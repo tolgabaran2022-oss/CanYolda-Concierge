@@ -1,0 +1,76 @@
+Build a full-stack web application called "CanYoldaşı".
+
+🌍 Concept
+
+CanYoldaşı is a community-based platform for:
+
+Stray animal reporting and care
+Pet profile management and adoption listings
+
+The app helps users locate stray animals, report their condition, and coordinate feeding or assistance. It also allows pet owners to manage digital pet profiles and create adoption listings.
+
+🧩 Core Features (MVP)
+1. Stray Animals Map System
+Users can add a stray animal by:
+Uploading a photo
+Auto or manual location pin on map
+Selecting status: hungry / injured / healthy / unknown
+Adding optional notes
+Each animal post appears on a map feed
+Users can interact with posts:
+"I fed this animal"
+"Needs help"
+Comment section
+Each interaction updates the animal’s status history
+2. Pet Profiles
+Users can create pet profiles:
+Name
+Type (cat, dog, etc.)
+Age
+Photo
+Vaccination info
+Feeding notes
+Profiles can be edited anytime
+3. Adoption Listings
+Users can create adoption posts for pets:
+Pet details
+Photos
+Location
+Adoption description
+Other users can view listings and contact the owner
+🧱 Tech Stack Requirements
+Frontend: React (or Next.js preferred)
+Backend: Node.js + Express
+Database: SQLite or PostgreSQL (choose simplest working option)
+Map integration: Leaflet or Google Maps API
+Authentication: simple email/password auth (or mock auth if needed)
+🎨 UI Style
+Warm, emotional design
+Colors: beige, orange, soft green
+Friendly, rounded UI components
+Mobile-first responsive design
+📌 Pages
+Home (map of stray animals)
+Add Stray Animal
+Animal Detail Page
+Pet Profiles
+Add Pet Profile
+Adoption Listings
+Login / Register
+⚙️ Logic Notes
+Each stray animal entry should store:
+id
+image
+location (lat/lng)
+status
+timestamp
+user interactions
+Ensure basic CRUD functionality works for animals and pets.
+🎯 Goal
+
+Create a working MVP that demonstrates the core idea of a community-driven animal care network and pet management system.
+
+💡 Extra (nice to have)
+Map clustering for many animals
+Simple notification system (mock)
+“Recently fed” badge system

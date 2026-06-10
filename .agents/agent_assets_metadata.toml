@@ -1,0 +1,8 @@
+uploads = []
+outputs = []
+
+[[generated]]
+id = "urF2HaCLoYCZvisEzw3dK"
+uri = "file://artifacts/mobile/assets/images/icon.png"
+type = "image"
+title = "canyoldasi app icon"

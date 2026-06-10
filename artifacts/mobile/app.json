@@ -1,0 +1,53 @@
+{
+  "expo": {
+    "name": "CanYoldaşı",
+    "slug": "mobile",
+    "version": "1.0.0",
+    "orientation": "portrait",
+    "icon": "./assets/images/icon.png",
+    "scheme": "mobile",
+    "userInterfaceStyle": "automatic",
+    "newArchEnabled": true,
+    "splash": {
+      "image": "./assets/images/icon.png",
+      "resizeMode": "contain",
+      "backgroundColor": "#FAF7F0"
+    },
+    "ios": {
+      "supportsTablet": false,
+      "infoPlist": {
+        "NSLocationWhenInUseUsageDescription": "CanYoldaşı, sokak hayvanlarının konumunu belirlemek için konumunuzu kullanır.",
+        "NSPhotoLibraryUsageDescription": "CanYoldaşı, hayvan fotoğrafı eklemek için fotoğraf kitaplığınıza erişir.",
+        "NSCameraUsageDescription": "CanYoldaşı, hayvan fotoğrafı çekmek için kameranıza erişir."
+      }
+    },
+    "android": {
+      "permissions": [
+        "ACCESS_FINE_LOCATION",
+        "ACCESS_COARSE_LOCATION",
+        "READ_EXTERNAL_STORAGE",
+        "WRITE_EXTERNAL_STORAGE",
+        "CAMERA"
+      ]
+    },
+    "web": {
+      "favicon": "./assets/images/icon.png"
+    },
+    "plugins": [
+      [
+        "expo-router",
+        {
+          "origin": "https://replit.com/"
+        }
+      ],
+      "expo-font",
+      "expo-web-browser",
+      "expo-location",
+      "expo-image-picker"
+    ],
+    "experiments": {
+      "typedRoutes": true,
+      "reactCompiler": true
+    }
+  }
+}

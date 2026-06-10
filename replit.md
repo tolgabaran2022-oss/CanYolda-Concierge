@@ -1,45 +1,63 @@
-# [Project name]
+# CanYoldaşı
 
-_Replace the heading above with the project's name, and this line with one sentence describing what this app does for users._
+Türkiye'deki sokak hayvanlarını raporlamak, takip etmek ve sahiplendirme ilanları yönetmek için topluluk odaklı mobil uygulama.
 
 ## Run & Operate
 
-- `pnpm --filter @workspace/api-server run dev` — run the API server (port 5000)
+- `pnpm --filter @workspace/mobile run dev` — run the Expo dev server
+- `pnpm --filter @workspace/api-server run dev` — run the API server (port 8080)
 - `pnpm run typecheck` — full typecheck across all packages
 - `pnpm run build` — typecheck + build all packages
-- `pnpm --filter @workspace/api-spec run codegen` — regenerate API hooks and Zod schemas from the OpenAPI spec
-- `pnpm --filter @workspace/db run push` — push DB schema changes (dev only)
-- Required env: `DATABASE_URL` — Postgres connection string
 
 ## Stack
 
 - pnpm workspaces, Node.js 24, TypeScript 5.9
-- API: Express 5
-- DB: PostgreSQL + Drizzle ORM
-- Validation: Zod (`zod/v4`), `drizzle-zod`
-- API codegen: Orval (from OpenAPI spec)
-- Build: esbuild (CJS bundle)
+- Mobile: Expo SDK 54, expo-router, React Native 0.81
+- Persistence: AsyncStorage (no backend for first build)
+- Maps: react-native-maps@1.18.0 (pinned — only version compatible with Expo Go)
+- Location: expo-location
+- Images: expo-image-picker, expo-image
+- UI: @expo/vector-icons, expo-linear-gradient, expo-blur, expo-haptics
+- Auth: Custom local auth with AsyncStorage
 
 ## Where things live
 
-_Populate as you build — short repo map plus pointers to the source-of-truth file for DB schema, API contracts, theme files, etc._
+- `artifacts/mobile/app/` — all screens (expo-router file-based routing)
+- `artifacts/mobile/contexts/` — AuthContext, AnimalsContext, PetsContext, AdoptionContext
+- `artifacts/mobile/components/` — AnimalCard, PetCard, AdoptionCard, StatusBadge, EmptyState
+- `artifacts/mobile/constants/colors.ts` — warm palette tokens
+- `artifacts/mobile/hooks/useColors.ts` — color hook
+- `artifacts/mobile/stubs/react-native-maps.web.js` — web polyfill for react-native-maps
+- `artifacts/mobile/metro.config.js` — metro resolver override for web
 
 ## Architecture decisions
 
-_Populate as you build — non-obvious choices a reader couldn't infer from the code (3-5 bullets)._
+- **AsyncStorage only** — no backend for the first build; all data persisted locally per device
+- **react-native-maps web stub** — react-native-maps@1.18.0 crashes on web due to codegenNativeCommands; a metro resolver override maps the module to a CJS stub on the `web` platform
+- **NativeTabs + liquid glass** — uses `isLiquidGlassAvailable()` for iOS 26+ liquid glass tab bars with classic BlurView fallback
+- **Auth via AsyncStorage** — simple email/password stored locally; no third-party auth for first build
+- **Context providers stacked** — Auth > Animals > Pets > Adoption > QueryClient > GestureHandler
 
 ## Product
 
-_Describe the high-level user-facing capabilities of this app once they exist._
+- Interactive map showing stray animals in Istanbul with colored markers (status: aç/yaralı/sağlıklı/bilinmiyor)
+- CRUD for stray animal reports (add photo, set status, pin location, leave comments, mark as fed)
+- Pet profile management for owned pets (name, type, age, vaccination info, feeding notes)
+- Adoption listings board with contact info
+- Full auth flow (register / login / logout) with profile page and stats
 
 ## User preferences
 
-_Populate as you build — explicit user instructions worth remembering across sessions._
+_Populate as you build._
 
 ## Gotchas
 
-_Populate as you build — sharp edges, "always run X before Y" rules._
+- **react-native-maps must stay at exactly 1.18.0** — other versions crash in Expo Go
+- **Never add react-native-maps to `plugins` in app.json** — it will crash the app
+- **Web bundler** — react-native-maps needs the metro stub (see `stubs/`) or web bundling fails
+- Seed data for animals and adoption listings populates automatically on first launch (AsyncStorage key absent = seed)
 
 ## Pointers
 
 - See the `pnpm-workspace` skill for workspace structure, TypeScript setup, and package details
+- See `.agents/memory/rn-maps-web-stub.md` for the react-native-maps web fix details

@@ -1,0 +1,1 @@
+- [react-native-maps web stub](rn-maps-web-stub.md) — react-native-maps@1.18.0 crashes on web; needs metro.config.js resolver stub + stubs/react-native-maps.web.js
