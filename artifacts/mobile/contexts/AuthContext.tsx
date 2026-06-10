@@ -35,9 +35,23 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   const [isLoading, setIsLoading] = useState(true);
 
   useEffect(() => {
+    const DEMO_USER = { id: "demo", name: "Demo Kullanıcı", email: "demo@canyoldasi.app" };
+    const DEMO_STORED = { ...DEMO_USER, password: "demo1234" };
+
     AsyncStorage.getItem(AUTH_KEY)
-      .then((data) => {
-        if (data) setUser(JSON.parse(data));
+      .then(async (data) => {
+        if (data) {
+          setUser(JSON.parse(data));
+          return;
+        }
+        const usersData = await AsyncStorage.getItem(USERS_KEY);
+        const users: StoredUser[] = usersData ? JSON.parse(usersData) : [];
+        if (!users.find((u) => u.email === DEMO_USER.email)) {
+          users.push(DEMO_STORED);
+          await AsyncStorage.setItem(USERS_KEY, JSON.stringify(users));
+        }
+        await AsyncStorage.setItem(AUTH_KEY, JSON.stringify(DEMO_USER));
+        setUser(DEMO_USER);
       })
       .finally(() => setIsLoading(false));
   }, []);

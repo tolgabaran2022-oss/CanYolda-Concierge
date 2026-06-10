@@ -6,6 +6,7 @@ import { SymbolView } from "expo-symbols";
 import { Feather } from "@expo/vector-icons";
 import React from "react";
 import { Platform, StyleSheet, View, useColorScheme } from "react-native";
+import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { useColors } from "@/hooks/useColors";
 
 function NativeTabLayout() {
@@ -35,8 +36,11 @@ function ClassicTabLayout() {
   const colors = useColors();
   const colorScheme = useColorScheme();
   const isDark = colorScheme === "dark";
+  const insets = useSafeAreaInsets();
   const isIOS = Platform.OS === "ios";
   const isWeb = Platform.OS === "web";
+
+  const pillBottom = insets.bottom + (isWeb ? 12 : 10);
 
   return (
     <Tabs
@@ -46,38 +50,64 @@ function ClassicTabLayout() {
         headerShown: false,
         tabBarStyle: {
           position: "absolute",
-          backgroundColor: isIOS ? "transparent" : colors.background,
-          borderTopWidth: isWeb ? 1 : 0,
-          borderTopColor: colors.border,
+          bottom: pillBottom,
+          left: 18,
+          right: 18,
+          height: 64,
+          borderRadius: 32,
+          backgroundColor: "transparent",
+          borderTopWidth: 0,
           elevation: 0,
-          ...(isWeb ? { height: 84 } : {}),
+          shadowColor: "#2D1B0E",
+          shadowOffset: { width: 0, height: 8 },
+          shadowOpacity: 0.14,
+          shadowRadius: 28,
+          overflow: "hidden",
         },
-        tabBarBackground: () =>
-          isIOS ? (
-            <BlurView
-              intensity={100}
-              tint={isDark ? "dark" : "light"}
-              style={StyleSheet.absoluteFill}
-            />
-          ) : isWeb ? (
-            <View
-              style={[
-                StyleSheet.absoluteFill,
-                { backgroundColor: colors.background },
-              ]}
-            />
-          ) : null,
+        tabBarBackground: () => (
+          <View style={[StyleSheet.absoluteFill, styles.glassContainer]}>
+            {isIOS ? (
+              <BlurView
+                intensity={90}
+                tint={isDark ? "dark" : "systemChromeMaterial"}
+                style={StyleSheet.absoluteFill}
+              />
+            ) : (
+              <View
+                style={[
+                  StyleSheet.absoluteFill,
+                  {
+                    backgroundColor: isDark
+                      ? "rgba(30,22,14,0.88)"
+                      : "rgba(253,250,245,0.90)",
+                  },
+                ]}
+              />
+            )}
+            {/* Subtle top highlight line (liquid glass shimmer) */}
+            <View style={styles.topHighlight} />
+          </View>
+        ),
+        tabBarItemStyle: {
+          paddingTop: 8,
+          paddingBottom: 6,
+        },
+        tabBarLabelStyle: {
+          fontSize: 10,
+          fontFamily: "Inter_500Medium",
+          marginTop: 1,
+        },
       }}
     >
       <Tabs.Screen
         name="index"
         options={{
           title: "Harita",
-          tabBarIcon: ({ color }) =>
+          tabBarIcon: ({ color, size }) =>
             isIOS ? (
-              <SymbolView name="map" tintColor={color} size={24} />
+              <SymbolView name="map" tintColor={color} size={22} />
             ) : (
-              <Feather name="map-pin" size={22} color={color} />
+              <Feather name="map-pin" size={21} color={color} />
             ),
         }}
       />
@@ -87,9 +117,9 @@ function ClassicTabLayout() {
           title: "Hayvanlar",
           tabBarIcon: ({ color }) =>
             isIOS ? (
-              <SymbolView name="pawprint" tintColor={color} size={24} />
+              <SymbolView name="pawprint" tintColor={color} size={22} />
             ) : (
-              <Feather name="list" size={22} color={color} />
+              <Feather name="list" size={21} color={color} />
             ),
         }}
       />
@@ -99,9 +129,9 @@ function ClassicTabLayout() {
           title: "Evcil",
           tabBarIcon: ({ color }) =>
             isIOS ? (
-              <SymbolView name="heart" tintColor={color} size={24} />
+              <SymbolView name="heart" tintColor={color} size={22} />
             ) : (
-              <Feather name="heart" size={22} color={color} />
+              <Feather name="heart" size={21} color={color} />
             ),
         }}
       />
@@ -111,15 +141,33 @@ function ClassicTabLayout() {
           title: "Profil",
           tabBarIcon: ({ color }) =>
             isIOS ? (
-              <SymbolView name="person" tintColor={color} size={24} />
+              <SymbolView name="person" tintColor={color} size={22} />
             ) : (
-              <Feather name="user" size={22} color={color} />
+              <Feather name="user" size={21} color={color} />
             ),
         }}
       />
     </Tabs>
   );
 }
+
+const styles = StyleSheet.create({
+  glassContainer: {
+    borderRadius: 32,
+    overflow: "hidden",
+    borderWidth: 0.75,
+    borderColor: "rgba(255,255,255,0.55)",
+  },
+  topHighlight: {
+    position: "absolute",
+    top: 0,
+    left: 20,
+    right: 20,
+    height: 1,
+    borderRadius: 1,
+    backgroundColor: "rgba(255,255,255,0.7)",
+  },
+});
 
 export default function TabLayout() {
   if (isLiquidGlassAvailable()) {
