@@ -151,7 +151,7 @@ export default function RegisterScreen() {
               <Text style={[styles.loginLabel, { color: colors.mutedForeground }]}>
                 Zaten hesabın var mı?
               </Text>
-              <Pressable onPress={() => router.replace("/(auth)/login")}>
+              <Pressable onPress={() => router.replace("/(auth)/login-form")}>
                 <Text style={[styles.loginLink, { color: colors.primary }]}>
                   {" "}Giriş Yap
                 </Text>
