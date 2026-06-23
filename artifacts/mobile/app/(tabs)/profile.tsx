@@ -1,7 +1,7 @@
 import { Ionicons } from "@expo/vector-icons";
 import * as Haptics from "expo-haptics";
 import { useRouter } from "expo-router";
-import React from "react";
+import React, { useEffect } from "react";
 import {
   Alert,
   Platform,
@@ -16,6 +16,7 @@ import { AnimalCard } from "@/components/AnimalCard";
 import { useAdoption } from "@/contexts/AdoptionContext";
 import { useAnimals } from "@/contexts/AnimalsContext";
 import { useAuth } from "@/contexts/AuthContext";
+import { useBoost } from "@/contexts/BoostContext";
 import { usePets } from "@/contexts/PetsContext";
 import { useColors } from "@/hooks/useColors";
 
@@ -27,6 +28,17 @@ function getInitials(name: string) {
     .join("");
 }
 
+function formatExpiry(expiresAt: string) {
+  const diff = new Date(expiresAt).getTime() - Date.now();
+  const hoursLeft = Math.max(0, Math.floor(diff / 3_600_000));
+  const minutesLeft = Math.max(0, Math.floor((diff % 3_600_000) / 60_000));
+  if (hoursLeft > 0) return `${hoursLeft} saat ${minutesLeft} dk`;
+  return `${minutesLeft} dakika`;
+}
+
+const TAB_FLOAT_H = 64;
+const TAB_BOTTOM_GAP = Platform.OS === "web" ? 12 : 10;
+
 export default function ProfileScreen() {
   const colors = useColors();
   const insets = useSafeAreaInsets();
@@ -34,6 +46,7 @@ export default function ProfileScreen() {
   const { animals } = useAnimals();
   const { pets } = usePets();
   const { listings } = useAdoption();
+  const { myBoosts, fetchMyBoosts } = useBoost();
   const router = useRouter();
 
   const myAnimals = animals.filter((a) => a.userId === user?.id);
@@ -41,7 +54,11 @@ export default function ProfileScreen() {
   const myListings = listings.filter((l) => l.userId === user?.id);
 
   const topPad = Platform.OS === "web" ? 67 : insets.top;
-  const tabBarOffset = Platform.OS === "web" ? 84 : 80;
+  const tabClearance = insets.bottom + TAB_BOTTOM_GAP + TAB_FLOAT_H;
+
+  useEffect(() => {
+    if (user?.email) fetchMyBoosts(user.email);
+  }, [user?.email, fetchMyBoosts]);
 
   const handleLogout = () => {
     Alert.alert("Çıkış Yap", "Hesabından çıkmak istiyor musun?", [
@@ -59,12 +76,19 @@ export default function ProfileScreen() {
 
   if (!user) return null;
 
+  const activeBoosts = myBoosts.filter(
+    (b) => new Date(b.expires_at ?? b.expiresAt).getTime() > Date.now()
+  );
+
+  const getListingName = (listingId: string) =>
+    myListings.find((l) => l.id === listingId)?.petName ?? "Bilinmiyor";
+
   return (
     <ScrollView
       style={{ backgroundColor: colors.background }}
       contentContainerStyle={[
         styles.container,
-        { paddingTop: topPad + 16, paddingBottom: insets.bottom + tabBarOffset + 24 },
+        { paddingTop: topPad + 16, paddingBottom: tabClearance + 24 },
       ]}
       showsVerticalScrollIndicator={false}
     >
@@ -76,7 +100,6 @@ export default function ProfileScreen() {
         <Text style={[styles.userName, { color: colors.foreground }]}>{user.name}</Text>
         <Text style={[styles.userEmail, { color: colors.mutedForeground }]}>{user.email}</Text>
 
-        {/* Stats */}
         <View style={[styles.statsRow, { borderTopColor: colors.border }]}>
           {[
             { value: myAnimals.length, label: "Bildirdi" },
@@ -100,6 +123,51 @@ export default function ProfileScreen() {
           ))}
         </View>
       </View>
+
+      {/* Active Boosts */}
+      {activeBoosts.length > 0 && (
+        <View style={styles.section}>
+          <Text style={[styles.sectionTitle, { color: colors.foreground }]}>
+            Aktif Öne Çıkarmalar
+          </Text>
+          <View style={[styles.actionsCard, { backgroundColor: colors.card, borderColor: colors.border }]}>
+            {activeBoosts.map((boost, i) => {
+              const expiresAt = boost.expires_at ?? boost.expiresAt;
+              const listingId = boost.listing_id ?? boost.listingId;
+              const hours = boost.package_hours ?? boost.packageHours;
+              return (
+                <Pressable
+                  key={boost.id ?? i}
+                  style={({ pressed }) => [
+                    styles.actionItem,
+                    {
+                      borderTopColor: colors.border,
+                      borderTopWidth: i > 0 ? 1 : 0,
+                      opacity: pressed ? 0.8 : 1,
+                    },
+                  ]}
+                  onPress={() =>
+                    router.push(`/adoption/${listingId}` as const)
+                  }
+                >
+                  <View style={[styles.actionIcon, { backgroundColor: `${colors.primary}20` }]}>
+                    <Ionicons name="star" size={18} color={colors.primary} />
+                  </View>
+                  <View style={{ flex: 1 }}>
+                    <Text style={[styles.actionLabel, { color: colors.foreground }]}>
+                      {getListingName(listingId)}
+                    </Text>
+                    <Text style={[styles.boostMeta, { color: colors.mutedForeground }]}>
+                      {hours}s paket · {formatExpiry(expiresAt)} kaldı
+                    </Text>
+                  </View>
+                  <Ionicons name="chevron-forward" size={16} color={colors.mutedForeground} />
+                </Pressable>
+              );
+            })}
+          </View>
+        </View>
+      )}
 
       {/* Quick actions */}
       <View style={styles.section}>
@@ -178,10 +246,7 @@ export default function ProfileScreen() {
 }
 
 const styles = StyleSheet.create({
-  container: {
-    paddingHorizontal: 16,
-    gap: 20,
-  },
+  container: { paddingHorizontal: 16, gap: 20 },
   profileCard: {
     borderRadius: 20,
     borderWidth: 1,
@@ -198,51 +263,21 @@ const styles = StyleSheet.create({
     justifyContent: "center",
     marginBottom: 12,
   },
-  avatarText: {
-    fontSize: 28,
-    fontFamily: "Inter_700Bold",
-    color: "white",
-  },
-  userName: {
-    fontSize: 20,
-    fontFamily: "Inter_700Bold",
-  },
+  avatarText: { fontSize: 28, fontFamily: "Inter_700Bold", color: "white" },
+  userName: { fontSize: 20, fontFamily: "Inter_700Bold" },
   userEmail: {
     fontSize: 14,
     fontFamily: "Inter_400Regular",
     marginTop: 2,
     marginBottom: 20,
   },
-  statsRow: {
-    flexDirection: "row",
-    width: "100%",
-    borderTopWidth: 1,
-  },
-  statItem: {
-    flex: 1,
-    paddingVertical: 16,
-    alignItems: "center",
-    gap: 2,
-  },
-  statValue: {
-    fontSize: 22,
-    fontFamily: "Inter_700Bold",
-  },
-  statLabel: {
-    fontSize: 12,
-    fontFamily: "Inter_400Regular",
-  },
+  statsRow: { flexDirection: "row", width: "100%", borderTopWidth: 1 },
+  statItem: { flex: 1, paddingVertical: 16, alignItems: "center", gap: 2 },
+  statValue: { fontSize: 22, fontFamily: "Inter_700Bold" },
+  statLabel: { fontSize: 12, fontFamily: "Inter_400Regular" },
   section: { gap: 10 },
-  sectionTitle: {
-    fontSize: 18,
-    fontFamily: "Inter_700Bold",
-    paddingHorizontal: 2,
-  },
-  actionsCard: {
-    borderRadius: 16,
-    borderWidth: 1,
-    overflow: "hidden",
-  },
+  sectionTitle: { fontSize: 18, fontFamily: "Inter_700Bold", paddingHorizontal: 2 },
+  actionsCard: { borderRadius: 16, borderWidth: 1, overflow: "hidden" },
   actionItem: {
     flexDirection: "row",
     alignItems: "center",
@@ -257,11 +292,8 @@ const styles = StyleSheet.create({
     alignItems: "center",
     justifyContent: "center",
   },
-  actionLabel: {
-    flex: 1,
-    fontSize: 15,
-    fontFamily: "Inter_500Medium",
-  },
+  actionLabel: { flex: 1, fontSize: 15, fontFamily: "Inter_500Medium" },
+  boostMeta: { fontSize: 12, fontFamily: "Inter_400Regular", marginTop: 2 },
   logoutBtn: {
     flexDirection: "row",
     alignItems: "center",
@@ -272,8 +304,5 @@ const styles = StyleSheet.create({
     paddingVertical: 14,
     marginTop: 4,
   },
-  logoutText: {
-    fontSize: 15,
-    fontFamily: "Inter_600SemiBold",
-  },
+  logoutText: { fontSize: 15, fontFamily: "Inter_600SemiBold" },
 });

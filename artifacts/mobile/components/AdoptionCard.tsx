@@ -4,6 +4,7 @@ import { useRouter } from "expo-router";
 import React from "react";
 import { Pressable, StyleSheet, Text, View } from "react-native";
 import type { AdoptionListing } from "@/contexts/AdoptionContext";
+import { useBoost } from "@/contexts/BoostContext";
 import { useColors } from "@/hooks/useColors";
 import { formatTimeAgo } from "@/utils/formatters";
 
@@ -14,6 +15,9 @@ interface Props {
 export function AdoptionCard({ listing }: Props) {
   const colors = useColors();
   const router = useRouter();
+  const { boostStatuses } = useBoost();
+  const boost = boostStatuses[listing.id];
+  const isFeatured = boost?.isFeatured ?? false;
 
   return (
     <Pressable
@@ -21,12 +25,20 @@ export function AdoptionCard({ listing }: Props) {
         styles.card,
         {
           backgroundColor: colors.card,
-          borderColor: colors.border,
+          borderColor: isFeatured ? "#E07A35" : colors.border,
+          borderWidth: isFeatured ? 1.5 : 1,
           opacity: pressed ? 0.92 : 1,
         },
       ]}
       onPress={() => router.push(`/adoption/${listing.id}` as const)}
     >
+      {isFeatured && (
+        <View style={styles.featuredBanner}>
+          <Ionicons name="star" size={11} color="white" />
+          <Text style={styles.featuredText}>Öne Çıkan</Text>
+        </View>
+      )}
+
       {listing.photo ? (
         <Image
           source={{ uri: listing.photo }}
@@ -88,10 +100,23 @@ export function AdoptionCard({ listing }: Props) {
 const styles = StyleSheet.create({
   card: {
     borderRadius: 16,
-    borderWidth: 1,
     marginHorizontal: 16,
     marginVertical: 6,
     overflow: "hidden",
+  },
+  featuredBanner: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 5,
+    backgroundColor: "#E07A35",
+    paddingHorizontal: 12,
+    paddingVertical: 5,
+  },
+  featuredText: {
+    fontSize: 12,
+    fontFamily: "Inter_700Bold",
+    color: "white",
+    letterSpacing: 0.3,
   },
   image: {
     width: "100%",

@@ -2,7 +2,7 @@ import { Ionicons } from "@expo/vector-icons";
 import * as Haptics from "expo-haptics";
 import { Image } from "expo-image";
 import { useLocalSearchParams, useRouter } from "expo-router";
-import React from "react";
+import React, { useEffect } from "react";
 import {
   Alert,
   Linking,
@@ -16,8 +16,25 @@ import {
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { useAdoption } from "@/contexts/AdoptionContext";
 import { useAuth } from "@/contexts/AuthContext";
+import { useBoost } from "@/contexts/BoostContext";
 import { useColors } from "@/hooks/useColors";
 import { formatTimeAgo } from "@/utils/formatters";
+
+function BoostStatusBadge({ expiresAt, packageHours }: { expiresAt: string; packageHours: number }) {
+  const colors = useColors();
+  const remaining = new Date(expiresAt).getTime() - Date.now();
+  const hoursLeft = Math.max(0, Math.floor(remaining / 3_600_000));
+  const minutesLeft = Math.max(0, Math.floor((remaining % 3_600_000) / 60_000));
+
+  return (
+    <View style={[styles.boostActive, { backgroundColor: `${colors.primary}12`, borderColor: `${colors.primary}30` }]}>
+      <Ionicons name="star" size={14} color={colors.primary} />
+      <Text style={[styles.boostActiveText, { color: colors.primary }]}>
+        Öne Çıkan · {hoursLeft > 0 ? `${hoursLeft}s ` : ""}{minutesLeft}dk kaldı
+      </Text>
+    </View>
+  );
+}
 
 export default function AdoptionDetailScreen() {
   const { id } = useLocalSearchParams<{ id: string }>();
@@ -26,10 +43,16 @@ export default function AdoptionDetailScreen() {
   const router = useRouter();
   const { getListing, deleteListing } = useAdoption();
   const { user } = useAuth();
+  const { boostStatuses, fetchBoostStatus } = useBoost();
 
   const listing = getListing(id ?? "");
   const isOwner = listing?.userId === user?.id;
   const bottomPad = Platform.OS === "web" ? 34 : insets.bottom;
+  const boost = boostStatuses[id ?? ""];
+
+  useEffect(() => {
+    if (id) fetchBoostStatus([id]);
+  }, [id, fetchBoostStatus]);
 
   if (!listing) {
     return (
@@ -73,13 +96,20 @@ export default function AdoptionDetailScreen() {
     ]);
   };
 
+  const handleBoost = () => {
+    Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
+    router.push({
+      pathname: "/boost-packages",
+      params: { listingId: listing.id, petName: listing.petName },
+    } as any);
+  };
+
   return (
     <ScrollView
       style={{ backgroundColor: colors.background }}
       contentContainerStyle={{ paddingBottom: bottomPad + 24 }}
       showsVerticalScrollIndicator={false}
     >
-      {/* Photo */}
       {listing.photo ? (
         <Image source={{ uri: listing.photo }} style={styles.heroImage} contentFit="cover" />
       ) : (
@@ -91,7 +121,7 @@ export default function AdoptionDetailScreen() {
       <View style={styles.body}>
         {/* Pet info */}
         <View style={styles.titleRow}>
-          <View>
+          <View style={{ flex: 1 }}>
             <Text style={[styles.petName, { color: colors.foreground }]}>{listing.petName}</Text>
             <Text style={[styles.petMeta, { color: colors.mutedForeground }]}>
               {listing.petType}
@@ -104,6 +134,13 @@ export default function AdoptionDetailScreen() {
             </Text>
           </View>
         </View>
+
+        {boost?.isFeatured && boost.expiresAt && (
+          <BoostStatusBadge
+            expiresAt={boost.expiresAt}
+            packageHours={boost.packageHours ?? 24}
+          />
+        )}
 
         {/* Posted by + time */}
         <View style={styles.postedRow}>
@@ -157,18 +194,42 @@ export default function AdoptionDetailScreen() {
 
         {/* Owner actions */}
         {isOwner && (
-          <Pressable
-            style={({ pressed }) => [
-              styles.deleteBtn,
-              { borderColor: colors.destructive, opacity: pressed ? 0.7 : 1 },
-            ]}
-            onPress={handleDelete}
-          >
-            <Ionicons name="trash-outline" size={18} color={colors.destructive} />
-            <Text style={[styles.deleteBtnText, { color: colors.destructive }]}>
-              İlanı Kaldır
-            </Text>
-          </Pressable>
+          <View style={styles.ownerActions}>
+            {/* Boost button */}
+            <Pressable
+              style={({ pressed }) => [
+                styles.boostBtn,
+                { borderColor: colors.primary, opacity: pressed ? 0.8 : 1 },
+              ]}
+              onPress={handleBoost}
+            >
+              <Ionicons name="star" size={18} color={colors.primary} />
+              <View style={{ flex: 1 }}>
+                <Text style={[styles.boostBtnTitle, { color: colors.primary }]}>
+                  {boost?.isFeatured ? "Öne Çıkarmayı Yenile" : "İlanı Öne Çıkar"}
+                </Text>
+                <Text style={[styles.boostBtnSub, { color: colors.mutedForeground }]}>
+                  {boost?.isFeatured
+                    ? "Süre uzatmak için yeni paket al"
+                    : "₺50'den başlayan fiyatlarla"}
+                </Text>
+              </View>
+              <Ionicons name="chevron-forward" size={16} color={colors.primary} />
+            </Pressable>
+
+            <Pressable
+              style={({ pressed }) => [
+                styles.deleteBtn,
+                { borderColor: colors.destructive, opacity: pressed ? 0.7 : 1 },
+              ]}
+              onPress={handleDelete}
+            >
+              <Ionicons name="trash-outline" size={18} color={colors.destructive} />
+              <Text style={[styles.deleteBtnText, { color: colors.destructive }]}>
+                İlanı Kaldır
+              </Text>
+            </Pressable>
+          </View>
         )}
       </View>
     </ScrollView>
@@ -192,6 +253,19 @@ const styles = StyleSheet.create({
   petMeta: { fontSize: 15, fontFamily: "Inter_400Regular", marginTop: 2 },
   badge: { borderRadius: 10, paddingHorizontal: 12, paddingVertical: 6 },
   badgeText: { fontSize: 13, fontFamily: "Inter_600SemiBold" },
+  boostActive: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 6,
+    borderRadius: 10,
+    borderWidth: 1,
+    paddingHorizontal: 12,
+    paddingVertical: 8,
+  },
+  boostActiveText: {
+    fontSize: 13,
+    fontFamily: "Inter_600SemiBold",
+  },
   postedRow: { flexDirection: "row", alignItems: "center", gap: 8 },
   avatarSmall: {
     width: 28,
@@ -239,6 +313,18 @@ const styles = StyleSheet.create({
     paddingVertical: 10,
   },
   contactInfoText: { fontSize: 14, fontFamily: "Inter_400Regular", flex: 1 },
+  ownerActions: { gap: 12, marginTop: 4 },
+  boostBtn: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 12,
+    borderRadius: 14,
+    borderWidth: 1.5,
+    paddingVertical: 14,
+    paddingHorizontal: 16,
+  },
+  boostBtnTitle: { fontSize: 15, fontFamily: "Inter_700Bold" },
+  boostBtnSub: { fontSize: 12, fontFamily: "Inter_400Regular", marginTop: 1 },
   deleteBtn: {
     flexDirection: "row",
     alignItems: "center",
@@ -247,7 +333,6 @@ const styles = StyleSheet.create({
     borderRadius: 14,
     borderWidth: 1.5,
     paddingVertical: 14,
-    marginTop: 8,
   },
   deleteBtnText: { fontSize: 15, fontFamily: "Inter_600SemiBold" },
 });

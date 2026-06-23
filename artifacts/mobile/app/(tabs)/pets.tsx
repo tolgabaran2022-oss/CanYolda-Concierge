@@ -1,7 +1,7 @@
 import { Ionicons } from "@expo/vector-icons";
 import * as Haptics from "expo-haptics";
 import { useRouter } from "expo-router";
-import React, { useState } from "react";
+import React, { useEffect, useState } from "react";
 import {
   FlatList,
   Platform,
@@ -16,10 +16,14 @@ import { EmptyState } from "@/components/EmptyState";
 import { PetCard } from "@/components/PetCard";
 import { useAdoption } from "@/contexts/AdoptionContext";
 import { useAuth } from "@/contexts/AuthContext";
+import { useBoost } from "@/contexts/BoostContext";
 import { usePets } from "@/contexts/PetsContext";
 import { useColors } from "@/hooks/useColors";
 
 type Tab = "pets" | "adoption";
+
+const TAB_FLOAT_H = 64;
+const TAB_BOTTOM_GAP = Platform.OS === "web" ? 12 : 10;
 
 export default function PetsScreen() {
   const colors = useColors();
@@ -28,10 +32,24 @@ export default function PetsScreen() {
   const { pets } = usePets();
   const { listings } = useAdoption();
   const { user } = useAuth();
+  const { boostStatuses, fetchBoostStatus } = useBoost();
   const [activeTab, setActiveTab] = useState<Tab>("pets");
 
   const topPad = Platform.OS === "web" ? 67 : insets.top;
-  const tabBarOffset = Platform.OS === "web" ? 84 : 80;
+  const tabClearance = insets.bottom + TAB_BOTTOM_GAP + TAB_FLOAT_H;
+
+  useEffect(() => {
+    if (listings.length > 0) {
+      fetchBoostStatus(listings.map((l) => l.id));
+    }
+  }, [listings, fetchBoostStatus]);
+
+  const sortedListings = [...listings].sort((a, b) => {
+    const aFeatured = boostStatuses[a.id]?.isFeatured ? 1 : 0;
+    const bFeatured = boostStatuses[b.id]?.isFeatured ? 1 : 0;
+    if (bFeatured !== aFeatured) return bFeatured - aFeatured;
+    return new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime();
+  });
 
   const fabAction = () => {
     Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
@@ -56,9 +74,7 @@ export default function PetsScreen() {
         </Text>
 
         {/* Segment control */}
-        <View
-          style={[styles.segment, { backgroundColor: colors.muted }]}
-        >
+        <View style={[styles.segment, { backgroundColor: colors.muted }]}>
           {(["pets", "adoption"] as Tab[]).map((tab) => (
             <Pressable
               key={tab}
@@ -102,7 +118,7 @@ export default function PetsScreen() {
           columnWrapperStyle={styles.row}
           contentContainerStyle={[
             styles.listContent,
-            { paddingBottom: insets.bottom + tabBarOffset + 80 },
+            { paddingBottom: tabClearance + 80 },
           ]}
           renderItem={({ item }) => (
             <PetCard pet={item} isOwner={item.userId === user?.id} />
@@ -119,19 +135,29 @@ export default function PetsScreen() {
       ) : (
         <FlatList
           key="adoption"
-          data={listings}
+          data={sortedListings}
           keyExtractor={(item) => item.id}
           contentContainerStyle={[
             styles.listContent,
-            { paddingBottom: insets.bottom + tabBarOffset + 80 },
+            { paddingBottom: tabClearance + 80 },
           ]}
           renderItem={({ item }) => <AdoptionCard listing={item} />}
           showsVerticalScrollIndicator={false}
+          ListHeaderComponent={
+            sortedListings.some((l) => boostStatuses[l.id]?.isFeatured) ? (
+              <View style={[styles.featuredNote, { backgroundColor: `${"#E07A35"}12` }]}>
+                <Ionicons name="star" size={14} color="#E07A35" />
+                <Text style={[styles.featuredNoteText, { color: "#E07A35" }]}>
+                  Öne çıkan ilanlar üstte gösterilir
+                </Text>
+              </View>
+            ) : null
+          }
           ListEmptyComponent={
             <EmptyState
               icon="hand-left-outline"
               title="Sahiplendirme ilanı yok"
-              subtitle='Yuva arayan hayvanlar için ilan paylaş.'
+              subtitle="Yuva arayan hayvanlar için ilan paylaş."
             />
           }
         />
@@ -142,7 +168,7 @@ export default function PetsScreen() {
         style={({ pressed }) => [
           styles.fab,
           {
-            bottom: insets.bottom + tabBarOffset + 12,
+            bottom: tabClearance + 14,
             backgroundColor: activeTab === "pets" ? colors.primary : colors.secondary,
             opacity: pressed ? 0.85 : 1,
           },
@@ -186,6 +212,21 @@ const styles = StyleSheet.create({
   },
   listContent: {
     paddingTop: 8,
+  },
+  featuredNote: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 6,
+    marginHorizontal: 16,
+    marginBottom: 4,
+    marginTop: 4,
+    borderRadius: 10,
+    paddingHorizontal: 12,
+    paddingVertical: 8,
+  },
+  featuredNoteText: {
+    fontSize: 12,
+    fontFamily: "Inter_500Medium",
   },
   fab: {
     position: "absolute",

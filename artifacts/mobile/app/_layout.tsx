@@ -17,6 +17,7 @@ import { ErrorBoundary } from "@/components/ErrorBoundary";
 import { AdoptionProvider } from "@/contexts/AdoptionContext";
 import { AnimalsProvider } from "@/contexts/AnimalsContext";
 import { AuthProvider, useAuth } from "@/contexts/AuthContext";
+import { BoostProvider } from "@/contexts/BoostContext";
 import { PetsProvider } from "@/contexts/PetsContext";
 
 SplashScreen.preventAutoHideAsync();
@@ -102,6 +103,13 @@ function RootLayoutNav() {
           headerTitleStyle: { fontFamily: "Inter_600SemiBold" },
         }}
       />
+      <Stack.Screen
+        name="boost-packages"
+        options={{
+          presentation: "modal",
+          headerShown: false,
+        }}
+      />
     </Stack>
   );
 }
@@ -129,13 +137,15 @@ export default function RootLayout() {
           <AnimalsProvider>
             <PetsProvider>
               <AdoptionProvider>
-                <QueryClientProvider client={queryClient}>
-                  <GestureHandlerRootView style={{ flex: 1 }}>
-                    <KeyboardProvider>
-                      <RootLayoutNav />
-                    </KeyboardProvider>
-                  </GestureHandlerRootView>
-                </QueryClientProvider>
+                <BoostProvider>
+                  <QueryClientProvider client={queryClient}>
+                    <GestureHandlerRootView style={{ flex: 1 }}>
+                      <KeyboardProvider>
+                        <RootLayoutNav />
+                      </KeyboardProvider>
+                    </GestureHandlerRootView>
+                  </QueryClientProvider>
+                </BoostProvider>
               </AdoptionProvider>
             </PetsProvider>
           </AnimalsProvider>
