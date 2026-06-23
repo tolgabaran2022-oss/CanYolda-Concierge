@@ -12,13 +12,16 @@ import {
 } from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { AdoptionCard } from "@/components/AdoptionCard";
+import { AppHeader } from "@/components/AppHeader";
 import { EmptyState } from "@/components/EmptyState";
 import { PetCard } from "@/components/PetCard";
 import { useAdoption } from "@/contexts/AdoptionContext";
 import { useAuth } from "@/contexts/AuthContext";
 import { useBoost } from "@/contexts/BoostContext";
 import { usePets } from "@/contexts/PetsContext";
-import { useColors } from "@/hooks/useColors";
+
+const PURPLE = "#7B5EA7";
+const BG = "#F5F1FF";
 
 type Tab = "pets" | "adoption";
 
@@ -26,7 +29,6 @@ const TAB_FLOAT_H = 64;
 const TAB_BOTTOM_GAP = Platform.OS === "web" ? 12 : 10;
 
 export default function PetsScreen() {
-  const colors = useColors();
   const insets = useSafeAreaInsets();
   const router = useRouter();
   const { pets } = usePets();
@@ -61,52 +63,37 @@ export default function PetsScreen() {
   };
 
   return (
-    <View style={[styles.container, { backgroundColor: colors.background }]}>
-      {/* Header */}
-      <View
-        style={[
-          styles.header,
-          { paddingTop: topPad + 12, backgroundColor: colors.background },
-        ]}
-      >
-        <Text style={[styles.title, { color: colors.foreground }]}>
-          {activeTab === "pets" ? "Evcil Hayvanlar" : "Sahiplendirme"}
-        </Text>
+    <View style={styles.container}>
+      <AppHeader topPad={topPad} />
 
-        {/* Segment control */}
-        <View style={[styles.segment, { backgroundColor: colors.muted }]}>
-          {(["pets", "adoption"] as Tab[]).map((tab) => (
-            <Pressable
-              key={tab}
+      {/* Screen title */}
+      <View style={styles.titleRow}>
+        <Text style={styles.screenTitle}>Evcil Hayvanlar</Text>
+      </View>
+
+      {/* Segment control */}
+      <View style={styles.segmentWrap}>
+        {(["pets", "adoption"] as Tab[]).map((tab) => (
+          <Pressable
+            key={tab}
+            style={[
+              styles.segmentItem,
+              activeTab === tab && styles.segmentActive,
+            ]}
+            onPress={() => setActiveTab(tab)}
+          >
+            <Text
               style={[
-                styles.segmentItem,
-                activeTab === tab && {
-                  backgroundColor: colors.card,
-                  shadowColor: "#000",
-                  shadowOffset: { width: 0, height: 1 },
-                  shadowOpacity: 0.1,
-                  shadowRadius: 4,
-                  elevation: 2,
-                },
+                styles.segmentText,
+                activeTab === tab
+                  ? styles.segmentTextActive
+                  : styles.segmentTextInactive,
               ]}
-              onPress={() => setActiveTab(tab)}
             >
-              <Text
-                style={[
-                  styles.segmentText,
-                  {
-                    color:
-                      activeTab === tab ? colors.primary : colors.mutedForeground,
-                    fontFamily:
-                      activeTab === tab ? "Inter_600SemiBold" : "Inter_400Regular",
-                  },
-                ]}
-              >
-                {tab === "pets" ? "Evcil Hayvanlarım" : "Sahiplendirme"}
-              </Text>
-            </Pressable>
-          ))}
-        </View>
+              {tab === "pets" ? "Evcil Hayvanlarım" : "Sahiplendirme"}
+            </Text>
+          </Pressable>
+        ))}
       </View>
 
       {activeTab === "pets" ? (
@@ -145,9 +132,9 @@ export default function PetsScreen() {
           showsVerticalScrollIndicator={false}
           ListHeaderComponent={
             sortedListings.some((l) => boostStatuses[l.id]?.isFeatured) ? (
-              <View style={[styles.featuredNote, { backgroundColor: `${"#E07A35"}12` }]}>
-                <Ionicons name="star" size={14} color="#E07A35" />
-                <Text style={[styles.featuredNoteText, { color: "#E07A35" }]}>
+              <View style={styles.featuredNote}>
+                <Ionicons name="star" size={14} color={PURPLE} />
+                <Text style={styles.featuredNoteText}>
                   Öne çıkan ilanlar üstte gösterilir
                 </Text>
               </View>
@@ -169,7 +156,6 @@ export default function PetsScreen() {
           styles.fab,
           {
             bottom: tabClearance + 14,
-            backgroundColor: activeTab === "pets" ? colors.primary : colors.secondary,
             opacity: pressed ? 0.85 : 1,
           },
         ]}
@@ -182,36 +168,59 @@ export default function PetsScreen() {
 }
 
 const styles = StyleSheet.create({
-  container: { flex: 1 },
-  header: {
-    paddingHorizontal: 16,
-    paddingBottom: 12,
-    gap: 14,
+  container: { flex: 1, backgroundColor: BG },
+  titleRow: {
+    paddingHorizontal: 20,
+    marginBottom: 12,
+    zIndex: 1,
   },
-  title: {
-    fontSize: 24,
+  screenTitle: {
+    fontSize: 22,
     fontFamily: "Inter_700Bold",
+    color: "#2D1B4E",
   },
-  segment: {
+  segmentWrap: {
     flexDirection: "row",
-    borderRadius: 12,
+    marginHorizontal: 20,
+    marginBottom: 14,
+    backgroundColor: "rgba(255,255,255,0.7)",
+    borderRadius: 14,
     padding: 4,
+    borderWidth: 1.5,
+    borderColor: "rgba(123,94,167,0.18)",
+    zIndex: 1,
   },
   segmentItem: {
     flex: 1,
-    paddingVertical: 9,
+    paddingVertical: 10,
     borderRadius: 10,
     alignItems: "center",
   },
+  segmentActive: {
+    backgroundColor: PURPLE,
+    shadowColor: PURPLE,
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.25,
+    shadowRadius: 6,
+    elevation: 3,
+  },
   segmentText: {
     fontSize: 13,
+  },
+  segmentTextActive: {
+    color: "#FFFFFF",
+    fontFamily: "Inter_600SemiBold",
+  },
+  segmentTextInactive: {
+    color: "#8874A8",
+    fontFamily: "Inter_400Regular",
   },
   row: {
     justifyContent: "space-between",
     paddingHorizontal: 16,
   },
   listContent: {
-    paddingTop: 8,
+    paddingTop: 4,
   },
   featuredNote: {
     flexDirection: "row",
@@ -223,22 +232,25 @@ const styles = StyleSheet.create({
     borderRadius: 10,
     paddingHorizontal: 12,
     paddingVertical: 8,
+    backgroundColor: `${PURPLE}15`,
   },
   featuredNoteText: {
     fontSize: 12,
     fontFamily: "Inter_500Medium",
+    color: PURPLE,
   },
   fab: {
     position: "absolute",
-    right: 16,
+    right: 20,
     width: 56,
     height: 56,
     borderRadius: 28,
+    backgroundColor: PURPLE,
     alignItems: "center",
     justifyContent: "center",
-    shadowColor: "#000",
+    shadowColor: PURPLE,
     shadowOffset: { width: 0, height: 4 },
-    shadowOpacity: 0.2,
+    shadowOpacity: 0.3,
     shadowRadius: 8,
     elevation: 6,
   },

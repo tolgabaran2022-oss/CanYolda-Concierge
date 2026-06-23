@@ -12,11 +12,14 @@ import {
 } from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { AnimalCard } from "@/components/AnimalCard";
+import { AppHeader } from "@/components/AppHeader";
 import { EmptyState } from "@/components/EmptyState";
 import { STATUS_COLORS } from "@/components/StatusBadge";
 import type { AnimalStatus } from "@/contexts/AnimalsContext";
 import { useAnimals } from "@/contexts/AnimalsContext";
-import { useColors } from "@/hooks/useColors";
+
+const PURPLE = "#7B5EA7";
+const BG = "#F5F1FF";
 
 const FILTERS: { key: "all" | AnimalStatus; label: string }[] = [
   { key: "all", label: "Tümü" },
@@ -27,7 +30,6 @@ const FILTERS: { key: "all" | AnimalStatus; label: string }[] = [
 ];
 
 export default function AnimalsScreen() {
-  const colors = useColors();
   const insets = useSafeAreaInsets();
   const router = useRouter();
   const { animals } = useAnimals();
@@ -42,63 +44,64 @@ export default function AnimalsScreen() {
   const tabBarOffset = Platform.OS === "web" ? 84 : 80;
 
   return (
-    <View style={[styles.container, { backgroundColor: colors.background }]}>
-      {/* Header */}
-      <View style={[styles.header, { paddingTop: topPad + 12, backgroundColor: colors.background }]}>
-        <View style={styles.headerRow}>
-          <Text style={[styles.headerTitle, { color: colors.foreground }]}>
-            Sokak Hayvanları
-          </Text>
-          <Pressable
-            style={({ pressed }) => [
-              styles.addBtn,
-              { backgroundColor: colors.primary, opacity: pressed ? 0.85 : 1 },
-            ]}
-            onPress={() => router.push("/add-animal")}
-          >
-            <Ionicons name="add" size={20} color="white" />
-          </Pressable>
-        </View>
+    <View style={styles.container}>
+      {/* Header with blobs + logo */}
+      <AppHeader topPad={topPad} />
 
-        <ScrollView
-          horizontal
-          showsHorizontalScrollIndicator={false}
-          contentContainerStyle={styles.filterScroll}
+      {/* Screen title + add button */}
+      <View style={styles.titleRow}>
+        <Text style={styles.screenTitle}>Sokak Hayvanları</Text>
+        <Pressable
+          style={({ pressed }) => [
+            styles.addBtn,
+            { opacity: pressed ? 0.85 : 1 },
+          ]}
+          onPress={() => router.push("/add-animal")}
         >
-          {FILTERS.map((f) => {
-            const isActive = filter === f.key;
-            const dotColor = f.key !== "all" ? STATUS_COLORS[f.key] : colors.primary;
-            return (
-              <Pressable
-                key={f.key}
+          <Ionicons name="add" size={22} color="white" />
+        </Pressable>
+      </View>
+
+      {/* Filter chips */}
+      <ScrollView
+        horizontal
+        showsHorizontalScrollIndicator={false}
+        contentContainerStyle={styles.filterScroll}
+      >
+        {FILTERS.map((f) => {
+          const isActive = filter === f.key;
+          const chipColor = f.key === "all" ? PURPLE : STATUS_COLORS[f.key];
+          const count =
+            f.key === "all"
+              ? animals.length
+              : animals.filter((a) => a.status === f.key).length;
+          return (
+            <Pressable
+              key={f.key}
+              style={[
+                styles.filterChip,
+                {
+                  backgroundColor: isActive ? chipColor : "rgba(255,255,255,0.7)",
+                  borderColor: isActive ? chipColor : "rgba(123,94,167,0.2)",
+                },
+              ]}
+              onPress={() => setFilter(f.key)}
+            >
+              <Text
                 style={[
-                  styles.filterChip,
+                  styles.filterText,
                   {
-                    backgroundColor: isActive ? dotColor : colors.muted,
-                    borderColor: isActive ? dotColor : "transparent",
+                    color: isActive ? "white" : "#8874A8",
+                    fontFamily: isActive ? "Inter_600SemiBold" : "Inter_400Regular",
                   },
                 ]}
-                onPress={() => setFilter(f.key)}
               >
-                <Text
-                  style={[
-                    styles.filterText,
-                    {
-                      color: isActive ? "white" : colors.mutedForeground,
-                      fontFamily: isActive ? "Inter_600SemiBold" : "Inter_400Regular",
-                    },
-                  ]}
-                >
-                  {f.label}
-                  {f.key !== "all"
-                    ? ` (${animals.filter((a) => a.status === f.key).length})`
-                    : ` (${animals.length})`}
-                </Text>
-              </Pressable>
-            );
-          })}
-        </ScrollView>
-      </View>
+                {f.label} ({count})
+              </Text>
+            </Pressable>
+          );
+        })}
+      </ScrollView>
 
       <FlatList
         data={filtered}
@@ -122,32 +125,40 @@ export default function AnimalsScreen() {
 }
 
 const styles = StyleSheet.create({
-  container: { flex: 1 },
-  header: {
-    paddingHorizontal: 16,
-    paddingBottom: 8,
-    gap: 12,
+  container: {
+    flex: 1,
+    backgroundColor: BG,
   },
-  headerRow: {
+  titleRow: {
     flexDirection: "row",
     justifyContent: "space-between",
     alignItems: "center",
+    paddingHorizontal: 20,
+    marginBottom: 12,
+    zIndex: 1,
   },
-  headerTitle: {
-    fontSize: 24,
+  screenTitle: {
+    fontSize: 22,
     fontFamily: "Inter_700Bold",
+    color: "#2D1B4E",
   },
   addBtn: {
-    width: 36,
-    height: 36,
-    borderRadius: 18,
+    width: 40,
+    height: 40,
+    borderRadius: 20,
+    backgroundColor: PURPLE,
     alignItems: "center",
     justifyContent: "center",
+    shadowColor: PURPLE,
+    shadowOffset: { width: 0, height: 3 },
+    shadowOpacity: 0.3,
+    shadowRadius: 6,
+    elevation: 4,
   },
   filterScroll: {
-    paddingHorizontal: 0,
+    paddingHorizontal: 20,
     gap: 8,
-    paddingBottom: 4,
+    paddingBottom: 12,
   },
   filterChip: {
     borderRadius: 20,
@@ -159,6 +170,6 @@ const styles = StyleSheet.create({
     fontSize: 13,
   },
   list: {
-    paddingTop: 8,
+    paddingTop: 4,
   },
 });

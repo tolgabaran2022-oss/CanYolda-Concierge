@@ -1,5 +1,6 @@
 import { Ionicons } from "@expo/vector-icons";
 import * as Haptics from "expo-haptics";
+import { Image } from "expo-image";
 import { useRouter } from "expo-router";
 import React, { useEffect } from "react";
 import {
@@ -12,21 +13,22 @@ import {
   View,
 } from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
-import { AnimalCard } from "@/components/AnimalCard";
+import { AppHeader } from "@/components/AppHeader";
 import { useAdoption } from "@/contexts/AdoptionContext";
 import { useAnimals } from "@/contexts/AnimalsContext";
 import { useAuth } from "@/contexts/AuthContext";
 import { useBoost } from "@/contexts/BoostContext";
 import { usePets } from "@/contexts/PetsContext";
-import { useColors } from "@/hooks/useColors";
 
-function getInitials(name: string) {
-  return name
-    .split(" ")
-    .slice(0, 2)
-    .map((n) => n[0]?.toUpperCase() ?? "")
-    .join("");
-}
+const PURPLE = "#7B5EA7";
+const PURPLE_DARK = "#3D2070";
+const BG = "#F5F1FF";
+
+const TAB_FLOAT_H = 64;
+const TAB_BOTTOM_GAP = Platform.OS === "web" ? 12 : 10;
+
+const CAT_AVATAR =
+  "https://images.unsplash.com/photo-1514888286974-6c03e2ca1dba?w=200&q=80";
 
 function formatExpiry(expiresAt: string) {
   const diff = new Date(expiresAt).getTime() - Date.now();
@@ -36,11 +38,7 @@ function formatExpiry(expiresAt: string) {
   return `${minutesLeft} dakika`;
 }
 
-const TAB_FLOAT_H = 64;
-const TAB_BOTTOM_GAP = Platform.OS === "web" ? 12 : 10;
-
 export default function ProfileScreen() {
-  const colors = useColors();
   const insets = useSafeAreaInsets();
   const { user, logout } = useAuth();
   const { animals } = useAnimals();
@@ -83,217 +81,281 @@ export default function ProfileScreen() {
   const getListingName = (listingId: string) =>
     myListings.find((l) => l.id === listingId)?.petName ?? "Bilinmiyor";
 
+  const quickActions = [
+    {
+      icon: "paw-outline" as const,
+      label: "Sokak Hayvanı Ekle",
+      action: () => router.push("/add-animal"),
+    },
+    {
+      icon: "heart-outline" as const,
+      label: "Evcil Hayvan Ekle",
+      action: () => router.push("/add-pet"),
+    },
+    {
+      icon: "hand-left-outline" as const,
+      label: "Sahiplendirme İlanı Ver",
+      action: () => router.push("/add-adoption"),
+    },
+  ];
+
   return (
-    <ScrollView
-      style={{ backgroundColor: colors.background }}
-      contentContainerStyle={[
-        styles.container,
-        { paddingTop: topPad + 16, paddingBottom: tabClearance + 24 },
-      ]}
-      showsVerticalScrollIndicator={false}
-    >
-      {/* Profile card */}
-      <View style={[styles.profileCard, { backgroundColor: colors.card, borderColor: colors.border }]}>
-        <View style={[styles.avatar, { backgroundColor: colors.primary }]}>
-          <Text style={styles.avatarText}>{getInitials(user.name)}</Text>
-        </View>
-        <Text style={[styles.userName, { color: colors.foreground }]}>{user.name}</Text>
-        <Text style={[styles.userEmail, { color: colors.mutedForeground }]}>{user.email}</Text>
+    <View style={styles.outerContainer}>
+      <AppHeader topPad={topPad} />
 
-        <View style={[styles.statsRow, { borderTopColor: colors.border }]}>
-          {[
-            { value: myAnimals.length, label: "Bildirdi" },
-            { value: myPets.length, label: "Evcil" },
-            { value: myListings.length, label: "İlan" },
-          ].map((stat, i) => (
-            <View
-              key={i}
-              style={[
-                styles.statItem,
-                i < 2 && { borderRightColor: colors.border, borderRightWidth: 1 },
-              ]}
-            >
-              <Text style={[styles.statValue, { color: colors.primary }]}>
-                {stat.value}
-              </Text>
-              <Text style={[styles.statLabel, { color: colors.mutedForeground }]}>
-                {stat.label}
-              </Text>
-            </View>
-          ))}
-        </View>
-      </View>
+      <ScrollView
+        style={styles.scroll}
+        contentContainerStyle={[
+          styles.container,
+          { paddingBottom: tabClearance + 24 },
+        ]}
+        showsVerticalScrollIndicator={false}
+      >
+        {/* Profile card */}
+        <View style={styles.profileCard}>
+          <View style={styles.avatarWrap}>
+            <Image
+              source={{ uri: CAT_AVATAR }}
+              style={styles.avatarImage}
+              contentFit="cover"
+            />
+          </View>
+          <Text style={styles.userName}>{user.name}</Text>
+          <Text style={styles.userEmail}>{user.email}</Text>
 
-      {/* Active Boosts */}
-      {activeBoosts.length > 0 && (
-        <View style={styles.section}>
-          <Text style={[styles.sectionTitle, { color: colors.foreground }]}>
-            Aktif Öne Çıkarmalar
-          </Text>
-          <View style={[styles.actionsCard, { backgroundColor: colors.card, borderColor: colors.border }]}>
-            {activeBoosts.map((boost, i) => {
-              const expiresAt = boost.expires_at ?? boost.expiresAt;
-              const listingId = boost.listing_id ?? boost.listingId;
-              const hours = boost.package_hours ?? boost.packageHours;
-              return (
-                <Pressable
-                  key={boost.id ?? i}
-                  style={({ pressed }) => [
-                    styles.actionItem,
-                    {
-                      borderTopColor: colors.border,
-                      borderTopWidth: i > 0 ? 1 : 0,
-                      opacity: pressed ? 0.8 : 1,
-                    },
-                  ]}
-                  onPress={() =>
-                    router.push(`/adoption/${listingId}` as const)
-                  }
-                >
-                  <View style={[styles.actionIcon, { backgroundColor: `${colors.primary}20` }]}>
-                    <Ionicons name="star" size={18} color={colors.primary} />
-                  </View>
-                  <View style={{ flex: 1 }}>
-                    <Text style={[styles.actionLabel, { color: colors.foreground }]}>
-                      {getListingName(listingId)}
-                    </Text>
-                    <Text style={[styles.boostMeta, { color: colors.mutedForeground }]}>
-                      {hours}s paket · {formatExpiry(expiresAt)} kaldı
-                    </Text>
-                  </View>
-                  <Ionicons name="chevron-forward" size={16} color={colors.mutedForeground} />
-                </Pressable>
-              );
-            })}
+          <View style={styles.statsRow}>
+            {[
+              { value: myAnimals.length, label: "Bildirdi" },
+              { value: myPets.length, label: "Evcil" },
+              { value: myListings.length, label: "İlan" },
+            ].map((stat, i) => (
+              <View
+                key={i}
+                style={[
+                  styles.statItem,
+                  i < 2 && styles.statBorder,
+                ]}
+              >
+                <Text style={styles.statValue}>{stat.value}</Text>
+                <Text style={styles.statLabel}>{stat.label}</Text>
+              </View>
+            ))}
           </View>
         </View>
-      )}
 
-      {/* Quick actions */}
-      <View style={styles.section}>
-        <Text style={[styles.sectionTitle, { color: colors.foreground }]}>
-          Hızlı Erişim
-        </Text>
-        <View style={[styles.actionsCard, { backgroundColor: colors.card, borderColor: colors.border }]}>
-          {[
-            {
-              icon: "paw-outline" as const,
-              label: "Sokak Hayvanı Ekle",
-              color: colors.primary,
-              action: () => router.push("/add-animal"),
-            },
-            {
-              icon: "heart-outline" as const,
-              label: "Evcil Hayvan Ekle",
-              color: colors.secondary,
-              action: () => router.push("/add-pet"),
-            },
-            {
-              icon: "hand-left-outline" as const,
-              label: "Sahiplendirme İlanı Ver",
-              color: "#8B5CF6",
-              action: () => router.push("/add-adoption"),
-            },
-          ].map((item, i) => (
-            <Pressable
-              key={i}
-              style={({ pressed }) => [
-                styles.actionItem,
-                { borderTopColor: colors.border, borderTopWidth: i > 0 ? 1 : 0 },
-                pressed && { opacity: 0.7 },
-              ]}
-              onPress={item.action}
-            >
-              <View style={[styles.actionIcon, { backgroundColor: item.color + "20" }]}>
-                <Ionicons name={item.icon} size={20} color={item.color} />
-              </View>
-              <Text style={[styles.actionLabel, { color: colors.foreground }]}>
-                {item.label}
-              </Text>
-              <Ionicons name="chevron-forward" size={16} color={colors.mutedForeground} />
-            </Pressable>
-          ))}
-        </View>
-      </View>
+        {/* Active Boosts */}
+        {activeBoosts.length > 0 && (
+          <View style={styles.section}>
+            <Text style={styles.sectionTitle}>Aktif Öne Çıkarmalar</Text>
+            <View style={styles.card}>
+              {activeBoosts.map((boost, i) => {
+                const expiresAt = boost.expires_at ?? boost.expiresAt;
+                const listingId = boost.listing_id ?? boost.listingId;
+                const hours = boost.package_hours ?? boost.packageHours;
+                return (
+                  <Pressable
+                    key={boost.id ?? i}
+                    style={({ pressed }) => [
+                      styles.cardRow,
+                      i > 0 && styles.cardRowBorder,
+                      { opacity: pressed ? 0.8 : 1 },
+                    ]}
+                    onPress={() => router.push(`/adoption/${listingId}` as const)}
+                  >
+                    <View style={styles.iconBadge}>
+                      <Ionicons name="star" size={18} color={PURPLE} />
+                    </View>
+                    <View style={{ flex: 1 }}>
+                      <Text style={styles.cardRowLabel}>
+                        {getListingName(listingId)}
+                      </Text>
+                      <Text style={styles.cardRowMeta}>
+                        {hours}s paket · {formatExpiry(expiresAt)} kaldı
+                      </Text>
+                    </View>
+                    <Ionicons name="chevron-forward" size={16} color="#8874A8" />
+                  </Pressable>
+                );
+              })}
+            </View>
+          </View>
+        )}
 
-      {/* My animals */}
-      {myAnimals.length > 0 && (
+        {/* Quick actions */}
         <View style={styles.section}>
-          <Text style={[styles.sectionTitle, { color: colors.foreground }]}>
-            Bildirdiklerim
-          </Text>
-          {myAnimals.slice(0, 3).map((animal) => (
-            <AnimalCard key={animal.id} animal={animal} />
-          ))}
+          <Text style={styles.sectionTitle}>Hızlı Erişim</Text>
+          <View style={styles.card}>
+            {quickActions.map((item, i) => (
+              <Pressable
+                key={i}
+                style={({ pressed }) => [
+                  styles.cardRow,
+                  i > 0 && styles.cardRowBorder,
+                  { opacity: pressed ? 0.75 : 1 },
+                ]}
+                onPress={item.action}
+              >
+                <View style={styles.iconBadge}>
+                  <Ionicons name={item.icon} size={20} color={PURPLE} />
+                </View>
+                <Text style={styles.cardRowLabel}>{item.label}</Text>
+                <Ionicons name="chevron-forward" size={16} color="#8874A8" />
+              </Pressable>
+            ))}
+          </View>
         </View>
-      )}
 
-      {/* Logout */}
-      <Pressable
-        style={({ pressed }) => [
-          styles.logoutBtn,
-          { borderColor: colors.destructive, opacity: pressed ? 0.7 : 1 },
-        ]}
-        onPress={handleLogout}
-      >
-        <Ionicons name="log-out-outline" size={20} color={colors.destructive} />
-        <Text style={[styles.logoutText, { color: colors.destructive }]}>
-          Çıkış Yap
-        </Text>
-      </Pressable>
-    </ScrollView>
+        {/* Logout */}
+        <Pressable
+          style={({ pressed }) => [
+            styles.logoutBtn,
+            { opacity: pressed ? 0.75 : 1 },
+          ]}
+          onPress={handleLogout}
+        >
+          <Ionicons name="log-out-outline" size={20} color="#D94040" />
+          <Text style={styles.logoutText}>Çıkış Yap</Text>
+        </Pressable>
+      </ScrollView>
+    </View>
   );
 }
 
 const styles = StyleSheet.create({
-  container: { paddingHorizontal: 16, gap: 20 },
+  outerContainer: {
+    flex: 1,
+    backgroundColor: BG,
+  },
+  scroll: {
+    flex: 1,
+  },
+  container: {
+    paddingHorizontal: 20,
+    gap: 20,
+  },
+
+  /* Profile card */
   profileCard: {
+    backgroundColor: "rgba(255,255,255,0.85)",
     borderRadius: 20,
     borderWidth: 1,
+    borderColor: "rgba(123,94,167,0.15)",
     alignItems: "center",
-    paddingTop: 28,
-    paddingHorizontal: 20,
+    paddingTop: 24,
     overflow: "hidden",
+    shadowColor: PURPLE,
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.08,
+    shadowRadius: 16,
+    elevation: 3,
   },
-  avatar: {
+  avatarWrap: {
     width: 80,
     height: 80,
     borderRadius: 40,
-    alignItems: "center",
-    justifyContent: "center",
+    overflow: "hidden",
     marginBottom: 12,
+    borderWidth: 3,
+    borderColor: `${PURPLE}40`,
   },
-  avatarText: { fontSize: 28, fontFamily: "Inter_700Bold", color: "white" },
-  userName: { fontSize: 20, fontFamily: "Inter_700Bold" },
+  avatarImage: {
+    width: 80,
+    height: 80,
+  },
+  userName: {
+    fontSize: 20,
+    fontFamily: "Inter_700Bold",
+    color: PURPLE_DARK,
+  },
   userEmail: {
-    fontSize: 14,
+    fontSize: 13,
     fontFamily: "Inter_400Regular",
+    color: "#8874A8",
     marginTop: 2,
     marginBottom: 20,
   },
-  statsRow: { flexDirection: "row", width: "100%", borderTopWidth: 1 },
-  statItem: { flex: 1, paddingVertical: 16, alignItems: "center", gap: 2 },
-  statValue: { fontSize: 22, fontFamily: "Inter_700Bold" },
-  statLabel: { fontSize: 12, fontFamily: "Inter_400Regular" },
+  statsRow: {
+    flexDirection: "row",
+    width: "100%",
+    borderTopWidth: 1,
+    borderTopColor: "rgba(123,94,167,0.12)",
+  },
+  statItem: {
+    flex: 1,
+    paddingVertical: 16,
+    alignItems: "center",
+    gap: 2,
+  },
+  statBorder: {
+    borderRightWidth: 1,
+    borderRightColor: "rgba(123,94,167,0.12)",
+  },
+  statValue: {
+    fontSize: 22,
+    fontFamily: "Inter_700Bold",
+    color: PURPLE,
+  },
+  statLabel: {
+    fontSize: 11,
+    fontFamily: "Inter_400Regular",
+    color: "#8874A8",
+  },
+
+  /* Sections */
   section: { gap: 10 },
-  sectionTitle: { fontSize: 18, fontFamily: "Inter_700Bold", paddingHorizontal: 2 },
-  actionsCard: { borderRadius: 16, borderWidth: 1, overflow: "hidden" },
-  actionItem: {
+  sectionTitle: {
+    fontSize: 18,
+    fontFamily: "Inter_700Bold",
+    color: PURPLE_DARK,
+    paddingHorizontal: 2,
+  },
+
+  /* Card rows */
+  card: {
+    backgroundColor: "rgba(255,255,255,0.85)",
+    borderRadius: 16,
+    borderWidth: 1,
+    borderColor: "rgba(123,94,167,0.15)",
+    overflow: "hidden",
+    shadowColor: PURPLE,
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.06,
+    shadowRadius: 10,
+    elevation: 2,
+  },
+  cardRow: {
     flexDirection: "row",
     alignItems: "center",
     paddingHorizontal: 16,
     paddingVertical: 14,
     gap: 12,
   },
-  actionIcon: {
+  cardRowBorder: {
+    borderTopWidth: 1,
+    borderTopColor: "rgba(123,94,167,0.1)",
+  },
+  iconBadge: {
     width: 38,
     height: 38,
     borderRadius: 12,
+    backgroundColor: `${PURPLE}18`,
     alignItems: "center",
     justifyContent: "center",
   },
-  actionLabel: { flex: 1, fontSize: 15, fontFamily: "Inter_500Medium" },
-  boostMeta: { fontSize: 12, fontFamily: "Inter_400Regular", marginTop: 2 },
+  cardRowLabel: {
+    flex: 1,
+    fontSize: 15,
+    fontFamily: "Inter_500Medium",
+    color: PURPLE_DARK,
+  },
+  cardRowMeta: {
+    fontSize: 12,
+    fontFamily: "Inter_400Regular",
+    color: "#8874A8",
+    marginTop: 2,
+  },
+
+  /* Logout */
   logoutBtn: {
     flexDirection: "row",
     alignItems: "center",
@@ -301,8 +363,13 @@ const styles = StyleSheet.create({
     gap: 8,
     borderRadius: 14,
     borderWidth: 1.5,
+    borderColor: "#D94040",
     paddingVertical: 14,
     marginTop: 4,
   },
-  logoutText: { fontSize: 15, fontFamily: "Inter_600SemiBold" },
+  logoutText: {
+    fontSize: 15,
+    fontFamily: "Inter_600SemiBold",
+    color: "#D94040",
+  },
 });
