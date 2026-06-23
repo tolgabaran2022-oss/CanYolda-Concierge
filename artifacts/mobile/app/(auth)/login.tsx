@@ -18,7 +18,7 @@ const BLOB_PURPLE  = "#C8B4F0";
 const BLOB_CREAM   = "#F0E4CE";
 const BG           = "#FAF7F2";
 
-const PET_IMAGE = require("@/assets/images/hero-pets.png");
+const HERO_IMAGE = require("@/assets/images/hero-logo-pets.png");
 
 export default function WelcomeScreen() {
   const insets = useSafeAreaInsets();
@@ -30,46 +30,16 @@ export default function WelcomeScreen() {
   return (
     <View style={[styles.root, { paddingTop: insets.top, paddingBottom: Math.max(insets.bottom, 16) }]}>
 
-      {/* ── Organic blobs ─────────────────────────────── */}
-      {/* Left large purple blob */}
-      <View style={styles.blobLeftMain} />
-      <View style={styles.blobLeftTail} />
-      {/* Top-right cream blob */}
-      <View style={styles.blobTopRight} />
-      {/* Bottom-right cream blob */}
+      {/* Bottom decorative blobs (below the hero graphic) */}
       <View style={styles.blobBottomRight} />
+      <View style={styles.blobBottomLeft} />
 
-      {/* ── Logo ──────────────────────────────────────── */}
-      <View style={styles.logoSection}>
-        <Ionicons name="heart" size={22} color={PURPLE} style={{ marginBottom: 4 }} />
-        <Text style={styles.logoText}>canyoldaşı</Text>
-        <Text style={styles.tagline}>
-          Dostların için{"\n"}
-          her şey <Text style={styles.taglinePurple}>bir tık uzağında</Text>
-        </Text>
-      </View>
-
-      {/* ── Hero ──────────────────────────────────────── */}
-      <View style={styles.heroOuter}>
-        {/* Purple blob behind image */}
-        <View style={styles.heroBlobBehind} />
-
-        <Image
-          source={PET_IMAGE}
-          style={styles.heroImage}
-          contentFit="cover"
-        />
-
-        {/* Paw badge – left */}
-        <View style={styles.pawBadge}>
-          <Ionicons name="paw" size={20} color="#FFF" />
-        </View>
-
-        {/* Decorative dots */}
-        <View style={[styles.dot, { top: 12, right: 18, width: 18, height: 18, backgroundColor: "rgba(160,120,220,0.45)" }]} />
-        <View style={[styles.dot, { top: 54, right: 6,  width: 10, height: 10, backgroundColor: "rgba(160,120,220,0.28)" }]} />
-        <View style={[styles.dot, { bottom: 22, right: 12, width: 12, height: 12, backgroundColor: BLOB_CREAM }]} />
-      </View>
+      {/* ── Hero graphic: logo + tagline + pets + blobs ── */}
+      <Image
+        source={HERO_IMAGE}
+        style={styles.heroImage}
+        contentFit="contain"
+      />
 
       {/* ── Buttons ───────────────────────────────────── */}
       <View style={styles.btnSection}>
@@ -146,138 +116,46 @@ const styles = StyleSheet.create({
     backgroundColor: BG,
   },
 
-  /* ── Blobs ─────────────────────────────────── */
-  blobLeftMain: {
-    position: "absolute",
-    top: -100,
-    left: -70,
-    width: 230,
-    height: 380,
-    backgroundColor: BLOB_PURPLE,
-    opacity: 0.55,
-    borderTopLeftRadius: 30,
-    borderTopRightRadius: 200,
-    borderBottomRightRadius: 160,
-    borderBottomLeftRadius: 80,
-  },
-  blobLeftTail: {
-    position: "absolute",
-    top: 250,
-    left: -50,
-    width: 160,
-    height: 220,
-    backgroundColor: BLOB_PURPLE,
-    opacity: 0.35,
-    borderTopLeftRadius: 60,
-    borderTopRightRadius: 140,
-    borderBottomRightRadius: 80,
-    borderBottomLeftRadius: 30,
-  },
-  blobTopRight: {
-    position: "absolute",
-    top: -40,
-    right: -50,
-    width: 130,
-    height: 130,
-    backgroundColor: BLOB_CREAM,
-    opacity: 0.7,
-    borderTopLeftRadius: 100,
-    borderTopRightRadius: 20,
-    borderBottomRightRadius: 40,
-    borderBottomLeftRadius: 120,
-  },
   blobBottomRight: {
     position: "absolute",
-    bottom: 80,
+    bottom: 70,
     right: -60,
     width: 160,
     height: 160,
     backgroundColor: BLOB_CREAM,
-    opacity: 0.5,
+    opacity: 0.45,
     borderTopLeftRadius: 140,
     borderTopRightRadius: 50,
     borderBottomRightRadius: 20,
     borderBottomLeftRadius: 100,
   },
-
-  /* ── Logo ──────────────────────────────────── */
-  logoSection: {
-    alignItems: "center",
-    paddingTop: 20,
-    paddingBottom: 4,
-    zIndex: 1,
-  },
-  logoText: {
-    fontSize: 36,
-    fontFamily: "Inter_700Bold",
-    color: PURPLE_DARK,
-    letterSpacing: -0.5,
-  },
-  tagline: {
-    fontSize: 14,
-    fontFamily: "Inter_400Regular",
-    color: "#666",
-    textAlign: "center",
-    lineHeight: 21,
-    marginTop: 6,
-  },
-  taglinePurple: {
-    color: PURPLE,
-    fontFamily: "Inter_600SemiBold",
-  },
-
-  /* ── Hero ──────────────────────────────────── */
-  heroOuter: {
-    alignSelf: "center",
-    width: 290,
-    height: 205,
-    marginTop: 18,
-    marginBottom: 8,
-    zIndex: 1,
-  },
-  heroBlobBehind: {
+  blobBottomLeft: {
     position: "absolute",
-    top: -14,
-    left: -10,
-    right: -10,
-    bottom: -14,
+    bottom: -50,
+    left: -55,
+    width: 180,
+    height: 180,
     backgroundColor: BLOB_PURPLE,
-    opacity: 0.38,
-    borderTopLeftRadius: 30,
-    borderTopRightRadius: 160,
-    borderBottomRightRadius: 130,
-    borderBottomLeftRadius: 110,
+    opacity: 0.5,
+    borderTopLeftRadius: 90,
+    borderTopRightRadius: 140,
+    borderBottomRightRadius: 60,
+    borderBottomLeftRadius: 40,
   },
+
+  /* ── Hero graphic ──────────────────────────── */
   heroImage: {
-    width: 290,
-    height: 205,
-    borderRadius: 110,
-  },
-  pawBadge: {
-    position: "absolute",
-    left: -12,
-    top: "38%",
-    width: 52,
-    height: 52,
-    borderRadius: 26,
-    backgroundColor: PURPLE,
-    alignItems: "center",
-    justifyContent: "center",
-    shadowColor: PURPLE,
-    shadowOffset: { width: 0, height: 4 },
-    shadowOpacity: 0.35,
-    shadowRadius: 8,
-    elevation: 6,
-  },
-  dot: {
-    position: "absolute",
-    borderRadius: 50,
+    width: "100%",
+    aspectRatio: 0.9,
+    marginTop: 4,
+    zIndex: 1,
   },
 
   /* ── Buttons ───────────────────────────────── */
   btnSection: {
     paddingHorizontal: 28,
     gap: 12,
+    marginTop: 4,
     zIndex: 1,
   },
   primaryBtn: {
