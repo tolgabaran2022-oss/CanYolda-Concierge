@@ -1,6 +1,5 @@
 import { Ionicons } from "@expo/vector-icons";
 import * as Haptics from "expo-haptics";
-import { LinearGradient } from "expo-linear-gradient";
 import { useRouter } from "expo-router";
 import React, { useState } from "react";
 import {
@@ -18,6 +17,12 @@ import {
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { useAuth } from "@/contexts/AuthContext";
 import { useColors } from "@/hooks/useColors";
+
+const PURPLE = "#7B5EA7";
+const PURPLE_DARK = "#3D2070";
+const BG = "#F5F1FF";
+const BLOB = "rgba(180,155,220,0.22)";
+const BLOB2 = "rgba(160,130,210,0.16)";
 
 export default function RegisterScreen() {
   const colors = useColors();
@@ -54,10 +59,11 @@ export default function RegisterScreen() {
   };
 
   return (
-    <LinearGradient
-      colors={["#FAF7F0", "#F5EAD7", "#D4EDDA"]}
-      style={styles.gradient}
-    >
+    <View style={styles.root}>
+      {/* Blobs */}
+      <View style={[styles.blobTL, { top: insets.top - 50 }]} />
+      <View style={[styles.blobTR, { top: insets.top - 30 }]} />
+
       <KeyboardAvoidingView
         behavior={Platform.OS === "ios" ? "padding" : "height"}
         style={{ flex: 1 }}
@@ -65,54 +71,72 @@ export default function RegisterScreen() {
         <ScrollView
           contentContainerStyle={[
             styles.container,
-            { paddingTop: insets.top + 32, paddingBottom: insets.bottom + 24 },
+            { paddingTop: insets.top + 24, paddingBottom: insets.bottom + 24 },
           ]}
           keyboardShouldPersistTaps="handled"
           showsVerticalScrollIndicator={false}
         >
+          {/* Back button */}
+          <Pressable
+            style={({ pressed }) => [styles.backBtn, { opacity: pressed ? 0.7 : 1 }]}
+            onPress={() => router.back()}
+          >
+            <Ionicons name="chevron-back" size={22} color={PURPLE} />
+          </Pressable>
+
+          {/* Header */}
           <View style={styles.header}>
-            <View style={[styles.logoCircle, { backgroundColor: colors.secondary }]}>
-              <Ionicons name="heart" size={36} color="#FFFFFF" />
+            <View style={styles.iconCircle}>
+              <Ionicons name="heart" size={32} color="#FFFFFF" />
             </View>
-            <Text style={[styles.title, { color: colors.foreground }]}>
-              Hesap Oluştur
-            </Text>
-            <Text style={[styles.subtitle, { color: colors.mutedForeground }]}>
+            <Text style={styles.title}>Hesap Oluştur</Text>
+            <Text style={styles.subtitle}>
               Topluluğa katıl, hayvan hayatlarına dokunuş yap
             </Text>
           </View>
 
-          <View style={[styles.card, { backgroundColor: "rgba(255,255,255,0.85)" }]}>
-            {[
-              { label: "Ad Soyad", value: name, setter: setName, placeholder: "Adın Soyadın", icon: "person-outline" as const, keyboardType: "default" as const },
-              { label: "E-posta", value: email, setter: setEmail, placeholder: "ornek@mail.com", icon: "mail-outline" as const, keyboardType: "email-address" as const },
-            ].map((field) => (
-              <View key={field.label} style={styles.inputGroup}>
-                <Text style={[styles.label, { color: colors.mutedForeground }]}>
-                  {field.label}
-                </Text>
-                <View style={[styles.inputWrap, { borderColor: colors.border, backgroundColor: colors.background }]}>
-                  <Ionicons name={field.icon} size={18} color={colors.mutedForeground} />
-                  <TextInput
-                    style={[styles.input, { color: colors.foreground }]}
-                    value={field.value}
-                    onChangeText={field.setter}
-                    placeholder={field.placeholder}
-                    placeholderTextColor={colors.mutedForeground}
-                    keyboardType={field.keyboardType}
-                    autoCapitalize={field.keyboardType === "email-address" ? "none" : "words"}
-                    autoCorrect={false}
-                  />
-                </View>
-              </View>
-            ))}
-
+          {/* Form card */}
+          <View style={styles.card}>
+            {/* Ad Soyad */}
             <View style={styles.inputGroup}>
-              <Text style={[styles.label, { color: colors.mutedForeground }]}>
-                Şifre
-              </Text>
-              <View style={[styles.inputWrap, { borderColor: colors.border, backgroundColor: colors.background }]}>
-                <Ionicons name="lock-closed-outline" size={18} color={colors.mutedForeground} />
+              <Text style={[styles.label, { color: colors.mutedForeground }]}>Ad Soyad</Text>
+              <View style={styles.inputWrap}>
+                <Ionicons name="person-outline" size={18} color={PURPLE} />
+                <TextInput
+                  style={[styles.input, { color: colors.foreground }]}
+                  value={name}
+                  onChangeText={setName}
+                  placeholder="Adın Soyadın"
+                  placeholderTextColor={colors.mutedForeground}
+                  autoCapitalize="words"
+                  autoCorrect={false}
+                />
+              </View>
+            </View>
+
+            {/* E-posta */}
+            <View style={styles.inputGroup}>
+              <Text style={[styles.label, { color: colors.mutedForeground }]}>E-posta</Text>
+              <View style={styles.inputWrap}>
+                <Ionicons name="mail-outline" size={18} color={PURPLE} />
+                <TextInput
+                  style={[styles.input, { color: colors.foreground }]}
+                  value={email}
+                  onChangeText={setEmail}
+                  placeholder="ornek@mail.com"
+                  placeholderTextColor={colors.mutedForeground}
+                  keyboardType="email-address"
+                  autoCapitalize="none"
+                  autoCorrect={false}
+                />
+              </View>
+            </View>
+
+            {/* Şifre */}
+            <View style={styles.inputGroup}>
+              <Text style={[styles.label, { color: colors.mutedForeground }]}>Şifre</Text>
+              <View style={styles.inputWrap}>
+                <Ionicons name="lock-closed-outline" size={18} color={PURPLE} />
                 <TextInput
                   style={[styles.input, { color: colors.foreground }]}
                   value={password}
@@ -126,17 +150,14 @@ export default function RegisterScreen() {
                   <Ionicons
                     name={showPassword ? "eye-off-outline" : "eye-outline"}
                     size={18}
-                    color={colors.mutedForeground}
+                    color={PURPLE}
                   />
                 </Pressable>
               </View>
             </View>
 
             <Pressable
-              style={({ pressed }) => [
-                styles.button,
-                { backgroundColor: colors.secondary, opacity: pressed ? 0.85 : 1 },
-              ]}
+              style={({ pressed }) => [styles.button, { opacity: pressed ? 0.85 : 1 }]}
               onPress={handleRegister}
               disabled={isLoading}
             >
@@ -152,37 +173,68 @@ export default function RegisterScreen() {
                 Zaten hesabın var mı?
               </Text>
               <Pressable onPress={() => router.replace("/(auth)/login-form")}>
-                <Text style={[styles.loginLink, { color: colors.primary }]}>
-                  {" "}Giriş Yap
-                </Text>
+                <Text style={styles.loginLink}> Giriş Yap</Text>
               </Pressable>
             </View>
           </View>
         </ScrollView>
       </KeyboardAvoidingView>
-    </LinearGradient>
+    </View>
   );
 }
 
 const styles = StyleSheet.create({
-  gradient: { flex: 1 },
+  root: {
+    flex: 1,
+    backgroundColor: BG,
+  },
+  blobTL: {
+    position: "absolute",
+    left: -55,
+    width: 180,
+    height: 180,
+    borderRadius: 90,
+    backgroundColor: BLOB,
+    transform: [{ scaleX: 1.3 }],
+    zIndex: 0,
+  },
+  blobTR: {
+    position: "absolute",
+    right: -45,
+    width: 160,
+    height: 160,
+    borderRadius: 80,
+    backgroundColor: BLOB2,
+    transform: [{ scaleY: 1.5 }],
+    zIndex: 0,
+  },
   container: {
     flexGrow: 1,
     paddingHorizontal: 24,
-    gap: 28,
+    gap: 24,
+    zIndex: 1,
+  },
+  backBtn: {
+    width: 40,
+    height: 40,
+    borderRadius: 20,
+    backgroundColor: "rgba(123,94,167,0.12)",
+    alignItems: "center",
+    justifyContent: "center",
   },
   header: {
     alignItems: "center",
     gap: 8,
   },
-  logoCircle: {
+  iconCircle: {
     width: 72,
     height: 72,
     borderRadius: 36,
+    backgroundColor: PURPLE,
     alignItems: "center",
     justifyContent: "center",
     marginBottom: 8,
-    shadowColor: "#6FA870",
+    shadowColor: PURPLE,
     shadowOffset: { width: 0, height: 4 },
     shadowOpacity: 0.3,
     shadowRadius: 12,
@@ -191,47 +243,79 @@ const styles = StyleSheet.create({
   title: {
     fontSize: 26,
     fontFamily: "Inter_700Bold",
+    color: PURPLE_DARK,
   },
   subtitle: {
     fontSize: 14,
     fontFamily: "Inter_400Regular",
+    color: "#8874A8",
     textAlign: "center",
+    lineHeight: 20,
   },
   card: {
+    backgroundColor: "rgba(255,255,255,0.82)",
     borderRadius: 24,
     padding: 24,
     gap: 14,
-    shadowColor: "#000",
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.08,
-    shadowRadius: 16,
+    shadowColor: PURPLE,
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.10,
+    shadowRadius: 20,
     elevation: 4,
+    borderWidth: 1,
+    borderColor: "rgba(123,94,167,0.10)",
   },
   inputGroup: { gap: 6 },
-  label: { fontSize: 13, fontFamily: "Inter_500Medium" },
+  label: {
+    fontSize: 13,
+    fontFamily: "Inter_500Medium",
+  },
   inputWrap: {
     flexDirection: "row",
     alignItems: "center",
     borderRadius: 12,
     borderWidth: 1.5,
+    borderColor: "rgba(123,94,167,0.25)",
+    backgroundColor: "rgba(255,255,255,0.9)",
     paddingHorizontal: 14,
     paddingVertical: 12,
     gap: 10,
   },
-  input: { flex: 1, fontSize: 15, fontFamily: "Inter_400Regular" },
+  input: {
+    flex: 1,
+    fontSize: 15,
+    fontFamily: "Inter_400Regular",
+  },
   button: {
     borderRadius: 14,
     paddingVertical: 15,
     alignItems: "center",
     marginTop: 4,
-    shadowColor: "#6FA870",
+    backgroundColor: PURPLE,
+    shadowColor: PURPLE,
     shadowOffset: { width: 0, height: 4 },
     shadowOpacity: 0.25,
     shadowRadius: 8,
     elevation: 4,
   },
-  buttonText: { fontSize: 16, fontFamily: "Inter_700Bold", color: "#FFFFFF" },
-  loginRow: { flexDirection: "row", justifyContent: "center", marginTop: 4 },
-  loginLabel: { fontSize: 14, fontFamily: "Inter_400Regular" },
-  loginLink: { fontSize: 14, fontFamily: "Inter_600SemiBold" },
+  buttonText: {
+    fontSize: 16,
+    fontFamily: "Inter_700Bold",
+    color: "#FFFFFF",
+  },
+  loginRow: {
+    flexDirection: "row",
+    justifyContent: "center",
+    alignItems: "center",
+    marginTop: 4,
+  },
+  loginLabel: {
+    fontSize: 14,
+    fontFamily: "Inter_400Regular",
+  },
+  loginLink: {
+    fontSize: 14,
+    fontFamily: "Inter_600SemiBold",
+    color: PURPLE,
+  },
 });
