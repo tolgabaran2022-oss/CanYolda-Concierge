@@ -18,8 +18,7 @@ const BLOB_PURPLE  = "#C8B4F0";
 const BLOB_CREAM   = "#F0E4CE";
 const BG           = "#FAF7F2";
 
-const PET_IMAGE =
-  "https://images.unsplash.com/photo-1450778869180-41d0601e046e?w=700&q=85";
+const PET_IMAGE = require("@/assets/images/hero-pets.png");
 
 export default function WelcomeScreen() {
   const insets = useSafeAreaInsets();
@@ -56,7 +55,7 @@ export default function WelcomeScreen() {
         <View style={styles.heroBlobBehind} />
 
         <Image
-          source={{ uri: PET_IMAGE }}
+          source={PET_IMAGE}
           style={styles.heroImage}
           contentFit="cover"
         />
