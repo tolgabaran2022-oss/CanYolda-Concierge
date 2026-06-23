@@ -60,8 +60,8 @@ export default function PetDetailScreen() {
 
   const handleDelete = () => {
     Alert.alert(
-      "Profili Sil",
-      `${pet.name} profilini silmek istediğine emin misin?`,
+      "İlanı Sil",
+      `${pet.name} ilanını silmek istediğine emin misin?`,
       [
         { text: "İptal", style: "cancel" },
         {
@@ -189,7 +189,7 @@ export default function PetDetailScreen() {
             >
               <Ionicons name="trash-outline" size={18} color={colors.destructive} />
               <Text style={[styles.deleteBtnText, { color: colors.destructive }]}>
-                Profili Sil
+                İlanı Sil
               </Text>
             </Pressable>
           </View>
