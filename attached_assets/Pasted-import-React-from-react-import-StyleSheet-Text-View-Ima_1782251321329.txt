@@ -1,0 +1,178 @@
+import React from "react";
+import { StyleSheet, Text, View, Image, TouchableOpacity } from "react-native";
+import { LinearGradient } from "expo-linear-gradient";
+import { BlurView } from "expo-blur";
+
+export default function App() {
+  return (
+    <LinearGradient
+      colors={["#F7F4FF", "#EFE9FF", "#FFFFFF"]}
+      style={styles.container}
+    >
+      {/* Floating liquid blobs */}
+      <View style={styles.blob1} />
+      <View style={styles.blob2} />
+
+      {/* Logo */}
+      <Text style={styles.logo}>
+        canyoldaşı<span style={{ color: "#7C5CFF" }}>🐾</span>
+      </Text>
+
+      <Text style={styles.subtitle}>
+        Dostların için her şey bir tık uzakta
+      </Text>
+
+      {/* Pet card (liquid glass effect) */}
+      <BlurView intensity={60} style={styles.petCard}>
+        <Image
+          source={{
+            uri: "https://images.unsplash.com/photo-1601758228041-f3b2795255f1",
+          }}
+          style={styles.petImage}
+        />
+      </BlurView>
+
+      {/* Buttons */}
+      <TouchableOpacity activeOpacity={0.8}>
+        <LinearGradient
+          colors={["#7C5CFF", "#9B7BFF"]}
+          style={styles.primaryBtn}
+        >
+          <Text style={styles.btnText}>Giriş Yap</Text>
+        </LinearGradient>
+      </TouchableOpacity>
+
+      <TouchableOpacity style={styles.secondaryBtn}>
+        <Text style={styles.secondaryText}>Kayıt Ol</Text>
+      </TouchableOpacity>
+
+      {/* Social login */}
+      <View style={styles.socialRow}>
+        <View style={styles.socialBtn}><Text>G</Text></View>
+        <View style={styles.socialBtn}><Text></Text></View>
+        <View style={styles.socialBtn}><Text>f</Text></View>
+      </View>
+
+      <Text style={styles.footer}>
+        Devam ederek Kullanım Koşulları ve Gizlilik Politikasını kabul etmiş olursunuz.
+      </Text>
+    </LinearGradient>
+  );
+}
+
+const styles = StyleSheet.create({
+  container: {
+    flex: 1,
+    alignItems: "center",
+    paddingTop: 80,
+  },
+
+  logo: {
+    fontSize: 34,
+    fontWeight: "800",
+    color: "#3A2E6B",
+    letterSpacing: 0.5,
+  },
+
+  subtitle: {
+    marginTop: 10,
+    fontSize: 14,
+    color: "#6B6B7A",
+  },
+
+  petCard: {
+    width: 280,
+    height: 180,
+    borderRadius: 30,
+    overflow: "hidden",
+    marginTop: 40,
+    justifyContent: "center",
+    alignItems: "center",
+    backgroundColor: "rgba(255,255,255,0.4)",
+  },
+
+  petImage: {
+    width: "100%",
+    height: "100%",
+    borderRadius: 30,
+  },
+
+  primaryBtn: {
+    marginTop: 40,
+    width: 260,
+    padding: 16,
+    borderRadius: 18,
+    alignItems: "center",
+    shadowColor: "#7C5CFF",
+    shadowOpacity: 0.3,
+    shadowRadius: 10,
+  },
+
+  btnText: {
+    color: "white",
+    fontWeight: "700",
+  },
+
+  secondaryBtn: {
+    marginTop: 15,
+    width: 260,
+    padding: 16,
+    borderRadius: 18,
+    alignItems: "center",
+    backgroundColor: "#F2F0FF",
+  },
+
+  secondaryText: {
+    color: "#6A5ACD",
+    fontWeight: "600",
+  },
+
+  socialRow: {
+    flexDirection: "row",
+    marginTop: 25,
+    gap: 15,
+  },
+
+  socialBtn: {
+    width: 45,
+    height: 45,
+    borderRadius: 14,
+    backgroundColor: "#fff",
+    justifyContent: "center",
+    alignItems: "center",
+    shadowColor: "#000",
+    shadowOpacity: 0.1,
+    shadowRadius: 8,
+  },
+
+  footer: {
+    position: "absolute",
+    bottom: 30,
+    fontSize: 11,
+    color: "#8A8A9A",
+    textAlign: "center",
+    paddingHorizontal: 20,
+  },
+
+  blob1: {
+    position: "absolute",
+    top: -80,
+    left: -60,
+    width: 200,
+    height: 200,
+    borderRadius: 100,
+    backgroundColor: "#D9CCFF",
+    opacity: 0.6,
+  },
+
+  blob2: {
+    position: "absolute",
+    bottom: 100,
+    right: -80,
+    width: 220,
+    height: 220,
+    borderRadius: 110,
+    backgroundColor: "#C7B8FF",
+    opacity: 0.5,
+  },
+});
