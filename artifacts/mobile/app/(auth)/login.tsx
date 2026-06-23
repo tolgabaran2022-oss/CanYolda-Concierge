@@ -146,7 +146,7 @@ const styles = StyleSheet.create({
   /* ── Hero graphic ──────────────────────────── */
   heroImage: {
     width: "100%",
-    aspectRatio: 0.9,
+    aspectRatio: 4265 / 4585,
     marginTop: 4,
     zIndex: 1,
   },
