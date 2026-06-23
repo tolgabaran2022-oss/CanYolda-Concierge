@@ -2,7 +2,7 @@ import { Ionicons } from "@expo/vector-icons";
 import * as Haptics from "expo-haptics";
 import { Image } from "expo-image";
 import { useLocalSearchParams, useRouter } from "expo-router";
-import React from "react";
+import React, { useEffect } from "react";
 import {
   Alert,
   Platform,
@@ -14,6 +14,7 @@ import {
 } from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { useAuth } from "@/contexts/AuthContext";
+import { useBoost } from "@/contexts/BoostContext";
 import { usePets } from "@/contexts/PetsContext";
 import { useColors } from "@/hooks/useColors";
 import { formatTimeAgo } from "@/utils/formatters";
@@ -25,10 +26,16 @@ export default function PetDetailScreen() {
   const router = useRouter();
   const { getPet, deletePet } = usePets();
   const { user } = useAuth();
+  const { boostStatuses, fetchBoostStatus } = useBoost();
 
   const pet = getPet(id ?? "");
   const isOwner = pet?.userId === user?.id;
   const bottomPad = Platform.OS === "web" ? 34 : insets.bottom;
+  const boost = boostStatuses[id ?? ""];
+
+  useEffect(() => {
+    if (id) fetchBoostStatus([id]);
+  }, [id, fetchBoostStatus]);
 
   if (!pet) {
     return (
@@ -42,6 +49,14 @@ export default function PetDetailScreen() {
       </View>
     );
   }
+
+  const handleBoost = () => {
+    Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+    router.push({
+      pathname: "/boost-packages",
+      params: { listingId: pet.id, petName: pet.name },
+    });
+  };
 
   const handleDelete = () => {
     Alert.alert(
@@ -101,6 +116,21 @@ export default function PetDetailScreen() {
           Eklenme: {formatTimeAgo(pet.createdAt)}
         </Text>
 
+        {/* Active boost badge */}
+        {boost?.isFeatured && boost.expiresAt && (
+          <View style={[styles.boostActiveBadge, { backgroundColor: `${colors.primary}12`, borderColor: `${colors.primary}30` }]}>
+            <Ionicons name="star" size={14} color={colors.primary} />
+            <Text style={[styles.boostActiveBadgeText, { color: colors.primary }]}>
+              {(() => {
+                const remaining = new Date(boost.expiresAt).getTime() - Date.now();
+                const h = Math.max(0, Math.floor(remaining / 3_600_000));
+                const m = Math.max(0, Math.floor((remaining % 3_600_000) / 60_000));
+                return `Öne Çıkan · ${h > 0 ? `${h}s ` : ""}${m}dk kaldı`;
+              })()}
+            </Text>
+          </View>
+        )}
+
         {/* Info sections */}
         {[
           { label: "Aşı Bilgisi", value: pet.vaccinationInfo, icon: "shield-checkmark-outline" as const },
@@ -126,18 +156,43 @@ export default function PetDetailScreen() {
 
         {/* Owner actions */}
         {isOwner && (
-          <Pressable
-            style={({ pressed }) => [
-              styles.deleteBtn,
-              { borderColor: colors.destructive, opacity: pressed ? 0.7 : 1 },
-            ]}
-            onPress={handleDelete}
-          >
-            <Ionicons name="trash-outline" size={18} color={colors.destructive} />
-            <Text style={[styles.deleteBtnText, { color: colors.destructive }]}>
-              Profili Sil
-            </Text>
-          </Pressable>
+          <View style={styles.actionsCol}>
+            {/* Boost button */}
+            <Pressable
+              style={({ pressed }) => [
+                styles.boostBtn,
+                { borderColor: colors.primary, backgroundColor: `${colors.primary}08`, opacity: pressed ? 0.8 : 1 },
+              ]}
+              onPress={handleBoost}
+            >
+              <Ionicons name="star" size={18} color={colors.primary} />
+              <View style={{ flex: 1 }}>
+                <Text style={[styles.boostBtnTitle, { color: colors.primary }]}>
+                  {boost?.isFeatured ? "Öne Çıkarmayı Yenile" : "İlanı Öne Çıkar"}
+                </Text>
+                <Text style={[styles.boostBtnSub, { color: colors.mutedForeground }]}>
+                  {boost?.isFeatured
+                    ? "Süre uzatmak için yeni paket al"
+                    : "₺50'den başlayan fiyatlarla"}
+                </Text>
+              </View>
+              <Ionicons name="chevron-forward" size={16} color={colors.primary} />
+            </Pressable>
+
+            {/* Delete button */}
+            <Pressable
+              style={({ pressed }) => [
+                styles.deleteBtn,
+                { borderColor: colors.destructive, opacity: pressed ? 0.7 : 1 },
+              ]}
+              onPress={handleDelete}
+            >
+              <Ionicons name="trash-outline" size={18} color={colors.destructive} />
+              <Text style={[styles.deleteBtnText, { color: colors.destructive }]}>
+                Profili Sil
+              </Text>
+            </Pressable>
+          </View>
         )}
       </View>
     </ScrollView>
@@ -173,6 +228,19 @@ const styles = StyleSheet.create({
   },
   vacText: { fontSize: 13, fontFamily: "Inter_600SemiBold" },
   addedDate: { fontSize: 13, fontFamily: "Inter_400Regular" },
+  boostActiveBadge: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 6,
+    borderRadius: 10,
+    borderWidth: 1,
+    paddingHorizontal: 12,
+    paddingVertical: 8,
+  },
+  boostActiveBadgeText: {
+    fontSize: 13,
+    fontFamily: "Inter_600SemiBold",
+  },
   infoCard: {
     borderRadius: 14,
     borderWidth: 1,
@@ -182,6 +250,25 @@ const styles = StyleSheet.create({
   infoHeader: { flexDirection: "row", alignItems: "center", gap: 8 },
   infoLabel: { fontSize: 15, fontFamily: "Inter_600SemiBold" },
   infoText: { fontSize: 14, fontFamily: "Inter_400Regular", lineHeight: 20 },
+  actionsCol: { gap: 12, marginTop: 8 },
+  boostBtn: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 12,
+    borderRadius: 14,
+    borderWidth: 1.5,
+    paddingVertical: 14,
+    paddingHorizontal: 16,
+  },
+  boostBtnTitle: {
+    fontSize: 15,
+    fontFamily: "Inter_600SemiBold",
+  },
+  boostBtnSub: {
+    fontSize: 12,
+    fontFamily: "Inter_400Regular",
+    marginTop: 2,
+  },
   deleteBtn: {
     flexDirection: "row",
     alignItems: "center",
@@ -190,7 +277,6 @@ const styles = StyleSheet.create({
     borderRadius: 14,
     borderWidth: 1.5,
     paddingVertical: 14,
-    marginTop: 8,
   },
   deleteBtnText: { fontSize: 15, fontFamily: "Inter_600SemiBold" },
 });
