@@ -1,6 +1,7 @@
 import { db } from "@workspace/db";
 import { featuredListings } from "@workspace/db/schema";
 import { and, gt, inArray, sql } from "drizzle-orm";
+import { getUncachableStripeClient } from "./stripeClient.js";
 
 export interface BoostPackage {
   id: string;
@@ -21,34 +22,32 @@ export interface BoostStatus {
 export class Storage {
   async getBoostPackages(): Promise<BoostPackage[]> {
     try {
-      const rows = await db.execute(sql`
-        SELECT
-          p.id,
-          p.metadata,
-          pr.id as price_id,
-          pr.unit_amount,
-          pr.currency
-        FROM stripe.products p
-        JOIN stripe.prices pr ON pr.product = p.id
-        WHERE p.active = true
-          AND pr.active = true
-          AND p.metadata->>'boost_type' = 'featured_listing'
-        ORDER BY pr.unit_amount ASC
-      `);
+      const stripe = await getUncachableStripeClient();
+      const products = await stripe.products.search({
+        query: "metadata['boost_type']:'featured_listing' AND active:'true'",
+      });
 
-      return rows.rows.map((r: any) => {
-        const meta = typeof r.metadata === "string" ? JSON.parse(r.metadata) : r.metadata ?? {};
-        const hours = parseInt(meta.package_hours ?? "24", 10);
-        return {
-          id: r.id,
+      const packages: BoostPackage[] = [];
+      for (const product of products.data) {
+        const prices = await stripe.prices.list({
+          product: product.id,
+          active: true,
+          limit: 1,
+        });
+        if (!prices.data.length) continue;
+        const price = prices.data[0]!;
+        const hours = parseInt(product.metadata.package_hours ?? "24", 10);
+        packages.push({
+          id: product.id,
           packageHours: hours,
-          priceId: r.price_id,
-          unitAmount: r.unit_amount,
-          currency: r.currency,
+          priceId: price.id,
+          unitAmount: price.unit_amount ?? 0,
+          currency: price.currency,
           label: hours === 24 ? "24 Saatlik" : hours === 72 ? "72 Saatlik" : `${hours} Saatlik`,
           description: hours === 24 ? "1 gün öne çıkarma" : "3 gün öne çıkarma",
-        };
-      });
+        });
+      }
+      return packages.sort((a, b) => a.unitAmount - b.unitAmount);
     } catch {
       return [];
     }
