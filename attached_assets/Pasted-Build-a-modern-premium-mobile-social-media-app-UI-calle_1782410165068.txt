@@ -1,0 +1,100 @@
+Build a modern, premium mobile social media app UI called “canyoldaşı”.
+The app is an Instagram-style pet social network where ALL content is only cats and dogs.
+
+🎯 Tech Stack
+React (or Next.js if needed)
+TailwindCSS
+Mobile-first responsive design
+Clean component-based structure
+📱 GENERAL DESIGN STYLE
+Apple-level premium UI (rounded corners, soft shadows, glassmorphism)
+Light background (#f7f7fb / white gradient)
+Purple accent color (#7c5cff)
+Smooth animations (hover, like, transitions)
+Instagram-like feed layout
+🧩 MAIN REQUIREMENTS
+1. HEADER
+App logo/text: canyoldaşı 🐾
+Notification bell icon (top right)
+Story section under header:
+Circular avatars (ONLY cats and dogs)
+Add story button (“Hikaye Ekle” with + icon)
+Username under each avatar
+2. STORIES USERS (EXAMPLE DATA)
+
+Create fake users like:
+
+pati_dostum (cat avatar)
+miyav.house (cat avatar)
+patili.bir.dunya (dog avatar)
+koydeki.patiler (cat avatar)
+
+All avatars MUST be realistic cat/dog images.
+
+3. FEED (AKIŞ PAGE)
+
+Each post card must include:
+
+Post Header:
+Profile picture (cat/dog)
+Username
+Time + location (e.g. “2 saat önce · Kadıköy, İstanbul”)
+Post Content:
+Image MUST always be cats or dogs only
+No humans, no objects, no landscapes
+High-quality realistic pet photos
+Post Caption Examples:
+“Küçük prensimiz bugün çok mutlu 🐱💜 Sahiplenmek isteyenler DM ✨”
+“Yeni dostumuz Max, artık güvende 🐶❤️”
+“Yağmurdan sonra biraz mama zamanı 🌧️🐱”
+Post Actions:
+Like (heart)
+Comment
+Share
+Bookmark
+4. BOTTOM NAVBAR
+
+Fixed bottom navigation with 4 tabs:
+
+🏠 Akış (Feed)
+🗺️ Harita
+🐾 Hayvanlar
+👤 Profil
+
+Active tab highlighted in purple.
+
+5. UI RULES (IMPORTANT)
+ALL profile images = cats or dogs
+ALL post images = cats or dogs
+No humans allowed anywhere
+No random stock images (only pet-themed placeholders or AI images)
+Rounded UI cards (16–20px radius)
+Soft shadow cards
+Smooth spacing (8–16px system)
+6. EXTRA FEATURE (OPTIONAL BUT NICE)
+“Like counter”
+“Comment counter”
+Fake data generator for 20–50 posts
+Infinite scroll simulation
+7. DATA MOCK STRUCTURE
+
+Create sample JSON like:
+
+users: [
+{ username: "miyav.house", avatar: "cat1.jpg" },
+{ username: "patili.bir.dunya", avatar: "dog1.jpg" }
+]
+
+posts: [
+{
+user: "miyav.house",
+image: "cat_post_1.jpg",
+caption: "...",
+likes: 128,
+comments: 12
+}
+]
+
+🎯 GOAL
+
+Build a fully working frontend clone of an Instagram-like feed but ONLY for cats and dogs, with premium UI and realistic social media feel.
