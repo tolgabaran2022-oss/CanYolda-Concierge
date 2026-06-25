@@ -164,9 +164,9 @@ const styles = StyleSheet.create({
   content: {
     flex: 1,
     paddingHorizontal: 12,
-    paddingVertical: 6,
+    paddingVertical: 8,
     gap: 4,
-    justifyContent: "space-between",
+    justifyContent: "flex-start",
   },
   topRow: {
     flexDirection: "row",
