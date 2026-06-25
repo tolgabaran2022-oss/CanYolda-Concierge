@@ -46,7 +46,7 @@ export function AnimalCard({ animal }: Props) {
                 { backgroundColor: STATUS_COLORS[animal.status] },
               ]}
             />
-            <Ionicons name="paw" size={21} color={colors.mutedForeground} />
+            <Ionicons name="paw" size={30} color={colors.mutedForeground} />
           </View>
         )}
       </View>
@@ -87,7 +87,7 @@ export function AnimalCard({ animal }: Props) {
             <View style={styles.stat}>
               <Ionicons
                 name="restaurant-outline"
-                size={10}
+                size={13}
                 color={colors.secondary}
               />
               <Text style={[styles.statText, { color: colors.mutedForeground }]}>
@@ -96,7 +96,7 @@ export function AnimalCard({ animal }: Props) {
             </View>
             {animal.needsHelpByUsers.length > 0 && (
               <View style={styles.stat}>
-                <Ionicons name="alert-circle-outline" size={10} color="#EF4444" />
+                <Ionicons name="alert-circle-outline" size={13} color="#EF4444" />
                 <Text style={[styles.statText, { color: colors.mutedForeground }]}>
                   {animal.needsHelpByUsers.length}
                 </Text>
@@ -106,7 +106,7 @@ export function AnimalCard({ animal }: Props) {
               <View style={styles.stat}>
                 <Ionicons
                   name="chatbubble-outline"
-                  size={10}
+                  size={13}
                   color={colors.mutedForeground}
                 />
                 <Text style={[styles.statText, { color: colors.mutedForeground }]}>
@@ -120,7 +120,7 @@ export function AnimalCard({ animal }: Props) {
 
       {/* Chevron */}
       <View style={styles.chevronWrap}>
-        <Ionicons name="chevron-forward" size={11} color={colors.mutedForeground} />
+        <Ionicons name="chevron-forward" size={16} color={colors.mutedForeground} />
       </View>
     </Pressable>
   );
@@ -130,42 +130,42 @@ const styles = StyleSheet.create({
   card: {
     flexDirection: "row",
     alignItems: "center",
-    borderRadius: 12,
+    borderRadius: 16,
     borderWidth: 1,
-    marginHorizontal: 14,
+    marginHorizontal: 16,
     marginVertical: 3,
     overflow: "hidden",
     minHeight: 35,
   },
   imageWrap: {
-    width: 50,
+    width: 72,
     alignSelf: "stretch",
   },
   image: {
-    width: 50,
+    width: 72,
     height: "100%",
   },
   imagePlaceholder: {
-    width: 50,
+    width: 72,
     height: "100%",
     alignItems: "center",
     justifyContent: "center",
   },
   statusDot: {
     position: "absolute",
-    top: 5,
-    left: 5,
-    width: 9,
-    height: 9,
-    borderRadius: 5,
-    borderWidth: 1.5,
+    top: 8,
+    left: 8,
+    width: 13,
+    height: 13,
+    borderRadius: 7,
+    borderWidth: 2,
     borderColor: "white",
   },
   content: {
     flex: 1,
-    paddingHorizontal: 8,
+    paddingHorizontal: 12,
     paddingVertical: 6,
-    gap: 3,
+    gap: 4,
     justifyContent: "space-between",
   },
   topRow: {
@@ -174,16 +174,16 @@ const styles = StyleSheet.create({
     alignItems: "center",
   },
   time: {
-    fontSize: 10,
+    fontSize: 11,
     fontFamily: "Inter_400Regular",
   },
   notes: {
-    fontSize: 11,
+    fontSize: 13,
     fontFamily: "Inter_400Regular",
-    lineHeight: 15,
+    lineHeight: 18,
   },
   noNotes: {
-    fontSize: 11,
+    fontSize: 13,
     fontFamily: "Inter_400Regular",
     fontStyle: "italic",
   },
@@ -193,26 +193,26 @@ const styles = StyleSheet.create({
     alignItems: "center",
   },
   userName: {
-    fontSize: 10,
+    fontSize: 11.5,
     fontFamily: "Inter_500Medium",
     flex: 1,
-    marginRight: 4,
+    marginRight: 6,
   },
   stats: {
     flexDirection: "row",
-    gap: 5,
+    gap: 8,
   },
   stat: {
     flexDirection: "row",
     alignItems: "center",
-    gap: 2,
+    gap: 3,
   },
   statText: {
-    fontSize: 10,
+    fontSize: 11,
     fontFamily: "Inter_500Medium",
   },
   chevronWrap: {
-    paddingRight: 8,
-    paddingLeft: 3,
+    paddingRight: 12,
+    paddingLeft: 4,
   },
 });
