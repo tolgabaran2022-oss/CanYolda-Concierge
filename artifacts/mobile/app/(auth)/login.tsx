@@ -13,10 +13,9 @@ import {
 } from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 
-const PURPLE      = "#6C4FCF";
-const PURPLE_DARK = "#2E1A6E";
-const PURPLE_MID  = "#9478D8";
-const BG          = "#FAFAF9";
+const PURPLE      = "#7B5EA7";
+const PURPLE_DARK = "#3D2080";
+const BG          = "#EEE8FF";
 
 const HERO_IMAGE = require("@/assets/images/hero-logo-pets.png");
 
@@ -28,21 +27,38 @@ export default function WelcomeScreen() {
   const handleSocial = () => Alert.alert("Yakında", "Sosyal giriş yakında eklenecek.");
 
   return (
-    <View style={[styles.root, { paddingTop: insets.top, paddingBottom: Math.max(insets.bottom, 24) }]}>
-
-      {/* Subtle corner accent — top right only */}
-      <View style={styles.accentTR} />
-
-      {/* ── Top: Logo ─────────────────────────────── */}
-      <View style={styles.logoSection}>
-        <View style={styles.logoMark}>
-          <Ionicons name="paw" size={16} color="#FFF" />
-        </View>
+    <View
+      style={[
+        styles.root,
+        { paddingTop: insets.top + 8, paddingBottom: Math.max(insets.bottom, 20) },
+      ]}
+    >
+      {/* ── Logo ─────────────────────────────────── */}
+      <View style={styles.logoBlock}>
+        <Ionicons name="paw" size={28} color={PURPLE} />
         <Text style={styles.logoText}>canyoldaşı</Text>
+        <Text style={styles.tagline}>
+          Dostların için{"\n"}
+          <Text style={styles.taglineBold}>her şey bir tık uzağında</Text>
+        </Text>
       </View>
 
-      {/* ── Hero ──────────────────────────────────── */}
-      <View style={styles.heroSection}>
+      {/* ── Hero ─────────────────────────────────── */}
+      <View style={styles.heroWrap}>
+        {/* Soft blob behind image */}
+        <View style={styles.heroBlob} />
+
+        {/* Floating decorative elements */}
+        <View style={styles.decoPawCircle}>
+          <Ionicons name="paw" size={16} color={PURPLE} />
+        </View>
+        <View style={styles.decoHeart}>
+          <Ionicons name="heart" size={18} color="#A78BFA" />
+        </View>
+        <View style={[styles.decoDot, { width: 10, height: 10, bottom: 24, right: 28 }]} />
+        <View style={[styles.decoDot, { width: 7, height: 7, bottom: 14, right: 48, opacity: 0.5 }]} />
+        <View style={[styles.decoDot, { width: 6, height: 6, top: 36, left: 36, opacity: 0.35 }]} />
+
         <Image
           source={HERO_IMAGE}
           style={styles.heroImage}
@@ -50,77 +66,75 @@ export default function WelcomeScreen() {
         />
       </View>
 
-      {/* ── Headline ──────────────────────────────── */}
-      <View style={styles.headlineSection}>
-        <Text style={styles.headline}>Sokak hayvanları için{"\n"}bir topluluk</Text>
-        <Text style={styles.subheadline}>
-          Bildir, takip et, sahiplendir — birlikte daha güçlüyüz.
-        </Text>
+      {/* ── Sub-tagline ───────────────────────────── */}
+      <View style={styles.subTaglineRow}>
+        <Text style={styles.subTagline}>Sokak hayvanları için</Text>
+        <Text style={styles.subTaglineAccent}>topluluk platformu</Text>
       </View>
 
-      {/* ── CTA Buttons ───────────────────────────── */}
-      <View style={styles.ctaSection}>
-        {/* Primary */}
+      {/* ── Buttons ──────────────────────────────── */}
+      <View style={styles.btnSection}>
+        {/* Giriş Yap */}
         <Pressable
           onPress={() => { press(); router.push("/(auth)/login-form"); }}
-          style={({ pressed }) => [{ opacity: pressed ? 0.9 : 1 }]}
+          style={({ pressed }) => [{ opacity: pressed ? 0.88 : 1 }]}
         >
           <LinearGradient
-            colors={[PURPLE_MID, PURPLE]}
+            colors={["#9478D8", PURPLE]}
             start={{ x: 0, y: 0 }}
             end={{ x: 1, y: 1 }}
             style={styles.primaryBtn}
           >
+            <Ionicons name="person-outline" size={20} color="#FFF" />
             <Text style={styles.primaryBtnText}>Giriş Yap</Text>
+            <Ionicons name="chevron-forward" size={18} color="rgba(255,255,255,0.65)" />
           </LinearGradient>
         </Pressable>
 
-        {/* Secondary */}
+        {/* Kayıt Ol */}
         <Pressable
           style={({ pressed }) => [styles.secondaryBtn, { opacity: pressed ? 0.85 : 1 }]}
           onPress={() => { press(); router.push("/(auth)/register"); }}
         >
+          <Ionicons name="person-add-outline" size={20} color={PURPLE_DARK} />
           <Text style={styles.secondaryBtnText}>Kayıt Ol</Text>
+          <Ionicons name="chevron-forward" size={18} color="rgba(61,32,128,0.4)" />
         </Pressable>
       </View>
 
-      {/* ── Social ────────────────────────────────── */}
-      <View style={styles.socialSection}>
-        <View style={styles.dividerRow}>
-          <View style={styles.dividerLine} />
-          <Text style={styles.dividerLabel}>Veya devam et</Text>
-          <View style={styles.dividerLine} />
-        </View>
+      {/* ── Divider ───────────────────────────────── */}
+      <View style={styles.dividerRow}>
+        <View style={styles.dividerLine} />
+        <Text style={styles.dividerText}>veya</Text>
+        <View style={styles.dividerLine} />
+      </View>
 
-        <View style={styles.socialRow}>
-          {[
-            { label: "G", color: "#4285F4", isText: true },
-            { name: "logo-apple", color: "#1A1A1A", isText: false },
-            { name: "logo-facebook", color: "#1877F2", isText: false },
-          ].map((s, i) => (
-            <Pressable
-              key={i}
-              style={({ pressed }) => [styles.socialBtn, { opacity: pressed ? 0.75 : 1 }]}
-              onPress={handleSocial}
-            >
-              {s.isText ? (
-                <Text style={[styles.socialG, { color: s.color }]}>{s.label}</Text>
-              ) : (
-                <Ionicons name={s.name as any} size={20} color={s.color} />
-              )}
-            </Pressable>
-          ))}
-        </View>
+      {/* ── Social ────────────────────────────────── */}
+      <View style={styles.socialRow}>
+        <Pressable style={({ pressed }) => [styles.socialBtn, { opacity: pressed ? 0.7 : 1 }]} onPress={handleSocial}>
+          <Text style={styles.googleG}>G</Text>
+        </Pressable>
+        <Pressable style={({ pressed }) => [styles.socialBtn, { opacity: pressed ? 0.7 : 1 }]} onPress={handleSocial}>
+          <Ionicons name="logo-apple" size={22} color="#1A1A1A" />
+        </Pressable>
+        <Pressable style={({ pressed }) => [styles.socialBtn, { opacity: pressed ? 0.7 : 1 }]} onPress={handleSocial}>
+          <Ionicons name="logo-facebook" size={22} color="#1877F2" />
+        </Pressable>
       </View>
 
       {/* ── Privacy ───────────────────────────────── */}
-      <Text style={styles.privacy}>
-        Devam ederek{" "}
-        <Text style={styles.privacyLink}>Kullanım Koşulları</Text>
-        {" "}ve{" "}
-        <Text style={styles.privacyLink}>Gizlilik Politikası</Text>
-        {"'"}nı kabul edersiniz.
-      </Text>
+      <View style={styles.privacyRow}>
+        <View style={styles.shieldCircle}>
+          <Ionicons name="shield-checkmark-outline" size={16} color={PURPLE} />
+        </View>
+        <Text style={styles.privacyText}>
+          Devam ederek{" "}
+          <Text style={styles.privacyLink}>Kullanım Koşulları</Text>
+          {" "}ve{" "}
+          <Text style={styles.privacyLink}>Gizlilik Politikası</Text>
+          {"'"}nı kabul etmiş olursunuz.
+        </Text>
+      </View>
     </View>
   );
 }
@@ -133,89 +147,114 @@ const styles = StyleSheet.create({
     paddingHorizontal: 24,
   },
 
-  /* Accent */
-  accentTR: {
-    position: "absolute",
-    top: -64,
-    right: -64,
-    width: 180,
-    height: 180,
-    borderRadius: 90,
-    backgroundColor: PURPLE_MID,
-    opacity: 0.08,
-  },
-
-  /* Logo */
-  logoSection: {
-    flexDirection: "row",
+  /* Logo block */
+  logoBlock: {
     alignItems: "center",
-    gap: 8,
-    marginTop: 16,
+    gap: 4,
     marginBottom: 8,
   },
-  logoMark: {
-    width: 28,
-    height: 28,
-    borderRadius: 8,
-    backgroundColor: PURPLE,
-    alignItems: "center",
-    justifyContent: "center",
-  },
   logoText: {
-    fontSize: 20,
+    fontSize: 32,
     fontFamily: "Inter_700Bold",
     color: PURPLE_DARK,
-    letterSpacing: -0.5,
+    letterSpacing: -1,
+    marginTop: 2,
+  },
+  tagline: {
+    fontSize: 14,
+    fontFamily: "Inter_400Regular",
+    color: "#5C4A80",
+    textAlign: "center",
+    lineHeight: 22,
+    marginTop: 4,
+  },
+  taglineBold: {
+    fontFamily: "Inter_700Bold",
+    color: PURPLE_DARK,
   },
 
   /* Hero */
-  heroSection: {
-    flex: 1,
+  heroWrap: {
+    width: "100%",
     alignItems: "center",
     justifyContent: "center",
-    width: "100%",
-    maxHeight: 280,
-    minHeight: 180,
+    marginBottom: 8,
+    height: 220,
+  },
+  heroBlob: {
+    position: "absolute",
+    width: 260,
+    height: 200,
+    borderRadius: 130,
+    backgroundColor: "rgba(255,255,255,0.55)",
+    transform: [{ scaleX: 1.2 }],
   },
   heroImage: {
-    width: "72%",
+    width: "82%",
     aspectRatio: 4265 / 4585,
+    zIndex: 1,
   },
-
-  /* Headline */
-  headlineSection: {
-    alignItems: "center",
-    gap: 8,
-    marginBottom: 24,
-    paddingHorizontal: 8,
-  },
-  headline: {
-    fontSize: 26,
-    fontFamily: "Inter_700Bold",
-    color: PURPLE_DARK,
-    textAlign: "center",
-    lineHeight: 34,
-    letterSpacing: -0.5,
-  },
-  subheadline: {
-    fontSize: 13,
-    fontFamily: "Inter_400Regular",
-    color: "rgba(62,40,110,0.5)",
-    textAlign: "center",
-    lineHeight: 20,
-  },
-
-  /* CTA */
-  ctaSection: {
-    width: "100%",
-    gap: 12,
-    marginBottom: 24,
-  },
-  primaryBtn: {
-    height: 52,
-    borderRadius: 16,
+  decoPawCircle: {
+    position: "absolute",
+    top: 16,
+    left: 20,
+    width: 36,
+    height: 36,
+    borderRadius: 18,
+    backgroundColor: "rgba(255,255,255,0.85)",
     alignItems: "center",
     justifyContent: "center",
+    zIndex: 2,
+    shadowColor: "#000",
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.08,
+    shadowRadius: 6,
+    elevation: 2,
+  },
+  decoHeart: {
+    position: "absolute",
+    top: 8,
+    right: 16,
+    zIndex: 2,
+  },
+  decoDot: {
+    position: "absolute",
+    borderRadius: 10,
+    backgroundColor: PURPLE,
+    opacity: 0.45,
+    zIndex: 2,
+  },
+
+  /* Sub-tagline */
+  subTaglineRow: {
+    alignItems: "center",
+    marginBottom: 16,
+  },
+  subTagline: {
+    fontSize: 13,
+    fontFamily: "Inter_400Regular",
+    color: "#6B5490",
+  },
+  subTaglineAccent: {
+    fontSize: 14,
+    fontFamily: "Inter_600SemiBold",
+    color: PURPLE,
+    textDecorationLine: "underline",
+  },
+
+  /* Buttons */
+  btnSection: {
+    width: "100%",
+    gap: 12,
+    marginBottom: 16,
+  },
+  primaryBtn: {
+    flexDirection: "row",
+    alignItems: "center",
+    borderRadius: 50,
+    paddingVertical: 16,
+    paddingHorizontal: 22,
+    gap: 12,
     shadowColor: PURPLE,
     shadowOffset: { width: 0, height: 6 },
     shadowOpacity: 0.35,
@@ -223,86 +262,108 @@ const styles = StyleSheet.create({
     elevation: 6,
   },
   primaryBtnText: {
+    flex: 1,
     fontSize: 16,
     fontFamily: "Inter_700Bold",
     color: "#FFF",
-    letterSpacing: 0.2,
   },
   secondaryBtn: {
-    height: 52,
-    borderRadius: 16,
+    flexDirection: "row",
     alignItems: "center",
-    justifyContent: "center",
+    borderRadius: 50,
+    paddingVertical: 15,
+    paddingHorizontal: 22,
+    gap: 12,
+    backgroundColor: "#FFF",
     borderWidth: 1.5,
-    borderColor: `${PURPLE}35`,
-    backgroundColor: "rgba(255,255,255,0.8)",
+    borderColor: "rgba(123,94,167,0.22)",
+    shadowColor: "#000",
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.07,
+    shadowRadius: 8,
+    elevation: 2,
   },
   secondaryBtnText: {
+    flex: 1,
     fontSize: 16,
     fontFamily: "Inter_600SemiBold",
     color: PURPLE_DARK,
-    letterSpacing: 0.2,
   },
 
-  /* Social */
-  socialSection: {
-    width: "100%",
-    gap: 16,
-    marginBottom: 20,
-  },
+  /* Divider */
   dividerRow: {
     flexDirection: "row",
     alignItems: "center",
     gap: 12,
+    width: "100%",
+    marginBottom: 16,
   },
   dividerLine: {
     flex: 1,
     height: StyleSheet.hairlineWidth,
-    backgroundColor: "rgba(0,0,0,0.10)",
+    backgroundColor: "rgba(0,0,0,0.12)",
   },
-  dividerLabel: {
+  dividerText: {
     fontSize: 12,
     fontFamily: "Inter_400Regular",
-    color: "rgba(0,0,0,0.32)",
-    letterSpacing: 0.1,
+    color: "rgba(0,0,0,0.3)",
   },
+
+  /* Social */
   socialRow: {
     flexDirection: "row",
     justifyContent: "center",
-    gap: 16,
+    gap: 20,
+    marginBottom: 20,
   },
   socialBtn: {
-    width: 52,
-    height: 52,
-    borderRadius: 14,
+    width: 56,
+    height: 56,
+    borderRadius: 28,
     backgroundColor: "#FFF",
     alignItems: "center",
     justifyContent: "center",
-    borderWidth: 1,
-    borderColor: "rgba(0,0,0,0.07)",
     shadowColor: "#000",
-    shadowOffset: { width: 0, height: 1 },
-    shadowOpacity: 0.06,
-    shadowRadius: 4,
-    elevation: 1,
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.08,
+    shadowRadius: 8,
+    elevation: 2,
+    borderWidth: 1,
+    borderColor: "rgba(0,0,0,0.05)",
   },
-  socialG: {
-    fontSize: 19,
+  googleG: {
+    fontSize: 20,
     fontFamily: "Inter_700Bold",
-    lineHeight: 22,
+    color: "#4285F4",
+    lineHeight: 24,
   },
 
   /* Privacy */
-  privacy: {
-    fontSize: 11,
+  privacyRow: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 10,
+    paddingHorizontal: 4,
+    marginTop: "auto",
+  },
+  shieldCircle: {
+    width: 34,
+    height: 34,
+    borderRadius: 17,
+    backgroundColor: "rgba(123,94,167,0.12)",
+    alignItems: "center",
+    justifyContent: "center",
+    flexShrink: 0,
+  },
+  privacyText: {
+    flex: 1,
+    fontSize: 12,
     fontFamily: "Inter_400Regular",
-    color: "rgba(0,0,0,0.32)",
-    textAlign: "center",
-    lineHeight: 17,
-    paddingHorizontal: 8,
+    color: "#6B5490",
+    lineHeight: 18,
   },
   privacyLink: {
     color: PURPLE,
-    fontFamily: "Inter_500Medium",
+    fontFamily: "Inter_600SemiBold",
   },
 });
