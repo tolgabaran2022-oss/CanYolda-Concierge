@@ -53,8 +53,11 @@ export default function AnimalsScreen() {
       {/* Header */}
       <AppHeader topPad={topPad} />
 
-      {/* Title row — no add button here */}
+      {/* Title row */}
       <View style={styles.titleRow}>
+        <Text style={[styles.countBadge, { color: "transparent" }]}>
+          {filtered.length} hayvan
+        </Text>
         <Text style={styles.screenTitle}>Sokak Hayvanları</Text>
         <Text style={[styles.countBadge, { color: PURPLE }]}>
           {filtered.length} hayvan
@@ -154,6 +157,7 @@ const styles = StyleSheet.create({
     paddingHorizontal: 20,
     paddingTop: 4,
     paddingBottom: 4,
+    position: "relative",
   },
   screenTitle: {
     fontSize: 22,
