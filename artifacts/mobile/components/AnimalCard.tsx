@@ -133,7 +133,7 @@ const styles = StyleSheet.create({
     borderRadius: 16,
     borderWidth: 1,
     marginHorizontal: 16,
-    marginVertical: 3,
+    marginVertical: 4,
     overflow: "hidden",
     minHeight: 35,
   },
