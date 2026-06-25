@@ -33,9 +33,19 @@ export default function LoginFormScreen() {
   const [showPassword, setShowPassword] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
 
+  const EMAIL_REGEX =
+    /^[a-zA-Z0-9._%+-]+@(gmail\.com|hotmail\.com|yahoo\.com|outlook\.com)$/i;
+
   const handleLogin = async () => {
     if (!email.trim() || !password.trim()) {
       Alert.alert("Hata", "Lütfen tüm alanları doldurun.");
+      return;
+    }
+    if (!EMAIL_REGEX.test(email.trim())) {
+      Alert.alert(
+        "Geçersiz E-posta",
+        "Lütfen geçerli bir Gmail, Hotmail, Yahoo veya Outlook adresi girin."
+      );
       return;
     }
     setIsLoading(true);

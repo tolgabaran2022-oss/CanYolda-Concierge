@@ -24,6 +24,7 @@ interface AuthContextType {
   login: (email: string, password: string) => Promise<void>;
   register: (name: string, email: string, password: string) => Promise<void>;
   logout: () => Promise<void>;
+  changePassword: (currentPassword: string, newPassword: string) => Promise<void>;
 }
 
 const AuthContext = createContext<AuthContextType | null>(null);
@@ -86,8 +87,23 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     setUser(null);
   }, []);
 
+  const changePassword = useCallback(
+    async (currentPassword: string, newPassword: string) => {
+      if (!user) throw new Error("Giriş yapılmamış.");
+      const usersData = await AsyncStorage.getItem(USERS_KEY);
+      const users: StoredUser[] = usersData ? JSON.parse(usersData) : [];
+      const idx = users.findIndex((u) => u.id === user.id);
+      if (idx === -1) throw new Error("Kullanıcı bulunamadı.");
+      if (users[idx].password !== currentPassword)
+        throw new Error("Mevcut şifre hatalı.");
+      users[idx].password = newPassword;
+      await AsyncStorage.setItem(USERS_KEY, JSON.stringify(users));
+    },
+    [user]
+  );
+
   return (
-    <AuthContext.Provider value={{ user, isLoading, login, register, logout }}>
+    <AuthContext.Provider value={{ user, isLoading, login, register, logout, changePassword }}>
       {children}
     </AuthContext.Provider>
   );
