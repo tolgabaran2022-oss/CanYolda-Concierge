@@ -545,24 +545,28 @@ const styles = StyleSheet.create({
     borderWidth: 1,
   },
   pillEmoji: {
-    fontSize: 14,
-    lineHeight: 18,
+    fontSize: 13,
+    lineHeight: 16,
+    includeFontPadding: false,
   },
   pillText: {
     fontSize: 13,
+    lineHeight: 16,
     fontFamily: "Inter_600SemiBold",
+    includeFontPadding: false,
   },
   pillCount: {
-    minWidth: 20,
-    height: 20,
     borderRadius: 10,
     alignItems: "center",
     justifyContent: "center",
-    paddingHorizontal: 5,
+    paddingHorizontal: 6,
+    paddingVertical: 2,
   },
   pillCountText: {
     fontSize: 11,
+    lineHeight: 14,
     fontFamily: "Inter_700Bold",
+    includeFontPadding: false,
   },
 
   animalRow: {
