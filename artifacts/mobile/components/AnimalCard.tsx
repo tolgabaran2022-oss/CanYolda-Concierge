@@ -135,7 +135,7 @@ const styles = StyleSheet.create({
     marginHorizontal: 16,
     marginVertical: 5,
     overflow: "hidden",
-    minHeight: 86,
+    minHeight: 50,
   },
   imageWrap: {
     width: 100,
