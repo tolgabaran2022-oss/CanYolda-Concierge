@@ -13,350 +13,289 @@ import {
 } from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 
-const PURPLE      = "#7B5EA7";
-const PURPLE_DEEP = "#5B3E9B";
-const BLOB        = "#C8B4E8";
-const BG          = "#FAF8F3";
+const PURPLE       = "#7B5CBF";
+const PURPLE_DARK  = "#3D2080";
+const BLOB_PURPLE  = "#C8B4F0";
+const BLOB_CREAM   = "#F0E4CE";
+const BG           = "#FAF7F2";
 
-const HERO = require("@/assets/images/hero-logo-pets.png");
+const HERO_IMAGE = require("@/assets/images/hero-logo-pets.png");
 
 export default function WelcomeScreen() {
   const insets = useSafeAreaInsets();
   const router = useRouter();
 
-  const press  = () => Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
-  const social = () => Alert.alert("Yakında", "Sosyal giriş yakında eklenecek.");
+  const handleSocial = () =>
+    Alert.alert("Yakında", "Sosyal giriş yakında eklenecek.");
 
   return (
-    <View style={[S.root, { paddingTop: insets.top, paddingBottom: Math.max(insets.bottom + 8, 28) }]}>
+    <View style={[styles.root, { paddingTop: insets.top, paddingBottom: Math.max(insets.bottom, 16) }]}>
 
-      {/* ── Dekoratif blob'lar ─────────────────────
-          Sol üst: büyük oval
-          Sağ üst: küçük oval
-      ─────────────────────────────────────────── */}
-      <View style={S.blobTopLeft} />
-      <View style={S.blobTopRight} />
-      <View style={S.blobRightMid} />
+      {/* Decorative blobs */}
+      <View style={styles.blobBottomRight} />
+      <View style={styles.blobBottomLeft} />
 
-      {/* ── LOGO ────────────────────────────────── */}
-      <View style={S.logoSection}>
-        <Ionicons name="heart" size={16} color={PURPLE} style={{ marginBottom: 2 }} />
-        <Text style={S.logoText}>canyoldaşı</Text>
-        <View style={S.taglineWrap}>
-          <Text style={S.taglineNormal}>Dostların için</Text>
-          <Text style={S.taglineNormal}>
-            her şey <Text style={S.taglineBold}>bir tık uzağında</Text>
-          </Text>
-        </View>
-      </View>
+      {/* Hero graphic */}
+      <Image
+        source={HERO_IMAGE}
+        style={styles.heroImage}
+        contentFit="contain"
+      />
 
-      {/* ── HERO ────────────────────────────────── */}
-      <View style={S.heroSection}>
-        {/* Sol paw dairesi */}
-        <View style={S.pawCircle}>
-          <Ionicons name="paw" size={22} color="#FFF" />
-        </View>
+      {/* ── Buttons ─────────────────────────────── */}
+      <View style={styles.btnSection}>
 
-        {/* Sağ mor noktalar */}
-        <View style={[S.dot, { top: 12, right: 32, width: 14, height: 14 }]} />
-        <View style={[S.dot, { top: 36, right: 18, width: 10, height: 10, opacity: 0.55 }]} />
-        <View style={[S.dot, { top: 56, right: 38, width: 7,  height: 7,  opacity: 0.35 }]} />
-
-        <Image source={HERO} style={S.heroImage} contentFit="contain" />
-      </View>
-
-      {/* ── CTA ─────────────────────────────────── */}
-      <View style={S.ctaSection}>
-
-        {/* Giriş Yap */}
+        {/* Giriş Yap – gradient */}
         <Pressable
-          onPress={() => { press(); router.push("/(auth)/login-form"); }}
-          style={({ pressed }) => ({ opacity: pressed ? 0.88 : 1 })}
+          onPress={() => {
+            Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+            router.push("/(auth)/login-form");
+          }}
+          style={({ pressed }) => ({ opacity: pressed ? 0.9 : 1 })}
         >
           <LinearGradient
-            colors={["#9070CC", PURPLE_DEEP]}
+            colors={["#9478D8", "#5A3BB2"]}
             start={{ x: 0, y: 0 }}
             end={{ x: 1, y: 1 }}
-            style={S.btnPrimary}
+            style={styles.primaryBtn}
           >
-            <Ionicons name="person-outline" size={19} color="rgba(255,255,255,0.85)" />
-            <Text style={S.btnPrimaryText}>Giriş Yap</Text>
-            <Ionicons name="chevron-forward" size={18} color="rgba(255,255,255,0.55)" />
+            <Ionicons name="person-outline" size={22} color="#FFF" />
+            <Text style={styles.primaryBtnText}>Giriş Yap</Text>
+            <Ionicons name="chevron-forward" size={22} color="rgba(255,255,255,0.7)" />
           </LinearGradient>
         </Pressable>
 
-        {/* Kayıt Ol */}
+        {/* Kayıt Ol – white card */}
         <Pressable
-          style={({ pressed }) => [S.btnSecondary, { opacity: pressed ? 0.82 : 1 }]}
-          onPress={() => { press(); router.push("/(auth)/register"); }}
+          style={({ pressed }) => [styles.secondaryBtn, { opacity: pressed ? 0.9 : 1 }]}
+          onPress={() => {
+            Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+            router.push("/(auth)/register");
+          }}
         >
-          <Ionicons name="person-add-outline" size={19} color={PURPLE_DEEP} />
-          <Text style={S.btnSecondaryText}>Kayıt Ol</Text>
-          <Ionicons name="chevron-forward" size={18} color="rgba(91,62,155,0.4)" />
+          <Ionicons name="person-add-outline" size={22} color="#1A1A2E" />
+          <Text style={styles.secondaryBtnText}>Kayıt Ol</Text>
+          <Ionicons name="chevron-forward" size={22} color="#333" />
         </Pressable>
 
-        {/* veya */}
-        <Text style={S.veya}>veya</Text>
+        {/* Divider */}
+        <View style={styles.dividerRow}>
+          <View style={styles.dividerLine} />
+          <Text style={styles.dividerText}>veya</Text>
+          <View style={styles.dividerLine} />
+        </View>
 
-        {/* Sosyal */}
-        <View style={S.socialRow}>
-          {([
-            { key: "g", node: <Text style={S.gText}>G</Text> },
-            { key: "a", node: <Ionicons name="logo-apple"    size={22} color="#111" /> },
-            { key: "f", node: <Ionicons name="logo-facebook" size={22} color="#1877F2" /> },
-          ] as const).map(({ key, node }) => (
-            <Pressable
-              key={key}
-              style={({ pressed }) => [S.socialBtn, { opacity: pressed ? 0.7 : 1 }]}
-              onPress={social}
-            >
-              {node}
-            </Pressable>
-          ))}
+        {/* Social */}
+        <View style={styles.socialRow}>
+          {/* Google */}
+          <Pressable style={styles.socialBtn} onPress={handleSocial}>
+            <View style={styles.googleGWrap}>
+              <Text style={[styles.googleSegment, { color: "#4285F4" }]}>G</Text>
+            </View>
+          </Pressable>
+          {/* Apple */}
+          <Pressable style={styles.socialBtn} onPress={handleSocial}>
+            <Ionicons name="logo-apple" size={28} color="#111" />
+          </Pressable>
+          {/* Facebook */}
+          <Pressable style={styles.socialBtn} onPress={handleSocial}>
+            <Ionicons name="logo-facebook" size={30} color="#1877F2" />
+          </Pressable>
         </View>
 
         {/* Privacy */}
-        <View style={S.privacyRow}>
-          <View style={S.shieldWrap}>
-            <Ionicons name="shield-checkmark-outline" size={15} color={PURPLE} />
+        <View style={styles.privacyRow}>
+          <View style={styles.shieldBadge}>
+            <Ionicons name="shield-checkmark-outline" size={18} color={PURPLE} />
           </View>
-          <Text style={S.privacyText}>
+          <Text style={styles.privacyText}>
             Devam ederek{" "}
-            <Text style={S.privacyBold}>Kullanım Koşulları</Text>
-            {" "}ve{" "}
-            <Text style={S.privacyBold}>Gizlilik Politikası</Text>
+            <Text style={styles.privacyLink}>Kullanım Koşulları</Text>
+            {" "}ve{"\n"}
+            <Text style={styles.privacyLink}>Gizlilik Politikası</Text>
             {"'"}nı kabul etmiş olursunuz.
           </Text>
         </View>
       </View>
 
-      {/* ── Alt paw ─────────────────────────────── */}
-      <Ionicons name="paw" size={20} color={PURPLE} style={{ marginTop: 12, opacity: 0.45 }} />
+      {/* Bottom paw */}
+      <Ionicons name="paw" size={26} color={PURPLE} style={styles.bottomPaw} />
     </View>
   );
 }
 
-const S = StyleSheet.create({
+const styles = StyleSheet.create({
   root: {
     flex: 1,
     backgroundColor: BG,
-    alignItems: "center",
-    paddingHorizontal: 24,
-    overflow: "hidden",
   },
 
-  /* Blob'lar */
-  blobTopLeft: {
+  /* Blobs */
+  blobBottomRight: {
     position: "absolute",
-    top: -100,
-    left: -80,
-    width: 280,
-    height: 280,
-    borderRadius: 140,
-    backgroundColor: BLOB,
-    opacity: 0.38,
-    transform: [{ scaleX: 1.25 }, { scaleY: 0.85 }],
-  },
-  blobTopRight: {
-    position: "absolute",
-    top: -60,
+    bottom: 70,
     right: -60,
     width: 160,
     height: 160,
-    borderRadius: 80,
-    backgroundColor: BLOB,
-    opacity: 0.28,
+    backgroundColor: BLOB_CREAM,
+    opacity: 0.45,
+    borderTopLeftRadius: 140,
+    borderTopRightRadius: 50,
+    borderBottomRightRadius: 20,
+    borderBottomLeftRadius: 100,
   },
-  blobRightMid: {
+  blobBottomLeft: {
     position: "absolute",
-    top: 200,
-    right: -48,
-    width: 110,
-    height: 110,
-    borderRadius: 55,
-    backgroundColor: BLOB,
-    opacity: 0.22,
-  },
-
-  /* Logo */
-  logoSection: {
-    alignItems: "center",
-    marginTop: 24,
-    marginBottom: 12,
-    zIndex: 2,
-  },
-  logoText: {
-    fontSize: 36,
-    fontFamily: "Inter_700Bold",
-    color: PURPLE_DEEP,
-    letterSpacing: -1,
-    marginBottom: 6,
-  },
-  taglineWrap: {
-    alignItems: "center",
-    gap: 1,
-  },
-  taglineNormal: {
-    fontSize: 14,
-    fontFamily: "Inter_400Regular",
-    color: "#555",
-    textAlign: "center",
-    lineHeight: 21,
-  },
-  taglineBold: {
-    fontFamily: "Inter_700Bold",
-    color: PURPLE_DEEP,
+    bottom: -50,
+    left: -55,
+    width: 200,
+    height: 200,
+    backgroundColor: BLOB_PURPLE,
+    opacity: 0.5,
+    borderTopLeftRadius: 90,
+    borderTopRightRadius: 160,
+    borderBottomRightRadius: 60,
+    borderBottomLeftRadius: 40,
   },
 
   /* Hero */
-  heroSection: {
-    width: "100%",
-    flex: 1,
-    alignItems: "center",
-    justifyContent: "center",
-    maxHeight: 240,
-    zIndex: 2,
-    marginBottom: 4,
-  },
-  pawCircle: {
-    position: "absolute",
-    left: 4,
-    top: "30%",
-    width: 52,
-    height: 52,
-    borderRadius: 26,
-    backgroundColor: PURPLE,
-    alignItems: "center",
-    justifyContent: "center",
-    zIndex: 3,
-    shadowColor: PURPLE,
-    shadowOffset: { width: 0, height: 4 },
-    shadowOpacity: 0.35,
-    shadowRadius: 8,
-    elevation: 4,
-  },
-  dot: {
-    position: "absolute",
-    borderRadius: 10,
-    backgroundColor: PURPLE,
-    opacity: 0.7,
-    zIndex: 3,
-  },
   heroImage: {
-    width: "80%",
-    aspectRatio: 4265 / 4585,
-    zIndex: 2,
-  },
-
-  /* CTA */
-  ctaSection: {
     width: "100%",
-    gap: 12,
-    zIndex: 2,
+    aspectRatio: 4265 / 4585,
+    marginTop: 4,
+    zIndex: 1,
   },
 
-  btnPrimary: {
+  /* Button section */
+  btnSection: {
+    paddingHorizontal: 24,
+    gap: 13,
+    marginTop: 0,
+    zIndex: 1,
+  },
+
+  /* Giriş Yap */
+  primaryBtn: {
     flexDirection: "row",
     alignItems: "center",
-    borderRadius: 50,
-    paddingVertical: 16,
-    paddingHorizontal: 22,
-    gap: 10,
-    shadowColor: PURPLE_DEEP,
+    borderRadius: 36,
+    paddingVertical: 18,
+    paddingHorizontal: 24,
+    gap: 12,
+    shadowColor: "#5A3BB2",
     shadowOffset: { width: 0, height: 6 },
-    shadowOpacity: 0.3,
+    shadowOpacity: 0.38,
     shadowRadius: 14,
-    elevation: 5,
+    elevation: 6,
   },
-  btnPrimaryText: {
+  primaryBtnText: {
     flex: 1,
-    fontSize: 16,
+    fontSize: 17,
     fontFamily: "Inter_700Bold",
     color: "#FFF",
   },
 
-  btnSecondary: {
+  /* Kayıt Ol */
+  secondaryBtn: {
     flexDirection: "row",
     alignItems: "center",
-    borderRadius: 50,
-    paddingVertical: 15,
-    paddingHorizontal: 22,
-    gap: 10,
-    backgroundColor: "#FFF",
-    borderWidth: 1.5,
-    borderColor: "rgba(123,94,167,0.2)",
+    backgroundColor: "#FFFFFF",
+    borderRadius: 36,
+    paddingVertical: 17,
+    paddingHorizontal: 24,
+    gap: 12,
     shadowColor: "#000",
-    shadowOffset: { width: 0, height: 1 },
-    shadowOpacity: 0.06,
-    shadowRadius: 6,
-    elevation: 1,
+    shadowOffset: { width: 0, height: 3 },
+    shadowOpacity: 0.10,
+    shadowRadius: 12,
+    elevation: 3,
   },
-  btnSecondaryText: {
+  secondaryBtnText: {
     flex: 1,
-    fontSize: 16,
-    fontFamily: "Inter_600SemiBold",
-    color: PURPLE_DEEP,
+    fontSize: 17,
+    fontFamily: "Inter_700Bold",
+    color: "#1A1A2E",
   },
 
-  veya: {
-    textAlign: "center",
-    fontSize: 12,
+  /* Divider */
+  dividerRow: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 14,
+    marginVertical: 2,
+  },
+  dividerLine: {
+    flex: 1,
+    height: StyleSheet.hairlineWidth,
+    backgroundColor: "rgba(0,0,0,0.15)",
+  },
+  dividerText: {
+    fontSize: 13,
     fontFamily: "Inter_400Regular",
-    color: "rgba(0,0,0,0.35)",
-    marginVertical: -2,
+    color: "#B0B0B0",
   },
 
+  /* Social */
   socialRow: {
     flexDirection: "row",
     justifyContent: "center",
     gap: 20,
   },
   socialBtn: {
-    width: 52,
-    height: 52,
-    borderRadius: 26,
+    width: 68,
+    height: 68,
+    borderRadius: 34,
     backgroundColor: "#FFF",
     alignItems: "center",
     justifyContent: "center",
-    borderWidth: 1,
-    borderColor: "rgba(0,0,0,0.08)",
     shadowColor: "#000",
     shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.07,
-    shadowRadius: 6,
-    elevation: 2,
+    shadowOpacity: 0.09,
+    shadowRadius: 10,
+    elevation: 3,
   },
-  gText: {
-    fontSize: 19,
+  googleGWrap: {
+    alignItems: "center",
+    justifyContent: "center",
+  },
+  googleSegment: {
+    fontSize: 26,
     fontFamily: "Inter_700Bold",
-    color: "#4285F4",
-    lineHeight: 22,
+    lineHeight: 30,
   },
 
+  /* Privacy */
   privacyRow: {
     flexDirection: "row",
     alignItems: "center",
     gap: 10,
-    marginTop: 2,
+    paddingHorizontal: 2,
   },
-  shieldWrap: {
-    width: 30,
-    height: 30,
-    borderRadius: 15,
-    backgroundColor: "rgba(123,94,167,0.10)",
+  shieldBadge: {
+    width: 40,
+    height: 40,
+    borderRadius: 20,
+    backgroundColor: "rgba(123,92,191,0.12)",
     alignItems: "center",
     justifyContent: "center",
     flexShrink: 0,
   },
   privacyText: {
     flex: 1,
-    fontSize: 11.5,
+    fontSize: 13,
     fontFamily: "Inter_400Regular",
-    color: "rgba(0,0,0,0.45)",
-    lineHeight: 17,
+    color: "#888",
+    lineHeight: 19,
   },
-  privacyBold: {
-    fontFamily: "Inter_700Bold",
+  privacyLink: {
     color: PURPLE,
+    fontFamily: "Inter_700Bold",
+  },
+
+  /* Bottom paw */
+  bottomPaw: {
+    alignSelf: "center",
+    marginTop: "auto",
+    paddingTop: 8,
   },
 });
