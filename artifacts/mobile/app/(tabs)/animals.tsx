@@ -61,10 +61,11 @@ export default function AnimalsScreen() {
         </Text>
       </View>
 
-      {/* Filter chips — proper vertical padding */}
+      {/* Filter chips */}
       <ScrollView
         horizontal
         showsHorizontalScrollIndicator={false}
+        style={{ flex: 0 }}
         contentContainerStyle={styles.filterScroll}
       >
         {FILTERS.map((f) => {
@@ -151,8 +152,8 @@ const styles = StyleSheet.create({
     justifyContent: "space-between",
     alignItems: "center",
     paddingHorizontal: 20,
-    paddingTop: 2,
-    paddingBottom: 2,
+    paddingTop: 4,
+    paddingBottom: 4,
   },
   screenTitle: {
     fontSize: 22,
@@ -167,7 +168,7 @@ const styles = StyleSheet.create({
   /* Filter chips */
   filterScroll: {
     paddingHorizontal: 20,
-    paddingTop: 6,
+    paddingTop: 4,
     paddingBottom: 8,
     gap: 8,
     alignItems: "center",
