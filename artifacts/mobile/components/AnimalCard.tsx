@@ -28,6 +28,7 @@ export function AnimalCard({ animal }: Props) {
       ]}
       onPress={() => router.push(`/animal/${animal.id}` as const)}
     >
+      {/* Thumbnail */}
       <View style={styles.imageWrap}>
         {animal.image ? (
           <Image
@@ -37,10 +38,7 @@ export function AnimalCard({ animal }: Props) {
           />
         ) : (
           <View
-            style={[
-              styles.imagePlaceholder,
-              { backgroundColor: colors.muted },
-            ]}
+            style={[styles.imagePlaceholder, { backgroundColor: colors.muted }]}
           >
             <View
               style={[
@@ -48,12 +46,14 @@ export function AnimalCard({ animal }: Props) {
                 { backgroundColor: STATUS_COLORS[animal.status] },
               ]}
             />
-            <Ionicons name="paw" size={28} color={colors.mutedForeground} />
+            <Ionicons name="paw" size={30} color={colors.mutedForeground} />
           </View>
         )}
       </View>
 
+      {/* Content */}
       <View style={styles.content}>
+        {/* Status badge + time on same row */}
         <View style={styles.topRow}>
           <StatusBadge status={animal.status} size="sm" />
           <Text style={[styles.time, { color: colors.mutedForeground }]}>
@@ -61,6 +61,7 @@ export function AnimalCard({ animal }: Props) {
           </Text>
         </View>
 
+        {/* Notes — up to 2 lines with comfortable line-height */}
         {animal.notes ? (
           <Text
             style={[styles.notes, { color: colors.foreground }]}
@@ -68,10 +69,18 @@ export function AnimalCard({ animal }: Props) {
           >
             {animal.notes}
           </Text>
-        ) : null}
+        ) : (
+          <Text style={[styles.noNotes, { color: colors.mutedForeground }]}>
+            Not eklenmemiş
+          </Text>
+        )}
 
+        {/* Footer: username + stats */}
         <View style={styles.footer}>
-          <Text style={[styles.userName, { color: colors.mutedForeground }]}>
+          <Text
+            style={[styles.userName, { color: colors.mutedForeground }]}
+            numberOfLines={1}
+          >
             {animal.userName}
           </Text>
           <View style={styles.stats}>
@@ -108,6 +117,11 @@ export function AnimalCard({ animal }: Props) {
           </View>
         </View>
       </View>
+
+      {/* Chevron */}
+      <View style={styles.chevronWrap}>
+        <Ionicons name="chevron-forward" size={16} color={colors.mutedForeground} />
+      </View>
     </Pressable>
   );
 }
@@ -115,30 +129,32 @@ export function AnimalCard({ animal }: Props) {
 const styles = StyleSheet.create({
   card: {
     flexDirection: "row",
+    alignItems: "center",
     borderRadius: 16,
     borderWidth: 1,
     marginHorizontal: 16,
     marginVertical: 6,
     overflow: "hidden",
+    minHeight: 110,
   },
   imageWrap: {
-    width: 96,
-    height: 96,
+    width: 100,
+    alignSelf: "stretch",
   },
   image: {
-    width: 96,
-    height: 96,
+    width: 100,
+    height: "100%",
   },
   imagePlaceholder: {
-    width: 96,
-    height: 96,
+    width: 100,
+    height: "100%",
     alignItems: "center",
     justifyContent: "center",
   },
   statusDot: {
     position: "absolute",
-    top: 8,
-    left: 8,
+    top: 10,
+    left: 10,
     width: 10,
     height: 10,
     borderRadius: 5,
@@ -147,8 +163,10 @@ const styles = StyleSheet.create({
   },
   content: {
     flex: 1,
-    padding: 12,
-    gap: 4,
+    paddingHorizontal: 14,
+    paddingVertical: 12,
+    gap: 5,
+    justifyContent: "space-between",
   },
   topRow: {
     flexDirection: "row",
@@ -160,20 +178,25 @@ const styles = StyleSheet.create({
     fontFamily: "Inter_400Regular",
   },
   notes: {
+    fontSize: 13.5,
+    fontFamily: "Inter_400Regular",
+    lineHeight: 20,
+  },
+  noNotes: {
     fontSize: 13,
     fontFamily: "Inter_400Regular",
-    lineHeight: 18,
-    flex: 1,
+    fontStyle: "italic",
   },
   footer: {
     flexDirection: "row",
     justifyContent: "space-between",
     alignItems: "center",
-    marginTop: 4,
   },
   userName: {
-    fontSize: 11,
+    fontSize: 11.5,
     fontFamily: "Inter_500Medium",
+    flex: 1,
+    marginRight: 6,
   },
   stats: {
     flexDirection: "row",
@@ -182,10 +205,14 @@ const styles = StyleSheet.create({
   stat: {
     flexDirection: "row",
     alignItems: "center",
-    gap: 2,
+    gap: 3,
   },
   statText: {
     fontSize: 11,
     fontFamily: "Inter_500Medium",
+  },
+  chevronWrap: {
+    paddingRight: 12,
+    paddingLeft: 4,
   },
 });

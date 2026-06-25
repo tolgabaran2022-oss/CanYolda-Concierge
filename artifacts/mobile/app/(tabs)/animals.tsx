@@ -21,55 +21,54 @@ import { useAnimals } from "@/contexts/AnimalsContext";
 const PURPLE = "#7B5EA7";
 const BG = "#F5F1FF";
 
+const TAB_BAR_H = 64;
+const TAB_BAR_MARGIN = Platform.OS === "web" ? 12 : 10;
+
 const FILTERS: { key: "all" | AnimalStatus; label: string }[] = [
-  { key: "all", label: "Tümü" },
-  { key: "hungry", label: "Aç" },
-  { key: "injured", label: "Yaralı" },
-  { key: "healthy", label: "Sağlıklı" },
-  { key: "unknown", label: "Bilinmiyor" },
+  { key: "all",      label: "Hepsi"      },
+  { key: "hungry",   label: "Aç"         },
+  { key: "injured",  label: "Yaralı"     },
+  { key: "healthy",  label: "Sağlıklı"   },
+  { key: "unknown",  label: "Bilinmiyor" },
 ];
 
 export default function AnimalsScreen() {
-  const insets = useSafeAreaInsets();
-  const router = useRouter();
+  const insets  = useSafeAreaInsets();
+  const router  = useRouter();
   const { animals } = useAnimals();
   const [filter, setFilter] = useState<"all" | AnimalStatus>("all");
 
   const filtered = useMemo(
-    () => (filter === "all" ? animals : animals.filter((a) => a.status === filter)),
+    () => filter === "all" ? animals : animals.filter((a) => a.status === filter),
     [animals, filter]
   );
 
   const topPad = Platform.OS === "web" ? 67 : insets.top;
-  const tabBarOffset = Platform.OS === "web" ? 84 : 80;
+
+  // Bottom of floating tab bar from bottom of screen
+  const tabBarBottom = insets.bottom + TAB_BAR_MARGIN + TAB_BAR_H;
 
   return (
     <View style={styles.container}>
-      {/* Header with blobs + logo */}
+      {/* Header */}
       <AppHeader topPad={topPad} />
 
-      {/* Screen title + add button */}
+      {/* Title row — no add button here */}
       <View style={styles.titleRow}>
         <Text style={styles.screenTitle}>Sokak Hayvanları</Text>
-        <Pressable
-          style={({ pressed }) => [
-            styles.addBtn,
-            { opacity: pressed ? 0.85 : 1 },
-          ]}
-          onPress={() => router.push("/add-animal")}
-        >
-          <Ionicons name="add" size={22} color="white" />
-        </Pressable>
+        <Text style={[styles.countBadge, { color: PURPLE }]}>
+          {filtered.length} hayvan
+        </Text>
       </View>
 
-      {/* Filter chips */}
+      {/* Filter chips — proper vertical padding */}
       <ScrollView
         horizontal
         showsHorizontalScrollIndicator={false}
         contentContainerStyle={styles.filterScroll}
       >
         {FILTERS.map((f) => {
-          const isActive = filter === f.key;
+          const isActive  = filter === f.key;
           const chipColor = f.key === "all" ? PURPLE : STATUS_COLORS[f.key];
           const count =
             f.key === "all"
@@ -81,8 +80,8 @@ export default function AnimalsScreen() {
               style={[
                 styles.filterChip,
                 {
-                  backgroundColor: isActive ? chipColor : "rgba(255,255,255,0.7)",
-                  borderColor: isActive ? chipColor : "rgba(123,94,167,0.2)",
+                  backgroundColor: isActive ? chipColor : "rgba(255,255,255,0.85)",
+                  borderColor: isActive ? chipColor : "rgba(123,94,167,0.22)",
                 },
               ]}
               onPress={() => setFilter(f.key)}
@@ -96,20 +95,22 @@ export default function AnimalsScreen() {
                   },
                 ]}
               >
-                {f.label} ({count})
+                {f.label}
+                {count > 0 ? ` (${count})` : ""}
               </Text>
             </Pressable>
           );
         })}
       </ScrollView>
 
+      {/* List — padded well clear of tab bar + safe area */}
       <FlatList
         data={filtered}
         keyExtractor={(item) => item.id}
         renderItem={({ item }) => <AnimalCard animal={item} />}
         contentContainerStyle={[
           styles.list,
-          { paddingBottom: insets.bottom + tabBarOffset + 16 },
+          { paddingBottom: tabBarBottom + 32 },
         ]}
         showsVerticalScrollIndicator={false}
         ListEmptyComponent={
@@ -120,6 +121,20 @@ export default function AnimalsScreen() {
           />
         }
       />
+
+      {/* True floating action button — above tab bar */}
+      <Pressable
+        style={({ pressed }) => [
+          styles.fab,
+          {
+            bottom: tabBarBottom + 16,
+            opacity: pressed ? 0.85 : 1,
+          },
+        ]}
+        onPress={() => router.push("/add-animal")}
+      >
+        <Ionicons name="add" size={28} color="white" />
+      </Pressable>
     </View>
   );
 }
@@ -129,47 +144,62 @@ const styles = StyleSheet.create({
     flex: 1,
     backgroundColor: BG,
   },
+
+  /* Title row */
   titleRow: {
     flexDirection: "row",
     justifyContent: "space-between",
     alignItems: "center",
     paddingHorizontal: 20,
-    marginBottom: 12,
-    zIndex: 1,
+    paddingTop: 6,
+    paddingBottom: 2,
   },
   screenTitle: {
     fontSize: 22,
     fontFamily: "Inter_700Bold",
     color: "#2D1B4E",
   },
-  addBtn: {
-    width: 40,
-    height: 40,
-    borderRadius: 20,
-    backgroundColor: PURPLE,
-    alignItems: "center",
-    justifyContent: "center",
-    shadowColor: PURPLE,
-    shadowOffset: { width: 0, height: 3 },
-    shadowOpacity: 0.3,
-    shadowRadius: 6,
-    elevation: 4,
+  countBadge: {
+    fontSize: 13,
+    fontFamily: "Inter_500Medium",
   },
+
+  /* Filter chips */
   filterScroll: {
     paddingHorizontal: 20,
+    paddingTop: 10,
+    paddingBottom: 14,
     gap: 8,
-    paddingBottom: 12,
   },
   filterChip: {
     borderRadius: 20,
     paddingHorizontal: 14,
-    paddingVertical: 7,
+    paddingVertical: 8,
     borderWidth: 1.5,
   },
   filterText: {
     fontSize: 13,
   },
+
+  /* List */
   list: {
     paddingTop: 4,
+  },
+
+  /* FAB */
+  fab: {
+    position: "absolute",
+    right: 20,
+    width: 56,
+    height: 56,
+    borderRadius: 28,
+    backgroundColor: PURPLE,
+    alignItems: "center",
+    justifyContent: "center",
+    shadowColor: PURPLE,
+    shadowOffset: { width: 0, height: 6 },
+    shadowOpacity: 0.38,
+    shadowRadius: 12,
+    elevation: 8,
   },
 });
