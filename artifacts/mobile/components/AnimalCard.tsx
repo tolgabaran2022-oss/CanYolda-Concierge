@@ -46,7 +46,10 @@ export function AnimalCard({ animal }: Props) {
                 { backgroundColor: STATUS_COLORS[animal.status] },
               ]}
             />
-            <Ionicons name="paw" size={30} color={colors.mutedForeground} />
+            <Ionicons name="camera-outline" size={22} color={colors.mutedForeground} />
+            <Text style={[styles.photoHint, { color: colors.mutedForeground }]}>
+              Fotoğraf{"\n"}ekle
+            </Text>
           </View>
         )}
       </View>
@@ -153,6 +156,13 @@ const styles = StyleSheet.create({
     height: 64,
     alignItems: "center",
     justifyContent: "center",
+    gap: 2,
+  },
+  photoHint: {
+    fontSize: 8,
+    textAlign: "center",
+    lineHeight: 11,
+    fontFamily: "Inter_400Regular",
   },
   statusDot: {
     position: "absolute",
