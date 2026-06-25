@@ -1,5 +1,4 @@
 import { Ionicons } from "@expo/vector-icons";
-import { LinearGradient } from "expo-linear-gradient";
 import * as Haptics from "expo-haptics";
 import * as Location from "expo-location";
 import { useRouter } from "expo-router";
@@ -270,14 +269,6 @@ export default function MapScreen() {
               );
             })}
           </ScrollView>
-          {/* Right-edge fade to signal more chips */}
-          <LinearGradient
-            colors={["transparent", "rgba(250,247,240,0.96)"]}
-            start={{ x: 0, y: 0 }}
-            end={{ x: 1, y: 0 }}
-            style={styles.filterFade}
-            pointerEvents="none"
-          />
         </View>
 
         {/* Animal rows */}
@@ -505,16 +496,7 @@ const styles = StyleSheet.create({
     paddingHorizontal: 20,
     paddingTop: 2,
     paddingBottom: 14,
-    paddingRight: 48,
     gap: 8,
-  },
-  filterFade: {
-    position: "absolute",
-    right: 0,
-    top: 0,
-    bottom: 0,
-    width: 48,
-    pointerEvents: "none",
   },
   pill: {
     flexDirection: "row",
