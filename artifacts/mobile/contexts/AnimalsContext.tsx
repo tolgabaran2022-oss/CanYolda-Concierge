@@ -21,6 +21,7 @@ export interface AnimalComment {
 export interface StrayAnimal {
   id: string;
   image?: string;
+  locationName?: string;
   latitude: number;
   longitude: number;
   status: AnimalStatus;
@@ -56,6 +57,8 @@ const ANIMALS_KEY = "@canyoldasi:animals";
 const SEED: StrayAnimal[] = [
   {
     id: "seed-1",
+    image: "https://loremflickr.com/600/400/dog,stray?lock=301",
+    locationName: "Eyüp, İstanbul",
     latitude: 41.0082,
     longitude: 28.9784,
     status: "hungry",
@@ -63,12 +66,18 @@ const SEED: StrayAnimal[] = [
     timestamp: new Date(Date.now() - 3600000).toISOString(),
     userId: "system",
     userName: "Ayşe Y.",
-    fedByUsers: [],
+    fedByUsers: ["user2"],
     needsHelpByUsers: [],
-    comments: [],
+    comments: [
+      { id: "c-s1-1", userId: "user3", userName: "Zeynep A.", text: "Bu sabah mama bıraktım, iyiydi.", timestamp: new Date(Date.now() - 1800000).toISOString() },
+      { id: "c-s1-2", userId: "user4", userName: "Murat K.", text: "Akşam da bakacağım.", timestamp: new Date(Date.now() - 600000).toISOString() },
+      { id: "c-s1-3", userId: "user5", userName: "Selin B.", text: "Teşekkürler 🐾", timestamp: new Date(Date.now() - 300000).toISOString() },
+    ],
   },
   {
     id: "seed-2",
+    image: "https://loremflickr.com/600/400/cat,stray?lock=302",
+    locationName: "Kadıköy, İstanbul",
     latitude: 41.014,
     longitude: 28.972,
     status: "healthy",
@@ -76,12 +85,21 @@ const SEED: StrayAnimal[] = [
     timestamp: new Date(Date.now() - 7200000).toISOString(),
     userId: "system",
     userName: "Mehmet K.",
-    fedByUsers: ["user1"],
+    fedByUsers: ["user1", "user3", "user5"],
     needsHelpByUsers: [],
-    comments: [],
+    comments: [
+      { id: "c-s2-1", userId: "user1", userName: "Ayşe Y.", text: "Çok tatlı bir kedi!", timestamp: new Date(Date.now() - 3600000).toISOString() },
+      { id: "c-s2-2", userId: "user6", userName: "Hasan D.", text: "Her gün buradayım 😊", timestamp: new Date(Date.now() - 1200000).toISOString() },
+      { id: "c-s2-3", userId: "user7", userName: "Leyla S.", text: "Sağlıklı görünüyor, iyi ki var.", timestamp: new Date(Date.now() - 900000).toISOString() },
+      { id: "c-s2-4", userId: "user8", userName: "Burak A.", text: "Parkın maskotu olmuş 🐈", timestamp: new Date(Date.now() - 600000).toISOString() },
+      { id: "c-s2-5", userId: "user9", userName: "Dilara M.", text: "Dün da gördüm, mutlu.", timestamp: new Date(Date.now() - 300000).toISOString() },
+      { id: "c-s2-6", userId: "user10", userName: "Cem Ö.", text: "👍", timestamp: new Date(Date.now() - 120000).toISOString() },
+    ],
   },
   {
     id: "seed-3",
+    image: "https://loremflickr.com/600/400/dog,injured?lock=303",
+    locationName: "Üsküdar, İstanbul",
     latitude: 40.998,
     longitude: 29.018,
     status: "injured",
@@ -93,16 +111,39 @@ const SEED: StrayAnimal[] = [
     needsHelpByUsers: ["user1", "user2"],
     comments: [
       {
-        id: "c1",
+        id: "c-s3-1",
         userId: "user2",
         userName: "Zeynep A.",
         text: "Yarın sabah veteriner götürebilirim.",
         timestamp: new Date(Date.now() - 900000).toISOString(),
       },
+      {
+        id: "c-s3-2",
+        userId: "user4",
+        userName: "Murat K.",
+        text: "Adres paylaşır mısınız?",
+        timestamp: new Date(Date.now() - 450000).toISOString(),
+      },
+      {
+        id: "c-s3-3",
+        userId: "user5",
+        userName: "Selin B.",
+        text: "Geçmiş olsun 💔",
+        timestamp: new Date(Date.now() - 200000).toISOString(),
+      },
+      {
+        id: "c-s3-4",
+        userId: "user6",
+        userName: "Hasan D.",
+        text: "Ben de yardım edebilirim.",
+        timestamp: new Date(Date.now() - 100000).toISOString(),
+      },
     ],
   },
   {
     id: "seed-4",
+    image: "https://loremflickr.com/600/400/cat,black?lock=304",
+    locationName: "Ataşehir, İstanbul",
     latitude: 41.022,
     longitude: 28.963,
     status: "unknown",

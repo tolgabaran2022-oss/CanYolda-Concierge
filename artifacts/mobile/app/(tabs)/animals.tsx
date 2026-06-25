@@ -1,7 +1,10 @@
 import { Ionicons } from "@expo/vector-icons";
+import * as Haptics from "expo-haptics";
+import { LinearGradient } from "expo-linear-gradient";
 import { useRouter } from "expo-router";
 import React, { useMemo, useState } from "react";
 import {
+  Animated,
   FlatList,
   Platform,
   Pressable,
@@ -12,110 +15,136 @@ import {
 } from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { AnimalCard } from "@/components/AnimalCard";
-import { AppHeader } from "@/components/AppHeader";
 import { EmptyState } from "@/components/EmptyState";
-import { STATUS_COLORS } from "@/components/StatusBadge";
 import type { AnimalStatus } from "@/contexts/AnimalsContext";
 import { useAnimals } from "@/contexts/AnimalsContext";
 
 const PURPLE = "#7B5EA7";
-const BG = "#F5F1FF";
+const BG     = "#F9F8FF";
 
-const TAB_BAR_H = 64;
-const TAB_BAR_MARGIN = Platform.OS === "web" ? 12 : 10;
+type FilterKey = "all" | "injured" | "hungry" | "healthy";
 
-const FILTERS: { key: "all" | AnimalStatus; label: string }[] = [
-  { key: "all",      label: "Hepsi"      },
-  { key: "hungry",   label: "Aç"         },
-  { key: "injured",  label: "Yaralı"     },
-  { key: "healthy",  label: "Sağlıklı"   },
-  { key: "unknown",  label: "Bilinmiyor" },
+const FILTERS: { key: FilterKey; label: string; emoji: string }[] = [
+  { key: "all",     label: "Hepsi",           emoji: "" },
+  { key: "injured", label: "Acil",             emoji: "🚨" },
+  { key: "hungry",  label: "Yardım Bekleyen",  emoji: "🟡" },
+  { key: "healthy", label: "Sağlıklı",         emoji: "🟢" },
 ];
 
+function filterAnimals(animals: import("@/contexts/AnimalsContext").StrayAnimal[], key: FilterKey) {
+  if (key === "all") return animals;
+  if (key === "injured") return animals.filter((a) => a.status === "injured");
+  if (key === "hungry")  return animals.filter((a) => a.status === "hungry" || a.status === "unknown");
+  if (key === "healthy") return animals.filter((a) => a.status === "healthy");
+  return animals;
+}
+
+function countForFilter(
+  animals: import("@/contexts/AnimalsContext").StrayAnimal[],
+  key: FilterKey
+) {
+  return filterAnimals(animals, key).length;
+}
+
 export default function AnimalsScreen() {
-  const insets  = useSafeAreaInsets();
-  const router  = useRouter();
+  const insets = useSafeAreaInsets();
+  const router = useRouter();
   const { animals } = useAnimals();
-  const [filter, setFilter] = useState<"all" | AnimalStatus>("all");
+  const [filter, setFilter] = useState<FilterKey>("all");
+  const fabScale = React.useRef(new Animated.Value(1)).current;
 
-  const filtered = useMemo(
-    () => filter === "all" ? animals : animals.filter((a) => a.status === filter),
-    [animals, filter]
-  );
+  const filtered = useMemo(() => filterAnimals(animals, filter), [animals, filter]);
 
-  const topPad = Platform.OS === "web" ? 67 : insets.top;
+  const topPad      = Platform.OS === "web" ? 20 : insets.top;
+  const bottomNavH  = 68 + insets.bottom + 10;
 
-  // Bottom of floating tab bar from bottom of screen
-  const tabBarBottom = insets.bottom + TAB_BAR_MARGIN + TAB_BAR_H;
+  const pressFab = () => {
+    Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
+    Animated.sequence([
+      Animated.spring(fabScale, { toValue: 0.88, useNativeDriver: true, speed: 40 }),
+      Animated.spring(fabScale, { toValue: 1,    useNativeDriver: true, speed: 30 }),
+    ]).start();
+    router.push("/add-animal");
+  };
 
-  return (
-    <View style={styles.container}>
-      {/* Header */}
-      <AppHeader topPad={topPad} />
+  const renderHeader = () => (
+    <>
+      {/* ── Hero header ─────────────────────────── */}
+      <View style={[H.hero, { paddingTop: topPad + 12 }]}>
+        {/* Logo row */}
+        <View style={H.logoRow}>
+          <Ionicons name="paw" size={16} color={PURPLE} />
+          <Text style={H.logoText}>canyoldaşı</Text>
+        </View>
 
-      {/* Title row */}
-      <View style={styles.titleRow}>
-        <Text style={[styles.countBadge, { color: "transparent" }]}>
-          {filtered.length} hayvan
-        </Text>
-        <Text style={styles.screenTitle}>Sokak Hayvanları</Text>
-        <Text style={[styles.countBadge, { color: PURPLE }]}>
-          {filtered.length} hayvan
-        </Text>
+        <Text style={H.title}>Sokak Hayvanları</Text>
+        <Text style={H.subtitle}>Yakınındaki canlı durumları keşfet</Text>
+
+        {/* Count banner */}
+        <Pressable style={H.countBanner} onPress={() => {}}>
+          <View style={H.countIconWrap}>
+            <Ionicons name="paw" size={20} color={PURPLE} />
+          </View>
+          <View style={{ flex: 1 }}>
+            <Text style={H.countMain}>{animals.length} aktif durum bulundu</Text>
+            <Text style={H.countSub}>Onların hayatına dokunabilirsin</Text>
+          </View>
+          <Ionicons name="chevron-forward" size={18} color={PURPLE} />
+        </Pressable>
       </View>
 
-      {/* Filter chips */}
+      {/* ── Filter chips ────────────────────────── */}
       <ScrollView
         horizontal
         showsHorizontalScrollIndicator={false}
-        style={{ flex: 0 }}
-        contentContainerStyle={styles.filterScroll}
+        style={{ flex: 0, backgroundColor: BG }}
+        contentContainerStyle={F.scroll}
       >
         {FILTERS.map((f) => {
-          const isActive  = filter === f.key;
-          const chipColor = f.key === "all" ? PURPLE : STATUS_COLORS[f.key];
-          const count =
-            f.key === "all"
-              ? animals.length
-              : animals.filter((a) => a.status === f.key).length;
+          const active = filter === f.key;
+          const count  = countForFilter(animals, f.key);
           return (
             <Pressable
               key={f.key}
-              style={[
-                styles.filterChip,
-                {
-                  backgroundColor: isActive ? chipColor : "rgba(255,255,255,0.85)",
-                  borderColor: isActive ? chipColor : "rgba(123,94,167,0.22)",
-                },
-              ]}
-              onPress={() => setFilter(f.key)}
+              onPress={() => {
+                Haptics.selectionAsync();
+                setFilter(f.key);
+              }}
+              style={active ? undefined : F.chipInactive}
             >
-              <Text
-                style={[
-                  styles.filterText,
-                  {
-                    color: isActive ? "white" : "#3D2870",
-                    fontFamily: isActive ? "Inter_600SemiBold" : "Inter_400Regular",
-                  },
-                ]}
-              >
-                {f.label}
-                {count > 0 ? ` (${count})` : ""}
-              </Text>
+              {active ? (
+                <LinearGradient
+                  colors={["#9478D8", "#5B3FD6"]}
+                  start={{ x: 0, y: 0 }}
+                  end={{ x: 1, y: 1 }}
+                  style={F.chipGradient}
+                >
+                  <Text style={F.chipTextActive}>
+                    {f.emoji ? `${f.emoji} ` : ""}{f.label} ({count})
+                  </Text>
+                </LinearGradient>
+              ) : (
+                <Text style={F.chipTextInactive}>
+                  {f.emoji ? `${f.emoji} ` : ""}{f.label} ({count})
+                </Text>
+              )}
             </Pressable>
           );
         })}
       </ScrollView>
 
-      {/* List — padded well clear of tab bar + safe area */}
+      <View style={{ height: 4 }} />
+    </>
+  );
+
+  return (
+    <View style={{ flex: 1, backgroundColor: BG }}>
       <FlatList
         data={filtered}
         keyExtractor={(item) => item.id}
         renderItem={({ item }) => <AnimalCard animal={item} />}
-        contentContainerStyle={[
-          styles.list,
-          { paddingBottom: tabBarBottom + 80 },
-        ]}
+        ListHeaderComponent={renderHeader}
+        contentContainerStyle={{ paddingBottom: bottomNavH + 80 }}
         showsVerticalScrollIndicator={false}
         ListEmptyComponent={
           <EmptyState
@@ -126,86 +155,152 @@ export default function AnimalsScreen() {
         }
       />
 
-      {/* True floating action button — above tab bar */}
-      <Pressable
-        style={({ pressed }) => [
-          styles.fab,
-          {
-            bottom: tabBarBottom + 16,
-            opacity: pressed ? 0.85 : 1,
-          },
+      {/* FAB */}
+      <Animated.View
+        style={[
+          FAB.wrap,
+          { bottom: bottomNavH - 8, transform: [{ scale: fabScale }] },
         ]}
-        onPress={() => router.push("/add-animal")}
       >
-        <Ionicons name="add" size={28} color="white" />
-      </Pressable>
+        <Pressable onPress={pressFab}>
+          <LinearGradient
+            colors={["#9478D8", "#5B3FD6"]}
+            start={{ x: 0, y: 0 }}
+            end={{ x: 1, y: 1 }}
+            style={FAB.gradient}
+          >
+            <Ionicons name="add" size={22} color="#FFF" />
+            <Text style={FAB.label}>Yeni Durum{"\n"}Bildir</Text>
+          </LinearGradient>
+        </Pressable>
+      </Animated.View>
     </View>
   );
 }
 
-const styles = StyleSheet.create({
-  container: {
-    flex: 1,
+/* ── Styles ─────────────────────────────────────────────── */
+
+const H = StyleSheet.create({
+  hero: {
     backgroundColor: BG,
+    paddingHorizontal: 18,
+    paddingBottom: 16,
+    gap: 4,
   },
-
-  /* Title row */
-  titleRow: {
+  logoRow: {
     flexDirection: "row",
-    justifyContent: "space-between",
     alignItems: "center",
-    paddingHorizontal: 20,
-    paddingTop: 4,
-    paddingBottom: 4,
-    position: "relative",
+    gap: 5,
+    marginBottom: 6,
   },
-  screenTitle: {
-    fontSize: 22,
+  logoText: {
+    fontSize: 14,
+    fontFamily: "Inter_600SemiBold",
+    color: PURPLE,
+    letterSpacing: -0.2,
+  },
+  title: {
+    fontSize: 26,
     fontFamily: "Inter_700Bold",
-    color: "#2D1B4E",
+    color: "#1E0B4B",
+    letterSpacing: -0.5,
   },
-  countBadge: {
-    fontSize: 13,
-    fontFamily: "Inter_500Medium",
+  subtitle: {
+    fontSize: 13.5,
+    fontFamily: "Inter_400Regular",
+    color: "#6B7280",
+    marginBottom: 12,
   },
+  countBanner: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 12,
+    backgroundColor: "#FFFFFF",
+    borderRadius: 16,
+    padding: 14,
+    borderWidth: 1,
+    borderColor: "rgba(123,94,167,0.12)",
+    shadowColor: "#2D1B4E",
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.07,
+    shadowRadius: 8,
+    elevation: 2,
+  },
+  countIconWrap: {
+    width: 40,
+    height: 40,
+    borderRadius: 12,
+    backgroundColor: "rgba(123,94,167,0.10)",
+    alignItems: "center",
+    justifyContent: "center",
+  },
+  countMain: {
+    fontSize: 14,
+    fontFamily: "Inter_600SemiBold",
+    color: "#1E0B4B",
+  },
+  countSub: {
+    fontSize: 12,
+    fontFamily: "Inter_400Regular",
+    color: "#6B7280",
+    marginTop: 1,
+  },
+});
 
-  /* Filter chips */
-  filterScroll: {
-    paddingHorizontal: 20,
-    paddingTop: 4,
-    paddingBottom: 8,
+const F = StyleSheet.create({
+  scroll: {
+    paddingHorizontal: 16,
+    paddingVertical: 10,
     gap: 8,
     alignItems: "center",
   },
-  filterChip: {
-    borderRadius: 20,
+  chipInactive: {
+    borderRadius: 99,
     paddingHorizontal: 14,
-    paddingVertical: 6,
+    paddingVertical: 8,
+    backgroundColor: "#FFFFFF",
     borderWidth: 1.5,
+    borderColor: "rgba(123,94,167,0.18)",
   },
-  filterText: {
+  chipGradient: {
+    borderRadius: 99,
+    paddingHorizontal: 16,
+    paddingVertical: 8,
+  },
+  chipTextActive: {
     fontSize: 13,
+    fontFamily: "Inter_600SemiBold",
+    color: "#FFFFFF",
   },
-
-  /* List */
-  list: {
-    paddingTop: 4,
+  chipTextInactive: {
+    fontSize: 13,
+    fontFamily: "Inter_500Medium",
+    color: "#4A2D8F",
   },
+});
 
-  /* FAB */
-  fab: {
+const FAB = StyleSheet.create({
+  wrap: {
     position: "absolute",
-    right: 20,
-    width: 56,
-    height: 56,
-    borderRadius: 28,
-    backgroundColor: PURPLE,
+    right: 18,
+  },
+  gradient: {
+    flexDirection: "row",
     alignItems: "center",
-    justifyContent: "center",
-    shadowColor: PURPLE,
+    gap: 8,
+    paddingHorizontal: 18,
+    paddingVertical: 14,
+    borderRadius: 32,
+    shadowColor: "#5B3FD6",
     shadowOffset: { width: 0, height: 6 },
-    shadowOpacity: 0.38,
-    shadowRadius: 12,
+    shadowOpacity: 0.45,
+    shadowRadius: 14,
     elevation: 8,
+  },
+  label: {
+    fontSize: 13,
+    fontFamily: "Inter_700Bold",
+    color: "#FFF",
+    lineHeight: 17,
   },
 });

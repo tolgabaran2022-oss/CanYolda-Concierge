@@ -1,0 +1,118 @@
+“HAYVANLAR” SAYFASI (BİREBİR PREMIUM CLONE UI)
+
+Redesign the “Hayvanlar” page using the attached reference UI as a pixel-perfect inspiration.
+The goal is to recreate a premium animal rescue listing system with modern mobile UI (Airbnb + Instagram + Waze hybrid style).
+
+🎯 1. GENERAL GOAL
+
+Transform the “Hayvanlar” tab into a:
+👉 “Premium animal rescue listing + detail navigation system”
+👉 visually rich, card-based, high-end mobile UI
+👉 fully interactive frontend prototype
+
+🧠 2. PAGE STRUCTURE
+HEADER
+Title: “Sokak Hayvanları”
+Subtitle: “Yakınındaki canlı durumları keşfet”
+Right side: live count badge (e.g. “4 aktif durum”)
+Soft glass background header
+🔥 3. FILTER CHIPS (TOP BAR)
+
+Replace old filters with modern segmented controls:
+
+Hepsi
+🚨 Acil
+🟡 Yardım Bekleyen
+🟢 Sağlıklı
+
+Design:
+
+pill style
+active = purple gradient fill
+smooth animation
+horizontal scrollable
+🐾 4. LIST CARD DESIGN (MAIN FOCUS)
+
+Each animal item must be a premium card like reference design:
+
+CARD STRUCTURE:
+LEFT SIDE:
+small image thumbnail (rounded 12–16px)
+or placeholder camera icon if missing image
+status dot:
+green = healthy
+orange = urgent
+red = injured
+gray = unknown
+CENTER CONTENT:
+Title (bold, 1–2 lines max)
+Short description
+User name + timestamp
+Location (pin icon + text)
+RIGHT SIDE:
+arrow icon (navigation to detail page)
+optional quick action icon
+❤️ 5. INTERACTION ROW (UNDER CARD)
+
+Each card must include:
+
+❤️ Help / Like count
+💬 Comments count
+📍 Location open button
+
+All interactions must update instantly (frontend state only)
+
+➕ 6. FLOATING ACTION BUTTON
+
+Bottom-right:
+
+“Yeni Durum Bildir”
+circular floating button
+purple gradient
+soft glow
+smooth hover animation
+📄 7. DETAIL PAGE (ON CLICK)
+
+When a card is clicked:
+
+Open detail view with:
+
+Large animal image
+Status badge (Aç / Yaralı / Sağlıklı)
+Full description
+Location info
+Action buttons:
+“Yardım Et”
+“Yorum Yap”
+“Konumu Aç”
+
+Layout:
+
+Instagram-like detail screen
+scrollable content
+sticky action buttons
+🎨 8. DESIGN SYSTEM
+Primary: #7C5CFF
+Background: #F9F8FF
+Card background: white / glass
+Text: #111827
+Secondary text: #6B7280
+Radius: 16–20px
+Spacing: 8pt grid system
+⚡ 9. UX REQUIREMENTS
+Smooth transitions between list → detail
+Cards must feel clickable and interactive
+No flat boring UI
+No default HTML look
+Must feel like:
+👉 “Real-time rescue social platform”
+🚀 10. FINAL OUTPUT
+Fully functional “Hayvanlar” page
+List + detail flow working
+Modern card system identical to reference style
+Mobile-first responsive UI
+Production-level design quality
+💎 IMPORTANT RULE
+
+Do NOT keep old simple list design.
+Fully replace it with premium card-based rescue feed system like the reference UI.

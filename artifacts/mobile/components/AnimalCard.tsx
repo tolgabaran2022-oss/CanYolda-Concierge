@@ -1,231 +1,232 @@
 import { Ionicons } from "@expo/vector-icons";
+import * as Haptics from "expo-haptics";
 import { Image } from "expo-image";
 import { useRouter } from "expo-router";
-import React from "react";
-import { Pressable, StyleSheet, Text, View } from "react-native";
+import React, { useState } from "react";
+import { Alert, Pressable, StyleSheet, Text, View } from "react-native";
 import { StatusBadge, STATUS_COLORS } from "@/components/StatusBadge";
 import type { StrayAnimal } from "@/contexts/AnimalsContext";
-import { useColors } from "@/hooks/useColors";
 import { formatTimeAgo } from "@/utils/formatters";
+
+const C = {
+  purple: "#7B5EA7",
+  text:   "#111827",
+  muted:  "#6B7280",
+  card:   "#FFFFFF",
+  border: "#F0EDF8",
+  bg:     "#F9F8FF",
+};
 
 interface Props {
   animal: StrayAnimal;
+  onLike?: (id: string) => void;
 }
 
-export function AnimalCard({ animal }: Props) {
-  const colors = useColors();
+export function AnimalCard({ animal, onLike }: Props) {
   const router = useRouter();
+  const [liked, setLiked] = useState(false);
+
+  const statusDotColor = STATUS_COLORS[animal.status];
+
+  const handleLike = () => {
+    Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+    setLiked((v) => !v);
+    onLike?.(animal.id);
+  };
 
   return (
-    <Pressable
-      style={({ pressed }) => [
-        styles.card,
-        {
-          backgroundColor: colors.card,
-          borderColor: colors.border,
-          opacity: pressed ? 0.92 : 1,
-        },
-      ]}
-      onPress={() => router.push(`/animal/${animal.id}` as const)}
-    >
-      {/* Thumbnail */}
-      <View style={styles.imageWrap}>
-        {animal.image ? (
-          <Image
-            source={{ uri: animal.image }}
-            style={styles.image}
-            contentFit="cover"
-          />
-        ) : (
-          <View
-            style={[styles.imagePlaceholder, { backgroundColor: colors.muted }]}
-          >
-            <View
-              style={[
-                styles.statusDot,
-                { backgroundColor: STATUS_COLORS[animal.status] },
-              ]}
-            />
-            <Ionicons name="camera-outline" size={22} color={colors.mutedForeground} />
-            <Text style={[styles.photoHint, { color: colors.mutedForeground }]}>
-              Fotoğraf{"\n"}ekle
-            </Text>
-          </View>
-        )}
-      </View>
+    <View style={S.wrapper}>
+      <Pressable
+        style={({ pressed }) => [S.card, pressed && { opacity: 0.95 }]}
+        onPress={() => router.push(`/animal/${animal.id}` as any)}
+      >
+        {/* Thumbnail */}
+        <View style={S.thumbWrap}>
+          {animal.image ? (
+            <Image source={{ uri: animal.image }} style={S.thumb} contentFit="cover" />
+          ) : (
+            <View style={S.thumbPlaceholder}>
+              <Ionicons name="camera-outline" size={24} color="#C0B8D8" />
+            </View>
+          )}
+          {/* Status dot */}
+          <View style={[S.statusDot, { backgroundColor: statusDotColor }]} />
+        </View>
 
-      {/* Content */}
-      <View style={styles.content}>
-        {/* Status badge + time on same row */}
-        <View style={styles.topRow}>
+        {/* Main content */}
+        <View style={S.content}>
           <StatusBadge status={animal.status} size="sm" />
-          <Text style={[styles.time, { color: colors.mutedForeground }]}>
+          <Text style={S.notes} numberOfLines={2}>{animal.notes || "Not eklenmemiş"}</Text>
+          <Text style={S.meta}>
+            {animal.userName}
+            <Text style={S.dot}> · </Text>
             {formatTimeAgo(animal.timestamp)}
           </Text>
+          {animal.locationName ? (
+            <View style={S.locRow}>
+              <Ionicons name="location-outline" size={12} color={C.muted} />
+              <Text style={S.locText}>{animal.locationName}</Text>
+            </View>
+          ) : null}
         </View>
 
-        {/* Notes — up to 2 lines with comfortable line-height */}
-        {animal.notes ? (
-          <Text
-            style={[styles.notes, { color: colors.foreground }]}
-            numberOfLines={2}
-          >
-            {animal.notes}
-          </Text>
-        ) : (
-          <Text style={[styles.noNotes, { color: colors.mutedForeground }]}>
-            Not eklenmemiş
-          </Text>
-        )}
-
-        {/* Footer: username + stats */}
-        <View style={styles.footer}>
-          <Text
-            style={[styles.userName, { color: colors.mutedForeground }]}
-            numberOfLines={1}
-          >
-            {animal.userName}
-          </Text>
-          <View style={styles.stats}>
-            <View style={styles.stat}>
-              <Ionicons
-                name="restaurant-outline"
-                size={13}
-                color={colors.secondary}
-              />
-              <Text style={[styles.statText, { color: colors.mutedForeground }]}>
-                {animal.fedByUsers.length}
-              </Text>
-            </View>
-            {animal.needsHelpByUsers.length > 0 && (
-              <View style={styles.stat}>
-                <Ionicons name="alert-circle-outline" size={13} color="#EF4444" />
-                <Text style={[styles.statText, { color: colors.mutedForeground }]}>
-                  {animal.needsHelpByUsers.length}
-                </Text>
-              </View>
-            )}
-            {animal.comments.length > 0 && (
-              <View style={styles.stat}>
-                <Ionicons
-                  name="chatbubble-outline"
-                  size={13}
-                  color={colors.mutedForeground}
-                />
-                <Text style={[styles.statText, { color: colors.mutedForeground }]}>
-                  {animal.comments.length}
-                </Text>
-              </View>
-            )}
+        {/* Arrow */}
+        <View style={S.arrowWrap}>
+          <View style={S.arrowCircle}>
+            <Ionicons name="chevron-forward" size={14} color={C.purple} />
           </View>
         </View>
-      </View>
+      </Pressable>
 
-      {/* Chevron */}
-      <View style={styles.chevronWrap}>
-        <Ionicons name="chevron-forward" size={16} color={colors.mutedForeground} />
+      {/* Interaction row */}
+      <View style={S.interactRow}>
+        <Pressable onPress={handleLike} style={S.interactBtn} hitSlop={8}>
+          <Ionicons
+            name={liked ? "heart" : "heart-outline"}
+            size={16}
+            color={liked ? "#FF3B6B" : C.muted}
+          />
+          <Text style={S.interactText}>
+            {animal.fedByUsers.length + (liked ? 1 : 0)}
+          </Text>
+        </Pressable>
+
+        <Pressable
+          onPress={() => router.push(`/animal/${animal.id}` as any)}
+          style={S.interactBtn}
+          hitSlop={8}
+        >
+          <Ionicons name="chatbubble-outline" size={15} color={C.muted} />
+          <Text style={S.interactText}>{animal.comments.length}</Text>
+        </Pressable>
+
+        <Pressable
+          onPress={() =>
+            Alert.alert(
+              "Konumu Aç",
+              animal.locationName
+                ? `${animal.locationName} konumunu haritada aç?`
+                : "Konum bilgisi mevcut değil.",
+              animal.locationName
+                ? [{ text: "İptal", style: "cancel" }, { text: "Aç", style: "default" }]
+                : [{ text: "Tamam" }]
+            )
+          }
+          style={S.interactBtn}
+          hitSlop={8}
+        >
+          <Ionicons name="location-outline" size={15} color={C.muted} />
+          <Text style={S.interactText}>Konumu Aç</Text>
+        </Pressable>
       </View>
-    </Pressable>
+    </View>
   );
 }
 
-const styles = StyleSheet.create({
+const S = StyleSheet.create({
+  wrapper: {
+    marginHorizontal: 16,
+    marginVertical: 5,
+    borderRadius: 18,
+    backgroundColor: C.card,
+    shadowColor: "#2D1B4E",
+    shadowOffset: { width: 0, height: 3 },
+    shadowOpacity: 0.07,
+    shadowRadius: 10,
+    elevation: 3,
+    borderWidth: 1,
+    borderColor: C.border,
+    overflow: "hidden",
+  },
+
+  /* Card top row */
   card: {
     flexDirection: "row",
     alignItems: "center",
-    borderRadius: 16,
-    borderWidth: 1,
-    marginHorizontal: 16,
-    marginVertical: 2,
-    overflow: "hidden",
+    paddingHorizontal: 12,
+    paddingTop: 12,
+    paddingBottom: 10,
+    gap: 12,
   },
-  imageWrap: {
-    width: 64,
-    height: 64,
-    borderRadius: 10,
-    overflow: "hidden",
-    marginLeft: 12,
+
+  /* Thumbnail */
+  thumbWrap: {
+    width: 88,
+    height: 88,
+    borderRadius: 14,
+    overflow: "visible",
     flexShrink: 0,
   },
-  image: {
-    width: 64,
-    height: 64,
+  thumb: {
+    width: 88,
+    height: 88,
+    borderRadius: 14,
   },
-  imagePlaceholder: {
-    width: 64,
-    height: 64,
+  thumbPlaceholder: {
+    width: 88,
+    height: 88,
+    borderRadius: 14,
+    backgroundColor: "#EDE9F8",
     alignItems: "center",
     justifyContent: "center",
-    gap: 2,
-  },
-  photoHint: {
-    fontSize: 8,
-    textAlign: "center",
-    lineHeight: 11,
-    fontFamily: "Inter_400Regular",
   },
   statusDot: {
     position: "absolute",
-    top: 8,
-    left: 8,
-    width: 13,
-    height: 13,
+    top: -4,
+    left: -4,
+    width: 14,
+    height: 14,
     borderRadius: 7,
-    borderWidth: 2,
-    borderColor: "white",
+    borderWidth: 2.5,
+    borderColor: "#FFFFFF",
   },
-  content: {
-    flex: 1,
-    paddingHorizontal: 12,
-    paddingVertical: 5,
-    gap: 2,
-    justifyContent: "flex-start",
-  },
-  topRow: {
-    flexDirection: "row",
-    justifyContent: "space-between",
-    alignItems: "center",
-  },
-  time: {
-    fontSize: 11,
-    fontFamily: "Inter_400Regular",
-  },
+
+  /* Content */
+  content: { flex: 1, gap: 4 },
   notes: {
-    fontSize: 13,
-    fontFamily: "Inter_400Regular",
-    lineHeight: 18,
+    fontSize: 14,
+    fontFamily: "Inter_600SemiBold",
+    color: C.text,
+    lineHeight: 20,
   },
-  noNotes: {
-    fontSize: 13,
+  meta: {
+    fontSize: 12,
     fontFamily: "Inter_400Regular",
-    fontStyle: "italic",
+    color: C.muted,
   },
-  footer: {
+  dot: { color: "#C0B8D8" },
+  locRow: { flexDirection: "row", alignItems: "center", gap: 3 },
+  locText: { fontSize: 11.5, fontFamily: "Inter_400Regular", color: C.muted },
+
+  /* Arrow */
+  arrowWrap:   { paddingLeft: 4 },
+  arrowCircle: {
+    width: 28,
+    height: 28,
+    borderRadius: 14,
+    backgroundColor: `rgba(123,94,167,0.10)`,
+    alignItems: "center",
+    justifyContent: "center",
+  },
+
+  /* Interaction row */
+  interactRow: {
     flexDirection: "row",
-    justifyContent: "space-between",
+    borderTopWidth: 1,
+    borderTopColor: "#F4F0FC",
+    paddingHorizontal: 14,
+    paddingVertical: 9,
+    gap: 20,
     alignItems: "center",
   },
-  userName: {
-    fontSize: 11.5,
-    fontFamily: "Inter_500Medium",
-    flex: 1,
-    marginRight: 6,
-  },
-  stats: {
-    flexDirection: "row",
-    gap: 8,
-  },
-  stat: {
+  interactBtn: {
     flexDirection: "row",
     alignItems: "center",
-    gap: 3,
+    gap: 5,
   },
-  statText: {
-    fontSize: 11,
+  interactText: {
+    fontSize: 12.5,
     fontFamily: "Inter_500Medium",
-  },
-  chevronWrap: {
-    paddingRight: 12,
-    paddingLeft: 4,
+    color: C.muted,
   },
 });
