@@ -438,7 +438,6 @@ const styles = StyleSheet.create({
     bottom: 0,
     left: 0,
     right: 0,
-    overflow: "hidden",
     borderTopLeftRadius: 30,
     borderTopRightRadius: 30,
     shadowColor: "#000",
