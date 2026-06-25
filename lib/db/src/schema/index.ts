@@ -13,5 +13,20 @@ export const featuredListings = pgTable("featured_listings", {
   createdAt: timestamp("created_at", { withTimezone: true }).defaultNow(),
 });
 
+export const oauthUsers = pgTable("oauth_users", {
+  id: text("id")
+    .primaryKey()
+    .default(sql`gen_random_uuid()::text`),
+  provider: text("provider").notNull(),        // 'google' | 'apple' | 'facebook'
+  providerId: text("provider_id").notNull(),   // provider's user ID
+  email: text("email"),
+  name: text("name"),
+  avatarUrl: text("avatar_url"),
+  createdAt: timestamp("created_at", { withTimezone: true }).defaultNow(),
+  updatedAt: timestamp("updated_at", { withTimezone: true }).defaultNow(),
+});
+
 export type FeaturedListing = typeof featuredListings.$inferSelect;
 export type InsertFeaturedListing = typeof featuredListings.$inferInsert;
+export type OAuthUser = typeof oauthUsers.$inferSelect;
+export type InsertOAuthUser = typeof oauthUsers.$inferInsert;
