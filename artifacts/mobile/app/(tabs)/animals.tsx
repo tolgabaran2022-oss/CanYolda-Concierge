@@ -4,7 +4,6 @@ import { LinearGradient } from "expo-linear-gradient";
 import { useRouter } from "expo-router";
 import React, { useMemo, useState } from "react";
 import {
-  Animated,
   FlatList,
   Platform,
   Pressable,
@@ -16,7 +15,6 @@ import {
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { AnimalCard } from "@/components/AnimalCard";
 import { EmptyState } from "@/components/EmptyState";
-import type { AnimalStatus } from "@/contexts/AnimalsContext";
 import { useAnimals } from "@/contexts/AnimalsContext";
 
 const PURPLE = "#7B5EA7";
@@ -25,14 +23,17 @@ const BG     = "#F9F8FF";
 type FilterKey = "all" | "injured" | "hungry" | "healthy";
 
 const FILTERS: { key: FilterKey; label: string; emoji: string }[] = [
-  { key: "all",     label: "Hepsi",           emoji: "" },
-  { key: "injured", label: "Acil",             emoji: "🚨" },
-  { key: "hungry",  label: "Yardım Bekleyen",  emoji: "🟡" },
-  { key: "healthy", label: "Sağlıklı",         emoji: "🟢" },
+  { key: "all",     label: "Hepsi",          emoji: ""   },
+  { key: "injured", label: "Acil",            emoji: "🚨" },
+  { key: "hungry",  label: "Yardım Bekleyen", emoji: "🟡" },
+  { key: "healthy", label: "Sağlıklı",        emoji: "🟢" },
 ];
 
-function filterAnimals(animals: import("@/contexts/AnimalsContext").StrayAnimal[], key: FilterKey) {
-  if (key === "all") return animals;
+function filterAnimals(
+  animals: import("@/contexts/AnimalsContext").StrayAnimal[],
+  key: FilterKey
+) {
+  if (key === "all")     return animals;
   if (key === "injured") return animals.filter((a) => a.status === "injured");
   if (key === "hungry")  return animals.filter((a) => a.status === "hungry" || a.status === "unknown");
   if (key === "healthy") return animals.filter((a) => a.status === "healthy");
@@ -51,19 +52,13 @@ export default function AnimalsScreen() {
   const router = useRouter();
   const { animals } = useAnimals();
   const [filter, setFilter] = useState<FilterKey>("all");
-  const fabScale = React.useRef(new Animated.Value(1)).current;
 
-  const filtered = useMemo(() => filterAnimals(animals, filter), [animals, filter]);
+  const filtered   = useMemo(() => filterAnimals(animals, filter), [animals, filter]);
+  const topPad     = Platform.OS === "web" ? 20 : insets.top;
+  const bottomNavH = 68 + insets.bottom + 10;
 
-  const topPad      = Platform.OS === "web" ? 20 : insets.top;
-  const bottomNavH  = 68 + insets.bottom + 10;
-
-  const pressFab = () => {
+  const handleAdd = () => {
     Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
-    Animated.sequence([
-      Animated.spring(fabScale, { toValue: 0.88, useNativeDriver: true, speed: 40 }),
-      Animated.spring(fabScale, { toValue: 1,    useNativeDriver: true, speed: 30 }),
-    ]).start();
     router.push("/add-animal");
   };
 
@@ -71,17 +66,32 @@ export default function AnimalsScreen() {
     <>
       {/* ── Hero header ─────────────────────────── */}
       <View style={[H.hero, { paddingTop: topPad + 12 }]}>
-        {/* Logo row */}
-        <View style={H.logoRow}>
-          <Ionicons name="paw" size={16} color={PURPLE} />
-          <Text style={H.logoText}>canyoldaşı</Text>
+        {/* Top row: logo + action button */}
+        <View style={H.topRow}>
+          <View style={H.logoRow}>
+            <Ionicons name="paw" size={16} color={PURPLE} />
+            <Text style={H.logoText}>canyoldaşı</Text>
+          </View>
+
+          {/* ── Header action button (replaces FAB) ── */}
+          <Pressable onPress={handleAdd} hitSlop={8}>
+            <LinearGradient
+              colors={["#9478D8", "#5B3FD6"]}
+              start={{ x: 0, y: 0 }}
+              end={{ x: 1, y: 1 }}
+              style={H.addBtn}
+            >
+              <Ionicons name="add" size={16} color="#FFF" />
+              <Text style={H.addBtnText}>Durum Bildir</Text>
+            </LinearGradient>
+          </Pressable>
         </View>
 
         <Text style={H.title}>Sokak Hayvanları</Text>
         <Text style={H.subtitle}>Yakınındaki canlı durumları keşfet</Text>
 
         {/* Count banner */}
-        <Pressable style={H.countBanner} onPress={() => {}}>
+        <View style={H.countBanner}>
           <View style={H.countIconWrap}>
             <Ionicons name="paw" size={20} color={PURPLE} />
           </View>
@@ -90,7 +100,7 @@ export default function AnimalsScreen() {
             <Text style={H.countSub}>Onların hayatına dokunabilirsin</Text>
           </View>
           <Ionicons name="chevron-forward" size={18} color={PURPLE} />
-        </Pressable>
+        </View>
       </View>
 
       {/* ── Filter chips ────────────────────────── */}
@@ -106,10 +116,7 @@ export default function AnimalsScreen() {
           return (
             <Pressable
               key={f.key}
-              onPress={() => {
-                Haptics.selectionAsync();
-                setFilter(f.key);
-              }}
+              onPress={() => { Haptics.selectionAsync(); setFilter(f.key); }}
               style={active ? undefined : F.chipInactive}
             >
               {active ? (
@@ -144,7 +151,7 @@ export default function AnimalsScreen() {
         keyExtractor={(item) => item.id}
         renderItem={({ item }) => <AnimalCard animal={item} />}
         ListHeaderComponent={renderHeader}
-        contentContainerStyle={{ paddingBottom: bottomNavH + 80 }}
+        contentContainerStyle={{ paddingBottom: bottomNavH + 20 }}
         showsVerticalScrollIndicator={false}
         ListEmptyComponent={
           <EmptyState
@@ -154,26 +161,6 @@ export default function AnimalsScreen() {
           />
         }
       />
-
-      {/* FAB */}
-      <Animated.View
-        style={[
-          FAB.wrap,
-          { bottom: bottomNavH - 8, transform: [{ scale: fabScale }] },
-        ]}
-      >
-        <Pressable onPress={pressFab}>
-          <LinearGradient
-            colors={["#9478D8", "#5B3FD6"]}
-            start={{ x: 0, y: 0 }}
-            end={{ x: 1, y: 1 }}
-            style={FAB.gradient}
-          >
-            <Ionicons name="add" size={22} color="#FFF" />
-            <Text style={FAB.label}>Yeni Durum{"\n"}Bildir</Text>
-          </LinearGradient>
-        </Pressable>
-      </Animated.View>
     </View>
   );
 }
@@ -187,17 +174,40 @@ const H = StyleSheet.create({
     paddingBottom: 16,
     gap: 4,
   },
+  topRow: {
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "space-between",
+    marginBottom: 6,
+  },
   logoRow: {
     flexDirection: "row",
     alignItems: "center",
     gap: 5,
-    marginBottom: 6,
   },
   logoText: {
     fontSize: 14,
     fontFamily: "Inter_600SemiBold",
     color: PURPLE,
     letterSpacing: -0.2,
+  },
+  addBtn: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 5,
+    paddingHorizontal: 14,
+    paddingVertical: 8,
+    borderRadius: 20,
+    shadowColor: "#5B3FD6",
+    shadowOffset: { width: 0, height: 3 },
+    shadowOpacity: 0.30,
+    shadowRadius: 8,
+    elevation: 4,
+  },
+  addBtnText: {
+    fontSize: 13,
+    fontFamily: "Inter_600SemiBold",
+    color: "#FFF",
   },
   title: {
     fontSize: 26,
@@ -276,31 +286,5 @@ const F = StyleSheet.create({
     fontSize: 13,
     fontFamily: "Inter_500Medium",
     color: "#4A2D8F",
-  },
-});
-
-const FAB = StyleSheet.create({
-  wrap: {
-    position: "absolute",
-    right: 18,
-  },
-  gradient: {
-    flexDirection: "row",
-    alignItems: "center",
-    gap: 8,
-    paddingHorizontal: 18,
-    paddingVertical: 14,
-    borderRadius: 32,
-    shadowColor: "#5B3FD6",
-    shadowOffset: { width: 0, height: 6 },
-    shadowOpacity: 0.45,
-    shadowRadius: 14,
-    elevation: 8,
-  },
-  label: {
-    fontSize: 13,
-    fontFamily: "Inter_700Bold",
-    color: "#FFF",
-    lineHeight: 17,
   },
 });
