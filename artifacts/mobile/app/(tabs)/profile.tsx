@@ -31,8 +31,7 @@ const BG = "#F5F1FF";
 const TAB_FLOAT_H = 64;
 const TAB_BOTTOM_GAP = Platform.OS === "web" ? 12 : 10;
 
-const CAT_AVATAR =
-  "https://images.unsplash.com/photo-1514888286974-6c03e2ca1dba?w=200&q=80";
+const CAT_AVATAR = "https://loremflickr.com/300/300/cat?lock=500";
 
 function formatExpiry(expiresAt: string) {
   const diff = new Date(expiresAt).getTime() - Date.now();
