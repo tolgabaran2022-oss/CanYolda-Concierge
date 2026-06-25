@@ -133,9 +133,9 @@ const styles = StyleSheet.create({
     borderRadius: 16,
     borderWidth: 1,
     marginHorizontal: 16,
-    marginVertical: 6,
+    marginVertical: 5,
     overflow: "hidden",
-    minHeight: 110,
+    minHeight: 86,
   },
   imageWrap: {
     width: 100,
@@ -163,9 +163,9 @@ const styles = StyleSheet.create({
   },
   content: {
     flex: 1,
-    paddingHorizontal: 14,
-    paddingVertical: 12,
-    gap: 5,
+    paddingHorizontal: 12,
+    paddingVertical: 9,
+    gap: 4,
     justifyContent: "space-between",
   },
   topRow: {
@@ -178,9 +178,9 @@ const styles = StyleSheet.create({
     fontFamily: "Inter_400Regular",
   },
   notes: {
-    fontSize: 13.5,
+    fontSize: 13,
     fontFamily: "Inter_400Regular",
-    lineHeight: 20,
+    lineHeight: 18,
   },
   noNotes: {
     fontSize: 13,
