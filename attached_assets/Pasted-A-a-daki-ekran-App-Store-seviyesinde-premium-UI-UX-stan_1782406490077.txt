@@ -1,0 +1,47 @@
+Aşağıdaki ekranı “App Store seviyesinde premium UI/UX” standardına göre tamamen yeniden düzenle.
+
+🎯 Ana hedef
+
+Modern, minimal, yüksek hiyerarşili, clean ve “premium mobile app onboarding/login screen” tasarımı oluştur.
+
+1. Layout & Hierarchy Fix
+Üst logo, başlık ve ana görsel arasında net bir görsel hiyerarşi kur.
+Tek bir ana odak noktası olmalı (hero image + CTA).
+Üstte gereksiz tekrar eden logo varsa kaldır veya sadeleştir.
+2. Hero Section (Görsel alan)
+Köpek/kedi görseli daha dengeli konumlandır.
+Etrafındaki dekoratif shape’leri azalt (noise kaldır).
+Görseli %10–15 daha küçük ve daha “airy spacing” ile yerleştir.
+3. Typography (Çok önemli)
+Başlık daha güçlü ve kısa hiyerarşiyle gösterilmeli.
+Alt açıklama metni daha soft ve düşük kontrastlı olmalı ama okunabilir kalmalı.
+Font sistemi: modern sans-serif (Poppins / Inter benzeri).
+4. Buttons (CTA)
+“Giriş Yap” primary CTA olacak: gradient + güçlü shadow + yüksek kontrast.
+“Kayıt Ol” secondary olacak: outline style, daha hafif.
+Button height sabit (48–52px), corner radius modern (14–18px).
+5. Social Login
+Google / Apple / Facebook ikonları eşit boyut, eşit spacing ile hizalanmalı.
+Üstüne “Continue with” veya “Veya devam et” başlığı ekle.
+Divider line ince ve modern olmalı.
+6. Spacing System
+8pt grid sistemi kullan.
+Her bölüm arasında net boşluk hiyerarşisi:
+Section spacing: 24–32px
+Element spacing: 12–16px
+7. Visual Noise Reduction
+Arka plan blob shape’ler azaltılmalı veya opacity düşürülmeli.
+Gereksiz dekoratif ikonlar kaldırılmalı.
+UI sadece content + spacing üzerine kurulmalı.
+8. Bottom Area Fix
+KVKK / gizlilik metni daha okunabilir ve hizalı olmalı.
+Bottom navigation varsa içerikle çakışmamalı.
+9. Overall Style Direction
+Style: “Apple-level clean onboarding UI”
+Look: minimal, soft shadows, smooth gradients, high spacing quality
+No clutter, no visual competition between elements
+10. Output Requirement
+Responsive mobile-first UI üret
+Overlapping olmayacak
+Pixel-perfect alignment
+Production-ready UI component structure
