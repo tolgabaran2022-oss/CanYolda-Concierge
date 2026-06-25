@@ -47,7 +47,7 @@ function TabIcon({
           <Feather name={featherIcon as any} size={21} color={iconColor} />
         )}
       </View>
-      <Text style={[styles.label, { color: iconColor }]}>{title}</Text>
+      <Text style={[styles.label, { color: iconColor }]} numberOfLines={1}>{title}</Text>
     </View>
   );
 }
@@ -119,6 +119,7 @@ const styles = StyleSheet.create({
     borderColor: "rgba(123,94,167,0.10)",
   },
   tabItem: {
+    width: "100%",
     alignItems: "center",
     justifyContent: "center",
     gap: 3,
