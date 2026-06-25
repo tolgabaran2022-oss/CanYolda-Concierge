@@ -13,11 +13,9 @@ import {
 } from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 
-const PURPLE       = "#7B5CBF";
-const PURPLE_DARK  = "#3D2080";
-const BLOB_PURPLE  = "#C8B4F0";
-const BLOB_CREAM   = "#F0E4CE";
-const BG           = "#FAF7F2";
+const PURPLE      = "#7B5CBF";
+const PURPLE_DARK = "#3D2080";
+const BG          = "#FAF7F2";
 
 const HERO_IMAGE = require("@/assets/images/hero-logo-pets.png");
 
@@ -29,29 +27,44 @@ export default function WelcomeScreen() {
     Alert.alert("Yakında", "Sosyal giriş yakında eklenecek.");
 
   return (
-    <View style={[styles.root, { paddingTop: insets.top, paddingBottom: Math.max(insets.bottom, 16) }]}>
+    <View
+      style={[
+        styles.root,
+        { paddingTop: insets.top + 4, paddingBottom: Math.max(insets.bottom, 20) },
+      ]}
+    >
+      {/* Decorative blobs — corners only, low opacity */}
+      <View style={styles.blobTR} />
+      <View style={styles.blobBL} />
 
-      {/* Decorative blobs */}
-      <View style={styles.blobBottomRight} />
-      <View style={styles.blobBottomLeft} />
+      {/* ── Logo row ─────────────────────────────── */}
+      <View style={styles.logoRow}>
+        <Ionicons name="paw" size={20} color={PURPLE} />
+        <Text style={styles.logoText}>canyoldaşı</Text>
+      </View>
 
-      {/* Hero graphic */}
+      {/* ── Hero image — 20% smaller ─────────────── */}
       <Image
         source={HERO_IMAGE}
         style={styles.heroImage}
         contentFit="contain"
       />
 
-      {/* ── Buttons ─────────────────────────────── */}
+      {/* ── Tagline ──────────────────────────────── */}
+      <Text style={styles.tagline}>
+        Sokak hayvanları için{"\n"}topluluk platformu
+      </Text>
+
+      {/* ── Buttons ──────────────────────────────── */}
       <View style={styles.btnSection}>
 
-        {/* Giriş Yap – gradient */}
+        {/* Giriş Yap */}
         <Pressable
           onPress={() => {
             Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
             router.push("/(auth)/login-form");
           }}
-          style={({ pressed }) => ({ opacity: pressed ? 0.9 : 1 })}
+          style={({ pressed }) => [{ opacity: pressed ? 0.88 : 1 }]}
         >
           <LinearGradient
             colors={["#9478D8", "#5A3BB2"]}
@@ -59,23 +72,19 @@ export default function WelcomeScreen() {
             end={{ x: 1, y: 1 }}
             style={styles.primaryBtn}
           >
-            <Ionicons name="person-outline" size={22} color="#FFF" />
             <Text style={styles.primaryBtnText}>Giriş Yap</Text>
-            <Ionicons name="chevron-forward" size={22} color="rgba(255,255,255,0.7)" />
           </LinearGradient>
         </Pressable>
 
-        {/* Kayıt Ol – white card */}
+        {/* Kayıt Ol */}
         <Pressable
-          style={({ pressed }) => [styles.secondaryBtn, { opacity: pressed ? 0.9 : 1 }]}
+          style={({ pressed }) => [styles.secondaryBtn, { opacity: pressed ? 0.88 : 1 }]}
           onPress={() => {
             Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
             router.push("/(auth)/register");
           }}
         >
-          <Ionicons name="person-add-outline" size={22} color="#1A1A2E" />
           <Text style={styles.secondaryBtnText}>Kayıt Ol</Text>
-          <Ionicons name="chevron-forward" size={22} color="#333" />
         </Pressable>
 
         {/* Divider */}
@@ -85,41 +94,28 @@ export default function WelcomeScreen() {
           <View style={styles.dividerLine} />
         </View>
 
-        {/* Social */}
+        {/* Social icons */}
         <View style={styles.socialRow}>
-          {/* Google */}
           <Pressable style={styles.socialBtn} onPress={handleSocial}>
-            <View style={styles.googleGWrap}>
-              <Text style={[styles.googleSegment, { color: "#4285F4" }]}>G</Text>
-            </View>
+            <Text style={styles.googleG}>G</Text>
           </Pressable>
-          {/* Apple */}
           <Pressable style={styles.socialBtn} onPress={handleSocial}>
-            <Ionicons name="logo-apple" size={28} color="#111" />
+            <Ionicons name="logo-apple" size={22} color="#111" />
           </Pressable>
-          {/* Facebook */}
           <Pressable style={styles.socialBtn} onPress={handleSocial}>
-            <Ionicons name="logo-facebook" size={30} color="#1877F2" />
+            <Ionicons name="logo-facebook" size={22} color="#1877F2" />
           </Pressable>
         </View>
 
         {/* Privacy */}
-        <View style={styles.privacyRow}>
-          <View style={styles.shieldBadge}>
-            <Ionicons name="shield-checkmark-outline" size={18} color={PURPLE} />
-          </View>
-          <Text style={styles.privacyText}>
-            Devam ederek{" "}
-            <Text style={styles.privacyLink}>Kullanım Koşulları</Text>
-            {" "}ve{"\n"}
-            <Text style={styles.privacyLink}>Gizlilik Politikası</Text>
-            {"'"}nı kabul etmiş olursunuz.
-          </Text>
-        </View>
+        <Text style={styles.privacyText}>
+          Devam ederek{" "}
+          <Text style={styles.privacyLink}>Kullanım Koşulları</Text>
+          {" "}ve{" "}
+          <Text style={styles.privacyLink}>Gizlilik Politikası</Text>
+          {"'"}nı kabul etmiş olursunuz.
+        </Text>
       </View>
-
-      {/* Bottom paw */}
-      <Ionicons name="paw" size={26} color={PURPLE} style={styles.bottomPaw} />
     </View>
   );
 }
@@ -128,174 +124,167 @@ const styles = StyleSheet.create({
   root: {
     flex: 1,
     backgroundColor: BG,
+    alignItems: "center",
   },
 
-  /* Blobs */
-  blobBottomRight: {
+  /* Blobs — corners only, very subtle */
+  blobTR: {
     position: "absolute",
-    bottom: 70,
-    right: -60,
-    width: 160,
-    height: 160,
-    backgroundColor: BLOB_CREAM,
-    opacity: 0.45,
-    borderTopLeftRadius: 140,
-    borderTopRightRadius: 50,
-    borderBottomRightRadius: 20,
-    borderBottomLeftRadius: 100,
+    top: -40,
+    right: -40,
+    width: 140,
+    height: 140,
+    backgroundColor: "#C8B4F0",
+    opacity: 0.18,
+    borderRadius: 70,
   },
-  blobBottomLeft: {
+  blobBL: {
     position: "absolute",
     bottom: -50,
-    left: -55,
-    width: 200,
-    height: 200,
-    backgroundColor: BLOB_PURPLE,
-    opacity: 0.5,
-    borderTopLeftRadius: 90,
-    borderTopRightRadius: 160,
-    borderBottomRightRadius: 60,
-    borderBottomLeftRadius: 40,
+    left: -50,
+    width: 160,
+    height: 160,
+    backgroundColor: "#F0E4CE",
+    opacity: 0.22,
+    borderRadius: 80,
   },
 
-  /* Hero */
-  heroImage: {
-    width: "100%",
-    aspectRatio: 4265 / 4585,
-    marginTop: 4,
-    zIndex: 1,
-  },
-
-  /* Button section */
-  btnSection: {
-    paddingHorizontal: 24,
-    gap: 13,
-    marginTop: 0,
-    zIndex: 1,
-  },
-
-  /* Giriş Yap */
-  primaryBtn: {
+  /* Logo */
+  logoRow: {
     flexDirection: "row",
     alignItems: "center",
-    borderRadius: 36,
-    paddingVertical: 18,
+    gap: 7,
+    marginBottom: 4,
+  },
+  logoText: {
+    fontSize: 22,
+    fontFamily: "Inter_700Bold",
+    color: PURPLE_DARK,
+    letterSpacing: -0.4,
+  },
+
+  /* Hero — ~78% of screen width */
+  heroImage: {
+    width: "78%",
+    aspectRatio: 4265 / 4585,
+    zIndex: 1,
+  },
+
+  /* Tagline */
+  tagline: {
+    fontSize: 14,
+    fontFamily: "Inter_400Regular",
+    color: "#8874A8",
+    textAlign: "center",
+    lineHeight: 21,
+    marginTop: 2,
+    marginBottom: 4,
+  },
+
+  /* Buttons section */
+  btnSection: {
+    width: "100%",
     paddingHorizontal: 24,
-    gap: 12,
+    gap: 11,
+    zIndex: 1,
+    marginTop: "auto",
+  },
+
+  /* Primary button */
+  primaryBtn: {
+    borderRadius: 50,
+    paddingVertical: 15,
+    alignItems: "center",
     shadowColor: "#5A3BB2",
-    shadowOffset: { width: 0, height: 6 },
-    shadowOpacity: 0.38,
-    shadowRadius: 14,
-    elevation: 6,
+    shadowOffset: { width: 0, height: 5 },
+    shadowOpacity: 0.32,
+    shadowRadius: 12,
+    elevation: 5,
   },
   primaryBtnText: {
-    flex: 1,
-    fontSize: 17,
+    fontSize: 16,
     fontFamily: "Inter_700Bold",
     color: "#FFF",
+    letterSpacing: 0.1,
   },
 
-  /* Kayıt Ol */
+  /* Secondary button */
   secondaryBtn: {
-    flexDirection: "row",
+    borderRadius: 50,
+    paddingVertical: 14,
     alignItems: "center",
-    backgroundColor: "#FFFFFF",
-    borderRadius: 36,
-    paddingVertical: 17,
-    paddingHorizontal: 24,
-    gap: 12,
+    backgroundColor: "#FFF",
+    borderWidth: 1.5,
+    borderColor: "rgba(123,92,191,0.28)",
     shadowColor: "#000",
-    shadowOffset: { width: 0, height: 3 },
-    shadowOpacity: 0.10,
-    shadowRadius: 12,
-    elevation: 3,
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.07,
+    shadowRadius: 8,
+    elevation: 2,
   },
   secondaryBtnText: {
-    flex: 1,
-    fontSize: 17,
+    fontSize: 16,
     fontFamily: "Inter_700Bold",
-    color: "#1A1A2E",
+    color: PURPLE_DARK,
+    letterSpacing: 0.1,
   },
 
   /* Divider */
   dividerRow: {
     flexDirection: "row",
     alignItems: "center",
-    gap: 14,
+    gap: 12,
     marginVertical: 2,
   },
   dividerLine: {
     flex: 1,
     height: StyleSheet.hairlineWidth,
-    backgroundColor: "rgba(0,0,0,0.15)",
+    backgroundColor: "rgba(0,0,0,0.12)",
   },
   dividerText: {
-    fontSize: 13,
+    fontSize: 12,
     fontFamily: "Inter_400Regular",
-    color: "#B0B0B0",
+    color: "rgba(0,0,0,0.3)",
   },
 
   /* Social */
   socialRow: {
     flexDirection: "row",
     justifyContent: "center",
-    gap: 20,
+    gap: 16,
   },
   socialBtn: {
-    width: 68,
-    height: 68,
-    borderRadius: 34,
+    width: 52,
+    height: 52,
+    borderRadius: 26,
     backgroundColor: "#FFF",
     alignItems: "center",
     justifyContent: "center",
+    borderWidth: 1,
+    borderColor: "rgba(0,0,0,0.08)",
     shadowColor: "#000",
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.09,
-    shadowRadius: 10,
-    elevation: 3,
+    shadowOffset: { width: 0, height: 1 },
+    shadowOpacity: 0.07,
+    shadowRadius: 6,
+    elevation: 2,
   },
-  googleGWrap: {
-    alignItems: "center",
-    justifyContent: "center",
-  },
-  googleSegment: {
-    fontSize: 26,
+  googleG: {
+    fontSize: 20,
     fontFamily: "Inter_700Bold",
-    lineHeight: 30,
+    color: "#4285F4",
+    lineHeight: 24,
   },
 
   /* Privacy */
-  privacyRow: {
-    flexDirection: "row",
-    alignItems: "center",
-    gap: 10,
-    paddingHorizontal: 2,
-  },
-  shieldBadge: {
-    width: 40,
-    height: 40,
-    borderRadius: 20,
-    backgroundColor: "rgba(123,92,191,0.12)",
-    alignItems: "center",
-    justifyContent: "center",
-    flexShrink: 0,
-  },
   privacyText: {
-    flex: 1,
-    fontSize: 13,
+    fontSize: 11.5,
     fontFamily: "Inter_400Regular",
-    color: "#888",
-    lineHeight: 19,
+    color: "rgba(0,0,0,0.38)",
+    textAlign: "center",
+    lineHeight: 17,
   },
   privacyLink: {
     color: PURPLE,
-    fontFamily: "Inter_700Bold",
-  },
-
-  /* Bottom paw */
-  bottomPaw: {
-    alignSelf: "center",
-    marginTop: "auto",
-    paddingTop: 8,
+    fontFamily: "Inter_600SemiBold",
   },
 });
