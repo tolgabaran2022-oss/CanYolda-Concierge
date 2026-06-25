@@ -90,7 +90,7 @@ export default function AnimalsScreen() {
                 style={[
                   styles.filterText,
                   {
-                    color: isActive ? "white" : "#8874A8",
+                    color: isActive ? "white" : "#3D2870",
                     fontFamily: isActive ? "Inter_600SemiBold" : "Inter_400Regular",
                   },
                 ]}
@@ -110,7 +110,7 @@ export default function AnimalsScreen() {
         renderItem={({ item }) => <AnimalCard animal={item} />}
         contentContainerStyle={[
           styles.list,
-          { paddingBottom: tabBarBottom + 32 },
+          { paddingBottom: tabBarBottom + 80 },
         ]}
         showsVerticalScrollIndicator={false}
         ListEmptyComponent={
@@ -170,11 +170,12 @@ const styles = StyleSheet.create({
     paddingTop: 6,
     paddingBottom: 8,
     gap: 8,
+    alignItems: "center",
   },
   filterChip: {
     borderRadius: 20,
     paddingHorizontal: 14,
-    paddingVertical: 8,
+    paddingVertical: 6,
     borderWidth: 1.5,
   },
   filterText: {

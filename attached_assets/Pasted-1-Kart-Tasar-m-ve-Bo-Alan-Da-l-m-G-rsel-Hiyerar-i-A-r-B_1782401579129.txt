@@ -1,0 +1,23 @@
+1. Kart Tasarımı ve Boş Alan Dağılımı (Görsel Hiyerarşi)
+Aşırı Büyük Sol Blok: Ortadaki büyük kartın sol tarafındaki mor alan (patili kısım) gereksiz derecede geniş tutulmuş. Bu durum, asıl önemli olan sağ taraftaki metin alanını sıkıştırıyor.
+
+Metin Sıkışması: Hayvanın durumunu ve konumunu anlatan metin, sağ taraftaki dar alana sıkıştığı için okumayı zorlaştırıyor. Sol blok küçültülerek metin alanı genişletilmeli.
+
+2. Okunabilirlik ve Kontrast (Erişilebilirlik)
+Düşük Kontrastlı Metinler: Kartın içindeki kullanıcı adı ("Ayşe Y.") ve zaman bilgisi ("1 sa önce"), arka plandaki açık mor/leylak rengi üzerinde çok açık bir gri tonuyla yazılmış. WCAG (Web İçerikleri Erişilebilirlik Kılavuzu) standartlarına göre bu durum, özellikle dış mekanda (güneş ışığı altında) ekranın okunmasını neredeyse imkansız hale getirir. Metin renkleri koyulaştırılmalı.
+
+İkon Kontrastı: Sağ alttaki yeşil kaşık-çatal benzeri ikon ve yanındaki "0" sayısı da benzer şekilde arka plan rengi içinde kayboluyor.
+
+3. Filtreleme Butonları (Üst Menü)
+Okunabilirlik Sorunu: Üst taraftaki "Aç (1)", "Yaralı (1)", "Sağlıklı (1)" yazan filtreleme butonlarının metin renkleri beyaza çok yakın bir gri. Beyaz arka planlı butonların içinde bu metinleri seçmek çok zor. Font rengi belirgin şekilde koyulaştırılmalı veya buton seçildiğindeki gibi zıt bir renk kullanılmalı.
+
+4. Navigasyon Barı (Alt Menü) Çakışması
+İçeriklerin Üst Üste Binmesi: En altta bulunan "Sağlıklı" durumundaki ikinci kart, alt navigasyon barının arkasında kalıyor ve barın şeffaflığı/tasarımı nedeniyle metinler üst üste binmiş gibi duruyor. Sayfanın en alt kısmına ekstra bir boşluk (padding/margin) eklenerek listenin navigasyon barının üzerinde tamamen bitmesi sağlanmalı.
+
+5. Durum Belirteçleri (Renk Kodları)
+Küçük ve Belirsiz Noktalar: Kartların sol üst köşesinde bulunan renkli noktalar (sarı ve yeşil) çok küçük. Renk körlüğü olan kullanıcılar için sadece renk üzerinden durum belirtmek (sarı=aç, yeşil=sağlıklı vb.) yetersizdir. Bu noktaların boyutu büyütülebilir veya yanına küçük bir ikon/metin desteği eklenebilir.
+
+6. Buton Tasarımları
+Erişilebilirlik Alanı: Sağ alttaki mor "+" (ekle) butonu, alt navigasyon barına çok yakın konumlandırılmış. Kullanıcılar "+" butonuna basmak isterken yanlışlıkla alt menüdeki ikonlara dokunabilir. Dokunma alanlarının (hitbox) birbirinden biraz daha uzaklaştırılması kullanıcı deneyimini iyileştirecektir.
+
+Uygulamanın bu arayüzdeki renk kontrastı ve alan dağılımı sorunları çözüldüğünde, sokak hayvanlarına yardım etmeyi amaçlayan bu güzel konsept çok daha kullanışlı hale gelecektir.
