@@ -23,7 +23,7 @@ import { useColors } from "@/hooks/useColors";
 import { formatTimeAgo } from "@/utils/formatters";
 
 const { height: SCREEN_H } = Dimensions.get("window");
-const SNAP_COLLAPSED = 230;
+const SNAP_COLLAPSED = 270;
 const SNAP_EXPANDED = Math.floor(SCREEN_H * 0.6);
 
 const STATUS_FILTERS: { key: string; label: string }[] = [
@@ -453,8 +453,9 @@ const styles = StyleSheet.create({
 
   filterRow: {
     paddingHorizontal: 16,
+    paddingTop: 6,
+    paddingBottom: 14,
     gap: 8,
-    paddingBottom: 12,
   },
   pill: {
     paddingHorizontal: 14,
