@@ -1,41 +1,15 @@
-import { BlurView } from "expo-blur";
-import { isLiquidGlassAvailable } from "expo-glass-effect";
 import { Tabs } from "expo-router";
-import { Icon, Label, NativeTabs } from "expo-router/unstable-native-tabs";
 import { SymbolView } from "expo-symbols";
 import { Feather } from "@expo/vector-icons";
 import React from "react";
-import { Platform, StyleSheet, View, useColorScheme } from "react-native";
+import { Platform, StyleSheet, View } from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { useColors } from "@/hooks/useColors";
 
-function NativeTabLayout() {
-  return (
-    <NativeTabs>
-      <NativeTabs.Trigger name="index">
-        <Icon sf={{ default: "map", selected: "map.fill" }} />
-        <Label>Harita</Label>
-      </NativeTabs.Trigger>
-      <NativeTabs.Trigger name="animals">
-        <Icon sf={{ default: "pawprint", selected: "pawprint.fill" }} />
-        <Label>Hayvanlar</Label>
-      </NativeTabs.Trigger>
-      <NativeTabs.Trigger name="pets">
-        <Icon sf={{ default: "heart", selected: "heart.fill" }} />
-        <Label>Evcil</Label>
-      </NativeTabs.Trigger>
-      <NativeTabs.Trigger name="profile">
-        <Icon sf={{ default: "person", selected: "person.fill" }} />
-        <Label>Profil</Label>
-      </NativeTabs.Trigger>
-    </NativeTabs>
-  );
-}
+const PURPLE = "#7B5EA7";
 
 function ClassicTabLayout() {
   const colors = useColors();
-  const colorScheme = useColorScheme();
-  const isDark = colorScheme === "dark";
   const insets = useSafeAreaInsets();
   const isIOS = Platform.OS === "ios";
   const isWeb = Platform.OS === "web";
@@ -45,7 +19,7 @@ function ClassicTabLayout() {
   return (
     <Tabs
       screenOptions={{
-        tabBarActiveTintColor: colors.primary,
+        tabBarActiveTintColor: PURPLE,
         tabBarInactiveTintColor: colors.mutedForeground,
         headerShown: false,
         tabBarStyle: {
@@ -58,35 +32,14 @@ function ClassicTabLayout() {
           backgroundColor: "transparent",
           borderTopWidth: 0,
           elevation: 0,
-          shadowColor: "#2D1B0E",
+          shadowColor: "#2D1B4E",
           shadowOffset: { width: 0, height: 8 },
           shadowOpacity: 0.14,
-          shadowRadius: 28,
+          shadowRadius: 24,
           overflow: "hidden",
         },
         tabBarBackground: () => (
-          <View style={[StyleSheet.absoluteFill, styles.glassContainer]}>
-            {isIOS ? (
-              <BlurView
-                intensity={90}
-                tint={isDark ? "dark" : "systemChromeMaterial"}
-                style={StyleSheet.absoluteFill}
-              />
-            ) : (
-              <View
-                style={[
-                  StyleSheet.absoluteFill,
-                  {
-                    backgroundColor: isDark
-                      ? "rgba(30,22,14,0.88)"
-                      : "rgba(253,250,245,0.90)",
-                  },
-                ]}
-              />
-            )}
-            {/* Subtle top highlight line (liquid glass shimmer) */}
-            <View style={styles.topHighlight} />
-          </View>
+          <View style={styles.tabBg} />
         ),
         tabBarItemStyle: {
           paddingTop: 8,
@@ -103,7 +56,7 @@ function ClassicTabLayout() {
         name="index"
         options={{
           title: "Harita",
-          tabBarIcon: ({ color, size }) =>
+          tabBarIcon: ({ color }) =>
             isIOS ? (
               <SymbolView name="map" tintColor={color} size={22} />
             ) : (
@@ -152,26 +105,15 @@ function ClassicTabLayout() {
 }
 
 const styles = StyleSheet.create({
-  glassContainer: {
+  tabBg: {
+    ...StyleSheet.absoluteFillObject,
     borderRadius: 32,
-    overflow: "hidden",
-    borderWidth: 0.75,
-    borderColor: "rgba(255,255,255,0.55)",
-  },
-  topHighlight: {
-    position: "absolute",
-    top: 0,
-    left: 20,
-    right: 20,
-    height: 1,
-    borderRadius: 1,
-    backgroundColor: "rgba(255,255,255,0.7)",
+    backgroundColor: "#FFFFFF",
+    borderWidth: 1,
+    borderColor: "rgba(123,94,167,0.10)",
   },
 });
 
 export default function TabLayout() {
-  if (isLiquidGlassAvailable()) {
-    return <NativeTabLayout />;
-  }
   return <ClassicTabLayout />;
 }
