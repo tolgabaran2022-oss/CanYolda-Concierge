@@ -375,8 +375,7 @@ export default function FeedScreen() {
           <PostCard post={item} onLike={handleLike} onComment={handleComment} />
         )}
         ListHeaderComponent={renderHeader}
-        ItemSeparatorComponent={() => <View style={F.separator} />}
-        contentContainerStyle={{ paddingBottom: BOTTOM_NAV_H + 16 }}
+        contentContainerStyle={[F.listContent, { paddingBottom: BOTTOM_NAV_H + 16 }]}
         showsVerticalScrollIndicator={false}
         style={F.list}
       />
@@ -410,10 +409,10 @@ export default function FeedScreen() {
 }
 
 const F = StyleSheet.create({
-  root:      { flex: 1, backgroundColor: C.bg },
-  list:      { flex: 1, backgroundColor: C.white },
-  divider:   { height: 8, backgroundColor: C.bg },
-  separator: { height: 8, backgroundColor: C.bg },
+  root:        { flex: 1, backgroundColor: C.bg },
+  list:        { flex: 1, backgroundColor: C.bg },
+  listContent: { paddingTop: 14 },
+  divider:     { height: 12, backgroundColor: C.bg },
   fab: {
     position: "absolute",
     right: 20,
