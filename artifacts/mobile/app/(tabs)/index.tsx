@@ -1,5 +1,6 @@
 import { Ionicons } from "@expo/vector-icons";
 import { BlurView } from "expo-blur";
+import { LinearGradient } from "expo-linear-gradient";
 import * as Haptics from "expo-haptics";
 import * as Location from "expo-location";
 import { useRouter } from "expo-router";
@@ -212,42 +213,52 @@ export default function MapScreen() {
           </Pressable>
         </View>
 
-        {/* Filters */}
-        <ScrollView
-          horizontal
-          showsHorizontalScrollIndicator={false}
-          style={{ flexGrow: 0 }}
-          contentContainerStyle={styles.filterRow}
-        >
-          {STATUS_FILTERS.map((f) => {
-            const active = filter === f.key;
-            return (
-              <Pressable
-                key={f.key}
-                style={[
-                  styles.pill,
-                  {
-                    backgroundColor: active ? colors.primary : `${colors.primary}14`,
-                    borderColor: active ? colors.primary : "transparent",
-                  },
-                ]}
-                onPress={() => {
-                  setFilter(f.key);
-                  Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
-                }}
-              >
-                <Text
+        {/* Filters — horizontal scroll with right-fade hint */}
+        <View style={styles.filterWrapper}>
+          <ScrollView
+            horizontal
+            showsHorizontalScrollIndicator={false}
+            style={{ flexGrow: 0 }}
+            contentContainerStyle={styles.filterRow}
+          >
+            {STATUS_FILTERS.map((f) => {
+              const active = filter === f.key;
+              return (
+                <Pressable
+                  key={f.key}
                   style={[
-                    styles.pillText,
-                    { color: active ? "white" : colors.foreground },
+                    styles.pill,
+                    {
+                      backgroundColor: active ? colors.primary : `${colors.primary}14`,
+                      borderColor: active ? colors.primary : "transparent",
+                    },
                   ]}
+                  onPress={() => {
+                    setFilter(f.key);
+                    Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+                  }}
                 >
-                  {f.label}
-                </Text>
-              </Pressable>
-            );
-          })}
-        </ScrollView>
+                  <Text
+                    style={[
+                      styles.pillText,
+                      { color: active ? "white" : colors.foreground },
+                    ]}
+                  >
+                    {f.label}
+                  </Text>
+                </Pressable>
+              );
+            })}
+          </ScrollView>
+          {/* Right-edge fade to signal more chips */}
+          <LinearGradient
+            colors={["transparent", "rgba(250,247,240,0.96)"]}
+            start={{ x: 0, y: 0 }}
+            end={{ x: 1, y: 0 }}
+            style={styles.filterFade}
+            pointerEvents="none"
+          />
+        </View>
 
         {/* Animal rows */}
         <ScrollView
@@ -425,14 +436,14 @@ const styles = StyleSheet.create({
 
   handleRow: {
     alignItems: "center",
-    paddingTop: 12,
-    paddingBottom: 6,
+    paddingTop: 14,
+    paddingBottom: 10,
   },
   handle: {
-    width: 38,
+    width: 40,
     height: 4,
     borderRadius: 2,
-    backgroundColor: "rgba(0,0,0,0.16)",
+    backgroundColor: "rgba(0,0,0,0.14)",
   },
 
   sheetTitleRow: {
@@ -440,7 +451,8 @@ const styles = StyleSheet.create({
     alignItems: "center",
     justifyContent: "space-between",
     paddingHorizontal: 20,
-    paddingBottom: 10,
+    paddingTop: 4,
+    paddingBottom: 14,
   },
   sheetTitle: {
     fontSize: 18,
@@ -451,15 +463,28 @@ const styles = StyleSheet.create({
     fontFamily: "Inter_500Medium",
   },
 
+  filterWrapper: {
+    position: "relative",
+    marginBottom: 4,
+  },
   filterRow: {
-    paddingHorizontal: 16,
-    paddingTop: 6,
+    paddingHorizontal: 20,
+    paddingTop: 2,
     paddingBottom: 14,
+    paddingRight: 48,
     gap: 8,
   },
+  filterFade: {
+    position: "absolute",
+    right: 0,
+    top: 0,
+    bottom: 0,
+    width: 48,
+    pointerEvents: "none",
+  },
   pill: {
-    paddingHorizontal: 14,
-    paddingVertical: 7,
+    paddingHorizontal: 16,
+    paddingVertical: 8,
     borderRadius: 20,
     borderWidth: 1,
   },
