@@ -151,7 +151,7 @@ const styles = StyleSheet.create({
     justifyContent: "space-between",
     alignItems: "center",
     paddingHorizontal: 20,
-    paddingTop: 6,
+    paddingTop: 2,
     paddingBottom: 2,
   },
   screenTitle: {
@@ -167,8 +167,8 @@ const styles = StyleSheet.create({
   /* Filter chips */
   filterScroll: {
     paddingHorizontal: 20,
-    paddingTop: 10,
-    paddingBottom: 14,
+    paddingTop: 6,
+    paddingBottom: 8,
     gap: 8,
   },
   filterChip: {

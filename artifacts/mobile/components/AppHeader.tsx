@@ -19,7 +19,7 @@ export function AppHeader({ topPad }: Props) {
       <View style={[styles.blobTR, { top: -30 + topPad * 0.3 }]} />
 
       {/* Logo section */}
-      <View style={[styles.logoSection, { paddingTop: topPad + 6 }]}>
+      <View style={[styles.logoSection, { paddingTop: topPad + 2 }]}>
         <View style={styles.logoRow}>
           <Ionicons name="heart" size={16} color={PURPLE} />
           <Text style={styles.appName}>canyoldaşı</Text>
@@ -52,7 +52,7 @@ const styles = StyleSheet.create({
   },
   logoSection: {
     alignItems: "center",
-    paddingBottom: 8,
+    paddingBottom: 4,
     zIndex: 1,
   },
   logoRow: {
