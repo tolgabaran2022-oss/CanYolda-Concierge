@@ -99,13 +99,9 @@ export default function MapScreen() {
     return acc;
   }, {});
 
-  const scheme = useColorScheme();
-  const isDark = scheme === "dark";
   const topPad = Platform.OS === "web" ? 67 : insets.top;
   const tabClearance = insets.bottom + TAB_BOTTOM_GAP + TAB_FLOAT_H;
   const isIOS = Platform.OS === "ios";
-  const sheetBg = isDark ? "rgba(22,14,40,0.96)" : "rgba(250,247,240,0.96)";
-  const fadeBg = isDark ? "rgba(22,14,40,0.97)" : "rgba(250,247,240,0.96)";
 
   return (
     <View style={styles.container}>
@@ -193,8 +189,8 @@ export default function MapScreen() {
       <Animated.View style={[styles.sheet, { height: sheetAnim }]}>
         {isIOS ? (
           <BlurView
-            intensity={85}
-            tint={isDark ? "dark" : "light"}
+            intensity={82}
+            tint="light"
             style={[StyleSheet.absoluteFill, styles.sheetRadius]}
           />
         ) : (
@@ -202,7 +198,7 @@ export default function MapScreen() {
             style={[
               StyleSheet.absoluteFill,
               styles.sheetRadius,
-              { backgroundColor: sheetBg },
+              { backgroundColor: "rgba(250,247,240,0.93)" },
             ]}
           />
         )}
@@ -294,7 +290,7 @@ export default function MapScreen() {
           </ScrollView>
           {/* Right-edge fade to signal more chips */}
           <LinearGradient
-            colors={["transparent", fadeBg]}
+            colors={["transparent", "rgba(250,247,240,0.96)"]}
             start={{ x: 0, y: 0 }}
             end={{ x: 1, y: 0 }}
             style={styles.filterFade}
