@@ -1,0 +1,155 @@
+🚀 REPLIT PROMPT — INSTAGRAM PET FEED (BİREBİR CLONE UI)
+
+Build a full mobile-first social app UI for pets that exactly replicates a modern Instagram-style pet feed design shown in the reference.
+
+The app must be a complete production-level frontend prototype with:
+
+Feed (Akış)
+Stories bar
+Post cards
+Like / comment system (frontend state only)
+Bottom navigation
+Create post (+ button)
+🎯 1. DESIGN GOAL (ÇOK ÖNEMLİ)
+
+Create a UI that feels like:
+👉 Instagram + TikTok + modern pet community app
+
+It must be:
+
+clean
+premium
+highly visual
+content-first
+scroll optimized
+
+No clutter, no basic UI.
+
+📱 2. MAIN SCREEN — AKIŞ (FEED)
+Layout:
+Full screen vertical scroll feed
+Top stories horizontal scroll bar
+Floating “+” create post button
+🟣 STORIES SECTION (INSTAGRAM STYLE)
+
+At top:
+
+Horizontal story avatars
+Circular gradient borders
+Each story:
+pet profile photo
+username
+tappable UI
+
+Include:
+
+“Hikaye Ekle” (+ button first item)
+🐾 POST CARD DESIGN
+
+Each post includes:
+
+Header:
+user avatar (circle)
+username
+location (small gray text)
+3-dot menu
+Content:
+full-width pet image
+rounded corners (16–20px)
+Actions:
+Like (heart)
+Comment
+Share / Save
+Meta:
+Like count
+Caption text
+“view comments” link
+❤️ 3. LIKE SYSTEM (FRONTEND STATE)
+Heart toggle animation
+Liked state:
+red filled heart
+Unliked:
+outline heart
+Update count instantly
+💬 4. COMMENT SYSTEM (SIMPLE MVP)
+Under post:
+comment input
+submit button
+Comments stored in local state array
+Show last 2 comments preview
+➕ 5. CREATE POST SYSTEM
+
+Floating action button:
+
+Bottom right (+)
+Opens modal or page:
+
+Fields:
+
+image upload
+caption
+location
+submit button
+
+On submit:
+
+new post added to feed instantly
+🧭 6. BOTTOM NAVIGATION (IMPORTANT)
+
+Must include:
+
+Harita
+Akış (ACTIVE TAB ⭐)
+Hayvanlar
+Evcil
+Profil
+
+Style:
+
+iOS style
+active tab purple highlight
+subtle icon + label
+🎨 7. UI STYLE SYSTEM
+Colors:
+Primary: #7C5CFF
+Background: #F9F8FF
+Text: #111827
+Secondary text: #6B7280
+Design rules:
+No heavy borders
+Soft shadows only (very light)
+Card-based feed
+Large images dominate UI
+Instagram-like spacing
+⚙️ 8. DATA MODEL (FRONTEND ONLY)
+posts = [
+  {
+    id,
+    user: { name, avatar },
+    image,
+    caption,
+    location,
+    likes: 0,
+    liked: false,
+    comments: []
+  }
+]
+🚀 9. REQUIRED OUTPUT
+Fully working feed UI
+Smooth scroll experience
+Working like/comment/create post (frontend only)
+Clean component structure
+Mobile-first design
+Instagram-level UX feel
+💎 FINAL TARGET
+
+The final app should feel like:
+👉 “Instagram for pet lovers”
+👉 startup-ready social platform MVP
+👉 App Store quality UI prototype
+
+💡 EXTRA (ÇOK KRİTİK)
+
+Eğer Replit yarım yaparsa şunu ekle:
+
+“This is not a listing app anymore. It is a full social media feed system. Do not simplify or reduce features.”

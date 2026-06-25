@@ -5,9 +5,9 @@ import React from "react";
 import { Platform, Pressable, StyleSheet, Text, View } from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 
-const PURPLE = "#7B5EA7";
+const PURPLE   = "#7B5EA7";
 const INACTIVE = "#B0A3C4";
-const TAB_H = 68;
+const TAB_H    = 68;
 
 type TabItem = {
   name: string;
@@ -18,19 +18,20 @@ type TabItem = {
 };
 
 const TABS: TabItem[] = [
-  { name: "index",   path: "/",          title: "Harita",    sfSymbol: "map",      featherIcon: "map-pin" },
-  { name: "animals", path: "/animals",   title: "Hayvanlar", sfSymbol: "pawprint", featherIcon: "list"    },
-  { name: "pets",    path: "/pets",      title: "Evcil",     sfSymbol: "heart",    featherIcon: "heart"   },
-  { name: "profile", path: "/profile",   title: "Profil",    sfSymbol: "person",   featherIcon: "user"    },
+  { name: "index",   path: "/",        title: "Harita",    sfSymbol: "map",         featherIcon: "map-pin" },
+  { name: "feed",    path: "/feed",    title: "Akış",      sfSymbol: "house",       featherIcon: "home"    },
+  { name: "animals", path: "/animals", title: "Hayvanlar", sfSymbol: "pawprint",    featherIcon: "list"    },
+  { name: "pets",    path: "/pets",    title: "Evcil",     sfSymbol: "heart",       featherIcon: "heart"   },
+  { name: "profile", path: "/profile", title: "Profil",    sfSymbol: "person",      featherIcon: "user"    },
 ];
 
 function CustomTabBar() {
-  const insets = useSafeAreaInsets();
-  const isWeb = Platform.OS === "web";
-  const isIOS = Platform.OS === "ios";
+  const insets   = useSafeAreaInsets();
+  const isWeb    = Platform.OS === "web";
+  const isIOS    = Platform.OS === "ios";
   const pathname = usePathname();
-  const router = useRouter();
-  const bottom = insets.bottom + (isWeb ? 12 : 10);
+  const router   = useRouter();
+  const bottom   = insets.bottom + (isWeb ? 12 : 10);
 
   return (
     <View style={[styles.barOuter, { bottom }]}>
@@ -55,9 +56,9 @@ function CustomTabBar() {
               {active && <View style={styles.activeDot} />}
               <View style={[styles.iconWrap, active && styles.iconWrapActive]}>
                 {isIOS ? (
-                  <SymbolView name={tab.sfSymbol as any} tintColor={color} size={22} />
+                  <SymbolView name={tab.sfSymbol as any} tintColor={color} size={20} />
                 ) : (
-                  <Feather name={tab.featherIcon as any} size={21} color={color} />
+                  <Feather name={tab.featherIcon as any} size={20} color={color} />
                 )}
               </View>
               <Text style={[styles.label, { color }]} numberOfLines={1}>
@@ -90,12 +91,8 @@ export default function TabLayout() {
 }
 
 const styles = StyleSheet.create({
-  barOuter: {
-    position: "absolute",
-    left: 18,
-    right: 18,
-  },
-  barInner: {
+  barOuter:  { position: "absolute", left: 14, right: 14 },
+  barInner:  {
     flexDirection: "row",
     height: TAB_H,
     borderRadius: 36,
@@ -113,33 +110,31 @@ const styles = StyleSheet.create({
     flex: 1,
     alignItems: "center",
     justifyContent: "center",
-    gap: 4,
+    gap: 3,
     paddingTop: 8,
     paddingBottom: 8,
   },
   activeDot: {
     position: "absolute",
     top: 6,
-    width: 24,
+    width: 20,
     height: 3,
     borderRadius: 2,
     backgroundColor: PURPLE,
   },
   iconWrap: {
-    width: 40,
-    height: 30,
+    width: 36,
+    height: 28,
     alignItems: "center",
     justifyContent: "center",
-    borderRadius: 12,
+    borderRadius: 10,
   },
-  iconWrapActive: {
-    backgroundColor: `${PURPLE}15`,
-  },
+  iconWrapActive: { backgroundColor: `${PURPLE}15` },
   label: {
-    fontSize: 11,
+    fontSize: 10,
     fontFamily: "Inter_500Medium",
     includeFontPadding: false,
-    lineHeight: 13,
+    lineHeight: 12,
     textAlign: "center",
   },
 });
