@@ -23,6 +23,7 @@ import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { PostCard, type PostData } from "@/components/PostCard";
 import { StoryBar, type Story } from "@/components/StoryBar";
 import { useAuth } from "@/contexts/AuthContext";
+import { FEED_POSTS } from "@/data/feedData";
 
 const { width: SW } = Dimensions.get("window");
 
@@ -36,111 +37,15 @@ const C = {
   border:     "#F0EDF8",
 };
 
-/* ── Seed data ────────────────────────────────────────────── */
-/* Stable animal image URLs — loremflickr serves real pet photos by keyword */
-const CAT_AVATARS = [
-  "https://loremflickr.com/100/100/cat,kitten?lock=11",
-  "https://loremflickr.com/100/100/cat,kitten?lock=22",
-  "https://loremflickr.com/100/100/cat,tabby?lock=33",
-  "https://loremflickr.com/100/100/cat,kitten?lock=44",
-];
-const DOG_AVATARS = [
-  "https://loremflickr.com/100/100/dog,puppy?lock=55",
-  "https://loremflickr.com/100/100/dog,golden?lock=66",
-  "https://loremflickr.com/100/100/dog,puppy?lock=77",
-];
-
 const SEED_STORIES: Story[] = [
-  { id: "s1", user: "Pamuk",   avatar: CAT_AVATARS[0], seen: false },
-  { id: "s2", user: "Karamel", avatar: DOG_AVATARS[0], seen: false },
-  { id: "s3", user: "Tekir",   avatar: CAT_AVATARS[1], seen: true  },
-  { id: "s4", user: "Şero",    avatar: DOG_AVATARS[1], seen: false },
-  { id: "s5", user: "Boncuk",  avatar: CAT_AVATARS[2], seen: true  },
-  { id: "s6", user: "Tarçın",  avatar: DOG_AVATARS[2], seen: false },
-];
-
-const SEED_POSTS: PostData[] = [
-  {
-    id: "p1",
-    user: { name: "Pamuk", avatar: CAT_AVATARS[0] },
-    image: "https://loremflickr.com/600/700/cat,kitten?lock=101",
-    caption: "Bugün güneşin tadını çıkardım ☀️ Sizi seviyorum hepinizi 🐾",
-    location: "Kadıköy, İstanbul",
-    likes: 142,
-    liked: false,
-    comments: [
-      { id: "c1", user: "Karamel", text: "Çok tatlısın! 😍" },
-      { id: "c2", user: "Tekir",   text: "Hep böyle güzel kal 🐱" },
-    ],
-    timestamp: "2 saat önce",
-  },
-  {
-    id: "p2",
-    user: { name: "Şero", avatar: DOG_AVATARS[1] },
-    image: "https://loremflickr.com/600/700/dog,puppy?lock=202",
-    caption: "Park zamanı! 🐕 En sevdiğim aktivite koşmak 💨",
-    location: "Beşiktaş, İstanbul",
-    likes: 89,
-    liked: false,
-    comments: [
-      { id: "c3", user: "Boncuk", text: "Ne kadar enerjik 😂" },
-    ],
-    timestamp: "5 saat önce",
-  },
-  {
-    id: "p3",
-    user: { name: "Boncuk", avatar: CAT_AVATARS[2] },
-    image: "https://loremflickr.com/600/700/cat,cute?lock=303",
-    caption: "Yeni evimizde ilk günüm 🏠 Her şey mükemmel!",
-    location: "Üsküdar, İstanbul",
-    likes: 234,
-    liked: true,
-    comments: [
-      { id: "c4", user: "Pamuk",   text: "Tebrikler! 🎉" },
-      { id: "c5", user: "Tarçın",  text: "Çok şirin bir ev 🏡" },
-      { id: "c6", user: "Şero",    text: "Maşallah 🐾" },
-    ],
-    timestamp: "1 gün önce",
-  },
-  {
-    id: "p4",
-    user: { name: "Tarçın", avatar: DOG_AVATARS[2] },
-    image: "https://loremflickr.com/600/700/dog,golden?lock=404",
-    caption: "Yağmurda bile mutluyum! ☔🐶",
-    location: "Şişli, İstanbul",
-    likes: 67,
-    liked: false,
-    comments: [],
-    timestamp: "2 gün önce",
-  },
-  {
-    id: "p5",
-    user: { name: "Tekir", avatar: CAT_AVATARS[1] },
-    image: "https://loremflickr.com/600/700/cat,tabby?lock=505",
-    caption: "Yeni oyuncağım geldi 🎾 Bütün gün oynayabilirim!",
-    location: "Bakırköy, İstanbul",
-    likes: 178,
-    liked: false,
-    comments: [
-      { id: "c7", user: "Pamuk",   text: "Çok şanslısın 🎉" },
-      { id: "c8", user: "Karamel", text: "Benimle paylaşır mısın? 😄" },
-    ],
-    timestamp: "3 gün önce",
-  },
-  {
-    id: "p6",
-    user: { name: "Karamel", avatar: DOG_AVATARS[0] },
-    image: "https://loremflickr.com/600/700/dog,labrador?lock=606",
-    caption: "Sahilden selamlar! 🌊🐾 Denizi çok seviyorum",
-    location: "Florya, İstanbul",
-    likes: 312,
-    liked: false,
-    comments: [
-      { id: "c9",  user: "Şero",   text: "Renkler harika 😍" },
-      { id: "c10", user: "Boncuk", text: "Ben de gelmek istiyorum!" },
-    ],
-    timestamp: "4 gün önce",
-  },
+  { id: "s1", user: "Ayşe Y.",   avatar: "https://loremflickr.com/100/100/cat,kitten?lock=11",  seen: false },
+  { id: "s2", user: "Mehmet K.", avatar: "https://loremflickr.com/100/100/dog,golden?lock=22",  seen: false },
+  { id: "s3", user: "Fatma D.",  avatar: "https://loremflickr.com/100/100/cat,tabby?lock=33",   seen: true  },
+  { id: "s4", user: "Ali R.",    avatar: "https://loremflickr.com/100/100/dog,puppy?lock=44",   seen: false },
+  { id: "s5", user: "Zeynep S.", avatar: "https://loremflickr.com/100/100/cat,kitten?lock=55",  seen: true  },
+  { id: "s6", user: "Murat Ö.",  avatar: "https://loremflickr.com/100/100/dog,labrador?lock=66",seen: false },
+  { id: "s7", user: "Selin B.",  avatar: "https://loremflickr.com/100/100/cat,persian?lock=77", seen: false },
+  { id: "s8", user: "Hasan T.",  avatar: "https://loremflickr.com/100/100/dog,beagle?lock=88",  seen: true  },
 ];
 
 /* ── Create post modal ────────────────────────────────────── */
@@ -371,7 +276,7 @@ const H = StyleSheet.create({
 /* ── Main screen ──────────────────────────────────────────── */
 export default function FeedScreen() {
   const insets = useSafeAreaInsets();
-  const [posts,        setPosts]        = useState<PostData[]>(SEED_POSTS);
+  const [posts,        setPosts]        = useState<PostData[]>(FEED_POSTS);
   const [stories,      setStories]      = useState<Story[]>(SEED_STORIES);
   const [createVisible, setCreateVisible] = useState(false);
   const fabAnim = useRef(new Animated.Value(1)).current;
