@@ -1,0 +1,128 @@
+🧠 REPLIT PROMPT (AKIŞ SCREEN – EXACT UI CLONE)
+
+Build a mobile-first Instagram-style Feed screen for a pet social app called “canyoldaşı 🐾”.
+
+This screen must look EXACTLY like the provided design image (premium iOS style UI).
+
+🎯 TECH STACK
+React (or Next.js)
+TailwindCSS
+Component-based architecture
+Fake/mock data only (no backend required)
+📱 SCREEN NAME: AKIŞ (FEED)
+🎨 GENERAL UI STYLE
+iPhone-style layout (safe area top notch included)
+White / light gray gradient background
+Purple accent color (#7c5cff)
+Soft shadows (blur + low opacity)
+Rounded cards (16–20px)
+Clean Instagram-like spacing system
+Premium Apple UI feel
+🧩 HEADER SECTION
+Top Bar:
+Center logo text: 🐾 canyoldaşı
+Right side: notification bell icon (with red dot badge)
+📸 STORIES ROW (UNDER HEADER)
+
+Horizontal scrollable story section:
+
+First item:
+“Hikaye Ekle” button
+Circular avatar with + icon overlay
+Then fake users:
+pati_dostum
+miyav.house
+patili.bir.dunya
+koydeki.patiler
+
+Each story:
+
+Circular avatar (ONLY cats or dogs)
+Username below avatar
+Soft purple border for active story style
+📰 FEED CARDS (MAIN REQUIREMENT)
+
+Each post card must match layout exactly:
+
+🧷 POST HEADER
+
+Left:
+
+Profile avatar (cat/dog image only)
+Right:
+Username (bold)
+Under it: time + location
+Example:
+“2 saat önce · Kadıköy, İstanbul”
+
+Top right:
+
+“•••” menu icon
+🖼️ POST IMAGE
+Large rounded image (16px radius)
+MUST be realistic cat or dog only
+No humans, no objects, no landscapes
+✍️ CAPTION TEXT
+
+Examples (use randomly):
+
+“Küçük prensimiz bugün çok mutlu 🐱💜 Sahiplenmek isteyenler DM ✨”
+“Yeni dostumuz Max, artık güvende 🐶❤️”
+“Yağmurdan sonra biraz mama zamanı 🌧️🐱”
+❤️ ACTION BAR (BOTTOM OF POST)
+
+Left side icons:
+
+Like (heart)
+Comment
+Share
+
+Right side:
+
+Bookmark icon
+
+Below or near:
+
+Like count (e.g. 128)
+Comment count (e.g. 12)
+
+Style:
+
+Minimal thin icons
+Purple accent when active like
+📊 MOCK DATA (IMPORTANT)
+
+Create fake JSON like:
+
+posts = [
+  {
+    username: "miyav.house",
+    location: "Kadıköy, İstanbul",
+    time: "2 saat önce",
+    image: "cat1.jpg",
+    caption: "...",
+    likes: 128,
+    comments: 12
+  }
+]
+🚫 STRICT RULES
+ONLY cats and dogs everywhere (mandatory)
+No humans at all
+No real-world objects as main subject
+No messy UI
+No extra buttons (keep clean like Instagram)
+No bottom-right floating + button
+🎯 GOAL
+
+Recreate a premium Instagram-like feed screen identical to the provided image:
+
+Same spacing
+Same card layout
+Same story row
+Same hierarchy
+But fully modernized Apple-level UI polish
+⭐ BONUS (if possible)
+Smooth scroll animations
+Like button toggle animation
+Story click modal preview
+Skeleton loading state

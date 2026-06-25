@@ -80,11 +80,9 @@ export function PostCard({ post, onLike, onComment }: Props) {
         </View>
         <View style={{ flex: 1 }}>
           <Text style={S.username}>{post.user.name}</Text>
-          {post.location ? (
-            <Text style={S.location}>
-              <Ionicons name="location-outline" size={11} color={C.muted} /> {post.location}
-            </Text>
-          ) : null}
+          <Text style={S.location}>
+            {post.timestamp}{post.location ? ` · ${post.location}` : ""}
+          </Text>
         </View>
         <Pressable style={S.moreBtn} hitSlop={12}>
           <Feather name="more-horizontal" size={20} color={C.muted} />
@@ -155,8 +153,6 @@ export function PostCard({ post, onLike, onComment }: Props) {
             {c.text}
           </Text>
         ))}
-
-        <Text style={S.timestamp}>{post.timestamp}</Text>
       </View>
 
       {/* ── Comment input ──────────────────────── */}
@@ -235,7 +231,6 @@ const S = StyleSheet.create({
   viewAllComments: { fontSize: 13, fontFamily: "Inter_400Regular", color: C.muted, marginTop: 2 },
   commentRow:  { fontSize: 13, fontFamily: "Inter_400Regular", color: C.text },
   commentUser: { fontFamily: "Inter_700Bold" },
-  timestamp:   { fontSize: 11, fontFamily: "Inter_400Regular", color: C.muted, marginTop: 4 },
 
   /* Comment input */
   commentInput: {

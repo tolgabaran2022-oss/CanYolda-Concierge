@@ -38,14 +38,14 @@ const C = {
 };
 
 const SEED_STORIES: Story[] = [
-  { id: "s1", user: "Pamuk",   avatar: "https://loremflickr.com/100/100/kitten?lock=11", seen: false },
-  { id: "s2", user: "Karamel", avatar: "https://loremflickr.com/100/100/puppy?lock=22",  seen: false },
-  { id: "s3", user: "Tekir",   avatar: "https://loremflickr.com/100/100/tabby?lock=33",  seen: true  },
-  { id: "s4", user: "Şero",    avatar: "https://loremflickr.com/100/100/dog?lock=44",    seen: false },
-  { id: "s5", user: "Boncuk",  avatar: "https://loremflickr.com/100/100/kitten?lock=55", seen: true  },
-  { id: "s6", user: "Tarçın",  avatar: "https://loremflickr.com/100/100/golden?lock=66", seen: false },
-  { id: "s7", user: "Minnoş",  avatar: "https://loremflickr.com/100/100/cat?lock=77",    seen: false },
-  { id: "s8", user: "Duman",   avatar: "https://loremflickr.com/100/100/puppy?lock=88",  seen: true  },
+  { id: "s1", user: "pati_dostum",      avatar: "https://loremflickr.com/100/100/kitten?lock=11", seen: false },
+  { id: "s2", user: "miyav.house",      avatar: "https://loremflickr.com/100/100/puppy?lock=22",  seen: false },
+  { id: "s3", user: "patili.bir.dunya", avatar: "https://loremflickr.com/100/100/tabby?lock=33",  seen: true  },
+  { id: "s4", user: "koydeki.patiler",  avatar: "https://loremflickr.com/100/100/dog?lock=44",    seen: false },
+  { id: "s5", user: "kucuk.pawlar",     avatar: "https://loremflickr.com/100/100/kitten?lock=55", seen: true  },
+  { id: "s6", user: "sokak.dostlari",   avatar: "https://loremflickr.com/100/100/golden?lock=66", seen: false },
+  { id: "s7", user: "minnoslar.evi",    avatar: "https://loremflickr.com/100/100/cat?lock=77",    seen: false },
+  { id: "s8", user: "patici.sultan",    avatar: "https://loremflickr.com/100/100/puppy?lock=88",  seen: true  },
 ];
 
 /* ── Create post modal ────────────────────────────────────── */
@@ -246,8 +246,9 @@ function FeedHeader({ onNotify }: { onNotify: () => void }) {
         <Text style={H.logo}>canyoldaşı</Text>
       </View>
       <View style={H.right}>
-        <Pressable onPress={onNotify} hitSlop={10}>
-          <Ionicons name="heart-outline" size={26} color={C.text} />
+        <Pressable onPress={onNotify} hitSlop={10} style={H.bellWrap}>
+          <Ionicons name="notifications-outline" size={26} color={C.text} />
+          <View style={H.badge} />
         </Pressable>
         <Pressable onPress={onNotify} hitSlop={10}>
           <Feather name="send" size={24} color={C.text} />
@@ -268,9 +269,21 @@ const H = StyleSheet.create({
     borderBottomWidth: 1,
     borderBottomColor: C.border,
   },
-  left:  { flexDirection: "row", alignItems: "center", gap: 7 },
-  logo:  { fontSize: 20, fontFamily: "Inter_700Bold", color: "#3D2080", letterSpacing: -0.5 },
-  right: { flexDirection: "row", alignItems: "center", gap: 18 },
+  left:    { flexDirection: "row", alignItems: "center", gap: 7 },
+  logo:    { fontSize: 20, fontFamily: "Inter_700Bold", color: "#3D2080", letterSpacing: -0.5 },
+  right:   { flexDirection: "row", alignItems: "center", gap: 18 },
+  bellWrap: { position: "relative" },
+  badge:   {
+    position: "absolute",
+    top: 1,
+    right: 1,
+    width: 8,
+    height: 8,
+    borderRadius: 4,
+    backgroundColor: "#FF3B6B",
+    borderWidth: 1.5,
+    borderColor: C.white,
+  },
 });
 
 /* ── Main screen ──────────────────────────────────────────── */
