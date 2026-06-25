@@ -1,5 +1,4 @@
 import { Ionicons } from "@expo/vector-icons";
-import * as Haptics from "expo-haptics";
 import { LinearGradient } from "expo-linear-gradient";
 import { useRouter } from "expo-router";
 import React, { useEffect, useState } from "react";
@@ -203,19 +202,6 @@ export default function PetsScreen() {
         />
       )}
 
-      {/* FAB */}
-      <Pressable
-        style={({ pressed }) => [
-          styles.fab,
-          { bottom: tabClearance + 14, opacity: pressed ? 0.85 : 1 },
-        ]}
-        onPress={() => {
-          Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
-          goCreateListing();
-        }}
-      >
-        <Ionicons name="add" size={28} color="white" />
-      </Pressable>
     </View>
   );
 }
@@ -457,20 +443,4 @@ const styles = StyleSheet.create({
     color: "#FFF",
   },
 
-  /* FAB */
-  fab: {
-    position: "absolute",
-    right: 20,
-    width: 56,
-    height: 56,
-    borderRadius: 28,
-    backgroundColor: PURPLE,
-    alignItems: "center",
-    justifyContent: "center",
-    shadowColor: PURPLE,
-    shadowOffset: { width: 0, height: 4 },
-    shadowOpacity: 0.3,
-    shadowRadius: 8,
-    elevation: 6,
-  },
 });
