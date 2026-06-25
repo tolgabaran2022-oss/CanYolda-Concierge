@@ -27,12 +27,12 @@ const { height: SCREEN_H } = Dimensions.get("window");
 const SNAP_COLLAPSED = 270;
 const SNAP_EXPANDED = Math.floor(SCREEN_H * 0.6);
 
-const STATUS_FILTERS: { key: string; label: string }[] = [
-  { key: "all", label: "Hepsi" },
-  { key: "aç", label: "Aç" },
-  { key: "yaralı", label: "Yaralı" },
-  { key: "sağlıklı", label: "Sağlıklı" },
-  { key: "bilinmiyor", label: "Bilinmiyor" },
+const STATUS_FILTERS: { key: string; label: string; emoji: string | null; accent: string | null }[] = [
+  { key: "all",        label: "Hepsi",     emoji: null,  accent: null },
+  { key: "aç",        label: "Aç",        emoji: "🍽️", accent: "#F97316" },
+  { key: "yaralı",    label: "Yaralı",    emoji: "🩹",  accent: "#EF4444" },
+  { key: "sağlıklı",  label: "Sağlıklı",  emoji: "✅",  accent: "#16A34A" },
+  { key: "bilinmiyor",label: "Bilinmiyor",emoji: "❓",  accent: "#71717A" },
 ];
 
 const DEFAULT_REGION = {
@@ -90,6 +90,13 @@ export default function MapScreen() {
   const filtered = filter === "all"
     ? animals
     : animals.filter((a) => a.status === (filter as AnimalStatus));
+
+  const countPerFilter = STATUS_FILTERS.reduce<Record<string, number>>((acc, f) => {
+    acc[f.key] = f.key === "all"
+      ? animals.length
+      : animals.filter((a) => a.status === f.key).length;
+    return acc;
+  }, {});
 
   const topPad = Platform.OS === "web" ? 67 : insets.top;
   const tabClearance = insets.bottom + TAB_BOTTOM_GAP + TAB_FLOAT_H;
@@ -202,9 +209,16 @@ export default function MapScreen() {
 
         {/* Title row */}
         <View style={styles.sheetTitleRow}>
-          <Text style={[styles.sheetTitle, { color: colors.foreground }]}>
-            Yakındaki Hayvanlar
-          </Text>
+          <View style={styles.sheetTitleGroup}>
+            <Text style={[styles.sheetTitle, { color: colors.foreground }]}>
+              Yakındaki Hayvanlar
+            </Text>
+            <View style={[styles.countBadge, { backgroundColor: `${colors.primary}18` }]}>
+              <Text style={[styles.countBadgeText, { color: colors.primary }]}>
+                {animals.length} hayvan
+              </Text>
+            </View>
+          </View>
           <Pressable
             onPress={() => router.push("/(tabs)/animals" as any)}
             hitSlop={8}
@@ -223,14 +237,23 @@ export default function MapScreen() {
           >
             {STATUS_FILTERS.map((f) => {
               const active = filter === f.key;
+              const count = countPerFilter[f.key] ?? 0;
+              const accentColor = f.accent ?? colors.primary;
+              const activeBg = accentColor;
+              const inactiveBg = `${accentColor}12`;
               return (
                 <Pressable
                   key={f.key}
                   style={[
                     styles.pill,
                     {
-                      backgroundColor: active ? colors.primary : `${colors.primary}14`,
-                      borderColor: active ? colors.primary : "transparent",
+                      backgroundColor: active ? activeBg : inactiveBg,
+                      borderColor: active ? activeBg : `${accentColor}30`,
+                      shadowColor: active ? accentColor : "transparent",
+                      shadowOffset: { width: 0, height: 2 },
+                      shadowOpacity: active ? 0.3 : 0,
+                      shadowRadius: 6,
+                      elevation: active ? 3 : 0,
                     },
                   ]}
                   onPress={() => {
@@ -238,14 +261,28 @@ export default function MapScreen() {
                     Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
                   }}
                 >
+                  {f.emoji && (
+                    <Text style={styles.pillEmoji}>{f.emoji}</Text>
+                  )}
                   <Text
                     style={[
                       styles.pillText,
-                      { color: active ? "white" : colors.foreground },
+                      { color: active ? "white" : "#2D2D3A" },
                     ]}
                   >
                     {f.label}
                   </Text>
+                  <View style={[
+                    styles.pillCount,
+                    { backgroundColor: active ? "rgba(255,255,255,0.25)" : `${accentColor}20` },
+                  ]}>
+                    <Text style={[
+                      styles.pillCountText,
+                      { color: active ? "white" : accentColor },
+                    ]}>
+                      {count}
+                    </Text>
+                  </View>
                 </Pressable>
               );
             })}
@@ -454,9 +491,24 @@ const styles = StyleSheet.create({
     paddingTop: 4,
     paddingBottom: 14,
   },
+  sheetTitleGroup: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 8,
+    flex: 1,
+  },
   sheetTitle: {
     fontSize: 18,
     fontFamily: "Inter_700Bold",
+  },
+  countBadge: {
+    paddingHorizontal: 8,
+    paddingVertical: 3,
+    borderRadius: 10,
+  },
+  countBadgeText: {
+    fontSize: 11,
+    fontFamily: "Inter_600SemiBold",
   },
   seeAll: {
     fontSize: 14,
@@ -483,14 +535,34 @@ const styles = StyleSheet.create({
     pointerEvents: "none",
   },
   pill: {
-    paddingHorizontal: 16,
-    paddingVertical: 8,
-    borderRadius: 20,
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 5,
+    paddingHorizontal: 14,
+    paddingVertical: 10,
+    minHeight: 44,
+    borderRadius: 22,
     borderWidth: 1,
+  },
+  pillEmoji: {
+    fontSize: 14,
+    lineHeight: 18,
   },
   pillText: {
     fontSize: 13,
-    fontFamily: "Inter_500Medium",
+    fontFamily: "Inter_600SemiBold",
+  },
+  pillCount: {
+    minWidth: 20,
+    height: 20,
+    borderRadius: 10,
+    alignItems: "center",
+    justifyContent: "center",
+    paddingHorizontal: 5,
+  },
+  pillCountText: {
+    fontSize: 11,
+    fontFamily: "Inter_700Bold",
   },
 
   animalRow: {
