@@ -237,11 +237,6 @@ export default function MapScreen() {
                     {
                       backgroundColor: active ? activeBg : inactiveBg,
                       borderColor: active ? activeBg : `${accentColor}30`,
-                      shadowColor: active ? accentColor : "transparent",
-                      shadowOffset: { width: 0, height: 2 },
-                      shadowOpacity: active ? 0.3 : 0,
-                      shadowRadius: 6,
-                      elevation: active ? 3 : 0,
                     },
                   ]}
                   onPress={() => {
