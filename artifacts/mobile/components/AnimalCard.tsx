@@ -133,9 +133,8 @@ const styles = StyleSheet.create({
     borderRadius: 16,
     borderWidth: 1,
     marginHorizontal: 16,
-    marginVertical: 4,
+    marginVertical: 2,
     overflow: "hidden",
-    minHeight: 35,
   },
   imageWrap: {
     width: 72,
@@ -164,8 +163,8 @@ const styles = StyleSheet.create({
   content: {
     flex: 1,
     paddingHorizontal: 12,
-    paddingVertical: 8,
-    gap: 4,
+    paddingVertical: 5,
+    gap: 2,
     justifyContent: "flex-start",
   },
   topRow: {
