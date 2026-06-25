@@ -415,7 +415,7 @@ const styles = StyleSheet.create({
   },
   container: {
     paddingHorizontal: 20,
-    gap: 20,
+    gap: 14,
   },
 
   /* Profile card */
@@ -425,7 +425,7 @@ const styles = StyleSheet.create({
     borderWidth: 1,
     borderColor: "rgba(123,94,167,0.15)",
     alignItems: "center",
-    paddingTop: 24,
+    paddingTop: 16,
     overflow: "hidden",
     shadowColor: PURPLE,
     shadowOffset: { width: 0, height: 4 },
@@ -434,29 +434,29 @@ const styles = StyleSheet.create({
     elevation: 3,
   },
   avatarWrap: {
-    width: 80,
-    height: 80,
-    borderRadius: 40,
+    width: 64,
+    height: 64,
+    borderRadius: 32,
     overflow: "hidden",
-    marginBottom: 12,
-    borderWidth: 3,
+    marginBottom: 8,
+    borderWidth: 2,
     borderColor: `${PURPLE}40`,
   },
   avatarImage: {
-    width: 80,
-    height: 80,
+    width: 64,
+    height: 64,
   },
   userName: {
-    fontSize: 20,
+    fontSize: 17,
     fontFamily: "Inter_700Bold",
     color: PURPLE_DARK,
   },
   userEmail: {
-    fontSize: 13,
+    fontSize: 12,
     fontFamily: "Inter_400Regular",
     color: "#8874A8",
     marginTop: 2,
-    marginBottom: 20,
+    marginBottom: 12,
   },
   statsRow: {
     flexDirection: "row",
@@ -466,29 +466,29 @@ const styles = StyleSheet.create({
   },
   statItem: {
     flex: 1,
-    paddingVertical: 16,
+    paddingVertical: 10,
     alignItems: "center",
-    gap: 2,
+    gap: 1,
   },
   statBorder: {
     borderRightWidth: 1,
     borderRightColor: "rgba(123,94,167,0.12)",
   },
   statValue: {
-    fontSize: 22,
+    fontSize: 18,
     fontFamily: "Inter_700Bold",
     color: PURPLE,
   },
   statLabel: {
-    fontSize: 11,
+    fontSize: 10,
     fontFamily: "Inter_400Regular",
     color: "#8874A8",
   },
 
   /* Sections */
-  section: { gap: 10 },
+  section: { gap: 6 },
   sectionTitle: {
-    fontSize: 18,
+    fontSize: 15,
     fontFamily: "Inter_700Bold",
     color: PURPLE_DARK,
     paddingHorizontal: 2,
@@ -497,7 +497,7 @@ const styles = StyleSheet.create({
   /* Card rows */
   card: {
     backgroundColor: "rgba(255,255,255,0.85)",
-    borderRadius: 16,
+    borderRadius: 14,
     borderWidth: 1,
     borderColor: "rgba(123,94,167,0.15)",
     overflow: "hidden",
@@ -510,25 +510,25 @@ const styles = StyleSheet.create({
   cardRow: {
     flexDirection: "row",
     alignItems: "center",
-    paddingHorizontal: 16,
-    paddingVertical: 14,
-    gap: 12,
+    paddingHorizontal: 14,
+    paddingVertical: 10,
+    gap: 10,
   },
   cardRowBorder: {
     borderTopWidth: 1,
     borderTopColor: "rgba(123,94,167,0.1)",
   },
   iconBadge: {
-    width: 38,
-    height: 38,
-    borderRadius: 12,
+    width: 32,
+    height: 32,
+    borderRadius: 10,
     backgroundColor: `${PURPLE}18`,
     alignItems: "center",
     justifyContent: "center",
   },
   cardRowLabel: {
     flex: 1,
-    fontSize: 15,
+    fontSize: 14,
     fontFamily: "Inter_500Medium",
     color: PURPLE_DARK,
   },
