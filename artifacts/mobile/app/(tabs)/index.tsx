@@ -1,5 +1,4 @@
 import { Ionicons } from "@expo/vector-icons";
-import { BlurView } from "expo-blur";
 import { LinearGradient } from "expo-linear-gradient";
 import * as Haptics from "expo-haptics";
 import * as Location from "expo-location";
@@ -139,15 +138,11 @@ export default function MapScreen() {
         ))}
       </MapView>
 
-      {/* Top glass bar */}
+      {/* Top bar */}
       <View style={[styles.topBar, { top: topPad + 12 }]}>
-        {isIOS ? (
-          <BlurView intensity={75} tint="light" style={StyleSheet.absoluteFill} />
-        ) : (
-          <View
-            style={[StyleSheet.absoluteFill, { backgroundColor: "rgba(250,247,240,0.88)" }]}
-          />
-        )}
+        <View
+          style={[StyleSheet.absoluteFill, { backgroundColor: colors.background }]}
+        />
         <Ionicons name="paw" size={17} color={colors.primary} />
         <Text style={[styles.topTitle, { color: colors.foreground }]}>CanYoldaşı</Text>
         <View style={{ flex: 1 }} />
@@ -187,21 +182,13 @@ export default function MapScreen() {
 
       {/* Bottom Sheet */}
       <Animated.View style={[styles.sheet, { height: sheetAnim }]}>
-        {isIOS ? (
-          <BlurView
-            intensity={82}
-            tint="light"
-            style={[StyleSheet.absoluteFill, styles.sheetRadius]}
-          />
-        ) : (
-          <View
-            style={[
-              StyleSheet.absoluteFill,
-              styles.sheetRadius,
-              { backgroundColor: "rgba(250,247,240,0.93)" },
-            ]}
-          />
-        )}
+        <View
+          style={[
+            StyleSheet.absoluteFill,
+            styles.sheetRadius,
+            { backgroundColor: colors.background },
+          ]}
+        />
 
         {/* Drag handle */}
         <Pressable style={styles.handleRow} onPress={toggleSheet} hitSlop={12}>
