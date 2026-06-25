@@ -19,14 +19,11 @@ export function AppHeader({ topPad }: Props) {
       <View style={[styles.blobTR, { top: -30 + topPad * 0.3 }]} />
 
       {/* Logo section */}
-      <View style={[styles.logoSection, { paddingTop: topPad + 12 }]}>
-        <Ionicons name="heart" size={20} color={PURPLE} style={{ marginBottom: 2 }} />
-        <Text style={styles.appName}>canyoldaşı</Text>
-        <Text style={styles.tagline}>
-          Dostların için{"\n"}
-          her şey{" "}
-          <Text style={styles.taglineBold}>bir tık uzağında</Text>
-        </Text>
+      <View style={[styles.logoSection, { paddingTop: topPad + 6 }]}>
+        <View style={styles.logoRow}>
+          <Ionicons name="heart" size={16} color={PURPLE} />
+          <Text style={styles.appName}>canyoldaşı</Text>
+        </View>
       </View>
     </>
   );
@@ -55,25 +52,18 @@ const styles = StyleSheet.create({
   },
   logoSection: {
     alignItems: "center",
-    paddingBottom: 16,
+    paddingBottom: 8,
     zIndex: 1,
   },
+  logoRow: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 6,
+  },
   appName: {
-    fontSize: 28,
+    fontSize: 20,
     fontFamily: "Inter_700Bold",
     color: PURPLE_DARK,
-    letterSpacing: -0.5,
-  },
-  tagline: {
-    fontSize: 13,
-    fontFamily: "Inter_400Regular",
-    color: "#777",
-    textAlign: "center",
-    lineHeight: 20,
-    marginTop: 2,
-  },
-  taglineBold: {
-    color: PURPLE,
-    fontFamily: "Inter_600SemiBold",
+    letterSpacing: -0.3,
   },
 });
