@@ -38,14 +38,14 @@ const C = {
 };
 
 const SEED_STORIES: Story[] = [
-  { id: "s1", user: "Ayşe Y.",   avatar: "https://loremflickr.com/100/100/cat,kitten?lock=11",  seen: false },
-  { id: "s2", user: "Mehmet K.", avatar: "https://loremflickr.com/100/100/dog,golden?lock=22",  seen: false },
-  { id: "s3", user: "Fatma D.",  avatar: "https://loremflickr.com/100/100/cat,tabby?lock=33",   seen: true  },
-  { id: "s4", user: "Ali R.",    avatar: "https://loremflickr.com/100/100/dog,puppy?lock=44",   seen: false },
-  { id: "s5", user: "Zeynep S.", avatar: "https://loremflickr.com/100/100/cat,kitten?lock=55",  seen: true  },
-  { id: "s6", user: "Murat Ö.",  avatar: "https://loremflickr.com/100/100/dog,labrador?lock=66",seen: false },
-  { id: "s7", user: "Selin B.",  avatar: "https://loremflickr.com/100/100/cat,persian?lock=77", seen: false },
-  { id: "s8", user: "Hasan T.",  avatar: "https://loremflickr.com/100/100/dog,beagle?lock=88",  seen: true  },
+  { id: "s1", user: "Pamuk",    avatar: "https://loremflickr.com/100/100/cat,kitten?lock=11",  seen: false },
+  { id: "s2", user: "Karamel",  avatar: "https://loremflickr.com/100/100/dog,golden?lock=22",  seen: false },
+  { id: "s3", user: "Tekir",    avatar: "https://loremflickr.com/100/100/cat,tabby?lock=33",   seen: true  },
+  { id: "s4", user: "Şero",     avatar: "https://loremflickr.com/100/100/dog,puppy?lock=44",   seen: false },
+  { id: "s5", user: "Boncuk",   avatar: "https://loremflickr.com/100/100/cat,kitten?lock=55",  seen: true  },
+  { id: "s6", user: "Tarçın",   avatar: "https://loremflickr.com/100/100/dog,labrador?lock=66",seen: false },
+  { id: "s7", user: "Minnoş",   avatar: "https://loremflickr.com/100/100/cat,persian?lock=77", seen: false },
+  { id: "s8", user: "Duman",    avatar: "https://loremflickr.com/100/100/dog,beagle?lock=88",  seen: true  },
 ];
 
 /* ── Create post modal ────────────────────────────────────── */

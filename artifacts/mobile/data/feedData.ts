@@ -1,21 +1,21 @@
 import type { PostData } from "@/components/PostCard";
 
 const USERS = [
-  { name: "Ayşe Y.",    avatar: "https://loremflickr.com/100/100/cat,kitten?lock=11"  },
-  { name: "Mehmet K.",  avatar: "https://loremflickr.com/100/100/dog,golden?lock=22"  },
-  { name: "Fatma D.",   avatar: "https://loremflickr.com/100/100/cat,tabby?lock=33"   },
-  { name: "Ali R.",     avatar: "https://loremflickr.com/100/100/dog,puppy?lock=44"   },
-  { name: "Zeynep S.",  avatar: "https://loremflickr.com/100/100/cat,kitten?lock=55"  },
-  { name: "Murat Ö.",   avatar: "https://loremflickr.com/100/100/dog,labrador?lock=66"},
-  { name: "Selin B.",   avatar: "https://loremflickr.com/100/100/cat,persian?lock=77" },
-  { name: "Hasan T.",   avatar: "https://loremflickr.com/100/100/dog,beagle?lock=88"  },
-  { name: "Dilara M.",  avatar: "https://loremflickr.com/100/100/cat,black?lock=99"   },
-  { name: "Burak A.",   avatar: "https://loremflickr.com/100/100/dog,husky?lock=110"  },
-  { name: "Leyla C.",   avatar: "https://loremflickr.com/100/100/cat,orange?lock=121" },
-  { name: "Serkan D.",  avatar: "https://loremflickr.com/100/100/dog,poodle?lock=132" },
-  { name: "Neslihan G.",avatar: "https://loremflickr.com/100/100/cat,white?lock=143"  },
-  { name: "Emre K.",    avatar: "https://loremflickr.com/100/100/dog,shepherd?lock=154"},
-  { name: "Pınar Y.",   avatar: "https://loremflickr.com/100/100/cat,siamese?lock=165"},
+  { name: "Pamuk",    avatar: "https://loremflickr.com/100/100/cat,kitten?lock=11"  },
+  { name: "Karamel",  avatar: "https://loremflickr.com/100/100/dog,golden?lock=22"  },
+  { name: "Tekir",    avatar: "https://loremflickr.com/100/100/cat,tabby?lock=33"   },
+  { name: "Şero",     avatar: "https://loremflickr.com/100/100/dog,puppy?lock=44"   },
+  { name: "Boncuk",   avatar: "https://loremflickr.com/100/100/cat,kitten?lock=55"  },
+  { name: "Tarçın",   avatar: "https://loremflickr.com/100/100/dog,labrador?lock=66"},
+  { name: "Minnoş",   avatar: "https://loremflickr.com/100/100/cat,persian?lock=77" },
+  { name: "Duman",    avatar: "https://loremflickr.com/100/100/dog,beagle?lock=88"  },
+  { name: "Zeytin",   avatar: "https://loremflickr.com/100/100/cat,black?lock=99"   },
+  { name: "Kurt",     avatar: "https://loremflickr.com/100/100/dog,husky?lock=110"  },
+  { name: "Portakal", avatar: "https://loremflickr.com/100/100/cat,orange?lock=121" },
+  { name: "Pamukcuk", avatar: "https://loremflickr.com/100/100/dog,poodle?lock=132" },
+  { name: "Kartopu",  avatar: "https://loremflickr.com/100/100/cat,white?lock=143"  },
+  { name: "Aslan",    avatar: "https://loremflickr.com/100/100/dog,shepherd?lock=154"},
+  { name: "Süt",      avatar: "https://loremflickr.com/100/100/cat,siamese?lock=165"},
 ];
 
 const LOCATIONS = [
