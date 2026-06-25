@@ -37,20 +37,33 @@ const C = {
 };
 
 /* ── Seed data ────────────────────────────────────────────── */
+/* Stable animal image URLs — loremflickr serves real pet photos by keyword */
+const CAT_AVATARS = [
+  "https://loremflickr.com/100/100/cat,kitten?lock=11",
+  "https://loremflickr.com/100/100/cat,kitten?lock=22",
+  "https://loremflickr.com/100/100/cat,tabby?lock=33",
+  "https://loremflickr.com/100/100/cat,kitten?lock=44",
+];
+const DOG_AVATARS = [
+  "https://loremflickr.com/100/100/dog,puppy?lock=55",
+  "https://loremflickr.com/100/100/dog,golden?lock=66",
+  "https://loremflickr.com/100/100/dog,puppy?lock=77",
+];
+
 const SEED_STORIES: Story[] = [
-  { id: "s1", user: "Pamuk",   avatar: "https://picsum.photos/seed/cat1/100/100",  seen: false },
-  { id: "s2", user: "Karamel", avatar: "https://picsum.photos/seed/dog1/100/100",  seen: false },
-  { id: "s3", user: "Tekir",   avatar: "https://picsum.photos/seed/cat2/100/100",  seen: true  },
-  { id: "s4", user: "Şero",    avatar: "https://picsum.photos/seed/dog2/100/100",  seen: false },
-  { id: "s5", user: "Boncuk",  avatar: "https://picsum.photos/seed/cat3/100/100",  seen: true  },
-  { id: "s6", user: "Tarçın",  avatar: "https://picsum.photos/seed/dog3/100/100",  seen: false },
+  { id: "s1", user: "Pamuk",   avatar: CAT_AVATARS[0], seen: false },
+  { id: "s2", user: "Karamel", avatar: DOG_AVATARS[0], seen: false },
+  { id: "s3", user: "Tekir",   avatar: CAT_AVATARS[1], seen: true  },
+  { id: "s4", user: "Şero",    avatar: DOG_AVATARS[1], seen: false },
+  { id: "s5", user: "Boncuk",  avatar: CAT_AVATARS[2], seen: true  },
+  { id: "s6", user: "Tarçın",  avatar: DOG_AVATARS[2], seen: false },
 ];
 
 const SEED_POSTS: PostData[] = [
   {
     id: "p1",
-    user: { name: "Pamuk", avatar: "https://picsum.photos/seed/cat1/100/100" },
-    image: "https://picsum.photos/seed/catpost1/600/700",
+    user: { name: "Pamuk", avatar: CAT_AVATARS[0] },
+    image: "https://loremflickr.com/600/700/cat,kitten?lock=101",
     caption: "Bugün güneşin tadını çıkardım ☀️ Sizi seviyorum hepinizi 🐾",
     location: "Kadıköy, İstanbul",
     likes: 142,
@@ -63,8 +76,8 @@ const SEED_POSTS: PostData[] = [
   },
   {
     id: "p2",
-    user: { name: "Şero", avatar: "https://picsum.photos/seed/dog2/100/100" },
-    image: "https://picsum.photos/seed/dogpost1/600/700",
+    user: { name: "Şero", avatar: DOG_AVATARS[1] },
+    image: "https://loremflickr.com/600/700/dog,puppy?lock=202",
     caption: "Park zamanı! 🐕 En sevdiğim aktivite koşmak 💨",
     location: "Beşiktaş, İstanbul",
     likes: 89,
@@ -76,8 +89,8 @@ const SEED_POSTS: PostData[] = [
   },
   {
     id: "p3",
-    user: { name: "Boncuk", avatar: "https://picsum.photos/seed/cat3/100/100" },
-    image: "https://picsum.photos/seed/catpost2/600/700",
+    user: { name: "Boncuk", avatar: CAT_AVATARS[2] },
+    image: "https://loremflickr.com/600/700/cat,cute?lock=303",
     caption: "Yeni evimizde ilk günüm 🏠 Her şey mükemmel!",
     location: "Üsküdar, İstanbul",
     likes: 234,
@@ -91,14 +104,42 @@ const SEED_POSTS: PostData[] = [
   },
   {
     id: "p4",
-    user: { name: "Tarçın", avatar: "https://picsum.photos/seed/dog3/100/100" },
-    image: "https://picsum.photos/seed/dogpost2/600/700",
+    user: { name: "Tarçın", avatar: DOG_AVATARS[2] },
+    image: "https://loremflickr.com/600/700/dog,golden?lock=404",
     caption: "Yağmurda bile mutluyum! ☔🐶",
     location: "Şişli, İstanbul",
     likes: 67,
     liked: false,
     comments: [],
     timestamp: "2 gün önce",
+  },
+  {
+    id: "p5",
+    user: { name: "Tekir", avatar: CAT_AVATARS[1] },
+    image: "https://loremflickr.com/600/700/cat,tabby?lock=505",
+    caption: "Yeni oyuncağım geldi 🎾 Bütün gün oynayabilirim!",
+    location: "Bakırköy, İstanbul",
+    likes: 178,
+    liked: false,
+    comments: [
+      { id: "c7", user: "Pamuk",   text: "Çok şanslısın 🎉" },
+      { id: "c8", user: "Karamel", text: "Benimle paylaşır mısın? 😄" },
+    ],
+    timestamp: "3 gün önce",
+  },
+  {
+    id: "p6",
+    user: { name: "Karamel", avatar: DOG_AVATARS[0] },
+    image: "https://loremflickr.com/600/700/dog,labrador?lock=606",
+    caption: "Sahilden selamlar! 🌊🐾 Denizi çok seviyorum",
+    location: "Florya, İstanbul",
+    likes: 312,
+    liked: false,
+    comments: [
+      { id: "c9",  user: "Şero",   text: "Renkler harika 😍" },
+      { id: "c10", user: "Boncuk", text: "Ben de gelmek istiyorum!" },
+    ],
+    timestamp: "4 gün önce",
   },
 ];
 
