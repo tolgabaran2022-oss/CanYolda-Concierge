@@ -12,6 +12,7 @@ import {
   View,
 } from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
+import { AppleIcon, FacebookIcon, GoogleIcon } from "@/components/SocialIcons";
 
 const PURPLE       = "#7B5CBF";
 const PURPLE_DARK  = "#3D2080";
@@ -87,19 +88,14 @@ export default function WelcomeScreen() {
 
         {/* Social */}
         <View style={styles.socialRow}>
-          {/* Google */}
-          <Pressable style={styles.socialBtn} onPress={handleSocial}>
-            <View style={styles.googleGWrap}>
-              <Text style={[styles.googleSegment, { color: "#4285F4" }]}>G</Text>
-            </View>
+          <Pressable style={({ pressed }) => [styles.socialBtn, { opacity: pressed ? 0.7 : 1, transform: [{ scale: pressed ? 0.94 : 1 }] }]} onPress={handleSocial}>
+            <GoogleIcon size={26} />
           </Pressable>
-          {/* Apple */}
-          <Pressable style={styles.socialBtn} onPress={handleSocial}>
-            <Ionicons name="logo-apple" size={28} color="#111" />
+          <Pressable style={({ pressed }) => [styles.socialBtn, { opacity: pressed ? 0.7 : 1, transform: [{ scale: pressed ? 0.94 : 1 }] }]} onPress={handleSocial}>
+            <AppleIcon size={26} color="#111111" />
           </Pressable>
-          {/* Facebook */}
-          <Pressable style={styles.socialBtn} onPress={handleSocial}>
-            <Ionicons name="logo-facebook" size={30} color="#1877F2" />
+          <Pressable style={({ pressed }) => [styles.socialBtn, { opacity: pressed ? 0.7 : 1, transform: [{ scale: pressed ? 0.94 : 1 }] }]} onPress={handleSocial}>
+            <FacebookIcon size={26} color="#1877F2" />
           </Pressable>
         </View>
 
@@ -254,16 +250,6 @@ const styles = StyleSheet.create({
     shadowRadius: 10,
     elevation: 3,
   },
-  googleGWrap: {
-    alignItems: "center",
-    justifyContent: "center",
-  },
-  googleSegment: {
-    fontSize: 26,
-    fontFamily: "Inter_700Bold",
-    lineHeight: 30,
-  },
-
   /* Privacy */
   privacyRow: {
     flexDirection: "row",
