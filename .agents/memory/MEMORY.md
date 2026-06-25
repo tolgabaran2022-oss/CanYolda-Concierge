@@ -1,4 +1,5 @@
 - [react-native-maps web stub](rn-maps-web-stub.md) — react-native-maps@1.18.0 crashes on web; needs metro.config.js resolver stub + stubs/react-native-maps.web.js
+- [Feed backend architecture](feed-backend.md) — feed DB tables (feed_posts/comments/likes/bookmarks) in lib/db; API routes at /api/feed/*; mobile falls back to FEED_POSTS if API unreachable
 - [Stripe connector field names](stripe-connector-fields.md) — Replit Stripe connector settings uses `secret` and `publishable`, NOT `secret_key`/`webhook_secret`
 - [stripe-replit-sync esbuild external](stripe-replit-sync-external.md) — must be in esbuild external list or `__dirname` resolves wrong and migration SQL files are not found
 - [Stripe boost packages direct query](stripe-boost-packages-query.md) — syncBackfill unreliable in dev; query packages directly via Stripe API in storage layer

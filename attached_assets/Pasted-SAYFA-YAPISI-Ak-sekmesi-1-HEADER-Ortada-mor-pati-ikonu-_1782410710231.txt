@@ -1,0 +1,80 @@
+SAYFA YAPISI (Akış sekmesi)
+═══════════════════════════
+
+1) HEADER:
+- Ortada mor pati ikonu + "canyoldaşı" (mor, bold)
+- Sağ üstte bildirim zili + kırmızı bildirim noktası
+
+2) HİKAYELER (yatay scroll):
+- İlk daire "Hikaye Ekle": mor halka + ortada + butonu (tıklanınca "yakında" mesajı/modal)
+- Hesaplar: pati_dostum, miyav.house, patili.bir.dunya, koydeki.patiler
+- Yuvarlak avatar + mor gradient halka + altında kullanıcı adı
+
+3) GÖNDERİ KARTLARI (feed):
+Her kart:
+- Avatar + kullanıcı adı (bold) + "X saat önce · Mahalle, İstanbul" + üç nokta menü
+- Gönderi metni (emojili)
+- Büyük gönderi fotoğrafı
+- Etkileşim satırı: kalp + beğeni, yorum balonu + sayı, paylaş + sayı, sağda kaydet (bookmark)
+
+4) ALT NAVİGASYON (sabit, alta yapışık):
+Sekmeler: Harita (map), Akış (home·aktif), Hayvanlar (paw), Evcil (heart), Profil (user)
+Aktif sekme mor, diğerleri gri.
+
+═══════════════════════════
+İŞLEVSELLİK (ÇALIŞAN BUTONLAR)
+═══════════════════════════
+
+BEĞENİ:
+- Kalp ikonuna tıklayınca beğeni durumu değişsin (boş kalp ↔ dolu mor kalp)
+- Beğeni sayısı +1/-1 güncellensin
+- Tıklayınca küçük bir "pop" animasyonu olsun
+- Durum Supabase'e kaydedilsin
+
+KAYDET (Bookmark):
+- Tıklayınca dolu/boş hale geçsin, mor renk alsın
+- Kaydedilenler Supabase'e yazılsın
+
+YORUM:
+- Yorum ikonuna tıklayınca alttan açılan bir yorum paneli (bottom sheet) açılsın
+- Mevcut yorumlar listelensin + yeni yorum yazma alanı olsun
+- Yeni yorum Supabase'e kaydedilsin, anlık görünsün
+
+PAYLAŞ:
+- Tıklayınca "Bağlantı kopyalandı" toast bildirimi göstersin
+
+SEKME GEÇİŞLERİ (alt menü çalışsın):
+- Akış: ana feed (yukarıdaki ekran)
+- Harita: İstanbul üzerinde sahiplendirme noktalarını gösteren basit bir harita placeholder'ı
+- Hayvanlar: sahiplendirilmeyi bekleyen hayvanların grid (ızgara) listesi (fotoğraf, isim, tür, konum)
+- Evcil: kullanıcının kaydettiği/beğendiği gönderiler
+- Profil: kullanıcı bilgisi, gönderileri ve istatistikler (gönderi/takipçi/takip sayısı)
+Aktif sekme mor, geçişlerde içerik değişsin.
+
+GÖNDERİ EKLEME:
+- Profil veya feed üzerinde bir "+" (yeni gönderi) butonu olsun
+- Fotoğraf URL'i + metin + konum girilebilen bir form (modal) açılsın
+- Gönderi Supabase'e eklenince feed'in en üstünde görünsün
+
+═══════════════════════════
+SUPABASE BACKEND
+═══════════════════════════
+Şu tabloları oluştur:
+- posts (id, username, avatar_url, image_url, caption, location, time_ago, likes_count, comments_count, shares_count, created_at)
+- comments (id, post_id, username, text, created_at)
+- likes (id, post_id, user_id, created_at)
+- bookmarks (id, post_id, user_id, created_at)
+- animals (id, name, species, location, image_url, status)
+
+Başlangıç için örnek (seed) veriler ekle:
+GÖNDERİLER:
+- miyav.house · Kadıköy, İstanbul · "Küçük prensesimiz bugün çok mutlu 🐱💜 Sahiplenmek isteyenler DM ✨" · 2 saat önce · 128 beğeni · 12 yorum · kedi fotoğrafı
+- patili.bir.dunya · Üsküdar, İstanbul · "Yeni dostumuz Max, artık güvende 🐶❤️" · 3 saat önce · 342 beğeni · 26 yorum · 8 paylaşım · golden retriever fotoğrafı
+- koydeki.patiler · Eyüp, İstanbul · "Yağmurdan sonra biraz mama zamanı 🍚🐱" · 5 saat önce · siyah-beyaz kedi fotoğrafı
+
+Fotoğraflar için stok evcil hayvan görselleri (Unsplash URL'leri) kullan.
+
+═══════════════════════════
+GENEL
+═══════════════════════════
+Tasarım temiz, modern, Instagram benzeri olsun. Tüm metinler Türkçe. Toast bildirimleri ve modallar yumuşak animasyonlarla görünsün. Mobil dokunmatik deneyime uygun büyük dokunma alanları olsun.

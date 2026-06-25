@@ -151,14 +151,16 @@ export const FEED_POSTS: PostData[] = POST_SEEDS.map((seed, index) => {
   const likes     = ((seed.imageLock * 17 + index * 43) % 1000);
 
   return {
-    id:        `post-${seed.imageLock}`,
-    user:      USERS[userIdx],
-    image:     `https://loremflickr.com/600/700/${seed.imageKeyword}?lock=${seed.imageLock}`,
-    caption:   seed.caption,
-    location:  LOCATIONS[locIdx],
+    id:           `post-${seed.imageLock}`,
+    user:         USERS[userIdx],
+    image:        `https://loremflickr.com/600/700/${seed.imageKeyword}?lock=${seed.imageLock}`,
+    caption:      seed.caption,
+    location:     LOCATIONS[locIdx],
     likes,
-    liked:     false,
-    comments:  pickComments(seed.imageLock),
-    timestamp: TIMES[timeIdx],
+    liked:        false,
+    bookmarked:   false,
+    sharesCount:  (seed.imageLock * 3) % 50,
+    comments:     pickComments(seed.imageLock),
+    timestamp:    TIMES[timeIdx],
   };
 });

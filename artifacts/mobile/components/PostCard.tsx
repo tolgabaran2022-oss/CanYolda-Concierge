@@ -1,7 +1,7 @@
 import { Ionicons, Feather } from "@expo/vector-icons";
 import * as Haptics from "expo-haptics";
 import { Image } from "expo-image";
-import React, { useState } from "react";
+import React, { useRef, useState } from "react";
 import {
   Animated,
   Dimensions,
@@ -14,8 +14,8 @@ import {
 } from "react-native";
 
 const { width: SW } = Dimensions.get("window");
-const CARD_W   = SW - 24;
-const IMG_H    = Math.round(CARD_W * 0.65);
+const CARD_W = SW - 24;
+const IMG_H  = Math.round(CARD_W * 0.65);
 
 const C = {
   purple:  "#7B5EA7",
@@ -28,28 +28,33 @@ const C = {
 
 export type Comment = { id: string; user: string; text: string };
 export type PostData = {
-  id: string;
-  user: { name: string; avatar: string };
-  image: string;
-  caption: string;
-  location: string;
-  likes: number;
-  liked: boolean;
-  comments: Comment[];
-  timestamp: string;
+  id:           string;
+  user:         { name: string; avatar: string };
+  image:        string;
+  caption:      string;
+  location:     string;
+  likes:        number;
+  liked:        boolean;
+  bookmarked:   boolean;
+  sharesCount?: number;
+  comments:     Comment[];
+  timestamp:    string;
 };
 
 interface Props {
-  post: PostData;
-  onLike: (id: string) => void;
-  onComment: (id: string, text: string) => void;
+  post:        PostData;
+  onLike:      (id: string) => void;
+  onBookmark:  (id: string) => void;
+  onComment:   (id: string, text: string) => void;
+  onShare?:    (id: string) => void;
 }
 
-export function PostCard({ post, onLike, onComment }: Props) {
+export function PostCard({ post, onLike, onBookmark, onComment, onShare }: Props) {
   const [commentText, setCommentText] = useState("");
   const [showInput,   setShowInput]   = useState(false);
   const [showAll,     setShowAll]     = useState(false);
-  const heartScale = React.useRef(new Animated.Value(1)).current;
+  const heartScale = useRef(new Animated.Value(1)).current;
+  const toastAnim  = useRef(new Animated.Value(0)).current;
 
   const handleLike = () => {
     Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
@@ -62,16 +67,33 @@ export function PostCard({ post, onLike, onComment }: Props) {
 
   const handleDoubleTap = () => { if (!post.liked) handleLike(); };
 
+  const handleBookmark = () => {
+    Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+    onBookmark(post.id);
+  };
+
+  const handleShare = () => {
+    Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+    onShare?.(post.id);
+    Animated.sequence([
+      Animated.timing(toastAnim, { toValue: 1, duration: 200, useNativeDriver: true }),
+      Animated.delay(1800),
+      Animated.timing(toastAnim, { toValue: 0, duration: 300, useNativeDriver: true }),
+    ]).start();
+  };
+
   const submitComment = () => {
     const t = commentText.trim();
     if (!t) return;
     onComment(post.id, t);
     setCommentText("");
+    setShowInput(false);
     Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
   };
 
   const visibleComments = showAll ? post.comments : post.comments.slice(-1);
-  const likeCount = post.likes + (post.liked ? 1 : 0);
+  const likeCount  = post.likes;
+  const shareCount = post.sharesCount ?? 0;
 
   return (
     <View style={S.card}>
@@ -104,6 +126,7 @@ export function PostCard({ post, onLike, onComment }: Props) {
       {/* ── Actions ─────────────────────────────── */}
       <View style={S.actions}>
         <View style={S.leftActions}>
+          {/* Like */}
           <Pressable onPress={handleLike} style={S.actionBtn} hitSlop={8}>
             <Animated.View style={{ transform: [{ scale: heartScale }] }}>
               <Ionicons
@@ -113,15 +136,22 @@ export function PostCard({ post, onLike, onComment }: Props) {
               />
             </Animated.View>
           </Pressable>
+          {/* Comment */}
           <Pressable onPress={() => setShowInput((v) => !v)} style={S.actionBtn} hitSlop={8}>
             <Ionicons name="chatbubble-outline" size={22} color={C.text} />
           </Pressable>
-          <Pressable style={S.actionBtn} hitSlop={8}>
+          {/* Share */}
+          <Pressable onPress={handleShare} style={S.actionBtn} hitSlop={8}>
             <Feather name="send" size={21} color={C.text} />
           </Pressable>
         </View>
-        <Pressable hitSlop={8}>
-          <Ionicons name="bookmark-outline" size={22} color={C.text} />
+        {/* Bookmark */}
+        <Pressable onPress={handleBookmark} hitSlop={8}>
+          <Ionicons
+            name={post.bookmarked ? "bookmark" : "bookmark-outline"}
+            size={22}
+            color={post.bookmarked ? C.purple : C.text}
+          />
         </Pressable>
       </View>
 
@@ -131,6 +161,9 @@ export function PostCard({ post, onLike, onComment }: Props) {
           <Text style={S.stat}>{likeCount} beğeni</Text>
           {post.comments.length > 0 && (
             <Text style={S.stat}>{post.comments.length} yorum</Text>
+          )}
+          {shareCount > 0 && (
+            <Text style={S.stat}>{shareCount} paylaşım</Text>
           )}
         </View>
 
@@ -177,6 +210,14 @@ export function PostCard({ post, onLike, onComment }: Props) {
           </View>
         </View>
       )}
+
+      {/* ── Share toast ──────────────────────────── */}
+      <Animated.View
+        pointerEvents="none"
+        style={[S.toast, { opacity: toastAnim }]}
+      >
+        <Text style={S.toastText}>🔗 Bağlantı kopyalandı!</Text>
+      </Animated.View>
     </View>
   );
 }
@@ -223,7 +264,7 @@ const S = StyleSheet.create({
   },
   avatar:   { width: "100%", height: "100%" },
   username: { fontSize: 13, fontFamily: "Inter_600SemiBold", color: C.text },
-  meta:     { fontSize: 11, fontFamily: "Inter_400Regular", color: C.muted, marginTop: 1 },
+  meta:     { fontSize: 11, fontFamily: "Inter_400Regular",  color: C.muted, marginTop: 1 },
 
   imageWrap: { width: "100%", height: IMG_H },
   image:     { width: "100%", height: "100%" },
@@ -239,10 +280,10 @@ const S = StyleSheet.create({
   leftActions: { flexDirection: "row", gap: 16 },
   actionBtn:   { padding: 2 },
 
-  foot: { paddingHorizontal: 14, paddingBottom: 14, gap: 3 },
-  statsRow: { flexDirection: "row", gap: 12 },
-  stat:     { fontSize: 12, fontFamily: "Inter_700Bold", color: C.text },
-  caption:  { fontSize: 13, fontFamily: "Inter_400Regular", color: C.text, lineHeight: 18 },
+  foot:        { paddingHorizontal: 14, paddingBottom: 14, gap: 3 },
+  statsRow:    { flexDirection: "row", gap: 12 },
+  stat:        { fontSize: 12, fontFamily: "Inter_700Bold", color: C.text },
+  caption:     { fontSize: 13, fontFamily: "Inter_400Regular", color: C.text, lineHeight: 18 },
   captionUser: { fontFamily: "Inter_700Bold" },
   viewAll:     { fontSize: 12, fontFamily: "Inter_400Regular", color: C.muted },
   commentRow:  { fontSize: 12, fontFamily: "Inter_400Regular", color: C.text },
@@ -270,4 +311,19 @@ const S = StyleSheet.create({
     color: C.text,
   },
   sendBtn: { padding: 2 },
+
+  toast: {
+    position: "absolute",
+    bottom: 60,
+    alignSelf: "center",
+    backgroundColor: "rgba(59,36,110,0.88)",
+    paddingHorizontal: 18,
+    paddingVertical: 9,
+    borderRadius: 24,
+  },
+  toastText: {
+    color: "#FFFFFF",
+    fontSize: 13,
+    fontFamily: "Inter_600SemiBold",
+  },
 });
