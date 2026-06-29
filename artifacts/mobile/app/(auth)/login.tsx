@@ -12,7 +12,7 @@ import {
   View,
 } from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
-import { AppleIcon, FacebookIcon, GoogleIcon } from "@/components/SocialIcons";
+import { AppleIcon, GoogleIcon } from "@/components/SocialIcons";
 
 const PURPLE       = "#7B5CBF";
 const PURPLE_DARK  = "#3D2080";
@@ -93,9 +93,6 @@ export default function WelcomeScreen() {
           </Pressable>
           <Pressable style={({ pressed }) => [styles.socialBtn, { opacity: pressed ? 0.7 : 1, transform: [{ scale: pressed ? 0.94 : 1 }] }]} onPress={handleSocial}>
             <AppleIcon size={26} color="#111111" />
-          </Pressable>
-          <Pressable style={({ pressed }) => [styles.socialBtn, { opacity: pressed ? 0.7 : 1, transform: [{ scale: pressed ? 0.94 : 1 }] }]} onPress={handleSocial}>
-            <FacebookIcon size={26} color="#1877F2" />
           </Pressable>
         </View>
 
