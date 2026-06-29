@@ -27,7 +27,7 @@ async function upsertUser(
   email: string | null,
   name: string | null,
   avatarUrl: string | null
-) {
+): Promise<{ user: typeof oauthUsers.$inferSelect; isNewUser: boolean }> {
   const existing = await db
     .select()
     .from(oauthUsers)
@@ -40,14 +40,14 @@ async function upsertUser(
       .set({ email, name, avatarUrl, updatedAt: new Date() })
       .where(eq(oauthUsers.id, existing[0].id))
       .returning();
-    return user;
+    return { user, isNewUser: false };
   }
 
   const [user] = await db
     .insert(oauthUsers)
     .values({ provider, providerId, email, name, avatarUrl })
     .returning();
-  return user;
+  return { user, isNewUser: true };
 }
 
 /* ── POST /api/auth/google ────────────────────────────────────
@@ -90,7 +90,7 @@ router.post("/auth/google", async (req, res): Promise<void> => {
       return;
     }
 
-    const user = await upsertUser(
+    const { user, isNewUser } = await upsertUser(
       "google",
       payload.sub,
       payload.email ?? null,
@@ -101,6 +101,7 @@ router.post("/auth/google", async (req, res): Promise<void> => {
     res.json({
       token: makeToken(user),
       user: { id: user.id, email: user.email, name: user.name, avatar: user.avatarUrl },
+      isNewUser,
     });
   } catch (err) {
     logger.error({ err }, "Google auth error");
@@ -145,7 +146,7 @@ router.post("/auth/apple", async (req, res): Promise<void> => {
       issuer: "https://appleid.apple.com",
     }) as jwt.JwtPayload;
 
-    const user = await upsertUser(
+    const { user, isNewUser } = await upsertUser(
       "apple",
       payload.sub as string,
       (payload.email as string | undefined) ?? null,
@@ -156,6 +157,7 @@ router.post("/auth/apple", async (req, res): Promise<void> => {
     res.json({
       token: makeToken(user),
       user: { id: user.id, email: user.email, name: user.name, avatar: null },
+      isNewUser,
     });
   } catch (err) {
     logger.error({ err }, "Apple auth error");
@@ -201,7 +203,7 @@ router.post("/auth/facebook", async (req, res): Promise<void> => {
       picture?: { data?: { url?: string } };
     };
 
-    const user = await upsertUser(
+    const { user, isNewUser } = await upsertUser(
       "facebook",
       profile.id,
       profile.email ?? null,
@@ -212,6 +214,7 @@ router.post("/auth/facebook", async (req, res): Promise<void> => {
     res.json({
       token: makeToken(user),
       user: { id: user.id, email: user.email, name: user.name, avatar: user.avatarUrl },
+      isNewUser,
     });
   } catch (err) {
     logger.error({ err }, "Facebook auth error");

@@ -1,18 +1,12 @@
 /**
  * useOAuthLogin
  *
- * Expo-compatible OAuth helper for Google, Apple, and Facebook.
+ * Production-ready OAuth helpers for Google (PKCE) and Apple (native).
+ * Returns { token, user } from backend. Token stored in AsyncStorage.
  *
- * Google + Facebook → expo-auth-session (browser-based PKCE flow)
- * Apple            → expo-apple-authentication (native iOS module)
- *
- * Each method returns a { token, user } pair from the backend,
- * where `token` is the JWT to store in AsyncStorage.
- *
- * REQUIRED ENV VARS (set in Replit Secrets):
- *   EXPO_PUBLIC_GOOGLE_CLIENT_ID   – iOS OAuth 2.0 client ID from Google Cloud Console
- *   EXPO_PUBLIC_FACEBOOK_APP_ID    – App ID from Facebook Developers Portal
- *   EXPO_PUBLIC_API_URL            – e.g. https://<your-replit-domain>/api
+ * Required env vars:
+ *   EXPO_PUBLIC_GOOGLE_CLIENT_ID  – Google Cloud Console iOS OAuth 2.0 Client ID
+ *   EXPO_PUBLIC_API_URL            – https://<domain>/api  (or /api for web)
  */
 
 import * as AppleAuthentication from "expo-apple-authentication";
@@ -22,18 +16,36 @@ import { Platform } from "react-native";
 
 WebBrowser.maybeCompleteAuthSession();
 
-const API_URL = process.env.EXPO_PUBLIC_API_URL ?? "/api";
+const API_URL =
+  process.env.EXPO_PUBLIC_API_URL ??
+  (process.env.EXPO_PUBLIC_DOMAIN
+    ? `https://${process.env.EXPO_PUBLIC_DOMAIN}/api`
+    : "/api");
 
 export interface OAuthUser {
   id: string;
   email: string | null;
   name: string | null;
+  avatar?: string | null;
 }
+
+export type OAuthResult = {
+  token: string;
+  user: OAuthUser;
+  isNewUser: boolean;
+};
+
+export type OAuthError = {
+  code: "no_credentials" | "cancel" | "no_token" | "network" | "server" | "platform";
+  message: string;
+};
+
+/* ── helpers ────────────────────────────────────────────────────── */
 
 async function postToBackend(
   path: string,
   body: Record<string, string>
-): Promise<{ token: string; user: OAuthUser }> {
+): Promise<{ token: string; user: OAuthUser; isNewUser: boolean }> {
   const res = await fetch(`${API_URL}${path}`, {
     method: "POST",
     headers: { "Content-Type": "application/json" },
@@ -41,19 +53,24 @@ async function postToBackend(
   });
   const data = await res.json();
   if (!res.ok) throw new Error(data.error ?? "Giriş başarısız");
-  return data as { token: string; user: OAuthUser };
+  return data as { token: string; user: OAuthUser; isNewUser: boolean };
 }
 
-/* ── Google ──────────────────────────────────────────────── */
+/* ── Google (PKCE via expo-auth-session) ────────────────────────────── */
 export function useGoogleLogin() {
   const clientId = process.env.EXPO_PUBLIC_GOOGLE_CLIENT_ID ?? "";
 
   const discovery = {
     authorizationEndpoint: "https://accounts.google.com/o/oauth2/v2/auth",
-    tokenEndpoint:         "https://oauth2.googleapis.com/token",
+    tokenEndpoint: "https://oauth2.googleapis.com/token",
   };
 
-  const redirectUri = AuthSession.makeRedirectUri();
+  // Redirect URI: expo-auth-session resolves via scheme (com.canyoldasi.app) for native
+  // and window.location.origin for web automatically.
+  const redirectUri = AuthSession.makeRedirectUri({
+    scheme: "com.canyoldasi.app",
+    preferLocalhost: false,
+  });
 
   const [request, response, promptAsync] = AuthSession.useAuthRequest(
     {
@@ -66,30 +83,44 @@ export function useGoogleLogin() {
     discovery
   );
 
-  async function login() {
+  async function login(): Promise<OAuthResult> {
     if (!clientId) {
-      throw new Error(
-        "EXPO_PUBLIC_GOOGLE_CLIENT_ID henüz ayarlanmamış.\n" +
-        "Google Cloud Console → APIs & Services → Credentials → iOS OAuth 2.0 Client ID oluşturun."
+      throw Object.assign(
+        new Error(
+          "EXPO_PUBLIC_GOOGLE_CLIENT_ID ayarlı değil.\n" +
+            "Google Cloud Console → Credentials → iOS OAuth 2.0 Client ID oluşturun."
+        ),
+        { code: "no_credentials" as const }
       );
     }
     const result = await promptAsync();
     if (result.type !== "success") {
-      throw new Error("Google girişi iptal edildi.");
+      throw Object.assign(
+        new Error("Google girişi iptal edildi."),
+        { code: result.type === "cancel" ? ("cancel" as const) : ("no_token" as const) }
+      );
     }
     const idToken = result.params.id_token;
-    if (!idToken) throw new Error("Google'dan token alınamadı.");
+    if (!idToken) {
+      throw Object.assign(
+        new Error("Google'dan kimlik token'ı alınamadı."),
+        { code: "no_token" as const }
+      );
+    }
     return postToBackend("/auth/google", { idToken });
   }
 
-  return { login, request };
+  return { login, request, isConfigured: !!clientId };
 }
 
-/* ── Apple ───────────────────────────────────────────────── */
+/* ── Apple (native expo-apple-authentication) ────────────────────────────── */
 export function useAppleLogin() {
-  async function login() {
+  async function login(): Promise<OAuthResult> {
     if (Platform.OS !== "ios") {
-      throw new Error("Apple ile giriş yalnızca iOS cihazlarda kullanılabilir.");
+      throw Object.assign(
+        new Error("Apple ile giriş yalnızca iOS cihazlarda kullanılabilir."),
+        { code: "platform" as const }
+      );
     }
 
     const credential = await AppleAuthentication.signInAsync({
@@ -100,7 +131,10 @@ export function useAppleLogin() {
     });
 
     if (!credential.identityToken) {
-      throw new Error("Apple'dan kimlik token'ı alınamadı.");
+      throw Object.assign(
+        new Error("Apple'dan kimlik token'ı alınamadı."),
+        { code: "no_token" as const }
+      );
     }
 
     const fullName = [
@@ -116,45 +150,5 @@ export function useAppleLogin() {
     });
   }
 
-  return { login };
-}
-
-/* ── Facebook ────────────────────────────────────────────── */
-export function useFacebookLogin() {
-  const appId = process.env.EXPO_PUBLIC_FACEBOOK_APP_ID ?? "";
-
-  const discovery = {
-    authorizationEndpoint: "https://www.facebook.com/dialog/oauth",
-    tokenEndpoint:         "https://graph.facebook.com/oauth/access_token",
-  };
-
-  const redirectUri = AuthSession.makeRedirectUri();
-
-  const [request, response, promptAsync] = AuthSession.useAuthRequest(
-    {
-      clientId: appId,
-      redirectUri,
-      scopes: ["public_profile", "email"],
-      responseType: AuthSession.ResponseType.Token,
-    },
-    discovery
-  );
-
-  async function login() {
-    if (!appId) {
-      throw new Error(
-        "EXPO_PUBLIC_FACEBOOK_APP_ID henüz ayarlanmamış.\n" +
-        "Facebook Developers → My Apps → uygulamanızın App ID'sini ekleyin."
-      );
-    }
-    const result = await promptAsync();
-    if (result.type !== "success") {
-      throw new Error("Facebook girişi iptal edildi.");
-    }
-    const accessToken = result.params.access_token;
-    if (!accessToken) throw new Error("Facebook'tan token alınamadı.");
-    return postToBackend("/auth/facebook", { accessToken });
-  }
-
-  return { login, request };
+  return { login, isConfigured: Platform.OS === "ios" };
 }

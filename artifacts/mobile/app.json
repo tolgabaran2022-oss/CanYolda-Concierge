@@ -18,7 +18,18 @@
       "infoPlist": {
         "NSLocationWhenInUseUsageDescription": "CanYoldaşı, sokak hayvanlarının konumunu belirlemek için konumunuzu kullanır.",
         "NSPhotoLibraryUsageDescription": "CanYoldaşı, hayvan fotoğrafı eklemek için fotoğraf kitaplığınıza erişir.",
-        "NSCameraUsageDescription": "CanYoldaşı, hayvan fotoğrafı çekmek için kameranıza erişir."
+        "NSCameraUsageDescription": "CanYoldaşı, hayvan fotoğrafı çekmek için kameranıza erişir.",
+        "CFBundleURLTypes": [
+          {
+            "CFBundleURLSchemes": [
+              "com.canyoldasi.app",
+              "mobile"
+            ]
+          }
+        ]
+      },
+      "entitlements": {
+        "com.apple.developer.applesignin": ["Default"]
       }
     },
     "android": {

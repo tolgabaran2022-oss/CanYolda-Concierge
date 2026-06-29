@@ -13,6 +13,7 @@ export interface User {
   name: string;
   email: string;
   provider?: "local" | "google" | "apple" | "facebook";
+  avatar?: string | null;
 }
 
 interface StoredUser extends User {

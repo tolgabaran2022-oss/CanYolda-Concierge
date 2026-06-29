@@ -58,7 +58,7 @@
   "dependencies": {
     "expo-apple-authentication": "^56.0.4",
     "expo-auth-session": "^56.0.14",
-    "expo-crypto": "^56.0.4",
+    "expo-crypto": "~15.0.9",
     "react-native-maps": "1.18.0"
   }
 }
