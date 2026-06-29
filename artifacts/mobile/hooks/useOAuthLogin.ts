@@ -9,12 +9,17 @@
  *   EXPO_PUBLIC_API_URL            – https://<domain>/api  (or /api for web)
  */
 
-import * as AppleAuthentication from "expo-apple-authentication";
+import type * as AppleAuthenticationNS from "expo-apple-authentication";
 import * as AuthSession from "expo-auth-session";
 import * as WebBrowser from "expo-web-browser";
 import { Platform } from "react-native";
 
 WebBrowser.maybeCompleteAuthSession();
+
+let AppleAuthentication: typeof AppleAuthenticationNS | null = null;
+if (Platform.OS === "ios") {
+  AppleAuthentication = require("expo-apple-authentication");
+}
 
 const API_URL =
   process.env.EXPO_PUBLIC_API_URL ??
@@ -119,6 +124,13 @@ export function useAppleLogin() {
     if (Platform.OS !== "ios") {
       throw Object.assign(
         new Error("Apple ile giriş yalnızca iOS cihazlarda kullanılabilir."),
+        { code: "platform" as const }
+      );
+    }
+
+    if (!AppleAuthentication) {
+      throw Object.assign(
+        new Error("Apple Sign-In destegi bulunamadi."),
         { code: "platform" as const }
       );
     }

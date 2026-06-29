@@ -1,9 +1,17 @@
 import { Tabs, usePathname, useRouter } from "expo-router";
-import { SymbolView } from "expo-symbols";
 import { Feather } from "@expo/vector-icons";
 import React from "react";
 import { Platform, Pressable, StyleSheet, Text, View } from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
+
+let SymbolView: any = null;
+if (Platform.OS === "ios") {
+  try {
+    SymbolView = require("expo-symbols").SymbolView;
+  } catch {
+    SymbolView = null;
+  }
+}
 
 const PURPLE   = "#7B5EA7";
 const INACTIVE = "#B0A3C4";
@@ -55,7 +63,7 @@ function CustomTabBar() {
             >
               {active && <View style={styles.activeDot} />}
               <View style={[styles.iconWrap, active && styles.iconWrapActive]}>
-                {isIOS ? (
+                {isIOS && SymbolView ? (
                   <SymbolView name={tab.sfSymbol as any} tintColor={color} size={20} />
                 ) : (
                   <Feather name={tab.featherIcon as any} size={20} color={color} />
