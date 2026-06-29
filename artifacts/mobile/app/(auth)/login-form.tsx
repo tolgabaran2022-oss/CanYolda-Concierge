@@ -34,7 +34,7 @@ export default function LoginFormScreen() {
   const [isLoading, setIsLoading] = useState(false);
 
   const EMAIL_REGEX =
-    /^[a-zA-Z0-9._%+-]+@(gmail\.com|hotmail\.com|yahoo\.com|outlook\.com)$/i;
+    /^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$/i;
 
   const handleLogin = async () => {
     if (!email.trim() || !password.trim()) {
@@ -44,7 +44,7 @@ export default function LoginFormScreen() {
     if (!EMAIL_REGEX.test(email.trim())) {
       Alert.alert(
         "Geçersiz E-posta",
-        "Lütfen geçerli bir Gmail, Hotmail, Yahoo veya Outlook adresi girin."
+        "Lütfen geçerli bir e-posta adresi girin."
       );
       return;
     }
@@ -52,6 +52,7 @@ export default function LoginFormScreen() {
     try {
       await login(email.trim(), password);
       Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
+      router.replace("/(tabs)");
     } catch (e: unknown) {
       const msg = e instanceof Error ? e.message : "Giriş yapılamadı.";
       Alert.alert("Hata", msg);

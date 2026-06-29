@@ -16,31 +16,17 @@ function MapView({ style, children }) {
     React.createElement(
       Text,
       { style: { color: "#8B7260", fontSize: 13, fontFamily: "sans-serif" } },
-      "Harita (mobil uygulamada görüntülenir)"
+      "Harita (mobil uygulamada goruntulenir)"
     ),
     children
   );
 }
 
-function Marker() {
-  return null;
-}
-
-function Callout() {
-  return null;
-}
-
-function Polyline() {
-  return null;
-}
-
-function Polygon() {
-  return null;
-}
-
-function Circle() {
-  return null;
-}
+function Marker() { return null; }
+function Callout() { return null; }
+function Polyline() { return null; }
+function Polygon() { return null; }
+function Circle() { return null; }
 
 MapView.Marker = Marker;
 MapView.Callout = Callout;

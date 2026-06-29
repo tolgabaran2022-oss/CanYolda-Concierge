@@ -37,7 +37,7 @@ export default function RegisterScreen() {
   const [isLoading, setIsLoading] = useState(false);
 
   const EMAIL_REGEX =
-    /^[a-zA-Z0-9._%+-]+@(gmail\.com|hotmail\.com|yahoo\.com|outlook\.com)$/i;
+    /^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$/i;
 
   const handleRegister = async () => {
     if (!name.trim() || !email.trim() || !password.trim()) {
@@ -47,7 +47,7 @@ export default function RegisterScreen() {
     if (!EMAIL_REGEX.test(email.trim())) {
       Alert.alert(
         "Geçersiz E-posta",
-        "Lütfen geçerli bir Gmail, Hotmail, Yahoo veya Outlook adresi girin."
+        "Lütfen geçerli bir e-posta adresi girin."
       );
       return;
     }
@@ -59,8 +59,9 @@ export default function RegisterScreen() {
     try {
       await register(name.trim(), email.trim(), password);
       Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
+      router.replace("/(tabs)");
     } catch (e: unknown) {
-      const msg = e instanceof Error ? e.message : "Kayıt yapılamadı.";
+      const msg = e instanceof Error ? e.message : "Kayit yapilamadi.";
       Alert.alert("Hata", msg);
       Haptics.notificationAsync(Haptics.NotificationFeedbackType.Error);
     } finally {

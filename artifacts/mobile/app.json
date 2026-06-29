@@ -1,48 +1,102 @@
 {
   "expo": {
-    "name": "CanYoldaşı",
-    "slug": "mobile",
+    "name": "CanYoldasi",
+    "slug": "canyoldasi",
     "version": "1.0.0",
+    "buildNumber": "1",
     "orientation": "portrait",
     "icon": "./assets/images/icon.png",
-    "scheme": "mobile",
+    "scheme": "com.canyoldasi.app",
     "userInterfaceStyle": "light",
     "newArchEnabled": true,
+    "backgroundColor": "#FAF7F0",
     "splash": {
       "image": "./assets/images/icon.png",
       "resizeMode": "contain",
       "backgroundColor": "#FAF7F0"
     },
+    "updates": {
+      "enabled": false,
+      "url": "https://u.expo.dev/canyoldasi"
+    },
+    "assetBundlePatterns": [
+      "**/*"
+    ],
     "ios": {
-      "supportsTablet": false,
+      "supportsTablet": true,
+      "bundleIdentifier": "com.canyoldasi.app",
+      "buildNumber": "1.0.0.1",
       "infoPlist": {
-        "NSLocationWhenInUseUsageDescription": "CanYoldaşı, sokak hayvanlarının konumunu belirlemek için konumunuzu kullanır.",
-        "NSPhotoLibraryUsageDescription": "CanYoldaşı, hayvan fotoğrafı eklemek için fotoğraf kitaplığınıza erişir.",
-        "NSCameraUsageDescription": "CanYoldaşı, hayvan fotoğrafı çekmek için kameranıza erişir.",
+        "ITSAppUsesNonExemptEncryption": false,
+        "CFBundleDevelopmentRegion": "tr",
+        "CFBundleLocalizations": ["tr", "en"],
+        "CFBundleDisplayName": "CanYoldasi",
         "CFBundleURLTypes": [
           {
+            "CFBundleURLName": "com.canyoldasi.app",
             "CFBundleURLSchemes": [
               "com.canyoldasi.app",
               "mobile"
             ]
           }
-        ]
+        ],
+        "LSApplicationQueriesSchemes": [
+          "comgooglemaps",
+          "citymapper",
+          "uber",
+          "lyft",
+          "transit",
+          "truckmap",
+          "waze",
+          "yandexnavi",
+          "yandextaxi",
+          "yandexmaps",
+          "kakaomap",
+          "tmap",
+          "szn-mapy",
+          "mapswithme",
+          "osmandmaps",
+          "gett",
+          "nmap"
+        ],
+        "NSLocationAlwaysAndWhenInUseUsageDescription": "CanYoldasi, sokak hayvanlarinin konumunu haritada gostermek ve acil durumlarda veterinerlere yakinlik hesaplamak icin konumunuzu kullanir. Arka plan konumu raporlarinizi otomatik kaydetmek icin kullanilir.",
+        "NSLocationWhenInUseUsageDescription": "CanYoldasi, sokak hayvanlarinin konumunu haritada gostermek ve yakinindaki veterinerleri listelemek icin konumunuzu kullanir.",
+        "NSLocationAlwaysUsageDescription": "CanYoldasi, arka planda konumunuzu kullanarak sokak hayvani raporlarinizi otomatik kaydeder.",
+        "NSPhotoLibraryUsageDescription": "CanYoldasi, sokak hayvani fotograflari yuklemenizi ve profil fotografinizi ayarlamanizi saglamak icin fotograf kitapliginiza erisir.",
+        "NSPhotoLibraryAddUsageDescription": "CanYoldasi, sokak hayvani fotograflarini cihaziniza kaydetmenizi saglamak icin fotograf kitapliginiza yazma erisimi ister.",
+        "NSCameraUsageDescription": "CanYoldasi, sokak hayvani fotograflari cekmenizi ve profil fotografinizi guncellemenizi saglamak icin kameraniza erisir.",
+        "NSFaceIDUsageDescription": "CanYoldasi, hesabiniza guvenli giris yapmanizi saglamak icin Face ID kullanir.",
+        "NSUserTrackingUsageDescription": "CanYoldasi, size daha kisisellestirilmis icerik sunmak ve uygulama performansini iyilestirmek icin kullanim verilerinizi toplar. Bu veriler ucuncu taraflarla paylasilmaz.",
+        "NSMicrophoneUsageDescription": "CanYoldasi, hayvan ses kayitlari eklemenizi saglamak icin mikrofonunuza erisir."
       },
       "entitlements": {
-        "com.apple.developer.applesignin": ["Default"]
+        "com.apple.developer.applesignin": ["Default"],
+        "aps-environment": "production"
       }
     },
     "android": {
+      "package": "com.canyoldasi.app",
+      "versionCode": 1,
       "permissions": [
         "ACCESS_FINE_LOCATION",
         "ACCESS_COARSE_LOCATION",
         "READ_EXTERNAL_STORAGE",
         "WRITE_EXTERNAL_STORAGE",
-        "CAMERA"
+        "CAMERA",
+        "RECEIVE_BOOT_COMPLETED",
+        "VIBRATE"
+      ],
+      "adaptiveIcon": {
+        "foregroundImage": "./assets/images/icon.png",
+        "backgroundColor": "#FAF7F0"
+      },
+      "blockedPermissions": [
+        "android.permission.RECORD_AUDIO"
       ]
     },
     "web": {
-      "favicon": "./assets/images/icon.png"
+      "favicon": "./assets/images/icon.png",
+      "bundler": "metro"
     },
     "plugins": [
       [
@@ -53,13 +107,44 @@
       ],
       "expo-font",
       "expo-web-browser",
-      "expo-apple-authentication",
-      "expo-location",
-      "expo-image-picker"
+      [
+        "expo-apple-authentication",
+        {
+          "teamId": "YOUR_APPLE_TEAM_ID"
+        }
+      ],
+      [
+        "expo-location",
+        {
+          "locationAlwaysAndWhenInUsePermission": "CanYoldasi, sokak hayvanlarinin konumunu belirlemek icin konumunuzu kullanir.",
+          "isIosBackgroundLocationEnabled": false,
+          "isAndroidBackgroundLocationEnabled": false
+        }
+      ],
+      [
+        "expo-image-picker",
+        {
+          "photosPermission": "CanYoldasi, hayvan fotografi eklemek icin fotograf kitapliginiza erisir.",
+          "cameraPermission": "CanYoldasi, hayvan fotografi cekmek icin kameraniza erisir."
+        }
+      ],
+      [
+        "expo-splash-screen",
+        {
+          "backgroundColor": "#FAF7F0",
+          "image": "./assets/images/icon.png",
+          "resizeMode": "contain"
+        }
+      ]
     ],
     "experiments": {
       "typedRoutes": true,
       "reactCompiler": true
+    },
+    "extra": {
+      "eas": {
+        "projectId": "canyoldasi"
+      }
     }
   }
 }
