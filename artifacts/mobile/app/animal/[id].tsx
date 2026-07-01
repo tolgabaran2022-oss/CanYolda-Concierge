@@ -405,7 +405,7 @@ export default function AnimalDetailScreen() {
       </KeyboardAvoidingView>
 
       {/* ── Sticky action bar ───────────────────── */}
-      <View style={[D.actionBar, { paddingBottom: Math.max(insets.bottom, 16) + 8 }]}>
+      <View style={D.actionBar}>
         <PressableScale onPress={handleMapOpen} style={D.actionOutline}>
           <Ionicons name="chatbubble-outline" size={19} color={C.purple} />
           <Text style={D.actionOutlineText}>Yorum Yap</Text>
@@ -892,8 +892,12 @@ const D = StyleSheet.create({
     bottom: 0, left: 0, right: 0,
     flexDirection: "row",
     gap: 12,
-    paddingHorizontal: 20,
-    paddingTop: 14,
+    paddingLeft: 31,
+    paddingRight: 28,
+    paddingTop: 15,
+    paddingBottom: 53,
+    marginTop: -10,
+    marginBottom: -10,
     backgroundColor: "rgba(255,255,255,0.97)",
     borderTopWidth: 1,
     borderTopColor: "#F0EDF8",
@@ -913,6 +917,9 @@ const D = StyleSheet.create({
     borderColor: "#7B5EA7",
     borderRadius: 18,
     height: 54,
+    marginVertical: 3,
+    marginHorizontal: 18,
+    paddingHorizontal: 9,
   },
   actionOutlineText: {
     fontSize: 15,
@@ -927,6 +934,10 @@ const D = StyleSheet.create({
     gap: 8,
     borderRadius: 18,
     height: 54,
+    marginVertical: 4,
+    marginHorizontal: 19,
+    paddingVertical: 7,
+    paddingHorizontal: 10,
     shadowColor: "#5B3FD6",
     shadowOffset: { width: 0, height: 4 },
     shadowOpacity: 0.28,
