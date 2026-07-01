@@ -1,0 +1,79 @@
+İlan Detayı ekranını UI/UX olarak düzelt.
+
+Mevcut içerikler aynı kalsın:
+- Pamuk
+- Kedi • 2 yaş
+- Zeynep K. • 6 gün önce
+- Kadıköy, İstanbul
+- Açıklama metni
+- Sahip Arıyor rozeti
+- İletişime Geç butonu
+
+Yapılacak düzeltmeler:
+
+1. Header ile görsel alanı arasındaki büyük beyaz boşluğu tamamen kaldır.
+   Görsel alanı header’ın hemen altından başlasın.
+
+2. Üstteki mor placeholder alanını daha modern yap.
+   Eğer gerçek hayvan fotoğrafı yoksa:
+   - açık lavanta gradient arka plan kullan
+   - ortadaki kalp ikonunu küçült
+   - alan yüksekliğini daha dengeli yap
+   - image container 16:9 oranında olsun
+
+3. İçerik alanını daha premium iOS tasarımına çevir.
+   Arka plan çok açık krem/beyaz olsun.
+   Kartlar birbirinden net ayrılsın.
+
+4. “Pamuk” başlığı daha güçlü görünsün.
+   Font boyutu 28-32px arası olsun.
+   Altındaki “Kedi • 2 yaş” daha küçük ve gri/lila tonunda olsun.
+
+5. “Sahip Arıyor” rozetini modernleştir.
+   Rozete küçük pati veya kalp ikonu ekle.
+   Border-radius yüksek olsun.
+   Hafif border ve soft background kullan.
+
+6. Kullanıcı bilgisi satırını düzenle.
+   Avatar daha kaliteli görünsün.
+   İlan tarihi daha küçük ve soft renkte olsun.
+   Satır hizalaması düzgün olsun.
+
+7. Konum kutusu input gibi görünmesin.
+   Daha sade bilgi kartı gibi tasarla.
+   Sol tarafta konum ikonu olsun.
+   Arka plan çok hafif olsun, border yumuşak olsun.
+
+8. Açıklama kartını iyileştir.
+   Başlık 16-18px semi-bold olsun.
+   Metin line-height artırılsın.
+   Kart iç boşlukları dengeli olsun.
+
+9. “İletişime Geç” butonunu daha premium yap.
+   Mor gradient kullan.
+   Hafif shadow ekle.
+   Buton yüksekliği 54-58px olsun.
+   Icon ve yazı ortalı hizalansın.
+   Basınca scale/ripple efekti olsun.
+
+10. Alttaki email kutusu tasarımını kaldır veya ikincil bilgi olarak sadeleştir.
+    Eğer gösterilecekse buton gibi değil, küçük “İletişim e-postası” bilgi satırı şeklinde göster.
+
+11. Tüm ekran paddinglerini eşitle.
+    Sol-sağ 20 veya 24px kullan.
+    Kartlar arasında 12-16px boşluk olsun.
+
+12. Renk paletini sadeleştir:
+    - Primary: mor
+    - Accent: turuncu sadece geri butonu/header için
+    - Background: açık krem/beyaz
+    - Text: koyu lacivert
+    - Secondary text: gri/lila
+
+13. Safe area ve scroll düzenini kontrol et.
+    iPhone ekranında üst/alt taşma olmasın.
+    Alt kısımda yeterli boşluk bırak.
+
+Amaç:
+Bu ekran App Store seviyesinde, modern, premium, temiz ve iOS uyumlu bir “İlan Detayı” ekranı gibi görünmeli.
+Mevcut fonksiyonları bozma, sadece tasarım ve yerleşimi düzelt.
