@@ -8,7 +8,7 @@
     "icon": "./assets/images/icon.png",
     "scheme": "com.canyoldasi.app",
     "userInterfaceStyle": "light",
-    "newArchEnabled": true,
+    "newArchEnabled": false,
     "backgroundColor": "#FAF7F0",
     "splash": {
       "image": "./assets/images/icon.png",
@@ -107,12 +107,6 @@
       ],
       "expo-font",
       "expo-web-browser",
-      [
-        "expo-apple-authentication",
-        {
-          "teamId": "YOUR_APPLE_TEAM_ID"
-        }
-      ],
       [
         "expo-location",
         {

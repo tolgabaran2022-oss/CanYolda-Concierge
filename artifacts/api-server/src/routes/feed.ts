@@ -422,7 +422,7 @@ router.post("/feed/reseed", async (_req, res) => {
     logger.info("Feed re-seeded (%d posts)", SEED_POSTS.length);
     res.json({ seeded: SEED_POSTS.length });
   } catch (err) {
-    req.log.error({ err }, "POST /feed/reseed failed");
+    _req.log.error({ err }, "POST /feed/reseed failed");
     res.status(500).json({ error: "Internal server error" });
   }
 });
