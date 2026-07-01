@@ -103,7 +103,7 @@ const styles = StyleSheet.create({
   barInner:  {
     flexDirection: "row",
     height: TAB_H,
-    borderRadius: 40,
+    borderRadius: 35,
     backgroundColor: "rgba(255,255,255,0.97)",
     borderWidth: 1,
     borderColor: "rgba(123,94,167,0.08)",
@@ -113,6 +113,11 @@ const styles = StyleSheet.create({
     shadowRadius: 28,
     elevation: 14,
     overflow: "hidden",
+    marginTop: -5,
+    marginRight: 6,
+    marginBottom: 8,
+    paddingLeft: 5,
+    paddingBottom: 5,
   },
   tabBtn: {
     flex: 1,
@@ -137,6 +142,11 @@ const styles = StyleSheet.create({
     alignItems: "center",
     justifyContent: "center",
     borderRadius: 12,
+    gap: 2,
+    marginLeft: -4,
+    marginRight: -4,
+    paddingLeft: 3,
+    paddingRight: 3,
   },
   iconWrapActive: { backgroundColor: `${PURPLE}12` },
   label: {

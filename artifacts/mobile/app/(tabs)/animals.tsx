@@ -366,13 +366,19 @@ const H = StyleSheet.create({
 
   countBanner: {
     flexDirection: "row",
-    alignItems: "center",
-    gap: 12,
+    alignItems: "flex-end",
+    justifyContent: "space-between",
     backgroundColor: `${PURPLE}08`,
     borderRadius: 16,
-    paddingVertical: 13,
-    paddingHorizontal: 14,
+    paddingVertical: 9,
+    paddingLeft: 14,
+    paddingRight: 14,
+    marginTop: 45,
+    marginBottom: 1,
+    marginLeft: 9,
+    marginRight: 7,
     borderWidth: 1,
+    borderLeftWidth: 0,
     borderColor: `${PURPLE}18`,
   },
   countIconWrap: {
