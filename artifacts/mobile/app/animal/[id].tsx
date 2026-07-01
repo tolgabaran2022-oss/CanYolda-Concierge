@@ -3,9 +3,10 @@ import * as Haptics from "expo-haptics";
 import { Image } from "expo-image";
 import { LinearGradient } from "expo-linear-gradient";
 import { useLocalSearchParams, useRouter } from "expo-router";
-import React, { useState } from "react";
+import React, { useRef, useState } from "react";
 import {
   Alert,
+  Animated,
   KeyboardAvoidingView,
   Platform,
   Pressable,
@@ -24,13 +25,46 @@ import { formatTimeAgo } from "@/utils/formatters";
 
 const C = {
   purple:     "#7B5EA7",
-  purpleDark: "#5B3FD6",
-  bg:         "#F9F8FF",
+  purpleDark: "#4A2D8F",
+  bg:         "#F8F9FC",
   white:      "#FFFFFF",
-  text:       "#111827",
-  muted:      "#6B7280",
-  border:     "#F0EDF8",
+  text:       "#1A0A3C",
+  muted:      "#8B8FA8",
+  border:     "#EEE9F8",
+  divider:    "#F3F0FB",
 };
+
+const STATUS_CONFIG = {
+  hungry:  { emoji: "🟡", label: "Mama Bekliyor",   accentBg: "#FEF3C7", accentText: "#92400E" },
+  injured: { emoji: "🔴", label: "Acil Durum",      accentBg: "#FEE2E2", accentText: "#991B1B" },
+  healthy: { emoji: "🟢", label: "Güvende",         accentBg: "#D1FAE5", accentText: "#065F46" },
+  unknown: { emoji: "⚪", label: "Durum Bilinmiyor", accentBg: "#F3F4F6", accentText: "#374151" },
+};
+
+function PressableScale({
+  onPress,
+  style,
+  children,
+}: {
+  onPress: () => void;
+  style?: any;
+  children: React.ReactNode;
+}) {
+  const scale = useRef(new Animated.Value(1)).current;
+  return (
+    <Pressable
+      onPress={onPress}
+      onPressIn={() =>
+        Animated.timing(scale, { toValue: 0.95, duration: 80, useNativeDriver: true }).start()
+      }
+      onPressOut={() =>
+        Animated.timing(scale, { toValue: 1, duration: 140, useNativeDriver: true }).start()
+      }
+    >
+      <Animated.View style={[style, { transform: [{ scale }] }]}>{children}</Animated.View>
+    </Pressable>
+  );
+}
 
 export default function AnimalDetailScreen() {
   const { id }   = useLocalSearchParams<{ id: string }>();
@@ -43,12 +77,16 @@ export default function AnimalDetailScreen() {
   const [commentText, setCommentText] = useState("");
   const [helped,      setHelped]      = useState(false);
   const [mapOpened,   setMapOpened]   = useState(0);
+  const helpScale = useRef(new Animated.Value(1)).current;
 
   if (!animal) {
     return (
       <View style={[D.center, { paddingTop: insets.top }]}>
-        <Ionicons name="alert-circle-outline" size={40} color={C.muted} />
-        <Text style={D.notFound}>Hayvan bulunamadı</Text>
+        <View style={D.notFoundIcon}>
+          <Ionicons name="alert-circle-outline" size={36} color={C.muted} />
+        </View>
+        <Text style={D.notFoundTitle}>Hayvan bulunamadı</Text>
+        <Text style={D.notFoundSub}>Bu ilan silinmiş olabilir.</Text>
         <Pressable onPress={() => router.back()} style={D.backBtn}>
           <Text style={D.backBtnText}>Geri Dön</Text>
         </Pressable>
@@ -57,11 +95,16 @@ export default function AnimalDetailScreen() {
   }
 
   const statusDotColor = STATUS_COLORS[animal.status];
-  const helpCount = animal.needsHelpByUsers.length + (helped ? 1 : 0);
+  const statusCfg      = STATUS_CONFIG[animal.status];
+  const helpCount      = animal.needsHelpByUsers.length + (helped ? 1 : 0);
 
   const handleHelp = async () => {
     Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
     setHelped((v) => !v);
+    Animated.sequence([
+      Animated.timing(helpScale, { toValue: 0.88, duration: 80, useNativeDriver: true }),
+      Animated.timing(helpScale, { toValue: 1,    duration: 160, useNativeDriver: true }),
+    ]).start();
     if (user) await toggleNeedsHelp(animal.id, user.id);
   };
 
@@ -76,6 +119,7 @@ export default function AnimalDetailScreen() {
 
   const handleMapOpen = () => {
     setMapOpened((n) => n + 1);
+    Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
     Alert.alert(
       "Konumu Aç",
       animal.locationName
@@ -86,10 +130,13 @@ export default function AnimalDetailScreen() {
   };
 
   const handleShare = async () => {
+    Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
     await Share.share({
       message: `CanYoldaşı: ${animal.notes} — ${animal.locationName ?? ""}`,
     });
   };
+
+  const animalType = "🐾 Sokak Hayvanı";
 
   const statusLabel =
     animal.status === "hungry"  ? "Aç"
@@ -97,155 +144,237 @@ export default function AnimalDetailScreen() {
     : animal.status === "healthy" ? "Sağlıklı"
     : "Bilinmiyor";
 
+  const topPad = Platform.OS === "web" ? 16 : insets.top;
+
   return (
     <View style={{ flex: 1, backgroundColor: C.bg }}>
       <KeyboardAvoidingView
         style={{ flex: 1 }}
         behavior={Platform.OS === "ios" ? "padding" : undefined}
+        keyboardVerticalOffset={insets.bottom + 80}
       >
         <ScrollView
           showsVerticalScrollIndicator={false}
-          contentContainerStyle={{ paddingBottom: insets.bottom + 110 }}
+          contentContainerStyle={{ paddingBottom: insets.bottom + 120 }}
         >
-          {/* ── Hero image ───────────────────────── */}
+          {/* ── Hero image ──────────────────────────── */}
           <View style={D.imageWrap}>
             {animal.image ? (
-              <Image source={{ uri: animal.image }} style={D.heroImage} contentFit="cover" />
+              <Image
+                source={{ uri: animal.image }}
+                style={D.heroImage}
+                contentFit="cover"
+                transition={200}
+              />
             ) : (
               <View style={D.imagePlaceholder}>
-                <Ionicons name="camera-outline" size={48} color="#C0B8D8" />
-                <Text style={D.imagePlaceholderText}>Fotoğraf yok</Text>
+                <View style={D.placeholderIconWrap}>
+                  <Ionicons name="camera-outline" size={36} color="#B0A8CC" />
+                </View>
+                <Text style={D.imagePlaceholderText}>Henüz fotoğraf eklenmemiş</Text>
               </View>
             )}
 
-            {/* Dark gradient at top for header legibility */}
-            <LinearGradient
-              colors={["rgba(0,0,0,0.48)", "transparent"]}
-              style={D.imageOverlayTop}
-            />
+            {/* Top gradient for header legibility */}
+            {animal.image && (
+              <LinearGradient
+                colors={["rgba(0,0,0,0.52)", "transparent"]}
+                style={D.imageOverlayTop}
+              />
+            )}
 
             {/* Top bar */}
-            <View style={[D.topBar, { paddingTop: insets.top + 8 }]}>
-              <Pressable onPress={() => router.back()} style={D.circleBtn} hitSlop={12}>
-                <Ionicons name="arrow-back" size={20} color="#FFF" />
+            <View style={[D.topBar, { paddingTop: topPad + 12 }]}>
+              <Pressable
+                onPress={() => { Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light); router.back(); }}
+                style={[D.circleBtn, !animal.image && D.circleBtnDark]}
+                hitSlop={12}
+              >
+                <Ionicons
+                  name="arrow-back"
+                  size={19}
+                  color={animal.image ? "#FFF" : C.purpleDark}
+                />
               </Pressable>
-              <Text style={D.topBarTitle}>Durum Detayı</Text>
-              <Pressable onPress={handleShare} style={D.circleBtn} hitSlop={12}>
-                <Feather name="share" size={18} color="#FFF" />
+              <Pressable
+                onPress={handleShare}
+                style={[D.circleBtn, !animal.image && D.circleBtnDark]}
+                hitSlop={12}
+              >
+                <Feather name="share" size={17} color={animal.image ? "#FFF" : C.purpleDark} />
               </Pressable>
             </View>
 
-            {/* Status badge overlay on image */}
-            <View style={D.imageBadgeWrap}>
-              <View style={[D.statusDot, { backgroundColor: statusDotColor }]} />
-              <StatusBadge status={animal.status} size="sm" />
-            </View>
+            {/* Status overlay (only on photo) */}
+            {animal.image && (
+              <View style={D.imageBadgeWrap}>
+                <View style={[D.statusDot, { backgroundColor: statusDotColor }]} />
+                <StatusBadge status={animal.status} size="sm" />
+              </View>
+            )}
           </View>
 
-          {/* ── Content card ─────────────────────── */}
+          {/* ── White content card ───────────────────── */}
           <View style={D.card}>
+
+            {/* Status indicator row (always visible) */}
+            <View style={D.statusRow}>
+              <View style={[D.statusPill, { backgroundColor: statusCfg.accentBg }]}>
+                <Text style={D.statusPillEmoji}>{statusCfg.emoji}</Text>
+                <Text style={[D.statusPillText, { color: statusCfg.accentText }]}>
+                  {statusCfg.label}
+                </Text>
+              </View>
+              {!animal.image && (
+                <View style={D.typePill}>
+                  <Text style={D.typePillText}>{animalType}</Text>
+                </View>
+              )}
+            </View>
+
+            {/* Title */}
             <Text style={D.noteTitle}>{animal.notes}</Text>
 
             {/* Reporter row */}
             <View style={D.reporterRow}>
               <View style={D.avatarCircle}>
-                <Ionicons name="person" size={16} color={C.purple} />
+                <Ionicons name="person" size={15} color={C.purple} />
               </View>
-              <View style={{ flex: 1 }}>
+              <View style={{ flex: 1, gap: 1 }}>
                 <Text style={D.reporterName}>{animal.userName}</Text>
                 <Text style={D.reporterTime}>{formatTimeAgo(animal.timestamp)}</Text>
               </View>
               <View style={D.locPill}>
-                <Ionicons name="location-outline" size={13} color={C.purple} />
-                <Text style={D.locPillText}>{animal.locationName ?? "Konum yok"}</Text>
-              </View>
-            </View>
-
-            <View style={D.divider} />
-
-            {/* Açıklama */}
-            <Text style={D.sectionTitle}>Açıklama</Text>
-            <Text style={D.descText}>
-              {animal.notes}
-              {"\n\n"}Lütfen mama desteği veya sahiplenme konusunda yardımcı olalım. 🐾❤️
-            </Text>
-
-            <View style={D.divider} />
-
-            {/* Durum Bilgileri */}
-            <Text style={D.sectionTitle}>Durum Bilgileri</Text>
-            <View style={D.infoGrid}>
-              <View style={D.infoBox}>
-                <Ionicons name="time-outline" size={18} color={C.purple} />
-                <Text style={D.infoLabel}>Bildirilme Zamanı</Text>
-                <Text style={D.infoValue}>{formatTimeAgo(animal.timestamp)}</Text>
-              </View>
-              <View style={D.infoBox}>
-                <Ionicons name="location-outline" size={18} color={C.purple} />
-                <Text style={D.infoLabel}>Konum</Text>
-                <Text style={D.infoValue} numberOfLines={2}>
-                  {animal.locationName ?? "Belirtilmedi"}
+                <Ionicons name="location-outline" size={12} color={C.purple} />
+                <Text style={D.locPillText} numberOfLines={1}>
+                  {animal.locationName ?? "Konum Yok"}
                 </Text>
               </View>
-              <View style={D.infoBox}>
-                <Ionicons name="information-circle-outline" size={18} color={C.purple} />
-                <Text style={D.infoLabel}>Durum</Text>
-                <Text style={D.infoValue}>{statusLabel}</Text>
-              </View>
             </View>
 
             <View style={D.divider} />
 
-            {/* Etkileşim */}
+            {/* Description */}
+            <Text style={D.sectionTitle}>Hayvanın Durumu</Text>
+            <Text style={D.descText}>{animal.notes}</Text>
+
+            <View style={D.divider} />
+
+            {/* Info grid — 2×3 */}
+            <Text style={D.sectionTitle}>Durum Bilgileri</Text>
+            <View style={D.infoGrid}>
+              <InfoCard
+                icon="time-outline"
+                label="Bildirim Tarihi"
+                value={formatTimeAgo(animal.timestamp)}
+              />
+              <InfoCard
+                icon="location-outline"
+                label="Konum"
+                value={animal.locationName ?? "Belirtilmedi"}
+              />
+              <InfoCard
+                icon="information-circle-outline"
+                label="Durum"
+                value={statusLabel}
+                accent={statusCfg.accentText}
+              />
+              <InfoCard
+                icon="paw-outline"
+                label="Tür"
+                value={animalType}
+              />
+              <InfoCard
+                icon="transgender-outline"
+                label="Cinsiyet"
+                value="Bilinmiyor"
+              />
+              <InfoCard
+                icon="calendar-outline"
+                label="Tahmini Yaş"
+                value="Bilinmiyor"
+              />
+            </View>
+
+            <View style={D.divider} />
+
+            {/* Map preview section */}
+            <Text style={D.sectionTitle}>Konum</Text>
+            <Pressable
+              style={D.mapPreview}
+              onPress={handleMapOpen}
+            >
+              <LinearGradient
+                colors={["#EDE9F8", "#DDD5F5"]}
+                style={D.mapGradient}
+              >
+                <View style={D.mapPinWrap}>
+                  <Ionicons name="location" size={28} color={C.purple} />
+                </View>
+                <Text style={D.mapCoords}>
+                  {animal.locationName
+                    ? animal.locationName
+                    : `${animal.latitude.toFixed(4)}, ${animal.longitude.toFixed(4)}`}
+                </Text>
+              </LinearGradient>
+              <View style={D.mapOpenRow}>
+                <Ionicons name="map-outline" size={15} color={C.purple} />
+                <Text style={D.mapOpenText}>Haritada Aç</Text>
+                <Ionicons name="chevron-forward" size={14} color={C.purple} />
+              </View>
+            </Pressable>
+
+            <View style={D.divider} />
+
+            {/* Interaction stats */}
             <Text style={D.sectionTitle}>Etkileşim</Text>
             <View style={D.statsRow}>
-              <Pressable style={D.statBox} onPress={handleHelp}>
-                <Ionicons
-                  name={helped ? "heart" : "heart-outline"}
-                  size={22}
-                  color={helped ? "#FF3B6B" : C.purple}
-                />
-                <Text style={D.statNum}>{helpCount}</Text>
-                <Text style={D.statLabel}>Yardımcı Oldu</Text>
-              </Pressable>
-              <Pressable
-                style={D.statBox}
-                onPress={() => setCommentText("")}
-              >
-                <Ionicons name="chatbubble-outline" size={22} color={C.purple} />
-                <Text style={D.statNum}>{animal.comments.length}</Text>
-                <Text style={D.statLabel}>Yorum</Text>
-              </Pressable>
-              <Pressable style={D.statBox} onPress={handleMapOpen}>
-                <Ionicons name="location-outline" size={22} color={C.purple} />
-                <Text style={D.statNum}>{mapOpened}</Text>
-                <Text style={D.statLabel}>Konum Açıldı</Text>
-              </Pressable>
+              <StatCard
+                icon={helped ? "heart" : "heart-outline"}
+                iconColor={helped ? "#EF4444" : C.purple}
+                value={helpCount}
+                label="Yardımcı Oldu"
+                onPress={handleHelp}
+                scale={helpScale}
+              />
+              <StatCard
+                icon="chatbubble-outline"
+                iconColor={C.purple}
+                value={animal.comments.length}
+                label="Yorum"
+                onPress={() => {}}
+              />
+              <StatCard
+                icon="location-outline"
+                iconColor={C.purple}
+                value={mapOpened}
+                label="Konum Açıldı"
+                onPress={handleMapOpen}
+              />
             </View>
 
             <View style={D.divider} />
 
-            {/* Yorumlar */}
+            {/* Comments */}
             <Text style={D.sectionTitle}>
-              Yorumlar ({animal.comments.length})
+              Yorumlar{animal.comments.length > 0 ? ` (${animal.comments.length})` : ""}
             </Text>
             {animal.comments.length === 0 ? (
-              <Text style={D.noComment}>
-                Henüz yorum yok. İlk yorumu sen yap!
-              </Text>
+              <View style={D.emptyComments}>
+                <Ionicons name="chatbubbles-outline" size={24} color="#C0B8D8" />
+                <Text style={D.noComment}>Henüz yorum yok. İlk yorumu sen yap!</Text>
+              </View>
             ) : (
               animal.comments.map((c) => (
                 <View key={c.id} style={D.commentRow}>
                   <View style={D.commentAvatar}>
-                    <Ionicons name="person" size={13} color={C.purple} />
+                    <Ionicons name="person" size={12} color={C.purple} />
                   </View>
                   <View style={{ flex: 1 }}>
-                    <Text style={D.commentUser}>
-                      {c.userName}{" "}
-                      <Text style={D.commentTime}>
-                        {formatTimeAgo(c.timestamp)}
-                      </Text>
-                    </Text>
+                    <View style={D.commentHeader}>
+                      <Text style={D.commentUser}>{c.userName}</Text>
+                      <Text style={D.commentTime}>{formatTimeAgo(c.timestamp)}</Text>
+                    </View>
                     <Text style={D.commentText}>{c.text}</Text>
                   </View>
                 </View>
@@ -263,111 +392,551 @@ export default function AnimalDetailScreen() {
                 returnKeyType="send"
                 onSubmitEditing={handleComment}
               />
-              <Pressable onPress={handleComment} style={D.sendBtn} hitSlop={8}>
-                <Ionicons name="send" size={18} color={C.purple} />
+              <Pressable onPress={handleComment} style={D.sendBtn} hitSlop={10}>
+                <View style={D.sendCircle}>
+                  <Ionicons name="send" size={15} color="#FFF" />
+                </View>
               </Pressable>
             </View>
 
-            <Text style={D.footer}>
-              Küçük bir destek, büyük bir hayat kurtarır. 🙏
-            </Text>
+            <Text style={D.footer}>Küçük bir destek, büyük bir hayat kurtarır. 🙏</Text>
           </View>
         </ScrollView>
       </KeyboardAvoidingView>
 
-      {/* ── Sticky bottom action bar ───────────── */}
-      <View style={[D.actionBar, { paddingBottom: insets.bottom + 10 }]}>
-        <Pressable style={D.actionOutline} onPress={handleMapOpen}>
-          <Ionicons name="chatbubble-outline" size={18} color={C.purple} />
+      {/* ── Sticky action bar ───────────────────── */}
+      <View style={[D.actionBar, { paddingBottom: Math.max(insets.bottom, 16) + 8 }]}>
+        <PressableScale onPress={handleMapOpen} style={D.actionOutline}>
+          <Ionicons name="chatbubble-outline" size={19} color={C.purple} />
           <Text style={D.actionOutlineText}>Yorum Yap</Text>
-        </Pressable>
+        </PressableScale>
+
         <Pressable onPress={handleHelp} style={{ flex: 1 }}>
-          <LinearGradient
-            colors={helped ? ["#FF6B9D", "#FF3B6B"] : ["#9478D8", "#5B3FD6"]}
-            start={{ x: 0, y: 0 }}
-            end={{ x: 1, y: 1 }}
-            style={D.actionFill}
-          >
-            <Ionicons
-              name={helped ? "heart" : "heart-outline"}
-              size={18}
-              color="#FFF"
-            />
-            <Text style={D.actionFillText}>
-              {helped ? "Yardım Edildi!" : "Yardım Et"}
-            </Text>
-          </LinearGradient>
+          <Animated.View style={{ transform: [{ scale: helpScale }] }}>
+            <LinearGradient
+              colors={helped ? ["#F87171", "#EF4444"] : ["#9C7FE0", "#5B3FD6"]}
+              start={{ x: 0, y: 0 }}
+              end={{ x: 1, y: 1 }}
+              style={D.actionFill}
+            >
+              <Ionicons
+                name={helped ? "heart" : "heart-outline"}
+                size={19}
+                color="#FFF"
+              />
+              <Text style={D.actionFillText}>
+                {helped ? "Yardım Edildi!" : "Yardım Et"}
+              </Text>
+            </LinearGradient>
+          </Animated.View>
         </Pressable>
       </View>
     </View>
   );
 }
 
+/* ── Sub-components ──────────────────────────────────────── */
+
+function InfoCard({
+  icon,
+  label,
+  value,
+  accent,
+}: {
+  icon: string;
+  label: string;
+  value: string;
+  accent?: string;
+}) {
+  return (
+    <View style={D.infoBox}>
+      <View style={D.infoIconWrap}>
+        <Ionicons name={icon as any} size={16} color="#7B5EA7" />
+      </View>
+      <Text style={D.infoLabel}>{label}</Text>
+      <Text style={[D.infoValue, accent ? { color: accent } : undefined]} numberOfLines={2}>
+        {value}
+      </Text>
+    </View>
+  );
+}
+
+function StatCard({
+  icon,
+  iconColor,
+  value,
+  label,
+  onPress,
+  scale,
+}: {
+  icon: string;
+  iconColor: string;
+  value: number;
+  label: string;
+  onPress: () => void;
+  scale?: Animated.Value;
+}) {
+  const localScale = useRef(new Animated.Value(1)).current;
+  const s = scale ?? localScale;
+  return (
+    <Pressable
+      style={D.statBox}
+      onPress={onPress}
+      onPressIn={() =>
+        Animated.timing(s, { toValue: 0.93, duration: 70, useNativeDriver: true }).start()
+      }
+      onPressOut={() =>
+        Animated.timing(s, { toValue: 1, duration: 140, useNativeDriver: true }).start()
+      }
+    >
+      <Animated.View style={[{ alignItems: "center", gap: 6 }, { transform: [{ scale: s }] }]}>
+        <View style={D.statIconWrap}>
+          <Ionicons name={icon as any} size={22} color={iconColor} />
+        </View>
+        <Text style={D.statNum}>{value}</Text>
+        <Text style={D.statLabel}>{label}</Text>
+      </Animated.View>
+    </Pressable>
+  );
+}
+
+/* ── Styles ─────────────────────────────────────────────── */
+
 const D = StyleSheet.create({
-  center:       { flex: 1, alignItems: "center", justifyContent: "center", gap: 12 },
-  notFound:     { fontSize: 16, fontFamily: "Inter_500Medium", color: "#6B7280" },
-  backBtn:      { paddingHorizontal: 20, paddingVertical: 10, backgroundColor: "#7B5EA7", borderRadius: 12 },
-  backBtnText:  { color: "#FFF", fontFamily: "Inter_600SemiBold", fontSize: 14 },
+  center: {
+    flex: 1,
+    alignItems: "center",
+    justifyContent: "center",
+    gap: 12,
+    backgroundColor: "#F8F9FC",
+    padding: 24,
+  },
+  notFoundIcon: {
+    width: 72,
+    height: 72,
+    borderRadius: 20,
+    backgroundColor: "#EEE9F8",
+    alignItems: "center",
+    justifyContent: "center",
+    marginBottom: 4,
+  },
+  notFoundTitle: { fontSize: 17, fontFamily: "Inter_700Bold",   color: "#1A0A3C" },
+  notFoundSub:   { fontSize: 13, fontFamily: "Inter_400Regular", color: "#8B8FA8" },
+  backBtn:       {
+    marginTop: 8,
+    paddingHorizontal: 24,
+    paddingVertical: 12,
+    backgroundColor: "#7B5EA7",
+    borderRadius: 14,
+  },
+  backBtnText: { color: "#FFF", fontFamily: "Inter_600SemiBold", fontSize: 14 },
 
-  /* Hero */
-  imageWrap:           { position: "relative" },
-  heroImage:           { width: "100%", height: 320 },
-  imagePlaceholder:    { width: "100%", height: 260, backgroundColor: "#EDE9F8", alignItems: "center", justifyContent: "center", gap: 10 },
-  imagePlaceholderText:{ fontSize: 14, fontFamily: "Inter_400Regular", color: "#C0B8D8" },
-  imageOverlayTop:     { position: "absolute", top: 0, left: 0, right: 0, height: 130 },
+  /* ── Hero ── */
+  imageWrap: { position: "relative", backgroundColor: "#EDE9F8" },
+  heroImage: { width: "100%", height: 210 },
+  imagePlaceholder: {
+    width: "100%",
+    height: 210,
+    backgroundColor: "#EDE9F8",
+    alignItems: "center",
+    justifyContent: "center",
+    gap: 12,
+  },
+  placeholderIconWrap: {
+    width: 72,
+    height: 72,
+    borderRadius: 20,
+    backgroundColor: "rgba(123,94,167,0.10)",
+    alignItems: "center",
+    justifyContent: "center",
+  },
+  imagePlaceholderText: {
+    fontSize: 13,
+    fontFamily: "Inter_400Regular",
+    color: "#B0A8CC",
+  },
+  imageOverlayTop: {
+    position: "absolute",
+    top: 0, left: 0, right: 0,
+    height: 120,
+  },
 
-  topBar:       { position: "absolute", top: 0, left: 0, right: 0, flexDirection: "row", alignItems: "center", justifyContent: "space-between", paddingHorizontal: 16 },
-  circleBtn:    { width: 38, height: 38, borderRadius: 19, backgroundColor: "rgba(0,0,0,0.35)", alignItems: "center", justifyContent: "center" },
-  topBarTitle:  { fontSize: 16, fontFamily: "Inter_700Bold", color: "#FFF" },
+  /* Top bar */
+  topBar: {
+    position: "absolute",
+    top: 0, left: 0, right: 0,
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "space-between",
+    paddingHorizontal: 16,
+  },
+  circleBtn: {
+    width: 40,
+    height: 40,
+    borderRadius: 20,
+    backgroundColor: "rgba(0,0,0,0.30)",
+    alignItems: "center",
+    justifyContent: "center",
+  },
+  circleBtnDark: {
+    backgroundColor: "rgba(123,94,167,0.12)",
+  },
 
-  imageBadgeWrap: { position: "absolute", bottom: 14, left: 14, flexDirection: "row", alignItems: "center", gap: 6 },
-  statusDot:      { width: 12, height: 12, borderRadius: 6, borderWidth: 2, borderColor: "#FFF" },
+  imageBadgeWrap: {
+    position: "absolute",
+    bottom: 12,
+    left: 14,
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 6,
+  },
+  statusDot: {
+    width: 11,
+    height: 11,
+    borderRadius: 6,
+    borderWidth: 2,
+    borderColor: "#FFF",
+  },
 
-  /* Card */
-  card: { backgroundColor: "#FFF", borderTopLeftRadius: 24, borderTopRightRadius: 24, marginTop: -24, paddingHorizontal: 18, paddingTop: 22, paddingBottom: 16 },
+  /* ── Card ── */
+  card: {
+    backgroundColor: "#FFF",
+    borderTopLeftRadius: 28,
+    borderTopRightRadius: 28,
+    marginTop: -20,
+    paddingHorizontal: 20,
+    paddingTop: 24,
+    paddingBottom: 8,
+    shadowColor: "#1E0B4B",
+    shadowOffset: { width: 0, height: -4 },
+    shadowOpacity: 0.04,
+    shadowRadius: 12,
+    elevation: 2,
+  },
 
-  noteTitle:    { fontSize: 19, fontFamily: "Inter_700Bold", color: "#1E0B4B", lineHeight: 27, marginBottom: 14 },
+  statusRow: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 8,
+    marginBottom: 12,
+  },
+  statusPill: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 6,
+    paddingHorizontal: 12,
+    paddingVertical: 6,
+    borderRadius: 20,
+    alignSelf: "flex-start",
+  },
+  statusPillEmoji: { fontSize: 13 },
+  statusPillText: {
+    fontSize: 12.5,
+    fontFamily: "Inter_600SemiBold",
+  },
+  typePill: {
+    paddingHorizontal: 12,
+    paddingVertical: 6,
+    borderRadius: 20,
+    backgroundColor: "rgba(123,94,167,0.08)",
+    alignSelf: "flex-start",
+  },
+  typePillText: {
+    fontSize: 12.5,
+    fontFamily: "Inter_600SemiBold",
+    color: "#7B5EA7",
+  },
 
-  reporterRow:  { flexDirection: "row", alignItems: "center", gap: 10, marginBottom: 16 },
-  avatarCircle: { width: 36, height: 36, borderRadius: 18, backgroundColor: "rgba(123,94,167,0.10)", alignItems: "center", justifyContent: "center" },
-  reporterName: { fontSize: 13, fontFamily: "Inter_600SemiBold", color: "#1E0B4B" },
-  reporterTime: { fontSize: 11.5, fontFamily: "Inter_400Regular", color: "#6B7280" },
-  locPill:      { flexDirection: "row", alignItems: "center", gap: 4, backgroundColor: "rgba(123,94,167,0.08)", borderRadius: 99, paddingHorizontal: 10, paddingVertical: 5 },
-  locPillText:  { fontSize: 11.5, fontFamily: "Inter_500Medium", color: "#7B5EA7" },
+  noteTitle: {
+    fontSize: 20,
+    fontFamily: "Inter_700Bold",
+    color: "#1A0A3C",
+    lineHeight: 28,
+    letterSpacing: -0.4,
+    marginBottom: 16,
+  },
 
-  divider:      { height: 1, backgroundColor: "#F0EDF8", marginVertical: 14 },
-  sectionTitle: { fontSize: 15, fontFamily: "Inter_700Bold", color: "#1E0B4B", marginBottom: 10 },
-  descText:     { fontSize: 14, fontFamily: "Inter_400Regular", color: "#374151", lineHeight: 22 },
+  reporterRow: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 10,
+    marginBottom: 4,
+  },
+  avatarCircle: {
+    width: 38,
+    height: 38,
+    borderRadius: 19,
+    backgroundColor: "rgba(123,94,167,0.10)",
+    alignItems: "center",
+    justifyContent: "center",
+    flexShrink: 0,
+  },
+  reporterName: { fontSize: 13.5, fontFamily: "Inter_600SemiBold", color: "#1A0A3C" },
+  reporterTime: { fontSize: 11.5, fontFamily: "Inter_400Regular",  color: "#8B8FA8" },
+  locPill: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 4,
+    backgroundColor: "rgba(123,94,167,0.08)",
+    borderRadius: 99,
+    paddingHorizontal: 10,
+    paddingVertical: 5,
+    maxWidth: 130,
+  },
+  locPillText: {
+    fontSize: 11,
+    fontFamily: "Inter_500Medium",
+    color: "#7B5EA7",
+    flexShrink: 1,
+  },
 
-  /* Info grid */
-  infoGrid: { flexDirection: "row", gap: 8 },
-  infoBox:  { flex: 1, backgroundColor: "#F9F8FF", borderRadius: 14, padding: 12, gap: 4, borderWidth: 1, borderColor: "#EEEAF8" },
-  infoLabel:{ fontSize: 10.5, fontFamily: "Inter_400Regular", color: "#6B7280" },
-  infoValue:{ fontSize: 12, fontFamily: "Inter_600SemiBold", color: "#1E0B4B" },
+  divider: { height: 1, backgroundColor: "#F3F0FB", marginVertical: 20 },
+
+  sectionTitle: {
+    fontSize: 15,
+    fontFamily: "Inter_700Bold",
+    color: "#1A0A3C",
+    marginBottom: 12,
+    letterSpacing: -0.2,
+  },
+  descText: {
+    fontSize: 14.5,
+    fontFamily: "Inter_400Regular",
+    color: "#374151",
+    lineHeight: 24,
+  },
+
+  /* Info grid — 2 col */
+  infoGrid: {
+    flexDirection: "row",
+    flexWrap: "wrap",
+    gap: 8,
+  },
+  infoBox: {
+    width: "47.5%",
+    backgroundColor: "#F8F9FC",
+    borderRadius: 16,
+    padding: 14,
+    gap: 6,
+    borderWidth: 1,
+    borderColor: "#EEE9F8",
+    shadowColor: "#1E0B4B",
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.05,
+    shadowRadius: 12,
+    elevation: 2,
+  },
+  infoIconWrap: {
+    width: 32,
+    height: 32,
+    borderRadius: 10,
+    backgroundColor: "rgba(123,94,167,0.10)",
+    alignItems: "center",
+    justifyContent: "center",
+  },
+  infoLabel: { fontSize: 11, fontFamily: "Inter_400Regular", color: "#8B8FA8" },
+  infoValue: { fontSize: 13, fontFamily: "Inter_600SemiBold", color: "#1A0A3C" },
+
+  /* Map preview */
+  mapPreview: {
+    borderRadius: 18,
+    overflow: "hidden",
+    borderWidth: 1,
+    borderColor: "#EEE9F8",
+    shadowColor: "#1E0B4B",
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.05,
+    shadowRadius: 12,
+    elevation: 2,
+  },
+  mapGradient: {
+    height: 88,
+    alignItems: "center",
+    justifyContent: "center",
+    gap: 6,
+  },
+  mapPinWrap: {
+    width: 44,
+    height: 44,
+    borderRadius: 22,
+    backgroundColor: "rgba(123,94,167,0.15)",
+    alignItems: "center",
+    justifyContent: "center",
+  },
+  mapCoords: {
+    fontSize: 12,
+    fontFamily: "Inter_500Medium",
+    color: "#4A2D8F",
+    textAlign: "center",
+    paddingHorizontal: 20,
+  },
+  mapOpenRow: {
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "center",
+    gap: 6,
+    paddingVertical: 12,
+    backgroundColor: "#FFF",
+    borderTopWidth: 1,
+    borderTopColor: "#EEE9F8",
+  },
+  mapOpenText: {
+    fontSize: 13.5,
+    fontFamily: "Inter_600SemiBold",
+    color: "#7B5EA7",
+  },
 
   /* Stats */
   statsRow: { flexDirection: "row", gap: 8 },
-  statBox:  { flex: 1, backgroundColor: "#F9F8FF", borderRadius: 14, padding: 14, alignItems: "center", gap: 4, borderWidth: 1, borderColor: "#EEEAF8" },
-  statNum:  { fontSize: 18, fontFamily: "Inter_700Bold", color: "#1E0B4B" },
-  statLabel:{ fontSize: 11, fontFamily: "Inter_400Regular", color: "#6B7280", textAlign: "center" },
+  statBox: {
+    flex: 1,
+    backgroundColor: "#F8F9FC",
+    borderRadius: 18,
+    padding: 16,
+    alignItems: "center",
+    borderWidth: 1,
+    borderColor: "#EEE9F8",
+    shadowColor: "#1E0B4B",
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.05,
+    shadowRadius: 12,
+    elevation: 2,
+  },
+  statIconWrap: {
+    width: 44,
+    height: 44,
+    borderRadius: 14,
+    backgroundColor: "rgba(123,94,167,0.10)",
+    alignItems: "center",
+    justifyContent: "center",
+  },
+  statNum:   { fontSize: 20, fontFamily: "Inter_700Bold", color: "#1A0A3C" },
+  statLabel: { fontSize: 11, fontFamily: "Inter_400Regular", color: "#8B8FA8", textAlign: "center" },
 
   /* Comments */
-  noComment:     { fontSize: 13, fontFamily: "Inter_400Regular", color: "#9CA3AF", marginBottom: 10 },
-  commentRow:    { flexDirection: "row", gap: 10, marginBottom: 12 },
-  commentAvatar: { width: 30, height: 30, borderRadius: 15, backgroundColor: "rgba(123,94,167,0.10)", alignItems: "center", justifyContent: "center", flexShrink: 0 },
-  commentUser:   { fontSize: 13, fontFamily: "Inter_600SemiBold", color: "#1E0B4B" },
-  commentTime:   { fontSize: 11, fontFamily: "Inter_400Regular", color: "#9CA3AF" },
-  commentText:   { fontSize: 13, fontFamily: "Inter_400Regular", color: "#374151", marginTop: 2 },
+  emptyComments: {
+    alignItems: "center",
+    gap: 8,
+    paddingVertical: 16,
+    backgroundColor: "#F8F9FC",
+    borderRadius: 16,
+    marginBottom: 16,
+  },
+  noComment: {
+    fontSize: 13,
+    fontFamily: "Inter_400Regular",
+    color: "#B0A8CC",
+    textAlign: "center",
+  },
+  commentRow: {
+    flexDirection: "row",
+    gap: 10,
+    marginBottom: 14,
+    alignItems: "flex-start",
+  },
+  commentAvatar: {
+    width: 32,
+    height: 32,
+    borderRadius: 16,
+    backgroundColor: "rgba(123,94,167,0.10)",
+    alignItems: "center",
+    justifyContent: "center",
+    flexShrink: 0,
+  },
+  commentHeader: { flexDirection: "row", alignItems: "center", gap: 8, marginBottom: 3 },
+  commentUser:   { fontSize: 12.5, fontFamily: "Inter_600SemiBold", color: "#1A0A3C" },
+  commentTime:   { fontSize: 11, fontFamily: "Inter_400Regular", color: "#B0A8CC" },
+  commentText:   { fontSize: 13.5, fontFamily: "Inter_400Regular", color: "#374151", lineHeight: 20 },
 
-  inputRow: { flexDirection: "row", alignItems: "center", gap: 8, backgroundColor: "#F9F8FF", borderRadius: 24, paddingHorizontal: 14, paddingVertical: 10, borderWidth: 1, borderColor: "#EEEAF8", marginTop: 10 },
-  input:    { flex: 1, fontSize: 14, fontFamily: "Inter_400Regular", color: "#111827" },
-  sendBtn:  { padding: 4 },
-  footer:   { fontSize: 12, fontFamily: "Inter_400Regular", color: "#9CA3AF", textAlign: "center", marginTop: 16 },
+  inputRow: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 10,
+    backgroundColor: "#F8F9FC",
+    borderRadius: 28,
+    paddingLeft: 16,
+    paddingRight: 8,
+    paddingVertical: 8,
+    borderWidth: 1,
+    borderColor: "#EEE9F8",
+    marginTop: 8,
+  },
+  input: {
+    flex: 1,
+    fontSize: 14,
+    fontFamily: "Inter_400Regular",
+    color: "#1A0A3C",
+    paddingVertical: 6,
+  },
+  sendBtn: { padding: 2 },
+  sendCircle: {
+    width: 36,
+    height: 36,
+    borderRadius: 18,
+    backgroundColor: "#7B5EA7",
+    alignItems: "center",
+    justifyContent: "center",
+  },
+  footer: {
+    fontSize: 12,
+    fontFamily: "Inter_400Regular",
+    color: "#B0A8CC",
+    textAlign: "center",
+    marginTop: 20,
+    marginBottom: 8,
+  },
 
   /* Action bar */
-  actionBar:        { position: "absolute", bottom: 0, left: 0, right: 0, flexDirection: "row", gap: 12, paddingHorizontal: 18, paddingTop: 12, backgroundColor: "#FFF", borderTopWidth: 1, borderTopColor: "#F0EDF8", shadowColor: "#2D1B4E", shadowOffset: { width: 0, height: -4 }, shadowOpacity: 0.06, shadowRadius: 12, elevation: 6 },
-  actionOutline:    { flex: 1, flexDirection: "row", alignItems: "center", justifyContent: "center", gap: 8, borderWidth: 1.5, borderColor: "#7B5EA7", borderRadius: 16, paddingVertical: 14 },
-  actionOutlineText:{ fontSize: 15, fontFamily: "Inter_600SemiBold", color: "#7B5EA7" },
-  actionFill:       { flexDirection: "row", alignItems: "center", justifyContent: "center", gap: 8, borderRadius: 16, paddingVertical: 14 },
-  actionFillText:   { fontSize: 15, fontFamily: "Inter_700Bold", color: "#FFF" },
+  actionBar: {
+    position: "absolute",
+    bottom: 0, left: 0, right: 0,
+    flexDirection: "row",
+    gap: 12,
+    paddingHorizontal: 20,
+    paddingTop: 14,
+    backgroundColor: "rgba(255,255,255,0.97)",
+    borderTopWidth: 1,
+    borderTopColor: "#F0EDF8",
+    shadowColor: "#1E0B4B",
+    shadowOffset: { width: 0, height: -4 },
+    shadowOpacity: 0.06,
+    shadowRadius: 16,
+    elevation: 8,
+  },
+  actionOutline: {
+    flex: 1,
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "center",
+    gap: 8,
+    borderWidth: 1.5,
+    borderColor: "#7B5EA7",
+    borderRadius: 18,
+    height: 54,
+  },
+  actionOutlineText: {
+    fontSize: 15,
+    fontFamily: "Inter_600SemiBold",
+    color: "#7B5EA7",
+  },
+  actionFill: {
+    flex: 1,
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "center",
+    gap: 8,
+    borderRadius: 18,
+    height: 54,
+    shadowColor: "#5B3FD6",
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.28,
+    shadowRadius: 12,
+    elevation: 4,
+  },
+  actionFillText: {
+    fontSize: 15,
+    fontFamily: "Inter_700Bold",
+    color: "#FFF",
+    letterSpacing: -0.2,
+  },
 });

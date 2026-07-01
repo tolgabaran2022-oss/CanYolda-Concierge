@@ -1,0 +1,177 @@
+Bu ekran "Sokak Hayvanları > İlan Detay" sayfasıdır.
+
+Lütfen mevcut işlevleri, API bağlantılarını ve veri akışını bozmadan sadece arayüzü profesyonel seviyeye getir.
+
+DÜZELTİLMESİ GEREKENLER
+
+1. FOTOĞRAF ALANI
+- Fotoğraf alanı çok büyük. Yüksekliği 200-220px olacak şekilde küçült.
+- Eğer fotoğraf yoksa dev boş alan gösterme.
+- Bunun yerine modern bir placeholder kullan.
+- "Fotoğraf yok" yazısını "Henüz fotoğraf eklenmemiş" olarak değiştir.
+- Kamera ikonu ortalı olsun.
+
+2. SAFE AREA
+- Üstte Dynamic Island ile içerik arasında yeterli boşluk bırak.
+- SafeAreaView kullan.
+- Header hiçbir şekilde Dynamic Island'a yaklaşmasın.
+
+3. HEADER
+- Geri ve paylaş butonlarını aynı hizaya getir.
+- Ekran kenarlarından en az 16px boşluk bırak.
+- Butonlar tam daire şeklinde olsun.
+
+4. DURUM ETİKETİ
+- Sol taraftaki durum rozeti kesiliyor.
+- Bu AutoLayout hatasını düzelt.
+- Rozet tamamen görünür olsun.
+- Fotoğrafın altında hizalı şekilde yerleşsin.
+
+5. ANA KART
+- Beyaz kartın fotoğraf üzerine fazla taşmasını kaldır.
+- Kart ile fotoğraf arasında daha doğal bir geçiş oluştur.
+- Border radius 24px yap.
+- Gölgeyi hafiflet.
+
+6. BAŞLIK
+Başlık daha büyük ve güçlü görünsün.
+
+Örnek:
+
+🐕 İlk Kez Görüldü
+
+Durumu bilinmiyor
+
+Altına renkli durum etiketi ekle.
+
+Örneğin:
+
+🔴 Acil
+🟡 Mama Bekliyor
+🟢 Güvende
+
+7. KULLANICI BİLGİSİ
+
+Avatar
+İsim
+Bildirim tarihi
+
+aynı satırda düzgün hizalansın.
+
+Sağ tarafta
+
+📍 Konum Yok
+
+badge olarak gözüksün.
+
+8. AÇIKLAMA
+
+"Açıklama"
+
+başlığını
+
+"Hayvanın Durumu"
+
+olarak değiştir.
+
+Satır aralıklarını artır.
+
+Okunabilirliği yükselt.
+
+9. DURUM BİLGİLERİ
+
+Mevcut küçük kutuları yeniden tasarla.
+
+Kartlar daha büyük olsun.
+
+İç padding artır.
+
+Grid düzeni kullan.
+
+Gösterilecek bilgiler:
+
+📅 Bildirim Tarihi
+
+📍 Konum
+
+🏷 Durum
+
+🐾 Tür
+
+🚻 Cinsiyet
+
+🎂 Tahmini Yaş
+
+10. ETKİLEŞİM
+
+İstatistik kartlarını büyüt.
+
+İkonlar daha büyük olsun.
+
+Yardım Edenler
+
+Yorumlar
+
+Konumu Açanlar
+
+aynı yükseklikte hizalansın.
+
+11. ALT BUTONLAR
+
+Yorum Yap
+
+Yardım Et
+
+yüksekliği 54px olsun.
+
+Radius 18-20px.
+
+Aralarındaki boşluk 12px.
+
+Safe Area desteği ekle.
+
+Home Indicator ile arasında minimum 24px boşluk bırak.
+
+12. HARİTA
+
+Bilgilerin altına küçük bir harita önizlemesi ekle.
+
+"Haritada Aç" butonu ekle.
+
+13. GÖLGELER
+
+Tüm kartlarda:
+
+shadowOpacity: 0.05
+
+shadowRadius: 12
+
+shadowOffset: {width:0,height:4}
+
+elevation:2
+
+14. SPACING
+
+Tüm ekranı 8pt Grid System'e göre yeniden hizala.
+
+Hiçbir bileşen birbirine yapışık görünmesin.
+
+15. TASARIM
+
+Apple Human Interface Guidelines'a uygun tasarla.
+
+- Modern
+- Premium
+- Minimal
+- Responsive
+- Dark Mode uyumlu
+- iPhone 15 Pro ve 16 Pro ekranlarında kusursuz görünmeli.
+
+ÖNEMLİ
+
+- Mevcut API'leri değiştirme.
+- Component yapısını bozma.
+- Route yapısını değiştirme.
+- Sadece UI/UX iyileştirmesi yap.
+- Tüm AutoLayout, hizalama, spacing ve Safe Area problemlerini düzelt.
+- Sonuç App Store kalitesinde profesyonel bir ilan detay ekranı olsun.
