@@ -898,7 +898,7 @@ const D = StyleSheet.create({
     paddingBottom: 53,
     marginTop: -10,
     marginBottom: -10,
-    backgroundColor: "rgba(255,255,255,0.97)",
+    backgroundColor: "#ffffff",
     borderTopWidth: 1,
     borderTopColor: "#F0EDF8",
     shadowColor: "#1E0B4B",
