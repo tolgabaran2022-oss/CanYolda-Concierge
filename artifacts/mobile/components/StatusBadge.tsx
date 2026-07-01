@@ -51,19 +51,24 @@ export function StatusBadge({ status, size = "md" }: Props) {
 const styles = StyleSheet.create({
   badge: {
     borderRadius: 99,
-    paddingHorizontal: 10,
-    paddingVertical: 4,
+    paddingHorizontal: 12,
+    paddingVertical: 5,
     alignSelf: "flex-start",
+    minHeight: 26,
+    justifyContent: "center",
   },
   badgeSm: {
-    paddingHorizontal: 8,
-    paddingVertical: 2,
+    paddingHorizontal: 10,
+    paddingVertical: 3,
+    minHeight: 22,
   },
   text: {
     fontSize: 13,
     fontFamily: "Inter_600SemiBold",
+    letterSpacing: -0.1,
   },
   textSm: {
-    fontSize: 11,
+    fontSize: 11.5,
+    fontFamily: "Inter_600SemiBold",
   },
 });

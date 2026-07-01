@@ -15,7 +15,7 @@ if (Platform.OS === "ios") {
 
 const PURPLE   = "#7B5EA7";
 const INACTIVE = "#B0A3C4";
-const TAB_H    = 68;
+const TAB_H    = 86;
 
 type TabItem = {
   name: string;
@@ -103,46 +103,47 @@ const styles = StyleSheet.create({
   barInner:  {
     flexDirection: "row",
     height: TAB_H,
-    borderRadius: 36,
-    backgroundColor: "#FFFFFF",
+    borderRadius: 40,
+    backgroundColor: "rgba(255,255,255,0.97)",
     borderWidth: 1,
-    borderColor: "rgba(123,94,167,0.10)",
+    borderColor: "rgba(123,94,167,0.08)",
     shadowColor: "#2D1B4E",
     shadowOffset: { width: 0, height: 8 },
-    shadowOpacity: 0.14,
-    shadowRadius: 24,
-    elevation: 12,
+    shadowOpacity: 0.10,
+    shadowRadius: 28,
+    elevation: 14,
     overflow: "hidden",
   },
   tabBtn: {
     flex: 1,
     alignItems: "center",
     justifyContent: "center",
-    gap: 3,
-    paddingTop: 8,
-    paddingBottom: 8,
+    gap: 4,
+    paddingTop: 10,
+    paddingBottom: 10,
+    minHeight: 44,
   },
   activeDot: {
     position: "absolute",
-    top: 6,
-    width: 20,
+    top: 8,
+    width: 24,
     height: 3,
     borderRadius: 2,
     backgroundColor: PURPLE,
   },
   iconWrap: {
-    width: 36,
-    height: 28,
+    width: 40,
+    height: 32,
     alignItems: "center",
     justifyContent: "center",
-    borderRadius: 10,
+    borderRadius: 12,
   },
-  iconWrapActive: { backgroundColor: `${PURPLE}15` },
+  iconWrapActive: { backgroundColor: `${PURPLE}12` },
   label: {
-    fontSize: 10,
-    fontFamily: "Inter_500Medium",
+    fontSize: 10.5,
+    fontFamily: "Inter_600SemiBold",
     includeFontPadding: false,
-    lineHeight: 12,
+    lineHeight: 13,
     textAlign: "center",
   },
 });

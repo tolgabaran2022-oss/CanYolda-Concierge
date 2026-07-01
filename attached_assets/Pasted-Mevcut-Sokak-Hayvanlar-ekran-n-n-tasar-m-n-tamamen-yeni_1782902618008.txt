@@ -1,0 +1,89 @@
+Mevcut "Sokak Hayvanları" ekranının tasarımını tamamen yeniden düzenle. Mevcut fonksiyonlar, renk paleti ve içerikler aynı kalsın ancak arayüzü Apple Human Interface Guidelines seviyesinde premium hale getir.
+
+YAPILACAK DÜZENLEMELER
+
+1. SAFE AREA
+- Dynamic Island ile üst içerik arasındaki boşluğu artır.
+- Tüm ekran SafeAreaView kullansın.
+- Üst padding: insets.top + 12-16px.
+
+2. HEADER
+- Sol taraftaki logo ile sağdaki "+ Durum Bildir" butonunu aynı hizaya getir.
+- Başlık ile alt açıklama arasındaki boşluğu optimize et.
+- Başlık ile ilk kart arasında gereksiz boşluğu azalt.
+
+3. "+ Durum Bildir" BUTONU
+- Yüksekliği 44-48px olsun.
+- Border radius 22-24px.
+- Gölgesi daha doğal olsun.
+- İç padding artırılsın.
+- İkon ve yazı tam ortalansın.
+
+4. BİLGİ KARTI
+- "4 aktif durum bulundu" kartının yüksekliğini biraz azalt.
+- İç boşlukları dengeli yap.
+- Sağ ok ikonunu tam dikey ortala.
+- Kart gölgesini daha yumuşak yap.
+
+5. DURUM KARTLARI
+- Fotoğraf alanını küçült (64x64 veya 72x72).
+- Fotoğraf ile yazılar arasındaki boşluğu artır.
+- Kart yüksekliğini optimize et.
+- Border radius 20-24px yap.
+- Gölgeyi daha hafif ve modern hale getir.
+- Sağdaki ok butonunu tam dikey ortala.
+
+6. DURUM BADGE'LARI
+- "Aç", "Sağlıklı", "Yaralı" etiketlerini büyüt.
+- Yükseklik 22-24px.
+- Yatay padding artır.
+- Yazılar daha okunabilir olsun.
+
+7. METİNLER
+- Başlıklar biraz daha belirgin olsun.
+- Açıklama satırları maksimum 2 satır gösterilsin.
+- Kullanıcı adı ve tarih daha küçük gri tonunda olsun.
+
+8. ALT AKSİYONLAR
+- Beğeni, yorum ve "Konumu Aç" arasında daha fazla boşluk bırak.
+- İkonlar aynı hizada olsun.
+- Dokunma alanlarını en az 44x44px yap.
+
+9. BOTTOM TAB BAR
+- Yüksekliği 84-90px yap.
+- Safe Area desteği ekle.
+- Aktif sekme daha belirgin olsun.
+- Alt menünün üstüne hafif blur ve ince border ekle.
+- Son kart ile Bottom Tab arasında en az 120px boşluk bırak.
+
+10. RENKLER
+- Mevcut mor renk korunsun.
+- Ancak farklı tonları kullanılarak daha premium görünüm oluştur.
+- Arka plan tamamen beyaz yerine çok hafif gri (#F8F9FC) olsun.
+- Kartlar saf beyaz kalsın.
+
+11. GÖLGELER
+Tüm kartlarda:
+- shadowOpacity: 0.05
+- shadowRadius: 10-12
+- shadowOffset: { width: 0, height: 4 }
+- elevation: 2-3
+
+12. SPACING
+Tüm spacing değerlerini 8pt Grid System'e göre yeniden düzenle.
+Hiçbir öğe birbirine yapışık görünmesin.
+
+13. ANİMASYON
+- Kartlara hafif fade + slide animasyonu ekle.
+- Butonlara press scale efekti ekle.
+- Liste scroll'u 60 FPS akıcı olsun.
+
+14. KOD KALİTESİ
+- Mevcut fonksiyonları bozma.
+- Component yapısını koru.
+- Sadece UI/UX düzenlemesi yap.
+- Responsive tasarımı koru.
+- Dark Mode desteğini bozma.
+
+Amaç:
+Mevcut ekranın mantığını değiştirmeden, App Store'da yayınlanabilecek seviyede modern, premium ve Apple standartlarında bir arayüz oluştur.

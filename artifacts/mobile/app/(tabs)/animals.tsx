@@ -2,8 +2,9 @@ import { Ionicons } from "@expo/vector-icons";
 import * as Haptics from "expo-haptics";
 import { LinearGradient } from "expo-linear-gradient";
 import { useRouter } from "expo-router";
-import React, { useMemo, useState } from "react";
+import React, { useCallback, useMemo, useRef, useState } from "react";
 import {
+  Animated,
   FlatList,
   Platform,
   Pressable,
@@ -17,16 +18,17 @@ import { AnimalCard } from "@/components/AnimalCard";
 import { EmptyState } from "@/components/EmptyState";
 import { useAnimals } from "@/contexts/AnimalsContext";
 
-const PURPLE = "#7B5EA7";
-const BG     = "#F9F8FF";
+const PURPLE      = "#7B5EA7";
+const PURPLE_DARK = "#4A2D8F";
+const BG          = "#F8F9FC";
 
 type FilterKey = "all" | "injured" | "hungry" | "healthy";
 
-const FILTERS: { key: FilterKey; label: string; emoji: string }[] = [
-  { key: "all",     label: "Hepsi",          emoji: ""   },
-  { key: "injured", label: "Acil",            emoji: "🚨" },
-  { key: "hungry",  label: "Yardım Bekleyen", emoji: "🟡" },
-  { key: "healthy", label: "Sağlıklı",        emoji: "🟢" },
+const FILTERS: { key: FilterKey; label: string; emoji: string; accent: string }[] = [
+  { key: "all",     label: "Hepsi",          emoji: "🐾", accent: PURPLE      },
+  { key: "injured", label: "Acil",            emoji: "🚨", accent: "#DC2626"  },
+  { key: "hungry",  label: "Yardım Bekleyen", emoji: "🟡", accent: "#D97706"  },
+  { key: "healthy", label: "Sağlıklı",        emoji: "🟢", accent: "#16A34A"  },
 ];
 
 function filterAnimals(
@@ -47,100 +49,184 @@ function countForFilter(
   return filterAnimals(animals, key).length;
 }
 
+function FilterChip({
+  f,
+  active,
+  count,
+  onPress,
+}: {
+  f: (typeof FILTERS)[0];
+  active: boolean;
+  count: number;
+  onPress: () => void;
+}) {
+  const scale = useRef(new Animated.Value(1)).current;
+
+  const handlePress = () => {
+    Animated.sequence([
+      Animated.timing(scale, { toValue: 0.93, duration: 80, useNativeDriver: true }),
+      Animated.timing(scale, { toValue: 1,    duration: 120, useNativeDriver: true }),
+    ]).start();
+    onPress();
+  };
+
+  return (
+    <Animated.View style={{ transform: [{ scale }] }}>
+      <Pressable onPress={handlePress} hitSlop={4}>
+        {active ? (
+          <LinearGradient
+            colors={["#9478D8", "#5B3FD6"]}
+            start={{ x: 0, y: 0 }}
+            end={{ x: 1, y: 1 }}
+            style={F.chipActive}
+          >
+            <Text style={F.chipEmoji}>{f.emoji}</Text>
+            <Text style={F.chipLabelActive}>{f.label}</Text>
+            <View style={F.chipBadge}>
+              <Text style={F.chipBadgeText}>{count}</Text>
+            </View>
+          </LinearGradient>
+        ) : (
+          <View style={F.chipInactive}>
+            <Text style={F.chipEmoji}>{f.emoji}</Text>
+            <Text style={F.chipLabelInactive}>{f.label}</Text>
+            <View style={[F.chipBadgeInactive, { backgroundColor: `${f.accent}18` }]}>
+              <Text style={[F.chipBadgeTextInactive, { color: f.accent }]}>{count}</Text>
+            </View>
+          </View>
+        )}
+      </Pressable>
+    </Animated.View>
+  );
+}
+
 export default function AnimalsScreen() {
   const insets = useSafeAreaInsets();
   const router = useRouter();
   const { animals } = useAnimals();
   const [filter, setFilter] = useState<FilterKey>("all");
 
-  const filtered   = useMemo(() => filterAnimals(animals, filter), [animals, filter]);
-  const topPad     = Platform.OS === "web" ? 20 : insets.top;
-  const bottomNavH = 68 + insets.bottom + 10;
+  const filtered    = useMemo(() => filterAnimals(animals, filter), [animals, filter]);
+  const topPad      = Platform.OS === "web" ? 20 : insets.top;
+  const bottomNavH  = 84 + insets.bottom + 10;
 
-  const handleAdd = () => {
+  const addBtnScale = useRef(new Animated.Value(1)).current;
+
+  const handleAdd = useCallback(() => {
+    Animated.sequence([
+      Animated.timing(addBtnScale, { toValue: 0.93, duration: 80, useNativeDriver: true }),
+      Animated.timing(addBtnScale, { toValue: 1,    duration: 120, useNativeDriver: true }),
+    ]).start();
     Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
     router.push("/add-animal");
-  };
+  }, [router, addBtnScale]);
+
+  const handleFilterChange = useCallback((key: FilterKey) => {
+    Haptics.selectionAsync();
+    setFilter(key);
+  }, []);
+
+  const injured = countForFilter(animals, "injured");
+  const hungry  = countForFilter(animals, "hungry");
 
   const renderHeader = () => (
     <>
-      {/* ── Hero header ─────────────────────────── */}
-      <View style={[H.hero, { paddingTop: topPad + 12 }]}>
-        {/* Top row: logo + action button */}
+      {/* ── Hero header ───────────────────────── */}
+      <View style={[H.hero, { paddingTop: topPad + 16 }]}>
+
+        {/* Top row */}
         <View style={H.topRow}>
           <View style={H.logoRow}>
-            <Ionicons name="paw" size={16} color={PURPLE} />
+            <View style={H.logoPill}>
+              <Ionicons name="paw" size={14} color={PURPLE} />
+            </View>
             <Text style={H.logoText}>canyoldaşı</Text>
           </View>
 
-          {/* ── Header action button (replaces FAB) ── */}
-          <Pressable onPress={handleAdd} hitSlop={8}>
-            <LinearGradient
-              colors={["#9478D8", "#5B3FD6"]}
-              start={{ x: 0, y: 0 }}
-              end={{ x: 1, y: 1 }}
-              style={H.addBtn}
-            >
-              <Ionicons name="add" size={16} color="#FFF" />
-              <Text style={H.addBtnText}>Durum Bildir</Text>
-            </LinearGradient>
-          </Pressable>
+          <Animated.View style={{ transform: [{ scale: addBtnScale }] }}>
+            <Pressable onPress={handleAdd} hitSlop={8}>
+              <LinearGradient
+                colors={["#9C7FE0", "#5B3FD6"]}
+                start={{ x: 0, y: 0 }}
+                end={{ x: 1, y: 1 }}
+                style={H.addBtn}
+              >
+                <Ionicons name="add" size={15} color="#FFF" />
+                <Text style={H.addBtnText}>Durum Bildir</Text>
+              </LinearGradient>
+            </Pressable>
+          </Animated.View>
         </View>
 
-        <Text style={H.title}>Sokak Hayvanları</Text>
-        <Text style={H.subtitle}>Yakınındaki canlı durumları keşfet</Text>
+        {/* Title block */}
+        <View style={H.titleBlock}>
+          <Text style={H.title}>Sokak Hayvanları</Text>
+          <Text style={H.subtitle}>Yakınındaki canlı durumları keşfet</Text>
+        </View>
+
+        {/* Status summary row */}
+        <View style={H.summaryRow}>
+          <View style={H.summaryCard}>
+            <View style={[H.summaryDot, { backgroundColor: "#DC2626" }]} />
+            <View>
+              <Text style={H.summaryNum}>{injured}</Text>
+              <Text style={H.summaryLabel}>Acil</Text>
+            </View>
+          </View>
+          <View style={H.summaryDivider} />
+          <View style={H.summaryCard}>
+            <View style={[H.summaryDot, { backgroundColor: "#D97706" }]} />
+            <View>
+              <Text style={H.summaryNum}>{hungry}</Text>
+              <Text style={H.summaryLabel}>Bekleyen</Text>
+            </View>
+          </View>
+          <View style={H.summaryDivider} />
+          <View style={H.summaryCard}>
+            <View style={[H.summaryDot, { backgroundColor: PURPLE }]} />
+            <View>
+              <Text style={H.summaryNum}>{animals.length}</Text>
+              <Text style={H.summaryLabel}>Toplam</Text>
+            </View>
+          </View>
+        </View>
 
         {/* Count banner */}
-        <View style={H.countBanner}>
+        <Pressable
+          style={({ pressed }) => [H.countBanner, pressed && { opacity: 0.88 }]}
+          onPress={() => {}}
+        >
           <View style={H.countIconWrap}>
-            <Ionicons name="paw" size={20} color={PURPLE} />
+            <Ionicons name="paw" size={18} color={PURPLE} />
           </View>
           <View style={{ flex: 1 }}>
             <Text style={H.countMain}>{animals.length} aktif durum bulundu</Text>
             <Text style={H.countSub}>Onların hayatına dokunabilirsin</Text>
           </View>
-          <Ionicons name="chevron-forward" size={18} color={PURPLE} />
-        </View>
+          <View style={H.countArrow}>
+            <Ionicons name="chevron-forward" size={15} color={PURPLE} />
+          </View>
+        </Pressable>
       </View>
 
-      {/* ── Filter chips ────────────────────────── */}
-      <ScrollView
-        horizontal
-        showsHorizontalScrollIndicator={false}
-        style={{ flex: 0, backgroundColor: BG }}
-        contentContainerStyle={F.scroll}
-      >
-        {FILTERS.map((f) => {
-          const active = filter === f.key;
-          const count  = countForFilter(animals, f.key);
-          return (
-            <Pressable
+      {/* ── Filter chips ──────────────────────── */}
+      <View style={F.container}>
+        <ScrollView
+          horizontal
+          showsHorizontalScrollIndicator={false}
+          contentContainerStyle={F.scroll}
+        >
+          {FILTERS.map((f) => (
+            <FilterChip
               key={f.key}
-              onPress={() => { Haptics.selectionAsync(); setFilter(f.key); }}
-              style={active ? undefined : F.chipInactive}
-            >
-              {active ? (
-                <LinearGradient
-                  colors={["#9478D8", "#5B3FD6"]}
-                  start={{ x: 0, y: 0 }}
-                  end={{ x: 1, y: 1 }}
-                  style={F.chipGradient}
-                >
-                  <Text style={F.chipTextActive}>
-                    {f.emoji ? `${f.emoji} ` : ""}{f.label} ({count})
-                  </Text>
-                </LinearGradient>
-              ) : (
-                <Text style={F.chipTextInactive}>
-                  {f.emoji ? `${f.emoji} ` : ""}{f.label} ({count})
-                </Text>
-              )}
-            </Pressable>
-          );
-        })}
-      </ScrollView>
-
-      <View style={{ height: 4 }} />
+              f={f}
+              active={filter === f.key}
+              count={countForFilter(animals, f.key)}
+              onPress={() => handleFilterChange(f.key)}
+            />
+          ))}
+        </ScrollView>
+      </View>
     </>
   );
 
@@ -149,10 +235,11 @@ export default function AnimalsScreen() {
       <FlatList
         data={filtered}
         keyExtractor={(item) => item.id}
-        renderItem={({ item }) => <AnimalCard animal={item} />}
+        renderItem={({ item, index }) => <AnimalCard animal={item} index={index} />}
         ListHeaderComponent={renderHeader}
-        contentContainerStyle={{ paddingBottom: bottomNavH + 20 }}
+        contentContainerStyle={{ paddingBottom: bottomNavH + 24 }}
         showsVerticalScrollIndicator={false}
+        ItemSeparatorComponent={() => <View style={{ height: 2 }} />}
         ListEmptyComponent={
           <EmptyState
             icon="paw-outline"
@@ -165,126 +252,234 @@ export default function AnimalsScreen() {
   );
 }
 
-/* ── Styles ─────────────────────────────────────────────── */
+/* ── Styles ──────────────────────────────────────────────── */
 
 const H = StyleSheet.create({
   hero: {
     backgroundColor: BG,
-    paddingHorizontal: 18,
-    paddingBottom: 16,
-    gap: 4,
+    paddingHorizontal: 16,
+    paddingBottom: 8,
+    gap: 12,
   },
   topRow: {
     flexDirection: "row",
     alignItems: "center",
     justifyContent: "space-between",
-    marginBottom: 6,
   },
   logoRow: {
     flexDirection: "row",
     alignItems: "center",
-    gap: 5,
+    gap: 8,
+  },
+  logoPill: {
+    width: 28,
+    height: 28,
+    borderRadius: 8,
+    backgroundColor: `${PURPLE}14`,
+    alignItems: "center",
+    justifyContent: "center",
   },
   logoText: {
-    fontSize: 14,
-    fontFamily: "Inter_600SemiBold",
-    color: PURPLE,
-    letterSpacing: -0.2,
+    fontSize: 15,
+    fontFamily: "Inter_700Bold",
+    color: PURPLE_DARK,
+    letterSpacing: -0.3,
   },
   addBtn: {
     flexDirection: "row",
     alignItems: "center",
-    gap: 5,
-    paddingHorizontal: 14,
-    paddingVertical: 8,
-    borderRadius: 20,
+    gap: 6,
+    paddingHorizontal: 16,
+    paddingVertical: 11,
+    borderRadius: 24,
     shadowColor: "#5B3FD6",
-    shadowOffset: { width: 0, height: 3 },
-    shadowOpacity: 0.30,
-    shadowRadius: 8,
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.25,
+    shadowRadius: 10,
     elevation: 4,
   },
   addBtnText: {
     fontSize: 13,
     fontFamily: "Inter_600SemiBold",
     color: "#FFF",
+    letterSpacing: -0.1,
   },
+
+  titleBlock: { gap: 2 },
   title: {
-    fontSize: 26,
+    fontSize: 28,
     fontFamily: "Inter_700Bold",
-    color: "#1E0B4B",
-    letterSpacing: -0.5,
+    color: "#1A0A3C",
+    letterSpacing: -0.6,
   },
   subtitle: {
-    fontSize: 13.5,
+    fontSize: 14,
     fontFamily: "Inter_400Regular",
-    color: "#6B7280",
-    marginBottom: 12,
+    color: "#8B8FA8",
   },
+
+  summaryRow: {
+    flexDirection: "row",
+    backgroundColor: "#FFFFFF",
+    borderRadius: 20,
+    paddingVertical: 14,
+    paddingHorizontal: 20,
+    borderWidth: 1,
+    borderColor: "rgba(123,94,167,0.08)",
+    shadowColor: "#2D1B4E",
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.05,
+    shadowRadius: 12,
+    elevation: 2,
+    alignItems: "center",
+    justifyContent: "space-around",
+  },
+  summaryCard: {
+    alignItems: "center",
+    gap: 4,
+    flexDirection: "row",
+  },
+  summaryDot: {
+    width: 8,
+    height: 8,
+    borderRadius: 4,
+    marginRight: 8,
+  },
+  summaryNum: {
+    fontSize: 18,
+    fontFamily: "Inter_700Bold",
+    color: "#1A0A3C",
+    lineHeight: 22,
+  },
+  summaryLabel: {
+    fontSize: 11,
+    fontFamily: "Inter_400Regular",
+    color: "#8B8FA8",
+  },
+  summaryDivider: {
+    width: 1,
+    height: 32,
+    backgroundColor: "#EEE9F8",
+  },
+
   countBanner: {
     flexDirection: "row",
     alignItems: "center",
     gap: 12,
-    backgroundColor: "#FFFFFF",
+    backgroundColor: `${PURPLE}08`,
     borderRadius: 16,
-    padding: 14,
+    paddingVertical: 13,
+    paddingHorizontal: 14,
     borderWidth: 1,
-    borderColor: "rgba(123,94,167,0.12)",
-    shadowColor: "#2D1B4E",
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.07,
-    shadowRadius: 8,
-    elevation: 2,
+    borderColor: `${PURPLE}18`,
   },
   countIconWrap: {
-    width: 40,
-    height: 40,
+    width: 38,
+    height: 38,
     borderRadius: 12,
-    backgroundColor: "rgba(123,94,167,0.10)",
+    backgroundColor: `${PURPLE}14`,
     alignItems: "center",
     justifyContent: "center",
   },
   countMain: {
-    fontSize: 14,
+    fontSize: 13.5,
     fontFamily: "Inter_600SemiBold",
-    color: "#1E0B4B",
+    color: "#1A0A3C",
+    letterSpacing: -0.1,
   },
   countSub: {
-    fontSize: 12,
+    fontSize: 11.5,
     fontFamily: "Inter_400Regular",
-    color: "#6B7280",
-    marginTop: 1,
+    color: "#8B8FA8",
+    marginTop: 2,
+  },
+  countArrow: {
+    width: 28,
+    height: 28,
+    borderRadius: 10,
+    backgroundColor: `${PURPLE}14`,
+    alignItems: "center",
+    justifyContent: "center",
   },
 });
 
 const F = StyleSheet.create({
+  container: {
+    backgroundColor: BG,
+    paddingBottom: 4,
+  },
   scroll: {
     paddingHorizontal: 16,
     paddingVertical: 10,
     gap: 8,
     alignItems: "center",
   },
-  chipInactive: {
+  chipActive: {
+    flexDirection: "row",
+    alignItems: "center",
     borderRadius: 99,
     paddingHorizontal: 14,
-    paddingVertical: 8,
+    paddingVertical: 10,
+    gap: 6,
+    shadowColor: "#5B3FD6",
+    shadowOffset: { width: 0, height: 3 },
+    shadowOpacity: 0.22,
+    shadowRadius: 8,
+    elevation: 3,
+    minHeight: 40,
+  },
+  chipInactive: {
+    flexDirection: "row",
+    alignItems: "center",
+    borderRadius: 99,
+    paddingHorizontal: 14,
+    paddingVertical: 10,
+    gap: 6,
     backgroundColor: "#FFFFFF",
     borderWidth: 1.5,
-    borderColor: "rgba(123,94,167,0.18)",
+    borderColor: "rgba(123,94,167,0.14)",
+    minHeight: 40,
+    shadowColor: "#2D1B4E",
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.04,
+    shadowRadius: 6,
+    elevation: 1,
   },
-  chipGradient: {
-    borderRadius: 99,
-    paddingHorizontal: 16,
-    paddingVertical: 8,
-  },
-  chipTextActive: {
+  chipEmoji: { fontSize: 13, lineHeight: 16 },
+  chipLabelActive: {
     fontSize: 13,
     fontFamily: "Inter_600SemiBold",
-    color: "#FFFFFF",
+    color: "#FFF",
+    letterSpacing: -0.1,
   },
-  chipTextInactive: {
+  chipLabelInactive: {
     fontSize: 13,
     fontFamily: "Inter_500Medium",
-    color: "#4A2D8F",
+    color: "#3D2080",
+    letterSpacing: -0.1,
+  },
+  chipBadge: {
+    backgroundColor: "rgba(255,255,255,0.28)",
+    borderRadius: 20,
+    paddingHorizontal: 7,
+    paddingVertical: 1,
+    minWidth: 22,
+    alignItems: "center",
+  },
+  chipBadgeText: {
+    fontSize: 11,
+    fontFamily: "Inter_700Bold",
+    color: "#FFF",
+  },
+  chipBadgeInactive: {
+    borderRadius: 20,
+    paddingHorizontal: 7,
+    paddingVertical: 1,
+    minWidth: 22,
+    alignItems: "center",
+  },
+  chipBadgeTextInactive: {
+    fontSize: 11,
+    fontFamily: "Inter_700Bold",
   },
 });
