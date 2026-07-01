@@ -1,0 +1,96 @@
+Sahiplendirme İlanı ekranını modern iOS/Apple tarzında UI/UX olarak revize et.
+
+Mevcut sayfa yapısını ve form alanlarını koru, ama tasarımı daha premium hale getir.
+
+Düzeltilecekler:
+
+1. Safe Area / Header
+- Üst alan Dynamic Island’a çakışmayacak şekilde güvenli boşlukla başlasın.
+- Geri oku ve üst başlık düzgün hizalansın.
+- Header yüksekliği 56-64px olsun.
+- “Sahiplendirme” yazısı taşmasın, gerekirse ortalanmış sayfa başlığı kullan.
+
+2. Ana başlık alanı
+- “Sahiplendirme İlanı” başlığı daha güçlü görünsün.
+- Alt açıklama okunabilir olsun, çok silik olmasın.
+- Renk kontrastını artır.
+
+3. Form kartı
+- Formu beyaz premium kart içine al.
+- Kart radius: 24px
+- Hafif shadow kullan.
+- İç padding: 20-24px
+- Ekran kenar boşlukları eşit olsun.
+
+4. Fotoğraf yükleme alanı
+- Daha modern upload component yap.
+- Dashed border 2px olsun.
+- Kamera ikonu büyüsün.
+- İçerik ortalansın.
+- Metin:
+  “Fotoğraf ekle”
+  “JPG, PNG • Maks 10 MB”
+- Alan yüksekliği yaklaşık 150px olsun.
+- Border ve ikon rengi uygulama temasıyla uyumlu olsun.
+
+5. Input tasarımı
+- Tüm inputlar aynı yükseklik ve radius değerine sahip olsun.
+- Input height: 52-56px
+- Border: #E5E7EB
+- Radius: 16px
+- Focus durumunda turuncu veya ana tema rengi border kullan.
+- Placeholder rengi biraz daha okunabilir olsun.
+
+6. Tür seçim butonları
+- Kedi, Köpek, Kuş, Tavşan, Diğer butonlarını modern chip tasarımı yap.
+- Seçili olan buton gradient veya güçlü tema rengiyle belli olsun.
+- Buton yüksekliği 40-44px olsun.
+- Padding artır.
+- Mümkünse ikon ekle:
+  🐱 Kedi
+  🐶 Köpek
+  🐦 Kuş
+  🐰 Tavşan
+  Diğer
+
+7. Yaş ve Konum alanı
+- İki input aynı satırda düzgün hizalansın.
+- Aralarında 12px boşluk olsun.
+- Yaş alanı dar, konum alanı geniş kalsın ama hizalar düzgün olsun.
+
+8. Açıklama alanı
+- Textarea daha temiz görünsün.
+- Minimum height 120px olsun.
+- Placeholder metni daha okunabilir yap.
+- İç padding artır.
+
+9. Boşluk sistemi
+- Tüm ekran 8px grid sistemine göre düzenlensin.
+- Label, input ve bölümler arasında tutarlı spacing kullan.
+- Label ile input arası 8px
+- Form alanları arası 18-22px
+
+10. Alt CTA butonu
+- Ekranın altında sabit “İlanı Yayınla” butonu ekle.
+- Buton safe-area-bottom dikkate alsın.
+- Buton full-width olsun.
+- Height: 56px
+- Radius: 18px
+- Gradient veya ana tema rengi kullan.
+- Form scroll olduğunda buton altta sabit kalsın.
+
+11. Renk tutarlılığı
+- Mor renkleri azalt.
+- Uygulamanın ana rengi turuncuysa tüm aktif/focus/selected durumlarında turuncu tema kullan.
+- Arka plan çok açık pastel olabilir: #F8F5FF veya #FFF8F2.
+- Metin rengi koyu ve okunabilir olsun.
+
+12. Responsive / mobil uyum
+- iPhone 14/15 Pro ölçülerinde taşma olmasın.
+- Klavye açılınca inputlar kapanmasın.
+- ScrollView düzgün çalışsın.
+- Dynamic Island ve notch alanlarına dikkat et.
+
+Kodları mevcut projeye entegre et.
+Var olan form işlevlerini bozma.
+Sadece UI/UX, spacing, renk, header, input, upload alanı ve CTA butonunu iyileştir.
