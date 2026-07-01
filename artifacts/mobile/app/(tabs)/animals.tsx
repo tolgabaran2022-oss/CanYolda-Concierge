@@ -257,9 +257,11 @@ export default function AnimalsScreen() {
 const H = StyleSheet.create({
   hero: {
     backgroundColor: BG,
-    paddingHorizontal: 16,
+    paddingLeft: 17,
+    paddingRight: 16,
     paddingBottom: 8,
-    gap: 12,
+    gap: 11,
+    marginVertical: 11,
   },
   topRow: {
     flexDirection: "row",
