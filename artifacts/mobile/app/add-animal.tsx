@@ -23,6 +23,7 @@ import type { AnimalStatus } from "@/contexts/AnimalsContext";
 import { useAnimals } from "@/contexts/AnimalsContext";
 import { useAuth } from "@/contexts/AuthContext";
 import { useColors } from "@/hooks/useColors";
+import { ANIMAL_TYPES, type AnimalType } from "@/utils/animalDefaults";
 
 const STATUSES: { key: AnimalStatus; label: string; icon: keyof typeof Ionicons.glyphMap }[] = [
   { key: "hungry", label: "Aç", icon: "restaurant-outline" },
@@ -46,6 +47,7 @@ export default function AddAnimalScreen() {
   const { user } = useAuth();
 
   const [image, setImage] = useState<string | undefined>();
+  const [animalType, setAnimalType] = useState<AnimalType>("diger");
   const [status, setStatus] = useState<AnimalStatus>("unknown");
   const [notes, setNotes] = useState("");
   const [location, setLocation] = useState<{ latitude: number; longitude: number } | null>(null);
@@ -104,6 +106,7 @@ export default function AddAnimalScreen() {
     try {
       await addAnimal({
         image,
+        animalType,
         latitude: location.latitude,
         longitude: location.longitude,
         status,
@@ -147,6 +150,39 @@ export default function AddAnimalScreen() {
           </View>
         )}
       </Pressable>
+
+      {/* Animal type selector */}
+      <View style={styles.section}>
+        <Text style={[styles.sectionLabel, { color: colors.foreground }]}>Hayvan Türü</Text>
+        <View style={styles.statusRow}>
+          {ANIMAL_TYPES.map((t) => {
+            const isActive = animalType === t.key;
+            return (
+              <Pressable
+                key={t.key}
+                style={[
+                  styles.statusChip,
+                  {
+                    backgroundColor: isActive ? colors.primary : colors.muted,
+                    borderColor: isActive ? colors.primary : "transparent",
+                  },
+                ]}
+                onPress={() => setAnimalType(t.key)}
+              >
+                <Text style={styles.typeEmoji}>{t.emoji}</Text>
+                <Text
+                  style={[
+                    styles.statusChipText,
+                    { color: isActive ? "white" : colors.mutedForeground },
+                  ]}
+                >
+                  {t.label}
+                </Text>
+              </Pressable>
+            );
+          })}
+        </View>
+      </View>
 
       {/* Status selector */}
       <View style={styles.section}>
@@ -307,6 +343,7 @@ const styles = StyleSheet.create({
     borderWidth: 1.5,
   },
   statusChipText: { fontSize: 14, fontFamily: "Inter_500Medium" },
+  typeEmoji: { fontSize: 14 },
   notesInput: {
     borderRadius: 12,
     borderWidth: 1.5,

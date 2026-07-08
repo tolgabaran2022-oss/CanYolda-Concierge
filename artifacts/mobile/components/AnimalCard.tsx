@@ -13,6 +13,7 @@ import {
 } from "react-native";
 import { StatusBadge, STATUS_COLORS } from "@/components/StatusBadge";
 import type { StrayAnimal } from "@/contexts/AnimalsContext";
+import { getDefaultAnimalImageUri } from "@/utils/animalDefaults";
 import { formatTimeAgo } from "@/utils/formatters";
 
 const C = {
@@ -86,6 +87,7 @@ export function AnimalCard({ animal, onLike, index = 0 }: Props) {
   };
 
   const statusDotColor = STATUS_COLORS[animal.status];
+  const thumbUri = animal.image ?? animal.animalImage ?? getDefaultAnimalImageUri(animal.animalType);
 
   return (
     <Animated.View
@@ -108,18 +110,12 @@ export function AnimalCard({ animal, onLike, index = 0 }: Props) {
       >
         {/* Thumbnail */}
         <View style={S.thumbWrap}>
-          {animal.image ? (
-            <Image
-              source={{ uri: animal.image }}
-              style={S.thumb}
-              contentFit="cover"
-              transition={180}
-            />
-          ) : (
-            <View style={S.thumbPlaceholder}>
-              <Ionicons name="camera-outline" size={22} color="#C0B8D8" />
-            </View>
-          )}
+          <Image
+            source={{ uri: thumbUri }}
+            style={S.thumb}
+            contentFit="cover"
+            transition={180}
+          />
           <View style={[S.statusDot, { backgroundColor: statusDotColor }]} />
         </View>
 
@@ -251,24 +247,17 @@ const S = StyleSheet.create({
 
   /* Thumbnail */
   thumbWrap: {
-    width: 70,
-    height: 70,
-    borderRadius: 16,
+    width: 60,
+    height: 60,
+    borderRadius: 14,
     overflow: "visible",
     flexShrink: 0,
   },
   thumb: {
-    width: 70,
-    height: 70,
-    borderRadius: 16,
-  },
-  thumbPlaceholder: {
-    width: 70,
-    height: 70,
-    borderRadius: 16,
+    width: 60,
+    height: 60,
+    borderRadius: 14,
     backgroundColor: "#EDE9F8",
-    alignItems: "center",
-    justifyContent: "center",
   },
   statusDot: {
     position: "absolute",

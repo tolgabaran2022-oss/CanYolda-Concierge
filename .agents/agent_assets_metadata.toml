@@ -6,3 +6,27 @@ id = "urF2HaCLoYCZvisEzw3dK"
 uri = "file://artifacts/mobile/assets/images/icon.png"
 type = "image"
 title = "canyoldasi app icon"
+
+[[generated]]
+id = "P8lgZN8wBTE7sDFkWq4wQ"
+uri = "file://artifacts/mobile/assets/images/animal-default-cat.png"
+type = "image"
+title = "default cat icon"
+
+[[generated]]
+id = "11g3xB1kB5CxPcrpXpAJQ"
+uri = "file://artifacts/mobile/assets/images/animal-default-dog.png"
+type = "image"
+title = "default dog icon"
+
+[[generated]]
+id = "1jZM2YvCjlv1NItxMD2ZJ"
+uri = "file://artifacts/mobile/assets/images/animal-default-bird.png"
+type = "image"
+title = "default bird icon"
+
+[[generated]]
+id = "mkDTa142fnYB59OBnvSjz"
+uri = "file://artifacts/mobile/assets/images/animal-default-other.png"
+type = "image"
+title = "default other animal icon"

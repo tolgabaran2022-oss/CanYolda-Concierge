@@ -7,6 +7,7 @@ import React, {
   useState,
 } from "react";
 import { generateId } from "@/utils/formatters";
+import type { AnimalType } from "@/utils/animalDefaults";
 
 export type AnimalStatus = "hungry" | "injured" | "healthy" | "unknown";
 
@@ -21,6 +22,8 @@ export interface AnimalComment {
 export interface StrayAnimal {
   id: string;
   image?: string;
+  animalType?: AnimalType;
+  animalImage?: string;
   locationName?: string;
   latitude: number;
   longitude: number;
@@ -58,6 +61,7 @@ const SEED: StrayAnimal[] = [
   {
     id: "seed-1",
     image: "https://loremflickr.com/600/400/dog,stray?lock=301",
+    animalType: "kopek",
     locationName: "Eyüp, İstanbul",
     latitude: 41.0082,
     longitude: 28.9784,
@@ -77,6 +81,7 @@ const SEED: StrayAnimal[] = [
   {
     id: "seed-2",
     image: "https://loremflickr.com/600/400/cat,stray?lock=302",
+    animalType: "kedi",
     locationName: "Kadıköy, İstanbul",
     latitude: 41.014,
     longitude: 28.972,
@@ -99,6 +104,7 @@ const SEED: StrayAnimal[] = [
   {
     id: "seed-3",
     image: "https://loremflickr.com/600/400/dog,injured?lock=303",
+    animalType: "kopek",
     locationName: "Üsküdar, İstanbul",
     latitude: 40.998,
     longitude: 29.018,
@@ -143,6 +149,7 @@ const SEED: StrayAnimal[] = [
   {
     id: "seed-4",
     image: "https://loremflickr.com/600/400/cat,black?lock=304",
+    animalType: "kedi",
     locationName: "Ataşehir, İstanbul",
     latitude: 41.022,
     longitude: 28.963,
