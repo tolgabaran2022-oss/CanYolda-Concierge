@@ -1,7 +1,6 @@
 import { Ionicons } from "@expo/vector-icons";
 import * as Haptics from "expo-haptics";
 import { Image } from "expo-image";
-import { LinearGradient } from "expo-linear-gradient";
 import { useRouter } from "expo-router";
 import React from "react";
 import {
@@ -12,6 +11,7 @@ import {
   View,
 } from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
+import { LinearGradient } from "expo-linear-gradient";
 
 const PURPLE = "#7B5CBF";
 const BG     = "#FAF7F2";
@@ -23,65 +23,24 @@ export default function WelcomeScreen() {
   const router = useRouter();
   const { width: sw } = useWindowDimensions();
 
-  // Hero: scale down ~10% to create breathing room,
-  // then centre horizontally. Keeps logo slightly higher
-  // so animals feel balanced within the frame.
-  const heroScale = 0.90;
-  const heroW = Math.round(sw * heroScale);
-  const heroH = Math.round(heroW * (4585 / 4265));
-  const heroX = Math.round((sw - heroW) / 2);
-  // Pull hero slightly up (decrease top margin)
-  const heroTop = Math.max(insets.top - 4, 0);
-  // Gradient fade: 18% of hero height for subtle dissolve
-  const fadeH = Math.round(heroH * 0.18);
-
-  // Pull buttons up by ~50px with negative margin overlapping fade
-  const btnOverlap = fadeH * 0.65 + 14;
+  /* PNG native: 4265 × 4585 — full screen width, natural aspect ratio */
+  const heroW = sw;
+  const heroH = Math.round(sw * (4585 / 4265));
 
   return (
-    <View style={[styles.root, { paddingBottom: Math.max(insets.bottom, 16) }]}>
+    <View style={[styles.root, { paddingBottom: Math.max(insets.bottom, 20) }]}>
 
-      {/* Ambient soft blob top-left */}
-      <View
-        style={[
-          styles.blob,
-          {
-            top:    -sw * 0.18,
-            left:   -sw * 0.22,
-            width:   sw * 0.55,
-            height:  sw * 0.55,
-          },
-        ]}
-      />
-
-      {/* Hero section */}
-      <View
-        style={[
-          styles.heroWrap,
-          {
-            marginTop: heroTop,
-            marginLeft: heroX,
-            width: heroW,
-            height: heroH,
-          },
-        ]}
-      >
+      {/* ── Hero — full-bleed, flush under status bar ──────────── */}
+      <View style={[styles.heroWrap, { marginTop: insets.top, width: heroW, height: heroH }]}>
         <Image
           source={HERO_IMAGE}
           style={StyleSheet.absoluteFill}
           contentFit="contain"
         />
-
-        {/* Soft gradient fade at hero bottom to BG */}
-        <LinearGradient
-          colors={["transparent", BG]}
-          style={[styles.heroFade, { height: fadeH }]}
-          pointerEvents="none"
-        />
       </View>
 
-      {/* Buttons pulled up, wide margins, premium feel */}
-      <View style={[styles.btnSection, { marginTop: -btnOverlap }]}>
+      {/* ── Buttons — natural spacing below hero ───────────────── */}
+      <View style={styles.btnSection}>
 
         {/* Giriş Yap */}
         <Pressable
@@ -129,10 +88,10 @@ export default function WelcomeScreen() {
           <Ionicons name="chevron-forward" size={22} color={PURPLE} />
         </Pressable>
 
-        {/* Terms larger text, closer to buttons */}
+        {/* Terms */}
         <View style={styles.termsRow}>
           <View style={styles.heartBadge}>
-            <Ionicons name="heart" size={14} color={PURPLE} />
+            <Ionicons name="heart" size={15} color={PURPLE} />
           </View>
           <Text style={styles.termsText}>
             Devam ederek{" "}
@@ -143,14 +102,6 @@ export default function WelcomeScreen() {
           </Text>
         </View>
       </View>
-
-      {/* Bottom decorative paw small and subtle */}
-      <Ionicons
-        name="paw"
-        size={18}
-        color={PURPLE}
-        style={styles.bottomPaw}
-      />
     </View>
   );
 }
@@ -161,103 +112,90 @@ const styles = StyleSheet.create({
     backgroundColor: BG,
   },
 
-  blob: {
-    position: "absolute",
-    borderRadius: 999,
-    backgroundColor: "#C8B4F0",
-    opacity: 0.10,
-    zIndex: 0,
-  },
-
   heroWrap: {
     overflow: "hidden",
-    zIndex: 1,
-  },
-  heroFade: {
-    position: "absolute",
-    bottom: 0,
-    left: 0,
-    right: 0,
   },
 
-  // Buttons — wider horizontal margins, tighter vertical
+  /* Buttons */
   btnSection: {
-    paddingHorizontal: 36,
-    gap: 13,
-    zIndex: 2,
+    flex: 1,
+    paddingHorizontal: 26,
+    gap: 12,
+    justifyContent: "center",
+    paddingBottom: 8,
   },
 
   iconWrap: {
     width: 36,
     height: 36,
     borderRadius: 10,
-    backgroundColor: "rgba(255,255,255,0.22)",
+    backgroundColor: "rgba(255,255,255,0.20)",
     alignItems: "center",
     justifyContent: "center",
   },
   iconWrapSecondary: {
-    backgroundColor: `${PURPLE}12`,
+    backgroundColor: `${PURPLE}14`,
   },
 
-  // Giriş Yap
+  /* Giriş Yap */
   primaryBtn: {
     flexDirection: "row",
     alignItems: "center",
-    borderRadius: 22,
-    paddingVertical: 17,
-    paddingHorizontal: 20,
-    gap: 14,
+    borderRadius: 20,
+    paddingVertical: 16,
+    paddingHorizontal: 18,
+    gap: 13,
     shadowColor: "#5A3BB2",
-    shadowOffset: { width: 0, height: 10 },
-    shadowOpacity: 0.28,
-    shadowRadius: 20,
-    elevation: 12,
+    shadowOffset: { width: 0, height: 8 },
+    shadowOpacity: 0.30,
+    shadowRadius: 18,
+    elevation: 10,
   },
   primaryBtnText: {
     flex: 1,
     fontSize: 17,
     fontFamily: "Inter_700Bold",
     color: "#FFF",
-    letterSpacing: 0.3,
+    letterSpacing: 0.2,
   },
 
-  // Kayıt Ol
+  /* Kayıt Ol */
   secondaryBtn: {
     flexDirection: "row",
     alignItems: "center",
     backgroundColor: "#FFFFFF",
-    borderRadius: 22,
-    paddingVertical: 17,
-    paddingHorizontal: 20,
-    gap: 14,
+    borderRadius: 20,
+    paddingVertical: 16,
+    paddingHorizontal: 18,
+    gap: 13,
     borderWidth: 1.5,
-    borderColor: `${PURPLE}30`,
+    borderColor: `${PURPLE}35`,
     shadowColor: "#2D1B4E",
-    shadowOffset: { width: 0, height: 5 },
-    shadowOpacity: 0.07,
-    shadowRadius: 16,
-    elevation: 6,
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.08,
+    shadowRadius: 14,
+    elevation: 5,
   },
   secondaryBtnText: {
     flex: 1,
     fontSize: 17,
     fontFamily: "Inter_700Bold",
     color: "#1A1A2E",
-    letterSpacing: 0.3,
+    letterSpacing: 0.2,
   },
 
-  // Terms — larger, more readable
+  /* Terms */
   termsRow: {
     flexDirection: "row",
     alignItems: "flex-start",
     gap: 10,
     paddingHorizontal: 2,
-    marginTop: 8,
+    marginTop: 4,
   },
   heartBadge: {
-    width: 36,
-    height: 36,
-    borderRadius: 18,
+    width: 34,
+    height: 34,
+    borderRadius: 17,
     backgroundColor: `${PURPLE}10`,
     alignItems: "center",
     justifyContent: "center",
@@ -266,23 +204,14 @@ const styles = StyleSheet.create({
   },
   termsText: {
     flex: 1,
-    fontSize: 14,
+    fontSize: 13,
     fontFamily: "Inter_400Regular",
-    color: "#777",
-    lineHeight: 22,
-    paddingTop: 8,
+    color: "#888",
+    lineHeight: 20,
+    paddingTop: 7,
   },
   termsLink: {
     color: PURPLE,
     fontFamily: "Inter_600SemiBold",
-  },
-
-  // Bottom paw accent
-  bottomPaw: {
-    alignSelf: "center",
-    marginTop: "auto",
-    marginBottom: 14,
-    opacity: 0.35,
-    zIndex: 1,
   },
 });
