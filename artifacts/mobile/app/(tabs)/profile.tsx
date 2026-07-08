@@ -107,6 +107,14 @@ export default function ProfileScreen() {
   };
 
   const handleLogout = () => {
+    if (Platform.OS === "web") {
+      if (window.confirm("Hesabından çıkmak istiyor musun?")) {
+        logout().then(() =>
+          Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success)
+        );
+      }
+      return;
+    }
     Alert.alert("Çıkış Yap", "Hesabından çıkmak istiyor musun?", [
       { text: "İptal", style: "cancel" },
       {
