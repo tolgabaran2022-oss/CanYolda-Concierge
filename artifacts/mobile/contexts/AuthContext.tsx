@@ -24,7 +24,6 @@ interface AuthContextType {
   user: User | null;
   isLoading: boolean;
   login: (email: string, password: string) => Promise<void>;
-  loginWithOAuth: (oauthUser: User, jwtToken: string) => Promise<void>;
   register: (name: string, email: string, password: string) => Promise<void>;
   logout: () => Promise<void>;
   changePassword: (currentPassword: string, newPassword: string) => Promise<void>;
@@ -84,18 +83,6 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     setUser(safe);
   }, []);
 
-  /* ── OAuth login (Google / Apple / Facebook) ──── */
-  const loginWithOAuth = useCallback(
-    async (oauthUser: User, jwtToken: string) => {
-      await Promise.all([
-        AsyncStorage.setItem(AUTH_KEY, JSON.stringify(oauthUser)),
-        AsyncStorage.setItem(TOKEN_KEY, jwtToken),
-      ]);
-      setUser(oauthUser);
-    },
-    []
-  );
-
   /* ── Logout ───────────────────────────────────── */
   const logout = useCallback(async () => {
     await Promise.all([
@@ -125,7 +112,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
 
   return (
     <AuthContext.Provider
-      value={{ user, isLoading, login, loginWithOAuth, register, logout, changePassword }}
+      value={{ user, isLoading, login, register, logout, changePassword }}
     >
       {children}
     </AuthContext.Provider>

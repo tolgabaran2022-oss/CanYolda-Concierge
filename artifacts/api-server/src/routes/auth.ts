@@ -1,6 +1,5 @@
 import { Router } from "express";
 import jwt from "jsonwebtoken";
-import { createPublicKey } from "crypto";
 import { db, oauthUsers } from "@workspace/db";
 import { and, eq } from "drizzle-orm";
 import { logger } from "../lib/logger.js";
@@ -49,121 +48,6 @@ async function upsertUser(
     .returning();
   return { user, isNewUser: true };
 }
-
-/* ── POST /api/auth/google ────────────────────────────────────
-   Body: { idToken: string }
-   Verifies Google ID token via Google's tokeninfo endpoint.
-──────────────────────────────────────────────────────────── */
-router.post("/auth/google", async (req, res): Promise<void> => {
-  const { idToken } = req.body as { idToken?: string };
-  if (!idToken) { res.status(400).json({ error: "idToken gerekli" }); return; }
-
-  const GOOGLE_CLIENT_ID = process.env.GOOGLE_CLIENT_ID;
-  if (!GOOGLE_CLIENT_ID) {
-    res.status(503).json({ error: "Google credentials henüz yapılandırılmamış" });
-    return;
-  }
-
-  try {
-    const resp = await fetch(
-      `https://oauth2.googleapis.com/tokeninfo?id_token=${encodeURIComponent(idToken)}`
-    );
-    if (!resp.ok) { res.status(401).json({ error: "Geçersiz Google token" }); return; }
-
-    const payload = (await resp.json()) as {
-      sub: string;
-      email?: string;
-      name?: string;
-      picture?: string;
-      aud?: string;
-      error_description?: string;
-    };
-
-    if (payload.error_description) {
-      res.status(401).json({ error: payload.error_description });
-      return;
-    }
-
-    // Verify audience matches our app
-    if (payload.aud !== GOOGLE_CLIENT_ID) {
-      res.status(401).json({ error: "Token bu uygulama için geçerli değil" });
-      return;
-    }
-
-    const { user, isNewUser } = await upsertUser(
-      "google",
-      payload.sub,
-      payload.email ?? null,
-      payload.name ?? null,
-      payload.picture ?? null
-    );
-
-    res.json({
-      token: makeToken(user),
-      user: { id: user.id, email: user.email, name: user.name, avatar: user.avatarUrl },
-      isNewUser,
-    });
-  } catch (err) {
-    logger.error({ err }, "Google auth error");
-    res.status(500).json({ error: "Sunucu hatası" });
-  }
-});
-
-/* ── POST /api/auth/apple ─────────────────────────────────────
-   Body: { identityToken: string, fullName?: string }
-   Verifies Apple identity token using Apple's public JWKs.
-──────────────────────────────────────────────────────────── */
-router.post("/auth/apple", async (req, res): Promise<void> => {
-  const { identityToken, fullName } = req.body as {
-    identityToken?: string;
-    fullName?: string;
-  };
-  if (!identityToken) { res.status(400).json({ error: "identityToken gerekli" }); return; }
-
-  try {
-    // Decode header to find which key Apple used
-    const decoded = jwt.decode(identityToken, { complete: true });
-    if (!decoded || typeof decoded === "string") {
-      res.status(401).json({ error: "Geçersiz Apple token formatı" });
-      return;
-    }
-
-    // Fetch Apple's current public keys
-    const keysResp = await fetch("https://appleid.apple.com/auth/keys");
-    const { keys } = (await keysResp.json()) as {
-      keys: Array<{ kid: string; kty: string; use: string; alg: string; n: string; e: string }>;
-    };
-
-    const appleKey = keys.find((k) => k.kid === decoded.header.kid);
-    if (!appleKey) { res.status(401).json({ error: "Apple imzalama anahtarı bulunamadı" }); return; }
-
-    // Convert JWK to KeyObject for jwt.verify
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    const publicKey = createPublicKey({ key: appleKey as any, format: "jwk" } as any);
-
-    const payload = jwt.verify(identityToken, publicKey, {
-      algorithms: ["RS256"],
-      issuer: "https://appleid.apple.com",
-    }) as jwt.JwtPayload;
-
-    const { user, isNewUser } = await upsertUser(
-      "apple",
-      payload.sub as string,
-      (payload.email as string | undefined) ?? null,
-      fullName ?? null,
-      null
-    );
-
-    res.json({
-      token: makeToken(user),
-      user: { id: user.id, email: user.email, name: user.name, avatar: null },
-      isNewUser,
-    });
-  } catch (err) {
-    logger.error({ err }, "Apple auth error");
-    res.status(401).json({ error: "Apple token doğrulanamadı" });
-  }
-});
 
 /* ── POST /api/auth/facebook ──────────────────────────────────
    Body: { accessToken: string }
