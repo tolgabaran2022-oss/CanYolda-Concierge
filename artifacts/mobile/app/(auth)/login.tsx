@@ -15,181 +15,159 @@ import { useSafeAreaInsets } from "react-native-safe-area-context";
 
 const PURPLE      = "#7B5CBF";
 const PURPLE_DARK = "#3D2080";
-const BLOB_PURPLE = "#C8B4F0";
-const BLOB_CREAM  = "#F0E4CE";
 const BG          = "#FAF7F2";
 
 const HERO_IMAGE = require("@/assets/images/hero-logo-pets.png");
 
 export default function WelcomeScreen() {
-  const insets = useSafeAreaInsets();
-  const router = useRouter();
-  const { width: sw, height: sh } = useWindowDimensions();
+  const insets  = useSafeAreaInsets();
+  const router  = useRouter();
+  const { width: sw } = useWindowDimensions();
 
-  /* Responsive blob sizes — never overflow screen edges */
-  const b1 = Math.min(sw * 0.52, 210);
-  const b2 = Math.min(sw * 0.42, 170);
-  const b3 = Math.min(sw * 0.30, 120);
+  /* Image height: keep the original PNG aspect ratio (4265 × 4585) */
+  const heroW = sw;
+  const heroH = Math.round(sw * (4585 / 4265));
+  /* Fade overlay covers the bottom 38% of the image */
+  const fadeH = Math.round(heroH * 0.38);
 
   return (
-    <View style={styles.root}>
+    <View style={[styles.root, { paddingBottom: Math.max(insets.bottom, 20) }]}>
 
-      {/* ── Decorative blobs ─────────────────────────────────── */}
-      <View style={[styles.blob, {
-        top: insets.top - 10,
-        left: -b1 * 0.35,
-        width: b1, height: b1,
-        backgroundColor: BLOB_PURPLE,
-        opacity: 0.28,
-      }]} />
-      <View style={[styles.blob, {
-        top: insets.top + sh * 0.08,
-        right: -b2 * 0.25,
-        width: b2, height: b2,
-        backgroundColor: BLOB_CREAM,
-        opacity: 0.40,
-      }]} />
-      <View style={[styles.blob, {
-        bottom: Math.max(insets.bottom, 16) + sh * 0.15,
-        right: -b3 * 0.20,
-        width: b3, height: b3,
-        backgroundColor: BLOB_PURPLE,
-        opacity: 0.20,
-      }]} />
-      <View style={[styles.blob, {
-        bottom: Math.max(insets.bottom, 16),
-        left: -b2 * 0.30,
-        width: b2 * 1.1, height: b2 * 1.1,
-        backgroundColor: BLOB_CREAM,
-        opacity: 0.32,
-      }]} />
+      {/* ── Soft top-left blob ─────────────────────────────────── */}
+      <View
+        style={[
+          styles.blob,
+          {
+            top: -sw * 0.18,
+            left: -sw * 0.22,
+            width:  sw * 0.58,
+            height: sw * 0.58,
+          },
+        ]}
+      />
 
-      {/* ── Safe-area content ────────────────────────────────── */}
-      <View style={[
-        styles.safe,
-        {
-          paddingTop: Math.max(insets.top, 20),
-          paddingBottom: Math.max(insets.bottom, 20),
-        },
-      ]}>
+      {/* ── Hero image — full-bleed, flush to top ──────────────── */}
+      <View style={[styles.heroWrap, { marginTop: insets.top }]}>
+        <Image
+          source={HERO_IMAGE}
+          style={{ width: heroW, height: heroH }}
+          contentFit="cover"
+        />
 
-        {/* ── Hero (logo + pets graphic) ────────────────────── */}
-        <View style={styles.heroSection}>
-          <Image
-            source={HERO_IMAGE}
-            style={styles.heroImage}
-            contentFit="contain"
-          />
-        </View>
-
-        {/* ── CTA buttons ───────────────────────────────────── */}
-        <View style={styles.btnSection}>
-
-          {/* Giriş Yap */}
-          <Pressable
-            onPress={() => {
-              Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
-              router.push("/(auth)/login-form");
-            }}
-            style={({ pressed }) => ({
-              transform: [{ scale: pressed ? 0.975 : 1 }],
-              opacity: pressed ? 0.93 : 1,
-            })}
-          >
-            <LinearGradient
-              colors={["#9B7DE8", "#5A3BB2"]}
-              start={{ x: 0, y: 0 }}
-              end={{ x: 1, y: 1 }}
-              style={styles.primaryBtn}
-            >
-              <View style={styles.btnIconWrap}>
-                <Ionicons name="log-in-outline" size={21} color="#FFF" />
-              </View>
-              <Text style={styles.primaryBtnText}>Giriş Yap</Text>
-              <Ionicons name="chevron-forward" size={18} color="rgba(255,255,255,0.65)" />
-            </LinearGradient>
-          </Pressable>
-
-          {/* Kayıt Ol */}
-          <Pressable
-            onPress={() => {
-              Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
-              router.push("/(auth)/register");
-            }}
-            style={({ pressed }) => [
-              styles.secondaryBtn,
-              {
-                transform: [{ scale: pressed ? 0.975 : 1 }],
-                opacity: pressed ? 0.93 : 1,
-              },
-            ]}
-          >
-            <View style={[styles.btnIconWrap, styles.btnIconWrapSecondary]}>
-              <Ionicons name="person-add-outline" size={21} color={PURPLE} />
-            </View>
-            <Text style={styles.secondaryBtnText}>Kayıt Ol</Text>
-            <Ionicons name="chevron-forward" size={18} color={PURPLE} />
-          </Pressable>
-
-          {/* Terms row */}
-          <View style={styles.termsRow}>
-            <View style={styles.heartBadge}>
-              <Ionicons name="heart" size={16} color={PURPLE} />
-            </View>
-            <Text style={styles.termsText}>
-              Devam ederek{" "}
-              <Text style={styles.termsLink}>Kullanım Koşulları</Text>
-              {" "}ve{" "}
-              <Text style={styles.termsLink}>Gizlilik Politikası</Text>
-              {"'"}nı kabul etmiş olursunuz.
-            </Text>
-          </View>
-        </View>
-
-        {/* Bottom paw */}
-        <Ionicons
-          name="paw"
-          size={22}
-          color={PURPLE}
-          style={styles.bottomPaw}
+        {/* Soft gradient fade at the bottom of the hero */}
+        <LinearGradient
+          colors={["transparent", BG]}
+          style={[styles.heroFade, { height: fadeH }]}
+          pointerEvents="none"
         />
       </View>
+
+      {/* ── Buttons — float below the hero naturally ───────────── */}
+      <View style={styles.btnSection}>
+
+        {/* Giriş Yap */}
+        <Pressable
+          onPress={() => {
+            Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+            router.push("/(auth)/login-form");
+          }}
+          style={({ pressed }) => ({
+            transform: [{ scale: pressed ? 0.975 : 1 }],
+            opacity: pressed ? 0.93 : 1,
+          })}
+        >
+          <LinearGradient
+            colors={["#9B7DE8", "#5A3BB2"]}
+            start={{ x: 0, y: 0 }}
+            end={{ x: 1, y: 1 }}
+            style={styles.primaryBtn}
+          >
+            <View style={styles.btnIconWrap}>
+              <Ionicons name="log-in-outline" size={21} color="#FFF" />
+            </View>
+            <Text style={styles.primaryBtnText}>Giriş Yap</Text>
+            <Ionicons name="chevron-forward" size={18} color="rgba(255,255,255,0.65)" />
+          </LinearGradient>
+        </Pressable>
+
+        {/* Kayıt Ol */}
+        <Pressable
+          onPress={() => {
+            Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+            router.push("/(auth)/register");
+          }}
+          style={({ pressed }) => [
+            styles.secondaryBtn,
+            {
+              transform: [{ scale: pressed ? 0.975 : 1 }],
+              opacity: pressed ? 0.93 : 1,
+            },
+          ]}
+        >
+          <View style={[styles.btnIconWrap, styles.btnIconWrapSecondary]}>
+            <Ionicons name="person-add-outline" size={21} color={PURPLE} />
+          </View>
+          <Text style={styles.secondaryBtnText}>Kayıt Ol</Text>
+          <Ionicons name="chevron-forward" size={18} color={PURPLE} />
+        </Pressable>
+
+        {/* Terms */}
+        <View style={styles.termsRow}>
+          <View style={styles.heartBadge}>
+            <Ionicons name="heart" size={16} color={PURPLE} />
+          </View>
+          <Text style={styles.termsText}>
+            Devam ederek{" "}
+            <Text style={styles.termsLink}>Kullanım Koşulları</Text>
+            {" "}ve{" "}
+            <Text style={styles.termsLink}>Gizlilik Politikası</Text>
+            {"'"}nı kabul etmiş olursunuz.
+          </Text>
+        </View>
+      </View>
+
+      {/* Bottom paw */}
+      <Ionicons name="paw" size={22} color={PURPLE} style={styles.bottomPaw} />
     </View>
   );
 }
 
 const styles = StyleSheet.create({
-  root: { flex: 1, backgroundColor: BG },
-  safe: { flex: 1 },
-
-  /* Blobs */
-  blob: { position: "absolute", borderRadius: 999, zIndex: 0 },
-
-  /* Hero section — takes most of the vertical space */
-  heroSection: {
+  root: {
     flex: 1,
-    justifyContent: "center",
-    alignItems: "center",
-    paddingHorizontal: 20,
-    paddingTop: 8,
-    zIndex: 1,
-    minHeight: 240,
-  },
-  heroImage: {
-    width: "100%",
-    maxWidth: 380,
-    aspectRatio: 4265 / 4585,
+    backgroundColor: BG,
   },
 
-  /* Buttons section */
+  /* Top-left ambient blob — very soft, no hard edge */
+  blob: {
+    position: "absolute",
+    borderRadius: 999,
+    backgroundColor: "#C8B4F0",
+    opacity: 0.13,
+    zIndex: 0,
+  },
+
+  /* Hero */
+  heroWrap: {
+    width: "100%",
+    overflow: "hidden",
+    zIndex: 1,
+  },
+  heroFade: {
+    position: "absolute",
+    bottom: 0,
+    left: 0,
+    right: 0,
+  },
+
+  /* Buttons */
   btnSection: {
     paddingHorizontal: 26,
-    paddingBottom: 8,
     gap: 13,
-    zIndex: 1,
+    marginTop: -8,
+    zIndex: 2,
   },
 
-  /* Shared icon wrap */
   btnIconWrap: {
     width: 36,
     height: 36,
@@ -202,7 +180,6 @@ const styles = StyleSheet.create({
     backgroundColor: `${PURPLE}14`,
   },
 
-  /* Giriş Yap — gradient */
   primaryBtn: {
     flexDirection: "row",
     alignItems: "center",
@@ -224,7 +201,6 @@ const styles = StyleSheet.create({
     letterSpacing: 0.2,
   },
 
-  /* Kayıt Ol — white card */
   secondaryBtn: {
     flexDirection: "row",
     alignItems: "center",
@@ -249,7 +225,6 @@ const styles = StyleSheet.create({
     letterSpacing: 0.2,
   },
 
-  /* Terms */
   termsRow: {
     flexDirection: "row",
     alignItems: "center",
@@ -278,12 +253,10 @@ const styles = StyleSheet.create({
     fontFamily: "Inter_600SemiBold",
   },
 
-  /* Bottom paw */
   bottomPaw: {
     alignSelf: "center",
-    marginTop: 10,
-    marginBottom: 4,
-    opacity: 0.45,
+    marginTop: 12,
+    opacity: 0.4,
     zIndex: 1,
   },
 });
