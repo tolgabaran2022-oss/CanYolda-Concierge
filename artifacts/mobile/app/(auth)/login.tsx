@@ -1,7 +1,6 @@
 import { Ionicons } from "@expo/vector-icons";
 import * as Haptics from "expo-haptics";
 import { Image } from "expo-image";
-import { LinearGradient } from "expo-linear-gradient";
 import { useRouter } from "expo-router";
 import React from "react";
 import {
@@ -12,6 +11,7 @@ import {
   View,
 } from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
+import { LinearGradient } from "expo-linear-gradient";
 
 const PURPLE = "#7B5CBF";
 const BG     = "#FAF7F2";
@@ -23,52 +23,23 @@ export default function WelcomeScreen() {
   const router = useRouter();
   const { width: sw } = useWindowDimensions();
 
-  /*
-   * PNG native size: 4265 × 4585.
-   * Scale to 90% of screen width so the logo reads slightly smaller
-   * and leaves breathing room on both sides.
-   */
-  const heroW = Math.round(sw * 0.92);
-  const heroH = Math.round(heroW * (4585 / 4265));
-  /* Gradient fade covers only the bottom 22% — animals stay vivid */
-  const fadeH = Math.round(heroH * 0.22);
-  /* Centre horizontally */
-  const heroX = Math.round((sw - heroW) / 2);
+  /* PNG native: 4265 × 4585 — full screen width, natural aspect ratio */
+  const heroW = sw;
+  const heroH = Math.round(sw * (4585 / 4265));
 
   return (
     <View style={[styles.root, { paddingBottom: Math.max(insets.bottom, 20) }]}>
 
-      {/* ── Ambient top-left blob ──────────────────────────────── */}
-      <View style={[styles.blob, {
-        top:    -sw * 0.16,
-        left:   -sw * 0.20,
-        width:   sw * 0.52,
-        height:  sw * 0.52,
-      }]} />
-
-      {/* ── Hero — centred, flush to safe-area top ────────────── */}
-      <View style={[styles.heroWrap, {
-        marginTop: insets.top,
-        marginLeft: heroX,
-        width: heroW,
-      }]}>
+      {/* ── Hero — full-bleed, flush under status bar ──────────── */}
+      <View style={[styles.heroWrap, { marginTop: insets.top, width: heroW, height: heroH }]}>
         <Image
           source={HERO_IMAGE}
-          style={{ width: heroW, height: heroH }}
+          style={StyleSheet.absoluteFill}
           contentFit="contain"
-        />
-        {/* Bottom-only gradient: transparent → BG */}
-        <LinearGradient
-          colors={["transparent", BG]}
-          style={[styles.heroFade, { height: fadeH }]}
-          pointerEvents="none"
         />
       </View>
 
-      {/* ── Flex spacer pushes buttons to the bottom ──────────── */}
-      <View style={{ flex: 1 }} />
-
-      {/* ── Button section — anchored to bottom ───────────────── */}
+      {/* ── Buttons — natural spacing below hero ───────────────── */}
       <View style={styles.btnSection}>
 
         {/* Giriş Yap */}
@@ -141,33 +112,17 @@ const styles = StyleSheet.create({
     backgroundColor: BG,
   },
 
-  /* Ambient blob */
-  blob: {
-    position: "absolute",
-    borderRadius: 999,
-    backgroundColor: "#C8B4F0",
-    opacity: 0.12,
-    zIndex: 0,
-  },
-
-  /* Hero wrapper */
   heroWrap: {
     overflow: "hidden",
-    zIndex: 1,
-    alignSelf: "center",
-  },
-  heroFade: {
-    position: "absolute",
-    bottom: 0,
-    left: 0,
-    right: 0,
   },
 
   /* Buttons */
   btnSection: {
+    flex: 1,
     paddingHorizontal: 26,
     gap: 12,
-    zIndex: 2,
+    justifyContent: "center",
+    paddingBottom: 8,
   },
 
   iconWrap: {
