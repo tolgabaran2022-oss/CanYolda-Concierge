@@ -1,4 +1,4 @@
-import { Ionicons, Feather } from "@expo/vector-icons";
+import { Ionicons } from "@expo/vector-icons";
 import * as Haptics from "expo-haptics";
 import * as ImagePicker from "expo-image-picker";
 import { Image } from "expo-image";
@@ -189,9 +189,6 @@ function FeedHeader({ onNotify }: { onNotify: () => void }) {
         <Pressable onPress={onNotify} hitSlop={10} style={H.bellWrap}>
           <Ionicons name="notifications-outline" size={26} color={C.text} />
           <View style={H.badge} />
-        </Pressable>
-        <Pressable onPress={onNotify} hitSlop={10}>
-          <Feather name="send" size={24} color={C.text} />
         </Pressable>
       </View>
     </View>
