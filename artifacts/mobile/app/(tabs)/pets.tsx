@@ -536,20 +536,26 @@ const cr = StyleSheet.create({
   bannerSub:      { fontSize: 11, fontFamily: "Inter_400Regular", color: "rgba(255,255,255,0.88)", lineHeight: 16 },
 });
 
-// ── My Listings Section ───────────────────────────────────────────────────────
+// ── My Listings Section (Premium Redesign) ────────────────────────────────────
 const MY_FILTERS: { key: MyFilter; label: string }[] = [
-  { key: "all",     label: "Tümü"   },
-  { key: "active",  label: "Aktif"  },
-  { key: "passive", label: "Pasif"  },
+  { key: "all",     label: "Tümü"     },
+  { key: "active",  label: "Aktif"    },
+  { key: "passive", label: "Pasif"    },
   { key: "pending", label: "Bekleyen" },
 ];
 
 const STATUS_CFG: Record<ListStatus, { color: string; bg: string; icon: keyof typeof Ionicons.glyphMap }> = {
-  "Aktif":          { color: "#2D8B47", bg: "#E8F8EE", icon: "checkmark-circle" },
-  "Onay Bekliyor":  { color: "#B45309", bg: "#FEF3C7", icon: "time-outline"    },
-  "Pasif":          { color: BODY,      bg: `${BODY}14`, icon: "pause-circle-outline" },
-  "Süresi Doldu":   { color: "#C53030", bg: "#FEE2E2", icon: "close-circle-outline"   },
+  "Aktif":         { color: "#18A558", bg: "#E6F7EE", icon: "checkmark-circle"     },
+  "Onay Bekliyor": { color: "#D97706", bg: "#FEF3C7", icon: "time-outline"         },
+  "Pasif":         { color: BODY,      bg: `${BODY}14`, icon: "pause-circle-outline" },
+  "Süresi Doldu":  { color: "#DC2626", bg: "#FEE2E2", icon: "close-circle-outline"  },
 };
+
+const BOOST_PKGS = [
+  { id: "basic",    label: "Temel",    price: "49",  days: 7,  popular: false },
+  { id: "standard", label: "Standart", price: "99",  days: 15, popular: true  },
+  { id: "premium",  label: "Premium",  price: "199", days: 30, popular: false },
+] as const;
 
 function mockViews(id: string): number {
   let h = 0;
@@ -564,9 +570,9 @@ function mockFavs(id: string): number {
 
 interface MyCard {
   listing: AdoptionListing;
-  status: ListStatus;
-  views: number;
-  favs: number;
+  status:  ListStatus;
+  views:   number;
+  favs:    number;
 }
 
 function MyListingCard({
@@ -586,114 +592,204 @@ function MyListingCard({
 }) {
   const { listing, status, views, favs } = card;
   const cfg = STATUS_CFG[status];
+  const [selectedPkg, setSelectedPkg] = useState<string | null>(null);
 
   return (
-    <View style={ml.cardWrap}>
+    <View style={ml.cardOuter}>
+
+      {/* ── Main card ── */}
       <View style={ml.card}>
-        {/* ── Top row: photo + info ── */}
-        <View style={ml.topRow}>
-          {/* Thumbnail */}
-          <View style={ml.thumb}>
-            {listing.photo ? (
-              <Image source={{ uri: listing.photo }} style={ml.thumbImg} contentFit="cover" contentPosition={{ top: 0.3 }} />
-            ) : (
-              <LinearGradient colors={[`${P2}40`, `${P}28`]} style={ml.thumbFallback}>
-                <Ionicons name="paw" size={22} color={`${P}70`} />
-              </LinearGradient>
-            )}
-            {isFeatured && (
-              <View style={ml.featuredDot}>
-                <Ionicons name="star" size={8} color={WHITE} />
-              </View>
-            )}
-          </View>
 
-          {/* Info */}
-          <View style={ml.info}>
-            <View style={ml.infoTopRow}>
-              <Text style={ml.petName} numberOfLines={1}>{listing.petName}</Text>
-              <View style={[ml.statusBadge, { backgroundColor: cfg.bg }]}>
-                <Ionicons name={cfg.icon} size={11} color={cfg.color} />
-                <Text style={[ml.statusTxt, { color: cfg.color }]}>{status}</Text>
-              </View>
-            </View>
-
-            <Text style={ml.metaLine} numberOfLines={1}>
-              {listing.petType}{listing.petAge ? ` · ${listing.petAge}` : ""}
-            </Text>
-
-            <View style={ml.locRow}>
-              <Ionicons name="location-sharp" size={11} color={P} />
-              <Text style={ml.locTxt} numberOfLines={1}>{listing.location}</Text>
-            </View>
-
-            {/* Stats row */}
-            <View style={ml.statsRow}>
-              <View style={ml.statItem}>
-                <Ionicons name="eye-outline" size={12} color={BODY} />
-                <Text style={ml.statTxt}>{views}</Text>
-              </View>
-              <View style={ml.statItem}>
-                <Ionicons name="heart-outline" size={12} color={BODY} />
-                <Text style={ml.statTxt}>{favs}</Text>
-              </View>
-              <Text style={ml.dateTxt}>{formatTimeAgo(listing.createdAt)}</Text>
-            </View>
-          </View>
-        </View>
-
-        <View style={ml.divider} />
-
-        {/* ── Action buttons ── */}
-        <View style={ml.actions}>
-          <Pressable
-            style={({ pressed }) => [ml.actionBtn, ml.editBtn, { opacity: pressed ? 0.8 : 1 }]}
-            onPress={onEdit}
-          >
-            <Ionicons name="create-outline" size={14} color={P} />
-            <Text style={[ml.actionTxt, { color: P }]}>Düzenle</Text>
-          </Pressable>
-
-          <Pressable
-            style={({ pressed }) => [ml.actionBtn, ml.passiveBtn, { opacity: pressed ? 0.8 : 1 }]}
-            onPress={onTogglePassive}
-          >
-            <Ionicons
-              name={status === "Pasif" ? "play-circle-outline" : "pause-circle-outline"}
-              size={14}
-              color={BODY}
+        {/* Hero photo */}
+        <View style={ml.heroWrap}>
+          {listing.photo ? (
+            <Image
+              source={{ uri: listing.photo }}
+              style={ml.heroImg}
+              contentFit="cover"
+              contentPosition={{ top: 0.3 }}
             />
-            <Text style={[ml.actionTxt, { color: BODY }]}>
-              {status === "Pasif" ? "Aktif Et" : "Pasife Al"}
-            </Text>
-          </Pressable>
+          ) : (
+            <LinearGradient colors={[`${P2}50`, `${P}30`]} style={ml.heroFallback}>
+              <Ionicons name="paw" size={48} color={`${P}60`} />
+            </LinearGradient>
+          )}
 
-          <Pressable
-            style={({ pressed }) => [ml.actionBtn, ml.deleteBtn, { opacity: pressed ? 0.8 : 1 }]}
-            onPress={onDelete}
-          >
-            <Ionicons name="trash-outline" size={14} color="#E53E3E" />
-            <Text style={[ml.actionTxt, { color: "#E53E3E" }]}>Sil</Text>
-          </Pressable>
+          <LinearGradient
+            colors={["transparent", "rgba(26,8,56,0.65)"]}
+            style={ml.heroScrim}
+            pointerEvents="none"
+          />
+
+          {isFeatured && (
+            <View style={ml.featBadge}>
+              <Ionicons name="star" size={10} color={WHITE} />
+              <Text style={ml.featBadgeTxt}>Öne Çıkan</Text>
+            </View>
+          )}
+
+          <View style={[ml.statusBadge, { backgroundColor: cfg.bg }]}>
+            <Ionicons name={cfg.icon} size={11} color={cfg.color} />
+            <Text style={[ml.statusTxt, { color: cfg.color }]}>{status}</Text>
+          </View>
+
+          <View style={ml.typePill}>
+            <Text style={ml.typePillTxt}>{listing.petType}</Text>
+          </View>
         </View>
 
-        {/* Boost banner (if active listing) */}
-        {status === "Aktif" && !isFeatured && (
-          <Pressable style={ml.boostBanner} onPress={onBoost}>
-            <LinearGradient colors={["#FFB347", "#E07A35"]} style={ml.boostGrad}>
-              <Ionicons name="star-outline" size={13} color={WHITE} />
-              <Text style={ml.boostTxt}>İlanı Öne Çıkar — ₺50'den başlıyor</Text>
-              <Ionicons name="chevron-forward" size={13} color={WHITE} />
+        {/* Content */}
+        <View style={ml.content}>
+
+          <View style={ml.nameRow}>
+            <Text style={ml.petName} numberOfLines={1}>{listing.petName}</Text>
+            {listing.petAge ? (
+              <View style={ml.agePill}>
+                <Text style={ml.ageTxt}>{listing.petAge}</Text>
+              </View>
+            ) : null}
+          </View>
+
+          <View style={ml.locRow}>
+            <Ionicons name="location-sharp" size={12} color={P} />
+            <Text style={ml.locTxt} numberOfLines={1}>{listing.location}</Text>
+          </View>
+
+          <View style={ml.statsBar}>
+            <View style={ml.statChip}>
+              <Ionicons name="eye-outline" size={12} color={P} />
+              <Text style={ml.statChipTxt}>{views} görüntülenme</Text>
+            </View>
+            <View style={[ml.statChip, ml.statChipHeart]}>
+              <Ionicons name="heart-outline" size={12} color="#DC2626" />
+              <Text style={[ml.statChipTxt, { color: "#DC2626" }]}>{favs} favori</Text>
+            </View>
+            <Text style={ml.timeTxt}>{formatTimeAgo(listing.createdAt)}</Text>
+          </View>
+
+          <View style={ml.divider} />
+
+          <View style={ml.actions}>
+            <Pressable
+              style={({ pressed }) => [ml.btn, ml.btnEdit, { opacity: pressed ? 0.8 : 1 }]}
+              onPress={onEdit}
+            >
+              <Ionicons name="create-outline" size={13} color={P} />
+              <Text style={[ml.btnTxt, { color: P }]}>Düzenle</Text>
+            </Pressable>
+
+            <Pressable
+              style={({ pressed }) => [ml.btn, ml.btnPassive, { opacity: pressed ? 0.8 : 1 }]}
+              onPress={onTogglePassive}
+            >
+              <Ionicons
+                name={status === "Pasif" ? "play-circle-outline" : "pause-circle-outline"}
+                size={13}
+                color={BODY}
+              />
+              <Text style={[ml.btnTxt, { color: BODY }]}>
+                {status === "Pasif" ? "Aktif Et" : "Pasife Al"}
+              </Text>
+            </Pressable>
+
+            <Pressable
+              style={({ pressed }) => [ml.btn, ml.btnDel, { opacity: pressed ? 0.8 : 1 }]}
+              onPress={onDelete}
+            >
+              <Ionicons name="trash-outline" size={13} color="#DC2626" />
+              <Text style={[ml.btnTxt, { color: "#DC2626" }]}>Sil</Text>
+            </Pressable>
+          </View>
+        </View>
+      </View>
+
+      {/* ── Boost card (active & not featured) ── */}
+      {status === "Aktif" && !isFeatured && (
+        <View style={ml.boostCard}>
+
+          <View style={ml.boostHeader}>
+            <LinearGradient colors={["#FFB347", "#E07A35"]} style={ml.boostIconWrap}>
+              <Ionicons name="rocket" size={14} color={WHITE} />
+            </LinearGradient>
+            <View style={{ flex: 1 }}>
+              <Text style={ml.boostTitle}>İlanı Öne Çıkar</Text>
+              <Text style={ml.boostSub}>Daha fazla kişiye ulaş, daha hızlı sahiplendir</Text>
+            </View>
+          </View>
+
+          <View style={ml.pkgRow}>
+            {BOOST_PKGS.map((pkg) => {
+              const isSel = selectedPkg === pkg.id;
+              return (
+                <Pressable
+                  key={pkg.id}
+                  onPress={() => {
+                    Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+                    setSelectedPkg(isSel ? null : pkg.id);
+                  }}
+                  style={{ flex: 1 }}
+                >
+                  {isSel ? (
+                    <LinearGradient
+                      colors={[P2, DARK]}
+                      start={{ x: 0, y: 0 }}
+                      end={{ x: 1, y: 1 }}
+                      style={ml.pkgCard}
+                    >
+                      {pkg.popular && (
+                        <View style={ml.popBadge}>
+                          <Text style={ml.popBadgeTxt}>Popüler</Text>
+                        </View>
+                      )}
+                      <Text style={ml.pkgNameSel}>{pkg.label}</Text>
+                      <Text style={ml.pkgPriceSel}>₺{pkg.price}</Text>
+                      <Text style={ml.pkgDaysSel}>{pkg.days} gün</Text>
+                      <Ionicons name="checkmark-circle" size={16} color={WHITE} style={{ marginTop: 4 }} />
+                    </LinearGradient>
+                  ) : (
+                    <View style={[ml.pkgCard, ml.pkgIdle, pkg.popular && ml.pkgPop]}>
+                      {pkg.popular && (
+                        <View style={ml.popBadge}>
+                          <Text style={ml.popBadgeTxt}>Popüler</Text>
+                        </View>
+                      )}
+                      <Text style={ml.pkgName}>{pkg.label}</Text>
+                      <Text style={ml.pkgPrice}>₺{pkg.price}</Text>
+                      <Text style={ml.pkgDays}>{pkg.days} gün</Text>
+                    </View>
+                  )}
+                </Pressable>
+              );
+            })}
+          </View>
+
+          <Pressable
+            onPress={() => selectedPkg && onBoost()}
+            disabled={!selectedPkg}
+            style={ml.boostCta}
+          >
+            <LinearGradient
+              colors={selectedPkg ? ["#FFB347", "#E07A35"] : [`${BODY}50`, `${BODY}70`]}
+              start={{ x: 0, y: 0 }}
+              end={{ x: 1, y: 0 }}
+              style={ml.boostCtaGrad}
+            >
+              <Ionicons name="rocket-outline" size={15} color={WHITE} />
+              <Text style={ml.boostCtaTxt}>
+                {selectedPkg ? "Öne Çıkarmaya Başla" : "Paket Seçin"}
+              </Text>
             </LinearGradient>
           </Pressable>
-        )}
-        {isFeatured && (
-          <View style={ml.featuredBanner}>
-            <Ionicons name="star" size={13} color="#E07A35" />
-            <Text style={ml.featuredBannerTxt}>Öne Çıkan İlan</Text>
-          </View>
-        )}
-      </View>
+        </View>
+      )}
+
+      {isFeatured && (
+        <View style={ml.featuredBanner}>
+          <Ionicons name="star" size={12} color="#E07A35" />
+          <Text style={ml.featuredBannerTxt}>Öne Çıkan İlan · Aktif</Text>
+          <Ionicons name="checkmark-circle" size={12} color="#18A558" />
+        </View>
+      )}
     </View>
   );
 }
@@ -763,6 +859,10 @@ function MyListingsSection({
     [myListings, statusMap]
   );
 
+  const totalViews  = useMemo(() => cards.reduce((s, c) => s + c.views, 0), [cards]);
+  const totalFavs   = useMemo(() => cards.reduce((s, c) => s + c.favs,  0), [cards]);
+  const activeCount = useMemo(() => cards.filter((c) => c.status === "Aktif").length, [cards]);
+
   const FILTER_MAP: Record<MyFilter, (c: MyCard) => boolean> = {
     all:     () => true,
     active:  (c) => c.status === "Aktif",
@@ -771,44 +871,48 @@ function MyListingsSection({
   };
   const visible = cards.filter(FILTER_MAP[myFilter]);
 
-  if (myListings.length === 0) {
-    return (
-      <ScrollView contentContainerStyle={[ml.emptyWrap, { paddingBottom: botPad + 24 }]}>
-        <View style={ml.emptyIllo}>
-          <Ionicons name="list-outline" size={40} color={`${P}70`} />
+  return (
+    <ScrollView showsVerticalScrollIndicator={false} contentContainerStyle={{ paddingBottom: botPad + 24 }}>
+
+      {/* ── Section header ── */}
+      <View style={ml.secHeader}>
+        <View>
+          <Text style={ml.secTitle}>İlanlarım</Text>
+          <Text style={ml.secSub}>Evcil dostlarının ilanlarını yönet</Text>
         </View>
-        <Text style={ml.emptyTitle}>Henüz İlan Yok</Text>
-        <Text style={ml.emptySub}>İlk sahiplendirme ilanını oluşturarak patili dostuna yeni bir yuva bul.</Text>
         <Pressable
-          style={({ pressed }) => [ml.emptyBtn, { opacity: pressed ? 0.85 : 1 }]}
-          onPress={onAdd}
+          style={({ pressed }) => [{ opacity: pressed ? 0.85 : 1 }]}
+          onPress={() => { Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium); onAdd(); }}
         >
-          <LinearGradient colors={[P2, P]} style={ml.emptyBtnGrad}>
-            <Ionicons name="add-circle-outline" size={15} color={WHITE} />
-            <Text style={ml.emptyBtnTxt}>İlan Oluştur</Text>
+          <LinearGradient colors={[P2, P]} start={{ x: 0, y: 0 }} end={{ x: 1, y: 0 }} style={ml.addBtn}>
+            <Ionicons name="add" size={16} color={WHITE} />
+            <Text style={ml.addBtnTxt}>Yeni İlan</Text>
           </LinearGradient>
         </Pressable>
-      </ScrollView>
-    );
-  }
+      </View>
 
-  return (
-    <View style={{ flex: 1 }}>
-      {/* Summary strip */}
-      <View style={ml.summaryStrip}>
+      {/* ── Premium stat cards ── */}
+      <View style={ml.statsRow}>
         {([
-          { label: "Toplam", val: myListings.length, color: P },
-          { label: "Aktif",  val: cards.filter((c) => c.status === "Aktif").length,  color: "#2D8B47" },
-          { label: "Pasif",  val: cards.filter((c) => c.status === "Pasif").length,  color: BODY      },
-        ] as const).map((s) => (
-          <View key={s.label} style={ml.summaryCell}>
-            <Text style={[ml.summaryVal, { color: s.color }]}>{s.val}</Text>
-            <Text style={ml.summaryLbl}>{s.label}</Text>
-          </View>
+          { label: "Aktif İlan",   val: activeCount, icon: "checkmark-circle" as const, g: ["#34D399", "#059669"] as const },
+          { label: "Görüntülenme", val: totalViews,  icon: "eye"              as const, g: [P2, P]                as const },
+          { label: "Favori",       val: totalFavs,   icon: "heart"            as const, g: ["#F87171", "#DC2626"] as const },
+        ] as const).map((stat) => (
+          <LinearGradient
+            key={stat.label}
+            colors={stat.g}
+            start={{ x: 0, y: 0 }}
+            end={{ x: 1, y: 1 }}
+            style={ml.statCard}
+          >
+            <Ionicons name={stat.icon} size={22} color="rgba(255,255,255,0.9)" />
+            <Text style={ml.statVal}>{stat.val}</Text>
+            <Text style={ml.statLbl}>{stat.label}</Text>
+          </LinearGradient>
         ))}
       </View>
 
-      {/* Status filter pills */}
+      {/* ── Filter chips ── */}
       <ScrollView
         horizontal
         showsHorizontalScrollIndicator={false}
@@ -817,115 +921,245 @@ function MyListingsSection({
       >
         {MY_FILTERS.map((f) => {
           const isA = myFilter === f.key;
-          return (
+          return isA ? (
+            <LinearGradient
+              key={f.key}
+              colors={[P2, P]}
+              start={{ x: 0, y: 0 }}
+              end={{ x: 1, y: 0 }}
+              style={ml.filterChipActive}
+            >
+              <Text style={ml.filterLblActive}>{f.label}</Text>
+            </LinearGradient>
+          ) : (
             <Pressable
               key={f.key}
+              style={ml.filterChip}
               onPress={() => { Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light); setMyFilter(f.key); }}
-              style={[ml.filterChip, isA && ml.filterChipActive]}
             >
-              {isA
-                ? <Text style={ml.filterLblActive}>{f.label}</Text>
-                : <Text style={ml.filterLbl}>{f.label}</Text>
-              }
+              <Text style={ml.filterLbl}>{f.label}</Text>
             </Pressable>
           );
         })}
       </ScrollView>
 
-      {/* Cards list */}
-      <FlatList
-        data={visible}
-        keyExtractor={(c) => c.listing.id}
-        showsVerticalScrollIndicator={false}
-        contentContainerStyle={{ paddingTop: 4, paddingBottom: botPad + 24 }}
-        ListEmptyComponent={
-          <View style={ml.emptyFilter}>
-            <Ionicons name="filter-outline" size={32} color={`${P}50`} />
-            <Text style={ml.emptyFilterTxt}>Bu filtrede ilan yok</Text>
+      {/* ── No listings at all ── */}
+      {myListings.length === 0 && (
+        <View style={ml.emptyWrap}>
+          <View style={ml.emptyIllo}>
+            <Ionicons name="list-outline" size={40} color={`${P}70`} />
           </View>
-        }
-        renderItem={({ item: c }) => (
-          <MyListingCard
-            card={c}
-            isFeatured={boostStatuses[c.listing.id]?.isFeatured ?? false}
-            onEdit={() => router.push(`/adoption/${c.listing.id}`)}
-            onTogglePassive={() => togglePassive(c.listing.id)}
-            onDelete={() => handleDelete(c.listing)}
-            onBoost={() => onBoost(c.listing.id, c.listing.petName)}
-          />
-        )}
-      />
-    </View>
+          <Text style={ml.emptyTitle}>Henüz İlan Yok</Text>
+          <Text style={ml.emptySub}>
+            İlk sahiplendirme ilanını oluşturarak{"\n"}patili dostuna yeni bir yuva bul.
+          </Text>
+          <Pressable
+            style={({ pressed }) => [{ opacity: pressed ? 0.85 : 1, marginTop: 8 }]}
+            onPress={onAdd}
+          >
+            <LinearGradient colors={[P2, P]} start={{ x: 0, y: 0 }} end={{ x: 1, y: 0 }} style={ml.addBtn}>
+              <Ionicons name="add-circle-outline" size={15} color={WHITE} />
+              <Text style={ml.addBtnTxt}>İlan Oluştur</Text>
+            </LinearGradient>
+          </Pressable>
+        </View>
+      )}
+
+      {/* ── Filter empty state ── */}
+      {myListings.length > 0 && visible.length === 0 && (
+        <View style={ml.emptyFilter}>
+          <Ionicons name="filter-outline" size={32} color={`${P}50`} />
+          <Text style={ml.emptyFilterTxt}>Bu filtrede ilan yok</Text>
+        </View>
+      )}
+
+      {/* ── Listing cards ── */}
+      {visible.map((c) => (
+        <MyListingCard
+          key={c.listing.id}
+          card={c}
+          isFeatured={boostStatuses[c.listing.id]?.isFeatured ?? false}
+          onEdit={() => router.push(`/adoption/${c.listing.id}`)}
+          onTogglePassive={() => togglePassive(c.listing.id)}
+          onDelete={() => handleDelete(c.listing)}
+          onBoost={() => onBoost(c.listing.id, c.listing.petName)}
+        />
+      ))}
+    </ScrollView>
   );
 }
 
 const ml = StyleSheet.create({
-  // Card
-  cardWrap: { marginHorizontal: 20, marginBottom: 14, borderRadius: 20, ...CARD_SHADOW },
-  card:     { backgroundColor: WHITE, borderRadius: 20, borderWidth: 1, borderColor: BORDER, overflow: "hidden" },
+  // Outer wrapper (card + boost card stacked)
+  cardOuter: { marginHorizontal: 20, marginBottom: 18 },
 
-  topRow: { flexDirection: "row", padding: 14, gap: 12 },
+  // Main listing card
+  card: {
+    backgroundColor: WHITE,
+    borderRadius: 22,
+    borderWidth: 1,
+    borderColor: BORDER,
+    overflow: "hidden",
+    ...CARD_SHADOW,
+  },
 
-  thumb:        { width: 88, height: 88, borderRadius: 16, overflow: "hidden", flexShrink: 0 },
-  thumbImg:     { width: "100%", height: "100%" },
-  thumbFallback:{ flex: 1, alignItems: "center", justifyContent: "center" },
-  featuredDot:  { position: "absolute", top: 5, right: 5, width: 18, height: 18, borderRadius: 9, backgroundColor: "#E07A35", alignItems: "center", justifyContent: "center" },
+  // Hero photo
+  heroWrap:     { width: "100%", height: 190, position: "relative" },
+  heroImg:      { width: "100%", height: "100%" },
+  heroFallback: { flex: 1, alignItems: "center", justifyContent: "center" },
+  heroScrim:    { position: "absolute", bottom: 0, left: 0, right: 0, height: 90 },
 
-  info:       { flex: 1, gap: 4 },
-  infoTopRow: { flexDirection: "row", alignItems: "flex-start", gap: 6, justifyContent: "space-between" },
-  petName:    { flex: 1, fontSize: 15, fontFamily: "Inter_700Bold", color: DARK },
+  featBadge: {
+    position: "absolute", top: 10, left: 10,
+    flexDirection: "row", alignItems: "center", gap: 4,
+    backgroundColor: "#E07A35", borderRadius: 9,
+    paddingHorizontal: 9, paddingVertical: 5,
+  },
+  featBadgeTxt: { fontSize: 11, fontFamily: "Inter_700Bold", color: WHITE },
 
-  statusBadge: { flexDirection: "row", alignItems: "center", gap: 3, borderRadius: 7, paddingHorizontal: 7, paddingVertical: 3, flexShrink: 0 },
-  statusTxt:   { fontSize: 10, fontFamily: "Inter_700Bold" },
+  statusBadge: {
+    position: "absolute", top: 10, right: 10,
+    flexDirection: "row", alignItems: "center", gap: 4,
+    borderRadius: 10, paddingHorizontal: 9, paddingVertical: 5,
+  },
+  statusTxt: { fontSize: 11, fontFamily: "Inter_700Bold" },
 
-  metaLine: { fontSize: 12, fontFamily: "Inter_400Regular", color: BODY },
-  locRow:   { flexDirection: "row", alignItems: "center", gap: 3 },
-  locTxt:   { fontSize: 11, fontFamily: "Inter_400Regular", color: BODY, flex: 1 },
+  typePill: {
+    position: "absolute", bottom: 10, left: 10,
+    backgroundColor: "rgba(255,255,255,0.18)", borderRadius: 9,
+    paddingHorizontal: 10, paddingVertical: 4,
+    borderWidth: 1, borderColor: "rgba(255,255,255,0.30)",
+  },
+  typePillTxt: { fontSize: 12, fontFamily: "Inter_700Bold", color: WHITE },
 
-  statsRow: { flexDirection: "row", alignItems: "center", gap: 10, marginTop: 2 },
-  statItem: { flexDirection: "row", alignItems: "center", gap: 3 },
-  statTxt:  { fontSize: 11, fontFamily: "Inter_400Regular", color: BODY },
-  dateTxt:  { fontSize: 11, fontFamily: "Inter_400Regular", color: `${BODY}80`, marginLeft: "auto" as any },
+  // Content
+  content: { padding: 14, gap: 9 },
 
-  divider: { height: 1, backgroundColor: `${P}08`, marginHorizontal: 14 },
+  nameRow: { flexDirection: "row", alignItems: "center", justifyContent: "space-between", gap: 8 },
+  petName: { flex: 1, fontSize: 18, fontFamily: "Inter_700Bold", color: DARK, letterSpacing: -0.3 },
+  agePill: { backgroundColor: `${P}12`, borderRadius: 8, paddingHorizontal: 8, paddingVertical: 3 },
+  ageTxt:  { fontSize: 11, fontFamily: "Inter_600SemiBold", color: P },
 
-  actions:    { flexDirection: "row", padding: 10, gap: 8 },
-  actionBtn:  { flex: 1, flexDirection: "row", alignItems: "center", justifyContent: "center", gap: 5, paddingVertical: 9, borderRadius: 12, borderWidth: 1 },
-  editBtn:    { backgroundColor: `${P}08`, borderColor: `${P}28` },
-  passiveBtn: { backgroundColor: `${BODY}08`, borderColor: `${BODY}28` },
-  deleteBtn:  { backgroundColor: "#FFF5F5", borderColor: "#FFD5D5" },
-  actionTxt:  { fontSize: 11, fontFamily: "Inter_600SemiBold" },
+  locRow: { flexDirection: "row", alignItems: "center", gap: 4 },
+  locTxt: { flex: 1, fontSize: 12, fontFamily: "Inter_400Regular", color: BODY },
 
-  boostBanner: { marginHorizontal: 10, marginBottom: 10, borderRadius: 12, overflow: "hidden" },
-  boostGrad:   { flexDirection: "row", alignItems: "center", gap: 7, paddingVertical: 9, paddingHorizontal: 12 },
-  boostTxt:    { flex: 1, fontSize: 11, fontFamily: "Inter_600SemiBold", color: WHITE },
+  statsBar:      { flexDirection: "row", alignItems: "center", gap: 8, flexWrap: "wrap" },
+  statChip:      { flexDirection: "row", alignItems: "center", gap: 4, backgroundColor: `${P}0D`, borderRadius: 8, paddingHorizontal: 8, paddingVertical: 4 },
+  statChipHeart: { backgroundColor: "rgba(220,38,38,0.07)" },
+  statChipTxt:   { fontSize: 11, fontFamily: "Inter_600SemiBold", color: P },
+  timeTxt:       { fontSize: 11, fontFamily: "Inter_400Regular", color: `${BODY}80`, marginLeft: "auto" as any },
 
-  featuredBanner:    { flexDirection: "row", alignItems: "center", justifyContent: "center", gap: 5, marginHorizontal: 10, marginBottom: 10, backgroundColor: "#FFF7ED", borderRadius: 10, borderWidth: 1, borderColor: "#FFD59A", paddingVertical: 7 },
-  featuredBannerTxt: { fontSize: 11, fontFamily: "Inter_700Bold", color: "#E07A35" },
+  divider: { height: 1, backgroundColor: `${P}08` },
 
-  // Summary strip
-  summaryStrip: { flexDirection: "row", marginHorizontal: 20, marginBottom: 12, backgroundColor: WHITE, borderRadius: 16, borderWidth: 1, borderColor: BORDER, ...IOS_SHADOW },
-  summaryCell:  { flex: 1, alignItems: "center", paddingVertical: 12, gap: 2 },
-  summaryVal:   { fontSize: 20, fontFamily: "Inter_700Bold" },
-  summaryLbl:   { fontSize: 10, fontFamily: "Inter_400Regular", color: BODY },
+  // Actions
+  actions:   { flexDirection: "row", gap: 8 },
+  btn:       { flex: 1, flexDirection: "row", alignItems: "center", justifyContent: "center", gap: 5, paddingVertical: 10, borderRadius: 12, borderWidth: 1 },
+  btnEdit:   { backgroundColor: `${P}08`,     borderColor: `${P}28`    },
+  btnPassive:{ backgroundColor: `${BODY}08`,  borderColor: `${BODY}28` },
+  btnDel:    { backgroundColor: "#FFF5F5",    borderColor: "#FFD5D5"   },
+  btnTxt:    { fontSize: 11, fontFamily: "Inter_600SemiBold" },
 
-  // Filter
-  filterScroll: { marginBottom: 12 },
-  filterList:   { paddingHorizontal: 20, gap: 8, paddingVertical: 3, paddingRight: 24 },
-  filterChip:        { paddingVertical: 8, paddingHorizontal: 16, borderRadius: 20, backgroundColor: WHITE, borderWidth: 1.5, borderColor: `${P}22`, ...IOS_SHADOW },
-  filterChipActive:  { backgroundColor: `${P}14`, borderColor: P },
-  filterLbl:         { fontSize: 12, fontFamily: "Inter_600SemiBold", color: BODY },
-  filterLblActive:   { fontSize: 12, fontFamily: "Inter_700Bold", color: P },
+  // Boost card
+  boostCard: {
+    marginTop: 10,
+    backgroundColor: WHITE,
+    borderRadius: 20,
+    borderWidth: 1.5,
+    borderColor: "#FFD59A",
+    padding: 14,
+    ...Platform.select({
+      ios:     { shadowColor: "#E07A35", shadowOffset: { width: 0, height: 4 }, shadowOpacity: 0.13, shadowRadius: 14 },
+      android: { elevation: 3 },
+      default: {},
+    }),
+  },
+  boostHeader:  { flexDirection: "row", alignItems: "center", gap: 10, marginBottom: 12 },
+  boostIconWrap:{ width: 34, height: 34, borderRadius: 10, alignItems: "center", justifyContent: "center" },
+  boostTitle:   { fontSize: 14, fontFamily: "Inter_700Bold",    color: "#92400E" },
+  boostSub:     { fontSize: 11, fontFamily: "Inter_400Regular", color: "#B45309", lineHeight: 16, marginTop: 1 },
 
-  // Empty
-  emptyWrap:      { flex: 1, alignItems: "center", paddingTop: 60, paddingHorizontal: 40, gap: 10 },
+  // Package cards
+  pkgRow: { flexDirection: "row", gap: 8, marginBottom: 12 },
+  pkgCard:{ flex: 1, borderRadius: 14, padding: 10, alignItems: "center", gap: 3, overflow: "hidden" },
+  pkgIdle:{
+    backgroundColor: WHITE,
+    borderWidth: 1.5,
+    borderColor: "rgba(255,165,0,0.25)",
+    ...Platform.select({
+      ios:     { shadowColor: "#E07A35", shadowOffset: { width: 0, height: 2 }, shadowOpacity: 0.08, shadowRadius: 6 },
+      android: { elevation: 1 },
+      default: {},
+    }),
+  },
+  pkgPop: { borderColor: "#E07A35", borderWidth: 2 },
+
+  popBadge:   { backgroundColor: "#E07A35", borderRadius: 5, paddingHorizontal: 6, paddingVertical: 2, marginBottom: 2 },
+  popBadgeTxt:{ fontSize: 9, fontFamily: "Inter_700Bold", color: WHITE },
+
+  pkgName:    { fontSize: 11, fontFamily: "Inter_700Bold",    color: DARK },
+  pkgPrice:   { fontSize: 17, fontFamily: "Inter_700Bold",    color: DARK },
+  pkgDays:    { fontSize: 10, fontFamily: "Inter_400Regular", color: BODY },
+  pkgNameSel: { fontSize: 11, fontFamily: "Inter_700Bold",    color: WHITE },
+  pkgPriceSel:{ fontSize: 17, fontFamily: "Inter_700Bold",    color: WHITE },
+  pkgDaysSel: { fontSize: 10, fontFamily: "Inter_400Regular", color: "rgba(255,255,255,0.80)" },
+
+  boostCta:     { borderRadius: 14, overflow: "hidden" },
+  boostCtaGrad: { flexDirection: "row", alignItems: "center", justifyContent: "center", gap: 7, paddingVertical: 13 },
+  boostCtaTxt:  { fontSize: 13, fontFamily: "Inter_700Bold", color: WHITE },
+
+  // Featured active banner
+  featuredBanner:    { marginTop: 10, flexDirection: "row", alignItems: "center", justifyContent: "center", gap: 6, backgroundColor: "#FFF7ED", borderRadius: 14, borderWidth: 1, borderColor: "#FFD59A", paddingVertical: 9 },
+  featuredBannerTxt: { fontSize: 12, fontFamily: "Inter_700Bold", color: "#E07A35" },
+
+  // Section header
+  secHeader: { flexDirection: "row", alignItems: "center", justifyContent: "space-between", paddingHorizontal: 20, marginBottom: 16, paddingTop: 4 },
+  secTitle:  { fontSize: 22, fontFamily: "Inter_700Bold",    color: DARK, letterSpacing: -0.4 },
+  secSub:    { fontSize: 12, fontFamily: "Inter_400Regular", color: BODY, marginTop: 2 },
+  addBtn:    { flexDirection: "row", alignItems: "center", gap: 6, paddingVertical: 10, paddingHorizontal: 16, borderRadius: 50 },
+  addBtnTxt: { fontSize: 13, fontFamily: "Inter_700Bold", color: WHITE },
+
+  // Stat cards
+  statsRow: { flexDirection: "row", gap: 10, marginHorizontal: 20, marginBottom: 14 },
+  statCard: {
+    flex: 1, borderRadius: 18, padding: 14, alignItems: "center", gap: 4,
+    ...Platform.select({
+      ios:     { shadowColor: P, shadowOffset: { width: 0, height: 5 }, shadowOpacity: 0.22, shadowRadius: 12 },
+      android: { elevation: 5 },
+      default: {},
+    }),
+  },
+  statVal: { fontSize: 20, fontFamily: "Inter_700Bold", color: WHITE },
+  statLbl: { fontSize: 9,  fontFamily: "Inter_400Regular", color: "rgba(255,255,255,0.85)", textAlign: "center" },
+
+  // Filters
+  filterScroll:     { marginBottom: 14 },
+  filterList:       { paddingHorizontal: 20, gap: 8, paddingVertical: 4, paddingRight: 24 },
+  filterChip:       {
+    paddingVertical: 9, paddingHorizontal: 18, borderRadius: 20,
+    backgroundColor: WHITE, borderWidth: 1.5, borderColor: `${P}22`,
+    ...Platform.select({
+      ios:     { shadowColor: P, shadowOffset: { width: 0, height: 2 }, shadowOpacity: 0.07, shadowRadius: 6 },
+      android: { elevation: 1 },
+      default: {},
+    }),
+  },
+  filterChipActive: {
+    paddingVertical: 9, paddingHorizontal: 18, borderRadius: 20,
+    ...Platform.select({
+      ios:     { shadowColor: P, shadowOffset: { width: 0, height: 4 }, shadowOpacity: 0.28, shadowRadius: 10 },
+      android: { elevation: 4 },
+      default: {},
+    }),
+  },
+  filterLbl:       { fontSize: 13, fontFamily: "Inter_600SemiBold", color: BODY  },
+  filterLblActive: { fontSize: 13, fontFamily: "Inter_700Bold",    color: WHITE },
+
+  // Empty states
+  emptyWrap:      { alignItems: "center", paddingTop: 48, paddingHorizontal: 40, gap: 10 },
   emptyIllo:      { width: 74, height: 74, borderRadius: 37, backgroundColor: `${P}12`, alignItems: "center", justifyContent: "center", marginBottom: 6 },
-  emptyTitle:     { fontSize: 18, fontFamily: "Inter_700Bold", color: DARK },
+  emptyTitle:     { fontSize: 18, fontFamily: "Inter_700Bold",    color: DARK },
   emptySub:       { fontSize: 13, fontFamily: "Inter_400Regular", color: BODY, textAlign: "center", lineHeight: 20 },
-  emptyBtn:       { marginTop: 14, borderRadius: 50, overflow: "hidden" },
-  emptyBtnGrad:   { flexDirection: "row", alignItems: "center", gap: 7, paddingVertical: 12, paddingHorizontal: 26 },
-  emptyBtnTxt:    { fontSize: 13, fontFamily: "Inter_700Bold", color: WHITE },
-  emptyFilter:    { alignItems: "center", paddingTop: 40, gap: 8 },
+  emptyFilter:    { alignItems: "center", paddingTop: 40, gap: 10 },
   emptyFilterTxt: { fontSize: 14, fontFamily: "Inter_400Regular", color: BODY },
 });
 
