@@ -17,8 +17,9 @@ import {
 } from "react-native";
 
 const { width: SW } = Dimensions.get("window");
-const CARD_W = SW - 24;
-const IMG_H  = Math.round(CARD_W * 1.05);
+const isWeb  = Platform.OS === "web";
+const CARD_W = isWeb ? Math.min(SW - 24, 420) : SW - 24;
+const IMG_H  = Math.round(CARD_W * (isWeb ? 0.85 : 1.05));
 
 const C = {
   purple:  "#7B5EA7",
@@ -212,19 +213,21 @@ export function PostCard({
       </View>
 
       {/* ── Image ───────────────────────────────── */}
-      <Pressable
-        onPress={() => onPressPost ? onPressPost(post.id) : handleDoubleTap()}
-        onLongPress={handleDoubleTap}
-        delayLongPress={300}
-        style={S.imageWrap}
-      >
-        <Image
-          source={{ uri: post.image }}
-          style={S.image}
-          contentFit="cover"
-          transition={200}
-        />
-      </Pressable>
+      {post.image ? (
+        <Pressable
+          onPress={() => onPressPost ? onPressPost(post.id) : handleDoubleTap()}
+          onLongPress={handleDoubleTap}
+          delayLongPress={300}
+          style={S.imageWrap}
+        >
+          <Image
+            source={{ uri: post.image }}
+            style={S.image}
+            contentFit="cover"
+            transition={200}
+          />
+        </Pressable>
+      ) : null}
 
       {/* ── Actions ─────────────────────────────── */}
       <View style={S.actions}>
@@ -328,6 +331,7 @@ export function PostCard({
 const S = StyleSheet.create({
   card: {
     width: CARD_W,
+    maxWidth: 420,
     alignSelf: "center",
     backgroundColor: "#FFFFFF",
     borderRadius: 20,

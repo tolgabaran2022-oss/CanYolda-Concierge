@@ -41,8 +41,12 @@ function CustomTabBar() {
   const router   = useRouter();
   const bottom   = insets.bottom + (isWeb ? 8 : 4);
 
+  const barOuterStyle = isWeb
+    ? { position: "fixed" as const, left: 14, right: 14, bottom: 8, zIndex: 999 }
+    : [styles.barOuter, { bottom }];
+
   return (
-    <View style={[styles.barOuter, { bottom }]}>
+    <View style={barOuterStyle as any}>
       <View style={styles.barInner}>
         {TABS.map((tab) => {
           const active =

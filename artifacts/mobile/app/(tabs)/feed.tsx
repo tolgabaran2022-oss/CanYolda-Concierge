@@ -90,7 +90,8 @@ function SkeletonCard() {
     ).start();
   }, [shimmer]);
   const opacity = shimmer.interpolate({ inputRange: [0, 1], outputRange: [0.4, 0.85] });
-  const CARD_W = SW - 24;
+  const isWebSk = Platform.OS === "web";
+  const CARD_W = isWebSk ? Math.min(SW - 24, 420) : SW - 24;
   return (
     <View style={[SK.card, { width: CARD_W }]}>
       <View style={SK.header}>
