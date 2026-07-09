@@ -1,0 +1,268 @@
+Canyoldaşı uygulamasında şimdi Instagram tarzı etkileşim sistemini kur.
+
+Mevcut durum:
+- Supabase aktif.
+- Authentication çalışıyor.
+- Kullanıcı profili çalışıyor.
+- Gönderi sistemi çalışıyor.
+
+Mevcut UI tasarımını bozma.
+Mor/beyaz premium iOS tasarımını koru.
+
+AMAÇ:
+Kullanıcılar gönderilerle etkileşime girebilsin.
+
+--------------------------------
+
+1) BEĞENİ SİSTEMİ ❤️
+
+Supabase tablosu oluştur:
+
+likes
+
+Kolonlar:
+
+id
+user_id
+post_id
+created_at
+
+
+İlişkiler:
+
+user_id → users.id
+
+post_id → posts.id
+
+
+Çalışma mantığı:
+
+Kullanıcı kalp ikonuna basınca:
+
+- Beğeni kaydı oluştur.
+- Kalp aktif hale gelsin.
+- Beğeni sayısı artsın.
+
+
+Tekrar basınca:
+
+- Beğeni kaldırılsın.
+- Sayı azalsın.
+- Kalp eski haline dönsün.
+
+
+--------------------------------
+
+2) GÖNDERİ BEĞENİ SAYISI
+
+PostCard içinde göster:
+
+Örnek:
+
+❤️ 245 beğeni
+
+
+Sayı gerçek database'den gelsin.
+
+
+--------------------------------
+
+3) YORUM SİSTEMİ 💬
+
+Yeni tablo:
+
+comments
+
+
+Alanlar:
+
+id
+user_id
+post_id
+content
+created_at
+
+
+Özellikler:
+
+Kullanıcı:
+
+- Yorum yazabilsin.
+- Yorum gönderebilsin.
+- Kendi yorumunu silebilsin.
+
+
+Yorumlarda göster:
+
+- Profil fotoğrafı
+- Kullanıcı adı
+- Yorum metni
+- Tarih
+
+
+--------------------------------
+
+4) YORUM EKRANI
+
+Instagram tarzı açılır yorum paneli oluştur.
+
+Component:
+
+CommentSheet
+
+
+Özellikler:
+
+- Alttan açılan modal.
+- Tüm yorumları listele.
+- Yeni yorum inputu.
+- Gönder butonu.
+
+
+--------------------------------
+
+5) KAYDETME SİSTEMİ 🔖
+
+Yeni tablo:
+
+saved_posts
+
+
+Alanlar:
+
+id
+user_id
+post_id
+created_at
+
+
+Özellik:
+
+Kullanıcı gönderiyi kaydedebilsin.
+
+
+Profil içinde:
+
+Kaydedilenler sekmesi olsun.
+
+
+--------------------------------
+
+6) PAYLAŞ MENÜSÜ 📤
+
+Gönderide paylaş ikonuna basınca:
+
+Açılır menü:
+
+- Link kopyala
+- Mesaj olarak gönder
+- Diğer uygulamalara paylaş
+
+
+--------------------------------
+
+7) BİLDİRİM ALTYAPISI 🔔
+
+Yeni tablo:
+
+notifications
+
+
+Alanlar:
+
+id
+receiver_id
+sender_id
+type
+post_id
+read
+created_at
+
+
+Bildirim türleri:
+
+like
+
+comment
+
+follow
+
+
+Örnek:
+
+"Ahmet gönderini beğendi"
+
+"Zeynep yorum yaptı"
+
+
+--------------------------------
+
+8) BİLDİRİM SAYFASI
+
+Bildirim ikonuna basınca:
+
+NotificationsScreen aç.
+
+
+Göster:
+
+- Profil fotoğrafı
+- Kullanıcı adı
+- İşlem
+- Zaman
+
+
+Okunmamış bildirimlerde:
+
+Mor nokta göster.
+
+
+--------------------------------
+
+9) COMPONENTLER
+
+Oluştur:
+
+LikeButton
+
+CommentSheet
+
+CommentItem
+
+SaveButton
+
+ShareMenu
+
+NotificationCenter
+
+
+--------------------------------
+
+10) GÜVENLİK
+
+Kontrol et:
+
+- Kullanıcı sadece kendi yorumunu silebilir.
+- Kullanıcı sadece kendi kaydetmesini kaldırabilir.
+- Kullanıcı kendi beğenisini yönetebilir.
+
+Supabase RLS policy ekle.
+
+
+--------------------------------
+
+11) TEST
+
+Kontrol:
+
+✓ Beğeni çalışıyor mu?
+✓ Sayaç güncelleniyor mu?
+✓ Yorum ekleniyor mu?
+✓ Yorum siliniyor mu?
+✓ Kaydedilenler çalışıyor mu?
+✓ Bildirim oluşuyor mu?
+
+
+Sonuç:
+
+Canyoldaşı gönderi sistemi Instagram seviyesinde gerçek etkileşim altyapısına sahip olmalı.

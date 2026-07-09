@@ -26,7 +26,7 @@ import { useAuth } from "@/contexts/AuthContext";
 import { useBoost } from "@/contexts/BoostContext";
 import { usePets } from "@/contexts/PetsContext";
 import { ProfileStoryAvatar } from "@/components/ProfileStoryAvatar";
-import { apiFetchUserPosts } from "@/lib/feedApi";
+import { apiFetchUserPosts, apiFetchBookmarkedPosts } from "@/lib/feedApi";
 import type { ApiPost } from "@/lib/feedApi";
 import { apiGetFollowCounts } from "@/lib/socialApi";
 import type { FollowCounts } from "@/lib/socialApi";
@@ -69,9 +69,10 @@ export default function ProfileScreen() {
   const topPad = Platform.OS === "web" ? 67 : insets.top;
   const tabClearance = insets.bottom + TAB_BOTTOM_GAP + TAB_FLOAT_H;
 
-  const [gridTab,     setGridTab]     = useState<GridTab>("posts");
-  const [userPosts,   setUserPosts]   = useState<ApiPost[]>([]);
-  const [followCounts, setFollowCounts] = useState<FollowCounts>({ followers: 0, following: 0 });
+  const [gridTab,       setGridTab]       = useState<GridTab>("posts");
+  const [userPosts,     setUserPosts]     = useState<ApiPost[]>([]);
+  const [savedPosts,    setSavedPosts]    = useState<ApiPost[]>([]);
+  const [followCounts,  setFollowCounts]  = useState<FollowCounts>({ followers: 0, following: 0 });
 
   useEffect(() => {
     if (user?.email) fetchMyBoosts(user.email);
@@ -82,6 +83,9 @@ export default function ProfileScreen() {
     apiFetchUserPosts(user.id)
       .then(setUserPosts)
       .catch(() => setUserPosts([]));
+    apiFetchBookmarkedPosts(user.id)
+      .then(setSavedPosts)
+      .catch(() => setSavedPosts([]));
     apiGetFollowCounts(user.id)
       .then(setFollowCounts)
       .catch(() => {});
@@ -162,9 +166,11 @@ export default function ProfileScreen() {
     id: `a-${a.id}`, uri: a.image ?? CAT_AVATAR_DEFAULT, label: a.locationName ?? "Hayvan",
   }));
 
-  const savedImages = listings.filter((l) => l.userId !== user.id).slice(0, 9).map((l) => ({
-    id: `sl-${l.id}`, uri: l.photo ?? CAT_AVATAR_DEFAULT, label: l.petName,
-  }));
+  const savedImages = savedPosts.length > 0
+    ? savedPosts.map((p) => ({ id: `p-${p.id}`, uri: p.imageUrl, label: p.caption }))
+    : listings.filter((l) => l.userId !== user.id).slice(0, 9).map((l) => ({
+        id: `sl-${l.id}`, uri: l.photo ?? CAT_AVATAR_DEFAULT, label: l.petName,
+      }));
 
   const currentGrid =
     gridTab === "posts"   ? postGridImages :

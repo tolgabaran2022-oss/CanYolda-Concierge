@@ -23,6 +23,7 @@ import {
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { PostCard, type PostData } from "@/components/PostCard";
 import { EditPostModal } from "@/components/EditPostModal";
+import { CommentSheet } from "@/components/CommentSheet";
 import { StoryBar } from "@/components/StoryBar";
 import { StoryViewer } from "@/components/StoryViewer";
 import { CreateStoryModal } from "@/components/CreateStoryModal";
@@ -35,6 +36,7 @@ import {
   apiAddComment,
   apiDeletePost,
   apiEditPost,
+  apiFetchUnreadCount,
   type ApiPost,
 } from "@/lib/feedApi";
 import {
@@ -275,14 +277,22 @@ export default function FeedScreen() {
   const { user } = useAuth();
   const userId = user?.email ?? "anonymous";
 
-  const [posts,           setPosts]           = useState<PostData[]>(FEED_POSTS);
-  const [stories,         setStories]         = useState<ApiStoryGroup[]>([]);
-  const [storyViewerOpen, setStoryViewerOpen] = useState(false);
-  const [selectedGroup,   setSelectedGroup]    = useState<ApiStoryGroup | null>(null);
-  const [createVisible,   setCreateVisible]   = useState(false);
-  const [createStoryOpen, setCreateStoryOpen]  = useState(false);
-  const [apiReady,        setApiReady]        = useState(false);
-  const [editTarget,      setEditTarget]      = useState<PostData | null>(null);
+  const [posts,             setPosts]             = useState<PostData[]>(FEED_POSTS);
+  const [stories,           setStories]           = useState<ApiStoryGroup[]>([]);
+  const [storyViewerOpen,   setStoryViewerOpen]   = useState(false);
+  const [selectedGroup,     setSelectedGroup]      = useState<ApiStoryGroup | null>(null);
+  const [createVisible,     setCreateVisible]     = useState(false);
+  const [createStoryOpen,   setCreateStoryOpen]    = useState(false);
+  const [apiReady,          setApiReady]          = useState(false);
+  const [editTarget,        setEditTarget]        = useState<PostData | null>(null);
+  const [commentSheetPostId, setCommentSheetPostId] = useState<string | null>(null);
+  const [unreadCount,       setUnreadCount]       = useState(0);
+
+  /* ── Fetch unread notifications count ─────────────────── */
+  useEffect(() => {
+    if (!user?.id) return;
+    apiFetchUnreadCount(user.id).then(setUnreadCount).catch(() => {});
+  }, [user?.id]);
 
   /* ── Fetch posts on mount ──────────────────────────────── */
   useEffect(() => {
@@ -435,7 +445,7 @@ export default function FeedScreen() {
           onSearch={() => router.push("/search")}
           onNewPost={() => setCreateVisible(true)}
           onAvatarPress={() => router.push("/(tabs)/profile")}
-          unreadCount={0}
+          unreadCount={unreadCount}
         />
         <StoryBar
           stories={stories}
@@ -462,6 +472,7 @@ export default function FeedScreen() {
             onComment={handleComment}
             onPressUser={(username) => router.push(`/user-profile/${encodeURIComponent(username)}`)}
             onPressPost={(id) => router.push(`/post-detail/${encodeURIComponent(id)}`)}
+            onCommentPress={(id) => setCommentSheetPostId(id)}
             isOwn={!!item.userId && item.userId === user?.id}
             onEdit={handleEditPost}
             onDelete={handleDeletePost}
@@ -485,6 +496,23 @@ export default function FeedScreen() {
         initialLocation={editTarget?.location ?? ""}
         onClose={() => setEditTarget(null)}
         onSave={handleSaveEdit}
+      />
+
+      <CommentSheet
+        visible={commentSheetPostId !== null}
+        postId={commentSheetPostId ?? ""}
+        postOwnerId={posts.find((p) => p.id === commentSheetPostId)?.userId}
+        onClose={() => setCommentSheetPostId(null)}
+        onCountChange={(delta) => {
+          if (!commentSheetPostId) return;
+          setPosts((prev) => prev.map((p) =>
+            p.id === commentSheetPostId
+              ? { ...p, comments: delta > 0
+                  ? [...p.comments, { id: `tmp-${Date.now()}`, user: "", text: "" }]
+                  : p.comments.slice(0, -1) }
+              : p
+          ));
+        }}
       />
 
       <StoryViewer

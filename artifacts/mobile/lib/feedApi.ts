@@ -145,3 +145,20 @@ export async function apiDeleteComment(
   });
   if (!res.ok) throw new Error("delete comment failed");
 }
+
+export async function apiFetchBookmarkedPosts(userId: string): Promise<ApiPost[]> {
+  const res = await fetch(`${API_BASE}/feed/bookmarks`, { headers: hdrs(userId) });
+  if (!res.ok) throw new Error("fetch bookmarks failed");
+  return res.json() as Promise<ApiPost[]>;
+}
+
+export async function apiFetchUnreadCount(userId: string): Promise<number> {
+  try {
+    const res = await fetch(`${API_BASE}/notifications`, { headers: hdrs(userId) });
+    if (!res.ok) return 0;
+    const rows = await res.json() as { read: boolean }[];
+    return rows.filter((r) => !r.read).length;
+  } catch {
+    return 0;
+  }
+}

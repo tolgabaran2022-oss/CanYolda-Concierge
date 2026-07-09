@@ -6,6 +6,7 @@ import {
   feedComments,
   feedLikes,
   feedBookmarks,
+  notifications,
 } from "@workspace/db";
 import { logger } from "../lib/logger.js";
 
@@ -514,8 +515,24 @@ router.post("/feed/posts/:id/like", async (req, res) => {
       liked = true;
     }
 
-    const [post] = await db.select({ likesCount: feedPosts.likesCount }).from(feedPosts).where(eq(feedPosts.id, id));
+    const [post] = await db.select({ likesCount: feedPosts.likesCount, userId: feedPosts.userId, username: feedPosts.username, imageUrl: feedPosts.imageUrl }).from(feedPosts).where(eq(feedPosts.id, id));
     res.json({ liked, likesCount: post?.likesCount ?? 0 });
+
+    // fire-and-forget notification on new like
+    if (liked && post?.userId && post.userId !== userId) {
+      const senderName = req.headers["x-user-name"] as string ?? "Birisi";
+      const senderAvatar = req.headers["x-user-avatar"] as string ?? "";
+      db.insert(notifications).values({
+        receiverId:   post.userId,
+        senderId:     userId,
+        senderName,
+        senderAvatar,
+        type:         "like",
+        postId:       id,
+        postImage:    post.imageUrl ?? "",
+        message:      `${senderName} gönderini beğendi`,
+      }).catch(() => {});
+    }
   } catch (err) {
     req.log.error({ err }, "POST /feed/posts/:id/like failed");
     res.status(500).json({ error: "Internal server error" });
@@ -580,8 +597,51 @@ router.post("/feed/posts/:id/comments", async (req, res) => {
       .returning();
     await db.update(feedPosts).set({ commentsCount: sql`comments_count + 1` }).where(eq(feedPosts.id, id));
     res.json(comment);
+
+    // fire-and-forget notification on new comment
+    const postRow = await db.select({ userId: feedPosts.userId, imageUrl: feedPosts.imageUrl }).from(feedPosts).where(eq(feedPosts.id, id)).limit(1).catch(() => []);
+    if (postRow[0]?.userId && postRow[0].userId !== username) {
+      const senderAvatar = req.headers["x-user-avatar"] as string ?? "";
+      db.insert(notifications).values({
+        receiverId:   postRow[0].userId,
+        senderId:     username,
+        senderName:   username,
+        senderAvatar,
+        type:         "comment",
+        postId:       id,
+        postImage:    postRow[0].imageUrl ?? "",
+        message:      `${username} gönderine yorum yaptı: ${text.slice(0, 50)}`,
+      }).catch(() => {});
+    }
   } catch (err) {
     req.log.error({ err }, "POST /feed/posts/:id/comments failed");
+    res.status(500).json({ error: "Internal server error" });
+  }
+});
+
+/* ── GET /api/feed/bookmarks ─ saved posts for a user ───── */
+router.get("/feed/bookmarks", async (req, res) => {
+  try {
+    const userId = req.headers["x-user-id"] as string;
+    if (!userId) { res.status(400).json({ error: "x-user-id required" }); return; }
+
+    const bookmarked = await db
+      .select({ postId: feedBookmarks.postId })
+      .from(feedBookmarks)
+      .where(eq(feedBookmarks.userId, userId))
+      .orderBy(desc(feedBookmarks.createdAt));
+
+    if (bookmarked.length === 0) { res.json([]); return; }
+
+    const postIds = bookmarked.map((b) => b.postId);
+    const posts   = await db
+      .select()
+      .from(feedPosts)
+      .where(sql`${feedPosts.id} = ANY(${postIds}::text[])`);
+
+    res.json(posts.map((p) => ({ ...p, liked: false, bookmarked: true })));
+  } catch (err) {
+    req.log.error({ err }, "GET /feed/bookmarks failed");
     res.status(500).json({ error: "Internal server error" });
   }
 });

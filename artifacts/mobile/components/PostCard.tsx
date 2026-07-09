@@ -9,6 +9,7 @@ import {
   Dimensions,
   Platform,
   Pressable,
+  Share,
   StyleSheet,
   Text,
   TextInput,
@@ -45,16 +46,17 @@ export type PostData = {
 };
 
 interface Props {
-  post:          PostData;
-  onLike:        (id: string) => void;
-  onBookmark:    (id: string) => void;
-  onComment:     (id: string, text: string) => void;
-  onShare?:      (id: string) => void;
-  onPressUser?:  (username: string) => void;
-  onPressPost?:  (id: string) => void;
-  isOwn?:        boolean;
-  onEdit?:       (id: string) => void;
-  onDelete?:     (id: string) => void;
+  post:            PostData;
+  onLike:          (id: string) => void;
+  onBookmark:      (id: string) => void;
+  onComment:       (id: string, text: string) => void;
+  onShare?:        (id: string) => void;
+  onPressUser?:    (username: string) => void;
+  onPressPost?:    (id: string) => void;
+  onCommentPress?: (id: string) => void;
+  isOwn?:          boolean;
+  onEdit?:         (id: string) => void;
+  onDelete?:       (id: string) => void;
 }
 
 export function PostCard({
@@ -65,6 +67,7 @@ export function PostCard({
   onShare,
   onPressUser,
   onPressPost,
+  onCommentPress,
   isOwn,
   onEdit,
   onDelete,
@@ -94,11 +97,17 @@ export function PostCard({
   const handleShare = () => {
     Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
     onShare?.(post.id);
-    Animated.sequence([
-      Animated.timing(toastAnim, { toValue: 1, duration: 200, useNativeDriver: true }),
-      Animated.delay(1800),
-      Animated.timing(toastAnim, { toValue: 0, duration: 300, useNativeDriver: true }),
-    ]).start();
+    const caption = post.caption ? `"${post.caption.slice(0, 80)}"` : "";
+    Share.share({
+      title: `CanYoldaşı — ${post.user.name}`,
+      message: `CanYoldaşı'nda ${post.user.name}'in paylaşımı${caption ? `: ${caption}` : ""}`,
+    }).catch(() => {
+      Animated.sequence([
+        Animated.timing(toastAnim, { toValue: 1, duration: 200, useNativeDriver: true }),
+        Animated.delay(1800),
+        Animated.timing(toastAnim, { toValue: 0, duration: 300, useNativeDriver: true }),
+      ]).start();
+    });
   };
 
   const submitComment = () => {
@@ -194,7 +203,14 @@ export function PostCard({
             </Animated.View>
           </Pressable>
           {/* Comment */}
-          <Pressable onPress={() => onPressPost ? onPressPost(post.id) : setShowInput((v) => !v)} style={S.actionBtn} hitSlop={8}>
+          <Pressable
+            onPress={() => {
+              if (onCommentPress) onCommentPress(post.id);
+              else if (onPressPost) onPressPost(post.id);
+              else setShowInput((v) => !v);
+            }}
+            style={S.actionBtn} hitSlop={8}
+          >
             <Ionicons name="chatbubble-outline" size={22} color={C.text} />
           </Pressable>
           {/* Share */}
