@@ -27,3 +27,17 @@ export type Conversation    = typeof conversations.$inferSelect;
 export type InsertConversation = typeof conversations.$inferInsert;
 export type Message         = typeof messages.$inferSelect;
 export type InsertMessage   = typeof messages.$inferInsert;
+
+export const listingContacts = pgTable("listing_contacts", {
+  id:                 text("id").primaryKey().default(sql`gen_random_uuid()::text`),
+  listingId:          text("listing_id").notNull().unique(),
+  ownerId:            text("owner_id").notNull(),
+  phoneNumber:        text("phone_number").notNull().default(""),
+  allowPhoneContact:  boolean("allow_phone_contact").notNull().default(true),
+  allowMessages:      boolean("allow_messages").notNull().default(true),
+  createdAt:          timestamp("created_at", { withTimezone: true }).defaultNow(),
+  updatedAt:          timestamp("updated_at", { withTimezone: true }).defaultNow(),
+});
+
+export type ListingContact       = typeof listingContacts.$inferSelect;
+export type InsertListingContact = typeof listingContacts.$inferInsert;

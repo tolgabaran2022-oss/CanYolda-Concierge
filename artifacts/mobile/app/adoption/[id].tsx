@@ -6,9 +6,11 @@ import { LinearGradient } from "expo-linear-gradient";
 import { Stack, useLocalSearchParams, useRouter } from "expo-router";
 import React, { useEffect, useRef, useState } from "react";
 import {
+  ActivityIndicator,
   Alert,
   Animated,
   Linking,
+  Modal,
   Platform,
   Pressable,
   ScrollView,
@@ -21,6 +23,7 @@ import { useAdoption } from "@/contexts/AdoptionContext";
 import { useAuth } from "@/contexts/AuthContext";
 import { useBoost } from "@/contexts/BoostContext";
 import { formatTimeAgo } from "@/utils/formatters";
+import { apiGetContactPrefs, apiRevealPhone, type ContactPrefs } from "@/lib/contactApi";
 
 // ── Palette (same as rest of app) ────────────────────────────────────────────
 const P     = "#7C4DCC";
@@ -94,6 +97,13 @@ export default function AdoptionDetailScreen() {
   const { boostStatuses, fetchBoostStatus } = useBoost();
   const [liked, setLiked] = useState(false);
 
+  /* Contact-reveal state */
+  const [contactPrefs,     setContactPrefs]     = useState<ContactPrefs>({ allowPhoneContact: true, allowMessages: true });
+  const [phoneModalOpen,   setPhoneModalOpen]   = useState(false);
+  const [revealedPhone,    setRevealedPhone]    = useState<string | null>(null);
+  const [revealLoading,    setRevealLoading]    = useState(false);
+  const [revealError,      setRevealError]      = useState<string | null>(null);
+
   const listing = getListing(id ?? "");
   const isOwner = listing?.userId === user?.id;
   const boost   = boostStatuses[id ?? ""];
@@ -104,6 +114,20 @@ export default function AdoptionDetailScreen() {
   const onPressOut = () => Animated.spring(pressScale, { toValue: 1,    useNativeDriver: true, speed: 20 }).start();
 
   useEffect(() => { if (id) fetchBoostStatus([id]); }, [id]);
+
+  /* Fetch public contact prefs when listing loads */
+  useEffect(() => {
+    if (!id || !listing) return;
+    /* Prefer persisted booleans from AsyncStorage if already present */
+    if (listing.allowPhoneContact !== undefined || listing.allowMessages !== undefined) {
+      setContactPrefs({
+        allowPhoneContact: listing.allowPhoneContact ?? true,
+        allowMessages:     listing.allowMessages     ?? true,
+      });
+      return;
+    }
+    apiGetContactPrefs(id).then(setContactPrefs).catch(() => {});
+  }, [id, listing?.id]);
 
   if (!listing) {
     return (
@@ -133,29 +157,26 @@ export default function AdoptionDetailScreen() {
   const isPhone = !listing.contactInfo.includes("@");
   const topBarPad = Platform.OS === "web" ? 20 : insets.top + 6;
 
-  const handleContact = (mode: "message" | "call") => {
+  const handleRevealPhone = async () => {
+    if (!user) { Alert.alert("Giriş Gerekli", "Telefon numarasını görmek için giriş yapın."); return; }
     Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
-    const info = listing.contactInfo;
-    if (mode === "call") {
-      if (isPhone) {
-        Linking.openURL(`tel:${info.replace(/\s/g, "")}`).catch(() =>
-          Alert.alert("İletişim", info)
-        );
-      } else {
-        Alert.alert("İletişim Bilgisi", info);
-      }
-    } else {
-      if (info.includes("@")) {
-        Linking.openURL(`mailto:${info}`).catch(() =>
-          Alert.alert("İletişim", info)
-        );
-      } else {
-        Alert.alert("İletişim Bilgisi", info, [
-          { text: "Kapat", style: "cancel" },
-          { text: "Ara", onPress: () => Linking.openURL(`tel:${info.replace(/\s/g, "")}`) },
-        ]);
-      }
+    setPhoneModalOpen(true);
+    if (revealedPhone) return; /* already revealed */
+    setRevealLoading(true);
+    setRevealError(null);
+    try {
+      const result = await apiRevealPhone(user.id, id!);
+      setRevealedPhone(result.phoneNumber);
+    } catch (e: any) {
+      setRevealError(e?.message ?? "Telefon numarası alınamadı");
+    } finally {
+      setRevealLoading(false);
     }
+  };
+
+  const handleSendMessage = () => {
+    Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
+    Alert.alert("Mesaj Gönder", "Bu özellik yakında kullanılabilir olacak.");
   };
 
   const handleDelete = () => {
@@ -415,29 +436,85 @@ export default function AdoptionDetailScreen() {
         {/* ── Sticky bottom action buttons ── */}
         {!isOwner && (
           <View style={[S.stickyBottom, { paddingBottom: botPad + 12 }]}>
-            <Animated.View style={[{ flex: 1 }, { transform: [{ scale: pressScale }] }]}>
-              <Pressable
-                onPress={() => handleContact("message")}
-                onPressIn={onPressIn}
-                onPressOut={onPressOut}
-                style={S.msgBtnOuter}
-              >
-                <LinearGradient colors={[P2, P, DARK]} start={{ x: 0, y: 0 }} end={{ x: 1, y: 0 }} style={S.msgBtn}>
-                  <Ionicons name="chatbubble-ellipses" size={18} color={WHITE} />
-                  <Text style={S.msgBtnTxt}>Mesaj Gönder</Text>
-                </LinearGradient>
-              </Pressable>
-            </Animated.View>
+            {contactPrefs.allowMessages && (
+              <Animated.View style={[{ flex: 1 }, { transform: [{ scale: pressScale }] }]}>
+                <Pressable
+                  onPress={handleSendMessage}
+                  onPressIn={onPressIn}
+                  onPressOut={onPressOut}
+                  style={S.msgBtnOuter}
+                >
+                  <LinearGradient colors={[P2, P, DARK]} start={{ x: 0, y: 0 }} end={{ x: 1, y: 0 }} style={S.msgBtn}>
+                    <Ionicons name="chatbubble-ellipses" size={18} color={WHITE} />
+                    <Text style={S.msgBtnTxt}>Mesaj Gönder</Text>
+                  </LinearGradient>
+                </Pressable>
+              </Animated.View>
+            )}
 
-            <Pressable
-              style={({ pressed }) => [S.callBtn, { opacity: pressed ? 0.85 : 1 }]}
-              onPress={() => handleContact("call")}
-            >
-              <Ionicons name={isPhone ? "call" : "mail"} size={20} color={P} />
-            </Pressable>
+            {contactPrefs.allowPhoneContact && (
+              <Pressable
+                style={({ pressed }) => [S.callBtn, { opacity: pressed ? 0.85 : 1 }]}
+                onPress={handleRevealPhone}
+              >
+                <Ionicons name="call" size={20} color={P} />
+              </Pressable>
+            )}
           </View>
         )}
       </View>
+
+      {/* ── Phone Reveal Modal ── */}
+      <Modal
+        visible={phoneModalOpen}
+        transparent
+        animationType="slide"
+        onRequestClose={() => setPhoneModalOpen(false)}
+      >
+        <Pressable style={S.modalOverlay} onPress={() => setPhoneModalOpen(false)} />
+        <View style={[S.phoneModal, { paddingBottom: botPad + 16 }]}>
+          <View style={S.phoneModalHandle} />
+          <Text style={S.phoneModalTitle}>Telefon Numarası</Text>
+
+          {revealLoading ? (
+            <View style={{ paddingVertical: 28, alignItems: "center" }}>
+              <ActivityIndicator color={P} size="large" />
+              <Text style={{ marginTop: 12, fontSize: 14, fontFamily: "Inter_400Regular", color: BODY }}>Yükleniyor...</Text>
+            </View>
+          ) : revealError ? (
+            <View style={{ paddingVertical: 20, alignItems: "center", gap: 12 }}>
+              <Ionicons name="alert-circle-outline" size={40} color="#E53E3E" />
+              <Text style={{ fontSize: 15, fontFamily: "Inter_500Medium", color: "#E53E3E", textAlign: "center" }}>{revealError}</Text>
+            </View>
+          ) : revealedPhone ? (
+            <View style={{ alignItems: "center", gap: 18, paddingVertical: 12 }}>
+              <View style={S.phoneDisplay}>
+                <Ionicons name="call" size={20} color={P} />
+                <Text style={S.phoneDisplayTxt} selectable>{revealedPhone}</Text>
+              </View>
+              <Pressable
+                style={({ pressed }) => [S.callNowBtn, { opacity: pressed ? 0.85 : 1 }]}
+                onPress={() => {
+                  Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
+                  Linking.openURL(`tel:${revealedPhone.replace(/\s/g, "")}`).catch(() => {});
+                }}
+              >
+                <LinearGradient colors={[P2, P, DARK]} start={{ x: 0, y: 0 }} end={{ x: 1, y: 0 }} style={S.callNowBtnInner}>
+                  <Ionicons name="call" size={18} color={WHITE} />
+                  <Text style={S.callNowBtnTxt}>Şimdi Ara</Text>
+                </LinearGradient>
+              </Pressable>
+            </View>
+          ) : null}
+
+          <Pressable
+            style={({ pressed }) => [S.phoneModalClose, { opacity: pressed ? 0.7 : 1 }]}
+            onPress={() => setPhoneModalOpen(false)}
+          >
+            <Text style={S.phoneModalCloseTxt}>Kapat</Text>
+          </Pressable>
+        </View>
+      </Modal>
     </>
   );
 }
@@ -567,4 +644,32 @@ const S = StyleSheet.create({
   msgBtn:      { flexDirection: "row", alignItems: "center", justifyContent: "center", gap: 8, height: 56, borderRadius: 18 },
   msgBtnTxt:   { fontSize: 16, fontFamily: "Inter_700Bold", color: WHITE },
   callBtn:     { width: 56, height: 56, borderRadius: 18, backgroundColor: WHITE, borderWidth: 1.5, borderColor: BORDER, alignItems: "center", justifyContent: "center", ...IOS_SHADOW },
+
+  // Phone modal
+  modalOverlay:      { flex: 1, backgroundColor: "rgba(0,0,0,0.45)" },
+  phoneModal: {
+    backgroundColor: BG,
+    borderTopLeftRadius: 32, borderTopRightRadius: 32,
+    paddingTop: 8, paddingHorizontal: 24,
+    gap: 4,
+    ...Platform.select({
+      ios:     { shadowColor: "#000", shadowOffset: { width: 0, height: -4 }, shadowOpacity: 0.12, shadowRadius: 20 },
+      android: { elevation: 20 },
+      default: {},
+    }),
+  },
+  phoneModalHandle:   { width: 40, height: 4, borderRadius: 2, backgroundColor: `${P}30`, alignSelf: "center", marginBottom: 14, marginTop: 4 },
+  phoneModalTitle:    { fontSize: 18, fontFamily: "Inter_700Bold", color: DARK, textAlign: "center", marginBottom: 8 },
+  phoneDisplay: {
+    flexDirection: "row", alignItems: "center", gap: 12,
+    backgroundColor: WHITE, borderRadius: 16,
+    paddingHorizontal: 20, paddingVertical: 16, alignSelf: "stretch",
+    borderWidth: 1.5, borderColor: `${P}25`,
+  },
+  phoneDisplayTxt:    { fontSize: 20, fontFamily: "Inter_700Bold", color: DARK, letterSpacing: 1.2, flex: 1 },
+  callNowBtn:         { width: "100%", borderRadius: 18, overflow: "hidden" },
+  callNowBtnInner:    { flexDirection: "row", alignItems: "center", justifyContent: "center", gap: 8, height: 54, borderRadius: 18 },
+  callNowBtnTxt:      { fontSize: 16, fontFamily: "Inter_700Bold", color: WHITE },
+  phoneModalClose:    { paddingVertical: 16, alignItems: "center" },
+  phoneModalCloseTxt: { fontSize: 15, fontFamily: "Inter_600SemiBold", color: BODY },
 });

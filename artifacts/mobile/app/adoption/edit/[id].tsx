@@ -24,6 +24,7 @@ import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { useAdoption } from "@/contexts/AdoptionContext";
 import { useAuth } from "@/contexts/AuthContext";
 import { TURKEY_PROVINCES, type Province } from "@/constants/turkeyLocations";
+import { apiSaveListingContact } from "@/lib/contactApi";
 
 /* ── Tokens ─────────────────────────────────────────────── */
 const C = {
@@ -257,16 +258,18 @@ export default function EditAdoptionScreen() {
   const listing = getListing(id ?? "");
 
   /* ── Form state ── */
-  const [images,      setImages]      = useState<string[]>([]);
-  const [petName,     setPetName]     = useState("");
-  const [petType,     setPetType]     = useState("Kedi");
-  const [petAge,      setPetAge]      = useState("");
-  const [province,    setProvince]    = useState("");
-  const [district,    setDistrict]    = useState("");
-  const [description, setDescription] = useState("");
-  const [phone,       setPhone]       = useState("");
-  const [email,       setEmail]       = useState("");
-  const [isSaving,    setIsSaving]    = useState(false);
+  const [images,             setImages]             = useState<string[]>([]);
+  const [petName,            setPetName]            = useState("");
+  const [petType,            setPetType]            = useState("Kedi");
+  const [petAge,             setPetAge]             = useState("");
+  const [province,           setProvince]           = useState("");
+  const [district,           setDistrict]           = useState("");
+  const [description,        setDescription]        = useState("");
+  const [phone,              setPhone]              = useState("");
+  const [email,              setEmail]              = useState("");
+  const [allowPhoneContact,  setAllowPhoneContact]  = useState(true);
+  const [allowMessages,      setAllowMessages]      = useState(true);
+  const [isSaving,           setIsSaving]           = useState(false);
   const [errors,      setErrors]      = useState<Record<string, string>>({});
 
   /* ── Modal state ── */
@@ -298,6 +301,8 @@ export default function EditAdoptionScreen() {
     setDescription(listing.description ?? "");
     setPhone(parsePhoneFromContact(listing.contactInfo));
     setEmail(parseEmailFromContact(listing.contactInfo));
+    setAllowPhoneContact(listing.allowPhoneContact ?? true);
+    setAllowMessages(listing.allowMessages ?? true);
   }, [listing?.id]);
 
   if (!listing || listing.userId !== user?.id) {
@@ -402,19 +407,28 @@ export default function EditAdoptionScreen() {
 
   /* ── Save ── */
   const handleSave = async () => {
-    if (!validate()) return;
+    if (!validate() || !user) return;
     setIsSaving(true);
     try {
       await updateListing(listing.id, {
         images,
-        photo:       images[0],
-        petName:     petName.trim(),
+        photo:             images[0],
+        petName:           petName.trim(),
         petType,
         petAge,
-        location:    `${district}, ${province}`,
-        description: description.trim(),
-        contactInfo: `📞 +90 ${formatPhone(phone)} | ✉️ ${email.trim()}`,
+        location:          `${district}, ${province}`,
+        description:       description.trim(),
+        contactInfo:       `📞 +90 ${formatPhone(phone)} | ✉️ ${email.trim()}`,
+        allowPhoneContact,
+        allowMessages,
       });
+      /* Sync phone + prefs to backend */
+      apiSaveListingContact(
+        user.id, listing.id,
+        `+90${phone.replace(/\D/g, "")}`,
+        allowPhoneContact,
+        allowMessages
+      ).catch(() => {});
       Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
       router.back();
     } catch {
@@ -692,6 +706,55 @@ export default function EditAdoptionScreen() {
                   )}
                 </View>
               </FieldWrap>
+
+              <View style={S.divider} />
+
+              {/* ── İletişim Tercihleri ── */}
+              <View>
+                <View style={S.sectionTitleRow}>
+                  <Ionicons name="shield-checkmark-outline" size={18} color={C.purpleDark} />
+                  <Text style={S.sectionTitle}>İletişim Tercihleri</Text>
+                </View>
+                <Text style={{ fontSize: 12, fontFamily: "Inter_400Regular", color: C.sub, marginTop: 4, marginBottom: 14, lineHeight: 17 }}>
+                  Diğer kullanıcıların seninle hangi yollarla iletişim kurabileceğini seç.
+                </Text>
+
+                <Pressable
+                  style={S.toggleRow}
+                  onPress={() => { setAllowPhoneContact((v) => !v); Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light); }}
+                >
+                  <View style={S.toggleLeft}>
+                    <View style={[S.toggleIcon, allowPhoneContact && S.toggleIconActive]}>
+                      <Ionicons name="call-outline" size={18} color={allowPhoneContact ? "#FFF" : C.sub} />
+                    </View>
+                    <View>
+                      <Text style={S.toggleLabel}>Telefon ile iletişime izin ver</Text>
+                      <Text style={S.toggleSub}>Numaranız talep üzerine gösterilir</Text>
+                    </View>
+                  </View>
+                  <View style={[S.toggle, allowPhoneContact && S.toggleOn]}>
+                    <View style={[S.toggleThumb, allowPhoneContact && S.toggleThumbOn]} />
+                  </View>
+                </Pressable>
+
+                <Pressable
+                  style={[S.toggleRow, { marginTop: 10 }]}
+                  onPress={() => { setAllowMessages((v) => !v); Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light); }}
+                >
+                  <View style={S.toggleLeft}>
+                    <View style={[S.toggleIcon, allowMessages && S.toggleIconActive]}>
+                      <Ionicons name="chatbubble-outline" size={18} color={allowMessages ? "#FFF" : C.sub} />
+                    </View>
+                    <View>
+                      <Text style={S.toggleLabel}>Mesaj almaya izin ver</Text>
+                      <Text style={S.toggleSub}>Uygulama içi DM</Text>
+                    </View>
+                  </View>
+                  <View style={[S.toggle, allowMessages && S.toggleOn]}>
+                    <View style={[S.toggleThumb, allowMessages && S.toggleThumbOn]} />
+                  </View>
+                </Pressable>
+              </View>
             </View>
 
           </ScrollView>
@@ -788,6 +851,24 @@ const S = StyleSheet.create({
   sectionTitleRow: { flexDirection: "row", alignItems: "center", gap: 8 },
   sectionTitle:    { fontSize: 15, fontFamily: "Inter_700Bold", color: C.purpleDark, flex: 1 },
   sectionSub:      { fontSize: 12, fontFamily: "Inter_500Medium", color: C.sub },
+
+  /* Toggle rows */
+  toggleRow:        { flexDirection: "row", alignItems: "center", justifyContent: "space-between" },
+  toggleLeft:       { flexDirection: "row", alignItems: "center", gap: 12, flex: 1 },
+  toggleIcon:       { width: 40, height: 40, borderRadius: 12, backgroundColor: "rgba(123,94,167,0.1)", alignItems: "center", justifyContent: "center" },
+  toggleIconActive: { backgroundColor: C.purple },
+  toggleLabel:      { fontSize: 14, fontFamily: "Inter_600SemiBold", color: C.label },
+  toggleSub:        { fontSize: 11, fontFamily: "Inter_400Regular", color: C.sub, marginTop: 1 },
+  toggle:           { width: 48, height: 28, borderRadius: 14, backgroundColor: "#D1D5DB", padding: 2, justifyContent: "center" },
+  toggleOn:         { backgroundColor: C.purple },
+  toggleThumb: {
+    width: 24, height: 24, borderRadius: 12, backgroundColor: "#FFF", alignSelf: "flex-start",
+    ...Platform.select({ ios: { shadowColor: "#000", shadowOffset: { width: 0, height: 1 }, shadowOpacity: 0.15, shadowRadius: 3 }, android: { elevation: 2 }, default: {} }),
+  },
+  toggleThumbOn:    { alignSelf: "flex-end" },
+
+  /* Divider */
+  divider: { height: 1, backgroundColor: "#F0EDF8", marginHorizontal: -4 },
 
   /* Photo hints */
   photoHint:    { fontSize: 12, fontFamily: "Inter_400Regular", color: C.sub, lineHeight: 18 },

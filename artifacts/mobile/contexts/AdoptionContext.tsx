@@ -23,6 +23,8 @@ export interface AdoptionListing {
   userId: string;
   userName: string;
   contactInfo: string;
+  allowPhoneContact?: boolean;
+  allowMessages?: boolean;
   status?: "Aktif" | "Onay Bekliyor" | "Pasif" | "Sahiplendirildi" | "Süresi Doldu";
   viewsCount?: number;
   favoriteCount?: number;
@@ -33,7 +35,7 @@ export interface AdoptionListing {
 
 interface AdoptionContextType {
   listings: AdoptionListing[];
-  addListing: (listing: Omit<AdoptionListing, "id" | "createdAt">) => Promise<void>;
+  addListing: (listing: Omit<AdoptionListing, "id" | "createdAt">) => Promise<string>;
   updateListing: (id: string, updates: Partial<Omit<AdoptionListing, "id" | "createdAt">>) => Promise<void>;
   deleteListing: (id: string) => Promise<void>;
   getListing: (id: string) => AdoptionListing | undefined;
@@ -130,13 +132,14 @@ export function AdoptionProvider({ children }: { children: React.ReactNode }) {
   }, []);
 
   const addListing = useCallback(
-    async (listing: Omit<AdoptionListing, "id" | "createdAt">) => {
+    async (listing: Omit<AdoptionListing, "id" | "createdAt">): Promise<string> => {
       const newListing: AdoptionListing = {
         ...listing,
         id: generateId(),
         createdAt: new Date().toISOString(),
       };
       await save([newListing, ...listings]);
+      return newListing.id;
     },
     [listings, save]
   );

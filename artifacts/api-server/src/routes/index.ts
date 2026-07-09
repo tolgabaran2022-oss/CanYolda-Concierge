@@ -9,6 +9,7 @@ import notificationsRouter from "./notifications.js";
 import usersRouter from "./users.js";
 import petsRouter from "./pets.js";
 import messagesRouter from "./messages.js";
+import listingsRouter from "./listings.js";
 
 const router: IRouter = Router();
 
@@ -22,5 +23,6 @@ router.use(notificationsRouter);
 router.use(usersRouter);
 router.use(petsRouter);
 router.use(messagesRouter);
+router.use(listingsRouter);
 
 export default router;
