@@ -23,7 +23,6 @@ import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { useAdoption } from "@/contexts/AdoptionContext";
 import { useAnimals } from "@/contexts/AnimalsContext";
 import { useAuth } from "@/contexts/AuthContext";
-import { useBoost } from "@/contexts/BoostContext";
 import { usePets } from "@/contexts/PetsContext";
 import { ProfileStoryAvatar } from "@/components/ProfileStoryAvatar";
 import { apiFetchUserPosts, apiFetchBookmarkedPosts } from "@/lib/feedApi";
@@ -45,14 +44,6 @@ const CAT_AVATAR_DEFAULT = "https://loremflickr.com/300/300/cat?lock=500";
 const TAB_FLOAT_H = 64;
 const TAB_BOTTOM_GAP = Platform.OS === "web" ? 12 : 10;
 
-function formatExpiry(expiresAt: string) {
-  const diff = new Date(expiresAt).getTime() - Date.now();
-  const hoursLeft = Math.max(0, Math.floor(diff / 3_600_000));
-  const minutesLeft = Math.max(0, Math.floor((diff % 3_600_000) / 60_000));
-  if (hoursLeft > 0) return `${hoursLeft} saat ${minutesLeft} dk`;
-  return `${minutesLeft} dakika`;
-}
-
 type GridTab = "posts" | "animals" | "saved";
 
 export default function ProfileScreen() {
@@ -61,7 +52,6 @@ export default function ProfileScreen() {
   const { animals } = useAnimals();
   const { pets } = usePets();
   const { listings } = useAdoption();
-  const { myBoosts, fetchMyBoosts } = useBoost();
   const router = useRouter();
 
   const myAnimals = animals.filter((a) => a.userId === user?.id);
@@ -81,10 +71,6 @@ export default function ProfileScreen() {
   const [newPetType,    setNewPetType]    = useState("cat");
   const [newPetBreed,   setNewPetBreed]   = useState("");
   const [creatingPet,   setCreatingPet]   = useState(false);
-
-  useEffect(() => {
-    if (user?.email) fetchMyBoosts(user.email);
-  }, [user?.email, fetchMyBoosts]);
 
   useEffect(() => {
     if (!user?.id) return;
@@ -182,13 +168,6 @@ export default function ProfileScreen() {
 
   if (!user) return null;
 
-  const activeBoosts = myBoosts.filter(
-    (b) => new Date(b.expires_at ?? b.expiresAt).getTime() > Date.now()
-  );
-
-  const getListingName = (listingId: string) =>
-    myListings.find((l) => l.id === listingId)?.petName ?? "Bilinmiyor";
-
   const postGridImages = userPosts.map((p) => ({
     id: `p-${p.id}`, uri: p.imageUrl, label: p.caption,
   }));
@@ -283,34 +262,6 @@ export default function ProfileScreen() {
             </Pressable>
           </View>
         </View>
-
-        {/* ── Active Boosts ──────────────────────────────── */}
-        {activeBoosts.length > 0 && (
-          <View style={S.section}>
-            <Text style={S.sectionTitle}>⭐ Aktif Öne Çıkarmalar</Text>
-            <View style={S.card}>
-              {activeBoosts.map((boost, i) => {
-                const expiresAt = boost.expires_at ?? boost.expiresAt;
-                const listingId = boost.listing_id ?? boost.listingId;
-                const hours = boost.package_hours ?? boost.packageHours;
-                return (
-                  <Pressable
-                    key={boost.id ?? i}
-                    style={({ pressed }) => [S.cardRow, i > 0 && S.cardRowBorder, { opacity: pressed ? 0.8 : 1 }]}
-                    onPress={() => router.push(`/adoption/${listingId}` as const)}
-                  >
-                    <View style={S.iconBadge}><Ionicons name="star" size={16} color={PURPLE} /></View>
-                    <View style={{ flex: 1 }}>
-                      <Text style={S.cardRowLabel}>{getListingName(listingId)}</Text>
-                      <Text style={S.cardRowMeta}>{hours}s paket · {formatExpiry(expiresAt)} kaldı</Text>
-                    </View>
-                    <Ionicons name="chevron-forward" size={16} color="#8874A8" />
-                  </Pressable>
-                );
-              })}
-            </View>
-          </View>
-        )}
 
         {/* ── Quick Actions ──────────────────────────────── */}
         <View style={S.section}>
