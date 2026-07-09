@@ -1,0 +1,67 @@
+Diğer kullanıcıların profil sayfasını Instagram mantığında sadeleştir.
+
+Amaç:
+Başka bir kullanıcının profiline girildiğinde sadece o kullanıcıya ait içerikler gösterilsin. Kendi profilime özel olan sekmeler ve bileşenler diğer profillerde görünmesin.
+
+Yapılacaklar:
+
+1. Başka kullanıcı profilinde KALDIRILACAK öğeler:
+- Evcil Dostlar sekmesi (🐾)
+- Pati izi sekmesi
+- Evcil Hayvanlarım ile ilgili tüm alanlar
+- Kaydedilenler (Bookmark) sekmesi
+- Hesap ayarları ile ilgili tüm bileşenler
+- Kendi profilime özel widget ve kartlar
+
+Bu öğeler yalnızca kendi profilimde görünsün.
+
+2. Başka kullanıcı profilinde GÖRÜNECEK öğeler:
+- Profil fotoğrafı
+- Kullanıcı adı
+- Ad Soyad (varsa)
+- Biyografi
+- Konum
+- Gönderi sayısı
+- Takipçi sayısı
+- Takip edilen sayısı
+- Takip Et / Takiptesin butonu
+- Mesaj Gönder butonu
+- Gönderiler (Grid görünümü)
+
+3. Sekmeler:
+Başka kullanıcı profilinde sadece:
+- Grid (Gönderiler)
+
+bulunsun.
+
+Hiçbir ek sekme (🐾, Kaydedilenler vb.) görünmesin.
+
+4. Gönderiler:
+- Kullanıcının gönderileri 3 sütunlu Instagram grid yapısında gösterilsin.
+- Gönderiye basınca gönderi detay ekranı açılsın.
+- Gizli profillerde takipçi değilsem gönderiler gizlensin ve şu mesaj gösterilsin:
+  "Bu hesap gizli. Gönderileri görmek için takip et."
+
+5. Koşullu görünüm:
+Kod içerisinde kontrol yap:
+
+if (profile.id === currentUser.id)
+→ Kendi profil düzeni göster.
+
+else
+→ Ziyaretçi profil düzeni göster.
+
+İki profil görünümü birbirinden tamamen ayrı yönetilsin.
+
+6. Performans:
+- Kullanılmayan componentleri render etme.
+- Gereksiz API isteklerini kaldır.
+- TypeScript ve import hatalarını düzelt.
+
+7. Tasarım:
+- Instagram profil sayfasına benzer sade görünüm.
+- Mevcut mor/beyaz tema korunsun.
+- iOS, Android ve Web'de aynı görünüm sağlansın.
+
+Sonuç:
+Kendi profilimde tüm özellikler (Evcil Dostlar, Kaydedilenler vb.) görünmeye devam edecek. Başka kullanıcıların profiline girdiğimde ise yalnızca standart Instagram tarzı profil ve gönderi gridi gösterilecek.

@@ -66,16 +66,17 @@ export async function apiGetFollowCounts(userId: string): Promise<FollowCounts> 
 
 /* ── Profile sync ──────────────────────────────────────── */
 export type FullProfile = {
-  id:             string;
-  email:          string;
-  name:           string;
-  username:       string | null;
-  bio:            string;
-  location:       string;
-  avatarUrl:      string;
-  followersCount: number;
-  followingCount: number;
-  postsCount:     number;
+  id:              string;
+  email:           string;
+  name:            string;
+  username:        string | null;
+  bio:             string;
+  location:        string;
+  avatarUrl:       string;
+  followersCount:  number;
+  followingCount:  number;
+  postsCount:      number;
+  isProfilePublic: boolean;
 };
 
 export async function apiSyncProfile(profile: {

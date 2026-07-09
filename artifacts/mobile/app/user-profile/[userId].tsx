@@ -19,6 +19,7 @@ import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { useAuth } from "@/contexts/AuthContext";
 import { apiFetchUserPosts, type ApiPost } from "@/lib/feedApi";
 import { apiGetOrCreateConversation } from "@/lib/messagesApi";
+import { apiGetUserPets, type ApiPetProfile } from "@/lib/petsApi";
 import {
   apiCheckFollowing,
   apiGetFollowCounts,
@@ -26,20 +27,19 @@ import {
   apiToggleFollow,
   type FollowCounts,
 } from "@/lib/socialApi";
-import { apiGetUserPets, type ApiPetProfile } from "@/lib/petsApi";
 
 const { width: SW } = Dimensions.get("window");
 const GRID_GAP  = 1.5;
 const GRID_ITEM = (SW - GRID_GAP * 2) / 3;
 
-const P     = "#7B5EA7";
-const PDARK = "#3D2070";
+const P      = "#7B5EA7";
+const PDARK  = "#3D2070";
 const PLIGHT = "#EDE8F8";
-const BG    = "#F9F8FF";
-const WHITE = "#FFFFFF";
-const MUTED = "#9187B0";
-const TEXT  = "#1C1033";
-const CAT   = "https://loremflickr.com/300/300/cat?lock=500";
+const BG     = "#F9F8FF";
+const WHITE  = "#FFFFFF";
+const MUTED  = "#9187B0";
+const TEXT   = "#1C1033";
+const CAT    = "https://loremflickr.com/300/300/cat?lock=500";
 
 const SEED_AVATARS: Record<string, string> = {
   "miyav.house":      "https://loremflickr.com/100/100/kitten?lock=11",
@@ -57,7 +57,7 @@ const PET_TYPE_LABELS: Record<string, string> = {
   rabbit: "🐰 Tavşan", hamster: "🐹 Hamster", fish: "🐟 Balık",
 };
 
-type ProfileTab = "posts" | "pets";
+type OwnTab = "posts" | "pets";
 
 export default function UserProfileScreen() {
   const insets     = useSafeAreaInsets();
@@ -65,54 +65,56 @@ export default function UserProfileScreen() {
   const { user }   = useAuth();
   const { userId } = useLocalSearchParams<{ userId: string }>();
 
-  /* ── Data ── */
-  const [username,   setUsername]   = useState("");
-  const [avatarUrl,  setAvatarUrl]  = useState(CAT);
-  const [bio,        setBio]        = useState("");
-  const [location,   setLocation]   = useState("");
-  const [postCount,  setPostCount]  = useState(0);
-  const [counts,     setCounts]     = useState<FollowCounts>({ followers: 0, following: 0 });
-  const [following,  setFollowing]  = useState(false);
-  const [posts,      setPosts]      = useState<ApiPost[]>([]);
-  const [pets,       setPets]       = useState<ApiPetProfile[]>([]);
-  const [loading,    setLoading]    = useState(true);
-  const [toggling,   setToggling]   = useState(false);
-  const [activeTab,  setActiveTab]  = useState<ProfileTab>("posts");
+  const [username,        setUsername]        = useState("");
+  const [avatarUrl,       setAvatarUrl]       = useState(CAT);
+  const [bio,             setBio]             = useState("");
+  const [location,        setLocation]        = useState("");
+  const [postCount,       setPostCount]       = useState(0);
+  const [isProfilePublic, setIsProfilePublic] = useState(true);
+  const [counts,          setCounts]          = useState<FollowCounts>({ followers: 0, following: 0 });
+  const [following,       setFollowing]       = useState(false);
+  const [posts,           setPosts]           = useState<ApiPost[]>([]);
+  const [pets,            setPets]            = useState<ApiPetProfile[]>([]);
+  const [loading,         setLoading]         = useState(true);
+  const [toggling,        setToggling]        = useState(false);
+  const [msgSending,      setMsgSending]      = useState(false);
+  const [activeTab,       setActiveTab]       = useState<OwnTab>("posts");
 
-  /* ── Animated tab indicator ── */
   const tabAnim = useRef(new Animated.Value(0)).current;
+  const topPad  = Platform.OS === "web" ? 67 : insets.top;
 
-  const topPad = Platform.OS === "web" ? 67 : insets.top;
-  const isOwn  = !!(user && (
+  const isOwn = !!(user && (
     user.id === userId || user.username === userId || user.name === userId || user.email === userId
   ));
 
-  /* ── Load all profile data ── */
   const load = useCallback(async () => {
     if (!userId) return;
     setLoading(true);
     try {
-      const [postsData, countsData, petsData] = await Promise.all([
+      const fetches: Promise<any>[] = [
         apiFetchUserPosts(userId).catch(() => [] as ApiPost[]),
         apiGetFollowCounts(userId).catch(() => ({ followers: 0, following: 0 })),
-        apiGetUserPets(userId).catch(() => [] as ApiPetProfile[]),
-      ]);
-      setPosts(postsData);
-      setCounts(countsData);
-      setPets(petsData);
+      ];
+      if (isOwn) fetches.push(apiGetUserPets(userId).catch(() => [] as ApiPetProfile[]));
 
-      /* Full profile for bio/location */
+      const [postsData, countsData, petsData] = await Promise.all(fetches);
+      setPosts(postsData as ApiPost[]);
+      setCounts(countsData as FollowCounts);
+      if (isOwn && petsData) setPets(petsData as ApiPetProfile[]);
+
       const full = await apiGetFullProfile(userId).catch(() => null);
       if (full) {
         setUsername(full.username ?? full.name ?? userId);
         setBio(full.bio ?? "");
         setLocation(full.location ?? "");
-        setAvatarUrl(full.avatarUrl || postsData[0]?.avatarUrl || SEED_AVATARS[full.username ?? ""] || CAT);
-        setPostCount(full.postsCount ?? postsData.length);
-      } else if (postsData.length > 0) {
-        setUsername(postsData[0].username);
-        setAvatarUrl(postsData[0].avatarUrl || SEED_AVATARS[postsData[0].username] || CAT);
-        setPostCount(postsData.length);
+        setAvatarUrl(full.avatarUrl || (postsData as ApiPost[])[0]?.avatarUrl || SEED_AVATARS[full.username ?? ""] || CAT);
+        setPostCount(full.postsCount ?? (postsData as ApiPost[]).length);
+        setIsProfilePublic(full.isProfilePublic ?? true);
+      } else if ((postsData as ApiPost[]).length > 0) {
+        const p0 = (postsData as ApiPost[])[0];
+        setUsername(p0.username);
+        setAvatarUrl(p0.avatarUrl || SEED_AVATARS[p0.username] || CAT);
+        setPostCount((postsData as ApiPost[]).length);
       } else {
         setUsername(userId);
         setAvatarUrl(SEED_AVATARS[userId] || CAT);
@@ -130,8 +132,7 @@ export default function UserProfileScreen() {
 
   useEffect(() => { load(); }, [load]);
 
-  /* ── Tab switch animation ── */
-  const switchTab = (tab: ProfileTab) => {
+  const switchTab = (tab: OwnTab) => {
     Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
     setActiveTab(tab);
     Animated.spring(tabAnim, {
@@ -142,7 +143,6 @@ export default function UserProfileScreen() {
     }).start();
   };
 
-  /* ── Follow / Unfollow ── */
   const handleFollow = async () => {
     if (!user || !userId || isOwn) return;
     Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
@@ -155,7 +155,20 @@ export default function UserProfileScreen() {
     finally { setToggling(false); }
   };
 
-  /* ── Loading skeleton ── */
+  const handleMessage = async () => {
+    if (!user || !userId) return;
+    Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
+    setMsgSending(true);
+    try {
+      const conv = await apiGetOrCreateConversation(user.id, userId);
+      router.push(`/messages/${encodeURIComponent(conv.id)}` as any);
+    } catch {
+      router.push("/messages" as any);
+    } finally {
+      setMsgSending(false);
+    }
+  };
+
   if (loading) {
     return (
       <View style={[S.root, { paddingTop: topPad }]}>
@@ -172,24 +185,24 @@ export default function UserProfileScreen() {
     outputRange: [0, SW / 2],
   });
 
+  const isLocked = !isOwn && !isProfilePublic && !following;
+
   return (
     <View style={[S.root, { paddingTop: topPad }]}>
       <TopBar username={username} onBack={() => router.back()} />
 
       <ScrollView
         showsVerticalScrollIndicator={false}
-        stickyHeaderIndices={[1]}
+        stickyHeaderIndices={isOwn ? [1] : undefined}
         contentContainerStyle={{ paddingBottom: insets.bottom + 40 }}
       >
-        {/* ─── Profile Header Block ─── */}
+        {/* ─── Profile Header ─── */}
         <View style={S.profileBlock}>
 
-          {/* Avatar row */}
           <View style={S.avatarRow}>
             <LinearGradient
               colors={["#E040FB", "#9C27B0", "#5B3FD6"]}
-              start={{ x: 0, y: 1 }}
-              end={{ x: 1, y: 0 }}
+              start={{ x: 0, y: 1 }} end={{ x: 1, y: 0 }}
               style={S.avatarRing}
             >
               <View style={S.avatarBorder}>
@@ -197,15 +210,27 @@ export default function UserProfileScreen() {
               </View>
             </LinearGradient>
 
-            {/* Stats — Instagram horizontal */}
             <View style={S.statsRow}>
-              <StatCol value={postCount}        label="Gönderi"  onPress={undefined} />
-              <StatCol value={counts.followers} label="Takipçi"  onPress={() => { Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light); router.push(`/follow-list/${encodeURIComponent(userId ?? "")}?mode=followers`); }} />
-              <StatCol value={counts.following} label="Takip"    onPress={() => { Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light); router.push(`/follow-list/${encodeURIComponent(userId ?? "")}?mode=following`); }} />
+              <StatCol value={postCount}        label="Gönderi" />
+              <StatCol
+                value={counts.followers}
+                label="Takipçi"
+                onPress={() => {
+                  Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+                  router.push(`/follow-list/${encodeURIComponent(userId ?? "")}?mode=followers` as any);
+                }}
+              />
+              <StatCol
+                value={counts.following}
+                label="Takip"
+                onPress={() => {
+                  Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+                  router.push(`/follow-list/${encodeURIComponent(userId ?? "")}?mode=following` as any);
+                }}
+              />
             </View>
           </View>
 
-          {/* Name / bio / location */}
           <Text style={S.displayName}>@{username}</Text>
           {bio ? <Text style={S.bio}>{bio}</Text> : null}
           {location ? (
@@ -220,7 +245,7 @@ export default function UserProfileScreen() {
             {isOwn ? (
               <Pressable
                 style={({ pressed }) => [S.btnOutline, S.btnFlex, { opacity: pressed ? 0.7 : 1 }]}
-                onPress={() => router.push("/profile-edit")}
+                onPress={() => router.push("/profile-edit" as any)}
               >
                 <Text style={S.btnOutlineTxt}>Profili Düzenle</Text>
               </Pressable>
@@ -245,61 +270,64 @@ export default function UserProfileScreen() {
                 </Pressable>
 
                 <Pressable
-                  style={({ pressed }) => [S.btnOutline, S.btnFlex, { opacity: pressed ? 0.7 : 1 }]}
-                  onPress={async () => {
-                    if (!user || !userId) return;
-                    Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
-                    try {
-                      const conv = await apiGetOrCreateConversation(user.id, userId);
-                      router.push(`/messages/${encodeURIComponent(conv.id)}`);
-                    } catch {
-                      router.push("/messages");
-                    }
-                  }}
+                  style={({ pressed }) => [S.btnOutline, S.btnFlex, { opacity: (pressed || msgSending) ? 0.7 : 1 }]}
+                  onPress={handleMessage}
+                  disabled={msgSending}
                 >
-                  <Ionicons name="chatbubble-outline" size={16} color={PDARK} style={{ marginRight: 4 }} />
-                  <Text style={S.btnOutlineTxt}>Mesaj Gönder</Text>
+                  {msgSending ? (
+                    <ActivityIndicator size="small" color={PDARK} />
+                  ) : (
+                    <>
+                      <Ionicons name="chatbubble-outline" size={15} color={PDARK} style={{ marginRight: 5 }} />
+                      <Text style={S.btnOutlineTxt}>Mesaj Gönder</Text>
+                    </>
+                  )}
                 </Pressable>
               </>
             )}
           </View>
         </View>
 
-        {/* ─── Sticky Tab Bar ─── */}
-        <View style={S.tabBar}>
-          <Pressable style={S.tabBtn} onPress={() => switchTab("posts")}>
-            <Ionicons
-              name="grid-outline"
-              size={22}
-              color={activeTab === "posts" ? P : MUTED}
-            />
-          </Pressable>
-          <Pressable style={S.tabBtn} onPress={() => switchTab("pets")}>
-            <Ionicons
-              name="paw-outline"
-              size={22}
-              color={activeTab === "pets" ? P : MUTED}
-            />
-          </Pressable>
-          {/* Sliding indicator */}
-          <Animated.View
-            style={[S.tabIndicator, { transform: [{ translateX: tabIndicatorX }] }]}
-          />
-        </View>
+        {/* ─── Own Profile: Two-tab bar ─── */}
+        {isOwn && (
+          <View style={S.tabBar}>
+            <Pressable style={S.tabBtn} onPress={() => switchTab("posts")}>
+              <Ionicons name="grid-outline" size={22} color={activeTab === "posts" ? P : MUTED} />
+            </Pressable>
+            <Pressable style={S.tabBtn} onPress={() => switchTab("pets")}>
+              <Ionicons name="paw-outline" size={22} color={activeTab === "pets" ? P : MUTED} />
+            </Pressable>
+            <Animated.View style={[S.tabIndicator, { transform: [{ translateX: tabIndicatorX }] }]} />
+          </View>
+        )}
 
-        {/* ─── Tab Content ─── */}
-        {activeTab === "posts" ? (
-          <PostsGrid posts={posts} onPressPost={(id) => router.push(`/post-detail/${encodeURIComponent(id)}`)} />
+        {/* ─── Content ─── */}
+        {isOwn ? (
+          activeTab === "posts" ? (
+            <PostsGrid
+              posts={posts}
+              onPressPost={(id) => router.push(`/post-detail/${encodeURIComponent(id)}` as any)}
+            />
+          ) : (
+            <PetsGrid
+              pets={pets}
+              onPressPet={(petId) => router.push(`/pet/${encodeURIComponent(petId)}` as any)}
+            />
+          )
+        ) : isLocked ? (
+          <PrivateLockState />
         ) : (
-          <PetsGrid pets={pets} onPressPet={(petId) => router.push(`/pet/${encodeURIComponent(petId)}`)} />
+          <PostsGrid
+            posts={posts}
+            onPressPost={(id) => router.push(`/post-detail/${encodeURIComponent(id)}` as any)}
+          />
         )}
       </ScrollView>
-
     </View>
   );
 }
 
-/* ── Sub-components ─────────────────────────────────────────── */
+/* ── Sub-components ──────────────────────────────────────── */
 
 function TopBar({ username, onBack }: { username: string; onBack: () => void }) {
   return (
@@ -315,9 +343,7 @@ function TopBar({ username, onBack }: { username: string; onBack: () => void }) 
   );
 }
 
-function StatCol({
-  value, label, onPress,
-}: { value: number; label: string; onPress?: () => void }) {
+function StatCol({ value, label, onPress }: { value: number; label: string; onPress?: () => void }) {
   return (
     <Pressable
       style={({ pressed }) => [S.statCol, onPress && pressed && { opacity: 0.65 }]}
@@ -352,10 +378,12 @@ function PostsGrid({ posts, onPressPost }: { posts: ApiPost[]; onPressPost: (id:
             { marginRight: idx % 3 !== 2 ? GRID_GAP : 0 },
             { marginBottom: GRID_GAP },
           ]}
-          onPress={() => { Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light); onPressPost(p.id); }}
+          onPress={() => {
+            Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+            onPressPost(p.id);
+          }}
         >
           <Image source={{ uri: p.imageUrl }} style={S.gridImg} contentFit="cover" />
-          {/* like overlay */}
           <View style={S.gridOverlay}>
             <Ionicons name="heart" size={13} color={WHITE} />
             <Text style={S.gridLikes}>{p.likesCount}</Text>
@@ -374,7 +402,7 @@ function PetsGrid({ pets, onPressPet }: { pets: ApiPetProfile[]; onPressPet: (pe
           <Ionicons name="paw-outline" size={36} color={P} />
         </View>
         <Text style={S.emptyTitle}>Evcil Dostu Yok</Text>
-        <Text style={S.emptySub}>Bu kullanıcının evcil hayvanları burada görünecek</Text>
+        <Text style={S.emptySub}>Evcil hayvanlar burada görünecek</Text>
       </View>
     );
   }
@@ -386,23 +414,20 @@ function PetsGrid({ pets, onPressPet }: { pets: ApiPetProfile[]; onPressPet: (pe
           style={({ pressed }) => [S.petCard, { opacity: pressed ? 0.88 : 1 }]}
           onPress={() => { Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light); onPressPet(pet.id); }}
         >
-          <LinearGradient
-            colors={["#EDE8FF", "#F5F2FF"]}
-            style={S.petAvatarWrap}
-          >
+          <LinearGradient colors={["#EDE8FF", "#F5F2FF"]} style={S.petAvatarWrap}>
             {pet.avatarUrl ? (
               <Image source={{ uri: pet.avatarUrl }} style={S.petAvatar} contentFit="cover" />
             ) : (
-              <Text style={S.petEmoji}>{pet.type === "dog" ? "🐶" : pet.type === "bird" ? "🐦" : pet.type === "rabbit" ? "🐰" : "🐱"}</Text>
+              <Text style={S.petEmoji}>
+                {pet.type === "dog" ? "🐶" : pet.type === "bird" ? "🐦" : pet.type === "rabbit" ? "🐰" : "🐱"}
+              </Text>
             )}
           </LinearGradient>
-
           <View style={S.petInfo}>
             <Text style={S.petName}>{pet.name}</Text>
             <Text style={S.petMeta}>{PET_TYPE_LABELS[pet.type] ?? pet.type}{pet.breed ? ` · ${pet.breed}` : ""}</Text>
             {pet.bio ? <Text style={S.petBio} numberOfLines={2}>{pet.bio}</Text> : null}
           </View>
-
           <Ionicons name="chevron-forward" size={18} color="#C0B8D8" />
         </Pressable>
       ))}
@@ -410,23 +435,33 @@ function PetsGrid({ pets, onPressPet }: { pets: ApiPetProfile[]; onPressPet: (pe
   );
 }
 
-/* ── Styles ─────────────────────────────────────────────────── */
+function PrivateLockState() {
+  return (
+    <View style={S.lockWrap}>
+      <View style={S.lockCircle}>
+        <Ionicons name="lock-closed" size={32} color={P} />
+      </View>
+      <Text style={S.lockTitle}>Bu hesap gizli</Text>
+      <Text style={S.lockSub}>Gönderileri görmek için takip et</Text>
+    </View>
+  );
+}
+
+/* ── Styles ──────────────────────────────────────────────── */
 
 const S = StyleSheet.create({
   root:   { flex: 1, backgroundColor: BG },
   center: { flex: 1, alignItems: "center", justifyContent: "center" },
 
-  /* Top bar */
   topBar: {
     flexDirection: "row", alignItems: "center", justifyContent: "space-between",
     paddingHorizontal: 6, paddingVertical: 10,
     backgroundColor: WHITE,
     borderBottomWidth: StyleSheet.hairlineWidth, borderBottomColor: "rgba(123,94,167,0.12)",
   },
-  topBackBtn: { width: 40, height: 40, alignItems: "center", justifyContent: "center" },
+  topBackBtn:  { width: 40, height: 40, alignItems: "center", justifyContent: "center" },
   topUsername: { fontSize: 16, fontFamily: "Inter_700Bold", color: PDARK, maxWidth: SW - 120 },
 
-  /* Profile block */
   profileBlock: {
     backgroundColor: WHITE,
     paddingHorizontal: 18,
@@ -437,12 +472,7 @@ const S = StyleSheet.create({
     borderBottomColor: "rgba(123,94,167,0.10)",
   },
 
-  /* Avatar + stats row */
-  avatarRow: {
-    flexDirection: "row",
-    alignItems: "center",
-    gap: 20,
-  },
+  avatarRow: { flexDirection: "row", alignItems: "center", gap: 20 },
   avatarRing: {
     width: 90, height: 90, borderRadius: 45,
     alignItems: "center", justifyContent: "center",
@@ -450,24 +480,20 @@ const S = StyleSheet.create({
   },
   avatarBorder: {
     width: 85, height: 85, borderRadius: 42.5,
-    overflow: "hidden",
-    borderWidth: 2, borderColor: WHITE,
+    overflow: "hidden", borderWidth: 2, borderColor: WHITE,
   },
   avatarImg: { width: "100%", height: "100%" },
 
-  /* Stats */
   statsRow: { flex: 1, flexDirection: "row", justifyContent: "space-around" },
   statCol:  { alignItems: "center", gap: 2, flex: 1 },
   statVal:  { fontSize: 20, fontFamily: "Inter_700Bold", color: PDARK },
   statLbl:  { fontSize: 11, fontFamily: "Inter_400Regular", color: MUTED },
 
-  /* Name / bio */
   displayName: { fontSize: 15, fontFamily: "Inter_700Bold", color: PDARK, marginTop: 2 },
-  bio:  { fontSize: 13, fontFamily: "Inter_400Regular", color: TEXT, lineHeight: 19 },
-  locRow: { flexDirection: "row", alignItems: "center", gap: 4 },
-  locTxt: { fontSize: 12, fontFamily: "Inter_400Regular", color: MUTED },
+  bio:         { fontSize: 13, fontFamily: "Inter_400Regular", color: TEXT, lineHeight: 19 },
+  locRow:      { flexDirection: "row", alignItems: "center", gap: 4 },
+  locTxt:      { fontSize: 12, fontFamily: "Inter_400Regular", color: MUTED },
 
-  /* Action buttons */
   btnRow:  { flexDirection: "row", gap: 10, marginTop: 4 },
   btnFlex: { flex: 1, flexDirection: "row", alignItems: "center", justifyContent: "center" },
 
@@ -480,7 +506,7 @@ const S = StyleSheet.create({
       default: {},
     }),
   },
-  btnFillTxt:   { fontSize: 14, fontFamily: "Inter_700Bold", color: WHITE },
+  btnFillTxt: { fontSize: 14, fontFamily: "Inter_700Bold", color: WHITE },
 
   btnOutline: {
     paddingVertical: 10, borderRadius: 10,
@@ -489,7 +515,7 @@ const S = StyleSheet.create({
   },
   btnOutlineTxt: { fontSize: 14, fontFamily: "Inter_600SemiBold", color: PDARK },
 
-  /* Tabs */
+  /* Tab bar — only rendered for own profile */
   tabBar: {
     flexDirection: "row",
     backgroundColor: WHITE,
@@ -497,19 +523,15 @@ const S = StyleSheet.create({
     borderBottomColor: "rgba(123,94,167,0.12)",
     position: "relative",
   },
-  tabBtn: {
-    flex: 1, paddingVertical: 13,
-    alignItems: "center", justifyContent: "center",
-  },
+  tabBtn: { flex: 1, paddingVertical: 13, alignItems: "center", justifyContent: "center" },
   tabIndicator: {
     position: "absolute", bottom: 0, left: 0,
     width: SW / 2, height: 2.5,
-    backgroundColor: P,
-    borderRadius: 99,
+    backgroundColor: P, borderRadius: 99,
   },
 
-  /* Grid */
-  grid: { flexDirection: "row", flexWrap: "wrap" },
+  /* Posts grid */
+  grid:     { flexDirection: "row", flexWrap: "wrap" },
   gridItem: { width: GRID_ITEM, height: GRID_ITEM, position: "relative" },
   gridImg:  { width: "100%", height: "100%" },
   gridOverlay: {
@@ -518,23 +540,30 @@ const S = StyleSheet.create({
   },
   gridLikes: { fontSize: 11, fontFamily: "Inter_600SemiBold", color: WHITE },
 
-  /* Empty */
+  /* Empty state */
   emptyWrap: { alignItems: "center", paddingVertical: 64, gap: 12, paddingHorizontal: 40 },
   emptyIconCircle: {
     width: 72, height: 72, borderRadius: 36,
-    backgroundColor: PLIGHT,
-    alignItems: "center", justifyContent: "center",
-    marginBottom: 4,
+    backgroundColor: PLIGHT, alignItems: "center", justifyContent: "center", marginBottom: 4,
   },
   emptyTitle: { fontSize: 16, fontFamily: "Inter_700Bold", color: PDARK },
   emptySub:   { fontSize: 13, fontFamily: "Inter_400Regular", color: MUTED, textAlign: "center" },
 
-  /* Pets grid */
+  /* Private lock */
+  lockWrap:   { alignItems: "center", paddingVertical: 72, gap: 14, paddingHorizontal: 40 },
+  lockCircle: {
+    width: 80, height: 80, borderRadius: 40,
+    backgroundColor: PLIGHT, alignItems: "center", justifyContent: "center",
+    marginBottom: 4,
+  },
+  lockTitle:  { fontSize: 17, fontFamily: "Inter_700Bold", color: PDARK },
+  lockSub:    { fontSize: 14, fontFamily: "Inter_400Regular", color: MUTED, textAlign: "center" },
+
+  /* Pets list */
   petsWrap: { paddingHorizontal: 16, paddingTop: 12, gap: 10 },
   petCard: {
     flexDirection: "row", alignItems: "center", gap: 14,
-    backgroundColor: WHITE, borderRadius: 18,
-    padding: 14,
+    backgroundColor: WHITE, borderRadius: 18, padding: 14,
     borderWidth: 1, borderColor: "rgba(123,94,167,0.10)",
     ...Platform.select({
       ios:     { shadowColor: "#000", shadowOffset: { width: 0, height: 2 }, shadowOpacity: 0.06, shadowRadius: 8 },
@@ -544,8 +573,7 @@ const S = StyleSheet.create({
   },
   petAvatarWrap: {
     width: 58, height: 58, borderRadius: 16,
-    alignItems: "center", justifyContent: "center",
-    overflow: "hidden",
+    alignItems: "center", justifyContent: "center", overflow: "hidden",
   },
   petAvatar: { width: "100%", height: "100%" },
   petEmoji:  { fontSize: 28 },
@@ -554,4 +582,3 @@ const S = StyleSheet.create({
   petMeta:   { fontSize: 12, fontFamily: "Inter_400Regular", color: MUTED },
   petBio:    { fontSize: 12, fontFamily: "Inter_400Regular", color: TEXT, lineHeight: 17 },
 });
-
