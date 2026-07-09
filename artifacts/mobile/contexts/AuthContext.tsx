@@ -12,13 +12,18 @@ export interface User {
   id: string;
   name: string;
   email: string;
-  provider?: "local" | "google" | "apple" | "facebook";
+  username?: string;
+  bio?: string;
+  location?: string;
   avatar?: string | null;
+  provider?: "local" | "google" | "apple" | "facebook";
 }
 
 interface StoredUser extends User {
   password?: string;
 }
+
+export type ProfileUpdates = Partial<Pick<User, "name" | "username" | "bio" | "location" | "avatar">>;
 
 interface AuthContextType {
   user: User | null;
@@ -27,6 +32,7 @@ interface AuthContextType {
   register: (name: string, email: string, password: string) => Promise<void>;
   logout: () => Promise<void>;
   changePassword: (currentPassword: string, newPassword: string) => Promise<void>;
+  updateProfile: (updates: ProfileUpdates) => Promise<void>;
 }
 
 const AuthContext = createContext<AuthContextType | null>(null);
@@ -35,7 +41,7 @@ const TOKEN_KEY = "@canyoldasi:jwt";
 const USERS_KEY = "@canyoldasi:users";
 
 export function AuthProvider({ children }: { children: React.ReactNode }) {
-  const [user, setUser]         = useState<User | null>(null);
+  const [user, setUser]           = useState<User | null>(null);
   const [isLoading, setIsLoading] = useState(true);
 
   useEffect(() => {
@@ -110,9 +116,35 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     [user]
   );
 
+  /* ── Update profile ───────────────────────────── */
+  const updateProfile = useCallback(
+    async (updates: ProfileUpdates) => {
+      if (!user) throw new Error("Giriş yapılmamış.");
+      const usersData = await AsyncStorage.getItem(USERS_KEY);
+      const users: StoredUser[] = usersData ? JSON.parse(usersData) : [];
+      const idx = users.findIndex((u) => u.id === user.id);
+      if (idx === -1) throw new Error("Kullanıcı bulunamadı.");
+
+      if (updates.username && updates.username !== user.username) {
+        const taken = users.some(
+          (u) => u.id !== user.id && u.username === updates.username
+        );
+        if (taken) throw new Error("Bu kullanıcı adı zaten kullanılıyor.");
+      }
+
+      const merged = { ...users[idx], ...updates };
+      users[idx] = merged;
+      await AsyncStorage.setItem(USERS_KEY, JSON.stringify(users));
+      const { password: _p, ...safe } = merged;
+      await AsyncStorage.setItem(AUTH_KEY, JSON.stringify(safe));
+      setUser(safe);
+    },
+    [user]
+  );
+
   return (
     <AuthContext.Provider
-      value={{ user, isLoading, login, register, logout, changePassword }}
+      value={{ user, isLoading, login, register, logout, changePassword, updateProfile }}
     >
       {children}
     </AuthContext.Provider>

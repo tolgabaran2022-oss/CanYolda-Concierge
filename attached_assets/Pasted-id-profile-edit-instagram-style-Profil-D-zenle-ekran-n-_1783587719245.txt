@@ -1,0 +1,146 @@
+id="profile-edit-instagram-style"
+
+Profil Düzenle ekranını Instagram tarzında profesyonel bir kullanıcı ayar ekranına dönüştür.
+
+Amaç:
+Kullanıcı kendi profil bilgilerini kolayca değiştirebilmeli.
+
+Tasarım:
+- Mevcut "canyoldaşı" mor/beyaz tasarım dilini koru.
+- iOS App Store kalitesinde temiz ve modern görünüm oluştur.
+- Instagram profil düzenleme mantığını referans al.
+- Yuvarlak kartlar, soft shadow ve modern input alanları kullan.
+
+PROFİL FOTOĞRAFI:
+Üst bölümde büyük yuvarlak profil fotoğrafı göster.
+
+Özellikler:
+- Profil fotoğrafına tıklayınca seçenek menüsü aç:
+  - Fotoğraf seç
+  - Kameradan çek
+  - Fotoğrafı kaldır
+
+- Yeni fotoğraf yükleme desteği ekle.
+- Yüklenen fotoğraf otomatik crop edilerek yuvarlak avatar formatına getirilsin.
+- Profil fotoğrafı güncellendiğinde tüm uygulamada değişsin.
+
+KULLANICI BİLGİLERİ:
+
+Form alanları:
+
+1. Ad Soyad
+Örnek:
+Tolga
+
+Düzenlenebilir text input.
+
+---
+
+2. Kullanıcı adı
+
+Alan:
+@kullaniciadi
+
+Kurallar:
+- Benzersiz kullanıcı adı kontrolü yap.
+- Daha önce alınmış kullanıcı adı kullanılamasın.
+- Instagram mantığında username değiştirme.
+
+---
+
+3. Biyografi
+
+Textarea alanı:
+
+Örnek:
+"🐾 Sokak dostlarının yanındayım
+📍 İstanbul"
+
+Özellikler:
+- Maksimum 150 karakter.
+- Karakter sayacı göster.
+
+---
+
+4. E-posta
+
+Mevcut mail adresini göster.
+
+Örnek:
+bilgimerkezi@gmail.com
+
+Düzenleme opsiyonu ekle.
+
+---
+
+5. Şehir / Konum
+
+Alan:
+İstanbul
+
+Kullanıcı değiştirebilsin.
+
+---
+
+BUTONLAR:
+
+Kaydet butonu:
+- Mor renkli premium buton.
+- Basınca profil bilgilerini güncelle.
+
+İptal:
+- Önceki sayfaya dön.
+
+---
+
+EK ÖZELLİKLER:
+
+Profil düzenleme ekranında şu bölümleri ekle:
+
+Hesap:
+- Kullanıcı adı değiştir
+- E-posta değiştir
+- Şifre değiştir
+
+Gizlilik:
+- Profil herkese açık/gizli seçeneği
+- Hikaye görüntüleme ayarları
+
+Bildirimler:
+- Beğeni bildirimleri
+- Yorum bildirimleri
+- Mesaj bildirimleri
+
+---
+
+BACKEND:
+
+users tablosuna gerekli alanları bağla:
+
+- id
+- username
+- full_name
+- avatar_url
+- bio
+- location
+- email
+- updated_at
+
+Fotoğraf yükleme için storage sistemi kullan.
+
+---
+
+Component oluştur:
+
+ProfileEditScreen
+AvatarPicker
+BioInput
+UsernameInput
+ProfileSettings
+
+---
+
+Sonuç:
+Profil düzenleme ekranı Instagram seviyesinde çalışmalı.
+Kullanıcı fotoğrafını, kullanıcı adını, biyografisini ve diğer profil bilgilerini değiştirebilmeli.
+Mevcut uygulama tasarımını bozma.

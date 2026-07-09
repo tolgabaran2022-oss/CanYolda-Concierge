@@ -4,6 +4,7 @@ import { Image } from "expo-image";
 import { LinearGradient } from "expo-linear-gradient";
 import { useRouter } from "expo-router";
 import React, { useEffect, useState } from "react";
+
 import {
   ActivityIndicator,
   Alert,
@@ -32,7 +33,7 @@ const GRID_ITEM = (SW - GRID_GAP * 2) / 3;
 const PURPLE = "#7B5EA7";
 const PURPLE_DARK = "#3D2070";
 const BG = "#F9F8FF";
-const CAT_AVATAR = "https://loremflickr.com/300/300/cat?lock=500";
+const CAT_AVATAR_DEFAULT = "https://loremflickr.com/300/300/cat?lock=500";
 
 const TAB_FLOAT_H = 64;
 const TAB_BOTTOM_GAP = Platform.OS === "web" ? 12 : 10;
@@ -137,18 +138,18 @@ export default function ProfileScreen() {
     myListings.find((l) => l.id === listingId)?.petName ?? "Bilinmiyor";
 
   const gridImages: { id: string; uri: string; label: string }[] = [
-    ...myAnimals.map((a) => ({ id: `a-${a.id}`, uri: a.image ?? CAT_AVATAR, label: a.locationName ?? "Hayvan" })),
-    ...myPets.map((p) => ({ id: `p-${p.id}`, uri: p.image ?? CAT_AVATAR, label: p.name })),
-    ...myListings.map((l) => ({ id: `l-${l.id}`, uri: l.photo ?? CAT_AVATAR, label: l.petName })),
+    ...myAnimals.map((a) => ({ id: `a-${a.id}`, uri: a.image ?? CAT_AVATAR_DEFAULT, label: a.locationName ?? "Hayvan" })),
+    ...myPets.map((p) => ({ id: `p-${p.id}`, uri: p.image ?? CAT_AVATAR_DEFAULT, label: p.name })),
+    ...myListings.map((l) => ({ id: `l-${l.id}`, uri: l.photo ?? CAT_AVATAR_DEFAULT, label: l.petName })),
   ];
 
   const savedImages = listings.filter((l) => l.userId !== user.id).slice(0, 9).map((l) => ({
-    id: `sl-${l.id}`, uri: l.photo ?? CAT_AVATAR, label: l.petName,
+    id: `sl-${l.id}`, uri: l.photo ?? CAT_AVATAR_DEFAULT, label: l.petName,
   }));
 
   const currentGrid =
     gridTab === "posts" ? gridImages :
-    gridTab === "animals" ? myAnimals.map((a) => ({ id: `a-${a.id}`, uri: a.image ?? CAT_AVATAR, label: a.locationName ?? "Hayvan" })) :
+    gridTab === "animals" ? myAnimals.map((a) => ({ id: `a-${a.id}`, uri: a.image ?? CAT_AVATAR_DEFAULT, label: a.locationName ?? "Hayvan" })) :
     savedImages;
 
   return (
@@ -171,7 +172,7 @@ export default function ProfileScreen() {
             >
               <View style={S.avatarBorder}>
                 <Image
-                  source={{ uri: CAT_AVATAR }}
+                  source={{ uri: user.avatar ?? CAT_AVATAR_DEFAULT }}
                   style={S.avatarImg}
                   contentFit="cover"
                 />
@@ -188,14 +189,17 @@ export default function ProfileScreen() {
 
           {/* Name + bio */}
           <Text style={S.userName}>{user.name}</Text>
-          <Text style={S.userBio}>🐾 Sokak dostlarının yanındayım · İstanbul</Text>
+          {user.username ? (
+            <Text style={[S.userEmail, { color: PURPLE, fontSize: 13, fontFamily: "Inter_500Medium" }]}>@{user.username}</Text>
+          ) : null}
+          <Text style={S.userBio}>{user.bio || "🐾 Sokak dostlarının yanındayım"}{user.location ? ` · ${user.location}` : " · İstanbul"}</Text>
           <Text style={S.userEmail}>{user.email}</Text>
 
           {/* Action buttons */}
           <View style={S.actionBtnRow}>
             <Pressable
               style={({ pressed }) => [S.editBtn, { opacity: pressed ? 0.8 : 1 }]}
-              onPress={openPwModal}
+              onPress={() => router.push("/profile-edit")}
             >
               <Text style={S.editBtnText}>Profili Düzenle</Text>
             </Pressable>
