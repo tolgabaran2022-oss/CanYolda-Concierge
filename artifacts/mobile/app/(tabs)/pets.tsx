@@ -1254,9 +1254,11 @@ function MyListingsSection({
           { label: "Sahiplendirilen",val: adoptedCount,       icon: "home"             as const },
         ] as const).map((stat) => (
           <View key={stat.label} style={ml.statCard}>
-            <Ionicons name={stat.icon} size={22} color="#111" />
-            <Text style={ml.statVal}>{stat.val}</Text>
-            <Text style={ml.statLbl}>{stat.label}</Text>
+            <Ionicons name={stat.icon} size={18} color="#333" />
+            <View style={{ flex: 1 }}>
+              <Text style={ml.statVal}>{stat.val}</Text>
+              <Text style={ml.statLbl}>{stat.label}</Text>
+            </View>
           </View>
         ))}
       </View>
@@ -1494,23 +1496,25 @@ const ml = StyleSheet.create({
     flexWrap: "wrap",
     marginHorizontal: 20,
     marginBottom: 14,
-    gap: 10,
+    gap: 8,
   },
   statCard: {
     width: "47%",
     backgroundColor: "#F2F2F2",
-    borderRadius: 18,
-    padding: 16,
+    borderRadius: 14,
+    paddingVertical: 10,
+    paddingHorizontal: 12,
+    flexDirection: "row",
     alignItems: "center",
-    gap: 5,
+    gap: 10,
     ...Platform.select({
-      ios:     { shadowColor: "#000", shadowOffset: { width: 0, height: 2 }, shadowOpacity: 0.06, shadowRadius: 8 },
-      android: { elevation: 2 },
+      ios:     { shadowColor: "#000", shadowOffset: { width: 0, height: 1 }, shadowOpacity: 0.05, shadowRadius: 4 },
+      android: { elevation: 1 },
       default: {},
     }),
   },
-  statVal: { fontSize: 22, fontFamily: "Inter_700Bold", color: "#111" },
-  statLbl: { fontSize: 10, fontFamily: "Inter_400Regular", color: "#444", textAlign: "center" },
+  statVal: { fontSize: 16, fontFamily: "Inter_700Bold", color: "#111" },
+  statLbl: { fontSize: 10, fontFamily: "Inter_400Regular", color: "#666" },
 
   // Filters
   filterScroll:     { marginBottom: 14 },
