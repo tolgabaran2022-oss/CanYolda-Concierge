@@ -8,7 +8,6 @@
     "icon": "./assets/images/icon.png",
     "scheme": "com.canyoldasi.app",
     "userInterfaceStyle": "light",
-    "newArchEnabled": false,
     "backgroundColor": "#FAF7F0",
     "splash": {
       "image": "./assets/images/icon.png",
