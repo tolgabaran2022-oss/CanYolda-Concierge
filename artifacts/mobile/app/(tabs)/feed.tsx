@@ -537,7 +537,7 @@ export default function FeedScreen() {
     }
   };
 
-  const BOTTOM_NAV_H = 68 + insets.bottom + 10;
+  const BOTTOM_NAV_H = Platform.OS === "web" ? 100 : 68 + insets.bottom + 10;
   const activePosts  = feedTab === "following" ? followingPosts : posts;
   const isLoading    = feedTab === "discover" ? loadingDiscover : loadingFollowing;
   const hasError     = feedTab === "discover" ? errorDiscover   : errorFollowing;

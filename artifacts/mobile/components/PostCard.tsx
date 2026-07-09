@@ -81,6 +81,7 @@ export function PostCard({
   const [commentText, setCommentText] = useState("");
   const [showInput,   setShowInput]   = useState(false);
   const [showAll,     setShowAll]     = useState(false);
+  const [imgError,    setImgError]    = useState(false);
   const heartScale = useRef(new Animated.Value(1)).current;
   const toastAnim  = useRef(new Animated.Value(0)).current;
 
@@ -213,7 +214,7 @@ export function PostCard({
       </View>
 
       {/* ── Image ───────────────────────────────── */}
-      {post.image ? (
+      {post.image && !imgError ? (
         <Pressable
           onPress={() => onPressPost ? onPressPost(post.id) : handleDoubleTap()}
           onLongPress={handleDoubleTap}
@@ -225,6 +226,7 @@ export function PostCard({
             style={S.image}
             contentFit="cover"
             transition={200}
+            onError={() => setImgError(true)}
           />
         </Pressable>
       ) : null}
@@ -349,8 +351,14 @@ const S = StyleSheet.create({
   avatar:      { width: "100%", height: "100%" },
   username:    { fontSize: 14, fontFamily: "Inter_600SemiBold", color: C.text },
   meta:        { fontSize: 11, fontFamily: "Inter_400Regular", color: C.muted, marginTop: 1 },
-  imageWrap:   { width: "100%", height: IMG_H },
-  image:       { width: "100%", height: "100%" },
+  imageWrap:   {
+    width: "100%",
+    ...Platform.select({
+      web:     { aspectRatio: 4 / 5 },
+      default: { height: IMG_H },
+    }),
+  },
+  image:       { width: "100%", height: "100%", ...Platform.select({ web: { aspectRatio: 4 / 5 }, default: {} }) },
   actions:     { flexDirection: "row", justifyContent: "space-between", alignItems: "center", paddingHorizontal: 14, paddingTop: 10, paddingBottom: 4 },
   leftActions: { flexDirection: "row", gap: 16 },
   actionBtn:   { padding: 2 },
