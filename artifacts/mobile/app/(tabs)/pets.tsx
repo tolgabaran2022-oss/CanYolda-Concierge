@@ -205,8 +205,8 @@ const cr = StyleSheet.create({
   ctaGrad: { flexDirection: "row", alignItems: "center", gap: 6, paddingVertical: 11, paddingHorizontal: 14, justifyContent: "center" },
   ctaTxt: { fontSize: 13, fontFamily: "Inter_700Bold", color: WHITE },
 
-  heroRight: { width: 132, alignSelf: "stretch" },
-  dogImg: { width: "100%", height: "100%" },
+  heroRight: { width: 132 },
+  dogImg: { width: "100%", height: 200 },
 
   dot: { width: 6, height: 6, borderRadius: 3, backgroundColor: P, marginTop: 7, flexShrink: 0 },
   tipsTitle: { flex: 1, fontSize: 13, fontFamily: "Inter_600SemiBold", color: DARK },
