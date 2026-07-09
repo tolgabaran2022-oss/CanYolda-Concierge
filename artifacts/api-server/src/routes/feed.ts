@@ -458,7 +458,21 @@ router.get("/feed/posts", async (req, res) => {
         posts = [];
       }
     } else if (filterUserId) {
-      posts = await db.select().from(feedPosts).where(eq(feedPosts.userId, filterUserId)).orderBy(desc(feedPosts.createdAt));
+      if (filterUserId.startsWith("seed-")) {
+        /* Seed users have userId="" in DB — query by username + empty userId */
+        const seedUsername = filterUserId.slice("seed-".length);
+        posts = await db
+          .select()
+          .from(feedPosts)
+          .where(and(eq(feedPosts.username, seedUsername), eq(feedPosts.userId, "")))
+          .orderBy(desc(feedPosts.createdAt));
+      } else {
+        posts = await db
+          .select()
+          .from(feedPosts)
+          .where(eq(feedPosts.userId, filterUserId))
+          .orderBy(desc(feedPosts.createdAt));
+      }
     } else {
       /* Discover: filter out posts from users with private profiles unless viewer is a follower */
       const allPosts = await db.select().from(feedPosts).orderBy(desc(feedPosts.createdAt));
