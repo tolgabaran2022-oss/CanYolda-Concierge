@@ -4,23 +4,22 @@ import { Image } from "expo-image";
 import { LinearGradient } from "expo-linear-gradient";
 import React from "react";
 import { Pressable, ScrollView, StyleSheet, Text, View } from "react-native";
+import type { ApiStoryGroup } from "@/lib/storiesApi";
 
 const PURPLE = "#7B5EA7";
 
-export type Story = {
-  id: string;
-  user: string;
-  avatar: string;
-  seen: boolean;
-};
-
 interface Props {
-  stories: Story[];
-  onPress: (story: Story) => void;
+  stories: ApiStoryGroup[];
+  currentUserId?: string;
+  onPressGroup: (group: ApiStoryGroup) => void;
   onAddStory: () => void;
 }
 
-export function StoryBar({ stories, onPress, onAddStory }: Props) {
+export function StoryBar({ stories, currentUserId, onPressGroup, onAddStory }: Props) {
+  // Current user first if they have stories, otherwise show add button
+  const currentUserGroup = stories.find((g) => g.userId === currentUserId);
+  const otherGroups = stories.filter((g) => g.userId !== currentUserId);
+
   return (
     <ScrollView
       horizontal
@@ -28,7 +27,7 @@ export function StoryBar({ stories, onPress, onAddStory }: Props) {
       style={S.scroll}
       contentContainerStyle={S.content}
     >
-      {/* Add story */}
+      {/* Add story button */}
       <Pressable
         style={S.item}
         onPress={() => {
@@ -46,21 +45,16 @@ export function StoryBar({ stories, onPress, onAddStory }: Props) {
         </Text>
       </Pressable>
 
-      {/* Stories */}
-      {stories.map((story) => (
+      {/* Current user's stories (if any) */}
+      {currentUserGroup && (
         <Pressable
-          key={story.id}
           style={S.item}
           onPress={() => {
             Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
-            onPress(story);
+            onPressGroup(currentUserGroup);
           }}
         >
-          {story.seen ? (
-            <View style={S.seenCircle}>
-              <Image source={{ uri: story.avatar }} style={S.avatar} contentFit="cover" />
-            </View>
-          ) : (
+          {currentUserGroup.hasUnseen ? (
             <LinearGradient
               colors={["#C278F0", "#7B5EA7", "#5B3FD6"]}
               start={{ x: 0, y: 1 }}
@@ -68,12 +62,48 @@ export function StoryBar({ stories, onPress, onAddStory }: Props) {
               style={S.gradientRing}
             >
               <View style={S.avatarWrap}>
-                <Image source={{ uri: story.avatar }} style={S.avatar} contentFit="cover" />
+                <Image source={{ uri: currentUserGroup.avatarUrl }} style={S.avatar} contentFit="cover" />
               </View>
             </LinearGradient>
+          ) : (
+            <View style={S.seenCircle}>
+              <Image source={{ uri: currentUserGroup.avatarUrl }} style={S.avatar} contentFit="cover" />
+            </View>
           )}
           <Text style={S.name} numberOfLines={1}>
-            {story.user}
+            {currentUserGroup.username}
+          </Text>
+        </Pressable>
+      )}
+
+      {/* Other users' stories */}
+      {otherGroups.map((group) => (
+        <Pressable
+          key={group.userId}
+          style={S.item}
+          onPress={() => {
+            Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+            onPressGroup(group);
+          }}
+        >
+          {group.hasUnseen ? (
+            <LinearGradient
+              colors={["#C278F0", "#7B5EA7", "#5B3FD6"]}
+              start={{ x: 0, y: 1 }}
+              end={{ x: 1, y: 0 }}
+              style={S.gradientRing}
+            >
+              <View style={S.avatarWrap}>
+                <Image source={{ uri: group.avatarUrl }} style={S.avatar} contentFit="cover" />
+              </View>
+            </LinearGradient>
+          ) : (
+            <View style={S.seenCircle}>
+              <Image source={{ uri: group.avatarUrl }} style={S.avatar} contentFit="cover" />
+            </View>
+          )}
+          <Text style={S.name} numberOfLines={1}>
+            {group.username}
           </Text>
         </Pressable>
       ))}
@@ -87,7 +117,6 @@ const S = StyleSheet.create({
 
   item:     { alignItems: "center", gap: 5, width: 68 },
 
-  /* Add story */
   addCircle: {
     width: 66,
     height: 66,
@@ -107,7 +136,6 @@ const S = StyleSheet.create({
     justifyContent: "center",
   },
 
-  /* Story ring */
   gradientRing: {
     width: 66,
     height: 66,

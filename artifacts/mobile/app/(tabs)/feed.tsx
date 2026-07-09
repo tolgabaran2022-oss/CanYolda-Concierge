@@ -21,7 +21,9 @@ import {
 } from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { PostCard, type PostData } from "@/components/PostCard";
-import { StoryBar, type Story } from "@/components/StoryBar";
+import { StoryBar } from "@/components/StoryBar";
+import { StoryViewer } from "@/components/StoryViewer";
+import { CreateStoryModal } from "@/components/CreateStoryModal";
 import { useAuth } from "@/contexts/AuthContext";
 import { FEED_POSTS } from "@/data/feedData";
 import {
@@ -31,6 +33,11 @@ import {
   apiAddComment,
   type ApiPost,
 } from "@/lib/feedApi";
+import {
+  apiFetchStories,
+  apiCreateStory,
+  type ApiStoryGroup,
+} from "@/lib/storiesApi";
 
 const { width: SW } = Dimensions.get("window");
 void SW;
@@ -45,7 +52,6 @@ const C = {
   border:     "#F0EDF8",
 };
 
-/* ── helpers ─────────────────────────────────────────────── */
 function apiPostToPostData(p: ApiPost): PostData {
   return {
     id:          p.id,
@@ -61,17 +67,6 @@ function apiPostToPostData(p: ApiPost): PostData {
     timestamp:   p.timeAgo || "Yeni",
   };
 }
-
-const SEED_STORIES: Story[] = [
-  { id: "s1", user: "pati_dostum",      avatar: "https://loremflickr.com/100/100/kitten?lock=11", seen: false },
-  { id: "s2", user: "miyav.house",      avatar: "https://loremflickr.com/100/100/puppy?lock=22",  seen: false },
-  { id: "s3", user: "patili.bir.dunya", avatar: "https://loremflickr.com/100/100/tabby?lock=33",  seen: true  },
-  { id: "s4", user: "koydeki.patiler",  avatar: "https://loremflickr.com/100/100/dog?lock=44",    seen: false },
-  { id: "s5", user: "kucuk.pawlar",     avatar: "https://loremflickr.com/100/100/kitten?lock=55", seen: true  },
-  { id: "s6", user: "sokak.dostlari",   avatar: "https://loremflickr.com/100/100/golden?lock=66", seen: false },
-  { id: "s7", user: "minnoslar.evi",    avatar: "https://loremflickr.com/100/100/cat?lock=77",    seen: false },
-  { id: "s8", user: "patici.sultan",    avatar: "https://loremflickr.com/100/100/puppy?lock=88",  seen: true  },
-];
 
 /* ── Create post modal ────────────────────────────────────── */
 function CreatePostModal({
@@ -180,14 +175,13 @@ const M = StyleSheet.create({
 /* ── Feed header ──────────────────────────────────────────── */
 function FeedHeader({ onNotify }: { onNotify: () => void }) {
   return (
-    <View style={H.wrap}>
+    <View style={H.root}>
       <View style={H.left}>
-        <Ionicons name="paw" size={18} color={C.purple} />
-        <Text style={H.logo}>canyoldaşı</Text>
+        <Text style={H.logo}>CanYoldaşı</Text>
       </View>
       <View style={H.right}>
-        <Pressable onPress={onNotify} hitSlop={10} style={H.bellWrap}>
-          <Ionicons name="notifications-outline" size={26} color={C.text} />
+        <Pressable onPress={onNotify} style={H.bellWrap} hitSlop={10}>
+          <Ionicons name="notifications-outline" size={24} color={C.purple} />
           <View style={H.badge} />
         </Pressable>
       </View>
@@ -196,7 +190,7 @@ function FeedHeader({ onNotify }: { onNotify: () => void }) {
 }
 
 const H = StyleSheet.create({
-  wrap:    { flexDirection: "row", justifyContent: "space-between", alignItems: "center", paddingHorizontal: 16, paddingVertical: 12, backgroundColor: C.white, borderBottomWidth: 1, borderBottomColor: C.border },
+  root:    { flexDirection: "row", alignItems: "center", justifyContent: "space-between", paddingHorizontal: 18, paddingTop: 10, paddingBottom: 6 },
   left:    { flexDirection: "row", alignItems: "center", gap: 7 },
   logo:    { fontSize: 20, fontFamily: "Inter_700Bold", color: "#3D2080", letterSpacing: -0.5 },
   right:   { flexDirection: "row", alignItems: "center", gap: 18 },
@@ -210,13 +204,16 @@ export default function FeedScreen() {
   const { user } = useAuth();
   const userId = user?.email ?? "anonymous";
 
-  const [posts,          setPosts]          = useState<PostData[]>(FEED_POSTS);
-  const [stories,        setStories]        = useState<Story[]>(SEED_STORIES);
-  const [createVisible,  setCreateVisible]  = useState(false);
-  const [apiReady,       setApiReady]       = useState(false);
+  const [posts,           setPosts]           = useState<PostData[]>(FEED_POSTS);
+  const [stories,         setStories]         = useState<ApiStoryGroup[]>([]);
+  const [storyViewerOpen, setStoryViewerOpen] = useState(false);
+  const [selectedGroup,   setSelectedGroup]    = useState<ApiStoryGroup | null>(null);
+  const [createVisible,   setCreateVisible]   = useState(false);
+  const [createStoryOpen, setCreateStoryOpen]  = useState(false);
+  const [apiReady,        setApiReady]        = useState(false);
   const fabAnim = useRef(new Animated.Value(1)).current;
 
-  /* ── Fetch from API on mount ──────────────────────────── */
+  /* ── Fetch posts on mount ──────────────────────────────── */
   useEffect(() => {
     let cancelled = false;
     apiFetchPosts(userId)
@@ -232,6 +229,17 @@ export default function FeedScreen() {
     return () => { cancelled = true; };
   }, [userId]);
 
+  /* ── Fetch stories on mount ────────────────────────────── */
+  useEffect(() => {
+    let cancelled = false;
+    apiFetchStories(userId)
+      .then((data) => {
+        if (!cancelled) setStories(data);
+      })
+      .catch(() => {});
+    return () => { cancelled = true; };
+  }, [userId]);
+
   /* ── Like (optimistic + API) ─────────────────────────── */
   const handleLike = useCallback((id: string) => {
     setPosts((prev) =>
@@ -242,51 +250,31 @@ export default function FeedScreen() {
     if (!apiReady) return;
     apiToggleLike(id, userId)
       .then(({ liked, likesCount }) => {
-        setPosts((prev) =>
-          prev.map((p) => (p.id === id ? { ...p, liked, likes: likesCount } : p))
-        );
+        setPosts((prev) => prev.map((p) => (p.id === id ? { ...p, liked, likes: likesCount } : p)));
       })
       .catch(() => {
-        setPosts((prev) =>
-          prev.map((p) =>
-            p.id === id ? { ...p, liked: !p.liked, likes: p.likes + (p.liked ? 1 : -1) } : p
-          )
-        );
+        setPosts((prev) => prev.map((p) => (p.id === id ? { ...p, liked: !p.liked, likes: p.likes + (p.liked ? 1 : -1) } : p)));
       });
   }, [userId, apiReady]);
 
   /* ── Bookmark (optimistic + API) ─────────────────────── */
   const handleBookmark = useCallback((id: string) => {
-    setPosts((prev) =>
-      prev.map((p) => (p.id === id ? { ...p, bookmarked: !p.bookmarked } : p))
-    );
+    setPosts((prev) => prev.map((p) => (p.id === id ? { ...p, bookmarked: !p.bookmarked } : p)));
     if (!apiReady) return;
     apiToggleBookmark(id, userId)
-      .then(({ bookmarked }) => {
-        setPosts((prev) =>
-          prev.map((p) => (p.id === id ? { ...p, bookmarked } : p))
-        );
-      })
-      .catch(() => {
-        setPosts((prev) =>
-          prev.map((p) => (p.id === id ? { ...p, bookmarked: !p.bookmarked } : p))
-        );
-      });
+      .then(({ bookmarked }) => { setPosts((prev) => prev.map((p) => (p.id === id ? { ...p, bookmarked } : p))); })
+      .catch(() => { setPosts((prev) => prev.map((p) => (p.id === id ? { ...p, bookmarked: !p.bookmarked } : p))); });
   }, [userId, apiReady]);
 
   /* ── Comment (optimistic + API) ──────────────────────── */
   const handleComment = useCallback((id: string, text: string) => {
     const localComment = { id: `c${Date.now()}`, user: user?.name ?? "Sen", text };
-    setPosts((prev) =>
-      prev.map((p) =>
-        p.id === id ? { ...p, comments: [...p.comments, localComment] } : p
-      )
-    );
+    setPosts((prev) => prev.map((p) => (p.id === id ? { ...p, comments: [...p.comments, localComment] } : p)));
     if (!apiReady) return;
     apiAddComment(id, user?.name ?? "Sen", text).catch(() => {});
   }, [user?.name, apiReady]);
 
-  /* ── Create post (local; API create is a v2 feature) ─── */
+  /* ── Create post (local) ──────────────────────────────── */
   const handleCreate = useCallback(
     (data: { user: PostData["user"]; image: string; caption: string; location: string }) => {
       const newPost: PostData = {
@@ -304,9 +292,45 @@ export default function FeedScreen() {
     []
   );
 
-  const handleStory = (story: Story) => {
-    Alert.alert(story.user, "Hikaye görüntülemek için tam uygulama sürümü gerekli.");
-    setStories((prev) => prev.map((s) => (s.id === story.id ? { ...s, seen: true } : s)));
+  /* ── Story viewer navigation ───────────────────────────── */
+  const handleStoryGroupPress = (group: ApiStoryGroup) => {
+    setSelectedGroup(group);
+    setStoryViewerOpen(true);
+  };
+
+  const handleNextGroup = () => {
+    if (!selectedGroup) return;
+    const idx = stories.findIndex((g) => g.userId === selectedGroup.userId);
+    const next = stories[idx + 1];
+    if (next) setSelectedGroup(next);
+    else { setStoryViewerOpen(false); setSelectedGroup(null); }
+  };
+
+  const handlePrevGroup = () => {
+    if (!selectedGroup) return;
+    const idx = stories.findIndex((g) => g.userId === selectedGroup.userId);
+    const prev = stories[idx - 1];
+    if (prev) setSelectedGroup(prev);
+    else { setStoryViewerOpen(false); setSelectedGroup(null); }
+  };
+
+  /* ── Create story ──────────────────────────────────────── */
+  const handleCreateStory = async (imageUri: string, caption: string) => {
+    try {
+      const group = await apiCreateStory(
+        userId,
+        user?.name ?? "Ben",
+        "https://picsum.photos/seed/myavatar/100/100",
+        imageUri,
+        caption
+      );
+      setStories((prev) => {
+        const filtered = prev.filter((g) => g.userId !== group.userId);
+        return [group, ...filtered];
+      });
+    } catch {
+      Alert.alert("Hata", "Hikaye paylaşılamadı. Lütfen tekrar deneyin.");
+    }
   };
 
   const pressFab = () => {
@@ -324,11 +348,16 @@ export default function FeedScreen() {
     () => (
       <>
         <FeedHeader onNotify={() => Alert.alert("Bildirimler", "Yakında!")} />
-        <StoryBar stories={stories} onPress={handleStory} onAddStory={() => Alert.alert("Hikaye Ekle", "Yakında!")} />
+        <StoryBar
+          stories={stories}
+          currentUserId={userId}
+          onPressGroup={handleStoryGroupPress}
+          onAddStory={() => setCreateStoryOpen(true)}
+        />
         <View style={F.divider} />
       </>
     ),
-    [stories]
+    [stories, userId]
   );
 
   return (
@@ -363,6 +392,21 @@ export default function FeedScreen() {
         visible={createVisible}
         onClose={() => setCreateVisible(false)}
         onSubmit={handleCreate}
+      />
+
+      <StoryViewer
+        visible={storyViewerOpen}
+        group={selectedGroup}
+        viewerId={userId}
+        onClose={() => { setStoryViewerOpen(false); setSelectedGroup(null); }}
+        onNextGroup={handleNextGroup}
+        onPrevGroup={handlePrevGroup}
+      />
+
+      <CreateStoryModal
+        visible={createStoryOpen}
+        onClose={() => setCreateStoryOpen(false)}
+        onSubmit={handleCreateStory}
       />
     </View>
   );

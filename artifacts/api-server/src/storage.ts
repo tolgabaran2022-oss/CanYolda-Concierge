@@ -113,6 +113,39 @@ export class Storage {
     await db.execute(sql`
       CREATE INDEX IF NOT EXISTS featured_listings_expires_at_idx ON featured_listings(expires_at)
     `);
+
+    // Stories tables
+    await db.execute(sql`
+      CREATE TABLE IF NOT EXISTS stories (
+        id TEXT PRIMARY KEY DEFAULT gen_random_uuid()::text,
+        user_id TEXT NOT NULL,
+        username TEXT NOT NULL,
+        avatar_url TEXT NOT NULL DEFAULT '',
+        image_url TEXT NOT NULL,
+        caption TEXT NOT NULL DEFAULT '',
+        created_at TIMESTAMPTZ DEFAULT NOW(),
+        expires_at TIMESTAMPTZ NOT NULL
+      )
+    `);
+    await db.execute(sql`
+      CREATE INDEX IF NOT EXISTS stories_user_id_idx ON stories(user_id)
+    `);
+    await db.execute(sql`
+      CREATE INDEX IF NOT EXISTS stories_expires_at_idx ON stories(expires_at)
+    `);
+
+    await db.execute(sql`
+      CREATE TABLE IF NOT EXISTS story_views (
+        id TEXT PRIMARY KEY DEFAULT gen_random_uuid()::text,
+        story_id TEXT NOT NULL REFERENCES stories(id) ON DELETE CASCADE,
+        viewer_id TEXT NOT NULL,
+        viewed_at TIMESTAMPTZ DEFAULT NOW(),
+        UNIQUE(story_id, viewer_id)
+      )
+    `);
+    await db.execute(sql`
+      CREATE INDEX IF NOT EXISTS story_views_story_id_idx ON story_views(story_id)
+    `);
   }
 }
 

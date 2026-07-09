@@ -37,7 +37,27 @@ export const feedBookmarks = pgTable("feed_bookmarks", {
   createdAt: timestamp("created_at", { withTimezone: true }).defaultNow(),
 }, (t) => [unique("feed_bookmarks_post_user").on(t.postId, t.userId)]);
 
+export const stories = pgTable("stories", {
+  id:        text("id").primaryKey().default(sql`gen_random_uuid()::text`),
+  userId:    text("user_id").notNull(),
+  username:  text("username").notNull(),
+  avatarUrl: text("avatar_url").notNull().default(""),
+  imageUrl:  text("image_url").notNull(),
+  caption:   text("caption").notNull().default(""),
+  createdAt: timestamp("created_at", { withTimezone: true }).defaultNow(),
+  expiresAt: timestamp("expires_at", { withTimezone: true }).notNull(),
+});
+
+export const storyViews = pgTable("story_views", {
+  id:       text("id").primaryKey().default(sql`gen_random_uuid()::text`),
+  storyId:  text("story_id").notNull().references(() => stories.id, { onDelete: "cascade" }),
+  viewerId: text("viewer_id").notNull(),
+  viewedAt: timestamp("viewed_at", { withTimezone: true }).defaultNow(),
+}, (t) => [unique("story_views_unique").on(t.storyId, t.viewerId)]);
+
 export type FeedPost     = typeof feedPosts.$inferSelect;
 export type FeedComment  = typeof feedComments.$inferSelect;
 export type FeedLike     = typeof feedLikes.$inferSelect;
 export type FeedBookmark = typeof feedBookmarks.$inferSelect;
+export type Story        = typeof stories.$inferSelect;
+export type StoryView    = typeof storyViews.$inferSelect;
