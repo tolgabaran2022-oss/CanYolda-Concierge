@@ -29,7 +29,7 @@ const WHITE = "#FFFFFF";
 const BORDER = "rgba(124,77,204,0.13)";
 const SHADOW = { shadowColor: P, shadowOffset: { width: 0, height: 4 }, shadowOpacity: 0.1, shadowRadius: 12, elevation: 3 };
 
-const DOG_IMG = "https://images.unsplash.com/photo-1587300003388-59208cc962cb?w=320&q=80";
+const DOG_IMG = require("@/assets/hero-dog.png");
 
 type Tab     = "create" | "listings";
 type Filter  = "all" | "cat" | "dog" | "bird" | "rabbit" | "new" | "other";
