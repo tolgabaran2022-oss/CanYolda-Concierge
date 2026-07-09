@@ -23,6 +23,22 @@ export interface User {
   provider?: "local" | "google" | "apple" | "facebook";
 }
 
+export interface UserSettings {
+  isProfilePublic:             boolean;
+  areStoriesVisible:           boolean;
+  likeNotificationsEnabled:    boolean;
+  commentNotificationsEnabled: boolean;
+  messageNotificationsEnabled: boolean;
+}
+
+export const DEFAULT_SETTINGS: UserSettings = {
+  isProfilePublic:             true,
+  areStoriesVisible:           true,
+  likeNotificationsEnabled:    true,
+  commentNotificationsEnabled: true,
+  messageNotificationsEnabled: true,
+};
+
 export type ProfileUpdates = Partial<Pick<User, "name" | "username" | "bio" | "location" | "avatar">>;
 
 interface AuthContextType {
@@ -33,6 +49,8 @@ interface AuthContextType {
   logout: () => Promise<void>;
   changePassword: (currentPassword: string, newPassword: string) => Promise<void>;
   updateProfile: (updates: ProfileUpdates) => Promise<void>;
+  getSettings: () => Promise<UserSettings>;
+  updateSettings: (settings: Partial<UserSettings>) => Promise<void>;
 }
 
 const AuthContext = createContext<AuthContextType | null>(null);
@@ -172,9 +190,44 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     [user]
   );
 
+  /* ── Get settings ─────────────────────────────────────── */
+  const getSettings = useCallback(async (): Promise<UserSettings> => {
+    if (!user) return { ...DEFAULT_SETTINGS };
+    try {
+      const token = await AsyncStorage.getItem(TOKEN_KEY);
+      const res = await apiFetch("/social/settings", {
+        headers: {
+          "x-user-id": user.id,
+          ...(token ? { Authorization: `Bearer ${token}` } : {}),
+        },
+      });
+      if (!res.ok) return { ...DEFAULT_SETTINGS };
+      const data = await res.json() as Partial<UserSettings>;
+      return { ...DEFAULT_SETTINGS, ...data };
+    } catch {
+      return { ...DEFAULT_SETTINGS };
+    }
+  }, [user]);
+
+  /* ── Update settings ──────────────────────────────────── */
+  const updateSettings = useCallback(async (settings: Partial<UserSettings>) => {
+    if (!user) throw new Error("Giriş yapılmamış.");
+    const token = await AsyncStorage.getItem(TOKEN_KEY);
+    const res = await apiFetch("/social/settings", {
+      method: "PATCH",
+      headers: {
+        "x-user-id": user.id,
+        ...(token ? { Authorization: `Bearer ${token}` } : {}),
+      },
+      body: JSON.stringify(settings),
+    });
+    const data = await res.json() as { error?: string };
+    if (!res.ok) throw new Error(data.error ?? "Ayarlar kaydedilemedi.");
+  }, [user]);
+
   return (
     <AuthContext.Provider
-      value={{ user, isLoading, login, register, logout, changePassword, updateProfile }}
+      value={{ user, isLoading, login, register, logout, changePassword, updateProfile, getSettings, updateSettings }}
     >
       {children}
     </AuthContext.Provider>

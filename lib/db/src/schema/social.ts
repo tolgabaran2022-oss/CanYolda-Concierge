@@ -12,6 +12,13 @@ export const socialProfiles = pgTable("social_profiles", {
   avatarUrl: text("avatar_url").notNull().default(""),
   createdAt: timestamp("created_at", { withTimezone: true }).defaultNow(),
   updatedAt: timestamp("updated_at", { withTimezone: true }).defaultNow(),
+
+  /* Privacy & notification settings */
+  isProfilePublic:              boolean("is_profile_public").notNull().default(true),
+  areStoriesVisible:            boolean("are_stories_visible").notNull().default(true),
+  likeNotificationsEnabled:     boolean("like_notifications_enabled").notNull().default(true),
+  commentNotificationsEnabled:  boolean("comment_notifications_enabled").notNull().default(true),
+  messageNotificationsEnabled:  boolean("message_notifications_enabled").notNull().default(true),
 }, (t) => [unique("social_profiles_username_unique").on(t.username)]);
 
 export type SocialProfile       = typeof socialProfiles.$inferSelect;

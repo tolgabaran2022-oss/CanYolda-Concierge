@@ -4,7 +4,7 @@ import * as ImagePicker from "expo-image-picker";
 import { Image } from "expo-image";
 import { LinearGradient } from "expo-linear-gradient";
 import { useRouter } from "expo-router";
-import React, { useState } from "react";
+import React, { useEffect, useState } from "react";
 import {
   ActionSheetIOS,
   ActivityIndicator,
@@ -21,6 +21,8 @@ import {
 } from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { useAuth } from "@/contexts/AuthContext";
+import type { UserSettings } from "@/contexts/AuthContext";
+import { DEFAULT_SETTINGS } from "@/contexts/AuthContext";
 
 const PURPLE = "#7B5EA7";
 const PURPLE_DARK = "#3D2070";
@@ -30,7 +32,7 @@ const CAT_AVATAR = "https://loremflickr.com/300/300/cat?lock=500";
 export default function ProfileEditScreen() {
   const insets = useSafeAreaInsets();
   const router = useRouter();
-  const { user, updateProfile, changePassword } = useAuth();
+  const { user, updateProfile, changePassword, getSettings, updateSettings } = useAuth();
 
   const [name,      setName]      = useState(user?.name     ?? "");
   const [username,  setUsername]  = useState(user?.username ?? "");
@@ -39,12 +41,19 @@ export default function ProfileEditScreen() {
   const [avatar,    setAvatar]    = useState<string | null>(user?.avatar ?? null);
   const [saving,    setSaving]    = useState(false);
 
-  /* ── Privacy & notification prefs (local state only) ── */
-  const [publicProfile, setPublicProfile]   = useState(true);
-  const [storyVisible,  setStoryVisible]    = useState(true);
-  const [notifyLike,    setNotifyLike]      = useState(true);
-  const [notifyComment, setNotifyComment]   = useState(true);
-  const [notifyMessage, setNotifyMessage]   = useState(true);
+  /* ── Privacy & notification prefs ──────────────────────── */
+  const [settings,        setSettings]        = useState<UserSettings>({ ...DEFAULT_SETTINGS });
+  const [settingsLoading, setSettingsLoading] = useState(true);
+
+  useEffect(() => {
+    let cancelled = false;
+    getSettings().then((s) => { if (!cancelled) { setSettings(s); setSettingsLoading(false); } })
+                 .catch(() => { if (!cancelled) setSettingsLoading(false); });
+    return () => { cancelled = true; };
+  }, [getSettings]);
+
+  const patchSetting = (key: keyof UserSettings, val: boolean) =>
+    setSettings((prev) => ({ ...prev, [key]: val }));
 
   /* ── Password change ─────────────────────────────────── */
   const [pwExpanded, setPwExpanded]     = useState(false);
@@ -108,17 +117,21 @@ export default function ProfileEditScreen() {
     const trimmedUsername = username.trim().toLowerCase().replace(/[^a-z0-9_.]/g, "");
     setSaving(true);
     try {
-      await updateProfile({
-        name: trimmedName,
-        username: trimmedUsername || undefined,
-        bio: bio.trim(),
-        location: location.trim(),
-        avatar: avatar,
-      });
+      await Promise.all([
+        updateProfile({
+          name: trimmedName,
+          username: trimmedUsername || undefined,
+          bio: bio.trim(),
+          location: location.trim(),
+          avatar: avatar,
+        }),
+        updateSettings(settings),
+      ]);
       Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
+      Alert.alert("Başarılı", "Profil ayarları kaydedildi.");
       router.back();
     } catch (e: unknown) {
-      const msg = e instanceof Error ? e.message : "Profil güncellenemedi.";
+      const msg = e instanceof Error ? e.message : "Ayarlar kaydedilemedi. Lütfen tekrar deneyin.";
       Alert.alert("Hata", msg);
       Haptics.notificationAsync(Haptics.NotificationFeedbackType.Error);
     } finally {
@@ -311,46 +324,58 @@ export default function ProfileEditScreen() {
           {/* ── Gizlilik ─────────────────────────── */}
           <SectionHeader title="Gizlilik" />
           <View style={S.card}>
-            <ToggleRow
-              icon="earth-outline"
-              label="Profil herkese açık"
-              sub="Kapalıysa sadece takipçiler görür"
-              value={publicProfile}
-              onChange={setPublicProfile}
-            />
-            <FieldDivider />
-            <ToggleRow
-              icon="play-circle-outline"
-              label="Hikayelerim görünür"
-              sub="Hikayelerini kimin görebileceğini ayarla"
-              value={storyVisible}
-              onChange={setStoryVisible}
-            />
+            {settingsLoading ? (
+              <ActivityIndicator color={PURPLE} style={{ margin: 20 }} />
+            ) : (
+              <>
+                <ToggleRow
+                  icon="earth-outline"
+                  label="Profil herkese açık"
+                  sub="Kapalıysa sadece takipçiler görür"
+                  value={settings.isProfilePublic}
+                  onChange={(v) => patchSetting("isProfilePublic", v)}
+                />
+                <FieldDivider />
+                <ToggleRow
+                  icon="play-circle-outline"
+                  label="Hikayelerim görünür"
+                  sub="Hikayelerini kimin görebileceğini ayarla"
+                  value={settings.areStoriesVisible}
+                  onChange={(v) => patchSetting("areStoriesVisible", v)}
+                />
+              </>
+            )}
           </View>
 
           {/* ── Bildirimler ───────────────────────── */}
           <SectionHeader title="Bildirimler" />
           <View style={S.card}>
-            <ToggleRow
-              icon="heart-outline"
-              label="Beğeni bildirimleri"
-              value={notifyLike}
-              onChange={setNotifyLike}
-            />
-            <FieldDivider />
-            <ToggleRow
-              icon="chatbubble-outline"
-              label="Yorum bildirimleri"
-              value={notifyComment}
-              onChange={setNotifyComment}
-            />
-            <FieldDivider />
-            <ToggleRow
-              icon="mail-outline"
-              label="Mesaj bildirimleri"
-              value={notifyMessage}
-              onChange={setNotifyMessage}
-            />
+            {settingsLoading ? (
+              <ActivityIndicator color={PURPLE} style={{ margin: 20 }} />
+            ) : (
+              <>
+                <ToggleRow
+                  icon="heart-outline"
+                  label="Beğeni bildirimleri"
+                  value={settings.likeNotificationsEnabled}
+                  onChange={(v) => patchSetting("likeNotificationsEnabled", v)}
+                />
+                <FieldDivider />
+                <ToggleRow
+                  icon="chatbubble-outline"
+                  label="Yorum bildirimleri"
+                  value={settings.commentNotificationsEnabled}
+                  onChange={(v) => patchSetting("commentNotificationsEnabled", v)}
+                />
+                <FieldDivider />
+                <ToggleRow
+                  icon="mail-outline"
+                  label="Mesaj bildirimleri"
+                  value={settings.messageNotificationsEnabled}
+                  onChange={(v) => patchSetting("messageNotificationsEnabled", v)}
+                />
+              </>
+            )}
           </View>
 
           {/* ── Save button ───────────────────────── */}

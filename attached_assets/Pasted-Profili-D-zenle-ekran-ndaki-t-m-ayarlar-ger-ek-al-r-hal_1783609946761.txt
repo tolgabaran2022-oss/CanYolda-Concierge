@@ -1,0 +1,100 @@
+Profili Düzenle ekranındaki tüm ayarları gerçek çalışır hale getir.
+
+Amaç:
+Kullanıcı gizlilik ve bildirim ayarlarını değiştirdiğinde bu ayarlar Supabase’e kaydedilsin ve uygulamanın tüm bölümlerinde gerçek şekilde uygulansın.
+
+1. Supabase tablo güncellemesi
+
+profiles tablosuna şu alanları ekle:
+
+- is_profile_public boolean default true
+- are_stories_visible boolean default true
+- like_notifications_enabled boolean default true
+- comment_notifications_enabled boolean default true
+- message_notifications_enabled boolean default true
+
+Eğer alanlar varsa tekrar oluşturma.
+
+2. Profil herkese açık toggle
+
+Toggle açıksa:
+- Profil herkese açık olsun.
+- Herkes profili görebilsin.
+
+Toggle kapalıysa:
+- Sadece takip edilen / arkadaş olan kişiler profili görebilsin.
+- Arkadaş olmayan biri profile girerse profil bilgileri ve gönderiler gizlensin.
+- Şu mesaj gösterilsin:
+  “Bu profil gizli. İçerikleri görmek için takip etmelisin.”
+
+3. Hikayelerim görünür toggle
+
+Toggle açıksa:
+- Hikayeler normal şekilde görünsün.
+
+Toggle kapalıysa:
+- Kullanıcının hikayeleri başka kullanıcılara gösterilmesin.
+- Hikaye listelerinde, akışta ve profil detayında gizlensin.
+
+4. Beğeni bildirimleri toggle
+
+Kapalıysa:
+- Kullanıcı bir gönderi beğenildiğinde bildirim almasın.
+- Bildirim kaydı oluşturulmasın.
+- Push notification gönderilmesin.
+
+Açıksa:
+- Beğeni bildirimi normal çalışsın.
+
+5. Yorum bildirimleri toggle
+
+Kapalıysa:
+- Gönderiye yorum geldiğinde bildirim gelmesin.
+- Bildirim kaydı oluşturulmasın.
+- Push notification gönderilmesin.
+
+Açıksa:
+- Yorum bildirimi normal çalışsın.
+
+6. Mesaj bildirimleri toggle
+
+Kapalıysa:
+- Yeni mesaj geldiğinde bildirim gelmesin.
+- Push notification gönderilmesin.
+- Bildirim kaydı oluşturulmasın.
+
+Açıksa:
+- Mesaj bildirimi normal çalışsın.
+
+7. Ayarların kaydedilmesi
+
+- Toggle değişince local state güncellensin.
+- “Profili Kaydet” butonuna basınca Supabase profiles tablosuna kaydedilsin.
+- Başarılıysa:
+  “Profil ayarları kaydedildi.”
+- Hata olursa:
+  “Ayarlar kaydedilemedi. Lütfen tekrar deneyin.”
+
+8. Sayfa açılışında verileri çek
+
+- Profili Düzenle ekranı açıldığında kullanıcının mevcut ayarları Supabase’den çekilsin.
+- Toggle’lar kayıtlı ayarlara göre açık/kapalı gelsin.
+- Loading state göster.
+- Hata olursa uygulama çökmesin.
+
+9. Güvenlik
+
+- Kullanıcı sadece kendi profil ayarlarını güncelleyebilsin.
+- Supabase RLS policy kontrolü yap.
+- Başkasının ayarları değiştirilemesin.
+
+10. Kod temizliği
+
+- Dummy toggle mantığını kaldır.
+- Console log ile şifre, token veya kullanıcı bilgisi yazdırma.
+- Tüm TypeScript hatalarını düzelt.
+- Kullanılmayan importları temizle.
+- iOS, Android ve Web’de sorunsuz çalışsın.
+
+Sonuç:
+Profili gizle, hikaye gizle ve bildirim kapatma ayarları sadece görsel değil, gerçek veritabanı bağlantılı ve tüm uygulama genelinde çalışan hale gelsin.

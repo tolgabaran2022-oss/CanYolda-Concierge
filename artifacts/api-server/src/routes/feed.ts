@@ -8,6 +8,7 @@ import {
   feedBookmarks,
   notifications,
   follows,
+  socialProfiles,
 } from "@workspace/db";
 import { logger } from "../lib/logger.js";
 
@@ -437,7 +438,7 @@ router.get("/feed/posts", async (req, res) => {
     const filterUserId = req.query["userId"] as string | undefined;
     const mode         = req.query["mode"]   as string | undefined;
 
-    let posts;
+    let posts: (typeof feedPosts.$inferSelect)[];
     if (mode === "following" && userId) {
       /* Fetch posts only from followed users + own posts */
       const followingRows = await db
@@ -541,20 +542,27 @@ router.post("/feed/posts/:id/like", async (req, res) => {
     const [post] = await db.select({ likesCount: feedPosts.likesCount, userId: feedPosts.userId, username: feedPosts.username, imageUrl: feedPosts.imageUrl }).from(feedPosts).where(eq(feedPosts.id, id));
     res.json({ liked, likesCount: post?.likesCount ?? 0 });
 
-    // fire-and-forget notification on new like
+    // fire-and-forget notification on new like (respects receiver's like_notifications_enabled)
     if (liked && post?.userId && post.userId !== userId) {
       const senderName = req.headers["x-user-name"] as string ?? "Birisi";
       const senderAvatar = req.headers["x-user-avatar"] as string ?? "";
-      db.insert(notifications).values({
-        receiverId:   post.userId,
-        senderId:     userId,
-        senderName,
-        senderAvatar,
-        type:         "like",
-        postId:       id,
-        postImage:    post.imageUrl ?? "",
-        message:      `${senderName} gönderini beğendi`,
-      }).catch(() => {});
+      db.select({ likeNotificationsEnabled: socialProfiles.likeNotificationsEnabled })
+        .from(socialProfiles)
+        .where(eq(socialProfiles.id, post.userId))
+        .limit(1)
+        .then(([pref]) => {
+          if (pref?.likeNotificationsEnabled === false) return;
+          return db.insert(notifications).values({
+            receiverId:   post.userId,
+            senderId:     userId,
+            senderName,
+            senderAvatar,
+            type:         "like",
+            postId:       id,
+            postImage:    post.imageUrl ?? "",
+            message:      `${senderName} gönderini beğendi`,
+          }).catch(() => {});
+        }).catch(() => {});
     }
   } catch (err) {
     req.log.error({ err }, "POST /feed/posts/:id/like failed");
@@ -621,20 +629,29 @@ router.post("/feed/posts/:id/comments", async (req, res) => {
     await db.update(feedPosts).set({ commentsCount: sql`comments_count + 1` }).where(eq(feedPosts.id, id));
     res.json(comment);
 
-    // fire-and-forget notification on new comment
+    // fire-and-forget notification on new comment (respects receiver's comment_notifications_enabled)
     const postRow = await db.select({ userId: feedPosts.userId, imageUrl: feedPosts.imageUrl }).from(feedPosts).where(eq(feedPosts.id, id)).limit(1).catch(() => []);
     if (postRow[0]?.userId && postRow[0].userId !== username) {
       const senderAvatar = req.headers["x-user-avatar"] as string ?? "";
-      db.insert(notifications).values({
-        receiverId:   postRow[0].userId,
-        senderId:     username,
-        senderName:   username,
-        senderAvatar,
-        type:         "comment",
-        postId:       id,
-        postImage:    postRow[0].imageUrl ?? "",
-        message:      `${username} gönderine yorum yaptı: ${text.slice(0, 50)}`,
-      }).catch(() => {});
+      const receiverId = postRow[0].userId;
+      const postImage  = postRow[0].imageUrl ?? "";
+      db.select({ commentNotificationsEnabled: socialProfiles.commentNotificationsEnabled })
+        .from(socialProfiles)
+        .where(eq(socialProfiles.id, receiverId))
+        .limit(1)
+        .then(([pref]) => {
+          if (pref?.commentNotificationsEnabled === false) return;
+          return db.insert(notifications).values({
+            receiverId,
+            senderId:     username,
+            senderName:   username,
+            senderAvatar,
+            type:         "comment",
+            postId:       id,
+            postImage,
+            message:      `${username} gönderine yorum yaptı: ${text.slice(0, 50)}`,
+          }).catch(() => {});
+        }).catch(() => {});
     }
   } catch (err) {
     req.log.error({ err }, "POST /feed/posts/:id/comments failed");

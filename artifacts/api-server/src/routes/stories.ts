@@ -1,6 +1,6 @@
 import { Router } from "express";
-import { and, desc, eq, gt, sql } from "drizzle-orm";
-import { db, stories, storyViews } from "@workspace/db";
+import { and, desc, eq, gt, ne, sql } from "drizzle-orm";
+import { db, stories, storyViews, socialProfiles } from "@workspace/db";
 import { logger } from "../lib/logger.js";
 
 const router = Router();
@@ -56,11 +56,19 @@ router.get("/stories", async (req, res) => {
     const viewerId = req.headers["x-user-id"] as string | undefined;
     const now = new Date();
 
-    const rows = await db
+    /* Fetch IDs of users who have hidden their stories */
+    const hiddenUsers = await db
+      .select({ id: socialProfiles.id })
+      .from(socialProfiles)
+      .where(eq(socialProfiles.areStoriesVisible, false));
+    const hiddenIds = new Set(hiddenUsers.map((u) => u.id));
+
+    const rows = (await db
       .select()
       .from(stories)
       .where(gt(stories.expiresAt, now))
-      .orderBy(desc(stories.createdAt));
+      .orderBy(desc(stories.createdAt)))
+      .filter((s) => !hiddenIds.has(s.userId));
 
     const storyIds = rows.map((r) => r.id);
 
