@@ -42,7 +42,7 @@ interface AdoptionContextType {
 }
 
 const AdoptionContext = createContext<AdoptionContextType | null>(null);
-const ADOPTION_KEY = "@canyoldasi:adoption:v3";
+const ADOPTION_KEY = "@canyoldasi:adoption:v4";
 
 const SEED: AdoptionListing[] = [
   {
@@ -53,7 +53,7 @@ const SEED: AdoptionListing[] = [
     photo: "https://images.unsplash.com/photo-1592194996308-7b43878e84a6?w=400&q=80",
     location: "Kadıköy, İstanbul",
     description: "Sakin, oyuncu ve sevgi dolu bir patili dost. Aşıları tamam.",
-    userId: "system",
+    userId: "seed-user-zeynep",
     userName: "Zeynep K.",
     contactInfo: "zeynep@example.com",
     createdAt: new Date(Date.now() - 3_600_000).toISOString(),
@@ -66,7 +66,7 @@ const SEED: AdoptionListing[] = [
     photo: "https://images.unsplash.com/photo-1633722715463-d30f4f325e24?w=400&q=80",
     location: "Üsküdar, İstanbul",
     description: "Enerjik, arkadaş canlısı ve çocuklarla çok iyi anlaşır.",
-    userId: "system",
+    userId: "seed-user-ahmet",
     userName: "Ahmet M.",
     contactInfo: "0532 XXX XX XX",
     createdAt: new Date(Date.now() - 86_400_000).toISOString(),
@@ -79,7 +79,7 @@ const SEED: AdoptionListing[] = [
     photo: "https://images.unsplash.com/photo-1548247416-ec66f4900b2e?w=400&q=80",
     location: "Beşiktaş, İstanbul",
     description: "Oyuncu, meraklı ve çok tatlı bir yavru kedi.",
-    userId: "system",
+    userId: "seed-user-selin",
     userName: "Selin A.",
     contactInfo: "selin@example.com",
     createdAt: new Date(Date.now() - 172_800_000).toISOString(),
@@ -92,7 +92,7 @@ const SEED: AdoptionListing[] = [
     photo: "https://images.unsplash.com/photo-1585110396000-c9ffd4e4b308?w=400&q=80",
     location: "Bakırköy, İstanbul",
     description: "Sevecen, tuvalet eğitimi var ve sağlıklıdır.",
-    userId: "system",
+    userId: "seed-user-merve",
     userName: "Merve T.",
     contactInfo: "merve@example.com",
     createdAt: new Date(Date.now() - 259_200_000).toISOString(),
@@ -105,7 +105,7 @@ const SEED: AdoptionListing[] = [
     photo: "https://images.unsplash.com/photo-1547407139-3c921a66005c?w=400&q=80",
     location: "Şişli, İstanbul",
     description: "Aktif, zeki ve geniş alana ihtiyaç duyan bir Husky.",
-    userId: "system",
+    userId: "seed-user-can",
     userName: "Can B.",
     contactInfo: "can@example.com",
     createdAt: new Date(Date.now() - 345_600_000).toISOString(),

@@ -182,10 +182,6 @@ export default function AdoptionDetailScreen() {
       return;
     }
     if (!listing) return;
-    if (listing.userId === "system") {
-      Alert.alert("Demo İlan", "Bu bir örnek ilandır, mesajlaşma aktif değil.");
-      return;
-    }
     Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
     setMsgSending(true);
     try {
