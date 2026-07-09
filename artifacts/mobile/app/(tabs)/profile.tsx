@@ -26,6 +26,8 @@ import { useAuth } from "@/contexts/AuthContext";
 import { useBoost } from "@/contexts/BoostContext";
 import { usePets } from "@/contexts/PetsContext";
 import { ProfileStoryAvatar } from "@/components/ProfileStoryAvatar";
+import { apiFetchUserPosts } from "@/lib/feedApi";
+import type { ApiPost } from "@/lib/feedApi";
 
 const { width: SW } = Dimensions.get("window");
 const GRID_GAP = 2;
@@ -65,11 +67,19 @@ export default function ProfileScreen() {
   const topPad = Platform.OS === "web" ? 67 : insets.top;
   const tabClearance = insets.bottom + TAB_BOTTOM_GAP + TAB_FLOAT_H;
 
-  const [gridTab, setGridTab] = useState<GridTab>("posts");
+  const [gridTab, setGridTab]     = useState<GridTab>("posts");
+  const [userPosts, setUserPosts] = useState<ApiPost[]>([]);
 
   useEffect(() => {
     if (user?.email) fetchMyBoosts(user.email);
   }, [user?.email, fetchMyBoosts]);
+
+  useEffect(() => {
+    if (!user?.id) return;
+    apiFetchUserPosts(user.id)
+      .then(setUserPosts)
+      .catch(() => setUserPosts([]));
+  }, [user?.id]);
 
   const [pwModalVisible, setPwModalVisible] = useState(false);
   const [currentPw, setCurrentPw] = useState("");
@@ -138,20 +148,24 @@ export default function ProfileScreen() {
   const getListingName = (listingId: string) =>
     myListings.find((l) => l.id === listingId)?.petName ?? "Bilinmiyor";
 
-  const gridImages: { id: string; uri: string; label: string }[] = [
-    ...myAnimals.map((a) => ({ id: `a-${a.id}`, uri: a.image ?? CAT_AVATAR_DEFAULT, label: a.locationName ?? "Hayvan" })),
-    ...myPets.map((p) => ({ id: `p-${p.id}`, uri: p.image ?? CAT_AVATAR_DEFAULT, label: p.name })),
-    ...myListings.map((l) => ({ id: `l-${l.id}`, uri: l.photo ?? CAT_AVATAR_DEFAULT, label: l.petName })),
-  ];
+  const postGridImages = userPosts.map((p) => ({
+    id: `p-${p.id}`, uri: p.imageUrl, label: p.caption,
+  }));
+
+  const animalGridImages = myAnimals.map((a) => ({
+    id: `a-${a.id}`, uri: a.image ?? CAT_AVATAR_DEFAULT, label: a.locationName ?? "Hayvan",
+  }));
 
   const savedImages = listings.filter((l) => l.userId !== user.id).slice(0, 9).map((l) => ({
     id: `sl-${l.id}`, uri: l.photo ?? CAT_AVATAR_DEFAULT, label: l.petName,
   }));
 
   const currentGrid =
-    gridTab === "posts" ? gridImages :
-    gridTab === "animals" ? myAnimals.map((a) => ({ id: `a-${a.id}`, uri: a.image ?? CAT_AVATAR_DEFAULT, label: a.locationName ?? "Hayvan" })) :
+    gridTab === "posts"   ? postGridImages :
+    gridTab === "animals" ? animalGridImages :
     savedImages;
+
+  const totalPostCount = userPosts.length + myAnimals.length + myPets.length + myListings.length;
 
   return (
     <View style={S.root}>
@@ -174,7 +188,7 @@ export default function ProfileScreen() {
 
             {/* Stats */}
             <View style={S.statsArea}>
-              <StatPill value={myAnimals.length + myPets.length + myListings.length} label="Gönderi" />
+              <StatPill value={totalPostCount} label="Gönderi" />
               <StatPill value={128} label="Takipçi" />
               <StatPill value={64} label="Takip" />
             </View>
@@ -195,6 +209,15 @@ export default function ProfileScreen() {
               onPress={() => router.push("/profile-edit")}
             >
               <Text style={S.editBtnText}>Profili Düzenle</Text>
+            </Pressable>
+            <Pressable
+              style={({ pressed }) => [S.newPostBtn, { opacity: pressed ? 0.8 : 1 }]}
+              onPress={() => {
+                Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+                router.push("/create-post");
+              }}
+            >
+              <Ionicons name="add" size={22} color="#FFF" />
             </Pressable>
             <Pressable
               style={({ pressed }) => [S.shareBtn, { opacity: pressed ? 0.8 : 1 }]}
@@ -429,6 +452,13 @@ const S = StyleSheet.create({
     borderColor: "rgba(123,94,167,0.18)",
   },
   editBtnText: { fontSize: 14, fontFamily: "Inter_600SemiBold", color: PURPLE_DARK },
+  newPostBtn: {
+    width: 40,
+    backgroundColor: PURPLE,
+    borderRadius: 10,
+    alignItems: "center",
+    justifyContent: "center",
+  },
   shareBtn: {
     width: 40,
     backgroundColor: "rgba(123,94,167,0.10)",

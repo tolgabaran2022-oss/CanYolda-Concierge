@@ -431,12 +431,12 @@ router.post("/feed/reseed", async (_req, res) => {
 router.get("/feed/posts", async (req, res) => {
   try {
     await seedIfEmpty();
-    const userId = req.headers["x-user-id"] as string | undefined;
+    const userId       = req.headers["x-user-id"] as string | undefined;
+    const filterUserId = req.query["userId"] as string | undefined;
 
-    const posts = await db
-      .select()
-      .from(feedPosts)
-      .orderBy(desc(feedPosts.createdAt));
+    const posts = filterUserId
+      ? await db.select().from(feedPosts).where(eq(feedPosts.userId, filterUserId)).orderBy(desc(feedPosts.createdAt))
+      : await db.select().from(feedPosts).orderBy(desc(feedPosts.createdAt));
 
     let likedIds     = new Set<string>();
     let bookmarkedIds = new Set<string>();
@@ -466,14 +466,22 @@ router.get("/feed/posts", async (req, res) => {
 /* ── POST /api/feed/posts ────────────────────────────────── */
 router.post("/feed/posts", async (req, res) => {
   try {
-    const { username, avatarUrl, imageUrl, caption, location } = req.body as Record<string, string>;
+    const { userId, username, avatarUrl, imageUrl, caption, location } = req.body as Record<string, string>;
     if (!username || !imageUrl) {
       res.status(400).json({ error: "username and imageUrl required" });
       return;
     }
     const [post] = await db
       .insert(feedPosts)
-      .values({ username, avatarUrl: avatarUrl ?? "", imageUrl, caption: caption ?? "", location: location ?? "", timeAgo: "Az önce" })
+      .values({
+        userId:    userId ?? "",
+        username,
+        avatarUrl: avatarUrl ?? "",
+        imageUrl,
+        caption:   caption ?? "",
+        location:  location ?? "",
+        timeAgo:   "Az önce",
+      })
       .returning();
     res.json({ ...post, liked: false, bookmarked: false });
   } catch (err) {

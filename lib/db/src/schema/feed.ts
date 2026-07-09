@@ -3,6 +3,7 @@ import { sql } from "drizzle-orm";
 
 export const feedPosts = pgTable("feed_posts", {
   id:            text("id").primaryKey().default(sql`gen_random_uuid()::text`),
+  userId:        text("user_id").notNull().default(""),
   username:      text("username").notNull(),
   avatarUrl:     text("avatar_url").notNull().default(""),
   imageUrl:      text("image_url").notNull(),

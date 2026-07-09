@@ -1,0 +1,103 @@
+id="profile-create-post"
+
+Profil ekranına Instagram tarzında "Yeni Gönderi Paylaş" özelliği ekle.
+
+Amaç:
+Kullanıcı profil sayfasından direkt yeni gönderi oluşturabilsin.
+
+TASARIM:
+
+1. Yeni gönderi butonu:
+- Profil header bölümüne ekle.
+- "Profil Düzenle" butonunun yanına veya altına konumlandır.
+- Instagram mantığında küçük "+" ikonlu buton olabilir.
+- Mor/beyaz canyoldaşı tasarımına uyum sağla.
+- Yuvarlak köşeli premium buton oluştur.
+
+Buton görünümü:
++
+Yeni Gönderi
+
+veya:
+
++ ikonlu kare buton
+
+2. Butona basınca:
+Yeni gönderi oluşturma ekranı açılsın.
+
+Gönderi oluşturma ekranı:
+
+Üst bar:
+- Geri butonu
+- Başlık: "Yeni Gönderi"
+- Sağda "Paylaş" butonu
+
+İçerik:
+
+Fotoğraf alanı:
+- Büyük fotoğraf ekleme kutusu.
+- Kamera ile çek.
+- Galeriden seç.
+
+Kullanıcı:
+- Fotoğraf seçebilsin.
+- Birden fazla fotoğraf ekleyebilsin.
+- Fotoğraf önizleme görebilsin.
+
+Metin:
+Açıklama alanı:
+
+Örnek:
+"Bugün sokaktaki dostlarımızla güzel bir gün geçirdik 🐾"
+
+Özellikler:
+- Emoji desteği.
+- Karakter sınırı.
+- Konum ekleme.
+
+3. Paylaşınca:
+Gönderi otomatik olarak:
+
+Profil > Gönderiler bölümünde görünsün.
+
+Aynı zamanda:
+Akış (Feed) sayfasında diğer kullanıcıların görebileceği şekilde yayınlansın.
+
+4. Gönderi veritabanı:
+
+posts tablosu:
+
+id
+user_id
+image_url
+caption
+location
+created_at
+likes_count
+comments_count
+
+
+5. Profil gönderiler alanı:
+Şu an "Henüz paylaşım yok" alanı var.
+
+Yeni gönderi sonrası:
+- Instagram tarzı 3 kolon grid görünümü oluştur.
+- Fotoğraflar kare kutular halinde gösterilsin.
+- Gönderiye tıklayınca detay sayfası açılsın.
+
+6. UI/UX:
+- Instagram oluşturma akışına benzer deneyim.
+- Smooth animasyonlar.
+- iOS App Store kalitesinde.
+- Mevcut canyoldaşı renklerini koru.
+
+Component oluştur:
+
+CreatePostButton
+CreatePostScreen
+ImagePicker
+PostComposer
+PostGrid
+
+Sonuç:
+Kullanıcı profilinden tek dokunuşla yeni gönderi oluşturabilmeli ve gönderisi hem profilinde hem Akış bölümünde görünmeli.
