@@ -98,6 +98,26 @@ router.get("/boost/my-boosts", async (req, res): Promise<void> => {
   }
 });
 
+router.post("/boost/activate", async (req, res): Promise<void> => {
+  try {
+    const { listingId, userEmail, packageId } = req.body as {
+      listingId: string;
+      userEmail: string;
+      packageId: string;
+    };
+    if (!listingId || !userEmail || !packageId) {
+      res.status(400).json({ error: "Missing required fields" });
+      return;
+    }
+    const result = await storage.activateBoost({ listingId, userEmail, packageId });
+    res.json({ data: result });
+  } catch (err: unknown) {
+    const msg = err instanceof Error ? err.message : "Failed to activate boost";
+    logger.error({ err }, "Failed to activate boost");
+    res.status(500).json({ error: msg });
+  }
+});
+
 router.get("/boost/success", (_req, res): void => {
   res.send(`<!DOCTYPE html><html><head><meta charset="utf-8">
   <meta name="viewport" content="width=device-width,initial-scale=1">

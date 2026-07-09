@@ -39,6 +39,11 @@ interface BoostContextType {
     packageHours: number;
     petName?: string;
   }) => Promise<string>;
+  activateBoost: (params: {
+    listingId: string;
+    userEmail: string;
+    packageId: string;
+  }) => Promise<{ expiresAt: string; packageHours: number }>;
   isStripeReady: boolean;
 }
 
@@ -127,6 +132,22 @@ export function BoostProvider({ children }: { children: React.ReactNode }) {
     []
   );
 
+  const activateBoost = useCallback(
+    async (params: {
+      listingId: string;
+      userEmail: string;
+      packageId: string;
+    }): Promise<{ expiresAt: string; packageHours: number }> => {
+      const data = await apiFetch("/boost/activate", {
+        method: "POST",
+        body: JSON.stringify(params),
+      });
+      await fetchBoostStatus([params.listingId]);
+      return data.data as { expiresAt: string; packageHours: number };
+    },
+    [fetchBoostStatus]
+  );
+
   useEffect(() => {
     fetchPackages();
     pollRef.current = setInterval(fetchPackages, 60_000);
@@ -146,6 +167,7 @@ export function BoostProvider({ children }: { children: React.ReactNode }) {
         fetchBoostStatus,
         fetchMyBoosts,
         createCheckout,
+        activateBoost,
         isStripeReady,
       }}
     >

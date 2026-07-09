@@ -1,6 +1,6 @@
 import { db } from "@workspace/db";
 import { featuredListings } from "@workspace/db/schema";
-import { and, gt, inArray, sql } from "drizzle-orm";
+import { and, eq, gt, inArray, sql } from "drizzle-orm";
 import { getUncachableStripeClient } from "./stripeClient.js";
 
 export interface BoostPackage {
@@ -79,6 +79,33 @@ export class Storage {
       };
     }
     return result;
+  }
+
+  async activateBoost(params: {
+    listingId: string;
+    userEmail: string;
+    packageId: string;
+  }): Promise<{ expiresAt: string; packageHours: number }> {
+    const HOURS: Record<string, number> = {
+      standart: 24,
+      premium:  24 * 7,
+      vip:      24 * 30,
+    };
+    const packageHours = HOURS[params.packageId];
+    if (!packageHours) throw new Error(`Invalid packageId: ${params.packageId}`);
+
+    const expiresAt = new Date(Date.now() + packageHours * 3_600_000);
+
+    await db.delete(featuredListings).where(
+      eq(featuredListings.listingId, params.listingId)
+    );
+    await db.insert(featuredListings).values({
+      listingId:   params.listingId,
+      userEmail:   params.userEmail,
+      packageHours,
+      expiresAt,
+    });
+    return { expiresAt: expiresAt.toISOString(), packageHours };
   }
 
   async getMyBoosts(userEmail: string) {

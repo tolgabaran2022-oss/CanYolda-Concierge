@@ -7,6 +7,7 @@ import React, { useMemo, useRef, useState } from "react";
 import {
   Alert,
   FlatList,
+  Modal,
   Platform,
   Pressable,
   ScrollView,
@@ -286,7 +287,7 @@ const fc = StyleSheet.create({
 // ── Listing card ──────────────────────────────────────────────────────────────
 const IMG_H = 148; // ~40% of card
 
-function ListingCard({ listing, isFeatured }: { listing: AdoptionListing; isFeatured?: boolean }) {
+function ListingCard({ listing, isFeatured, featuredUntil }: { listing: AdoptionListing; isFeatured?: boolean; featuredUntil?: string | null }) {
   const router = useRouter();
   const [liked, setLiked] = useState(false);
 
@@ -319,10 +320,10 @@ function ListingCard({ listing, isFeatured }: { listing: AdoptionListing; isFeat
           />
 
           {isFeatured && (
-            <View style={lc.featuredBadge}>
+            <LinearGradient colors={[P2, DARK]} start={{ x: 0, y: 0 }} end={{ x: 1, y: 1 }} style={lc.featuredBadge}>
               <Ionicons name="star" size={9} color={WHITE} />
-              <Text style={lc.featuredTxt}>Öne Çıkan</Text>
-            </View>
+              <Text style={lc.featuredTxt}>⭐ ÖNE ÇIKAN</Text>
+            </LinearGradient>
           )}
 
           <View style={lc.typeTag}>
@@ -380,14 +381,14 @@ function ListingCard({ listing, isFeatured }: { listing: AdoptionListing; isFeat
 const lc = StyleSheet.create({
   shadow:        { marginHorizontal: 20, marginBottom: 14, borderRadius: 20, ...CARD_SHADOW },
   card:          { backgroundColor: WHITE, borderRadius: 20, overflow: "hidden", borderWidth: 1, borderColor: BORDER },
-  featuredBorder:{ borderColor: "#E07A35", borderWidth: 1.5 },
+  featuredBorder:{ borderColor: P, borderWidth: 2 },
 
   imgWrap:      { width: "100%", height: IMG_H, position: "relative" },
   img:          { width: "100%", height: "100%" },
   imgFallback:  { flex: 1, alignItems: "center", justifyContent: "center" },
   imgScrim:     { position: "absolute", bottom: 0, left: 0, right: 0, height: 56 },
 
-  featuredBadge:{ position: "absolute", top: 9, left: 9, flexDirection: "row", alignItems: "center", gap: 3, backgroundColor: "#E07A35", borderRadius: 7, paddingHorizontal: 8, paddingVertical: 4 },
+  featuredBadge:{ position: "absolute", top: 9, left: 9, flexDirection: "row", alignItems: "center", gap: 3, borderRadius: 7, paddingHorizontal: 8, paddingVertical: 4, overflow: "hidden" },
   featuredTxt:  { fontSize: 10, fontFamily: "Inter_700Bold", color: WHITE },
 
   typeTag:    { position: "absolute", bottom: 8, left: 9, backgroundColor: "rgba(255,255,255,0.2)", borderRadius: 7, paddingHorizontal: 8, paddingVertical: 3, borderWidth: 1, borderColor: "rgba(255,255,255,0.32)" },
@@ -536,6 +537,28 @@ const cr = StyleSheet.create({
   bannerSub:      { fontSize: 11, fontFamily: "Inter_400Regular", color: "rgba(255,255,255,0.88)", lineHeight: 16 },
 });
 
+// ── Success modal styles (must be above MyListingsSection) ───────────────────
+const sm = StyleSheet.create({
+  overlay: { flex: 1, backgroundColor: "rgba(20,8,46,0.65)", alignItems: "center", justifyContent: "center", padding: 24 },
+  card:    { backgroundColor: WHITE, borderRadius: 28, padding: 28, alignItems: "center", width: "100%", gap: 10,
+    ...Platform.select({
+      ios:     { shadowColor: DARK, shadowOffset: { width: 0, height: 16 }, shadowOpacity: 0.24, shadowRadius: 32 },
+      android: { elevation: 12 },
+      default: {},
+    }),
+  },
+  emoji:   { fontSize: 52, marginBottom: 4 },
+  title:   { fontSize: 22, fontFamily: "Inter_700Bold", color: DARK, letterSpacing: -0.4, textAlign: "center" },
+  sub:     { fontSize: 13, fontFamily: "Inter_400Regular", color: BODY, textAlign: "center", lineHeight: 20, marginBottom: 4 },
+  infoBox: { width: "100%", gap: 10, backgroundColor: `${P}07`, borderRadius: 16, padding: 14, borderWidth: 1, borderColor: `${P}14` },
+  infoRow: { flexDirection: "row", alignItems: "center", gap: 10 },
+  infoIcon:{ width: 28, height: 28, borderRadius: 8, alignItems: "center", justifyContent: "center", flexShrink: 0 },
+  infoTxt: { flex: 1, fontSize: 12, fontFamily: "Inter_500Medium", color: BODY, lineHeight: 17 },
+  btn:     { width: "100%", borderRadius: 16, overflow: "hidden", marginTop: 6 },
+  btnGrad: { flexDirection: "row", alignItems: "center", justifyContent: "center", gap: 8, paddingVertical: 15 },
+  btnTxt:  { fontSize: 15, fontFamily: "Inter_700Bold", color: WHITE },
+});
+
 // ── My Listings Section (Premium Redesign) ────────────────────────────────────
 const MY_FILTERS: { key: MyFilter; label: string }[] = [
   { key: "all",     label: "Tümü"     },
@@ -552,10 +575,20 @@ const STATUS_CFG: Record<ListStatus, { color: string; bg: string; icon: keyof ty
 };
 
 const BOOST_PKGS = [
-  { id: "basic",    label: "Temel",    price: "49",  days: 7,  popular: false },
-  { id: "standard", label: "Standart", price: "99",  days: 15, popular: true  },
-  { id: "premium",  label: "Premium",  price: "199", days: 30, popular: false },
+  { id: "standart", label: "Standart", price: "49",  daysLabel: "24 saat", popular: false },
+  { id: "premium",  label: "Premium",  price: "99",  daysLabel: "7 gün",   popular: true  },
+  { id: "vip",      label: "VIP",      price: "199", daysLabel: "30 gün",  popular: false },
 ] as const;
+
+function remainingTime(expiresAt: string): string {
+  const diff = new Date(expiresAt).getTime() - Date.now();
+  if (diff <= 0) return "Süre doldu";
+  const hours = Math.floor(diff / 3_600_000);
+  if (hours < 24) return `${hours}s kaldı`;
+  const days = Math.floor(hours / 24);
+  const remH = hours % 24;
+  return remH > 0 ? `${days}g ${remH}s kaldı` : `${days}g kaldı`;
+}
 
 function mockViews(id: string): number {
   let h = 0;
@@ -582,17 +615,20 @@ function MyListingCard({
   onDelete,
   onBoost,
   isFeatured,
+  featuredUntil,
 }: {
   card: MyCard;
   onEdit: () => void;
   onTogglePassive: () => void;
   onDelete: () => void;
-  onBoost: () => void;
+  onBoost: (packageId: string) => Promise<void>;
   isFeatured?: boolean;
+  featuredUntil?: string | null;
 }) {
   const { listing, status, views, favs } = card;
   const cfg = STATUS_CFG[status];
   const [selectedPkg, setSelectedPkg] = useState<string | null>(null);
+  const [boosting, setBoosting] = useState(false);
 
   return (
     <View style={ml.cardOuter}>
@@ -622,10 +658,10 @@ function MyListingCard({
           />
 
           {isFeatured && (
-            <View style={ml.featBadge}>
+            <LinearGradient colors={[P2, DARK]} start={{ x: 0, y: 0 }} end={{ x: 1, y: 1 }} style={ml.featBadge}>
               <Ionicons name="star" size={10} color={WHITE} />
-              <Text style={ml.featBadgeTxt}>Öne Çıkan</Text>
-            </View>
+              <Text style={ml.featBadgeTxt}>⭐ ÖNE ÇIKAN</Text>
+            </LinearGradient>
           )}
 
           <View style={[ml.statusBadge, { backgroundColor: cfg.bg }]}>
@@ -708,7 +744,7 @@ function MyListingCard({
         <View style={ml.boostCard}>
 
           <View style={ml.boostHeader}>
-            <LinearGradient colors={["#FFB347", "#E07A35"]} style={ml.boostIconWrap}>
+            <LinearGradient colors={[P2, DARK]} style={ml.boostIconWrap}>
               <Ionicons name="rocket" size={14} color={WHITE} />
             </LinearGradient>
             <View style={{ flex: 1 }}>
@@ -724,6 +760,7 @@ function MyListingCard({
                 <Pressable
                   key={pkg.id}
                   onPress={() => {
+                    if (boosting) return;
                     Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
                     setSelectedPkg(isSel ? null : pkg.id);
                   }}
@@ -743,7 +780,7 @@ function MyListingCard({
                       )}
                       <Text style={ml.pkgNameSel}>{pkg.label}</Text>
                       <Text style={ml.pkgPriceSel}>₺{pkg.price}</Text>
-                      <Text style={ml.pkgDaysSel}>{pkg.days} gün</Text>
+                      <Text style={ml.pkgDaysSel}>{pkg.daysLabel}</Text>
                       <Ionicons name="checkmark-circle" size={16} color={WHITE} style={{ marginTop: 4 }} />
                     </LinearGradient>
                   ) : (
@@ -755,7 +792,7 @@ function MyListingCard({
                       )}
                       <Text style={ml.pkgName}>{pkg.label}</Text>
                       <Text style={ml.pkgPrice}>₺{pkg.price}</Text>
-                      <Text style={ml.pkgDays}>{pkg.days} gün</Text>
+                      <Text style={ml.pkgDays}>{pkg.daysLabel}</Text>
                     </View>
                   )}
                 </Pressable>
@@ -764,19 +801,30 @@ function MyListingCard({
           </View>
 
           <Pressable
-            onPress={() => selectedPkg && onBoost()}
-            disabled={!selectedPkg}
+            onPress={async () => {
+              if (!selectedPkg || boosting) return;
+              setBoosting(true);
+              try {
+                await onBoost(selectedPkg);
+              } catch {
+                Alert.alert("Hata", "İlan öne çıkarılamadı. Lütfen tekrar dene.");
+              } finally {
+                setBoosting(false);
+                setSelectedPkg(null);
+              }
+            }}
+            disabled={!selectedPkg || boosting}
             style={ml.boostCta}
           >
             <LinearGradient
-              colors={selectedPkg ? ["#FFB347", "#E07A35"] : [`${BODY}50`, `${BODY}70`]}
+              colors={selectedPkg && !boosting ? [P2, DARK] : [`${BODY}50`, `${BODY}70`]}
               start={{ x: 0, y: 0 }}
               end={{ x: 1, y: 0 }}
               style={ml.boostCtaGrad}
             >
-              <Ionicons name="rocket-outline" size={15} color={WHITE} />
+              <Ionicons name={boosting ? "sync-outline" : "rocket-outline"} size={15} color={WHITE} />
               <Text style={ml.boostCtaTxt}>
-                {selectedPkg ? "Öne Çıkarmaya Başla" : "Paket Seçin"}
+                {boosting ? "Aktif Ediliyor..." : selectedPkg ? "Öne Çıkarmaya Başla" : "Paket Seçin"}
               </Text>
             </LinearGradient>
           </Pressable>
@@ -784,11 +832,16 @@ function MyListingCard({
       )}
 
       {isFeatured && (
-        <View style={ml.featuredBanner}>
-          <Ionicons name="star" size={12} color="#E07A35" />
-          <Text style={ml.featuredBannerTxt}>Öne Çıkan İlan · Aktif</Text>
-          <Ionicons name="checkmark-circle" size={12} color="#18A558" />
-        </View>
+        <LinearGradient colors={[`${P}12`, `${P2}08`]} style={ml.featuredBanner}>
+          <Ionicons name="star" size={13} color={P} />
+          <Text style={ml.featuredBannerTxt}>⭐ ÖNE ÇIKAN · Aktif</Text>
+          {featuredUntil && (
+            <View style={ml.featuredTimeChip}>
+              <Ionicons name="time-outline" size={10} color={P} />
+              <Text style={ml.featuredTimeTxt}>{remainingTime(featuredUntil)}</Text>
+            </View>
+          )}
+        </LinearGradient>
       )}
     </View>
   );
@@ -796,22 +849,40 @@ function MyListingCard({
 
 function MyListingsSection({
   userId,
+  userEmail,
   listings,
   boostStatuses,
   deleteListing,
   botPad,
-  onBoost,
   onAdd,
 }: {
   userId: string;
+  userEmail: string;
   listings: AdoptionListing[];
-  boostStatuses: Record<string, { isFeatured: boolean }>;
+  boostStatuses: Record<string, { isFeatured: boolean; expiresAt?: string | null }>;
   deleteListing: (id: string) => Promise<void>;
   botPad: number;
-  onBoost: (id: string, name: string) => void;
   onAdd: () => void;
 }) {
   const router = useRouter();
+  const { activateBoost } = useBoost();
+  const [successModal, setSuccessModal] = useState<{
+    petName: string;
+    pkgLabel: string;
+    expiresAt: string;
+  } | null>(null);
+
+  const handleBoost = async (listingId: string, petName: string, packageId: string) => {
+    const pkg = BOOST_PKGS.find((p) => p.id === packageId);
+    const result = await activateBoost({ listingId, userEmail, packageId });
+    setSuccessModal({
+      petName,
+      pkgLabel: pkg?.label ?? packageId,
+      expiresAt: result.expiresAt,
+    });
+    Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
+  };
+
   const myListings = useMemo(
     () => listings.filter((l) => l.userId === userId),
     [listings, userId]
@@ -872,6 +943,45 @@ function MyListingsSection({
   const visible = cards.filter(FILTER_MAP[myFilter]);
 
   return (
+    <>
+    <Modal
+      visible={successModal !== null}
+      transparent
+      animationType="fade"
+      onRequestClose={() => setSuccessModal(null)}
+    >
+      <Pressable style={sm.overlay} onPress={() => setSuccessModal(null)}>
+        <View style={sm.card}>
+          <Text style={sm.emoji}>🎉</Text>
+          <Text style={sm.title}>İlanın Öne Çıkarıldı!</Text>
+          <Text style={sm.sub}>İlanın artık daha fazla kullanıcıya gösterilecek</Text>
+          {successModal && (
+            <View style={sm.infoBox}>
+              <View style={sm.infoRow}>
+                <LinearGradient colors={[P2, DARK]} style={sm.infoIcon}>
+                  <Ionicons name="cube-outline" size={13} color={WHITE} />
+                </LinearGradient>
+                <Text style={sm.infoTxt}>{successModal.pkgLabel} Paketi · {BOOST_PKGS.find((p) => p.label === successModal.pkgLabel)?.daysLabel ?? ""}</Text>
+              </View>
+              <View style={sm.infoRow}>
+                <LinearGradient colors={[P2, DARK]} style={sm.infoIcon}>
+                  <Ionicons name="time-outline" size={13} color={WHITE} />
+                </LinearGradient>
+                <Text style={sm.infoTxt}>
+                  {new Date(successModal.expiresAt).toLocaleDateString("tr-TR", { day: "numeric", month: "long" })} · {new Date(successModal.expiresAt).toLocaleTimeString("tr-TR", { hour: "2-digit", minute: "2-digit" })} tarihine kadar aktif
+                </Text>
+              </View>
+            </View>
+          )}
+          <Pressable onPress={() => setSuccessModal(null)} style={sm.btn}>
+            <LinearGradient colors={[P2, P]} start={{ x: 0, y: 0 }} end={{ x: 1, y: 0 }} style={sm.btnGrad}>
+              <Ionicons name="rocket-outline" size={16} color={WHITE} />
+              <Text style={sm.btnTxt}>Harika! 🚀</Text>
+            </LinearGradient>
+          </Pressable>
+        </View>
+      </Pressable>
+    </Modal>
     <ScrollView showsVerticalScrollIndicator={false} contentContainerStyle={{ paddingBottom: botPad + 24 }}>
 
       {/* ── Section header ── */}
@@ -979,13 +1089,15 @@ function MyListingsSection({
           key={c.listing.id}
           card={c}
           isFeatured={boostStatuses[c.listing.id]?.isFeatured ?? false}
+          featuredUntil={boostStatuses[c.listing.id]?.expiresAt ?? null}
           onEdit={() => router.push(`/adoption/${c.listing.id}`)}
           onTogglePassive={() => togglePassive(c.listing.id)}
           onDelete={() => handleDelete(c.listing)}
-          onBoost={() => onBoost(c.listing.id, c.listing.petName)}
+          onBoost={(packageId) => handleBoost(c.listing.id, c.listing.petName, packageId)}
         />
       ))}
     </ScrollView>
+    </>
   );
 }
 
@@ -1012,7 +1124,7 @@ const ml = StyleSheet.create({
   featBadge: {
     position: "absolute", top: 10, left: 10,
     flexDirection: "row", alignItems: "center", gap: 4,
-    backgroundColor: "#E07A35", borderRadius: 9,
+    borderRadius: 9, overflow: "hidden",
     paddingHorizontal: 9, paddingVertical: 5,
   },
   featBadgeTxt: { fontSize: 11, fontFamily: "Inter_700Bold", color: WHITE },
@@ -1065,18 +1177,18 @@ const ml = StyleSheet.create({
     backgroundColor: WHITE,
     borderRadius: 20,
     borderWidth: 1.5,
-    borderColor: "#FFD59A",
+    borderColor: BORDER,
     padding: 14,
     ...Platform.select({
-      ios:     { shadowColor: "#E07A35", shadowOffset: { width: 0, height: 4 }, shadowOpacity: 0.13, shadowRadius: 14 },
+      ios:     { shadowColor: P, shadowOffset: { width: 0, height: 4 }, shadowOpacity: 0.12, shadowRadius: 14 },
       android: { elevation: 3 },
       default: {},
     }),
   },
   boostHeader:  { flexDirection: "row", alignItems: "center", gap: 10, marginBottom: 12 },
   boostIconWrap:{ width: 34, height: 34, borderRadius: 10, alignItems: "center", justifyContent: "center" },
-  boostTitle:   { fontSize: 14, fontFamily: "Inter_700Bold",    color: "#92400E" },
-  boostSub:     { fontSize: 11, fontFamily: "Inter_400Regular", color: "#B45309", lineHeight: 16, marginTop: 1 },
+  boostTitle:   { fontSize: 14, fontFamily: "Inter_700Bold",    color: DARK },
+  boostSub:     { fontSize: 11, fontFamily: "Inter_400Regular", color: BODY, lineHeight: 16, marginTop: 1 },
 
   // Package cards
   pkgRow: { flexDirection: "row", gap: 8, marginBottom: 12 },
@@ -1084,16 +1196,16 @@ const ml = StyleSheet.create({
   pkgIdle:{
     backgroundColor: WHITE,
     borderWidth: 1.5,
-    borderColor: "rgba(255,165,0,0.25)",
+    borderColor: `${P}22`,
     ...Platform.select({
-      ios:     { shadowColor: "#E07A35", shadowOffset: { width: 0, height: 2 }, shadowOpacity: 0.08, shadowRadius: 6 },
+      ios:     { shadowColor: P, shadowOffset: { width: 0, height: 2 }, shadowOpacity: 0.07, shadowRadius: 6 },
       android: { elevation: 1 },
       default: {},
     }),
   },
-  pkgPop: { borderColor: "#E07A35", borderWidth: 2 },
+  pkgPop: { borderColor: P, borderWidth: 2 },
 
-  popBadge:   { backgroundColor: "#E07A35", borderRadius: 5, paddingHorizontal: 6, paddingVertical: 2, marginBottom: 2 },
+  popBadge:   { backgroundColor: P, borderRadius: 5, paddingHorizontal: 6, paddingVertical: 2, marginBottom: 2 },
   popBadgeTxt:{ fontSize: 9, fontFamily: "Inter_700Bold", color: WHITE },
 
   pkgName:    { fontSize: 11, fontFamily: "Inter_700Bold",    color: DARK },
@@ -1108,8 +1220,10 @@ const ml = StyleSheet.create({
   boostCtaTxt:  { fontSize: 13, fontFamily: "Inter_700Bold", color: WHITE },
 
   // Featured active banner
-  featuredBanner:    { marginTop: 10, flexDirection: "row", alignItems: "center", justifyContent: "center", gap: 6, backgroundColor: "#FFF7ED", borderRadius: 14, borderWidth: 1, borderColor: "#FFD59A", paddingVertical: 9 },
-  featuredBannerTxt: { fontSize: 12, fontFamily: "Inter_700Bold", color: "#E07A35" },
+  featuredBanner:    { marginTop: 10, flexDirection: "row", alignItems: "center", justifyContent: "center", gap: 7, borderRadius: 14, borderWidth: 1.5, borderColor: `${P}30`, paddingVertical: 10, paddingHorizontal: 14 },
+  featuredBannerTxt: { fontSize: 12, fontFamily: "Inter_700Bold", color: P, flex: 1 },
+  featuredTimeChip:  { flexDirection: "row", alignItems: "center", gap: 3, backgroundColor: `${P}12`, borderRadius: 7, paddingHorizontal: 7, paddingVertical: 3 },
+  featuredTimeTxt:   { fontSize: 10, fontFamily: "Inter_600SemiBold", color: P },
 
   // Section header
   secHeader: { flexDirection: "row", alignItems: "center", justifyContent: "space-between", paddingHorizontal: 20, marginBottom: 16, paddingTop: 4 },
@@ -1220,13 +1334,11 @@ export default function PetsScreen() {
       {activeTab === "mylistings" && (
         <MyListingsSection
           userId={user?.id ?? ""}
+          userEmail={user?.email ?? ""}
           listings={listings}
           boostStatuses={boostStatuses}
           deleteListing={deleteListing}
           botPad={botPad}
-          onBoost={(id, name) =>
-            router.push({ pathname: "/boost-packages", params: { listingId: id, petName: name } } as any)
-          }
           onAdd={() => router.push("/add-adoption")}
         />
       )}
@@ -1243,6 +1355,7 @@ export default function PetsScreen() {
               <ListingCard
                 listing={item}
                 isFeatured={boostStatuses[item.id]?.isFeatured ?? false}
+                featuredUntil={boostStatuses[item.id]?.expiresAt ?? null}
               />
             )}
             contentContainerStyle={{ paddingTop: 2, paddingBottom: botPad + 24 }}
