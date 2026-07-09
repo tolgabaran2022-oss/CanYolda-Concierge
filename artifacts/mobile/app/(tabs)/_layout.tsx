@@ -30,7 +30,6 @@ const TABS: TabItem[] = [
   { name: "feed",    path: "/feed",    title: "Akış",      sfSymbol: "house",       featherIcon: "home"    },
   { name: "animals", path: "/animals", title: "Hayvanlar", sfSymbol: "pawprint",    featherIcon: "list"    },
   { name: "pets",    path: "/pets",    title: "Evcil",     sfSymbol: "heart",       featherIcon: "heart"   },
-  { name: "profile", path: "/profile", title: "Profil",    sfSymbol: "person",      featherIcon: "user"    },
 ];
 
 function CustomTabBar() {
