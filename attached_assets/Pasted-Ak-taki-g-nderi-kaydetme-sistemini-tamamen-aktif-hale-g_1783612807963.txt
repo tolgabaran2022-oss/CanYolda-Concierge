@@ -1,0 +1,101 @@
+Akıştaki gönderi kaydetme sistemini tamamen aktif hale getir.
+
+Amaç:
+Kullanıcı akıştaki bir gönderiyi kaydettiğinde, gönderi kendi profilindeki “Kaydedilenler” bölümünde görünsün. Kaydedilen gönderiye tıklayınca direkt o gönderinin detay sayfası açılsın.
+
+Yapılacaklar:
+
+1. Akışta kaydet butonu
+- Her gönderinin sağ altındaki bookmark/kaydet ikonu aktif çalışsın.
+- Kullanıcı ikona basınca gönderi kaydedilsin.
+- Tekrar basınca kayıttan çıkarılsın.
+- Kaydedilmiş gönderide ikon dolu/mor görünsün.
+- Kaydedilmemiş gönderide ikon boş görünsün.
+
+2. Supabase saved_posts tablosu
+
+saved_posts tablosu oluştur veya mevcut tabloyu kullan:
+
+- id uuid primary key default gen_random_uuid()
+- user_id uuid references auth.users(id)
+- post_id uuid references posts(id)
+- created_at timestamp default now()
+
+Aynı gönderi iki kez kaydedilmesin:
+
+unique(user_id, post_id)
+
+3. RLS güvenliği
+
+- Kullanıcı sadece kendi saved_posts kayıtlarını okuyabilsin.
+- Kullanıcı sadece kendi adına kayıt ekleyebilsin.
+- Kullanıcı sadece kendi kaydını silebilsin.
+- Başka kullanıcılar benim kaydettiklerimi göremesin.
+
+4. Akış ile bağlantı
+
+- Akış yüklenirken currentUser.id için saved_posts kontrol edilsin.
+- Her post için is_saved boolean değeri oluşturulsun.
+- Kaydet butonuna basınca local state anlık güncellensin.
+- Supabase hatası olursa eski haline geri dönsün ve hata mesajı göster:
+  “Gönderi kaydedilemedi.”
+
+5. Profilde Kaydedilenler sekmesi
+
+- Kendi profilimde bookmark/kaydedilenler sekmesi görünsün.
+- Başka kullanıcı profillerinde bu sekme görünmesin.
+- Sekmeye basınca currentUser.id ile saved_posts tablosundan kayıtlar çekilsin.
+- posts tablosu ile join yap.
+- Kaydedilen gönderiler 3 kolon Instagram grid olarak gösterilsin.
+- En son kaydedilen en üstte görünsün.
+
+6. Boş durum
+
+Kaydedilen gönderi yoksa:
+
+Başlık:
+“Henüz kaydedilen gönderi yok”
+
+Açıklama:
+“Kaydettiğin gönderiler burada görünecek.”
+
+7. Kaydedilen gönderiye tıklama
+
+- Profilde Kaydedilenler gridindeki herhangi bir gönderiye tıklayınca gönderi detay ekranı açılsın.
+- Route:
+  /post/[postId]
+  veya mevcut post detail route yapısını kullan.
+- Detay ekranında:
+  - Gönderi görseli
+  - Kullanıcı adı
+  - Profil fotoğrafı
+  - Açıklama
+  - Beğeni
+  - Yorum
+  - Kaydet ikonu
+  gösterilsin.
+
+8. Eğer gönderi silindiyse
+
+- Kaydedilen gönderi posts tablosunda artık yoksa gridde gösterme.
+- İstersen saved_posts kaydını otomatik temizle.
+
+9. Tasarım
+
+- Mevcut mor/beyaz tema korunsun.
+- Instagram tarzı bookmark ikonu kullan.
+- Grid görselleri kare olsun.
+- Aralarında 1–2 px boşluk olsun.
+- Aktif sekmenin altında mor çizgi görünsün.
+- iOS, Android ve Web’de düzgün çalışsın.
+
+10. Kod temizliği
+
+- Dummy kaydedilen görselleri kaldır.
+- Gerçek Supabase verisi kullan.
+- TypeScript hatalarını düzelt.
+- Router/import hatalarını temizle.
+- Boş container kalmasın.
+
+Sonuç:
+Akışta kaydettiğim gönderiler kendi profilimde Kaydedilenler sekmesinde görünecek. Kaydedilen görsele tıklayınca direkt ilgili gönderi detayına gidecek.

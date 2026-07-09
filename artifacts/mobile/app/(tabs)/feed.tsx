@@ -420,6 +420,7 @@ export default function FeedScreen() {
         const revert = (prev: PostData[]) => prev.map((p) => p.id === id ? { ...p, bookmarked: !p.bookmarked } : p);
         setPosts(revert);
         setFollowingPosts(revert);
+        Alert.alert("Hata", "Gönderi kaydedilemedi.");
       });
   }, [userId]);
 

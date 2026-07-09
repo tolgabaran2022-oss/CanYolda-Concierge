@@ -155,15 +155,19 @@ export default function ProfileScreen() {
         {/* ── Grid Tabs ──────────────────────────────────── */}
         <View style={S.gridTabBar}>
           {([
-            { key: "posts",  icon: "grid-outline"    },
-            { key: "saved",  icon: "bookmark-outline" },
-          ] as const).map(({ key, icon }) => (
+            { key: "posts",  inactive: "grid-outline",     active: "grid"     },
+            { key: "saved",  inactive: "bookmark-outline",  active: "bookmark" },
+          ] as const).map(({ key, inactive, active }) => (
             <Pressable
               key={key}
               style={[S.gridTabBtn, gridTab === key && S.gridTabActive]}
-              onPress={() => setGridTab(key)}
+              onPress={() => { Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light); setGridTab(key); }}
             >
-              <Ionicons name={icon} size={22} color={gridTab === key ? PURPLE : "#AAAACC"} />
+              <Ionicons
+                name={gridTab === key ? active : inactive}
+                size={22}
+                color={gridTab === key ? PURPLE : "#AAAACC"}
+              />
             </Pressable>
           ))}
         </View>

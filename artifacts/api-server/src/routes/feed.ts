@@ -718,9 +718,19 @@ router.get("/feed/bookmarks", async (req, res) => {
     const posts   = await db
       .select()
       .from(feedPosts)
-      .where(sql`${feedPosts.id} = ANY(${postIds}::text[])`);
+      .where(inArray(feedPosts.id, postIds));
 
-    res.json(posts.map((p) => ({ ...p, liked: false, bookmarked: true })));
+    /* Re-order to match bookmark creation order (most recent first) */
+    const postMap     = new Map(posts.map((p) => [p.id, p]));
+    const orderedPosts = postIds.map((id) => postMap.get(id)).filter(Boolean) as typeof posts;
+
+    /* Apply the same seed-userId fill as the main posts endpoint */
+    res.json(orderedPosts.map((p) => ({
+      ...p,
+      userId:     p.userId || `seed-${p.username}`,
+      liked:      false,
+      bookmarked: true,
+    })));
   } catch (err) {
     req.log.error({ err }, "GET /feed/bookmarks failed");
     res.status(500).json({ error: "Internal server error" });
@@ -743,7 +753,8 @@ router.get("/feed/posts/:id", async (req, res) => {
       ]);
       liked = l.length > 0; bookmarked = b.length > 0;
     }
-    res.json({ ...rows[0], liked, bookmarked });
+    const p = rows[0];
+    res.json({ ...p, userId: p.userId || `seed-${p.username}`, liked, bookmarked });
   } catch (err) {
     req.log.error({ err }, "GET /feed/posts/:id failed");
     res.status(500).json({ error: "Internal server error" });
