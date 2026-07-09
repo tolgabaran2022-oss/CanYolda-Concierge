@@ -9,6 +9,8 @@ export type ApiStoryItem = {
   createdAt: string;
   viewCount: number;
   seen: boolean;
+  liked?: boolean;
+  likesCount?: number;
 };
 
 export type ApiStoryGroup = {
@@ -17,6 +19,17 @@ export type ApiStoryGroup = {
   avatarUrl: string;
   hasUnseen: boolean;
   stories: ApiStoryItem[];
+};
+
+export type StoryViewer = {
+  viewerId: string;
+  viewedAt: string;
+};
+
+export type StoryLiker = {
+  userId: string;
+  username: string;
+  avatarUrl: string;
 };
 
 function hdrs(userId?: string): Record<string, string> {
@@ -54,4 +67,46 @@ export async function apiViewStory(storyId: string, viewerId: string): Promise<{
   });
   if (!res.ok) throw new Error("view story failed");
   return res.json() as Promise<{ viewed: boolean; viewCount: number }>;
+}
+
+export async function apiToggleStoryLike(storyId: string, userId: string): Promise<{ liked: boolean; likesCount: number }> {
+  const res = await fetch(`${API_BASE}/stories/${storyId}/like`, {
+    method: "POST",
+    headers: hdrs(userId),
+  });
+  if (!res.ok) throw new Error("toggle story like failed");
+  return res.json() as Promise<{ liked: boolean; likesCount: number }>;
+}
+
+export async function apiGetStoryLikeStatus(storyId: string, userId: string): Promise<{ liked: boolean; likesCount: number }> {
+  const res = await fetch(`${API_BASE}/stories/${storyId}/like?userId=${encodeURIComponent(userId)}`);
+  if (!res.ok) return { liked: false, likesCount: 0 };
+  return res.json() as Promise<{ liked: boolean; likesCount: number }>;
+}
+
+export async function apiReplyToStory(
+  storyId: string,
+  senderId: string,
+  receiverId: string,
+  message: string
+): Promise<{ ok: boolean }> {
+  const res = await fetch(`${API_BASE}/stories/${storyId}/reply`, {
+    method: "POST",
+    headers: hdrs(senderId),
+    body: JSON.stringify({ receiverId, message }),
+  });
+  if (!res.ok) throw new Error("reply to story failed");
+  return res.json() as Promise<{ ok: boolean }>;
+}
+
+export async function apiGetStoryViewers(storyId: string, ownerId: string): Promise<StoryViewer[]> {
+  const res = await fetch(`${API_BASE}/stories/${storyId}/views`, { headers: hdrs(ownerId) });
+  if (!res.ok) return [];
+  return res.json() as Promise<StoryViewer[]>;
+}
+
+export async function apiGetStoryLikers(storyId: string, ownerId: string): Promise<StoryLiker[]> {
+  const res = await fetch(`${API_BASE}/stories/${storyId}/likers`, { headers: hdrs(ownerId) });
+  if (!res.ok) return [];
+  return res.json() as Promise<StoryLiker[]>;
 }

@@ -1,0 +1,92 @@
+Hikaye görüntüleme ekranına Instagram mantığında “Beğen” ve “Yanıtla” özellikleri ekle.
+
+Amaç:
+Kullanıcı bir hikayeyi izlerken hikayeyi beğenebilsin ve hikaye sahibine mesaj olarak yanıt gönderebilsin.
+
+Yapılacaklar:
+
+1. Hikaye görüntüleme ekranı
+- Ekranın alt kısmına Instagram tarzı alan ekle:
+  - “Mesaj gönder...” input alanı
+  - Kalp / beğen ikonu
+  - Gönder butonu
+- Tasarım tam ekran hikaye izleme yapısına uygun olsun.
+- Klavye açılınca input yukarı taşınsın.
+
+2. Hikaye beğenme sistemi
+Supabase’de story_likes tablosu oluştur veya mevcut tabloyu kullan:
+
+Alanlar:
+- id uuid primary key
+- story_id uuid
+- user_id uuid
+- created_at timestamp default now()
+
+Kurallar:
+- Aynı kullanıcı aynı hikayeyi bir kez beğenebilsin.
+- Tekrar kalbe basınca beğeni kaldırılsın.
+- Beğenilen hikayede kalp ikonu dolu/mor görünsün.
+- Beğenilmeyen hikayede boş kalp görünsün.
+
+3. Hikayeye yanıt verme
+Supabase’de story_replies tablosu oluştur veya mevcut yapıya bağla:
+
+Alanlar:
+- id uuid primary key
+- story_id uuid
+- sender_id uuid
+- receiver_id uuid
+- message text
+- created_at timestamp default now()
+
+Kullanıcı hikayeye yanıt yazıp gönderince:
+- Mesaj story_replies tablosuna kaydedilsin.
+- Aynı zamanda DM sistemine mesaj olarak düşsün.
+- Hikaye sahibinin mesajlar bölümünde görünsün.
+- Mesaj içeriğinde hikaye referansı olsun:
+  “Hikayene yanıt verdi”
+- Yanıt boş gönderilemesin.
+
+4. Bildirim sistemi
+- Hikaye beğenilince hikaye sahibine bildirim gönderilsin.
+- Hikayeye yanıt gelince hikaye sahibine bildirim gönderilsin.
+- Kullanıcının bildirim ayarlarına uy:
+  - Mesaj bildirimleri kapalıysa yanıt bildirimi gönderme.
+  - Beğeni bildirimleri kapalıysa hikaye beğeni bildirimi gönderme.
+
+5. Gizlilik
+- Hikayelerim görünür ayarı kapalıysa hikaye görünmesin.
+- Gizli profillerde sadece takipçiler hikayeyi görebilsin.
+- Kullanıcı kendi hikayesine beğeni/yanıt gönderemesin.
+- Kendi hikayesini izliyorsa altta:
+  - Görüntüleyenler
+  - Beğenenler
+  listesi görünsün.
+
+6. UI/UX
+- Instagram benzeri sade alt cevap alanı olsun.
+- Input placeholder:
+  “Mesaj gönder...”
+- Beğen butonu kalp ikonu olsun.
+- Gönder butonu sadece yazı varsa aktif olsun.
+- Başarılı yanıt sonrası input temizlensin.
+- Toast mesajı:
+  “Yanıt gönderildi.”
+- Hata olursa:
+  “Yanıt gönderilemedi.”
+
+7. Güvenlik
+- RLS policy ekle.
+- Kullanıcı sadece kendi beğenisini ekleyip silebilsin.
+- Kullanıcı sadece kendi yanıtını oluşturabilsin.
+- Hikaye sahibi gelen yanıtları okuyabilsin.
+- Şifre, token veya kullanıcı bilgisi console.log ile yazdırılmasın.
+
+8. Kod temizliği
+- Dummy hikaye beğeni/yanıt mantığını kaldır.
+- Gerçek Supabase verisi kullan.
+- Tüm TypeScript/import/router hatalarını düzelt.
+- iOS, Android ve Web’de sorunsuz çalışsın.
+
+Sonuç:
+Hikaye izleme ekranında kullanıcı hikayeyi beğenebilecek, yanıt yazabilecek ve bu yanıt Instagram mantığında DM kutusuna düşecek.

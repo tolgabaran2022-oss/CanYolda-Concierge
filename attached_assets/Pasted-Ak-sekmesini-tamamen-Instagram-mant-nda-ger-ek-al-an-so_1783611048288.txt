@@ -1,0 +1,266 @@
+Akış sekmesini tamamen Instagram mantığında gerçek çalışan sosyal medya akışı haline getir.
+
+Amaç:
+Akış sayfasındaki Keşfet ve Takip Ettiklerin sekmeleri, hikayeler, gönderiler, beğeni, yorum, kaydet, paylaş, profil yönlendirme ve bildirimler gerçek Supabase verisiyle çalışsın.
+
+1. Akış üst alanı
+
+- Sol üstte logo / uygulama adı kalsın.
+- Sağ üstte:
+  - Arama
+  - Yeni gönderi ekle
+  - Bildirim
+  - Profil fotoğrafı
+  ikonları çalışır olsun.
+
+İşlevler:
+- Arama ikonuna basınca kullanıcı / gönderi arama ekranı açılsın.
+- + ikonuna basınca yeni gönderi paylaş ekranı açılsın.
+- Bildirim ikonuna basınca bildirimler ekranı açılsın.
+- Profil fotoğrafına basınca kendi profilime yönlendirsin.
+
+2. Hikayeler alanı
+
+- En üstte yatay hikaye listesi Instagram gibi çalışsın.
+- “Hikayeni” kartı her zaman ilk sırada olsun.
+- Kullanıcı hikaye paylaşmadıysa + ikonlu boş durum görünsün.
+- Basınca hikaye ekleme ekranı açılsın.
+- Diğer kullanıcı hikayelerine basınca tam ekran hikaye görüntüleyici açılsın.
+- Görülmemiş hikayelerde mor halka olsun.
+- Görülmüş hikayelerde gri halka olsun.
+- Hikaye 24 saat sonra otomatik görünmesin.
+- Hikayeye beğenme ve mesajla yanıtlama sistemi çalışsın.
+
+3. Keşfet sekmesi
+
+- Keşfet sekmesi tüm public gönderileri göstersin.
+- Gizli profillerin gönderileri sadece takipçilerine görünsün.
+- En yeni gönderiler üstte olsun.
+- Sahte/dummy gönderileri kaldır.
+- Supabase posts tablosundan gerçek veri çek.
+
+4. Takip Ettiklerin sekmesi
+
+- Sadece currentUser’ın takip ettiği kullanıcıların ve kendi gönderilerini göstersin.
+- follows tablosu ile filtreleme yap.
+- Takip edilen kullanıcı yoksa boş durum göster:
+  “Henüz kimseyi takip etmiyorsun.”
+  “Keşfet’ten yeni dostlar bulabilirsin.”
+
+5. Gönderi kartı
+
+Her gönderide şunlar olsun:
+
+- Profil fotoğrafı
+- Kullanıcı adı
+- Konum
+- Zaman bilgisi
+- Üç nokta menüsü
+- Gönderi görseli
+- Beğen butonu
+- Yorum butonu
+- Paylaş butonu
+- Kaydet butonu
+- Beğeni sayısı
+- Açıklama
+- Yorumları gör butonu
+- Gönderi tarihi
+
+6. Profil yönlendirme
+
+Gönderi sahibinin:
+- Profil fotoğrafına
+- Kullanıcı adına
+- Üst bilgi alanına
+
+basınca:
+
+Eğer post.user_id === currentUser.id ise:
+- Kendi profilime yönlendir.
+
+Eğer farklı kullanıcıysa:
+- O kullanıcının profil detayına yönlendir.
+
+7. Beğeni sistemi
+
+- Beğeni butonu gerçek çalışsın.
+- posts_likes tablosu kullanılsın.
+- Basınca beğeni eklensin.
+- Tekrar basınca beğeni kaldırılsın.
+- Kalp aktifken mor/dolu görünsün.
+- Beğeni sayısı anlık güncellensin.
+- Gönderi sahibi beğeni bildirimi açıksa bildirim oluşturulsun.
+
+8. Yorum sistemi
+
+- Yorum ikonuna basınca yorum ekranı / bottom sheet açılsın.
+- Yorumlar gerçek Supabase verisinden gelsin.
+- Kullanıcı yorum yazıp gönderebilsin.
+- Boş yorum gönderilemesin.
+- Gönderi sahibi yorum bildirimi açıksa bildirim oluşturulsun.
+
+9. Kaydet sistemi
+
+- Kaydet ikonu gerçek çalışsın.
+- saved_posts tablosu kullanılsın.
+- Basınca kaydedilsin.
+- Tekrar basınca kayıttan çıkarılsın.
+- Profildeki Kaydedilenler sekmesinde görünsün.
+- Kaydedilenler sadece profil sahibine görünsün.
+
+10. Paylaş sistemi
+
+- Paylaş ikonuna basınca paylaşım seçenekleri açılsın.
+- Uygulama içi DM ile gönderme seçeneği olsun.
+- Sistem paylaşımı çalışsın.
+- Link veya gönderi referansı paylaşılabilsin.
+
+11. Üç nokta menüsü
+
+Kendi gönderimde:
+- Gönderiyi düzenle
+- Gönderiyi sil
+- Paylaş
+
+Başkasının gönderisinde:
+- Şikayet et
+- Kullanıcıyı engelle
+- Paylaş
+
+Silme işleminde onay sor:
+“Bu gönderiyi silmek istiyor musun?”
+
+12. Gizlilik
+
+- Gizli profil gönderileri keşfette herkese görünmesin.
+- Sadece takipçileri görebilsin.
+- Engellenen kullanıcıların gönderileri görünmesin.
+- Engellediğim kullanıcılar benim gönderilerimi göremesin.
+
+13. Bildirim ayarlarına uy
+
+Şu ayarlar gerçek çalışsın:
+
+- Beğeni bildirimleri kapalıysa beğeni bildirimi oluşturma.
+- Yorum bildirimleri kapalıysa yorum bildirimi oluşturma.
+- Mesaj bildirimleri kapalıysa DM / hikaye yanıt bildirimi gönderme.
+
+14. Loading / boş / hata durumları
+
+- Akış yüklenirken skeleton loading göster.
+- Veri yoksa boş durum göster.
+- İnternet veya Supabase hatasında:
+  “Akış yüklenemedi. Lütfen tekrar deneyin.”
+- Pull to refresh ekle.
+
+15. Supabase tabloları
+
+Gerekirse oluştur veya mevcutları düzelt:
+
+posts:
+- id
+- user_id
+- image_url
+- caption
+- location
+- created_at
+
+post_likes:
+- id
+- post_id
+- user_id
+- created_at
+- unique(post_id, user_id)
+
+comments:
+- id
+- post_id
+- user_id
+- text
+- created_at
+
+saved_posts:
+- id
+- post_id
+- user_id
+- created_at
+- unique(post_id, user_id)
+
+follows:
+- follower_id
+- following_id
+- created_at
+- unique(follower_id, following_id)
+
+stories:
+- id
+- user_id
+- media_url
+- caption
+- created_at
+- expires_at
+
+story_views:
+- id
+- story_id
+- user_id
+- created_at
+
+story_likes:
+- id
+- story_id
+- user_id
+- created_at
+- unique(story_id, user_id)
+
+story_replies:
+- id
+- story_id
+- sender_id
+- receiver_id
+- message
+- created_at
+
+notifications:
+- id
+- user_id
+- actor_id
+- type
+- post_id
+- story_id
+- message
+- is_read
+- created_at
+
+16. RLS güvenliği
+
+- Kullanıcı sadece kendi gönderisini oluşturup silebilsin.
+- Kullanıcı sadece kendi beğenisini ekleyip silebilsin.
+- Kullanıcı sadece kendi yorumunu silebilsin.
+- Kullanıcı sadece kendi kaydettiği gönderileri görebilsin.
+- Kullanıcı sadece kendi takip ilişkisini oluşturup silebilsin.
+- Public profillerin gönderileri okunabilsin.
+- Gizli profil gönderileri sadece takipçilere görünsün.
+- Storage policy image upload için güvenli olsun.
+
+17. UI/UX
+
+- Instagram benzeri modern akış tasarımı olsun.
+- Mevcut mor/beyaz tema korunsun.
+- Gönderi görselleri tam genişlikte ve düzgün oranlı olsun.
+- Hikayeler yatay scroll olsun.
+- Alt tab bar ile içerik çakışmasın.
+- iOS, Android ve Web’de responsive çalışsın.
+- Dark mode desteklensin.
+
+18. Kod temizliği
+
+- Dummy veri ve sahte kullanıcıları kaldır.
+- Tüm veriler Supabase’den gelsin.
+- TypeScript hatalarını düzelt.
+- Router/import hatalarını düzelt.
+- Kullanılmayan componentleri temizle.
+- Production seviyesinde temiz ve sürdürülebilir kod yaz.
+
+Sonuç:
+Akış sekmesi Instagram mantığında gerçek çalışan sosyal akış olacak. Keşfet, Takip Ettiklerin, hikayeler, gönderiler, beğeni, yorum, kaydet, paylaş, profil yönlendirme, gizlilik ve bildirim ayarları eksiksiz çalışacak.
