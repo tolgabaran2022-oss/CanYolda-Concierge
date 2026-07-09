@@ -5,6 +5,7 @@ import { LinearGradient } from "expo-linear-gradient";
 import { useRouter } from "expo-router";
 import React, { useMemo, useRef, useState } from "react";
 import {
+  Alert,
   FlatList,
   Platform,
   Pressable,
@@ -17,7 +18,9 @@ import {
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import type { AdoptionListing } from "@/contexts/AdoptionContext";
 import { useAdoption } from "@/contexts/AdoptionContext";
+import { useAuth } from "@/contexts/AuthContext";
 import { useBoost } from "@/contexts/BoostContext";
+import { formatTimeAgo } from "@/utils/formatters";
 
 // ── Palette ───────────────────────────────────────────────────────────────────
 const P      = "#7C4DCC";
@@ -42,8 +45,10 @@ const CARD_SHADOW = Platform.select({
 
 const DOG_IMG = require("../../assets/hero-puppy.png");
 
-type Tab    = "create" | "listings";
-type Filter = "all" | "cat" | "dog" | "bird" | "rabbit" | "new" | "other";
+type Tab        = "create" | "mylistings" | "listings";
+type Filter     = "all" | "cat" | "dog" | "bird" | "rabbit" | "new" | "other";
+type MyFilter   = "all" | "active" | "passive" | "pending";
+type ListStatus = "Aktif" | "Onay Bekliyor" | "Pasif" | "Süresi Doldu";
 
 const TYPE_NORMALIZE: Record<string, Filter> = {
   Kedi: "cat", kedi: "cat", cat: "cat",
@@ -98,29 +103,33 @@ const hdr = StyleSheet.create({
   badge:   { position: "absolute", top: 7, right: 7, width: 8, height: 8, borderRadius: 4, backgroundColor: "#FF4444", borderWidth: 1.5, borderColor: BG },
 });
 
-// ── Tab switcher ──────────────────────────────────────────────────────────────
+// ── Tab switcher (3-segment) ──────────────────────────────────────────────────
+const TAB_DEFS: { key: Tab; label: string; icon: keyof typeof Ionicons.glyphMap }[] = [
+  { key: "create",     label: "İlan Oluştur", icon: "add-circle-outline" },
+  { key: "mylistings", label: "İlanlarım",    icon: "list-outline"       },
+  { key: "listings",   label: "Tüm İlanlar",  icon: "heart-outline"      },
+];
+
 function TabSwitcher({ active, onChange }: { active: Tab; onChange: (t: Tab) => void }) {
   return (
     <View style={tsw.wrap}>
-      {(["create", "listings"] as Tab[]).map((t) => {
-        const isActive = active === t;
-        const label = t === "create" ? "İlan Oluştur" : "Tüm İlanlar";
-        const icon: keyof typeof Ionicons.glyphMap = t === "create" ? "add-circle-outline" : "heart-outline";
+      {TAB_DEFS.map((t) => {
+        const isActive = active === t.key;
         return (
           <Pressable
-            key={t}
-            style={[tsw.item, isActive && tsw.itemActive]}
-            onPress={() => { Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light); onChange(t); }}
+            key={t.key}
+            style={[tsw.item]}
+            onPress={() => { Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light); onChange(t.key); }}
           >
             {isActive ? (
               <LinearGradient colors={[P2, P]} start={{ x: 0, y: 0 }} end={{ x: 1, y: 0 }} style={tsw.grad}>
-                <Ionicons name={icon} size={15} color={WHITE} />
-                <Text style={tsw.lblActive}>{label}</Text>
+                <Ionicons name={t.icon} size={13} color={WHITE} />
+                <Text style={tsw.lblActive} numberOfLines={1}>{t.label}</Text>
               </LinearGradient>
             ) : (
               <View style={tsw.inactiveRow}>
-                <Ionicons name={icon} size={15} color={P} />
-                <Text style={tsw.lblInactive}>{label}</Text>
+                <Ionicons name={t.icon} size={13} color={P} />
+                <Text style={tsw.lblInactive} numberOfLines={1}>{t.label}</Text>
               </View>
             )}
           </Pressable>
@@ -132,11 +141,10 @@ function TabSwitcher({ active, onChange }: { active: Tab; onChange: (t: Tab) => 
 const tsw = StyleSheet.create({
   wrap:        { flexDirection: "row", marginHorizontal: 20, marginBottom: 16, backgroundColor: WHITE, borderRadius: 16, padding: 4, borderWidth: 1, borderColor: BORDER, ...IOS_SHADOW },
   item:        { flex: 1, borderRadius: 12, overflow: "hidden" },
-  itemActive:  {},
-  grad:        { flexDirection: "row", alignItems: "center", justifyContent: "center", gap: 6, paddingVertical: 11 },
-  inactiveRow: { flexDirection: "row", alignItems: "center", justifyContent: "center", gap: 6, paddingVertical: 11 },
-  lblActive:   { fontSize: 14, fontFamily: "Inter_700Bold", color: WHITE },
-  lblInactive: { fontSize: 14, fontFamily: "Inter_500Medium", color: P },
+  grad:        { flexDirection: "row", alignItems: "center", justifyContent: "center", gap: 4, paddingVertical: 10 },
+  inactiveRow: { flexDirection: "row", alignItems: "center", justifyContent: "center", gap: 4, paddingVertical: 10 },
+  lblActive:   { fontSize: 11, fontFamily: "Inter_700Bold", color: WHITE },
+  lblInactive: { fontSize: 11, fontFamily: "Inter_500Medium", color: P },
 });
 
 // ── Search bar ────────────────────────────────────────────────────────────────
@@ -528,19 +536,411 @@ const cr = StyleSheet.create({
   bannerSub:      { fontSize: 11, fontFamily: "Inter_400Regular", color: "rgba(255,255,255,0.88)", lineHeight: 16 },
 });
 
+// ── My Listings Section ───────────────────────────────────────────────────────
+const MY_FILTERS: { key: MyFilter; label: string }[] = [
+  { key: "all",     label: "Tümü"   },
+  { key: "active",  label: "Aktif"  },
+  { key: "passive", label: "Pasif"  },
+  { key: "pending", label: "Bekleyen" },
+];
+
+const STATUS_CFG: Record<ListStatus, { color: string; bg: string; icon: keyof typeof Ionicons.glyphMap }> = {
+  "Aktif":          { color: "#2D8B47", bg: "#E8F8EE", icon: "checkmark-circle" },
+  "Onay Bekliyor":  { color: "#B45309", bg: "#FEF3C7", icon: "time-outline"    },
+  "Pasif":          { color: BODY,      bg: `${BODY}14`, icon: "pause-circle-outline" },
+  "Süresi Doldu":   { color: "#C53030", bg: "#FEE2E2", icon: "close-circle-outline"   },
+};
+
+function mockViews(id: string): number {
+  let h = 0;
+  for (let i = 0; i < id.length; i++) h = ((h << 5) - h + id.charCodeAt(i)) | 0;
+  return 12 + Math.abs(h % 289);
+}
+function mockFavs(id: string): number {
+  let h = 0;
+  for (let i = 0; i < id.length; i++) h = ((h << 3) + id.charCodeAt(i)) | 0;
+  return 1 + Math.abs(h % 47);
+}
+
+interface MyCard {
+  listing: AdoptionListing;
+  status: ListStatus;
+  views: number;
+  favs: number;
+}
+
+function MyListingCard({
+  card,
+  onEdit,
+  onTogglePassive,
+  onDelete,
+  onBoost,
+  isFeatured,
+}: {
+  card: MyCard;
+  onEdit: () => void;
+  onTogglePassive: () => void;
+  onDelete: () => void;
+  onBoost: () => void;
+  isFeatured?: boolean;
+}) {
+  const { listing, status, views, favs } = card;
+  const cfg = STATUS_CFG[status];
+
+  return (
+    <View style={ml.cardWrap}>
+      <View style={ml.card}>
+        {/* ── Top row: photo + info ── */}
+        <View style={ml.topRow}>
+          {/* Thumbnail */}
+          <View style={ml.thumb}>
+            {listing.photo ? (
+              <Image source={{ uri: listing.photo }} style={ml.thumbImg} contentFit="cover" contentPosition={{ top: 0.3 }} />
+            ) : (
+              <LinearGradient colors={[`${P2}40`, `${P}28`]} style={ml.thumbFallback}>
+                <Ionicons name="paw" size={22} color={`${P}70`} />
+              </LinearGradient>
+            )}
+            {isFeatured && (
+              <View style={ml.featuredDot}>
+                <Ionicons name="star" size={8} color={WHITE} />
+              </View>
+            )}
+          </View>
+
+          {/* Info */}
+          <View style={ml.info}>
+            <View style={ml.infoTopRow}>
+              <Text style={ml.petName} numberOfLines={1}>{listing.petName}</Text>
+              <View style={[ml.statusBadge, { backgroundColor: cfg.bg }]}>
+                <Ionicons name={cfg.icon} size={11} color={cfg.color} />
+                <Text style={[ml.statusTxt, { color: cfg.color }]}>{status}</Text>
+              </View>
+            </View>
+
+            <Text style={ml.metaLine} numberOfLines={1}>
+              {listing.petType}{listing.petAge ? ` · ${listing.petAge}` : ""}
+            </Text>
+
+            <View style={ml.locRow}>
+              <Ionicons name="location-sharp" size={11} color={P} />
+              <Text style={ml.locTxt} numberOfLines={1}>{listing.location}</Text>
+            </View>
+
+            {/* Stats row */}
+            <View style={ml.statsRow}>
+              <View style={ml.statItem}>
+                <Ionicons name="eye-outline" size={12} color={BODY} />
+                <Text style={ml.statTxt}>{views}</Text>
+              </View>
+              <View style={ml.statItem}>
+                <Ionicons name="heart-outline" size={12} color={BODY} />
+                <Text style={ml.statTxt}>{favs}</Text>
+              </View>
+              <Text style={ml.dateTxt}>{formatTimeAgo(listing.createdAt)}</Text>
+            </View>
+          </View>
+        </View>
+
+        <View style={ml.divider} />
+
+        {/* ── Action buttons ── */}
+        <View style={ml.actions}>
+          <Pressable
+            style={({ pressed }) => [ml.actionBtn, ml.editBtn, { opacity: pressed ? 0.8 : 1 }]}
+            onPress={onEdit}
+          >
+            <Ionicons name="create-outline" size={14} color={P} />
+            <Text style={[ml.actionTxt, { color: P }]}>Düzenle</Text>
+          </Pressable>
+
+          <Pressable
+            style={({ pressed }) => [ml.actionBtn, ml.passiveBtn, { opacity: pressed ? 0.8 : 1 }]}
+            onPress={onTogglePassive}
+          >
+            <Ionicons
+              name={status === "Pasif" ? "play-circle-outline" : "pause-circle-outline"}
+              size={14}
+              color={BODY}
+            />
+            <Text style={[ml.actionTxt, { color: BODY }]}>
+              {status === "Pasif" ? "Aktif Et" : "Pasife Al"}
+            </Text>
+          </Pressable>
+
+          <Pressable
+            style={({ pressed }) => [ml.actionBtn, ml.deleteBtn, { opacity: pressed ? 0.8 : 1 }]}
+            onPress={onDelete}
+          >
+            <Ionicons name="trash-outline" size={14} color="#E53E3E" />
+            <Text style={[ml.actionTxt, { color: "#E53E3E" }]}>Sil</Text>
+          </Pressable>
+        </View>
+
+        {/* Boost banner (if active listing) */}
+        {status === "Aktif" && !isFeatured && (
+          <Pressable style={ml.boostBanner} onPress={onBoost}>
+            <LinearGradient colors={["#FFB347", "#E07A35"]} style={ml.boostGrad}>
+              <Ionicons name="star-outline" size={13} color={WHITE} />
+              <Text style={ml.boostTxt}>İlanı Öne Çıkar — ₺50'den başlıyor</Text>
+              <Ionicons name="chevron-forward" size={13} color={WHITE} />
+            </LinearGradient>
+          </Pressable>
+        )}
+        {isFeatured && (
+          <View style={ml.featuredBanner}>
+            <Ionicons name="star" size={13} color="#E07A35" />
+            <Text style={ml.featuredBannerTxt}>Öne Çıkan İlan</Text>
+          </View>
+        )}
+      </View>
+    </View>
+  );
+}
+
+function MyListingsSection({
+  userId,
+  listings,
+  boostStatuses,
+  deleteListing,
+  botPad,
+  onBoost,
+  onAdd,
+}: {
+  userId: string;
+  listings: AdoptionListing[];
+  boostStatuses: Record<string, { isFeatured: boolean }>;
+  deleteListing: (id: string) => Promise<void>;
+  botPad: number;
+  onBoost: (id: string, name: string) => void;
+  onAdd: () => void;
+}) {
+  const router = useRouter();
+  const myListings = useMemo(
+    () => listings.filter((l) => l.userId === userId),
+    [listings, userId]
+  );
+  const [statusMap, setStatusMap] = useState<Record<string, ListStatus>>({});
+  const [myFilter, setMyFilter] = useState<MyFilter>("all");
+
+  const getStatus = (id: string): ListStatus => statusMap[id] ?? "Aktif";
+
+  const togglePassive = (id: string) => {
+    Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
+    setStatusMap((prev) => ({
+      ...prev,
+      [id]: prev[id] === "Pasif" ? "Aktif" : "Pasif",
+    }));
+  };
+
+  const handleDelete = (listing: AdoptionListing) => {
+    Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
+    Alert.alert(
+      "İlanı Sil",
+      `"${listing.petName}" ilanını kalıcı olarak silmek istiyor musun?`,
+      [
+        { text: "İptal", style: "cancel" },
+        {
+          text: "Sil",
+          style: "destructive",
+          onPress: async () => {
+            await deleteListing(listing.id);
+            Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
+          },
+        },
+      ]
+    );
+  };
+
+  const cards: MyCard[] = useMemo(
+    () =>
+      myListings.map((l) => ({
+        listing: l,
+        status: getStatus(l.id),
+        views: mockViews(l.id),
+        favs: mockFavs(l.id),
+      })),
+    [myListings, statusMap]
+  );
+
+  const FILTER_MAP: Record<MyFilter, (c: MyCard) => boolean> = {
+    all:     () => true,
+    active:  (c) => c.status === "Aktif",
+    passive: (c) => c.status === "Pasif",
+    pending: (c) => c.status === "Onay Bekliyor",
+  };
+  const visible = cards.filter(FILTER_MAP[myFilter]);
+
+  if (myListings.length === 0) {
+    return (
+      <ScrollView contentContainerStyle={[ml.emptyWrap, { paddingBottom: botPad + 24 }]}>
+        <View style={ml.emptyIllo}>
+          <Ionicons name="list-outline" size={40} color={`${P}70`} />
+        </View>
+        <Text style={ml.emptyTitle}>Henüz İlan Yok</Text>
+        <Text style={ml.emptySub}>İlk sahiplendirme ilanını oluşturarak patili dostuna yeni bir yuva bul.</Text>
+        <Pressable
+          style={({ pressed }) => [ml.emptyBtn, { opacity: pressed ? 0.85 : 1 }]}
+          onPress={onAdd}
+        >
+          <LinearGradient colors={[P2, P]} style={ml.emptyBtnGrad}>
+            <Ionicons name="add-circle-outline" size={15} color={WHITE} />
+            <Text style={ml.emptyBtnTxt}>İlan Oluştur</Text>
+          </LinearGradient>
+        </Pressable>
+      </ScrollView>
+    );
+  }
+
+  return (
+    <View style={{ flex: 1 }}>
+      {/* Summary strip */}
+      <View style={ml.summaryStrip}>
+        {([
+          { label: "Toplam", val: myListings.length, color: P },
+          { label: "Aktif",  val: cards.filter((c) => c.status === "Aktif").length,  color: "#2D8B47" },
+          { label: "Pasif",  val: cards.filter((c) => c.status === "Pasif").length,  color: BODY      },
+        ] as const).map((s) => (
+          <View key={s.label} style={ml.summaryCell}>
+            <Text style={[ml.summaryVal, { color: s.color }]}>{s.val}</Text>
+            <Text style={ml.summaryLbl}>{s.label}</Text>
+          </View>
+        ))}
+      </View>
+
+      {/* Status filter pills */}
+      <ScrollView
+        horizontal
+        showsHorizontalScrollIndicator={false}
+        contentContainerStyle={ml.filterList}
+        style={ml.filterScroll}
+      >
+        {MY_FILTERS.map((f) => {
+          const isA = myFilter === f.key;
+          return (
+            <Pressable
+              key={f.key}
+              onPress={() => { Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light); setMyFilter(f.key); }}
+              style={[ml.filterChip, isA && ml.filterChipActive]}
+            >
+              {isA
+                ? <Text style={ml.filterLblActive}>{f.label}</Text>
+                : <Text style={ml.filterLbl}>{f.label}</Text>
+              }
+            </Pressable>
+          );
+        })}
+      </ScrollView>
+
+      {/* Cards list */}
+      <FlatList
+        data={visible}
+        keyExtractor={(c) => c.listing.id}
+        showsVerticalScrollIndicator={false}
+        contentContainerStyle={{ paddingTop: 4, paddingBottom: botPad + 24 }}
+        ListEmptyComponent={
+          <View style={ml.emptyFilter}>
+            <Ionicons name="filter-outline" size={32} color={`${P}50`} />
+            <Text style={ml.emptyFilterTxt}>Bu filtrede ilan yok</Text>
+          </View>
+        }
+        renderItem={({ item: c }) => (
+          <MyListingCard
+            card={c}
+            isFeatured={boostStatuses[c.listing.id]?.isFeatured ?? false}
+            onEdit={() => router.push(`/adoption/${c.listing.id}`)}
+            onTogglePassive={() => togglePassive(c.listing.id)}
+            onDelete={() => handleDelete(c.listing)}
+            onBoost={() => onBoost(c.listing.id, c.listing.petName)}
+          />
+        )}
+      />
+    </View>
+  );
+}
+
+const ml = StyleSheet.create({
+  // Card
+  cardWrap: { marginHorizontal: 20, marginBottom: 14, borderRadius: 20, ...CARD_SHADOW },
+  card:     { backgroundColor: WHITE, borderRadius: 20, borderWidth: 1, borderColor: BORDER, overflow: "hidden" },
+
+  topRow: { flexDirection: "row", padding: 14, gap: 12 },
+
+  thumb:        { width: 88, height: 88, borderRadius: 16, overflow: "hidden", flexShrink: 0 },
+  thumbImg:     { width: "100%", height: "100%" },
+  thumbFallback:{ flex: 1, alignItems: "center", justifyContent: "center" },
+  featuredDot:  { position: "absolute", top: 5, right: 5, width: 18, height: 18, borderRadius: 9, backgroundColor: "#E07A35", alignItems: "center", justifyContent: "center" },
+
+  info:       { flex: 1, gap: 4 },
+  infoTopRow: { flexDirection: "row", alignItems: "flex-start", gap: 6, justifyContent: "space-between" },
+  petName:    { flex: 1, fontSize: 15, fontFamily: "Inter_700Bold", color: DARK },
+
+  statusBadge: { flexDirection: "row", alignItems: "center", gap: 3, borderRadius: 7, paddingHorizontal: 7, paddingVertical: 3, flexShrink: 0 },
+  statusTxt:   { fontSize: 10, fontFamily: "Inter_700Bold" },
+
+  metaLine: { fontSize: 12, fontFamily: "Inter_400Regular", color: BODY },
+  locRow:   { flexDirection: "row", alignItems: "center", gap: 3 },
+  locTxt:   { fontSize: 11, fontFamily: "Inter_400Regular", color: BODY, flex: 1 },
+
+  statsRow: { flexDirection: "row", alignItems: "center", gap: 10, marginTop: 2 },
+  statItem: { flexDirection: "row", alignItems: "center", gap: 3 },
+  statTxt:  { fontSize: 11, fontFamily: "Inter_400Regular", color: BODY },
+  dateTxt:  { fontSize: 11, fontFamily: "Inter_400Regular", color: `${BODY}80`, marginLeft: "auto" as any },
+
+  divider: { height: 1, backgroundColor: `${P}08`, marginHorizontal: 14 },
+
+  actions:    { flexDirection: "row", padding: 10, gap: 8 },
+  actionBtn:  { flex: 1, flexDirection: "row", alignItems: "center", justifyContent: "center", gap: 5, paddingVertical: 9, borderRadius: 12, borderWidth: 1 },
+  editBtn:    { backgroundColor: `${P}08`, borderColor: `${P}28` },
+  passiveBtn: { backgroundColor: `${BODY}08`, borderColor: `${BODY}28` },
+  deleteBtn:  { backgroundColor: "#FFF5F5", borderColor: "#FFD5D5" },
+  actionTxt:  { fontSize: 11, fontFamily: "Inter_600SemiBold" },
+
+  boostBanner: { marginHorizontal: 10, marginBottom: 10, borderRadius: 12, overflow: "hidden" },
+  boostGrad:   { flexDirection: "row", alignItems: "center", gap: 7, paddingVertical: 9, paddingHorizontal: 12 },
+  boostTxt:    { flex: 1, fontSize: 11, fontFamily: "Inter_600SemiBold", color: WHITE },
+
+  featuredBanner:    { flexDirection: "row", alignItems: "center", justifyContent: "center", gap: 5, marginHorizontal: 10, marginBottom: 10, backgroundColor: "#FFF7ED", borderRadius: 10, borderWidth: 1, borderColor: "#FFD59A", paddingVertical: 7 },
+  featuredBannerTxt: { fontSize: 11, fontFamily: "Inter_700Bold", color: "#E07A35" },
+
+  // Summary strip
+  summaryStrip: { flexDirection: "row", marginHorizontal: 20, marginBottom: 12, backgroundColor: WHITE, borderRadius: 16, borderWidth: 1, borderColor: BORDER, ...IOS_SHADOW },
+  summaryCell:  { flex: 1, alignItems: "center", paddingVertical: 12, gap: 2 },
+  summaryVal:   { fontSize: 20, fontFamily: "Inter_700Bold" },
+  summaryLbl:   { fontSize: 10, fontFamily: "Inter_400Regular", color: BODY },
+
+  // Filter
+  filterScroll: { marginBottom: 12 },
+  filterList:   { paddingHorizontal: 20, gap: 8, paddingVertical: 3, paddingRight: 24 },
+  filterChip:        { paddingVertical: 8, paddingHorizontal: 16, borderRadius: 20, backgroundColor: WHITE, borderWidth: 1.5, borderColor: `${P}22`, ...IOS_SHADOW },
+  filterChipActive:  { backgroundColor: `${P}14`, borderColor: P },
+  filterLbl:         { fontSize: 12, fontFamily: "Inter_600SemiBold", color: BODY },
+  filterLblActive:   { fontSize: 12, fontFamily: "Inter_700Bold", color: P },
+
+  // Empty
+  emptyWrap:      { flex: 1, alignItems: "center", paddingTop: 60, paddingHorizontal: 40, gap: 10 },
+  emptyIllo:      { width: 74, height: 74, borderRadius: 37, backgroundColor: `${P}12`, alignItems: "center", justifyContent: "center", marginBottom: 6 },
+  emptyTitle:     { fontSize: 18, fontFamily: "Inter_700Bold", color: DARK },
+  emptySub:       { fontSize: 13, fontFamily: "Inter_400Regular", color: BODY, textAlign: "center", lineHeight: 20 },
+  emptyBtn:       { marginTop: 14, borderRadius: 50, overflow: "hidden" },
+  emptyBtnGrad:   { flexDirection: "row", alignItems: "center", gap: 7, paddingVertical: 12, paddingHorizontal: 26 },
+  emptyBtnTxt:    { fontSize: 13, fontFamily: "Inter_700Bold", color: WHITE },
+  emptyFilter:    { alignItems: "center", paddingTop: 40, gap: 8 },
+  emptyFilterTxt: { fontSize: 14, fontFamily: "Inter_400Regular", color: BODY },
+});
+
 // ── Main ──────────────────────────────────────────────────────────────────────
 export default function PetsScreen() {
-  const insets = useSafeAreaInsets();
-  const router = useRouter();
-  const { listings } = useAdoption();
-  const { boostStatuses } = useBoost();
-  const [activeTab, setActiveTab] = useState<Tab>("create");
-  const [filter, setFilter]       = useState<Filter>("all");
-  const [query, setQuery]         = useState("");
+  const insets    = useSafeAreaInsets();
+  const router    = useRouter();
+  const { listings, deleteListing } = useAdoption();
+  const { boostStatuses }           = useBoost();
+  const { user }                    = useAuth();
+  const [activeTab, setActiveTab]   = useState<Tab>("create");
+  const [filter, setFilter]         = useState<Filter>("all");
+  const [query, setQuery]           = useState("");
 
-  // topPad: safe area top. On web use fixed offset.
   const topPad = Platform.OS === "web" ? 0 : insets.top;
-  // botPad: safe area bottom + tab bar height so content never hides behind tabs
   const botPad = (Platform.OS === "web" ? 0 : insets.bottom) + TAB_H;
 
   const NOW_THRESHOLD = Date.now() - 24 * 3_600_000;
@@ -556,9 +956,9 @@ export default function PetsScreen() {
 
   const filtered = useMemo(() => {
     let list = sorted;
-    if (filter === "new")       list = list.filter((l) => new Date(l.createdAt).getTime() > NOW_THRESHOLD);
-    else if (filter !== "all")  list = list.filter((l) => (TYPE_NORMALIZE[l.petType] ?? "other") === filter);
-    if (filter === "other")     list = sorted.filter((l) => (TYPE_NORMALIZE[l.petType] ?? "other") === "other");
+    if (filter === "new")      list = list.filter((l) => new Date(l.createdAt).getTime() > NOW_THRESHOLD);
+    else if (filter !== "all") list = list.filter((l) => (TYPE_NORMALIZE[l.petType] ?? "other") === filter);
+    if (filter === "other")    list = sorted.filter((l) => (TYPE_NORMALIZE[l.petType] ?? "other") === "other");
     if (query.trim()) {
       const q = query.toLowerCase();
       list = list.filter((l) =>
@@ -573,26 +973,35 @@ export default function PetsScreen() {
 
   return (
     <View style={s.root}>
-      {/* Sticky header block */}
+      {/* Sticky header */}
       <View style={s.stickyTop}>
         <PetHeader topPad={topPad} />
         <TabSwitcher active={activeTab} onChange={setActiveTab} />
       </View>
 
-      {activeTab === "create" ? (
+      {activeTab === "create" && (
         <CreateSection onPress={() => router.push("/add-adoption")} botPad={botPad} />
-      ) : (
+      )}
+
+      {activeTab === "mylistings" && (
+        <MyListingsSection
+          userId={user?.id ?? ""}
+          listings={listings}
+          boostStatuses={boostStatuses}
+          deleteListing={deleteListing}
+          botPad={botPad}
+          onBoost={(id, name) =>
+            router.push({ pathname: "/boost-packages", params: { listingId: id, petName: name } } as any)
+          }
+          onAdd={() => router.push("/add-adoption")}
+        />
+      )}
+
+      {activeTab === "listings" && (
         <View style={s.listingShell}>
-          {/* Search bar */}
           <SearchBar query={query} onQuery={setQuery} onFilter={() => {}} />
-
-          {/* Category chips — FlatList, no clipping */}
           <FilterRow active={filter} onChange={setFilter} />
-
-          {/* Count row */}
           <ListingsHeader count={filtered.length} filter={filter} />
-
-          {/* Cards */}
           <FlatList
             data={filtered}
             keyExtractor={(item) => item.id}
