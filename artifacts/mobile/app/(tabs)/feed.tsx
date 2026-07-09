@@ -3,6 +3,7 @@ import * as Haptics from "expo-haptics";
 import * as ImagePicker from "expo-image-picker";
 import { Image } from "expo-image";
 import { LinearGradient } from "expo-linear-gradient";
+import { useRouter } from "expo-router";
 import React, { useCallback, useEffect, useRef, useState } from "react";
 import {
   Alert,
@@ -173,16 +174,43 @@ const M = StyleSheet.create({
 });
 
 /* ── Feed header ──────────────────────────────────────────── */
-function FeedHeader({ onNotify }: { onNotify: () => void }) {
+const CAT_AVATAR_FEED = "https://loremflickr.com/100/100/cat?lock=500";
+
+function FeedHeader({
+  onNotify,
+  avatarUrl,
+  onAvatarPress,
+}: {
+  onNotify: () => void;
+  avatarUrl?: string;
+  onAvatarPress: () => void;
+}) {
   return (
     <View style={H.root}>
       <View style={H.left}>
-        <Text style={H.logo}>CanYoldaşı</Text>
+        <Ionicons name="heart" size={15} color={C.purple} />
+        <Text style={H.logo}>canyoldaşı</Text>
       </View>
       <View style={H.right}>
         <Pressable onPress={onNotify} style={H.bellWrap} hitSlop={10}>
           <Ionicons name="notifications-outline" size={24} color={C.purple} />
           <View style={H.badge} />
+        </Pressable>
+        <Pressable onPress={onAvatarPress} hitSlop={6}>
+          <LinearGradient
+            colors={["#C278F0", "#7B5EA7"]}
+            start={{ x: 0, y: 1 }}
+            end={{ x: 1, y: 0 }}
+            style={H.avatarRing}
+          >
+            <View style={H.avatarInner}>
+              <Image
+                source={{ uri: avatarUrl ?? CAT_AVATAR_FEED }}
+                style={H.avatar}
+                contentFit="cover"
+              />
+            </View>
+          </LinearGradient>
         </Pressable>
       </View>
     </View>
@@ -190,17 +218,21 @@ function FeedHeader({ onNotify }: { onNotify: () => void }) {
 }
 
 const H = StyleSheet.create({
-  root:    { flexDirection: "row", alignItems: "center", justifyContent: "space-between", paddingHorizontal: 18, paddingTop: 10, paddingBottom: 6 },
-  left:    { flexDirection: "row", alignItems: "center", gap: 7 },
-  logo:    { fontSize: 20, fontFamily: "Inter_700Bold", color: "#3D2080", letterSpacing: -0.5 },
-  right:   { flexDirection: "row", alignItems: "center", gap: 18 },
+  root:     { flexDirection: "row", alignItems: "center", justifyContent: "space-between", paddingHorizontal: 18, paddingTop: 10, paddingBottom: 8 },
+  left:     { flexDirection: "row", alignItems: "center", gap: 6 },
+  logo:     { fontSize: 20, fontFamily: "Inter_700Bold", color: "#3D2080", letterSpacing: -0.5 },
+  right:    { flexDirection: "row", alignItems: "center", gap: 14 },
   bellWrap: { position: "relative" },
-  badge:   { position: "absolute", top: 1, right: 1, width: 8, height: 8, borderRadius: 4, backgroundColor: "#FF3B6B", borderWidth: 1.5, borderColor: C.white },
+  badge:    { position: "absolute", top: 1, right: 1, width: 8, height: 8, borderRadius: 4, backgroundColor: "#FF3B6B", borderWidth: 1.5, borderColor: C.white },
+  avatarRing:  { width: 38, height: 38, borderRadius: 19, alignItems: "center", justifyContent: "center", padding: 2 },
+  avatarInner: { width: 34, height: 34, borderRadius: 17, overflow: "hidden", borderWidth: 1.5, borderColor: "#FFFFFF" },
+  avatar:      { width: "100%", height: "100%" },
 });
 
 /* ── Main screen ──────────────────────────────────────────── */
 export default function FeedScreen() {
   const insets = useSafeAreaInsets();
+  const router = useRouter();
   const { user } = useAuth();
   const userId = user?.email ?? "anonymous";
 
@@ -347,7 +379,10 @@ export default function FeedScreen() {
   const renderHeader = useCallback(
     () => (
       <>
-        <FeedHeader onNotify={() => Alert.alert("Bildirimler", "Yakında!")} />
+        <FeedHeader
+          onNotify={() => Alert.alert("Bildirimler", "Yakında!")}
+          onAvatarPress={() => router.push("/(tabs)/profile")}
+        />
         <StoryBar
           stories={stories}
           currentUserId={userId}
@@ -357,7 +392,7 @@ export default function FeedScreen() {
         <View style={F.divider} />
       </>
     ),
-    [stories, userId]
+    [stories, userId, router]
   );
 
   return (

@@ -1,0 +1,118 @@
+Bu uygulamanın Akış (Feed) ekranını verdiğim referans tasarıma göre yeniden düzenle.
+
+Uygulama adı: "canyoldaşı"
+
+Amaç:
+Instagram seviyesinde premium bir sosyal hayvan topluluğu uygulaması görünümü oluştur.
+
+GENEL TASARIM:
+- Mevcut mor/beyaz renk paletini koru.
+- Apple App Store kalitesinde modern UI oluştur.
+- Yuvarlak köşeler, soft shadow, temiz boşluk kullanımı.
+- Tasarım iOS uygulaması hissi vermeli.
+- Mevcut fonksiyonları bozma, sadece UI/UX geliştir.
+
+HEADER (ÜST BAR):
+Sol taraf:
+- Canyoldaşı logosu aynı kalacak.
+
+Sağ taraf:
+- Bildirim zil ikonu
+- Yanında Instagram tarzı küçük profil avatarı ekle.
+
+Profil avatar özellikleri:
+- 36x36 px yuvarlak kullanıcı fotoğrafı.
+- Mor ince halka.
+- Kullanıcı fotoğrafı varsa göster.
+- Fotoğraf yoksa varsayılan hayvan dostu avatar göster.
+- Tıklayınca Profil sayfasına yönlendir.
+
+HİKAYELER ALANI:
+Akış ekranının üst kısmında Instagram tarzı hikaye sistemi oluştur.
+
+Özellikler:
+- İlk kutu: "+" yeni hikaye ekle.
+- Kullanıcı kendi hikayesini oluşturabilsin.
+- Yuvarlak profil fotoğrafları.
+- Görülmeyen hikayelerde mor halka.
+- Görülen hikayelerde gri halka.
+- Hikaye kartları yatay kaydırılabilir olsun.
+
+Hikaye ekleme:
+- Fotoğraf yükleme.
+- Kamera ile çekme.
+- Açıklama ekleme.
+- Paylaş butonu.
+- 24 saat sonra otomatik kaldırma.
+
+AKIŞ POST TASARIMI:
+Instagram benzeri gönderi kartları:
+
+Kart:
+- Beyaz arka plan.
+- 20px yuvarlatılmış köşe.
+- Hafif gölge.
+- Kullanıcı profil fotoğrafı.
+- Kullanıcı adı.
+- Konum bilgisi.
+- Sağ üst üç nokta menüsü.
+
+Gönderi:
+- Büyük kare fotoğraf alanı.
+- Altında:
+  ❤️ Beğeni
+  💬 Yorum
+  📤 Paylaş
+  🔖 Kaydet
+
+Metin alanı:
+- Kullanıcı adı kalın.
+- Açıklama.
+- Emoji desteği.
+
+ALT NAVİGASYON:
+Mevcut menüyü koru:
+
+Harita
+Akış
+Hayvanlar
+Evcil
+Profil
+
+Tasarım:
+- Cam efekti (glassmorphism)
+- Yuvarlak beyaz panel.
+- Mor aktif ikon.
+- iOS tarzı.
+
+PROFİL SAYFASI:
+Sağ üst avatar tıklanınca açılan profil ekranı oluştur.
+
+Profil:
+- Büyük yuvarlak profil fotoğrafı.
+- Kullanıcı adı.
+- Kullanıcı açıklaması.
+- Gönderi sayısı.
+- Takipçi.
+- Takip edilen.
+- Profil düzenle butonu.
+- Paylaşımlar grid görünümü.
+- Hayvanlarım bölümü.
+- Kaydedilenler bölümü.
+
+TEKNİK:
+- React Native / Expo uyumlu yap.
+- TypeScript kullan.
+- Component yapısını temiz oluştur.
+- Responsive iPhone ekranlarına uygun yap.
+- Mevcut backend yapısını bozma.
+- Gerekli componentleri oluştur:
+  StoryBar
+  StoryViewer
+  AddStoryButton
+  ProfileAvatar
+  FeedCard
+  ProfileHeader
+
+Sonuç:
+Uygulama Instagram + Pawshake tarzında premium hayvan sosyal ağı görünümüne ulaşmalı.

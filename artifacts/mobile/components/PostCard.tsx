@@ -15,7 +15,7 @@ import {
 
 const { width: SW } = Dimensions.get("window");
 const CARD_W = SW - 24;
-const IMG_H  = Math.round(CARD_W * 0.65);
+const IMG_H  = Math.round(CARD_W * 1.05);
 
 const C = {
   purple:  "#7B5EA7",
@@ -228,21 +228,21 @@ const S = StyleSheet.create({
     alignSelf: "center",
     backgroundColor: "#FFFFFF",
     borderRadius: 20,
-    marginBottom: 16,
+    marginBottom: 20,
     overflow: "hidden",
     ...Platform.select({
       ios: {
         shadowColor: "#7B5EA7",
-        shadowOffset: { width: 0, height: 4 },
-        shadowOpacity: 0.10,
-        shadowRadius: 16,
+        shadowOffset: { width: 0, height: 6 },
+        shadowOpacity: 0.12,
+        shadowRadius: 20,
       },
-      android: { elevation: 4 },
+      android: { elevation: 5 },
       default: {
         shadowColor: "#7B5EA7",
-        shadowOffset: { width: 0, height: 4 },
-        shadowOpacity: 0.10,
-        shadowRadius: 16,
+        shadowOffset: { width: 0, height: 6 },
+        shadowOpacity: 0.12,
+        shadowRadius: 20,
       },
     }),
   },
@@ -251,19 +251,19 @@ const S = StyleSheet.create({
     flexDirection: "row",
     alignItems: "center",
     paddingHorizontal: 14,
-    paddingVertical: 11,
+    paddingVertical: 12,
     gap: 10,
   },
   avatarWrap: {
-    width: 36,
-    height: 36,
-    borderRadius: 18,
+    width: 40,
+    height: 40,
+    borderRadius: 20,
     borderWidth: 2,
     borderColor: C.purple,
     overflow: "hidden",
   },
   avatar:   { width: "100%", height: "100%" },
-  username: { fontSize: 13, fontFamily: "Inter_600SemiBold", color: C.text },
+  username: { fontSize: 14, fontFamily: "Inter_600SemiBold", color: C.text },
   meta:     { fontSize: 11, fontFamily: "Inter_400Regular",  color: C.muted, marginTop: 1 },
 
   imageWrap: { width: "100%", height: IMG_H },
