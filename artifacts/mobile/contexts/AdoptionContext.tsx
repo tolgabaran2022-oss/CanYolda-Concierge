@@ -17,6 +17,7 @@ export interface AdoptionListing {
   gender?: string;
   vaccinated?: boolean;
   photo?: string;
+  images?: string[];
   location: string;
   description: string;
   userId: string;

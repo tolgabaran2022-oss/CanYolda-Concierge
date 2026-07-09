@@ -367,6 +367,25 @@ export default function AdoptionDetailScreen() {
               <View style={S.ownerActionsWrap}>
                 <View style={S.divider} />
                 <SectionHead title="İlan Yönetimi" />
+
+                {/* Edit button */}
+                <Pressable
+                  style={({ pressed }) => [S.editBtn, { opacity: pressed ? 0.85 : 1 }]}
+                  onPress={() => {
+                    Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
+                    router.push(`/adoption/edit/${listing.id}` as any);
+                  }}
+                >
+                  <View style={S.editBtnInner}>
+                    <Ionicons name="create-outline" size={18} color={P} />
+                    <View style={{ flex: 1 }}>
+                      <Text style={S.editBtnTitle}>İlanı Düzenle</Text>
+                      <Text style={S.editBtnSub}>Fotoğraf, bilgi ve iletişim bilgilerini güncelle</Text>
+                    </View>
+                    <Ionicons name="chevron-forward" size={16} color={`${P}80`} />
+                  </View>
+                </Pressable>
+
                 <Pressable
                   style={({ pressed }) => [S.boostBtn, { opacity: pressed ? 0.85 : 1 }]}
                   onPress={handleBoost}
@@ -520,6 +539,10 @@ const S = StyleSheet.create({
 
   // Owner actions
   ownerActionsWrap: { gap: 12 },
+  editBtn:      { borderRadius: 18, borderWidth: 1.5, borderColor: BORDER, backgroundColor: WHITE, overflow: "hidden", ...IOS_SHADOW },
+  editBtnInner: { flexDirection: "row", alignItems: "center", gap: 12, padding: 16 },
+  editBtnTitle: { fontSize: 15, fontFamily: "Inter_700Bold", color: DARK },
+  editBtnSub:   { fontSize: 12, fontFamily: "Inter_400Regular", color: BODY, marginTop: 2 },
   boostBtn:    { borderRadius: 18, overflow: "hidden" },
   boostBtnGrad:{ flexDirection: "row", alignItems: "center", gap: 12, padding: 16, borderRadius: 18 },
   boostBtnTitle:{ fontSize: 15, fontFamily: "Inter_700Bold", color: WHITE },
