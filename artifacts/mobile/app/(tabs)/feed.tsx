@@ -178,10 +178,12 @@ const CAT_AVATAR_FEED = "https://loremflickr.com/100/100/cat?lock=500";
 
 function FeedHeader({
   onNotify,
+  onNewPost,
   avatarUrl,
   onAvatarPress,
 }: {
   onNotify: () => void;
+  onNewPost: () => void;
   avatarUrl?: string;
   onAvatarPress: () => void;
 }) {
@@ -192,10 +194,30 @@ function FeedHeader({
         <Text style={H.logo}>canyoldaşı</Text>
       </View>
       <View style={H.right}>
+        {/* New post */}
+        <Pressable
+          onPress={() => {
+            Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+            onNewPost();
+          }}
+          hitSlop={10}
+          style={H.newPostBtn}
+        >
+          <LinearGradient
+            colors={["#9478D8", "#5B3FD6"]}
+            start={{ x: 0, y: 0 }}
+            end={{ x: 1, y: 1 }}
+            style={H.newPostGradient}
+          >
+            <Ionicons name="add" size={18} color="#FFF" />
+          </LinearGradient>
+        </Pressable>
+        {/* Notifications */}
         <Pressable onPress={onNotify} style={H.bellWrap} hitSlop={10}>
           <Ionicons name="notifications-outline" size={24} color={C.purple} />
           <View style={H.badge} />
         </Pressable>
+        {/* Avatar */}
         <Pressable onPress={onAvatarPress} hitSlop={6}>
           <LinearGradient
             colors={["#C278F0", "#7B5EA7"]}
@@ -221,9 +243,11 @@ const H = StyleSheet.create({
   root:     { flexDirection: "row", alignItems: "center", justifyContent: "space-between", paddingHorizontal: 18, paddingTop: 10, paddingBottom: 8 },
   left:     { flexDirection: "row", alignItems: "center", gap: 6 },
   logo:     { fontSize: 20, fontFamily: "Inter_700Bold", color: "#3D2080", letterSpacing: -0.5 },
-  right:    { flexDirection: "row", alignItems: "center", gap: 14 },
+  right:    { flexDirection: "row", alignItems: "center", gap: 12 },
   bellWrap: { position: "relative" },
   badge:    { position: "absolute", top: 1, right: 1, width: 8, height: 8, borderRadius: 4, backgroundColor: "#FF3B6B", borderWidth: 1.5, borderColor: C.white },
+  newPostBtn:      {},
+  newPostGradient: { width: 34, height: 34, borderRadius: 10, alignItems: "center", justifyContent: "center", shadowColor: "#5B3FD6", shadowOffset: { width: 0, height: 3 }, shadowOpacity: 0.35, shadowRadius: 8, elevation: 5 },
   avatarRing:  { width: 38, height: 38, borderRadius: 19, alignItems: "center", justifyContent: "center", padding: 2 },
   avatarInner: { width: 34, height: 34, borderRadius: 17, overflow: "hidden", borderWidth: 1.5, borderColor: "#FFFFFF" },
   avatar:      { width: "100%", height: "100%" },
@@ -243,7 +267,6 @@ export default function FeedScreen() {
   const [createVisible,   setCreateVisible]   = useState(false);
   const [createStoryOpen, setCreateStoryOpen]  = useState(false);
   const [apiReady,        setApiReady]        = useState(false);
-  const fabAnim = useRef(new Animated.Value(1)).current;
 
   /* ── Fetch posts on mount ──────────────────────────────── */
   useEffect(() => {
@@ -365,14 +388,6 @@ export default function FeedScreen() {
     }
   };
 
-  const pressFab = () => {
-    Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
-    Animated.sequence([
-      Animated.spring(fabAnim, { toValue: 0.88, useNativeDriver: true, speed: 40 }),
-      Animated.spring(fabAnim, { toValue: 1,    useNativeDriver: true, speed: 30 }),
-    ]).start();
-    setCreateVisible(true);
-  };
 
   const BOTTOM_NAV_H = 68 + insets.bottom + 10;
 
@@ -381,6 +396,7 @@ export default function FeedScreen() {
       <>
         <FeedHeader
           onNotify={() => Alert.alert("Bildirimler", "Yakında!")}
+          onNewPost={() => setCreateVisible(true)}
           onAvatarPress={() => router.push("/(tabs)/profile")}
         />
         <StoryBar
@@ -414,15 +430,6 @@ export default function FeedScreen() {
         style={F.list}
       />
 
-      {/* FAB */}
-      <Animated.View style={[F.fab, { bottom: BOTTOM_NAV_H - 10, transform: [{ scale: fabAnim }] }]}>
-        <Pressable onPress={pressFab}>
-          <LinearGradient colors={["#9478D8", "#5B3FD6"]} start={{ x: 0, y: 0 }} end={{ x: 1, y: 1 }} style={F.fabGradient}>
-            <Ionicons name="add" size={28} color="#FFF" />
-          </LinearGradient>
-        </Pressable>
-      </Animated.View>
-
       <CreatePostModal
         visible={createVisible}
         onClose={() => setCreateVisible(false)}
@@ -452,6 +459,4 @@ const F = StyleSheet.create({
   list:        { flex: 1, backgroundColor: C.bg },
   listContent: { paddingTop: 14 },
   divider:     { height: 12, backgroundColor: C.bg },
-  fab:         { position: "absolute", right: 20 },
-  fabGradient: { width: 56, height: 56, borderRadius: 28, alignItems: "center", justifyContent: "center", shadowColor: "#5B3FD6", shadowOffset: { width: 0, height: 6 }, shadowOpacity: 0.4, shadowRadius: 14, elevation: 8 },
 });
