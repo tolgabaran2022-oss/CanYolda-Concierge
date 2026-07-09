@@ -133,6 +133,7 @@ function CreateSection({ onPress }: { onPress: () => void }) {
             </LinearGradient>
           </Pressable>
         </View>
+        {/* heroRight: kendi başına overflow+borderRadius — RN Web'de parent clip güvenilmez */}
         <View style={cr.heroRight}>
           <Image source={{ uri: DOG_IMG }} style={cr.dogImg} contentFit="cover" />
         </View>
@@ -191,7 +192,7 @@ function CreateSection({ onPress }: { onPress: () => void }) {
 }
 const cr = StyleSheet.create({
   card: { backgroundColor: WHITE, borderRadius: 16, borderWidth: 1, borderColor: BORDER, padding: 16, ...SHADOW },
-  heroCard: { backgroundColor: WHITE, borderRadius: 20, borderWidth: 1, borderColor: BORDER, flexDirection: "row", overflow: "hidden", minHeight: 210, ...SHADOW },
+  heroCard: { backgroundColor: WHITE, borderRadius: 20, borderWidth: 1, borderColor: BORDER, flexDirection: "row", overflow: "hidden", ...SHADOW },
   heroLeft: { flex: 1, padding: 18, gap: 8, justifyContent: "center" },
   heroIconCircle: { width: 60, height: 60, borderRadius: 30, alignItems: "center", justifyContent: "center" },
   heroTitle: { fontSize: 15, fontFamily: "Inter_700Bold", color: DARK, lineHeight: 21 },
@@ -199,8 +200,9 @@ const cr = StyleSheet.create({
   ctaBtn: { borderRadius: 50, overflow: "hidden", marginTop: 4 },
   ctaGrad: { flexDirection: "row", alignItems: "center", gap: 6, paddingVertical: 11, paddingHorizontal: 14, justifyContent: "center" },
   ctaTxt: { fontSize: 13, fontFamily: "Inter_700Bold", color: WHITE },
-  heroRight: { width: 115, overflow: "hidden" },
-  dogImg: { width: 115, height: "100%" as unknown as number },
+  /* heroRight clips the image itself — don't rely on parent overflow:hidden on RN Web */
+  heroRight: { width: 106, overflow: "hidden", borderTopRightRadius: 19, borderBottomRightRadius: 19 },
+  dogImg: { width: 106, height: 220 },
   dot: { width: 6, height: 6, borderRadius: 3, backgroundColor: P, marginTop: 7, flexShrink: 0 },
   tipsTitle: { flex: 1, fontSize: 13, fontFamily: "Inter_600SemiBold", color: DARK },
   tipTxt: { flex: 1, fontSize: 13, fontFamily: "Inter_400Regular", color: BODY, lineHeight: 20 },
