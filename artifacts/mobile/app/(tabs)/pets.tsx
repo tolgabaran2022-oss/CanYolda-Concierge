@@ -1243,33 +1243,21 @@ function MyListingsSection({
         </Pressable>
       </View>
 
-      {/* ── Stat cards — row 1 ── */}
-      <View style={ml.statsRow}>
+      {/* ── Stat cards — 2 column × 3 row grid ── */}
+      <View style={ml.statsGrid}>
         {([
-          { label: "Toplam İlan",   val: myListings.length, icon: "list"            as const, g: [DARK, P]              as const },
-          { label: "Aktif İlan",    val: activeCount,        icon: "checkmark-circle" as const, g: ["#34D399", "#059669"] as const },
-          { label: "Görüntülenme",  val: totalViews,         icon: "eye"              as const, g: [P2, P]               as const },
+          { label: "Toplam İlan",    val: myListings.length, icon: "list"             as const },
+          { label: "Aktif İlan",     val: activeCount,        icon: "checkmark-circle" as const },
+          { label: "Görüntülenme",   val: totalViews,         icon: "eye"              as const },
+          { label: "Favori",         val: totalFavs,          icon: "heart"            as const },
+          { label: "Mesaj",          val: totalMsgs,          icon: "chatbubble"       as const },
+          { label: "Sahiplendirilen",val: adoptedCount,       icon: "home"             as const },
         ] as const).map((stat) => (
-          <LinearGradient key={stat.label} colors={stat.g} start={{ x: 0, y: 0 }} end={{ x: 1, y: 1 }} style={ml.statCard}>
-            <Ionicons name={stat.icon} size={20} color="rgba(255,255,255,0.9)" />
+          <View key={stat.label} style={ml.statCard}>
+            <Ionicons name={stat.icon} size={22} color="#111" />
             <Text style={ml.statVal}>{stat.val}</Text>
             <Text style={ml.statLbl}>{stat.label}</Text>
-          </LinearGradient>
-        ))}
-      </View>
-
-      {/* ── Stat cards — row 2 ── */}
-      <View style={[ml.statsRow, { marginTop: 0, marginBottom: 14 }]}>
-        {([
-          { label: "Favori",          val: totalFavs,     icon: "heart"        as const, g: ["#F87171", "#DC2626"] as const },
-          { label: "Mesaj",           val: totalMsgs,     icon: "chatbubble"   as const, g: ["#60A5FA", "#0070F3"] as const },
-          { label: "Sahiplendirilen", val: adoptedCount,  icon: "home"         as const, g: ["#A78BFA", DARK]     as const },
-        ] as const).map((stat) => (
-          <LinearGradient key={stat.label} colors={stat.g} start={{ x: 0, y: 0 }} end={{ x: 1, y: 1 }} style={ml.statCard}>
-            <Ionicons name={stat.icon} size={20} color="rgba(255,255,255,0.9)" />
-            <Text style={ml.statVal}>{stat.val}</Text>
-            <Text style={ml.statLbl}>{stat.label}</Text>
-          </LinearGradient>
+          </View>
         ))}
       </View>
 
@@ -1500,18 +1488,29 @@ const ml = StyleSheet.create({
   addBtn:    { flexDirection: "row", alignItems: "center", gap: 6, paddingVertical: 10, paddingHorizontal: 16, borderRadius: 50 },
   addBtnTxt: { fontSize: 13, fontFamily: "Inter_700Bold", color: WHITE },
 
-  // Stat cards
-  statsRow: { flexDirection: "row", gap: 10, marginHorizontal: 20, marginBottom: 14 },
+  // Stat cards — 2-column grid
+  statsGrid: {
+    flexDirection: "row",
+    flexWrap: "wrap",
+    marginHorizontal: 20,
+    marginBottom: 14,
+    gap: 10,
+  },
   statCard: {
-    flex: 1, borderRadius: 18, padding: 14, alignItems: "center", gap: 4,
+    width: "47%",
+    backgroundColor: "#F2F2F2",
+    borderRadius: 18,
+    padding: 16,
+    alignItems: "center",
+    gap: 5,
     ...Platform.select({
-      ios:     { shadowColor: P, shadowOffset: { width: 0, height: 5 }, shadowOpacity: 0.22, shadowRadius: 12 },
-      android: { elevation: 5 },
+      ios:     { shadowColor: "#000", shadowOffset: { width: 0, height: 2 }, shadowOpacity: 0.06, shadowRadius: 8 },
+      android: { elevation: 2 },
       default: {},
     }),
   },
-  statVal: { fontSize: 20, fontFamily: "Inter_700Bold", color: WHITE },
-  statLbl: { fontSize: 9,  fontFamily: "Inter_400Regular", color: "rgba(255,255,255,0.85)", textAlign: "center" },
+  statVal: { fontSize: 22, fontFamily: "Inter_700Bold", color: "#111" },
+  statLbl: { fontSize: 10, fontFamily: "Inter_400Regular", color: "#444", textAlign: "center" },
 
   // Filters
   filterScroll:     { marginBottom: 14 },
