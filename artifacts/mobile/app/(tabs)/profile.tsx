@@ -5,6 +5,7 @@ import { useRouter } from "expo-router";
 import React, { useEffect, useState } from "react";
 
 import {
+  ActivityIndicator,
   Dimensions,
   Platform,
   Pressable,
@@ -14,7 +15,6 @@ import {
   View,
 } from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
-import { useAdoption } from "@/contexts/AdoptionContext";
 import { useAnimals } from "@/contexts/AnimalsContext";
 import { useAuth } from "@/contexts/AuthContext";
 import { ProfileStoryAvatar } from "@/components/ProfileStoryAvatar";
@@ -41,28 +41,29 @@ export default function ProfileScreen() {
   const insets = useSafeAreaInsets();
   const { user } = useAuth();
   const { animals } = useAnimals();
-  const { listings } = useAdoption();
   const router = useRouter();
 
-  const myAnimals  = animals.filter((a) => a.userId === user?.id);
-  const myListings = listings.filter((l) => l.userId === user?.id);
+  const myAnimals = animals.filter((a) => a.userId === user?.id);
 
-  const topPad      = Platform.OS === "web" ? 67 : insets.top;
+  const topPad       = Platform.OS === "web" ? 67 : insets.top;
   const tabClearance = insets.bottom + TAB_BOTTOM_GAP + TAB_FLOAT_H;
 
-  const [gridTab,      setGridTab]      = useState<GridTab>("posts");
-  const [userPosts,    setUserPosts]    = useState<ApiPost[]>([]);
-  const [savedPosts,   setSavedPosts]   = useState<ApiPost[]>([]);
-  const [followCounts, setFollowCounts] = useState<FollowCounts>({ followers: 0, following: 0 });
+  const [gridTab,       setGridTab]       = useState<GridTab>("posts");
+  const [userPosts,     setUserPosts]     = useState<ApiPost[]>([]);
+  const [savedPosts,    setSavedPosts]    = useState<ApiPost[]>([]);
+  const [savedLoading,  setSavedLoading]  = useState(true);
+  const [followCounts,  setFollowCounts]  = useState<FollowCounts>({ followers: 0, following: 0 });
 
   useEffect(() => {
     if (!user?.id) return;
     apiFetchUserPosts(user.id)
       .then(setUserPosts)
       .catch(() => setUserPosts([]));
+    setSavedLoading(true);
     apiFetchBookmarkedPosts(user.id)
       .then(setSavedPosts)
-      .catch(() => setSavedPosts([]));
+      .catch(() => setSavedPosts([]))
+      .finally(() => setSavedLoading(false));
     apiGetFollowCounts(user.id)
       .then(setFollowCounts)
       .catch(() => {});
@@ -75,15 +76,13 @@ export default function ProfileScreen() {
     id: `p-${p.id}`, uri: p.imageUrl, label: p.caption,
   }));
 
-  const savedImages = savedPosts.length > 0
-    ? savedPosts.map((p) => ({ id: `p-${p.id}`, uri: p.imageUrl, label: p.caption }))
-    : listings.filter((l) => l.userId !== user.id).slice(0, 9).map((l) => ({
-        id: `sl-${l.id}`, uri: l.photo ?? CAT_AVATAR_DEFAULT, label: l.petName,
-      }));
+  const savedImages = savedPosts.map((p) => ({
+    id: `p-${p.id}`, uri: p.imageUrl, label: p.caption,
+  }));
 
   const currentGrid = gridTab === "posts" ? postGridImages : savedImages;
 
-  const totalPostCount = userPosts.length + myAnimals.length + myListings.length;
+  const totalPostCount = userPosts.length + myAnimals.length;
 
   return (
     <View style={S.root}>
@@ -170,23 +169,37 @@ export default function ProfileScreen() {
         </View>
 
         {/* ── Photo Grid ─────────────────────────────────── */}
-        {currentGrid.length === 0 ? (
+        {gridTab === "saved" && savedLoading ? (
           <View style={S.emptyGrid}>
-            <Ionicons name="images-outline" size={48} color="#C5BAE8" />
-            <Text style={S.emptyGridText}>Henüz paylaşım yok</Text>
+            <ActivityIndicator color={PURPLE} />
+          </View>
+        ) : currentGrid.length === 0 ? (
+          <View style={S.emptyGrid}>
+            <Ionicons
+              name={gridTab === "saved" ? "bookmark-outline" : "images-outline"}
+              size={48}
+              color="#C5BAE8"
+            />
+            <Text style={S.emptyGridText}>
+              {gridTab === "saved"
+                ? "Henüz kaydedilen gönderi yok"
+                : "Henüz paylaşım yok"}
+            </Text>
+            {gridTab === "saved" && (
+              <Text style={S.emptyGridSub}>Kaydettiğin gönderiler burada görünecek.</Text>
+            )}
           </View>
         ) : (
           <View style={S.grid}>
             {currentGrid.map((item, idx) => {
-              const isPost    = gridTab === "posts" && item.id.startsWith("p-");
-              const realPostId = isPost ? item.id.replace(/^p-/, "") : null;
+              const postId = item.id.startsWith("p-") ? item.id.replace(/^p-/, "") : null;
               return (
                 <Pressable
                   key={item.id}
                   style={[S.gridItem, idx % 3 !== 2 && { marginRight: GRID_GAP }]}
                   onPress={() => {
                     Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
-                    if (realPostId) router.push(`/post-detail/${encodeURIComponent(realPostId)}`);
+                    if (postId) router.push(`/post-detail/${encodeURIComponent(postId)}`);
                   }}
                 >
                   <Image source={{ uri: item.uri }} style={S.gridImage} contentFit="cover" />
@@ -344,6 +357,14 @@ const S = StyleSheet.create({
     fontSize: 14,
     fontFamily: "Inter_400Regular",
     color: "#9B8EBD",
+  },
+  emptyGridSub: {
+    fontSize: 12,
+    fontFamily: "Inter_400Regular",
+    color: "#B0A8C8",
+    textAlign: "center",
+    paddingHorizontal: 32,
+    marginTop: -4,
   },
 
 });

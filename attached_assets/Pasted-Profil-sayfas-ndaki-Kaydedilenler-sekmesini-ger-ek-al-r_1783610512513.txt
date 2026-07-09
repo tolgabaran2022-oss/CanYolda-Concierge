@@ -1,0 +1,70 @@
+Profil sayfasındaki “Kaydedilenler” sekmesini gerçek çalışır hale getir.
+
+Amaç:
+Kullanıcı profilindeki kaydedilenler ikonuna tıklayınca, daha önce kaydettiği gönderiler grid olarak görünsün.
+
+Yapılacaklar:
+
+1. Profil sekmeleri çalışsın:
+- Grid sekmesi: kullanıcının kendi gönderilerini göstersin.
+- Hayvanlar/Pati sekmesi: kullanıcının hayvan/evcil içeriklerini göstersin.
+- Kaydedilenler sekmesi: kullanıcının kaydettiği gönderileri göstersin.
+
+2. Kaydetme sistemi:
+Supabase’de saved_posts tablosu oluştur veya mevcut tabloyu kullan.
+
+Alanlar:
+- id uuid primary key
+- user_id uuid
+- post_id uuid
+- created_at timestamp
+
+Aynı kullanıcı aynı gönderiyi iki kez kaydedemesin:
+unique(user_id, post_id)
+
+3. Kaydet butonu:
+- Gönderi detayında ve akışta bookmark/kaydet ikonu olsun.
+- Kullanıcı ikona basınca gönderi saved_posts tablosuna eklensin.
+- Tekrar basınca kayıttan çıkarılsın.
+- İkon aktifken mor/dolu görünsün, pasifken boş görünsün.
+
+4. Kaydedilenler sekmesi:
+- Profilde sağdaki bookmark ikonuna basınca activeTab = "saved" olsun.
+- saved_posts tablosundan currentUser.id ile kayıtlı post_id’ler çekilsin.
+- posts tablosuyla join yapılarak gönderi görselleri grid olarak gösterilsin.
+- En yeni kaydedilen en üstte gelsin.
+
+5. Boş durum:
+Eğer kaydedilen gönderi yoksa:
+- Ortada bookmark ikonu göster.
+- Başlık: “Henüz kaydedilen gönderi yok”
+- Açıklama: “Kaydettiğin gönderiler burada görünecek.”
+
+6. Gizlilik:
+- Kaydedilenler sadece profil sahibi tarafından görülsün.
+- Başka kullanıcı profiline girildiğinde kaydedilenler sekmesi görünmesin.
+- RLS policy ekle:
+  Kullanıcı sadece kendi saved_posts kayıtlarını okuyabilsin, ekleyebilsin ve silebilsin.
+
+7. Loading ve hata yönetimi:
+- Sekme değişirken loading göster.
+- Veri gelmezse boş ekran göster.
+- Hata olursa uygulama çökmesin:
+  “Kaydedilen gönderiler yüklenemedi.”
+
+8. Tasarım:
+- Mevcut Instagram tarzı 3 kolon grid tasarımını koru.
+- Görseller kare olsun.
+- Aralarında 1–2 px boşluk olsun.
+- Aktif sekmenin altında mor çizgi görünsün.
+- Alt tab bar ile çakışma olmasın.
+
+9. Kod temizliği:
+- Dummy kaydedilen görselleri kaldır.
+- Gerçek Supabase verisi kullan.
+- TypeScript hatalarını düzelt.
+- Kullanılmayan importları temizle.
+- iOS, Android ve Web’de sorunsuz çalışsın.
+
+Sonuç:
+Kaydedilenler ikonuna basıldığında kullanıcının gerçekten kaydettiği gönderiler eksiksiz şekilde listelensin.
