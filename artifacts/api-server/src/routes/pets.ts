@@ -22,6 +22,16 @@ router.get("/pets", async (req, res) => {
   } catch { res.status(500).json({ error: "Failed to fetch pets" }); }
 });
 
+/* ── GET /api/pets/user/:userId — public: another user's pets ── */
+router.get("/pets/user/:userId", async (req, res) => {
+  try {
+    const pets = await db.select().from(petProfiles)
+      .where(eq(petProfiles.ownerId, req.params.userId))
+      .orderBy(desc(petProfiles.createdAt));
+    res.json(pets);
+  } catch { res.status(500).json({ error: "Failed to fetch pets" }); }
+});
+
 router.get("/pets/:petId", async (req, res) => {
   try {
     const [pet] = await db.select().from(petProfiles).where(eq(petProfiles.id, req.params.petId));

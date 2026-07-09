@@ -46,6 +46,12 @@ export type ApiPetHealth = {
   createdAt: string;
 };
 
+export async function apiGetUserPets(targetUserId: string): Promise<ApiPetProfile[]> {
+  const res = await fetch(`${API_BASE}/pets/user/${encodeURIComponent(targetUserId)}`);
+  if (!res.ok) return [];
+  return res.json() as Promise<ApiPetProfile[]>;
+}
+
 export async function apiGetMyPets(userId: string): Promise<ApiPetProfile[]> {
   const res = await fetch(`${API_BASE}/pets`, { headers: hdrs(userId) });
   if (!res.ok) throw new Error("fetch pets failed");
