@@ -35,7 +35,7 @@ const CAT_AVATAR_DEFAULT = "https://loremflickr.com/300/300/cat?lock=500";
 const TAB_FLOAT_H    = 64;
 const TAB_BOTTOM_GAP = Platform.OS === "web" ? 12 : 10;
 
-type GridTab = "posts" | "animals" | "saved";
+type GridTab = "posts" | "saved";
 
 export default function ProfileScreen() {
   const insets = useSafeAreaInsets();
@@ -75,20 +75,13 @@ export default function ProfileScreen() {
     id: `p-${p.id}`, uri: p.imageUrl, label: p.caption,
   }));
 
-  const animalGridImages = myAnimals.map((a) => ({
-    id: `a-${a.id}`, uri: a.image ?? CAT_AVATAR_DEFAULT, label: a.locationName ?? "Hayvan",
-  }));
-
   const savedImages = savedPosts.length > 0
     ? savedPosts.map((p) => ({ id: `p-${p.id}`, uri: p.imageUrl, label: p.caption }))
     : listings.filter((l) => l.userId !== user.id).slice(0, 9).map((l) => ({
         id: `sl-${l.id}`, uri: l.photo ?? CAT_AVATAR_DEFAULT, label: l.petName,
       }));
 
-  const currentGrid =
-    gridTab === "posts"   ? postGridImages :
-    gridTab === "animals" ? animalGridImages :
-    savedImages;
+  const currentGrid = gridTab === "posts" ? postGridImages : savedImages;
 
   const totalPostCount = userPosts.length + myAnimals.length + myListings.length;
 
@@ -163,9 +156,8 @@ export default function ProfileScreen() {
         {/* ── Grid Tabs ──────────────────────────────────── */}
         <View style={S.gridTabBar}>
           {([
-            { key: "posts",   icon: "grid-outline"     },
-            { key: "animals", icon: "paw-outline"       },
-            { key: "saved",   icon: "bookmark-outline"  },
+            { key: "posts",  icon: "grid-outline"    },
+            { key: "saved",  icon: "bookmark-outline" },
           ] as const).map(({ key, icon }) => (
             <Pressable
               key={key}
