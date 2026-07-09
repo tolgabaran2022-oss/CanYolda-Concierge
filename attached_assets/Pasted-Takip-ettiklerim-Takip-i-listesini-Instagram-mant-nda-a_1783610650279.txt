@@ -1,0 +1,83 @@
+Takip ettiklerim / Takipçi listesini Instagram mantığında çalışır hale getir.
+
+Amaç:
+Profilde “Takip” veya “Takipçi” sayısına basınca açılan sayfa gerçek takip listesi gibi çalışsın. Rastgele önerilen kullanıcılar değil, gerçek takip edilen/takipçi kullanıcılar görünsün.
+
+Yapılacaklar:
+
+1. Sayfa başlığı
+- Takip sayısına basıldıysa başlık: “Takip Edilenler”
+- Takipçi sayısına basıldıysa başlık: “Takipçiler”
+- Geri butonu çalışsın.
+
+2. Arama alanı
+- Placeholder:
+  “Ara”
+- Kullanıcı adı, isim veya bio’ya göre canlı filtreleme yapsın.
+- Arama boşsa tüm liste görünsün.
+
+3. Gerçek veri kullan
+Supabase’de follows tablosunu kullan:
+
+- follower_id
+- following_id
+- created_at
+
+Takip edilenler:
+currentUser.id = follower_id olan kullanıcıları getir.
+
+Takipçiler:
+currentUser.id = following_id olan kullanıcıları getir.
+
+4. Liste görünümü
+Her satırda:
+- Profil fotoğrafı
+- Kullanıcı adı
+- İsim veya kısa bio
+- Sağ tarafta buton
+
+Buton mantığı:
+- Kullanıcı zaten takip ediliyorsa: “Takiptesin”
+- Takip edilmiyorsa: “Takip Et”
+- Kendi hesabıysa buton görünmesin.
+
+5. Tıklama
+- Kullanıcı satırına basınca o kişinin profil sayfası açılsın.
+- Profil Instagram tarzında gösterilsin.
+- Gizli profil ise sadece izin verilen bilgiler görünsün.
+
+6. Takip / takipten çıkma
+- “Takip Et” butonuna basınca follows tablosuna kayıt eklensin.
+- “Takiptesin” butonuna basınca takipten çıkma onayı göster:
+  “Bu kullanıcıyı takipten çıkarmak istiyor musun?”
+- Onaylanırsa follows tablosundan kayıt silinsin.
+- Sayılar anlık güncellensin.
+
+7. Boş durum
+Takip edilen yoksa:
+- “Henüz takip edilen kullanıcı yok”
+Takipçi yoksa:
+- “Henüz takipçi yok”
+
+8. Eski önerilen kullanıcıları kaldır
+- “Önerilen Kullanıcılar” başlığını kaldır.
+- Dummy kullanıcıları kaldır.
+- Rastgele kullanıcı gösterme.
+- Sadece gerçek takip/takipçi verisi göster.
+
+9. Tasarım
+- Instagram’daki takip listesi mantığında sade liste tasarımı olsun.
+- Mevcut mor/beyaz tema korunsun.
+- Satırlar arasında ince ayraç olsun.
+- Profil fotoğrafları yuvarlak olsun.
+- Butonlar modern ve küçük olsun.
+- iOS, Android ve Web’de düzgün görünsün.
+
+10. Güvenlik
+- RLS policy kontrolü yap.
+- Kullanıcı sadece kendi takip işlemlerini oluşturup silebilsin.
+- Herkes public profil listelerini okuyabilsin.
+- Gizli profiller için gizlilik kuralları uygulansın.
+
+Sonuç:
+Takip / Takipçi sayısına basınca açılan sayfa Instagram mantığında gerçek kullanıcı listesiyle çalışsın. Önerilen kullanıcılar ve sahte veriler tamamen kaldırılsın.

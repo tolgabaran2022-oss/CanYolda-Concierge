@@ -8,8 +8,6 @@ import {
   ActivityIndicator,
   Animated,
   Dimensions,
-  FlatList,
-  Modal,
   Platform,
   Pressable,
   ScrollView,
@@ -24,12 +22,9 @@ import { apiGetOrCreateConversation } from "@/lib/messagesApi";
 import {
   apiCheckFollowing,
   apiGetFollowCounts,
-  apiGetFollowersList,
-  apiGetFollowingList,
   apiGetFullProfile,
   apiToggleFollow,
   type FollowCounts,
-  type FollowUser,
 } from "@/lib/socialApi";
 import { apiGetUserPets, type ApiPetProfile } from "@/lib/petsApi";
 
@@ -63,7 +58,6 @@ const PET_TYPE_LABELS: Record<string, string> = {
 };
 
 type ProfileTab = "posts" | "pets";
-type FollowListMode = "followers" | "following" | null;
 
 export default function UserProfileScreen() {
   const insets     = useSafeAreaInsets();
@@ -84,11 +78,6 @@ export default function UserProfileScreen() {
   const [loading,    setLoading]    = useState(true);
   const [toggling,   setToggling]   = useState(false);
   const [activeTab,  setActiveTab]  = useState<ProfileTab>("posts");
-
-  /* ── Follow list modal ── */
-  const [listMode,    setListMode]    = useState<FollowListMode>(null);
-  const [listUsers,   setListUsers]   = useState<FollowUser[]>([]);
-  const [listLoading, setListLoading] = useState(false);
 
   /* ── Animated tab indicator ── */
   const tabAnim = useRef(new Animated.Value(0)).current;
@@ -166,31 +155,6 @@ export default function UserProfileScreen() {
     finally { setToggling(false); }
   };
 
-  /* ── Open followers/following sheet ── */
-  const openList = async (mode: "followers" | "following") => {
-    if (!userId) return;
-    Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
-    setListMode(mode);
-    setListLoading(true);
-    setListUsers([]);
-    try {
-      const data = mode === "followers"
-        ? await apiGetFollowersList(userId, user?.id)
-        : await apiGetFollowingList(userId, user?.id);
-      setListUsers(data);
-    } catch { setListUsers([]); }
-    finally { setListLoading(false); }
-  };
-
-  const handleListToggleFollow = async (targetId: string) => {
-    if (!user) return;
-    Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
-    try {
-      const { following: newF } = await apiToggleFollow(user.id, targetId);
-      setListUsers((p) => p.map((u) => u.userId === targetId ? { ...u, isFollowing: newF } : u));
-    } catch { /* ignore */ }
-  };
-
   /* ── Loading skeleton ── */
   if (loading) {
     return (
@@ -236,8 +200,8 @@ export default function UserProfileScreen() {
             {/* Stats — Instagram horizontal */}
             <View style={S.statsRow}>
               <StatCol value={postCount}        label="Gönderi"  onPress={undefined} />
-              <StatCol value={counts.followers} label="Takipçi"  onPress={() => openList("followers")} />
-              <StatCol value={counts.following} label="Takip"    onPress={() => openList("following")} />
+              <StatCol value={counts.followers} label="Takipçi"  onPress={() => { Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light); router.push(`/follow-list/${encodeURIComponent(userId ?? "")}?mode=followers`); }} />
+              <StatCol value={counts.following} label="Takip"    onPress={() => { Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light); router.push(`/follow-list/${encodeURIComponent(userId ?? "")}?mode=following`); }} />
             </View>
           </View>
 
@@ -331,66 +295,6 @@ export default function UserProfileScreen() {
         )}
       </ScrollView>
 
-      {/* ─── Followers / Following Modal ─── */}
-      <Modal
-        visible={listMode !== null}
-        animationType="slide"
-        presentationStyle="pageSheet"
-        onRequestClose={() => setListMode(null)}
-      >
-        <View style={[L.root, { paddingTop: insets.top + 8 }]}>
-          <View style={L.header}>
-            <View style={{ width: 32 }} />
-            <Text style={L.title}>
-              {listMode === "followers" ? "Takipçiler" : "Takip Edilenler"}
-            </Text>
-            <Pressable onPress={() => setListMode(null)} hitSlop={12}>
-              <Ionicons name="close" size={24} color={PDARK} />
-            </Pressable>
-          </View>
-
-          {listLoading ? (
-            <View style={L.center}>
-              <ActivityIndicator size="large" color={P} />
-            </View>
-          ) : listUsers.length === 0 ? (
-            <View style={L.center}>
-              <Ionicons name="people-outline" size={52} color="#C5BAE8" />
-              <Text style={L.empty}>
-                {listMode === "followers" ? "Henüz takipçi yok" : "Henüz takip edilen yok"}
-              </Text>
-            </View>
-          ) : (
-            <FlatList
-              data={listUsers}
-              keyExtractor={(u) => u.userId}
-              contentContainerStyle={{ paddingBottom: insets.bottom + 20 }}
-              renderItem={({ item }) => (
-                <Pressable
-                  style={L.row}
-                  onPress={() => {
-                    setListMode(null);
-                    router.push(`/user-profile/${encodeURIComponent(item.userId)}`);
-                  }}
-                >
-                  <Image source={{ uri: item.avatarUrl || CAT }} style={L.avatar} contentFit="cover" />
-                  <Text style={L.username} numberOfLines={1}>@{item.username}</Text>
-                  {item.userId !== user?.id && (
-                    <Pressable
-                      style={[L.fBtn, item.isFollowing && L.fBtnActive]}
-                      onPress={() => handleListToggleFollow(item.userId)}
-                    >
-                      <Text style={[L.fTxt, item.isFollowing && L.fTxtActive]}>
-                        {item.isFollowing ? "Takiptesin" : "Takip Et"}
-                      </Text>
-                    </Pressable>
-                  )}
-                </Pressable>
-              )}
-            />
-          )}
-        </View>
-      </Modal>
     </View>
   );
 }
@@ -651,36 +555,3 @@ const S = StyleSheet.create({
   petBio:    { fontSize: 12, fontFamily: "Inter_400Regular", color: TEXT, lineHeight: 17 },
 });
 
-/* ── Follow list modal styles ─────────────────────────────── */
-
-const L = StyleSheet.create({
-  root: { flex: 1, backgroundColor: WHITE },
-  header: {
-    flexDirection: "row", alignItems: "center", justifyContent: "space-between",
-    paddingHorizontal: 16, paddingBottom: 14,
-    borderBottomWidth: StyleSheet.hairlineWidth, borderBottomColor: "rgba(123,94,167,0.12)",
-  },
-  title:  { fontSize: 16, fontFamily: "Inter_700Bold", color: PDARK },
-  center: { flex: 1, alignItems: "center", justifyContent: "center", gap: 12 },
-  empty:  { fontSize: 14, fontFamily: "Inter_400Regular", color: "#AAAACC" },
-
-  row: {
-    flexDirection: "row", alignItems: "center",
-    paddingHorizontal: 16, paddingVertical: 12,
-    borderBottomWidth: StyleSheet.hairlineWidth, borderBottomColor: "#F0EDF8",
-    gap: 12,
-  },
-  avatar:   { width: 46, height: 46, borderRadius: 23, backgroundColor: "#EEE" },
-  username: { flex: 1, fontSize: 14, fontFamily: "Inter_600SemiBold", color: PDARK },
-
-  fBtn: {
-    paddingHorizontal: 16, paddingVertical: 8, borderRadius: 10,
-    backgroundColor: P,
-  },
-  fBtnActive: {
-    backgroundColor: "transparent",
-    borderWidth: 1.5, borderColor: "rgba(123,94,167,0.35)",
-  },
-  fTxt:       { fontSize: 13, fontFamily: "Inter_600SemiBold", color: WHITE },
-  fTxtActive: { color: P },
-});

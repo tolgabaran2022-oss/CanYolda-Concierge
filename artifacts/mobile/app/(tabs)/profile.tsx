@@ -103,10 +103,10 @@ export default function ProfileScreen() {
             />
             <View style={S.statsArea}>
               <StatPill value={totalPostCount} label="Gönderi" />
-              <Pressable onPress={() => router.push("/search")}>
+              <Pressable onPress={() => user && router.push(`/follow-list/${encodeURIComponent(user.id)}?mode=followers`)}>
                 <StatPill value={followCounts.followers} label="Takipçi" />
               </Pressable>
-              <Pressable onPress={() => router.push("/search")}>
+              <Pressable onPress={() => user && router.push(`/follow-list/${encodeURIComponent(user.id)}?mode=following`)}>
                 <StatPill value={followCounts.following} label="Takip" />
               </Pressable>
             </View>
