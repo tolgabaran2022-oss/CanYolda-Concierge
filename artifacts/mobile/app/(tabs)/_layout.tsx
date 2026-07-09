@@ -15,7 +15,7 @@ if (Platform.OS === "ios") {
 
 const PURPLE   = "#7B5EA7";
 const INACTIVE = "#B0A3C4";
-const TAB_H    = 86;
+const TAB_H    = 68;
 
 type TabItem = {
   name: string;
@@ -39,7 +39,7 @@ function CustomTabBar() {
   const isIOS    = Platform.OS === "ios";
   const pathname = usePathname();
   const router   = useRouter();
-  const bottom   = insets.bottom + (isWeb ? 12 : 10);
+  const bottom   = insets.bottom + (isWeb ? 8 : 4);
 
   return (
     <View style={[styles.barOuter, { bottom }]}>
@@ -113,19 +113,19 @@ const styles = StyleSheet.create({
     shadowRadius: 28,
     elevation: 14,
     overflow: "hidden",
-    marginTop: -5,
-    marginRight: 6,
-    marginBottom: 8,
-    paddingLeft: 5,
-    paddingBottom: 5,
+    marginTop: 0,
+    marginRight: 0,
+    marginBottom: 0,
+    paddingLeft: 4,
+    paddingBottom: 0,
   },
   tabBtn: {
     flex: 1,
     alignItems: "center",
     justifyContent: "center",
     gap: 4,
-    paddingTop: 10,
-    paddingBottom: 10,
+    paddingTop: 6,
+    paddingBottom: 6,
     minHeight: 44,
   },
   activeDot: {
