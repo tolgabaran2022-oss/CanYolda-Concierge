@@ -5,17 +5,12 @@ import { useRouter } from "expo-router";
 import React, { useEffect, useState } from "react";
 
 import {
-  ActivityIndicator,
-  Alert,
   Dimensions,
-  KeyboardAvoidingView,
-  Modal,
   Platform,
   Pressable,
   ScrollView,
   StyleSheet,
   Text,
-  TextInput,
   View,
 } from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
@@ -44,7 +39,7 @@ type GridTab = "posts" | "animals" | "saved";
 
 export default function ProfileScreen() {
   const insets = useSafeAreaInsets();
-  const { user, logout, changePassword } = useAuth();
+  const { user } = useAuth();
   const { animals } = useAnimals();
   const { listings } = useAdoption();
   const router = useRouter();
@@ -72,65 +67,6 @@ export default function ProfileScreen() {
       .then(setFollowCounts)
       .catch(() => {});
   }, [user?.id]);
-
-  /* ── Password modal ── */
-  const [pwModalVisible, setPwModalVisible] = useState(false);
-  const [currentPw,  setCurrentPw]  = useState("");
-  const [newPw,      setNewPw]      = useState("");
-  const [confirmPw,  setConfirmPw]  = useState("");
-  const [showCurrent, setShowCurrent] = useState(false);
-  const [showNew,     setShowNew]     = useState(false);
-  const [showConfirm, setShowConfirm] = useState(false);
-  const [pwLoading,   setPwLoading]   = useState(false);
-
-  const openPwModal = () => {
-    setCurrentPw(""); setNewPw(""); setConfirmPw("");
-    setPwModalVisible(true);
-  };
-
-  const handleChangePassword = async () => {
-    if (!currentPw || !newPw || !confirmPw) {
-      Alert.alert("Hata", "Lütfen tüm alanları doldurun."); return;
-    }
-    if (newPw.length < 6) {
-      Alert.alert("Hata", "Yeni şifre en az 6 karakter olmalıdır."); return;
-    }
-    if (newPw !== confirmPw) {
-      Alert.alert("Hata", "Yeni şifreler eşleşmiyor."); return;
-    }
-    setPwLoading(true);
-    try {
-      await changePassword(currentPw, newPw);
-      Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
-      setPwModalVisible(false);
-      Alert.alert("Başarılı", "Şifreniz güncellendi.");
-    } catch (e: unknown) {
-      const msg = e instanceof Error ? e.message : "Şifre değiştirilemedi.";
-      Alert.alert("Hata", msg);
-      Haptics.notificationAsync(Haptics.NotificationFeedbackType.Error);
-    } finally {
-      setPwLoading(false);
-    }
-  };
-
-  const handleLogout = () => {
-    if (Platform.OS === "web") {
-      if (window.confirm("Hesabından çıkmak istiyor musun?")) {
-        logout().then(() => Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success));
-      }
-      return;
-    }
-    Alert.alert("Çıkış Yap", "Hesabından çıkmak istiyor musun?", [
-      { text: "İptal", style: "cancel" },
-      {
-        text: "Çıkış Yap", style: "destructive",
-        onPress: async () => {
-          await logout();
-          Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
-        },
-      },
-    ]);
-  };
 
   if (!user) return null;
 
@@ -268,67 +204,8 @@ export default function ProfileScreen() {
           </View>
         )}
 
-        {/* ── Hesap Ayarları ─────────────────────────────── */}
-        <View style={S.section}>
-          <Text style={S.sectionTitle}>Hesap Ayarları</Text>
-          <View style={S.card}>
-            <Pressable style={({ pressed }) => [S.cardRow, { opacity: pressed ? 0.75 : 1 }]} onPress={openPwModal}>
-              <View style={S.iconBadge}><Ionicons name="lock-closed-outline" size={18} color={PURPLE} /></View>
-              <Text style={S.cardRowLabel}>Şifre Değiştir</Text>
-              <Ionicons name="chevron-forward" size={16} color="#8874A8" />
-            </Pressable>
-          </View>
-        </View>
-
-        <Pressable style={({ pressed }) => [S.logoutBtn, { opacity: pressed ? 0.75 : 1 }]} onPress={handleLogout}>
-          <Ionicons name="log-out-outline" size={20} color="#D94040" />
-          <Text style={S.logoutText}>Çıkış Yap</Text>
-        </Pressable>
       </ScrollView>
 
-      {/* ── Şifre Değiştir Modal ──────────────────────── */}
-      <Modal visible={pwModalVisible} animationType="slide" transparent onRequestClose={() => setPwModalVisible(false)}>
-        <KeyboardAvoidingView behavior={Platform.OS === "ios" ? "padding" : "height"} style={S.modalOverlay}>
-          <Pressable style={StyleSheet.absoluteFill} onPress={() => setPwModalVisible(false)} />
-          <View style={[S.modalSheet, { paddingBottom: Math.max(insets.bottom, 24) }]}>
-            <View style={S.modalHandle} />
-            <Text style={S.modalTitle}>Şifre Değiştir</Text>
-            <Text style={S.modalSubtitle}>Güvenliğin için güçlü bir şifre seç</Text>
-            {[
-              { label: "Mevcut Şifre",      icon: "lock-closed-outline" as const, val: currentPw,  set: setCurrentPw,  show: showCurrent, toggleShow: () => setShowCurrent((v) => !v) },
-              { label: "Yeni Şifre",         icon: "key-outline"         as const, val: newPw,       set: setNewPw,       show: showNew,     toggleShow: () => setShowNew((v) => !v)     },
-              { label: "Yeni Şifre (Tekrar)", icon: "key-outline"        as const, val: confirmPw,  set: setConfirmPw,  show: showConfirm, toggleShow: () => setShowConfirm((v) => !v)  },
-            ].map(({ label, icon, val, set, show, toggleShow }) => (
-              <View key={label} style={S.modalInputGroup}>
-                <Text style={S.modalLabel}>{label}</Text>
-                <View style={S.modalInputWrap}>
-                  <Ionicons name={icon} size={18} color={PURPLE} />
-                  <TextInput
-                    style={S.modalInput}
-                    value={val}
-                    onChangeText={set}
-                    placeholder={label}
-                    placeholderTextColor="#B0A8C8"
-                    secureTextEntry={!show}
-                    autoCapitalize="none"
-                  />
-                  <Pressable onPress={toggleShow}>
-                    <Ionicons name={show ? "eye-off-outline" : "eye-outline"} size={18} color={PURPLE} />
-                  </Pressable>
-                </View>
-              </View>
-            ))}
-            <View style={S.modalBtnRow}>
-              <Pressable style={({ pressed }) => [S.modalCancelBtn, { opacity: pressed ? 0.7 : 1 }]} onPress={() => setPwModalVisible(false)}>
-                <Text style={S.modalCancelText}>İptal</Text>
-              </Pressable>
-              <Pressable style={({ pressed }) => [S.modalSaveBtn, { opacity: pressed ? 0.85 : 1 }]} onPress={handleChangePassword} disabled={pwLoading}>
-                {pwLoading ? <ActivityIndicator color="#FFF" size="small" /> : <Text style={S.modalSaveText}>Kaydet</Text>}
-              </Pressable>
-            </View>
-          </View>
-        </KeyboardAvoidingView>
-      </Modal>
     </View>
   );
 }
@@ -477,152 +354,4 @@ const S = StyleSheet.create({
     color: "#9B8EBD",
   },
 
-  /* Section */
-  section: { paddingHorizontal: 16, marginTop: 20 },
-  sectionTitle: {
-    fontSize: 14,
-    fontFamily: "Inter_600SemiBold",
-    color: "#555",
-    marginBottom: 10,
-    textTransform: "uppercase",
-    letterSpacing: 0.6,
-  },
-
-  /* Card rows */
-  card: {
-    backgroundColor: "#FFF",
-    borderRadius: 16,
-    borderWidth: 1,
-    borderColor: "rgba(123,94,167,0.10)",
-    overflow: "hidden",
-    ...Platform.select({
-      ios:     { shadowColor: PURPLE, shadowOffset: { width: 0, height: 2 }, shadowOpacity: 0.07, shadowRadius: 8 },
-      android: { elevation: 2 },
-    }),
-  },
-  cardRow: {
-    flexDirection: "row",
-    alignItems: "center",
-    paddingHorizontal: 16,
-    paddingVertical: 14,
-    gap: 12,
-  },
-  cardRowLabel: {
-    flex: 1,
-    fontSize: 15,
-    fontFamily: "Inter_500Medium",
-    color: "#1A0A3C",
-  },
-  iconBadge: {
-    width: 34, height: 34, borderRadius: 10,
-    backgroundColor: "rgba(123,94,167,0.10)",
-    alignItems: "center", justifyContent: "center",
-  },
-
-  /* Logout */
-  logoutBtn: {
-    flexDirection: "row",
-    alignItems: "center",
-    justifyContent: "center",
-    gap: 8,
-    marginHorizontal: 16,
-    marginTop: 20,
-    marginBottom: 8,
-    paddingVertical: 14,
-    borderRadius: 16,
-    backgroundColor: "#FFF3F3",
-    borderWidth: 1,
-    borderColor: "rgba(217,64,64,0.15)",
-  },
-  logoutText: {
-    fontSize: 15,
-    fontFamily: "Inter_600SemiBold",
-    color: "#D94040",
-  },
-
-  /* Password modal */
-  modalOverlay: {
-    flex: 1,
-    justifyContent: "flex-end",
-    backgroundColor: "rgba(0,0,0,0.45)",
-  },
-  modalSheet: {
-    backgroundColor: "#FFF",
-    borderTopLeftRadius: 28,
-    borderTopRightRadius: 28,
-    paddingHorizontal: 24,
-    paddingTop: 16,
-    gap: 14,
-  },
-  modalHandle: {
-    width: 40, height: 4, borderRadius: 2,
-    backgroundColor: "#E0D8F0",
-    alignSelf: "center",
-    marginBottom: 6,
-  },
-  modalTitle: {
-    fontSize: 20,
-    fontFamily: "Inter_700Bold",
-    color: "#1A0A3C",
-    textAlign: "center",
-  },
-  modalSubtitle: {
-    fontSize: 13,
-    fontFamily: "Inter_400Regular",
-    color: "#888",
-    textAlign: "center",
-    marginTop: -6,
-  },
-  modalInputGroup: { gap: 6 },
-  modalLabel: {
-    fontSize: 12,
-    fontFamily: "Inter_500Medium",
-    color: "#888",
-  },
-  modalInputWrap: {
-    flexDirection: "row",
-    alignItems: "center",
-    borderRadius: 12,
-    borderWidth: 1.5,
-    borderColor: "rgba(123,94,167,0.22)",
-    backgroundColor: "#FAFAFE",
-    paddingHorizontal: 14,
-    paddingVertical: 11,
-    gap: 10,
-  },
-  modalInput: {
-    flex: 1,
-    fontSize: 15,
-    fontFamily: "Inter_400Regular",
-    color: "#1A0A3C",
-  },
-  modalBtnRow: {
-    flexDirection: "row",
-    gap: 10,
-    marginTop: 4,
-  },
-  modalCancelBtn: {
-    flex: 1,
-    paddingVertical: 14,
-    borderRadius: 14,
-    backgroundColor: "#EDE5F8",
-    alignItems: "center",
-  },
-  modalCancelText: {
-    fontSize: 15,
-    fontFamily: "Inter_600SemiBold",
-    color: PURPLE_DARK,
-  },
-  modalSaveBtn: {
-    flex: 2,
-    paddingVertical: 14,
-    borderRadius: 14,
-    backgroundColor: PURPLE,
-    alignItems: "center",
-  },
-  modalSaveText: {
-    fontSize: 15,
-    fontFamily: "Inter_600SemiBold",
-    color: "#FFF",
-  },
 });
