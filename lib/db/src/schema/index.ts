@@ -30,7 +30,23 @@ export const oauthUsers = pgTable("oauth_users", {
   updatedAt: timestamp("updated_at", { withTimezone: true }).defaultNow(),
 });
 
+import { uniqueIndex } from "drizzle-orm/pg-core";
+
+export const localUsers = pgTable("local_users", {
+  id: text("id")
+    .primaryKey()
+    .default(sql`gen_random_uuid()::text`),
+  email:        text("email").notNull(),
+  name:         text("name").notNull(),
+  passwordHash: text("password_hash").notNull(),
+  avatarUrl:    text("avatar_url"),
+  createdAt:    timestamp("created_at", { withTimezone: true }).defaultNow(),
+  updatedAt:    timestamp("updated_at", { withTimezone: true }).defaultNow(),
+}, (t) => [uniqueIndex("local_users_email_unique").on(t.email)]);
+
 export type FeaturedListing = typeof featuredListings.$inferSelect;
 export type InsertFeaturedListing = typeof featuredListings.$inferInsert;
 export type OAuthUser = typeof oauthUsers.$inferSelect;
 export type InsertOAuthUser = typeof oauthUsers.$inferInsert;
+export type LocalUser = typeof localUsers.$inferSelect;
+export type InsertLocalUser = typeof localUsers.$inferInsert;

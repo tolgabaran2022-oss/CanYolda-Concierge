@@ -6,8 +6,11 @@ import React, {
   useEffect,
   useState,
 } from "react";
-import { generateId } from "@/utils/formatters";
 import { apiSyncProfile, apiUpdateProfile } from "@/lib/socialApi";
+
+const API_BASE = process.env.EXPO_PUBLIC_DOMAIN
+  ? `https://${process.env.EXPO_PUBLIC_DOMAIN}/api`
+  : "http://localhost:8080/api";
 
 export interface User {
   id: string;
@@ -18,10 +21,6 @@ export interface User {
   location?: string;
   avatar?: string | null;
   provider?: "local" | "google" | "apple" | "facebook";
-}
-
-interface StoredUser extends User {
-  password?: string;
 }
 
 export type ProfileUpdates = Partial<Pick<User, "name" | "username" | "bio" | "location" | "avatar">>;
@@ -39,70 +38,84 @@ interface AuthContextType {
 const AuthContext = createContext<AuthContextType | null>(null);
 const AUTH_KEY  = "@canyoldasi:auth";
 const TOKEN_KEY = "@canyoldasi:jwt";
-const USERS_KEY = "@canyoldasi:users";
+
+/* ── helpers ───────────────────────────────────────────── */
+
+async function apiFetch(path: string, opts: RequestInit = {}): Promise<Response> {
+  return fetch(`${API_BASE}${path}`, {
+    ...opts,
+    headers: { "Content-Type": "application/json", ...(opts.headers ?? {}) },
+  });
+}
 
 export function AuthProvider({ children }: { children: React.ReactNode }) {
   const [user, setUser]           = useState<User | null>(null);
   const [isLoading, setIsLoading] = useState(true);
 
+  /* ── Restore session on boot ──────────────────────────── */
   useEffect(() => {
     AsyncStorage.getItem(AUTH_KEY)
       .then((data) => { if (data) setUser(JSON.parse(data)); })
       .finally(() => setIsLoading(false));
   }, []);
 
-  /* ── Local register ───────────────────────────── */
+  /* ── Register ─────────────────────────────────────────── */
   const register = useCallback(
     async (name: string, email: string, password: string) => {
-      const usersData = await AsyncStorage.getItem(USERS_KEY);
-      const users: StoredUser[] = usersData ? JSON.parse(usersData) : [];
-      const exists = users.find((u) => u.email?.toLowerCase() === email.toLowerCase());
-      if (exists) throw new Error("Bu e-posta adresi zaten kullanılıyor.");
+      const res = await apiFetch("/auth/register", {
+        method: "POST",
+        body: JSON.stringify({ name, email, password }),
+      });
+      const data = await res.json() as { error?: string; token?: string; user?: { id: string; email: string; name: string; avatar?: string | null } };
+      if (!res.ok) throw new Error(data.error ?? "Kayıt başarısız.");
 
-      const newUser: StoredUser = {
-        id: generateId(),
-        name,
-        email: email.toLowerCase(),
-        password,
+      const safe: User = {
+        id:       data.user!.id,
+        name:     data.user!.name,
+        email:    data.user!.email,
+        avatar:   data.user!.avatar ?? null,
         provider: "local",
       };
-      users.push(newUser);
-      await AsyncStorage.setItem(USERS_KEY, JSON.stringify(users));
-      const { password: _p, ...safe } = newUser;
+      await AsyncStorage.setItem(TOKEN_KEY, data.token!);
       await AsyncStorage.setItem(AUTH_KEY, JSON.stringify(safe));
       setUser(safe);
-      /* Sync to backend (non-blocking) */
+
+      /* Sync social profile (non-blocking) */
       apiSyncProfile({ id: safe.id, email: safe.email, name: safe.name }).catch(() => {});
     },
     []
   );
 
-  /* ── Local login ──────────────────────────────── */
+  /* ── Login ────────────────────────────────────────────── */
   const login = useCallback(async (email: string, password: string) => {
-    const usersData = await AsyncStorage.getItem(USERS_KEY);
-    const users: StoredUser[] = usersData ? JSON.parse(usersData) : [];
-    const found = users.find(
-      (u) =>
-        u.email?.toLowerCase() === email.toLowerCase() &&
-        u.password === password
-    );
-    if (!found) throw new Error("E-posta veya şifre hatalı.");
-    const { password: _p, ...safe } = found;
+    const res = await apiFetch("/auth/login", {
+      method: "POST",
+      body: JSON.stringify({ email, password }),
+    });
+    const data = await res.json() as { error?: string; token?: string; user?: { id: string; email: string; name: string; avatar?: string | null } };
+    if (!res.ok) throw new Error(data.error ?? "Giriş başarısız.");
+
+    const safe: User = {
+      id:       data.user!.id,
+      name:     data.user!.name,
+      email:    data.user!.email,
+      avatar:   data.user!.avatar ?? null,
+      provider: "local",
+    };
+    await AsyncStorage.setItem(TOKEN_KEY, data.token!);
     await AsyncStorage.setItem(AUTH_KEY, JSON.stringify(safe));
     setUser(safe);
-    /* Sync profile to backend (non-blocking) */
+
+    /* Sync social profile (non-blocking) */
     apiSyncProfile({
       id:        safe.id,
       email:     safe.email,
       name:      safe.name,
-      username:  safe.username,
-      bio:       safe.bio,
-      location:  safe.location,
-      avatarUrl: safe.avatar && safe.avatar.startsWith("http") ? safe.avatar : undefined,
+      avatarUrl: safe.avatar?.startsWith("http") ? safe.avatar : undefined,
     }).catch(() => {});
   }, []);
 
-  /* ── Logout ───────────────────────────────────── */
+  /* ── Logout ───────────────────────────────────────────── */
   const logout = useCallback(async () => {
     await Promise.all([
       AsyncStorage.removeItem(AUTH_KEY),
@@ -111,42 +124,30 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     setUser(null);
   }, []);
 
-  /* ── Change password (local only) ────────────── */
+  /* ── Change password ──────────────────────────────────── */
   const changePassword = useCallback(
     async (currentPassword: string, newPassword: string) => {
       if (!user) throw new Error("Giriş yapılmamış.");
       if (user.provider && user.provider !== "local") {
         throw new Error("Sosyal hesaplarda şifre değiştirilemez.");
       }
-      const usersData = await AsyncStorage.getItem(USERS_KEY);
-      const users: StoredUser[] = usersData ? JSON.parse(usersData) : [];
-      const idx = users.findIndex((u) => u.id === user.id);
-      if (idx === -1) throw new Error("Kullanıcı bulunamadı.");
-      if (users[idx].password !== currentPassword) throw new Error("Mevcut şifre hatalı.");
-      users[idx].password = newPassword;
-      await AsyncStorage.setItem(USERS_KEY, JSON.stringify(users));
+      const token = await AsyncStorage.getItem(TOKEN_KEY);
+      const res = await apiFetch("/auth/change-password", {
+        method: "POST",
+        headers: token ? { Authorization: `Bearer ${token}` } : {},
+        body: JSON.stringify({ currentPassword, newPassword }),
+      });
+      const data = await res.json() as { error?: string };
+      if (!res.ok) throw new Error(data.error ?? "Şifre değiştirilemedi.");
     },
     [user]
   );
 
-  /* ── Update profile ───────────────────────────── */
+  /* ── Update profile ───────────────────────────────────── */
   const updateProfile = useCallback(
     async (updates: ProfileUpdates) => {
       if (!user) throw new Error("Giriş yapılmamış.");
-      const usersData = await AsyncStorage.getItem(USERS_KEY);
-      const users: StoredUser[] = usersData ? JSON.parse(usersData) : [];
-      const idx = users.findIndex((u) => u.id === user.id);
-      if (idx === -1) throw new Error("Kullanıcı bulunamadı.");
 
-      if (updates.username && updates.username !== user.username) {
-        /* Check uniqueness locally */
-        const taken = users.some(
-          (u) => u.id !== user.id && u.username === updates.username
-        );
-        if (taken) throw new Error("Bu kullanıcı adı zaten kullanılıyor.");
-      }
-
-      /* Sync to backend — this also validates username uniqueness server-side */
       const apiUpdates: Record<string, string | undefined> = {};
       if (updates.name     !== undefined) apiUpdates.name     = updates.name;
       if (updates.username !== undefined) apiUpdates.username = updates.username;
@@ -157,21 +158,16 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       }
       if (Object.keys(apiUpdates).length > 0) {
         try {
-          /* First ensure profile exists in backend */
           await apiSyncProfile({ id: user.id, email: user.email });
           await apiUpdateProfile(user.id, apiUpdates);
         } catch (err) {
-          /* Re-throw meaningful errors (username conflict), ignore network errors */
           if (err instanceof Error && err.message.includes("kullanıcı adı")) throw err;
         }
       }
 
-      const merged = { ...users[idx], ...updates };
-      users[idx] = merged;
-      await AsyncStorage.setItem(USERS_KEY, JSON.stringify(users));
-      const { password: _p, ...safe } = merged;
-      await AsyncStorage.setItem(AUTH_KEY, JSON.stringify(safe));
-      setUser(safe);
+      const merged: User = { ...user, ...updates };
+      await AsyncStorage.setItem(AUTH_KEY, JSON.stringify(merged));
+      setUser(merged);
     },
     [user]
   );
