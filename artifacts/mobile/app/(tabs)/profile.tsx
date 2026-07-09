@@ -28,6 +28,8 @@ import { usePets } from "@/contexts/PetsContext";
 import { ProfileStoryAvatar } from "@/components/ProfileStoryAvatar";
 import { apiFetchUserPosts } from "@/lib/feedApi";
 import type { ApiPost } from "@/lib/feedApi";
+import { apiGetFollowCounts } from "@/lib/socialApi";
+import type { FollowCounts } from "@/lib/socialApi";
 
 const { width: SW } = Dimensions.get("window");
 const GRID_GAP = 2;
@@ -67,8 +69,9 @@ export default function ProfileScreen() {
   const topPad = Platform.OS === "web" ? 67 : insets.top;
   const tabClearance = insets.bottom + TAB_BOTTOM_GAP + TAB_FLOAT_H;
 
-  const [gridTab, setGridTab]     = useState<GridTab>("posts");
-  const [userPosts, setUserPosts] = useState<ApiPost[]>([]);
+  const [gridTab,     setGridTab]     = useState<GridTab>("posts");
+  const [userPosts,   setUserPosts]   = useState<ApiPost[]>([]);
+  const [followCounts, setFollowCounts] = useState<FollowCounts>({ followers: 0, following: 0 });
 
   useEffect(() => {
     if (user?.email) fetchMyBoosts(user.email);
@@ -79,6 +82,9 @@ export default function ProfileScreen() {
     apiFetchUserPosts(user.id)
       .then(setUserPosts)
       .catch(() => setUserPosts([]));
+    apiGetFollowCounts(user.id)
+      .then(setFollowCounts)
+      .catch(() => {});
   }, [user?.id]);
 
   const [pwModalVisible, setPwModalVisible] = useState(false);
@@ -189,8 +195,12 @@ export default function ProfileScreen() {
             {/* Stats */}
             <View style={S.statsArea}>
               <StatPill value={totalPostCount} label="Gönderi" />
-              <StatPill value={128} label="Takipçi" />
-              <StatPill value={64} label="Takip" />
+              <Pressable onPress={() => router.push("/search")}>
+                <StatPill value={followCounts.followers} label="Takipçi" />
+              </Pressable>
+              <Pressable onPress={() => router.push("/search")}>
+                <StatPill value={followCounts.following} label="Takip" />
+              </Pressable>
             </View>
           </View>
 

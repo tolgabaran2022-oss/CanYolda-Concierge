@@ -178,14 +178,18 @@ const CAT_AVATAR_FEED = "https://loremflickr.com/100/100/cat?lock=500";
 
 function FeedHeader({
   onNotify,
+  onSearch,
   onNewPost,
   avatarUrl,
   onAvatarPress,
+  unreadCount,
 }: {
   onNotify: () => void;
+  onSearch: () => void;
   onNewPost: () => void;
   avatarUrl?: string;
   onAvatarPress: () => void;
+  unreadCount: number;
 }) {
   return (
     <View style={H.root}>
@@ -194,6 +198,13 @@ function FeedHeader({
         <Text style={H.logo}>canyoldaşı</Text>
       </View>
       <View style={H.right}>
+        {/* Search */}
+        <Pressable
+          onPress={() => { Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light); onSearch(); }}
+          hitSlop={10}
+        >
+          <Ionicons name="search-outline" size={23} color={C.purple} />
+        </Pressable>
         {/* New post */}
         <Pressable
           onPress={() => {
@@ -215,7 +226,7 @@ function FeedHeader({
         {/* Notifications */}
         <Pressable onPress={onNotify} style={H.bellWrap} hitSlop={10}>
           <Ionicons name="notifications-outline" size={24} color={C.purple} />
-          <View style={H.badge} />
+          {unreadCount > 0 && <View style={H.badge} />}
         </Pressable>
         {/* Avatar */}
         <Pressable onPress={onAvatarPress} hitSlop={6}>
@@ -395,9 +406,11 @@ export default function FeedScreen() {
     () => (
       <>
         <FeedHeader
-          onNotify={() => Alert.alert("Bildirimler", "Yakında!")}
+          onNotify={() => router.push("/notifications")}
+          onSearch={() => router.push("/search")}
           onNewPost={() => setCreateVisible(true)}
           onAvatarPress={() => router.push("/(tabs)/profile")}
+          unreadCount={0}
         />
         <StoryBar
           stories={stories}
@@ -422,6 +435,7 @@ export default function FeedScreen() {
             onLike={handleLike}
             onBookmark={handleBookmark}
             onComment={handleComment}
+            onPressUser={(username) => router.push(`/user-profile/${encodeURIComponent(username)}`)}
           />
         )}
         ListHeaderComponent={renderHeader}

@@ -1,0 +1,405 @@
+Uygulamayı Instagram benzeri gerçek çalışan sosyal ağ altyapısına dönüştür.
+
+Uygulama:
+canyoldaşı - Hayvan dostları sosyal ağı
+
+Amaç:
+Profil, gönderi, takip sistemi, beğeni, yorum, hikaye ve kullanıcı etkileşimleri Instagram çalışma mantığıyla birebir çalışan bir sistem haline getirilecek.
+
+Mevcut tasarımı bozma.
+Mor/beyaz premium iOS tasarımını koru.
+
+========================
+1. KULLANICI PROFİL SİSTEMİ
+========================
+
+Instagram tarzı profil sistemi oluştur.
+
+Profil alanları:
+
+- Profil fotoğrafı
+- Kullanıcı adı
+- Ad soyad
+- Biyografi
+- Konum
+- Web sitesi (opsiyonel)
+- Gönderi sayısı
+- Takipçi sayısı
+- Takip edilen sayısı
+
+Profil düzenleme:
+
+Kullanıcı değiştirebilsin:
+
+- Profil fotoğrafı
+- Kullanıcı adı
+- İsim
+- Biyografi
+- Konum
+- E-posta
+
+Kaydet butonu ile tüm bilgiler güncellensin.
+
+
+========================
+2. TAKİP SİSTEMİ
+========================
+
+Instagram mantığında takip sistemi yap.
+
+Özellikler:
+
+Kullanıcı başka kullanıcı profiline girdiğinde:
+
+Butonlar:
+
+Takip Et
+Takiptesin
+Takibi bırak
+
+olsun.
+
+Takip işlemi:
+
+followers tablosu:
+
+id
+follower_id
+following_id
+created_at
+
+
+Kurallar:
+
+- Takip eden kişinin takipçi sayısı artsın.
+- Takip edilen kişinin takipçi sayısı artsın.
+- Takip bırakınca sayı düşsün.
+
+
+========================
+3. TAKİPÇİ / TAKİP EDİLEN LİSTESİ
+========================
+
+Profilde:
+
+128 Takipçi
+64 Takip
+
+alanları tıklanabilir olsun.
+
+Açılan sayfa:
+
+Takipçiler:
+- Profil fotoğrafı
+- Kullanıcı adı
+- Takip et butonu
+
+
+Takip edilenler:
+- Kullanıcı listesi
+
+
+========================
+4. GÖNDERİ SİSTEMİ
+========================
+
+Instagram post sistemi oluştur.
+
+Gönderi özellikleri:
+
+- Fotoğraf
+- Açıklama
+- Konum
+- Tarih
+- Kullanıcı bilgisi
+
+
+Gönderi kartı:
+
+Üst:
+
+Profil fotoğrafı
+Kullanıcı adı
+Konum
+3 nokta menü
+
+
+Orta:
+
+Büyük fotoğraf
+
+
+Alt:
+
+❤️ Beğeni
+💬 Yorum
+📤 Paylaş
+🔖 Kaydet
+
+
+========================
+5. BEĞENİ SİSTEMİ
+========================
+
+Gönderi beğenme çalışsın.
+
+
+likes tablosu:
+
+id
+post_id
+user_id
+created_at
+
+
+Özellik:
+
+- Kalbe basınca aktif olsun.
+- Tekrar basınca kaldırsın.
+- Beğeni sayısı gerçek güncellensin.
+
+
+========================
+6. YORUM SİSTEMİ
+========================
+
+Instagram yorum sistemi yap.
+
+
+comments:
+
+id
+post_id
+user_id
+text
+created_at
+
+
+Özellik:
+
+- Yorum ekleme
+- Yorum silme
+- Kullanıcı adı gösterme
+- Profil fotoğrafı gösterme
+
+
+========================
+7. GÖNDERİ DÜZENLEME
+========================
+
+Kendi gönderilerinde:
+
+3 nokta menüsü:
+
+Seçenekler:
+
+- Düzenle
+- Sil
+- Arşivle
+
+
+Düzenleme:
+
+- Açıklama değiştirme
+- Konum değiştirme
+
+
+========================
+8. PROFİL GÖNDERİ GRID SİSTEMİ
+========================
+
+Profilde:
+
+Gönderiler sekmesi:
+
+Instagram gibi 3 kolon grid oluştur.
+
+Her fotoğraf:
+
+- Kare
+- Dokununca detay açılır.
+
+
+Sekmeler:
+
+▦ Gönderiler
+
+🐾 Hayvanlarım
+
+🔖 Kaydedilenler
+
+
+========================
+9. HİKAYE SİSTEMİ
+========================
+
+Instagram Story mantığı:
+
+
+Özellikler:
+
+- 24 saat aktif
+- Fotoğraf paylaşma
+- Görüntüleme
+- Görüntülenme sayısı
+- Hikaye halkası
+
+
+Database:
+
+stories
+
+id
+user_id
+image_url
+created_at
+expires_at
+
+
+story_views:
+
+id
+story_id
+viewer_id
+created_at
+
+
+========================
+10. ANA AKIŞ ALGORİTMASI
+========================
+
+Akış:
+
+Öncelik:
+
+1.
+Takip edilen kullanıcıların gönderileri
+
+2.
+Yeni popüler gönderiler
+
+
+Göster:
+
+- Profil fotoğrafı
+- Kullanıcı adı
+- Gönderi
+- Beğeni
+- Yorum
+
+
+========================
+11. BİLDİRİM SİSTEMİ
+========================
+
+Instagram tarzı bildirim oluştur.
+
+
+Bildirimler:
+
+- Seni takip etti
+- Gönderini beğendi
+- Gönderine yorum yaptı
+- Hikayeni görüntüledi
+
+
+notifications:
+
+id
+receiver_id
+sender_id
+type
+post_id
+read
+created_at
+
+
+========================
+12. KULLANICI ARAMA
+========================
+
+Arama ekranı oluştur.
+
+
+Arama:
+
+- Kullanıcı adı
+- Hayvan adı
+- Şehir
+
+
+Sonuç:
+
+Profil kartları göster.
+
+
+========================
+13. VERİTABANI
+========================
+
+Supabase/PostgreSQL kullan.
+
+Tablolar:
+
+users
+
+posts
+
+likes
+
+comments
+
+followers
+
+stories
+
+story_views
+
+notifications
+
+saved_posts
+
+
+========================
+14. COMPONENT YAPISI
+
+Oluştur:
+
+
+ProfileHeader
+
+FollowButton
+
+FollowersList
+
+PostCard
+
+CreatePost
+
+EditPost
+
+CommentSection
+
+StoryViewer
+
+NotificationCenter
+
+
+========================
+
+Sonuç:
+
+canyoldaşı uygulaması Instagram mantığında çalışan gerçek bir sosyal ağ olmalı.
+
+Kullanıcı:
+- Profil oluşturabilmeli
+- Takip edebilmeli
+- Takipçi kazanabilmeli
+- Gönderi paylaşabilmeli
+- Gönderisini düzenleyebilmeli
+- Beğeni alabilmeli
+- Yorum alabilmeli
+- Hikaye paylaşabilmeli
+- Bildirim alabilmeli
+
+Mevcut UI tasarımını koru ve tüm özellikleri gerçek backend ile bağla.

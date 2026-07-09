@@ -2,6 +2,7 @@ import { integer, pgTable, text, timestamp } from "drizzle-orm/pg-core";
 import { sql } from "drizzle-orm";
 export * from "./feed.js";
 export { stories, storyViews } from "./feed.js";
+export * from "./social.js";
 
 export const featuredListings = pgTable("featured_listings", {
   id: text("id")

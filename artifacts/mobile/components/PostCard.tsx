@@ -42,14 +42,15 @@ export type PostData = {
 };
 
 interface Props {
-  post:        PostData;
-  onLike:      (id: string) => void;
-  onBookmark:  (id: string) => void;
-  onComment:   (id: string, text: string) => void;
-  onShare?:    (id: string) => void;
+  post:          PostData;
+  onLike:        (id: string) => void;
+  onBookmark:    (id: string) => void;
+  onComment:     (id: string, text: string) => void;
+  onShare?:      (id: string) => void;
+  onPressUser?:  (username: string) => void;
 }
 
-export function PostCard({ post, onLike, onBookmark, onComment, onShare }: Props) {
+export function PostCard({ post, onLike, onBookmark, onComment, onShare, onPressUser }: Props) {
   const [commentText, setCommentText] = useState("");
   const [showInput,   setShowInput]   = useState(false);
   const [showAll,     setShowAll]     = useState(false);
@@ -99,11 +100,13 @@ export function PostCard({ post, onLike, onBookmark, onComment, onShare }: Props
     <View style={S.card}>
       {/* ── Card header ─────────────────────────── */}
       <View style={S.header}>
-        <View style={S.avatarWrap}>
+        <Pressable style={S.avatarWrap} onPress={() => onPressUser?.(post.user.name)} hitSlop={6}>
           <Image source={{ uri: post.user.avatar }} style={S.avatar} contentFit="cover" />
-        </View>
+        </Pressable>
         <View style={{ flex: 1 }}>
-          <Text style={S.username}>{post.user.name}</Text>
+          <Pressable onPress={() => onPressUser?.(post.user.name)} hitSlop={4}>
+            <Text style={S.username}>{post.user.name}</Text>
+          </Pressable>
           <Text style={S.meta}>
             {post.timestamp}{post.location ? ` · ${post.location}` : ""}
           </Text>
