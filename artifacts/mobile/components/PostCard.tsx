@@ -174,7 +174,7 @@ export function PostCard({
   const confirmBlock = () => {
     Alert.alert("Kullanıcıyı Engelle", `${post.user.name} adlı kullanıcıyı engellemek istiyor musun?`, [
       { text: "İptal", style: "cancel" },
-      { text: "Engelle", style: "destructive", onPress: () => onBlock?.(post.userId ?? post.user.name) },
+      { text: "Engelle", style: "destructive", onPress: () => onBlock?.(post.userId || post.user.name) },
     ]);
   };
 
@@ -187,17 +187,25 @@ export function PostCard({
     <View style={S.card}>
       {/* ── Card header ─────────────────────────── */}
       <View style={S.header}>
-        <Pressable style={S.avatarWrap} onPress={() => onPressUser?.(post.userId ?? post.user.name)} hitSlop={6}>
-          <Image source={{ uri: post.user.avatar }} style={S.avatar} contentFit="cover" />
-        </Pressable>
-        <View style={{ flex: 1 }}>
-          <Pressable onPress={() => onPressUser?.(post.userId ?? post.user.name)} hitSlop={4}>
+        {/* Avatar + name + meta — entire left area is one tap target (Instagram-style) */}
+        <Pressable
+          style={S.headerLeft}
+          onPress={() => {
+            const uid = post.userId || post.user.name;
+            if (uid) onPressUser?.(uid);
+          }}
+          hitSlop={4}
+        >
+          <View style={S.avatarWrap}>
+            <Image source={{ uri: post.user.avatar }} style={S.avatar} contentFit="cover" />
+          </View>
+          <View style={{ flex: 1 }}>
             <Text style={S.username}>{post.user.name}</Text>
-          </Pressable>
-          <Text style={S.meta}>
-            {post.timestamp}{post.location ? ` · ${post.location}` : ""}
-          </Text>
-        </View>
+            <Text style={S.meta}>
+              {post.timestamp}{post.location ? ` · ${post.location}` : ""}
+            </Text>
+          </View>
+        </Pressable>
         <Pressable hitSlop={12} onPress={handleMorePress}>
           <Feather name="more-horizontal" size={20} color={C.purple} />
         </Pressable>
@@ -332,6 +340,7 @@ const S = StyleSheet.create({
     }),
   },
   header:      { flexDirection: "row", alignItems: "center", paddingHorizontal: 14, paddingVertical: 12, gap: 10 },
+  headerLeft:  { flex: 1, flexDirection: "row", alignItems: "center", gap: 10 },
   avatarWrap:  { width: 40, height: 40, borderRadius: 20, borderWidth: 2, borderColor: C.purple, overflow: "hidden" },
   avatar:      { width: "100%", height: "100%" },
   username:    { fontSize: 14, fontFamily: "Inter_600SemiBold", color: C.text },

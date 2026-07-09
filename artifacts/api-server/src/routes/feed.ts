@@ -516,7 +516,10 @@ router.get("/feed/posts", async (req, res) => {
     res.json(
       posts.map((p) => ({
         ...p,
-        liked:      likedIds.has(p.id),
+        /* Seed posts stored with userId="" — give them a stable "seed-{username}" ID
+           so the client can navigate to their profile without falling back to the display name */
+        userId:    p.userId || `seed-${p.username}`,
+        liked:     likedIds.has(p.id),
         bookmarked: bookmarkedIds.has(p.id),
       }))
     );

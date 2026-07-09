@@ -76,6 +76,7 @@ export default function UserProfileScreen() {
   const [posts,           setPosts]           = useState<ApiPost[]>([]);
   const [pets,            setPets]            = useState<ApiPetProfile[]>([]);
   const [loading,         setLoading]         = useState(true);
+  const [notFound,        setNotFound]        = useState(false);
   const [toggling,        setToggling]        = useState(false);
   const [msgSending,      setMsgSending]      = useState(false);
   const [activeTab,       setActiveTab]       = useState<OwnTab>("posts");
@@ -88,9 +89,18 @@ export default function UserProfileScreen() {
   ));
 
   const load = useCallback(async () => {
-    if (!userId) return;
+    if (!userId) {
+      setNotFound(true);
+      setLoading(false);
+      return;
+    }
     setLoading(true);
+    setNotFound(false);
     try {
+      /* Seed users: strip "seed-" prefix to get the real username */
+      const isSeedUser   = userId.startsWith("seed-");
+      const seedUsername = isSeedUser ? userId.slice("seed-".length) : "";
+
       const fetches: Promise<any>[] = [
         apiFetchUserPosts(userId).catch(() => [] as ApiPost[]),
         apiGetFollowCounts(userId).catch(() => ({ followers: 0, following: 0 })),
@@ -115,10 +125,14 @@ export default function UserProfileScreen() {
         setUsername(p0.username);
         setAvatarUrl(p0.avatarUrl || SEED_AVATARS[p0.username] || CAT);
         setPostCount((postsData as ApiPost[]).length);
-      } else {
-        setUsername(userId);
-        setAvatarUrl(SEED_AVATARS[userId] || CAT);
+      } else if (isSeedUser) {
+        /* Seed user with no posts yet — show their info from the avatar map */
+        setUsername(seedUsername);
+        setAvatarUrl(SEED_AVATARS[seedUsername] || CAT);
         setPostCount(0);
+      } else {
+        /* No profile and no posts — genuine not-found */
+        setNotFound(true);
       }
 
       if (user && !isOwn) {
@@ -175,6 +189,21 @@ export default function UserProfileScreen() {
         <TopBar username="" onBack={() => router.back()} />
         <View style={S.center}>
           <ActivityIndicator size="large" color={P} />
+        </View>
+      </View>
+    );
+  }
+
+  if (notFound) {
+    return (
+      <View style={[S.root, { paddingTop: topPad }]}>
+        <TopBar username="Profil" onBack={() => router.back()} />
+        <View style={S.center}>
+          <View style={S.notFoundCircle}>
+            <Ionicons name="person-outline" size={36} color={P} />
+          </View>
+          <Text style={S.notFoundTitle}>Profil bulunamadı</Text>
+          <Text style={S.notFoundSub}>Bu kullanıcı mevcut değil veya hesabını silmiş olabilir.</Text>
         </View>
       </View>
     );
@@ -548,6 +577,14 @@ const S = StyleSheet.create({
   },
   emptyTitle: { fontSize: 16, fontFamily: "Inter_700Bold", color: PDARK },
   emptySub:   { fontSize: 13, fontFamily: "Inter_400Regular", color: MUTED, textAlign: "center" },
+
+  /* Not found */
+  notFoundCircle: {
+    width: 80, height: 80, borderRadius: 40,
+    backgroundColor: PLIGHT, alignItems: "center", justifyContent: "center", marginBottom: 12,
+  },
+  notFoundTitle: { fontSize: 17, fontFamily: "Inter_700Bold", color: PDARK },
+  notFoundSub:   { fontSize: 14, fontFamily: "Inter_400Regular", color: MUTED, textAlign: "center", lineHeight: 20 },
 
   /* Private lock */
   lockWrap:   { alignItems: "center", paddingVertical: 72, gap: 14, paddingHorizontal: 40 },
