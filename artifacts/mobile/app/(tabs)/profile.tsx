@@ -25,6 +25,7 @@ import { useAnimals } from "@/contexts/AnimalsContext";
 import { useAuth } from "@/contexts/AuthContext";
 import { useBoost } from "@/contexts/BoostContext";
 import { usePets } from "@/contexts/PetsContext";
+import { ProfileStoryAvatar } from "@/components/ProfileStoryAvatar";
 
 const { width: SW } = Dimensions.get("window");
 const GRID_GAP = 2;
@@ -163,21 +164,13 @@ export default function ProfileScreen() {
         <View style={S.profileHeader}>
           {/* Avatar + stats row */}
           <View style={S.avatarStatsRow}>
-            {/* Big avatar with gradient ring */}
-            <LinearGradient
-              colors={["#C278F0", "#7B5EA7", "#5B3FD6"]}
-              start={{ x: 0, y: 1 }}
-              end={{ x: 1, y: 0 }}
-              style={S.avatarGradient}
-            >
-              <View style={S.avatarBorder}>
-                <Image
-                  source={{ uri: user.avatar ?? CAT_AVATAR_DEFAULT }}
-                  style={S.avatarImg}
-                  contentFit="cover"
-                />
-              </View>
-            </LinearGradient>
+            {/* Story-aware profile avatar */}
+            <ProfileStoryAvatar
+              userId={user.id}
+              username={user.username ?? user.name}
+              avatarUrl={user.avatar}
+              size={90}
+            />
 
             {/* Stats */}
             <View style={S.statsArea}>
