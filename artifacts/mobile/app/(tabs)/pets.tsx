@@ -11,7 +11,7 @@ import {
   ScrollView,
   StyleSheet,
   Text,
-  TouchableOpacity,
+  TextInput,
   View,
 } from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
@@ -20,19 +20,40 @@ import { useAdoption } from "@/contexts/AdoptionContext";
 import { useBoost } from "@/contexts/BoostContext";
 
 // ── Palette ───────────────────────────────────────────────────────────────────
-const P = "#7C4DCC";
-const P2 = "#A480D8";
-const DARK = "#4B267D";
-const BODY = "#6E6290";
-const BG = "#F8F4FF";
+const P     = "#7C4DCC";
+const P2    = "#A480D8";
+const DARK  = "#4B267D";
+const BODY  = "#6E6290";
+const BG    = "#F8F4FF";
 const WHITE = "#FFFFFF";
-const BORDER = "rgba(124,77,204,0.13)";
-const SHADOW = { shadowColor: P, shadowOffset: { width: 0, height: 4 }, shadowOpacity: 0.1, shadowRadius: 12, elevation: 3 };
+const BORDER = "rgba(124,77,204,0.12)";
+
+const IOS_SHADOW = Platform.select({
+  ios: {
+    shadowColor: "#4B267D",
+    shadowOffset: { width: 0, height: 6 },
+    shadowOpacity: 0.10,
+    shadowRadius: 18,
+  },
+  android: { elevation: 4 },
+  default: {},
+});
+
+const CARD_SHADOW = Platform.select({
+  ios: {
+    shadowColor: "#4B267D",
+    shadowOffset: { width: 0, height: 8 },
+    shadowOpacity: 0.12,
+    shadowRadius: 20,
+  },
+  android: { elevation: 5 },
+  default: {},
+});
 
 const DOG_IMG = require("../../assets/hero-puppy.png");
 
-type Tab     = "create" | "listings";
-type Filter  = "all" | "cat" | "dog" | "bird" | "rabbit" | "new" | "other";
+type Tab    = "create" | "listings";
+type Filter = "all" | "cat" | "dog" | "bird" | "rabbit" | "new" | "other";
 
 const TYPE_NORMALIZE: Record<string, Filter> = {
   Kedi: "cat", kedi: "cat", cat: "cat",
@@ -41,14 +62,14 @@ const TYPE_NORMALIZE: Record<string, Filter> = {
   Tavşan: "rabbit", tavşan: "rabbit", rabbit: "rabbit",
 };
 
-const FILTERS: { key: Filter; label: string; icon: keyof typeof Ionicons.glyphMap }[] = [
-  { key: "all",    label: "Tümü",         icon: "apps-outline" },
-  { key: "cat",    label: "Kedi",         icon: "ellipse-outline" },
-  { key: "dog",    label: "Köpek",        icon: "paw-outline" },
-  { key: "bird",   label: "Kuş",          icon: "leaf-outline" },
-  { key: "rabbit", label: "Tavşan",       icon: "heart-outline" },
-  { key: "new",    label: "Yeni İlanlar", icon: "time-outline" },
-  { key: "other",  label: "Diğer",        icon: "ellipsis-horizontal" },
+const FILTERS: { key: Filter; label: string; emoji: string }[] = [
+  { key: "all",    label: "Tümü",    emoji: "✨" },
+  { key: "cat",    label: "Kedi",    emoji: "🐱" },
+  { key: "dog",    label: "Köpek",   emoji: "🐶" },
+  { key: "bird",   label: "Kuş",     emoji: "🐦" },
+  { key: "rabbit", label: "Tavşan",  emoji: "🐰" },
+  { key: "new",    label: "Yeni",    emoji: "🆕" },
+  { key: "other",  label: "Diğer",   emoji: "🐾" },
 ];
 
 const TIPS = [
@@ -57,70 +78,124 @@ const TIPS = [
   "Sahiplenecek kişiyle yüz yüze görüşmeyi tercih et",
 ];
 
-// ── Header ───────────────────────────────────────────────────────────────────
+// ── Header ────────────────────────────────────────────────────────────────────
 function PetHeader({ topPad }: { topPad: number }) {
   return (
-    <View style={[hdr.wrap, { paddingTop: topPad + 2 }]}>
+    <View style={[hdr.wrap, { paddingTop: topPad + 4 }]}>
       <View style={hdr.logo}>
-        <Ionicons name="heart" size={16} color={P} />
+        <LinearGradient colors={[P2, P]} style={hdr.logoIcon}>
+          <Ionicons name="heart" size={13} color={WHITE} />
+        </LinearGradient>
         <Text style={hdr.logoTxt}>canyoldaşı</Text>
       </View>
-      <TouchableOpacity style={hdr.bell} activeOpacity={0.7}>
+      <Pressable style={hdr.bell} hitSlop={6}>
         <Ionicons name="notifications-outline" size={20} color={DARK} />
-      </TouchableOpacity>
+        <View style={hdr.badge} />
+      </Pressable>
     </View>
   );
 }
 const hdr = StyleSheet.create({
-  wrap: { flexDirection: "row", alignItems: "center", justifyContent: "space-between", paddingHorizontal: 20, paddingBottom: 6, backgroundColor: BG },
-  logo: { flexDirection: "row", alignItems: "center", gap: 6 },
-  logoTxt: { fontSize: 16, fontFamily: "Inter_700Bold", color: DARK, letterSpacing: -0.2 },
-  bell: { width: 36, height: 36, alignItems: "center", justifyContent: "center", backgroundColor: WHITE, borderRadius: 18, borderWidth: 1, borderColor: BORDER },
+  wrap:    { flexDirection: "row", alignItems: "center", justifyContent: "space-between", paddingHorizontal: 20, paddingBottom: 8, backgroundColor: BG },
+  logo:    { flexDirection: "row", alignItems: "center", gap: 8 },
+  logoIcon:{ width: 28, height: 28, borderRadius: 8, alignItems: "center", justifyContent: "center" },
+  logoTxt: { fontSize: 17, fontFamily: "Inter_700Bold", color: DARK, letterSpacing: -0.3 },
+  bell:    { width: 38, height: 38, alignItems: "center", justifyContent: "center", backgroundColor: WHITE, borderRadius: 19, borderWidth: 1, borderColor: BORDER, ...IOS_SHADOW },
+  badge:   { position: "absolute", top: 6, right: 6, width: 8, height: 8, borderRadius: 4, backgroundColor: "#FF4444", borderWidth: 1.5, borderColor: BG },
+});
+
+// ── Search bar ────────────────────────────────────────────────────────────────
+function SearchBar({ query, onQuery, onFilter }: { query: string; onQuery: (q: string) => void; onFilter: () => void }) {
+  return (
+    <View style={sb.wrap}>
+      <View style={sb.inputWrap}>
+        <Ionicons name="search-outline" size={17} color={BODY} style={sb.icon} />
+        <TextInput
+          style={sb.input}
+          placeholder="Kedi, köpek, kuş ara..."
+          placeholderTextColor={`${BODY}90`}
+          value={query}
+          onChangeText={onQuery}
+          returnKeyType="search"
+        />
+        {query.length > 0 && (
+          <Pressable onPress={() => onQuery("")} hitSlop={8}>
+            <Ionicons name="close-circle" size={17} color={BODY} />
+          </Pressable>
+        )}
+      </View>
+      <Pressable
+        style={sb.filterBtn}
+        onPress={() => { Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light); onFilter(); }}
+      >
+        <LinearGradient colors={[P2, P]} style={sb.filterGrad}>
+          <Ionicons name="options-outline" size={18} color={WHITE} />
+        </LinearGradient>
+      </Pressable>
+    </View>
+  );
+}
+const sb = StyleSheet.create({
+  wrap:       { flexDirection: "row", alignItems: "center", gap: 10, paddingHorizontal: 20, marginBottom: 14 },
+  inputWrap:  { flex: 1, flexDirection: "row", alignItems: "center", backgroundColor: WHITE, borderRadius: 14, paddingHorizontal: 12, height: 46, borderWidth: 1, borderColor: BORDER, gap: 8, ...IOS_SHADOW },
+  icon:       {},
+  input:      { flex: 1, fontSize: 14, fontFamily: "Inter_400Regular", color: DARK, height: 46 },
+  filterBtn:  { borderRadius: 14, overflow: "hidden", ...IOS_SHADOW },
+  filterGrad: { width: 46, height: 46, alignItems: "center", justifyContent: "center", borderRadius: 14 },
 });
 
 // ── Tab switcher ──────────────────────────────────────────────────────────────
 function TabSwitcher({ active, onChange }: { active: Tab; onChange: (t: Tab) => void }) {
   return (
-    <View style={tab.wrap}>
+    <View style={tsw.wrap}>
       {(["create", "listings"] as Tab[]).map((t) => {
         const isActive = active === t;
         const label = t === "create" ? "İlan Oluştur" : "Tüm İlanlar";
+        const icon: keyof typeof Ionicons.glyphMap = t === "create" ? "add-circle-outline" : "heart-outline";
         return (
           <Pressable
             key={t}
-            style={[tab.item, isActive && tab.itemActive]}
+            style={[tsw.item, isActive && tsw.itemActive]}
             onPress={() => { Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light); onChange(t); }}
           >
-            {isActive
-              ? <LinearGradient colors={[P2, P]} start={{ x: 0, y: 0 }} end={{ x: 1, y: 0 }} style={tab.grad}><Text style={tab.lblActive}>{label}</Text></LinearGradient>
-              : <Text style={tab.lblInactive}>{label}</Text>
-            }
+            {isActive ? (
+              <LinearGradient colors={[P2, P]} start={{ x: 0, y: 0 }} end={{ x: 1, y: 0 }} style={tsw.grad}>
+                <Ionicons name={icon} size={15} color={WHITE} />
+                <Text style={tsw.lblActive}>{label}</Text>
+              </LinearGradient>
+            ) : (
+              <View style={tsw.inactiveRow}>
+                <Ionicons name={icon} size={15} color={P} />
+                <Text style={tsw.lblInactive}>{label}</Text>
+              </View>
+            )}
           </Pressable>
         );
       })}
     </View>
   );
 }
-const tab = StyleSheet.create({
-  wrap: { flexDirection: "row", marginHorizontal: 20, marginBottom: 14, backgroundColor: WHITE, borderRadius: 14, padding: 4, borderWidth: 1, borderColor: BORDER, ...SHADOW },
-  item: { flex: 1, borderRadius: 10, overflow: "hidden" },
-  itemActive: {},
-  grad: { paddingVertical: 10, alignItems: "center" },
-  lblActive: { fontSize: 14, fontFamily: "Inter_700Bold", color: WHITE },
-  lblInactive: { fontSize: 14, fontFamily: "Inter_400Regular", color: P, paddingVertical: 10, textAlign: "center" },
+const tsw = StyleSheet.create({
+  wrap:        { flexDirection: "row", marginHorizontal: 20, marginBottom: 16, backgroundColor: WHITE, borderRadius: 16, padding: 4, borderWidth: 1, borderColor: BORDER, ...IOS_SHADOW },
+  item:        { flex: 1, borderRadius: 12, overflow: "hidden" },
+  itemActive:  {},
+  grad:        { flexDirection: "row", alignItems: "center", justifyContent: "center", gap: 6, paddingVertical: 11 },
+  inactiveRow: { flexDirection: "row", alignItems: "center", justifyContent: "center", gap: 6, paddingVertical: 11 },
+  lblActive:   { fontSize: 14, fontFamily: "Inter_700Bold", color: WHITE },
+  lblInactive: { fontSize: 14, fontFamily: "Inter_500Medium", color: P },
 });
 
-// ── İlan Oluştur ──────────────────────────────────────────────────────────────
+// ── CreateSection ─────────────────────────────────────────────────────────────
 function CreateSection({ onPress, botPad }: { onPress: () => void; botPad: number }) {
   return (
-    <ScrollView showsVerticalScrollIndicator={false} contentContainerStyle={{ paddingHorizontal: 20, paddingBottom: botPad + 16, gap: 10 }}>
+    <ScrollView showsVerticalScrollIndicator={false} contentContainerStyle={{ paddingHorizontal: 20, paddingBottom: botPad + 16, gap: 12 }}>
 
-      {/* Hero card — shadow and clipping are now on separate layers (Android fix) */}
+      {/* Hero card */}
       <View style={cr.heroCardShadow}>
         <View style={cr.heroCard}>
           <View style={cr.heroLeft}>
-            <LinearGradient colors={[`${P}20`, `${P2}12`]} style={cr.heroIconCircle}>
-              <Ionicons name="heart" size={28} color={P} />
+            <LinearGradient colors={[`${P}22`, `${P2}14`]} style={cr.heroIconCircle}>
+              <Ionicons name="heart" size={26} color={P} />
             </LinearGradient>
             <Text style={cr.heroTitle}>Evcil hayvanını{"\n"}sahiplendirme ilanına ekle</Text>
             <Text style={cr.heroSub}>Fotoğraf, açıklama ve konum{"\n"}ekleyerek ilan oluştur</Text>
@@ -129,7 +204,7 @@ function CreateSection({ onPress, botPad }: { onPress: () => void; botPad: numbe
               onPress={() => { Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium); onPress(); }}
             >
               <LinearGradient colors={[P2, P]} start={{ x: 0, y: 0 }} end={{ x: 1, y: 0 }} style={cr.ctaGrad}>
-                <Ionicons name="add-circle-outline" size={17} color={WHITE} />
+                <Ionicons name="add-circle-outline" size={16} color={WHITE} />
                 <Text style={cr.ctaTxt}>İlan Oluştur</Text>
               </LinearGradient>
             </Pressable>
@@ -142,12 +217,12 @@ function CreateSection({ onPress, botPad }: { onPress: () => void; botPad: numbe
 
       {/* Tips */}
       <View style={cr.card}>
-        <View style={{ flexDirection: "row", alignItems: "center", gap: 8, marginBottom: 10 }}>
+        <View style={{ flexDirection: "row", alignItems: "center", gap: 8, marginBottom: 12 }}>
           <Ionicons name="information-circle-outline" size={17} color={P} />
-          <Text style={cr.tipsTitle}>İlan verirken dikkat edilmesi gerekenler</Text>
+          <Text style={cr.tipsTitle}>İlan verirken dikkat et</Text>
         </View>
         {TIPS.map((tip, i) => (
-          <View key={i} style={{ flexDirection: "row", alignItems: "flex-start", gap: 10, marginBottom: i < TIPS.length - 1 ? 8 : 0 }}>
+          <View key={i} style={{ flexDirection: "row", alignItems: "flex-start", gap: 10, marginBottom: i < TIPS.length - 1 ? 10 : 0 }}>
             <View style={cr.dot} />
             <Text style={cr.tipTxt}>{tip}</Text>
           </View>
@@ -162,9 +237,9 @@ function CreateSection({ onPress, botPad }: { onPress: () => void; botPad: numbe
           { icon: "people" as const, val: "12K+",  lbl: "Hayvan Dostu" },
         ] as const).map((s) => (
           <View key={s.lbl} style={cr.statCard}>
-            <View style={cr.statIconWrap}>
-              <Ionicons name={s.icon} size={22} color={P} />
-            </View>
+            <LinearGradient colors={[`${P}18`, `${P2}10`]} style={cr.statIconWrap}>
+              <Ionicons name={s.icon} size={20} color={P} />
+            </LinearGradient>
             <Text style={cr.statVal}>{s.val}</Text>
             <Text style={cr.statLbl}>{s.lbl}</Text>
           </View>
@@ -175,16 +250,12 @@ function CreateSection({ onPress, botPad }: { onPress: () => void; botPad: numbe
       <LinearGradient colors={[P2, P, DARK]} start={{ x: 0, y: 0 }} end={{ x: 1, y: 1 }} style={cr.banner}>
         <View style={cr.bannerLeft}>
           <View style={cr.bannerIconWrap}>
-            <Ionicons name="shield-checkmark" size={26} color={WHITE} />
+            <Ionicons name="shield-checkmark" size={24} color={WHITE} />
           </View>
           <View style={{ flex: 1 }}>
             <Text style={cr.bannerTitle}>Güvenli Sahiplendirme</Text>
             <Text style={cr.bannerSub}>Doğrulanmış kullanıcılar ve güvenli iletişim ile patili dostlarımızı doğru yuvalara götürüyoruz.</Text>
           </View>
-        </View>
-        <View style={cr.bannerIllo}>
-          <Ionicons name="home" size={32} color="rgba(255,255,255,0.55)" />
-          <Ionicons name="paw" size={18} color="rgba(255,255,255,0.4)" style={{ marginTop: -6, marginLeft: 10 }} />
         </View>
       </LinearGradient>
 
@@ -192,45 +263,40 @@ function CreateSection({ onPress, botPad }: { onPress: () => void; botPad: numbe
   );
 }
 const cr = StyleSheet.create({
-  card: { backgroundColor: WHITE, borderRadius: 16, borderWidth: 1, borderColor: BORDER, padding: 16, ...SHADOW },
-
-  heroCardShadow: { borderRadius: 20, ...SHADOW },
-  heroCard: { backgroundColor: WHITE, borderRadius: 20, borderWidth: 1, borderColor: BORDER, flexDirection: "row", overflow: "hidden" },
-
-  heroLeft: { flex: 1, padding: 18, gap: 8, justifyContent: "center" },
-  heroIconCircle: { width: 60, height: 60, borderRadius: 30, alignItems: "center", justifyContent: "center" },
-  heroTitle: { fontSize: 15, fontFamily: "Inter_700Bold", color: DARK, lineHeight: 21 },
-  heroSub: { fontSize: 12, fontFamily: "Inter_400Regular", color: BODY, lineHeight: 18 },
-  ctaBtn: { borderRadius: 50, overflow: "hidden", marginTop: 4 },
-  ctaGrad: { flexDirection: "row", alignItems: "center", gap: 6, paddingVertical: 11, paddingHorizontal: 14, justifyContent: "center" },
-  ctaTxt: { fontSize: 13, fontFamily: "Inter_700Bold", color: WHITE },
-
-  heroRight: { width: 132 },
-  dogImg: { width: "100%", height: 200 },
-
-  dot: { width: 6, height: 6, borderRadius: 3, backgroundColor: P, marginTop: 7, flexShrink: 0 },
-  tipsTitle: { flex: 1, fontSize: 13, fontFamily: "Inter_600SemiBold", color: DARK },
-  tipTxt: { flex: 1, fontSize: 13, fontFamily: "Inter_400Regular", color: BODY, lineHeight: 20 },
-  statCard: { flex: 1, backgroundColor: WHITE, borderRadius: 16, borderWidth: 1, borderColor: BORDER, alignItems: "center", paddingVertical: 16, gap: 5, minHeight: 110, justifyContent: "center", ...SHADOW },
-  statIconWrap: { width: 42, height: 42, borderRadius: 21, backgroundColor: `${P}12`, alignItems: "center", justifyContent: "center" },
-  statVal: { fontSize: 17, fontFamily: "Inter_700Bold", color: DARK },
-  statLbl: { fontSize: 10, fontFamily: "Inter_400Regular", color: BODY, textAlign: "center" },
-  banner: { borderRadius: 20, padding: 18, flexDirection: "row", alignItems: "center" },
-  bannerLeft: { flex: 1, flexDirection: "row", alignItems: "center", gap: 14 },
-  bannerIconWrap: { width: 50, height: 50, borderRadius: 25, backgroundColor: "rgba(255,255,255,0.2)", alignItems: "center", justifyContent: "center" },
-  bannerTitle: { fontSize: 15, fontFamily: "Inter_700Bold", color: WHITE, marginBottom: 4 },
-  bannerSub: { fontSize: 11, fontFamily: "Inter_400Regular", color: "rgba(255,255,255,0.85)", lineHeight: 17 },
-  bannerIllo: { alignItems: "center", paddingLeft: 8 },
+  card:          { backgroundColor: WHITE, borderRadius: 20, borderWidth: 1, borderColor: BORDER, padding: 18, ...IOS_SHADOW },
+  heroCardShadow:{ borderRadius: 22, ...CARD_SHADOW },
+  heroCard:      { backgroundColor: WHITE, borderRadius: 22, borderWidth: 1, borderColor: BORDER, flexDirection: "row", overflow: "hidden" },
+  heroLeft:      { flex: 1, padding: 18, gap: 8, justifyContent: "center" },
+  heroIconCircle:{ width: 54, height: 54, borderRadius: 27, alignItems: "center", justifyContent: "center" },
+  heroTitle:     { fontSize: 15, fontFamily: "Inter_700Bold", color: DARK, lineHeight: 22 },
+  heroSub:       { fontSize: 12, fontFamily: "Inter_400Regular", color: BODY, lineHeight: 18 },
+  ctaBtn:        { borderRadius: 50, overflow: "hidden", marginTop: 4 },
+  ctaGrad:       { flexDirection: "row", alignItems: "center", gap: 6, paddingVertical: 11, paddingHorizontal: 14, justifyContent: "center" },
+  ctaTxt:        { fontSize: 13, fontFamily: "Inter_700Bold", color: WHITE },
+  heroRight:     { width: 130 },
+  dogImg:        { width: "100%", height: 200 },
+  dot:           { width: 6, height: 6, borderRadius: 3, backgroundColor: P, marginTop: 7, flexShrink: 0 },
+  tipsTitle:     { flex: 1, fontSize: 13, fontFamily: "Inter_600SemiBold", color: DARK },
+  tipTxt:        { flex: 1, fontSize: 13, fontFamily: "Inter_400Regular", color: BODY, lineHeight: 20 },
+  statCard:      { flex: 1, backgroundColor: WHITE, borderRadius: 20, borderWidth: 1, borderColor: BORDER, alignItems: "center", paddingVertical: 18, gap: 6, justifyContent: "center", ...IOS_SHADOW },
+  statIconWrap:  { width: 44, height: 44, borderRadius: 22, alignItems: "center", justifyContent: "center" },
+  statVal:       { fontSize: 18, fontFamily: "Inter_700Bold", color: DARK },
+  statLbl:       { fontSize: 10, fontFamily: "Inter_400Regular", color: BODY, textAlign: "center" },
+  banner:        { borderRadius: 22, padding: 20, flexDirection: "row", alignItems: "center" },
+  bannerLeft:    { flex: 1, flexDirection: "row", alignItems: "center", gap: 14 },
+  bannerIconWrap:{ width: 48, height: 48, borderRadius: 24, backgroundColor: "rgba(255,255,255,0.22)", alignItems: "center", justifyContent: "center" },
+  bannerTitle:   { fontSize: 15, fontFamily: "Inter_700Bold", color: WHITE, marginBottom: 5 },
+  bannerSub:     { fontSize: 11, fontFamily: "Inter_400Regular", color: "rgba(255,255,255,0.88)", lineHeight: 17 },
 });
 
-// ── Filter row ────────────────────────────────────────────────────────────────
+// ── Filter chips ──────────────────────────────────────────────────────────────
 function FilterRow({ active, onChange }: { active: Filter; onChange: (f: Filter) => void }) {
   return (
     <ScrollView
       horizontal
       showsHorizontalScrollIndicator={false}
-      contentContainerStyle={{ paddingHorizontal: 20, paddingRight: 32, gap: 8, paddingVertical: 2 }}
-      style={{ marginBottom: 12 }}
+      contentContainerStyle={{ paddingHorizontal: 20, paddingRight: 24, gap: 8, paddingVertical: 2 }}
+      style={{ marginBottom: 14 }}
     >
       {FILTERS.map((f) => {
         const isActive = active === f.key;
@@ -238,10 +304,23 @@ function FilterRow({ active, onChange }: { active: Filter; onChange: (f: Filter)
           <Pressable
             key={f.key}
             onPress={() => { Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light); onChange(f.key); }}
-            style={[fc.chip, isActive && fc.chipActive]}
           >
-            <Ionicons name={f.icon} size={13} color={isActive ? WHITE : P} />
-            <Text style={[fc.chipTxt, isActive && fc.chipTxtActive]}>{f.label}</Text>
+            {isActive ? (
+              <LinearGradient
+                colors={[P2, P]}
+                start={{ x: 0, y: 0 }}
+                end={{ x: 1, y: 0 }}
+                style={fc.chipActive}
+              >
+                <Text style={fc.emoji}>{f.emoji}</Text>
+                <Text style={fc.lblActive}>{f.label}</Text>
+              </LinearGradient>
+            ) : (
+              <View style={fc.chip}>
+                <Text style={fc.emoji}>{f.emoji}</Text>
+                <Text style={fc.lbl}>{f.label}</Text>
+              </View>
+            )}
           </Pressable>
         );
       })}
@@ -249,114 +328,162 @@ function FilterRow({ active, onChange }: { active: Filter; onChange: (f: Filter)
   );
 }
 const fc = StyleSheet.create({
-  chip: { flexDirection: "row", alignItems: "center", gap: 5, paddingVertical: 7, paddingHorizontal: 13, borderRadius: 50, backgroundColor: WHITE, borderWidth: 1.5, borderColor: `${P}28` },
-  chipActive: { backgroundColor: P, borderColor: P },
-  chipTxt: { fontSize: 12, fontFamily: "Inter_600SemiBold", color: P },
-  chipTxtActive: { color: WHITE },
+  chip:      { flexDirection: "row", alignItems: "center", gap: 5, paddingVertical: 9, paddingHorizontal: 14, borderRadius: 50, backgroundColor: WHITE, borderWidth: 1.5, borderColor: `${P}28`, ...IOS_SHADOW },
+  chipActive:{ flexDirection: "row", alignItems: "center", gap: 5, paddingVertical: 9, paddingHorizontal: 14, borderRadius: 50 },
+  emoji:     { fontSize: 14 },
+  lbl:       { fontSize: 13, fontFamily: "Inter_600SemiBold", color: P },
+  lblActive: { fontSize: 13, fontFamily: "Inter_600SemiBold", color: WHITE },
 });
 
-// ── Listing card ──────────────────────────────────────────────────────────────
+// ── Listing card (vertical, premium) ─────────────────────────────────────────
 function ListingCard({ listing, isFeatured }: { listing: AdoptionListing; isFeatured?: boolean }) {
   const router = useRouter();
   const [liked, setLiked] = useState(false);
 
   return (
     <Pressable
-      style={({ pressed }) => [lc.cardShadow, { opacity: pressed ? 0.94 : 1 }]}
+      style={({ pressed }) => [lc.shadow, { opacity: pressed ? 0.93 : 1 }]}
       onPress={() => router.push(`/adoption/${listing.id}`)}
     >
-      <View style={[lc.card, isFeatured && lc.featured]}>
-        {isFeatured && (
-          <View style={lc.featuredBadge}>
-            <Ionicons name="star" size={9} color={WHITE} />
-            <Text style={lc.featuredTxt}>Öne Çıkan</Text>
-          </View>
-        )}
+      <View style={[lc.card, isFeatured && lc.featuredBorder]}>
 
-        {/* Photo */}
+        {/* ── Photo area ── */}
         <View style={lc.imgWrap}>
           {listing.photo
             ? <Image source={{ uri: listing.photo }} style={lc.img} contentFit="cover" />
-            : <View style={lc.imgFallback}><Ionicons name="heart" size={28} color={`${P}60`} /></View>
+            : (
+              <LinearGradient colors={[`${P2}40`, `${P}28`]} style={lc.imgFallback}>
+                <Ionicons name="paw" size={40} color={`${P}70`} />
+              </LinearGradient>
+            )
           }
+
+          {/* Gradient scrim at bottom of image */}
+          <LinearGradient
+            colors={["transparent", "rgba(30,10,60,0.45)"]}
+            style={lc.imgScrim}
+          />
+
+          {/* Featured badge */}
+          {isFeatured && (
+            <View style={lc.featuredBadge}>
+              <Ionicons name="star" size={10} color={WHITE} />
+              <Text style={lc.featuredTxt}>Öne Çıkan</Text>
+            </View>
+          )}
+
+          {/* Type tag on image */}
+          <View style={lc.typeTagImg}>
+            <Text style={lc.typeTagImgTxt}>{listing.petType}</Text>
+          </View>
+
+          {/* Action buttons floating on image */}
+          <View style={lc.imgActions}>
+            <Pressable
+              style={lc.roundBtn}
+              onPress={(e) => {
+                e.stopPropagation?.();
+                setLiked((v) => !v);
+                Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+              }}
+              hitSlop={8}
+            >
+              <Ionicons
+                name={liked ? "heart" : "heart-outline"}
+                size={18}
+                color={liked ? "#FF4466" : WHITE}
+              />
+            </Pressable>
+          </View>
         </View>
 
-        {/* Content */}
+        {/* ── Content area ── */}
         <View style={lc.body}>
-          <View style={lc.typeRow}>
-            <View style={lc.typeTag}><Text style={lc.typeTagTxt}>{listing.petType}</Text></View>
+          <View style={lc.nameRow}>
+            <Text style={lc.name} numberOfLines={1}>{listing.petName}</Text>
+            {listing.petAge ? (
+              <View style={lc.agePill}>
+                <Text style={lc.ageTxt}>{listing.petAge}</Text>
+              </View>
+            ) : null}
           </View>
-          <Text style={lc.name} numberOfLines={1}>{listing.petName}</Text>
-          {listing.petAge ? <Text style={lc.meta} numberOfLines={1}>{listing.petAge}</Text> : null}
-          <Text style={lc.desc} numberOfLines={2}>{listing.description}</Text>
-          <View style={lc.locRow}>
-            <Ionicons name="location-sharp" size={11} color={P} />
-            <Text style={lc.loc} numberOfLines={1}>{listing.location}</Text>
+
+          {listing.description ? (
+            <Text style={lc.desc} numberOfLines={2}>{listing.description}</Text>
+          ) : null}
+
+          <View style={lc.footer}>
+            <View style={lc.locRow}>
+              <Ionicons name="location-sharp" size={12} color={P} />
+              <Text style={lc.loc} numberOfLines={1}>{listing.location}</Text>
+            </View>
+            <Pressable
+              style={lc.chatBtn}
+              onPress={() => router.push(`/adoption/${listing.id}`)}
+            >
+              <LinearGradient colors={[P2, P]} style={lc.chatGrad}>
+                <Ionicons name="chatbubble-ellipses" size={13} color={WHITE} />
+                <Text style={lc.chatTxt}>İletişim</Text>
+              </LinearGradient>
+            </Pressable>
           </View>
         </View>
 
-        {/* Actions column */}
-        <View style={lc.actions}>
-          <Pressable
-            onPress={() => { setLiked((v) => !v); Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light); }}
-            style={lc.actionBtn}
-            hitSlop={6}
-          >
-            <Ionicons name={liked ? "heart" : "heart-outline"} size={20} color={liked ? "#E53E3E" : "#C0B4D8"} />
-          </Pressable>
-          <Pressable
-            onPress={() => router.push(`/adoption/${listing.id}`)}
-            style={[lc.actionBtn, lc.chatBtn]}
-            hitSlop={6}
-          >
-            <Ionicons name="chatbubble-ellipses" size={15} color={WHITE} />
-          </Pressable>
-        </View>
       </View>
     </Pressable>
   );
 }
 const lc = StyleSheet.create({
-  cardShadow: { marginHorizontal: 20, marginBottom: 12, borderRadius: 18, ...SHADOW },
-  card: { flexDirection: "row", backgroundColor: WHITE, borderRadius: 18, borderWidth: 1, borderColor: BORDER, overflow: "hidden", minHeight: 120 },
-  featured: { borderColor: "#E07A35", borderWidth: 1.5 },
-  featuredBadge: { position: "absolute", top: 0, left: 0, zIndex: 2, flexDirection: "row", alignItems: "center", gap: 3, backgroundColor: "#E07A35", borderBottomRightRadius: 10, paddingHorizontal: 8, paddingVertical: 4 },
-  featuredTxt: { fontSize: 10, fontFamily: "Inter_700Bold", color: WHITE },
-  imgWrap: { width: 110, height: 120, backgroundColor: `${P}10` },
-  img: { width: 110, height: 120 },
-  imgFallback: { flex: 1, alignItems: "center", justifyContent: "center" },
-  body: { flex: 1, paddingVertical: 12, paddingLeft: 12, paddingRight: 6, gap: 3, justifyContent: "center" },
-  typeRow: { marginBottom: 1 },
-  typeTag: { backgroundColor: `${P}16`, borderRadius: 6, paddingHorizontal: 7, paddingVertical: 2, alignSelf: "flex-start" },
-  typeTagTxt: { fontSize: 11, fontFamily: "Inter_600SemiBold", color: P },
-  name: { fontSize: 16, fontFamily: "Inter_700Bold", color: DARK },
-  meta: { fontSize: 11, fontFamily: "Inter_400Regular", color: BODY },
-  desc: { fontSize: 12, fontFamily: "Inter_400Regular", color: "#7A7090", lineHeight: 17 },
-  locRow: { flexDirection: "row", alignItems: "center", gap: 3, marginTop: 2 },
-  loc: { fontSize: 11, fontFamily: "Inter_500Medium", color: BODY, flex: 1 },
-  actions: { width: 40, paddingVertical: 12, paddingRight: 10, justifyContent: "space-between", alignItems: "flex-end" },
-  actionBtn: { width: 30, height: 30, alignItems: "center", justifyContent: "center" },
-  chatBtn: { backgroundColor: P, borderRadius: 15 },
+  shadow:        { marginHorizontal: 20, marginBottom: 16, borderRadius: 20, ...CARD_SHADOW },
+  card:          { backgroundColor: WHITE, borderRadius: 20, overflow: "hidden", borderWidth: 1, borderColor: BORDER },
+  featuredBorder:{ borderColor: "#E07A35", borderWidth: 1.5 },
+
+  imgWrap:       { width: "100%", height: 190, position: "relative" },
+  img:           { width: "100%", height: "100%" },
+  imgFallback:   { flex: 1, alignItems: "center", justifyContent: "center" },
+  imgScrim:      { position: "absolute", bottom: 0, left: 0, right: 0, height: 70 },
+
+  featuredBadge: { position: "absolute", top: 10, left: 10, flexDirection: "row", alignItems: "center", gap: 4, backgroundColor: "#E07A35", borderRadius: 8, paddingHorizontal: 9, paddingVertical: 4 },
+  featuredTxt:   { fontSize: 10, fontFamily: "Inter_700Bold", color: WHITE },
+
+  typeTagImg:    { position: "absolute", bottom: 10, left: 10, backgroundColor: "rgba(255,255,255,0.22)", borderRadius: 8, paddingHorizontal: 9, paddingVertical: 4, borderWidth: 1, borderColor: "rgba(255,255,255,0.35)" },
+  typeTagImgTxt: { fontSize: 11, fontFamily: "Inter_700Bold", color: WHITE },
+
+  imgActions:    { position: "absolute", top: 10, right: 10, flexDirection: "column", gap: 8 },
+  roundBtn:      { width: 36, height: 36, borderRadius: 18, backgroundColor: "rgba(0,0,0,0.28)", alignItems: "center", justifyContent: "center", borderWidth: 1, borderColor: "rgba(255,255,255,0.25)" },
+
+  body:    { padding: 14, gap: 6 },
+  nameRow: { flexDirection: "row", alignItems: "center", justifyContent: "space-between", gap: 8 },
+  name:    { flex: 1, fontSize: 17, fontFamily: "Inter_700Bold", color: DARK },
+  agePill: { backgroundColor: `${P}16`, borderRadius: 8, paddingHorizontal: 8, paddingVertical: 3 },
+  ageTxt:  { fontSize: 11, fontFamily: "Inter_600SemiBold", color: P },
+  desc:    { fontSize: 13, fontFamily: "Inter_400Regular", color: BODY, lineHeight: 19 },
+
+  footer:  { flexDirection: "row", alignItems: "center", justifyContent: "space-between", marginTop: 4 },
+  locRow:  { flexDirection: "row", alignItems: "center", gap: 4, flex: 1 },
+  loc:     { fontSize: 12, fontFamily: "Inter_500Medium", color: BODY, flex: 1 },
+  chatBtn: { borderRadius: 10, overflow: "hidden" },
+  chatGrad:{ flexDirection: "row", alignItems: "center", gap: 5, paddingVertical: 8, paddingHorizontal: 14 },
+  chatTxt: { fontSize: 12, fontFamily: "Inter_700Bold", color: WHITE },
 });
 
-// ── Floating filter button ────────────────────────────────────────────────────
-function FloatingFilterButton({ bottom, onPress }: { bottom: number; onPress: () => void }) {
+// ── Section header (listings count) ──────────────────────────────────────────
+function ListingsHeader({ count, filter }: { count: number; filter: Filter }) {
+  const label = filter === "all" ? "Tüm İlanlar" : FILTERS.find((f) => f.key === filter)?.label ?? "";
   return (
-    <Pressable
-      style={[ffb.wrapShadow, { bottom }]}
-      onPress={() => { Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light); onPress(); }}
-    >
-      <LinearGradient colors={[P2, P]} start={{ x: 0, y: 0 }} end={{ x: 1, y: 0 }} style={ffb.grad}>
-        <Ionicons name="filter" size={16} color={WHITE} />
-        <Text style={ffb.txt}>Filtrele</Text>
-      </LinearGradient>
-    </Pressable>
+    <View style={lh.wrap}>
+      <Text style={lh.title}>{label}</Text>
+      <View style={lh.pill}>
+        <Text style={lh.count}>{count} ilan</Text>
+      </View>
+    </View>
   );
 }
-const ffb = StyleSheet.create({
-  wrapShadow: { position: "absolute", right: 20, borderRadius: 50, ...SHADOW },
-  grad: { flexDirection: "row", alignItems: "center", gap: 6, paddingVertical: 12, paddingHorizontal: 18, borderRadius: 50 },
-  txt: { fontSize: 13, fontFamily: "Inter_700Bold", color: WHITE },
+const lh = StyleSheet.create({
+  wrap:  { flexDirection: "row", alignItems: "center", justifyContent: "space-between", paddingHorizontal: 20, marginBottom: 12 },
+  title: { fontSize: 16, fontFamily: "Inter_700Bold", color: DARK },
+  pill:  { backgroundColor: `${P}16`, borderRadius: 10, paddingHorizontal: 10, paddingVertical: 4 },
+  count: { fontSize: 12, fontFamily: "Inter_600SemiBold", color: P },
 });
 
 // ── Main ──────────────────────────────────────────────────────────────────────
@@ -364,9 +491,10 @@ export default function PetsScreen() {
   const insets = useSafeAreaInsets();
   const router = useRouter();
   const { listings } = useAdoption();
-  const { boostStatuses, fetchBoostStatus } = useBoost();
+  const { boostStatuses } = useBoost();
   const [activeTab, setActiveTab] = useState<Tab>("create");
   const [filter, setFilter]       = useState<Filter>("all");
+  const [query, setQuery]         = useState("");
 
   const topPad = Platform.OS === "web" ? 67 : insets.top;
   const botPad = insets.bottom + 80;
@@ -382,34 +510,56 @@ export default function PetsScreen() {
 
   const NOW_THRESHOLD = Date.now() - 24 * 3_600_000;
   const filtered = useMemo(() => {
-    if (filter === "all")   return sorted;
-    if (filter === "new")   return sorted.filter((l) => new Date(l.createdAt).getTime() > NOW_THRESHOLD);
-    if (filter === "other") return sorted.filter((l) => (TYPE_NORMALIZE[l.petType] ?? "other") === "other");
-    return sorted.filter((l) => (TYPE_NORMALIZE[l.petType] ?? "other") === filter);
-  }, [sorted, filter]);
+    let list = sorted;
+    if (filter === "new")        list = list.filter((l) => new Date(l.createdAt).getTime() > NOW_THRESHOLD);
+    else if (filter !== "all")   list = list.filter((l) => (TYPE_NORMALIZE[l.petType] ?? "other") === filter);
+    if (filter === "other")      list = sorted.filter((l) => (TYPE_NORMALIZE[l.petType] ?? "other") === "other");
+    if (query.trim()) {
+      const q = query.toLowerCase();
+      list = list.filter((l) =>
+        l.petName.toLowerCase().includes(q) ||
+        l.petType.toLowerCase().includes(q) ||
+        l.description?.toLowerCase().includes(q) ||
+        l.location.toLowerCase().includes(q)
+      );
+    }
+    return list;
+  }, [sorted, filter, query]);
 
   return (
     <View style={s.root}>
-      <PetHeader topPad={topPad} />
+      {/* Sticky header */}
+      <View style={s.stickyTop}>
+        <PetHeader topPad={topPad} />
 
-      <View style={s.titleBlock}>
-        <Text style={s.title}>
-          {activeTab === "create" ? "Evcil Hayvan Merkezi" : "Evcil Hayvan İlanları"}
-        </Text>
-        <Text style={s.subtitle}>
-          {activeTab === "create"
-            ? "Sahiplendirme ilanları oluştur ve incele"
-            : "Patili dostlar için yeni bir yuva bul"}
-        </Text>
+        <View style={s.titleBlock}>
+          <Text style={s.title}>
+            {activeTab === "create" ? "Evcil Hayvan Merkezi" : "Sahiplendirme İlanları"}
+          </Text>
+          <Text style={s.subtitle}>
+            {activeTab === "create"
+              ? "Sahiplendirme ilanları oluştur ve incele"
+              : "Patili dostlar için yeni bir yuva bul"}
+          </Text>
+        </View>
+
+        <TabSwitcher active={activeTab} onChange={setActiveTab} />
       </View>
-
-      <TabSwitcher active={activeTab} onChange={setActiveTab} />
 
       {activeTab === "create" ? (
         <CreateSection onPress={() => router.push("/add-adoption")} botPad={botPad} />
       ) : (
         <View style={{ flex: 1 }}>
+          {/* Search + filter */}
+          <SearchBar query={query} onQuery={setQuery} onFilter={() => {}} />
+
+          {/* Category chips */}
           <FilterRow active={filter} onChange={setFilter} />
+
+          {/* Count row */}
+          <ListingsHeader count={filtered.length} filter={filter} />
+
+          {/* Cards */}
           <FlatList
             data={filtered}
             keyExtractor={(item) => item.id}
@@ -419,29 +569,36 @@ export default function PetsScreen() {
                 isFeatured={boostStatuses[item.id]?.isFeatured ?? false}
               />
             )}
-            contentContainerStyle={{ paddingTop: 2, paddingBottom: botPad + 80 }}
+            contentContainerStyle={{ paddingTop: 2, paddingBottom: botPad + 20 }}
             showsVerticalScrollIndicator={false}
             ListEmptyComponent={
               <View style={s.empty}>
-                <Ionicons name="heart-outline" size={52} color={`${P}50`} />
-                <Text style={s.emptyTitle}>İlan bulunamadı</Text>
-                <Text style={s.emptySub}>
-                  {filter === "all" ? "İlk sahiplendirme ilanını sen oluştur" : "Bu kategoride ilan yok"}
+                <View style={s.emptyIllo}>
+                  <Ionicons name="heart-outline" size={44} color={`${P}70`} />
+                </View>
+                <Text style={s.emptyTitle}>
+                  {query ? "Sonuç bulunamadı" : "İlan bulunamadı"}
                 </Text>
-                {filter === "all" && (
+                <Text style={s.emptySub}>
+                  {query
+                    ? `"${query}" için eşleşen ilan yok`
+                    : filter === "all"
+                    ? "İlk sahiplendirme ilanını sen oluştur"
+                    : "Bu kategoride henüz ilan yok"}
+                </Text>
+                {!query && filter === "all" && (
                   <Pressable
                     style={({ pressed }) => [s.emptyBtn, { opacity: pressed ? 0.85 : 1 }]}
                     onPress={() => setActiveTab("create")}
                   >
-                    <Text style={s.emptyBtnTxt}>İlan Oluştur</Text>
+                    <LinearGradient colors={[P2, P]} style={s.emptyBtnGrad}>
+                      <Ionicons name="add-circle-outline" size={16} color={WHITE} />
+                      <Text style={s.emptyBtnTxt}>İlan Oluştur</Text>
+                    </LinearGradient>
                   </Pressable>
                 )}
               </View>
             }
-          />
-          <FloatingFilterButton
-            bottom={insets.bottom + 24}
-            onPress={() => {}}
           />
         </View>
       )}
@@ -451,12 +608,15 @@ export default function PetsScreen() {
 
 const s = StyleSheet.create({
   root:       { flex: 1, backgroundColor: BG },
-  titleBlock: { paddingHorizontal: 20, paddingBottom: 12, alignItems: "center" },
-  title:      { fontSize: 21, fontFamily: "Inter_700Bold", color: DARK, textAlign: "center" },
+  stickyTop:  { backgroundColor: BG },
+  titleBlock: { paddingHorizontal: 20, paddingBottom: 14, alignItems: "center" },
+  title:      { fontSize: 22, fontFamily: "Inter_700Bold", color: DARK, textAlign: "center", letterSpacing: -0.4 },
   subtitle:   { fontSize: 13, fontFamily: "Inter_400Regular", color: BODY, marginTop: 3, textAlign: "center" },
-  empty:      { alignItems: "center", paddingTop: 60, paddingHorizontal: 40, gap: 8 },
-  emptyTitle: { fontSize: 18, fontFamily: "Inter_600SemiBold", color: DARK, marginTop: 8 },
-  emptySub:   { fontSize: 13, fontFamily: "Inter_400Regular", color: BODY, textAlign: "center" },
-  emptyBtn:   { marginTop: 12, backgroundColor: P, borderRadius: 50, paddingVertical: 12, paddingHorizontal: 28 },
-  emptyBtnTxt:{ fontSize: 14, fontFamily: "Inter_600SemiBold", color: WHITE },
+  empty:      { alignItems: "center", paddingTop: 56, paddingHorizontal: 40, gap: 8 },
+  emptyIllo:  { width: 80, height: 80, borderRadius: 40, backgroundColor: `${P}12`, alignItems: "center", justifyContent: "center", marginBottom: 6 },
+  emptyTitle: { fontSize: 18, fontFamily: "Inter_700Bold", color: DARK, marginTop: 4 },
+  emptySub:   { fontSize: 13, fontFamily: "Inter_400Regular", color: BODY, textAlign: "center", lineHeight: 20 },
+  emptyBtn:   { marginTop: 16, borderRadius: 50, overflow: "hidden", ...IOS_SHADOW },
+  emptyBtnGrad: { flexDirection: "row", alignItems: "center", gap: 7, paddingVertical: 13, paddingHorizontal: 28 },
+  emptyBtnTxt:{ fontSize: 14, fontFamily: "Inter_700Bold", color: WHITE },
 });
