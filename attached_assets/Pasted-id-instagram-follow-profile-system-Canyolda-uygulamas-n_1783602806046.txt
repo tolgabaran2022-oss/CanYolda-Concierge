@@ -1,0 +1,299 @@
+id="instagram_follow_profile_system"
+
+Canyoldaşı uygulamasındaki Akış bölümünü Instagram mantığında gerçek sosyal ağ sistemi olarak geliştir.
+
+Amaç:
+Kullanıcılar birbirlerini takip edebilsin, takip ettikleri kişilerin gönderilerini Akış'ta görebilsin ve diğer kullanıcı profilleri Instagram benzeri görünsün.
+
+=================================
+1. TAKİP SİSTEMİ DÜZELTME
+=================================
+
+Mevcut sorun:
+
+- Kullanıcı bir profili takip ettiğinde takip edilen kişi görünmüyor.
+- Takip ilişkisi Akış'a yansımıyor.
+
+Kontrol et ve düzelt:
+
+
+Database oluştur:
+
+followers tablosu:
+
+
+id
+
+follower_id
+
+following_id
+
+created_at
+
+
+
+Kurallar:
+
+
+Bir kullanıcı başka kullanıcıyı takip ettiğinde:
+
+follower_id:
+takip eden kullanıcı
+
+
+following_id:
+takip edilen kullanıcı
+
+
+
+Takip kaldırınca kayıt silinsin.
+
+
+
+=================================
+2. AKIŞ ALGORİTMASI
+=================================
+
+Instagram mantığında çalış:
+
+
+Akışta göster:
+
+
+1.
+Takip edilen kullanıcıların gönderileri
+
+
+2.
+Kullanıcının kendi gönderileri
+
+
+3.
+Önerilen popüler evcil hayvan gönderileri
+
+
+
+Sıralama:
+
+
+- Yeni gönderiler üstte
+- Etkileşimi yüksek gönderiler önerilerde
+
+
+Feed sorgusu:
+
+Kullanıcının following listesini al.
+
+Bu kullanıcıların:
+
+posts tablosundaki gönderilerini getir.
+
+
+
+=================================
+3. PROFİL SAYFASI INSTAGRAM TARZI
+=================================
+
+Başka kullanıcı profiline tıklayınca Instagram benzeri profil aç.
+
+
+Profil üst alanı:
+
+
+Profil fotoğrafı
+
+
+Kullanıcı adı
+
+
+Bio açıklaması
+
+
+Takipçi sayısı
+
+
+Takip edilen sayısı
+
+
+Gönderi sayısı
+
+
+
+Örnek:
+
+
+🐾
+
+Misket'in Annesi
+
+
+124 Gönderi
+
+356 Takipçi
+
+89 Takip
+
+
+
+[ Takip Et ]
+
+veya
+
+[ Takibi Bırak ]
+
+
+
+=================================
+4. PROFİL İÇERİĞİ
+=================================
+
+
+Instagram grid sistemi:
+
+
+Gönderiler
+
+
+3 sütun fotoğraf grid:
+
+
+[🐱][🐶][🐾]
+
+[🐕][🐱][🐈]
+
+
+
+Her fotoğrafa tıklayınca:
+
+
+Gönderi detay aç:
+
+
+Fotoğraf
+
+Açıklama
+
+Beğeni
+
+Yorumlar
+
+
+
+=================================
+5. TAKİPÇİ / TAKİP EDİLEN SAYFALARI
+=================================
+
+
+Takipçi sayısına basınca:
+
+
+Liste aç:
+
+
+Profil fotoğrafı
+
+Kullanıcı adı
+
+Takip Et butonu
+
+
+
+Takip edilen sayısına basınca:
+
+
+Takip ettiği kullanıcılar listesi.
+
+
+
+=================================
+6. PROFİL ETKİLEŞİMLERİ
+=================================
+
+
+Eklenmeli:
+
+
+Takip Et butonu
+
+
+Mesaj Gönder butonu
+
+
+Favori kullanıcı
+
+
+Paylaş
+
+
+
+=================================
+7. POST SİSTEMİ
+=================================
+
+posts tablosunu kontrol et:
+
+
+id
+
+user_id
+
+image
+
+caption
+
+likes_count
+
+comments_count
+
+created_at
+
+
+
+Her post:
+
+
+- Beğen
+- Yorum yap
+- Kaydet
+- Paylaş
+
+
+
+=================================
+8. GÜVENLİK
+=================================
+
+Supabase RLS:
+
+
+- Kullanıcı kendi profilini düzenleyebilir.
+- Başkasının profilini sadece görüntüleyebilir.
+- Takip işlemleri güvenli olmalı.
+
+
+=================================
+9. TASARIM
+=================================
+
+Profil tasarımı:
+
+Instagram + TikTok + modern pet community tarzında olsun.
+
+
+Özellikler:
+
+- Yuvarlak profil fotoğrafı
+- Büyük takipçi sayıları
+- Grid fotoğraf sistemi
+- Modern butonlar
+- Smooth animasyonlar
+
+
+Canyoldaşı mor tema korunacak.
+
+
+Sonuç:
+
+Kullanıcılar birbirini takip edebilecek.
+Takip edilen kişilerin gönderileri Akış'ta görünecek.
+Her kullanıcı profili Instagram kalitesinde çalışacak.
