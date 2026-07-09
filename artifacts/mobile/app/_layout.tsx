@@ -30,9 +30,13 @@ function RootLayoutNav() {
   useEffect(() => {
     if (isLoading) return;
     const inAuthGroup = segments[0] === "(auth)";
+    const currentScreen = segments[1] as string | undefined;
+    const openScreens   = ["forgot-password", "reset-password"];
+    const isOpenScreen  = openScreens.includes(currentScreen ?? "");
+
     if (!user && !inAuthGroup) {
       router.replace("/(auth)/login");
-    } else if (user && inAuthGroup) {
+    } else if (user && inAuthGroup && !isOpenScreen) {
       router.replace("/(tabs)");
     }
   }, [user, isLoading, segments]);
