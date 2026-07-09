@@ -178,10 +178,13 @@ const sb = StyleSheet.create({
   filterGrad:{ width: 44, height: 44, alignItems: "center", justifyContent: "center" },
 });
 
-// ── Filter chips (FlatList — no clipping) ────────────────────────────────────
+// ── Filter chips (horizontal FlatList, fixed-width, Instagram style) ──────────
+const CHIP_W = 86;
+const CHIP_H = 40;
+const CHIP_GAP = 8;
+
 function FilterRow({ active, onChange }: { active: Filter; onChange: (f: Filter) => void }) {
   const filterRef = useRef<FlatList>(null);
-  const activeIndex = FILTERS.findIndex((f) => f.key === active);
 
   const handlePress = (key: Filter, idx: number) => {
     Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
@@ -196,25 +199,34 @@ function FilterRow({ active, onChange }: { active: Filter; onChange: (f: Filter)
       horizontal
       keyExtractor={(item) => item.key}
       showsHorizontalScrollIndicator={false}
-      contentContainerStyle={fc.list}
-      style={fc.root}
+      decelerationRate="fast"
       onScrollToIndexFailed={() => {}}
+      style={fc.root}
+      contentContainerStyle={fc.list}
+      ItemSeparatorComponent={() => <View style={{ width: CHIP_GAP }} />}
       renderItem={({ item: f, index }) => {
         const isActive = active === f.key;
         return (
           <Pressable
+            key={f.key}
             onPress={() => handlePress(f.key, index)}
-            style={[fc.chip, isActive && fc.chipActive]}
+            style={fc.chipWrap}
           >
-            <Text style={fc.emoji}>{f.emoji}</Text>
-            <Text style={[fc.lbl, isActive && fc.lblActive]}>{f.label}</Text>
-            {isActive && (
+            {isActive ? (
               <LinearGradient
                 colors={[P2, P]}
                 start={{ x: 0, y: 0 }}
                 end={{ x: 1, y: 0 }}
-                style={fc.activeBar}
-              />
+                style={[fc.chip, fc.chipActiveShadow]}
+              >
+                <Text style={fc.emoji}>{f.emoji}</Text>
+                <Text style={fc.lblActive}>{f.label}</Text>
+              </LinearGradient>
+            ) : (
+              <View style={[fc.chip, fc.chipInactive]}>
+                <Text style={fc.emoji}>{f.emoji}</Text>
+                <Text style={fc.lbl}>{f.label}</Text>
+              </View>
             )}
           </Pressable>
         );
@@ -224,21 +236,41 @@ function FilterRow({ active, onChange }: { active: Filter; onChange: (f: Filter)
 }
 const fc = StyleSheet.create({
   root: { marginBottom: 12 },
-  list: { paddingHorizontal: 20, gap: 8, paddingVertical: 3, paddingRight: 28 },
-  chip: {
-    flexDirection: "row", alignItems: "center", gap: 5,
-    paddingVertical: 8, paddingHorizontal: 14,
-    borderRadius: 50,
-    backgroundColor: WHITE,
-    borderWidth: 1.5, borderColor: `${P}22`,
-    overflow: "hidden",
-    ...IOS_SHADOW,
+  list: {
+    paddingLeft: 20,
+    paddingRight: 24,   // ensures last chip not clipped
+    paddingVertical: 4,
   },
-  chipActive: { borderColor: P, backgroundColor: `${P}12` },
+  chipWrap: { width: CHIP_W },
+  chip: {
+    width: CHIP_W,
+    height: CHIP_H,
+    borderRadius: 20,
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "center",
+    gap: 4,
+  },
+  chipInactive: {
+    backgroundColor: WHITE,
+    borderWidth: 1.5,
+    borderColor: `${P}30`,
+    ...Platform.select({
+      ios:     { shadowColor: "#4B267D", shadowOffset: { width: 0, height: 2 }, shadowOpacity: 0.07, shadowRadius: 8 },
+      android: { elevation: 2 },
+      default: {},
+    }),
+  },
+  chipActiveShadow: {
+    ...Platform.select({
+      ios:     { shadowColor: P, shadowOffset: { width: 0, height: 4 }, shadowOpacity: 0.28, shadowRadius: 10 },
+      android: { elevation: 5 },
+      default: {},
+    }),
+  },
   emoji:    { fontSize: 13 },
-  lbl:      { fontSize: 13, fontFamily: "Inter_600SemiBold", color: BODY },
-  lblActive:{ color: P },
-  activeBar:{ position: "absolute", bottom: 0, left: 0, right: 0, height: 2 },
+  lbl:      { fontSize: 12, fontFamily: "Inter_600SemiBold", color: P },
+  lblActive:{ fontSize: 12, fontFamily: "Inter_700Bold",    color: WHITE },
 });
 
 // ── Listing card ──────────────────────────────────────────────────────────────
