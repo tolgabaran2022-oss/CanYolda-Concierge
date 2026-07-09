@@ -29,7 +29,7 @@ const WHITE = "#FFFFFF";
 const BORDER = "rgba(124,77,204,0.13)";
 const SHADOW = { shadowColor: P, shadowOffset: { width: 0, height: 4 }, shadowOpacity: 0.1, shadowRadius: 12, elevation: 3 };
 
-const DOG_IMG = "https://images.unsplash.com/photo-1552053831-71594a27632d?w=400&q=85";
+const DOG_IMG = require("../../assets/hero-puppy.png");
 
 type Tab     = "create" | "listings";
 type Filter  = "all" | "cat" | "dog" | "bird" | "rabbit" | "new" | "other";
@@ -135,7 +135,7 @@ function CreateSection({ onPress, botPad }: { onPress: () => void; botPad: numbe
             </Pressable>
           </View>
           <View style={cr.heroRight}>
-            <Image source={{ uri: DOG_IMG }} style={cr.dogImg} contentFit="cover" />
+            <Image source={DOG_IMG} style={cr.dogImg} contentFit="contain" />
           </View>
         </View>
       </View>
