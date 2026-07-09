@@ -1,0 +1,428 @@
+Canyoldaşı uygulamasında Evcil sekmesini aşağıdaki tasarıma göre KOD olarak yeniden oluştur.
+
+Referans:
+Gönderdiğim Evcil Hayvan Merkezi tasarımını birebir uygula.
+
+Teknoloji:
+- React Native Expo
+- TypeScript
+- Mevcut proje yapısını kullan
+- Mevcut Supabase bağlantısını bozma
+
+Yeni ekran oluştur:
+
+PetCenterScreen.tsx
+
+
+TASARIM:
+
+Arka plan:
+
+#F8F4FF
+
+
+HEADER:
+
+Üst bölüm:
+
+Sol:
+Mor kalp ikonu + "canyoldaşı"
+
+Sağ:
+Bildirim ikonu
+
+
+Başlık:
+
+Evcil Hayvan Merkezi
+
+
+Alt yazı:
+
+"Sahiplendirme ilanları oluştur ve incele"
+
+
+--------------------------------
+
+
+TAB BAR:
+
+İki sekmeli kontrol oluştur:
+
+
+İlan Oluştur
+
+Tüm İlanlar
+
+
+Aktif sekme:
+
+Mor gradient background
+
+Beyaz yazı
+
+
+Pasif:
+
+Beyaz kart
+
+Mor yazı
+
+
+--------------------------------
+
+
+İLAN OLUŞTUR KARTI:
+
+
+Beyaz büyük kart:
+
+
+Sol:
+
+
+Yuvarlak açık mor ikon alanı
+
+İçinde kalp ikonu
+
+
+Başlık:
+
+"Evcil hayvanını sahiplendirme ilanına ekle"
+
+
+Açıklama:
+
+"Fotoğraf, açıklama ve konum ekleyerek ilan oluştur"
+
+
+Buton:
+
+"+ İlan Oluştur"
+
+
+Mor gradient buton
+
+
+Sağ:
+
+Köpek fotoğrafı
+
+
+Fotoğraf:
+
+borderRadius:
+25
+
+resizeMode:
+cover
+
+
+--------------------------------
+
+
+DİKKAT KARTI:
+
+
+Başlık:
+
+"İlan verirken dikkat edilmesi gerekenler"
+
+
+Maddeler:
+
+
+• Hayvanın yaşı, karakteri ve sağlık durumunu belirt
+
+• Net ve aydınlık fotoğraflar ekle
+
+• Sahiplenecek kişiyle yüz yüze görüşmeyi tercih et
+
+
+Kart:
+
+White
+
+radius 20
+
+shadow
+
+
+--------------------------------
+
+
+İSTATİSTİK:
+
+
+3 kart oluştur:
+
+
+Kart 1:
+
+Icon: Paw
+
+2.4K+
+
+Aktif İlan
+
+
+Kart 2:
+
+Icon: Heart
+
+800+
+
+Sahiplendirilen
+
+
+Kart 3:
+
+Icon: Users
+
+12K+
+
+Hayvan Dostu
+
+
+Kart boyutu:
+
+110x110
+
+
+--------------------------------
+
+
+GÜVENLİ SAHİPLENDİRME BANNER:
+
+
+Mor gradient kart
+
+
+Başlık:
+
+"Güvenli Sahiplendirme"
+
+
+Açıklama:
+
+"Doğrulanmış kullanıcılar ve güvenli iletişim ile patili dostlarımızı doğru yuvalara götürüyoruz."
+
+
+Sol:
+Shield icon
+
+
+Sağ:
+Pet house icon
+
+
+--------------------------------
+
+
+TÜM İLANLAR SEKME:
+
+
+Ayrı component oluştur:
+
+
+PetListingsScreen.tsx
+
+
+Tasarım:
+
+
+Başlık:
+
+"Evcil Hayvan İlanları"
+
+
+Alt yazı:
+
+"Patili dostlar için yeni bir yuva bul"
+
+
+Filtre chipleri:
+
+
+Tümü
+
+Kedi
+
+Köpek
+
+Kuş
+
+Tavşan
+
+
+Aktif chip:
+
+Mor arka plan
+
+
+--------------------------------
+
+
+İLAN KARTI:
+
+
+Component:
+
+PetListingCard.tsx
+
+
+Tasarım:
+
+
+White card
+
+
+Sol:
+
+Hayvan fotoğrafı
+
+
+Sağ:
+
+
+Hayvan adı:
+
+Pamuk
+
+
+Tür etiketi:
+
+Kedi
+
+
+Bilgi:
+
+British Shorthair • 2 yaş
+
+
+Açıklama:
+
+"Sakin, oyuncu ve sevgi dolu bir patili dost."
+
+
+Konum:
+
+📍 Kadıköy, İstanbul
+
+
+Sağ üst:
+
+Heart icon
+
+
+Sağ alt:
+
+Message icon
+
+
+--------------------------------
+
+
+ÖRNEK VERİ:
+
+
+Şimdilik mock data oluştur:
+
+
+[
+{
+name:"Pamuk",
+type:"Kedi",
+breed:"British Shorthair",
+age:"2 yaş",
+location:"Kadıköy İstanbul",
+image:"cat"
+},
+
+{
+name:"Karamel",
+type:"Köpek",
+breed:"Golden Retriever",
+age:"1 yaş",
+location:"Beşiktaş İstanbul",
+image:"dog"
+},
+
+{
+name:"Misket",
+type:"Kedi",
+breed:"Tekir",
+age:"3 ay",
+location:"İstanbul",
+image:"cat"
+}
+
+]
+
+
+--------------------------------
+
+
+TEKNİK:
+
+
+Kullan:
+
+react-native-safe-area-context
+
+react-native-linear-gradient
+
+lucide-react-native
+
+
+ScrollView kullan.
+
+
+Alt navigation ile çakışma olmasın:
+
+contentContainerStyle:
+
+paddingBottom:120
+
+
+--------------------------------
+
+
+DOSYA YAPISI:
+
+
+components:
+
+PetCreateCard.tsx
+
+PetStats.tsx
+
+SafetyBanner.tsx
+
+PetListingCard.tsx
+
+CategoryChip.tsx
+
+
+screens:
+
+PetCenterScreen.tsx
+
+PetListingsScreen.tsx
+
+
+--------------------------------
+
+
+SONUÇ:
+
+
+Evcil sekmesi referans görseldeki gibi görünmeli.
+
+Premium iOS uygulama kalitesi.
+
+Kartlar düzgün hizalı.
+
+Alt menü içerikleri kapatmamalı.
+
+Hayvan ilanları görsellerle görünmeli.
