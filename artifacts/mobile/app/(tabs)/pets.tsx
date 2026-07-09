@@ -111,9 +111,9 @@ const tab = StyleSheet.create({
 });
 
 // ── İlan Oluştur ──────────────────────────────────────────────────────────────
-function CreateSection({ onPress }: { onPress: () => void }) {
+function CreateSection({ onPress, botPad }: { onPress: () => void; botPad: number }) {
   return (
-    <ScrollView showsVerticalScrollIndicator={false} contentContainerStyle={{ paddingHorizontal: 20, paddingBottom: 100, gap: 10 }}>
+    <ScrollView showsVerticalScrollIndicator={false} contentContainerStyle={{ paddingHorizontal: 20, paddingBottom: botPad + 16, gap: 10 }}>
 
       {/* Hero card — shadow and clipping are now on separate layers (Android fix) */}
       <View style={cr.heroCardShadow}>
@@ -406,7 +406,7 @@ export default function PetsScreen() {
       <TabSwitcher active={activeTab} onChange={setActiveTab} />
 
       {activeTab === "create" ? (
-        <CreateSection onPress={() => router.push("/add-adoption")} />
+        <CreateSection onPress={() => router.push("/add-adoption")} botPad={botPad} />
       ) : (
         <View style={{ flex: 1 }}>
           <FilterRow active={filter} onChange={setFilter} />
