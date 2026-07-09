@@ -1,0 +1,51 @@
+Şifreyi Değiştir / Giriş akışına “Şifremi Unuttum” özelliği ekle.
+
+Amaç:
+Kullanıcı e-posta adresini girerek mail üzerinden şifre sıfırlayabilsin. Supabase Auth ile tam entegre, güvenli ve production seviyesinde çalışsın.
+
+Yapılacaklar:
+
+1. Giriş ekranına ve Şifreyi Değiştir ekranına “Şifremi Unuttum?” butonu ekle.
+2. Butona basınca “Şifre Sıfırlama” ekranına yönlendir.
+3. Bu ekranda sadece e-posta alanı ve “Sıfırlama Bağlantısı Gönder” butonu olsun.
+4. Boş e-posta ve hatalı e-posta formatı için validasyon yap.
+5. Butona basınca Supabase Auth resetPasswordForEmail() fonksiyonunu kullan.
+6. Kullanıcı kayıtlı olmasa bile güvenlik için aynı mesajı göster:
+   “Eğer bu e-posta kayıtlıysa şifre sıfırlama bağlantısı gönderildi.”
+7. Mail linki uygulamaya geri dönsün. Deep link yapılandırmasını ekle:
+   myapp://reset-password
+8. Mail linkinden gelen kullanıcıyı “Yeni Şifre Oluştur” ekranına yönlendir.
+9. Yeni şifre ekranında:
+   - Yeni şifre
+   - Yeni şifre tekrar
+   alanları olsun.
+10. Şifre kuralları:
+   - Minimum 8 karakter
+   - En az 1 büyük harf
+   - En az 1 küçük harf
+   - En az 1 rakam
+   - En az 1 özel karakter
+11. Şifreler uyuşmazsa hata göster.
+12. Şifre uygunsa Supabase updateUser({ password }) ile şifreyi güncelle.
+13. Başarılı olunca:
+   “Şifreniz başarıyla güncellendi.”
+   mesajını göster ve kullanıcıyı giriş ekranına yönlendir.
+14. Loading state ekle, butona tekrar tekrar basılmasını engelle.
+15. Hata durumları için kullanıcı dostu mesajlar göster:
+   - İnternet bağlantısı yok
+   - Link geçersiz
+   - Link süresi dolmuş
+   - Sunucu hatası
+16. Şifre, token veya kullanıcı bilgilerini console.log ile yazdırma.
+17. UI mevcut uygulama tasarımına uyumlu olsun:
+   - Modern kart tasarım
+   - Responsive ekran
+   - Klavye açılınca içerik yukarı kaysın
+   - Dark mode uyumlu
+   - Türkçe dil desteği
+18. iOS, Android, Expo ve production build üzerinde çalışacak şekilde düzenle.
+19. Var olan auth yapısını bozma, mevcut login/register sistemini koru.
+20. Gerekli dosyaları oluştur veya güncelle ve tüm import/router hatalarını düzelt.
+
+Sonuç:
+Şifremi Unuttum → Mail gönderimi → Deep link ile uygulamaya dönüş → Yeni şifre oluşturma → Yeni şifreyle giriş akışı eksiksiz çalışmalı.

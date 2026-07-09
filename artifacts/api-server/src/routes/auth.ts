@@ -1,9 +1,23 @@
 import { Router } from "express";
 import jwt from "jsonwebtoken";
 import bcrypt from "bcryptjs";
-import { db, oauthUsers, localUsers } from "@workspace/db";
+import { db, pool, oauthUsers, localUsers } from "@workspace/db";
 import { and, eq } from "drizzle-orm";
 import { logger } from "../lib/logger.js";
+import { randomInt } from "crypto";
+
+/* ── password_reset_codes table (auto-created) ─────────────── */
+pool.query(`
+  CREATE TABLE IF NOT EXISTS password_reset_codes (
+    id         TEXT PRIMARY KEY DEFAULT gen_random_uuid()::text,
+    email      TEXT NOT NULL,
+    code       TEXT NOT NULL,
+    expires_at TIMESTAMPTZ NOT NULL DEFAULT (now() + interval '15 minutes'),
+    used       BOOLEAN NOT NULL DEFAULT false,
+    created_at TIMESTAMPTZ NOT NULL DEFAULT now()
+  );
+  CREATE INDEX IF NOT EXISTS idx_prc_email ON password_reset_codes(email);
+`).catch(() => {});
 
 const router = Router();
 
@@ -189,6 +203,140 @@ router.post("/auth/change-password", async (req, res): Promise<void> => {
     res.json({ ok: true });
   } catch (err) {
     logger.error({ err }, "POST /auth/change-password error");
+    res.status(500).json({ error: "Sunucu hatası" });
+  }
+});
+
+/* ── POST /api/auth/forgot-password ──────────────────────────
+   Body: { email }
+   Generates a 6-digit code stored in DB (15-min TTL).
+   In dev returns devCode in response; in prod you'd email it.
+──────────────────────────────────────────────────────────── */
+router.post("/auth/forgot-password", async (req, res): Promise<void> => {
+  const { email } = req.body as { email?: string };
+  if (!email || typeof email !== "string") {
+    res.status(400).json({ error: "E-posta adresi gerekli" });
+    return;
+  }
+
+  const normalizedEmail = email.toLowerCase().trim();
+  const isDev = process.env.NODE_ENV !== "production";
+
+  try {
+    /* Silently pass if user not found — security: don't reveal existence */
+    const users = await db
+      .select({ id: localUsers.id })
+      .from(localUsers)
+      .where(eq(localUsers.email, normalizedEmail))
+      .limit(1);
+
+    if (users.length === 0) {
+      /* Still return ok — don't reveal whether email is registered */
+      const fakeCode = isDev ? String(100000 + randomInt(900000)) : undefined;
+      res.json({ ok: true, ...(isDev ? { devCode: fakeCode } : {}) });
+      return;
+    }
+
+    /* Invalidate any existing unused codes */
+    await pool.query(
+      `UPDATE password_reset_codes SET used = true WHERE email = $1 AND used = false`,
+      [normalizedEmail]
+    );
+
+    /* Generate 6-digit code */
+    const code = String(100000 + randomInt(900000));
+    await pool.query(
+      `INSERT INTO password_reset_codes (email, code) VALUES ($1, $2)`,
+      [normalizedEmail, code]
+    );
+
+    /* TODO: send email via SMTP/SendGrid in production */
+    req.log.info({ email: normalizedEmail }, "Password reset code generated");
+
+    res.json({
+      ok: true,
+      /* Only expose code in development for testing */
+      ...(isDev ? { devCode: code } : {}),
+    });
+  } catch (err) {
+    req.log.error({ err }, "POST /auth/forgot-password error");
+    res.status(500).json({ error: "Sunucu hatası" });
+  }
+});
+
+/* ── POST /api/auth/reset-password ───────────────────────────
+   Body: { email, code, password }
+──────────────────────────────────────────────────────────── */
+router.post("/auth/reset-password", async (req, res): Promise<void> => {
+  const { email, code, password } = req.body as {
+    email?: string; code?: string; password?: string;
+  };
+
+  if (!email || !code || !password) {
+    res.status(400).json({ error: "E-posta, kod ve yeni şifre gerekli" });
+    return;
+  }
+
+  const normalizedEmail = email.toLowerCase().trim();
+  const trimmedCode     = code.trim();
+
+  /* Password strength: min 8, upper, lower, digit, special */
+  if (password.length < 8) {
+    res.status(400).json({ error: "Şifre en az 8 karakter olmalı" });
+    return;
+  }
+  if (!/[A-Z]/.test(password) || !/[a-z]/.test(password) || !/[0-9]/.test(password) || !/[^A-Za-z0-9]/.test(password)) {
+    res.status(400).json({ error: "Şifre güvenlik kurallarını karşılamıyor" });
+    return;
+  }
+
+  try {
+    /* Look up the most recent unused code for this email */
+    const rows = await pool.query<{
+      id: string; code: string; expires_at: Date; used: boolean;
+    }>(
+      `SELECT id, code, expires_at, used
+       FROM password_reset_codes
+       WHERE email = $1 AND used = false
+       ORDER BY created_at DESC
+       LIMIT 1`,
+      [normalizedEmail]
+    );
+
+    if (rows.rowCount === 0) {
+      res.status(400).json({ error: "Geçersiz veya kullanılmış sıfırlama kodu" });
+      return;
+    }
+
+    const row = rows.rows[0];
+
+    if (row.code !== trimmedCode) {
+      res.status(400).json({ error: "Sıfırlama kodu geçersiz" });
+      return;
+    }
+
+    if (new Date() > new Date(row.expires_at)) {
+      res.status(400).json({ error: "Kodun süresi dolmuş. Lütfen yeni bir kod talep edin." });
+      return;
+    }
+
+    /* Mark code as used */
+    await pool.query(
+      `UPDATE password_reset_codes SET used = true WHERE id = $1`,
+      [row.id]
+    );
+
+    /* Update password */
+    const newHash = await bcrypt.hash(password, BCRYPT_ROUNDS);
+    await db
+      .update(localUsers)
+      .set({ passwordHash: newHash, updatedAt: new Date() })
+      .where(eq(localUsers.email, normalizedEmail));
+
+    req.log.info({ email: normalizedEmail }, "Password reset successful");
+    res.json({ ok: true });
+  } catch (err) {
+    req.log.error({ err }, "POST /auth/reset-password error");
     res.status(500).json({ error: "Sunucu hatası" });
   }
 });
