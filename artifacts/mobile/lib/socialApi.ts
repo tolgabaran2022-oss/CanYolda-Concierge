@@ -124,21 +124,24 @@ export async function apiGetFollowersList(userId: string, callerId?: string): Pr
   const params = callerId ? `?callerId=${encodeURIComponent(callerId)}` : "";
   const res = await fetch(`${API_BASE}/social/follow/followers/${encodeURIComponent(userId)}${params}`);
   if (!res.ok) throw new Error("get followers failed");
-  return res.json() as Promise<FollowUser[]>;
+  const data = await res.json();
+  return Array.isArray(data) ? (data as FollowUser[]) : [];
 }
 
 export async function apiGetFollowingList(userId: string, callerId?: string): Promise<FollowUser[]> {
   const params = callerId ? `?callerId=${encodeURIComponent(callerId)}` : "";
   const res = await fetch(`${API_BASE}/social/follow/following/${encodeURIComponent(userId)}${params}`);
   if (!res.ok) throw new Error("get following failed");
-  return res.json() as Promise<FollowUser[]>;
+  const data = await res.json();
+  return Array.isArray(data) ? (data as FollowUser[]) : [];
 }
 
 /* ── User search ───────────────────────────────────────── */
 export async function apiSearchUsers(query: string): Promise<SocialUser[]> {
   const res = await fetch(`${API_BASE}/social/users?q=${encodeURIComponent(query)}`);
   if (!res.ok) throw new Error("search users failed");
-  return res.json() as Promise<SocialUser[]>;
+  const data = await res.json();
+  return Array.isArray(data) ? (data as SocialUser[]) : [];
 }
 
 export async function apiGetUser(userId: string): Promise<SocialUser | null> {
@@ -151,7 +154,8 @@ export async function apiGetUser(userId: string): Promise<SocialUser | null> {
 export async function apiFetchNotifications(userId: string): Promise<AppNotification[]> {
   const res = await fetch(`${API_BASE}/notifications`, { headers: hdrs(userId) });
   if (!res.ok) throw new Error("fetch notifications failed");
-  return res.json() as Promise<AppNotification[]>;
+  const data = await res.json();
+  return Array.isArray(data) ? (data as AppNotification[]) : [];
 }
 
 export async function apiMarkNotificationRead(id: string, userId: string): Promise<void> {

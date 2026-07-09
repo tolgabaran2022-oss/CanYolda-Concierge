@@ -41,7 +41,8 @@ function hdrs(userId?: string): Record<string, string> {
 export async function apiFetchStories(userId?: string): Promise<ApiStoryGroup[]> {
   const res = await fetch(`${API_BASE}/stories`, { headers: hdrs(userId) });
   if (!res.ok) throw new Error("fetch stories failed");
-  return res.json() as Promise<ApiStoryGroup[]>;
+  const data = await res.json();
+  return Array.isArray(data) ? (data as ApiStoryGroup[]) : [];
 }
 
 export async function apiFetchUserStories(

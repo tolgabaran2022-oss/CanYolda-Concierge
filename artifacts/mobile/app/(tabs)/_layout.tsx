@@ -92,6 +92,8 @@ export default function TabLayout() {
         {TABS.map((tab) => (
           <Tabs.Screen key={tab.name} name={tab.name} options={{ title: tab.title }} />
         ))}
+        {/* Profile is a tab-group screen navigated to via push, not shown in tab bar */}
+        <Tabs.Screen name="profile" options={{ href: null, headerShown: false }} />
       </Tabs>
       <CustomTabBar />
     </>

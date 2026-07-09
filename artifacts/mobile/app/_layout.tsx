@@ -109,6 +109,49 @@ function RootLayoutNav() {
           headerShown: false,
         }}
       />
+      <Stack.Screen
+        name="create-post"
+        options={{
+          presentation: "modal",
+          headerShown: false,
+        }}
+      />
+      <Stack.Screen
+        name="notifications"
+        options={{ headerShown: false }}
+      />
+      <Stack.Screen
+        name="search"
+        options={{ headerShown: false }}
+      />
+      <Stack.Screen
+        name="profile-edit"
+        options={{ headerShown: false }}
+      />
+      <Stack.Screen
+        name="post-detail/[postId]"
+        options={{ headerShown: false }}
+      />
+      <Stack.Screen
+        name="user-profile/[userId]"
+        options={{ headerShown: false }}
+      />
+      <Stack.Screen
+        name="follow-list/[userId]"
+        options={{ headerShown: false }}
+      />
+      <Stack.Screen
+        name="messages"
+        options={{ headerShown: false }}
+      />
+      <Stack.Screen
+        name="pet-profile/[petId]"
+        options={{ headerShown: false }}
+      />
+      <Stack.Screen
+        name="adoption/edit/[id]"
+        options={{ headerShown: false }}
+      />
     </Stack>
   );
 }

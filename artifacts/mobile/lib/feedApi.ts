@@ -36,19 +36,22 @@ function hdrs(userId?: string): Record<string, string> {
 export async function apiFetchPosts(userId?: string): Promise<ApiPost[]> {
   const res = await fetch(`${API_BASE}/feed/posts`, { headers: hdrs(userId) });
   if (!res.ok) throw new Error("fetch posts failed");
-  return res.json() as Promise<ApiPost[]>;
+  const data = await res.json();
+  return Array.isArray(data) ? (data as ApiPost[]) : [];
 }
 
 export async function apiFetchFollowingPosts(userId: string): Promise<ApiPost[]> {
   const res = await fetch(`${API_BASE}/feed/posts?mode=following`, { headers: hdrs(userId) });
   if (!res.ok) throw new Error("fetch following posts failed");
-  return res.json() as Promise<ApiPost[]>;
+  const data = await res.json();
+  return Array.isArray(data) ? (data as ApiPost[]) : [];
 }
 
 export async function apiFetchUserPosts(userId: string): Promise<ApiPost[]> {
   const res = await fetch(`${API_BASE}/feed/posts?userId=${encodeURIComponent(userId)}`, { headers: hdrs(userId) });
   if (!res.ok) throw new Error("fetch user posts failed");
-  return res.json() as Promise<ApiPost[]>;
+  const data = await res.json();
+  return Array.isArray(data) ? (data as ApiPost[]) : [];
 }
 
 export async function apiToggleLike(
@@ -78,7 +81,8 @@ export async function apiToggleBookmark(
 export async function apiFetchComments(postId: string): Promise<ApiComment[]> {
   const res = await fetch(`${API_BASE}/feed/posts/${postId}/comments`);
   if (!res.ok) throw new Error("fetch comments failed");
-  return res.json() as Promise<ApiComment[]>;
+  const data = await res.json();
+  return Array.isArray(data) ? (data as ApiComment[]) : [];
 }
 
 export async function apiAddComment(
@@ -155,7 +159,8 @@ export async function apiDeleteComment(
 export async function apiFetchBookmarkedPosts(userId: string): Promise<ApiPost[]> {
   const res = await fetch(`${API_BASE}/feed/bookmarks`, { headers: hdrs(userId) });
   if (!res.ok) throw new Error("fetch bookmarks failed");
-  return res.json() as Promise<ApiPost[]>;
+  const data = await res.json();
+  return Array.isArray(data) ? (data as ApiPost[]) : [];
 }
 
 export async function apiFetchUnreadCount(userId: string): Promise<number> {

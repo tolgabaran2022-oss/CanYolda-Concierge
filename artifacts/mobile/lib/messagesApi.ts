@@ -50,7 +50,8 @@ export async function apiGetOrCreateConversation(
 export async function apiGetConversations(myId: string): Promise<ApiConversation[]> {
   const res = await fetch(`${API_BASE}/messages/conversations`, { headers: hdrs(myId) });
   if (!res.ok) throw new Error("fetch conversations failed");
-  return res.json() as Promise<ApiConversation[]>;
+  const data = await res.json();
+  return Array.isArray(data) ? (data as ApiConversation[]) : [];
 }
 
 export async function apiGetMessages(
