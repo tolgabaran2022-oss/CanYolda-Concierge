@@ -22,6 +22,7 @@ import {
 } from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { PostCard, type PostData } from "@/components/PostCard";
+import { EditPostModal } from "@/components/EditPostModal";
 import { StoryBar } from "@/components/StoryBar";
 import { StoryViewer } from "@/components/StoryViewer";
 import { CreateStoryModal } from "@/components/CreateStoryModal";
@@ -32,6 +33,8 @@ import {
   apiToggleLike,
   apiToggleBookmark,
   apiAddComment,
+  apiDeletePost,
+  apiEditPost,
   type ApiPost,
 } from "@/lib/feedApi";
 import {
@@ -56,6 +59,7 @@ const C = {
 function apiPostToPostData(p: ApiPost): PostData {
   return {
     id:          p.id,
+    userId:      p.userId,
     user:        { name: p.username, avatar: p.avatarUrl },
     image:       p.imageUrl,
     caption:     p.caption,
@@ -278,6 +282,7 @@ export default function FeedScreen() {
   const [createVisible,   setCreateVisible]   = useState(false);
   const [createStoryOpen, setCreateStoryOpen]  = useState(false);
   const [apiReady,        setApiReady]        = useState(false);
+  const [editTarget,      setEditTarget]      = useState<PostData | null>(null);
 
   /* ── Fetch posts on mount ──────────────────────────────── */
   useEffect(() => {
@@ -339,6 +344,26 @@ export default function FeedScreen() {
     if (!apiReady) return;
     apiAddComment(id, user?.name ?? "Sen", text).catch(() => {});
   }, [user?.name, apiReady]);
+
+  /* ── Delete post ─────────────────────────────────────── */
+  const handleDeletePost = useCallback((id: string) => {
+    setPosts((prev) => prev.filter((p) => p.id !== id));
+    if (apiReady) apiDeletePost(id, userId).catch(() => {});
+  }, [userId, apiReady]);
+
+  /* ── Edit post ────────────────────────────────────────── */
+  const handleEditPost = useCallback((id: string) => {
+    const post = posts.find((p) => p.id === id);
+    if (post) setEditTarget(post);
+  }, [posts]);
+
+  const handleSaveEdit = useCallback(async (data: { caption: string; location: string }) => {
+    if (!editTarget) return;
+    setPosts((prev) => prev.map((p) => p.id === editTarget.id ? { ...p, ...data } : p));
+    if (apiReady) {
+      await apiEditPost(editTarget.id, userId, data).catch(() => {});
+    }
+  }, [editTarget, userId, apiReady]);
 
   /* ── Create post (local) ──────────────────────────────── */
   const handleCreate = useCallback(
@@ -436,6 +461,10 @@ export default function FeedScreen() {
             onBookmark={handleBookmark}
             onComment={handleComment}
             onPressUser={(username) => router.push(`/user-profile/${encodeURIComponent(username)}`)}
+            onPressPost={(id) => router.push(`/post-detail/${encodeURIComponent(id)}`)}
+            isOwn={!!item.userId && item.userId === user?.id}
+            onEdit={handleEditPost}
+            onDelete={handleDeletePost}
           />
         )}
         ListHeaderComponent={renderHeader}
@@ -448,6 +477,14 @@ export default function FeedScreen() {
         visible={createVisible}
         onClose={() => setCreateVisible(false)}
         onSubmit={handleCreate}
+      />
+
+      <EditPostModal
+        visible={editTarget !== null}
+        initialCaption={editTarget?.caption ?? ""}
+        initialLocation={editTarget?.location ?? ""}
+        onClose={() => setEditTarget(null)}
+        onSave={handleSaveEdit}
       />
 
       <StoryViewer

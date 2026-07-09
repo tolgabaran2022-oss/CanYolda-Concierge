@@ -314,15 +314,22 @@ export default function ProfileScreen() {
           </View>
         ) : (
           <View style={S.grid}>
-            {currentGrid.map((item, idx) => (
-              <Pressable
-                key={item.id}
-                style={[S.gridItem, idx % 3 !== 2 && { marginRight: GRID_GAP }]}
-                onPress={() => Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light)}
-              >
-                <Image source={{ uri: item.uri }} style={S.gridImage} contentFit="cover" />
-              </Pressable>
-            ))}
+            {currentGrid.map((item, idx) => {
+              const isPost = gridTab === "posts" && item.id.startsWith("p-");
+              const realPostId = isPost ? item.id.replace(/^p-/, "") : null;
+              return (
+                <Pressable
+                  key={item.id}
+                  style={[S.gridItem, idx % 3 !== 2 && { marginRight: GRID_GAP }]}
+                  onPress={() => {
+                    Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+                    if (realPostId) router.push(`/post-detail/${encodeURIComponent(realPostId)}`);
+                  }}
+                >
+                  <Image source={{ uri: item.uri }} style={S.gridImage} contentFit="cover" />
+                </Pressable>
+              );
+            })}
           </View>
         )}
 

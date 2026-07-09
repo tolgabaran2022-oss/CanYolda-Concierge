@@ -4,6 +4,7 @@ const API_BASE = process.env.EXPO_PUBLIC_DOMAIN
 
 export type ApiPost = {
   id: string;
+  userId: string;
   username: string;
   avatarUrl: string;
   imageUrl: string;
@@ -103,4 +104,44 @@ export async function apiCreatePost(data: {
   });
   if (!res.ok) throw new Error("create post failed");
   return res.json() as Promise<ApiPost & { liked: boolean; bookmarked: boolean }>;
+}
+
+export async function apiFetchPost(postId: string, userId?: string): Promise<ApiPost> {
+  const res = await fetch(`${API_BASE}/feed/posts/${postId}`, { headers: hdrs(userId) });
+  if (!res.ok) throw new Error("fetch post failed");
+  return res.json() as Promise<ApiPost>;
+}
+
+export async function apiEditPost(
+  postId: string,
+  userId: string,
+  data: { caption?: string; location?: string }
+): Promise<ApiPost> {
+  const res = await fetch(`${API_BASE}/feed/posts/${postId}`, {
+    method: "PATCH",
+    headers: hdrs(userId),
+    body: JSON.stringify(data),
+  });
+  if (!res.ok) throw new Error("edit post failed");
+  return res.json() as Promise<ApiPost>;
+}
+
+export async function apiDeletePost(postId: string, userId: string): Promise<void> {
+  const res = await fetch(`${API_BASE}/feed/posts/${postId}`, {
+    method: "DELETE",
+    headers: hdrs(userId),
+  });
+  if (!res.ok) throw new Error("delete post failed");
+}
+
+export async function apiDeleteComment(
+  postId: string,
+  commentId: string,
+  userId: string
+): Promise<void> {
+  const res = await fetch(`${API_BASE}/feed/posts/${postId}/comments/${commentId}`, {
+    method: "DELETE",
+    headers: hdrs(userId),
+  });
+  if (!res.ok) throw new Error("delete comment failed");
 }

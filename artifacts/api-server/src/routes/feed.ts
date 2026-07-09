@@ -586,4 +586,101 @@ router.post("/feed/posts/:id/comments", async (req, res) => {
   }
 });
 
+/* ── GET /api/feed/posts/:id ─────────────────────────────── */
+router.get("/feed/posts/:id", async (req, res) => {
+  try {
+    const { id }   = req.params;
+    const userId   = req.headers["x-user-id"] as string | undefined;
+    const rows     = await db.select().from(feedPosts).where(eq(feedPosts.id, id)).limit(1);
+    if (!rows[0]) { res.status(404).json({ error: "Post not found" }); return; }
+
+    let liked = false; let bookmarked = false;
+    if (userId) {
+      const [l, b] = await Promise.all([
+        db.select().from(feedLikes).where(and(eq(feedLikes.postId, id), eq(feedLikes.userId, userId))).limit(1),
+        db.select().from(feedBookmarks).where(and(eq(feedBookmarks.postId, id), eq(feedBookmarks.userId, userId))).limit(1),
+      ]);
+      liked = l.length > 0; bookmarked = b.length > 0;
+    }
+    res.json({ ...rows[0], liked, bookmarked });
+  } catch (err) {
+    req.log.error({ err }, "GET /feed/posts/:id failed");
+    res.status(500).json({ error: "Internal server error" });
+  }
+});
+
+/* ── PATCH /api/feed/posts/:id ─ edit (owner only) ──────── */
+router.patch("/feed/posts/:id", async (req, res) => {
+  try {
+    const { id }   = req.params;
+    const userId   = req.headers["x-user-id"] as string;
+    if (!userId) { res.status(400).json({ error: "x-user-id header required" }); return; }
+
+    const post = await db.select().from(feedPosts).where(eq(feedPosts.id, id)).limit(1);
+    if (!post[0]) { res.status(404).json({ error: "Post not found" }); return; }
+    if (post[0].userId !== userId) { res.status(403).json({ error: "Forbidden" }); return; }
+
+    const { caption, location } = req.body as { caption?: string; location?: string };
+    const [updated] = await db
+      .update(feedPosts)
+      .set({
+        ...(caption  !== undefined && { caption }),
+        ...(location !== undefined && { location }),
+      })
+      .where(eq(feedPosts.id, id))
+      .returning();
+    res.json({ ...updated, liked: false, bookmarked: false });
+  } catch (err) {
+    req.log.error({ err }, "PATCH /feed/posts/:id failed");
+    res.status(500).json({ error: "Internal server error" });
+  }
+});
+
+/* ── DELETE /api/feed/posts/:id ─ delete (owner only) ────── */
+router.delete("/feed/posts/:id", async (req, res) => {
+  try {
+    const { id } = req.params;
+    const userId = req.headers["x-user-id"] as string;
+    if (!userId) { res.status(400).json({ error: "x-user-id header required" }); return; }
+
+    const post = await db.select().from(feedPosts).where(eq(feedPosts.id, id)).limit(1);
+    if (!post[0]) { res.status(404).json({ error: "Post not found" }); return; }
+    if (post[0].userId !== userId) { res.status(403).json({ error: "Forbidden" }); return; }
+
+    await Promise.all([
+      db.delete(feedLikes).where(eq(feedLikes.postId, id)),
+      db.delete(feedBookmarks).where(eq(feedBookmarks.postId, id)),
+      db.delete(feedComments).where(eq(feedComments.postId, id)),
+    ]);
+    await db.delete(feedPosts).where(eq(feedPosts.id, id));
+    res.json({ deleted: true });
+  } catch (err) {
+    req.log.error({ err }, "DELETE /feed/posts/:id failed");
+    res.status(500).json({ error: "Internal server error" });
+  }
+});
+
+/* ── DELETE /api/feed/posts/:id/comments/:commentId ────────── */
+router.delete("/feed/posts/:id/comments/:commentId", async (req, res) => {
+  try {
+    const { id, commentId } = req.params;
+    const userId = req.headers["x-user-id"] as string;
+    if (!userId) { res.status(400).json({ error: "x-user-id header required" }); return; }
+
+    const postOwner = await db.select({ userId: feedPosts.userId }).from(feedPosts).where(eq(feedPosts.id, id)).limit(1);
+    const isPostOwner = postOwner[0]?.userId === userId;
+    const comment = await db.select().from(feedComments).where(eq(feedComments.id, commentId)).limit(1);
+    if (!comment[0]) { res.status(404).json({ error: "Comment not found" }); return; }
+    if (comment[0].username !== userId && !isPostOwner) {
+      res.status(403).json({ error: "Forbidden" }); return;
+    }
+    await db.delete(feedComments).where(eq(feedComments.id, commentId));
+    await db.update(feedPosts).set({ commentsCount: sql`GREATEST(comments_count - 1, 0)` }).where(eq(feedPosts.id, id));
+    res.json({ deleted: true });
+  } catch (err) {
+    req.log.error({ err }, "DELETE /feed/posts/:id/comments/:commentId failed");
+    res.status(500).json({ error: "Internal server error" });
+  }
+});
+
 export default router;

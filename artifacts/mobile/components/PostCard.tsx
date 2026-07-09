@@ -3,6 +3,8 @@ import * as Haptics from "expo-haptics";
 import { Image } from "expo-image";
 import React, { useRef, useState } from "react";
 import {
+  ActionSheetIOS,
+  Alert,
   Animated,
   Dimensions,
   Platform,
@@ -29,6 +31,7 @@ const C = {
 export type Comment = { id: string; user: string; text: string };
 export type PostData = {
   id:           string;
+  userId?:      string;
   user:         { name: string; avatar: string };
   image:        string;
   caption:      string;
@@ -48,9 +51,24 @@ interface Props {
   onComment:     (id: string, text: string) => void;
   onShare?:      (id: string) => void;
   onPressUser?:  (username: string) => void;
+  onPressPost?:  (id: string) => void;
+  isOwn?:        boolean;
+  onEdit?:       (id: string) => void;
+  onDelete?:     (id: string) => void;
 }
 
-export function PostCard({ post, onLike, onBookmark, onComment, onShare, onPressUser }: Props) {
+export function PostCard({
+  post,
+  onLike,
+  onBookmark,
+  onComment,
+  onShare,
+  onPressUser,
+  onPressPost,
+  isOwn,
+  onEdit,
+  onDelete,
+}: Props) {
   const [commentText, setCommentText] = useState("");
   const [showInput,   setShowInput]   = useState(false);
   const [showAll,     setShowAll]     = useState(false);
@@ -92,6 +110,37 @@ export function PostCard({ post, onLike, onBookmark, onComment, onShare, onPress
     Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
   };
 
+  const handleMorePress = () => {
+    if (!isOwn) return;
+    if (Platform.OS === "ios") {
+      ActionSheetIOS.showActionSheetWithOptions(
+        {
+          options: ["İptal", "Düzenle", "Sil"],
+          cancelButtonIndex: 0,
+          destructiveButtonIndex: 2,
+          title: "Gönderi",
+        },
+        (idx) => {
+          if (idx === 1) onEdit?.(post.id);
+          if (idx === 2) confirmDelete();
+        }
+      );
+    } else {
+      Alert.alert("Gönderi", "Ne yapmak istersin?", [
+        { text: "İptal", style: "cancel" },
+        { text: "Düzenle", onPress: () => onEdit?.(post.id) },
+        { text: "Sil", style: "destructive", onPress: confirmDelete },
+      ]);
+    }
+  };
+
+  const confirmDelete = () => {
+    Alert.alert("Gönderiyi Sil", "Bu gönderiyi silmek istediğine emin misin?", [
+      { text: "İptal", style: "cancel" },
+      { text: "Sil", style: "destructive", onPress: () => onDelete?.(post.id) },
+    ]);
+  };
+
   const visibleComments = showAll ? post.comments : post.comments.slice(-1);
   const likeCount  = post.likes;
   const shareCount = post.sharesCount ?? 0;
@@ -111,13 +160,18 @@ export function PostCard({ post, onLike, onBookmark, onComment, onShare, onPress
             {post.timestamp}{post.location ? ` · ${post.location}` : ""}
           </Text>
         </View>
-        <Pressable hitSlop={12}>
-          <Feather name="more-horizontal" size={20} color={C.muted} />
+        <Pressable hitSlop={12} onPress={isOwn ? handleMorePress : undefined}>
+          <Feather name="more-horizontal" size={20} color={isOwn ? C.purple : C.muted} />
         </Pressable>
       </View>
 
       {/* ── Image (landscape) ───────────────────── */}
-      <Pressable onPress={handleDoubleTap} style={S.imageWrap}>
+      <Pressable
+        onPress={() => onPressPost ? onPressPost(post.id) : handleDoubleTap()}
+        onLongPress={handleDoubleTap}
+        delayLongPress={300}
+        style={S.imageWrap}
+      >
         <Image
           source={{ uri: post.image }}
           style={S.image}
@@ -140,7 +194,7 @@ export function PostCard({ post, onLike, onBookmark, onComment, onShare, onPress
             </Animated.View>
           </Pressable>
           {/* Comment */}
-          <Pressable onPress={() => setShowInput((v) => !v)} style={S.actionBtn} hitSlop={8}>
+          <Pressable onPress={() => onPressPost ? onPressPost(post.id) : setShowInput((v) => !v)} style={S.actionBtn} hitSlop={8}>
             <Ionicons name="chatbubble-outline" size={22} color={C.text} />
           </Pressable>
           {/* Share */}
@@ -159,7 +213,7 @@ export function PostCard({ post, onLike, onBookmark, onComment, onShare, onPress
       </View>
 
       {/* ── Stats + caption ─────────────────────── */}
-      <View style={S.foot}>
+      <Pressable style={S.foot} onPress={() => onPressPost?.(post.id)}>
         <View style={S.statsRow}>
           <Text style={S.stat}>{likeCount} beğeni</Text>
           {post.comments.length > 0 && (
@@ -178,20 +232,20 @@ export function PostCard({ post, onLike, onBookmark, onComment, onShare, onPress
         ) : null}
 
         {post.comments.length > 1 && !showAll && (
-          <Pressable onPress={() => setShowAll(true)}>
+          <Pressable onPress={() => onPressPost ? onPressPost(post.id) : setShowAll(true)}>
             <Text style={S.viewAll}>Tüm yorumları gör ({post.comments.length})</Text>
           </Pressable>
         )}
-        {visibleComments.map((c) => (
+        {!onPressPost && visibleComments.map((c) => (
           <Text key={c.id} style={S.commentRow} numberOfLines={1}>
             <Text style={S.commentUser}>{c.user} </Text>
             {c.text}
           </Text>
         ))}
-      </View>
+      </Pressable>
 
-      {/* ── Comment input ───────────────────────── */}
-      {showInput && (
+      {/* ── Comment input (only when no post-detail nav) ──── */}
+      {!onPressPost && showInput && (
         <View style={S.commentInputWrap}>
           <View style={S.inputRow}>
             <TextInput

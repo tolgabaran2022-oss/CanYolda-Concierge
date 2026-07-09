@@ -1,0 +1,223 @@
+Canyoldaşı uygulamasında şimdi Instagram tarzı gerçek gönderi paylaşım sistemini kur.
+
+Mevcut durum:
+- Supabase aktif.
+- Authentication çalışıyor.
+- Profil sistemi gerçek database'e bağlı.
+- Mevcut UI tasarımını bozma.
+
+AMAÇ:
+Kullanıcıların fotoğraf + açıklama ile gönderi paylaşabilmesini sağla.
+
+--------------------------------
+
+1) POSTS DATABASE OLUŞTUR
+
+Supabase PostgreSQL'de posts tablosu oluştur.
+
+Alanlar:
+
+id
+user_id
+image_url
+caption
+location
+created_at
+updated_at
+
+
+İlişki:
+
+user_id → users.id
+
+
+--------------------------------
+
+2) FOTOĞRAF YÜKLEME SİSTEMİ
+
+Supabase Storage kullan.
+
+Yeni bucket oluştur:
+
+post-images
+
+
+Kullanıcı:
+
+- Galeriden fotoğraf seçebilsin
+- Kamera desteği hazır olsun
+- Fotoğraf önizlemesi göstersin
+
+
+Yükleme sonrası:
+
+image_url posts tablosuna kaydedilsin.
+
+
+--------------------------------
+
+3) YENİ GÖNDERİ OLUŞTURMA EKRANI
+
+Instagram oluşturma ekranı mantığında yap.
+
+Component:
+
+CreatePostScreen
+
+
+Üst bar:
+
+Sol:
+Geri butonu
+
+Orta:
+Yeni Gönderi
+
+Sağ:
+Paylaş
+
+
+İçerik:
+
+- Fotoğraf seçme alanı
+- Açıklama input
+- Konum ekleme
+
+
+Paylaş butonuna basınca:
+
+1. Fotoğraf Storage'a yüklensin.
+2. Posts tablosuna kayıt açılsın.
+3. Kullanıcının profilinde görünsün.
+4. Akış bölümünde görünsün.
+
+
+--------------------------------
+
+4) PROFİL GÖNDERİLERİ
+
+Profilde:
+
+"Henüz paylaşım yok"
+
+alanını kaldır.
+
+Yerine Instagram tarzı grid oluştur.
+
+Özellikler:
+
+- 3 kolon kare görünüm
+- Fotoğraf önizleme
+- Gönderiye tıklayınca detay sayfası
+
+
+Component:
+
+PostGrid
+
+
+--------------------------------
+
+5) AKIŞ (FEED) SİSTEMİ
+
+Akış ekranındaki gönderiler gerçek database'den gelsin.
+
+
+Gösterilecek bilgiler:
+
+Üst:
+
+- Profil fotoğrafı
+- Kullanıcı adı
+- Konum
+- 3 nokta menüsü
+
+
+Orta:
+
+- Gönderi fotoğrafı
+
+
+Alt:
+
+- Beğeni alanı
+- Yorum alanı
+- Kaydet butonu
+
+
+--------------------------------
+
+6) GÖNDERİ DETAY SAYFASI
+
+Gönderiye tıklayınca:
+
+PostDetailScreen aç.
+
+Göster:
+
+- Büyük fotoğraf
+- Kullanıcı bilgisi
+- Açıklama
+- Yorumlar
+
+
+--------------------------------
+
+7) GÖNDERİ YÖNETİMİ
+
+Kendi gönderilerinde 3 nokta menüsü:
+
+Seçenekler:
+
+- Düzenle
+- Sil
+
+
+Düzenle:
+
+- Açıklama değiştir
+- Konum değiştir
+
+
+Sil:
+
+Database'den kaldır.
+
+
+--------------------------------
+
+8) COMPONENT YAPISI
+
+Oluştur:
+
+CreatePostButton
+
+CreatePostScreen
+
+ImagePicker
+
+PostCard
+
+PostGrid
+
+PostDetailScreen
+
+EditPostModal
+
+
+--------------------------------
+
+9) TEST ET
+
+Kontrol:
+
+✓ Fotoğraf yükleniyor mu?
+✓ Gönderi database'e kaydoluyor mu?
+✓ Profilde görünüyor mu?
+✓ Akışta çıkıyor mu?
+✓ Kullanıcı sadece kendi gönderisini silebiliyor mu?
+
+
+Sonuç:
+
+Canyoldaşı uygulamasında Instagram mantığında gerçek çalışan gönderi paylaşım sistemi hazır olmalı.
