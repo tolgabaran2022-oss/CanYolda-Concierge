@@ -1,0 +1,453 @@
+Canyoldaşı uygulamasında "Evcil" sekmesini referans görseldeki tasarımın aynısını yap.
+
+ÖNEMLİ:
+Eklediğim referans görseli birebir UI/UX referansı olarak kullan.
+
+Amaç:
+Evcil sekmesi, hayvan sahiplendirme merkezi olarak çalışmalı.
+Tasarım Instagram + Petfinder + modern iOS uygulama kalitesinde olmalı.
+
+Mevcut:
+- Supabase bağlantısı aktif.
+- Authentication çalışıyor.
+- Kullanıcı sistemi mevcut.
+- Mevcut mor/beyaz tema korunacak.
+
+Tasarımı bozma, sadece Evcil sekmesini tamamen yeniden tasarla.
+
+==============================
+GENEL TASARIM
+==============================
+
+Referanstaki tasarım özelliklerini uygula:
+
+- Açık mor (#F7F2FF) arka plan
+- Mor gradient butonlar
+- Yuvarlak köşeli kartlar
+- Soft shadow
+- Premium iOS görünümü
+- Büyük boşluk kullanımı
+- Modern tipografi
+- Apple App Store kalitesi
+
+
+==============================
+HEADER
+==============================
+
+Üst bölüm:
+
+Sol:
+Kalp ikonu + canyoldaşı logosu
+
+Sağ:
+Bildirim ikonu
+
+
+Başlık:
+
+"Evcil Hayvan Merkezi"
+
+
+Alt açıklama:
+
+"Sahiplendirme ilanları oluştur ve incele"
+
+
+==============================
+TAB SİSTEMİ
+==============================
+
+İki sekmeli yapı oluştur:
+
+
+[ İlan Oluştur ]     [ Tüm İlanlar ]
+
+
+Aktif sekme:
+
+Mor gradient arka plan
+Beyaz yazı
+
+
+Pasif sekme:
+
+Beyaz kart
+Mor yazı
+
+
+==============================
+İLAN OLUŞTUR EKRANI
+==============================
+
+
+Büyük kart oluştur.
+
+
+Kart içeriği:
+
+Sol:
+
+Mor dairesel ikon içinde kalp
+
+
+Orta:
+
+Başlık:
+
+"Evcil hayvanını sahiplendirme
+ilanına ekle"
+
+
+Açıklama:
+
+"Fotoğraf, açıklama ve konum
+ekleyerek ilan oluştur"
+
+
+Alt:
+
+Büyük mor buton:
+
+"+ İlan Oluştur"
+
+
+Sağ:
+
+Sevimli köpek görseli
+
+
+==============================
+DİKKAT KARTI
+==============================
+
+
+Beyaz kart:
+
+
+Başlık:
+
+"İlan verirken dikkat edilmesi gerekenler"
+
+
+Maddeler:
+
+• Hayvanın yaşı, karakteri ve sağlık durumunu belirt
+
+• Net ve aydınlık fotoğraflar ekle
+
+• Sahiplenecek kişiyle yüz yüze görüşmeyi tercih et
+
+
+==============================
+İSTATİSTİK KARTLARI
+==============================
+
+
+3 adet küçük kart oluştur:
+
+
+Kart 1:
+
+🐾
+
+2.4K+
+
+Aktif İlan
+
+
+Kart 2:
+
+♡ 
+
+800+
+
+Sahiplendirilen
+
+
+Kart 3:
+
+👥
+
+12K+
+
+Hayvan Dostu
+
+
+Database'den gerçek veri çekilecek.
+
+
+==============================
+GÜVENLİ SAHİPLENDİRME BANNER
+==============================
+
+
+Mor gradient büyük banner:
+
+
+Başlık:
+
+"Güvenli Sahiplendirme"
+
+
+Açıklama:
+
+"Doğrulanmış kullanıcılar ve güvenli iletişim ile patili dostlarımızı doğru yuvalara götürüyoruz."
+
+
+Sol:
+Onay ikonu
+
+
+Sağ:
+Ev/pati illüstrasyonu
+
+
+==============================
+TÜM İLANLAR SAYFASI
+==============================
+
+
+Referanstaki ikinci ekranı oluştur.
+
+
+Başlık:
+
+"Evcil Hayvan İlanları"
+
+
+Alt açıklama:
+
+"Patili dostlar için yeni bir yuva bul"
+
+
+Kategori filtreleri:
+
+
+[Tümü]
+
+[Kedi]
+
+[Köpek]
+
+[Kuş]
+
+[Diğer]
+
+
+==============================
+İLAN KARTLARI
+==============================
+
+
+Her ilan kartı:
+
+
+Sol:
+
+Büyük kare hayvan fotoğrafı
+
+
+Sağ:
+
+
+Hayvan adı
+
+Örnek:
+
+Pamuk
+
+
+Tür etiketi:
+
+Kedi
+
+
+Bilgi:
+
+British Shorthair • 2 yaş
+
+
+Açıklama:
+
+"Sakin, oyuncu ve sevgi dolu bir patili dost."
+
+
+Konum:
+
+📍 İstanbul, Kadıköy
+
+
+Sağ üst:
+
+Favori kalp
+
+
+Sağ alt:
+
+Mesaj gönder butonu
+
+
+Kartlar:
+
+- Yuvarlatılmış
+- Beyaz
+- Soft shadow
+
+
+==============================
+DATABASE
+==============================
+
+
+pet_listings tablosuna bağla:
+
+
+id
+
+owner_id
+
+pet_id
+
+name
+
+type
+
+breed
+
+age
+
+gender
+
+description
+
+location
+
+images
+
+status
+
+created_at
+
+
+Fake veri kullanma.
+
+
+==============================
+İLAN OLUŞTURMA FORMU
+==============================
+
+
+Butona basınca:
+
+
+Yeni ekran aç:
+
+
+Alanlar:
+
+
+Hayvan fotoğrafı
+
+Hayvan adı
+
+Tür
+
+Cins
+
+Yaş
+
+Cinsiyet
+
+Açıklama
+
+Sağlık bilgisi
+
+Konum
+
+
+Fotoğraf:
+
+Supabase Storage kullan.
+
+
+Paylaşınca:
+
+İlan Tüm İlanlar bölümünde görünsün.
+
+
+==============================
+MESAJ SİSTEMİ HAZIRLIĞI
+==============================
+
+
+İlan kartındaki mesaj butonu aktif olsun.
+
+
+conversation yapısına hazır hale getir.
+
+
+==============================
+NAVIGATION
+==============================
+
+
+Alt menü:
+
+
+Harita
+
+Akış
+
+Hayvanlarım
+
+Evcil
+
+Profil
+
+
+Evcil sekmesi aktif olduğunda mor ikon olsun.
+
+
+==============================
+COMPONENT YAPISI
+==============================
+
+
+Oluştur:
+
+
+PetCenterScreen
+
+CreateListingCard
+
+ListingTabs
+
+ListingCard
+
+PetFilter
+
+CreateListingScreen
+
+PetStats
+
+SafetyBanner
+
+
+==============================
+
+SONUÇ:
+
+Referans görseldeki tasarımın aynısını oluştur.
+
+Evcil sekmesi sadece görsel değil gerçek çalışan bir sahiplendirme platformu olmalı.
+
+Kullanıcı:
+- İlan oluşturabilmeli
+- Fotoğraf yükleyebilmeli
+- İlanları görebilmeli
+- Filtreleyebilmeli
+- Favoriye alabilmeli
+- Mesaj gönderebilmeli
+
+Tüm tasarım referans görseldeki ölçü, renk, boşluk ve yerleşime uygun yapılmalı.

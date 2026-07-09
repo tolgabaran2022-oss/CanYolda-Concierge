@@ -30,6 +30,8 @@ import { apiFetchUserPosts, apiFetchBookmarkedPosts } from "@/lib/feedApi";
 import type { ApiPost } from "@/lib/feedApi";
 import { apiGetFollowCounts } from "@/lib/socialApi";
 import type { FollowCounts } from "@/lib/socialApi";
+import { apiGetMyPets, apiCreatePet } from "@/lib/petsApi";
+import type { ApiPetProfile } from "@/lib/petsApi";
 
 const { width: SW } = Dimensions.get("window");
 const GRID_GAP = 2;
@@ -73,6 +75,12 @@ export default function ProfileScreen() {
   const [userPosts,     setUserPosts]     = useState<ApiPost[]>([]);
   const [savedPosts,    setSavedPosts]    = useState<ApiPost[]>([]);
   const [followCounts,  setFollowCounts]  = useState<FollowCounts>({ followers: 0, following: 0 });
+  const [backendPets,   setBackendPets]   = useState<ApiPetProfile[]>([]);
+  const [showCreatePet, setShowCreatePet] = useState(false);
+  const [newPetName,    setNewPetName]    = useState("");
+  const [newPetType,    setNewPetType]    = useState("cat");
+  const [newPetBreed,   setNewPetBreed]   = useState("");
+  const [creatingPet,   setCreatingPet]   = useState(false);
 
   useEffect(() => {
     if (user?.email) fetchMyBoosts(user.email);
@@ -89,7 +97,30 @@ export default function ProfileScreen() {
     apiGetFollowCounts(user.id)
       .then(setFollowCounts)
       .catch(() => {});
+    apiGetMyPets(user.id)
+      .then(setBackendPets)
+      .catch(() => setBackendPets([]));
   }, [user?.id]);
+
+  const handleCreatePet = async () => {
+    if (!user?.id || !newPetName.trim()) {
+      Alert.alert("Hata", "Hayvan adı zorunlu."); return;
+    }
+    setCreatingPet(true);
+    try {
+      const pet = await apiCreatePet(user.id, {
+        name: newPetName.trim(), type: newPetType, breed: newPetBreed,
+        gender: "", birthDate: "", weight: "", color: "", avatarUrl: "", bio: "", location: "",
+      });
+      Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
+      setBackendPets((prev) => [pet, ...prev]);
+      setShowCreatePet(false);
+      setNewPetName(""); setNewPetType("cat"); setNewPetBreed("");
+      router.push(`/pet-profile/${encodeURIComponent(pet.id)}`);
+    } catch {
+      Alert.alert("Hata", "Hayvan profili oluşturulamadı.");
+    } finally { setCreatingPet(false); }
+  };
 
   const [pwModalVisible, setPwModalVisible] = useState(false);
   const [currentPw, setCurrentPw] = useState("");
@@ -278,7 +309,7 @@ export default function ProfileScreen() {
           <View style={S.quickRow}>
             {[
               { icon: "paw" as const, label: "Sokak\nHayvanı", action: () => router.push("/add-animal") },
-              { icon: "heart" as const, label: "Evcil\nHayvan", action: () => router.push("/add-pet") },
+              { icon: "heart" as const, label: "Evcil\nHayvan", action: () => setShowCreatePet(true) },
               { icon: "hand-left" as const, label: "Sahiplen-\ndirme", action: () => router.push("/add-adoption") },
             ].map((item, i) => (
               <Pressable key={i} style={({ pressed }) => [S.quickItem, { opacity: pressed ? 0.75 : 1 }]} onPress={item.action}>
@@ -289,6 +320,74 @@ export default function ProfileScreen() {
               </Pressable>
             ))}
           </View>
+        </View>
+
+        {/* ── Evcil Hayvanlarım ─────────────────────────── */}
+        <View style={S.section}>
+          <View style={{ flexDirection: "row", alignItems: "center", justifyContent: "space-between", marginBottom: 12 }}>
+            <Text style={S.sectionTitle}>Evcil Hayvanlarım</Text>
+            <Pressable
+              onPress={() => setShowCreatePet(true)}
+              style={({ pressed }) => [{ opacity: pressed ? 0.7 : 1, flexDirection: "row", alignItems: "center", gap: 4 }]}
+            >
+              <Ionicons name="add-circle-outline" size={18} color={PURPLE} />
+              <Text style={{ color: PURPLE, fontSize: 13, fontWeight: "600" }}>Ekle</Text>
+            </Pressable>
+          </View>
+          {backendPets.length === 0 ? (
+            <Pressable
+              onPress={() => setShowCreatePet(true)}
+              style={({ pressed }) => [{
+                backgroundColor: "#F0EAF8", borderRadius: 14, padding: 20,
+                alignItems: "center", borderWidth: 1.5, borderColor: "#D5C4EE", borderStyle: "dashed",
+                opacity: pressed ? 0.7 : 1,
+              }]}
+            >
+              <Text style={{ fontSize: 28, marginBottom: 6 }}>🐾</Text>
+              <Text style={{ color: PURPLE, fontWeight: "600", fontSize: 14 }}>İlk hayvanını ekle</Text>
+              <Text style={{ color: "#888", fontSize: 12, marginTop: 2 }}>Her hayvanın kendi profili olsun</Text>
+            </Pressable>
+          ) : (
+            <ScrollView horizontal showsHorizontalScrollIndicator={false} style={{ marginHorizontal: -20 }} contentContainerStyle={{ paddingHorizontal: 20, gap: 12 }}>
+              {backendPets.map((pet) => {
+                const emoji = { cat: "🐱", dog: "🐶", bird: "🦜", rabbit: "🐰", other: "🐾" }[pet.type] ?? "🐾";
+                const avatarUri = pet.avatarUrl || `https://loremflickr.com/120/120/${pet.type === "dog" ? "dog" : "cat"}?lock=700`;
+                return (
+                  <Pressable
+                    key={pet.id}
+                    onPress={() => router.push(`/pet-profile/${encodeURIComponent(pet.id)}`)}
+                    style={({ pressed }) => [{
+                      alignItems: "center", width: 90, opacity: pressed ? 0.75 : 1,
+                    }]}
+                  >
+                    <LinearGradient colors={["#A480D8", PURPLE]} style={{ width: 74, height: 74, borderRadius: 37, padding: 2.5, marginBottom: 6 }}>
+                      <Image
+                        source={{ uri: avatarUri }}
+                        style={{ width: "100%", height: "100%", borderRadius: 35 }}
+                        contentFit="cover"
+                      />
+                    </LinearGradient>
+                    <Text style={{ color: "#1a1a2e", fontSize: 13, fontWeight: "700", textAlign: "center" }} numberOfLines={1}>{emoji} {pet.name}</Text>
+                    <Text style={{ color: "#888", fontSize: 11, marginTop: 1 }}>{pet.postsCount} gönderi</Text>
+                  </Pressable>
+                );
+              })}
+              <Pressable
+                onPress={() => setShowCreatePet(true)}
+                style={({ pressed }) => [{
+                  width: 90, alignItems: "center", justifyContent: "center", opacity: pressed ? 0.7 : 1,
+                }]}
+              >
+                <View style={{
+                  width: 74, height: 74, borderRadius: 37, borderWidth: 2, borderColor: "#D5C4EE",
+                  borderStyle: "dashed", justifyContent: "center", alignItems: "center", marginBottom: 6,
+                }}>
+                  <Ionicons name="add" size={28} color={PURPLE} />
+                </View>
+                <Text style={{ color: PURPLE, fontSize: 12, fontWeight: "600" }}>Ekle</Text>
+              </Pressable>
+            </ScrollView>
+          )}
         </View>
 
         {/* ── Grid Tabs ──────────────────────────────────── */}
@@ -395,6 +494,71 @@ export default function ProfileScreen() {
               </Pressable>
               <Pressable style={({ pressed }) => [S.modalSaveBtn, { opacity: pressed ? 0.85 : 1 }]} onPress={handleChangePassword} disabled={pwLoading}>
                 {pwLoading ? <ActivityIndicator color="#FFF" size="small" /> : <Text style={S.modalSaveText}>Kaydet</Text>}
+              </Pressable>
+            </View>
+          </View>
+        </KeyboardAvoidingView>
+      </Modal>
+
+      {/* ── Yeni Hayvan Profili Modal ─────────────────── */}
+      <Modal visible={showCreatePet} animationType="slide" transparent onRequestClose={() => setShowCreatePet(false)}>
+        <KeyboardAvoidingView behavior={Platform.OS === "ios" ? "padding" : "height"} style={S.modalOverlay}>
+          <Pressable style={StyleSheet.absoluteFill} onPress={() => setShowCreatePet(false)} />
+          <View style={[S.modalSheet, { paddingBottom: Math.max(insets.bottom, 24) }]}>
+            <View style={S.modalHandle} />
+            <Text style={S.modalTitle}>Yeni Hayvan Profili</Text>
+            <Text style={S.modalSubtitle}>Her hayvanın kendi Instagram sayfası olsun 🐾</Text>
+
+            <View style={S.modalInputGroup}>
+              <Text style={S.modalLabel}>Hayvan Adı *</Text>
+              <View style={S.modalInputWrap}>
+                <Ionicons name="paw-outline" size={18} color={PURPLE} />
+                <TextInput
+                  style={S.modalInput} value={newPetName} onChangeText={setNewPetName}
+                  placeholder="Pamuk, Max, Boncuk..." placeholderTextColor="#B0A8C8" autoCapitalize="words"
+                />
+              </View>
+            </View>
+
+            <View style={S.modalInputGroup}>
+              <Text style={S.modalLabel}>Tür</Text>
+              <View style={{ flexDirection: "row", gap: 8, flexWrap: "wrap" }}>
+                {[
+                  { k: "cat", label: "🐱 Kedi" }, { k: "dog", label: "🐶 Köpek" },
+                  { k: "bird", label: "🦜 Kuş" }, { k: "rabbit", label: "🐰 Tavşan" },
+                  { k: "other", label: "🐾 Diğer" },
+                ].map(({ k, label }) => (
+                  <Pressable
+                    key={k}
+                    onPress={() => setNewPetType(k)}
+                    style={[{
+                      paddingVertical: 6, paddingHorizontal: 14, borderRadius: 20,
+                      backgroundColor: newPetType === k ? PURPLE : "#EDE7F6",
+                    }]}
+                  >
+                    <Text style={{ color: newPetType === k ? "#fff" : PURPLE_DARK, fontWeight: "600", fontSize: 13 }}>{label}</Text>
+                  </Pressable>
+                ))}
+              </View>
+            </View>
+
+            <View style={S.modalInputGroup}>
+              <Text style={S.modalLabel}>Cins (isteğe bağlı)</Text>
+              <View style={S.modalInputWrap}>
+                <Ionicons name="search-outline" size={18} color={PURPLE} />
+                <TextInput
+                  style={S.modalInput} value={newPetBreed} onChangeText={setNewPetBreed}
+                  placeholder="British Shorthair, Golden..." placeholderTextColor="#B0A8C8"
+                />
+              </View>
+            </View>
+
+            <View style={S.modalBtnRow}>
+              <Pressable style={({ pressed }) => [S.modalCancelBtn, { opacity: pressed ? 0.7 : 1 }]} onPress={() => setShowCreatePet(false)}>
+                <Text style={S.modalCancelText}>İptal</Text>
+              </Pressable>
+              <Pressable style={({ pressed }) => [S.modalSaveBtn, { opacity: pressed ? 0.85 : 1 }]} onPress={handleCreatePet} disabled={creatingPet}>
+                {creatingPet ? <ActivityIndicator color="#FFF" size="small" /> : <Text style={S.modalSaveText}>Profil Oluştur</Text>}
               </Pressable>
             </View>
           </View>

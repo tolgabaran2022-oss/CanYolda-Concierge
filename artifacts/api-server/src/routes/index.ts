@@ -7,6 +7,7 @@ import storiesRouter from "./stories.js";
 import socialRouter from "./social.js";
 import notificationsRouter from "./notifications.js";
 import usersRouter from "./users.js";
+import petsRouter from "./pets.js";
 
 const router: IRouter = Router();
 
@@ -18,5 +19,6 @@ router.use(storiesRouter);
 router.use(socialRouter);
 router.use(notificationsRouter);
 router.use(usersRouter);
+router.use(petsRouter);
 
 export default router;

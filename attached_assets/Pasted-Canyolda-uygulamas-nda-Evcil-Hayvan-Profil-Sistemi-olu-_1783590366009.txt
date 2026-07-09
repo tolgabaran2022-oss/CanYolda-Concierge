@@ -1,0 +1,396 @@
+Canyoldaşı uygulamasında Evcil Hayvan Profil Sistemi oluştur.
+
+ÖNEMLİ:
+Kullanıcı profili sistemi zaten mevcut.
+Yeni kullanıcı profili oluşturma sistemi yapma.
+
+Bu özellik sadece kullanıcının sahip olduğu EVCLİ HAYVANLAR için olacak.
+
+Mantık:
+
+Kullanıcı hesabı:
+Baran
+
+Evcil hayvanları:
+
+🐱 Pamuk
+🐶 Max
+🐰 Boncuk
+
+şeklinde ayrı hayvan profilleri oluşturabilmeli.
+
+================================
+
+1) PET DATABASE OLUŞTUR
+
+Yeni tablo:
+
+pets
+
+
+Alanlar:
+
+id
+
+owner_id
+
+name
+
+type
+
+breed
+
+gender
+
+birth_date
+
+age
+
+weight
+
+color
+
+avatar_url
+
+bio
+
+location
+
+created_at
+
+updated_at
+
+
+İlişki:
+
+owner_id → mevcut users.id
+
+
+Bir kullanıcı birden fazla hayvan ekleyebilmeli.
+
+
+================================
+
+2) HAYVAN EKLEME SİSTEMİ
+
+Mevcut profil içinde:
+
+"Evcil Hayvanlarım"
+
+bölümü oluştur.
+
+
+Buton:
+
++ Yeni Hayvan Ekle
+
+
+Form:
+
+Hayvan fotoğrafı
+
+Hayvan adı
+
+Tür:
+
+🐱 Kedi
+🐶 Köpek
+🐦 Kuş
+🐰 Tavşan
+🐹 Diğer
+
+
+Cins
+
+Cinsiyet
+
+Doğum tarihi
+
+Yaş otomatik hesaplama
+
+Kilo
+
+Renk
+
+Konum
+
+Biyografi
+
+
+Kaydet:
+
+pets tablosuna kayıt yap.
+
+
+================================
+
+3) HAYVAN PROFİL SAYFASI
+
+Her hayvan için Instagram tarzı ayrı profil oluştur.
+
+
+Örnek:
+
+🐱 Pamuk
+
+
+Üst bölüm:
+
+- Büyük yuvarlak hayvan fotoğrafı
+- Hayvan adı
+- Tür
+- Cins
+
+
+İstatistik:
+
+Gönderi sayısı
+
+Takipçi sayısı
+
+Takip edilen sayısı
+
+
+Butonlar:
+
++ Gönderi
+
+Düzenle
+
+
+================================
+
+4) HAYVAN GÖNDERİLERİ
+
+Hayvan kendi gönderilerine sahip olsun.
+
+
+Örnek:
+
+Pamuk'un fotoğrafları
+
+
+Yeni tablo:
+
+pet_posts
+
+
+Alanlar:
+
+id
+
+pet_id
+
+image_url
+
+caption
+
+location
+
+created_at
+
+updated_at
+
+
+Gönderiler:
+
+- Akışta görünsün.
+- Hayvan adı ile yayınlansın.
+
+
+Örnek:
+
+"Pamuk 🐱 bugün bahçede oynuyor"
+
+
+================================
+
+5) HAYVAN TAKİP SİSTEMİ
+
+
+Yeni tablo:
+
+pet_followers
+
+
+Alanlar:
+
+id
+
+pet_id
+
+user_id
+
+created_at
+
+
+Kullanıcı:
+
+Hayvan profilini takip edebilsin.
+
+
+Örnek:
+
+"Pamuk'u takip et"
+
+
+================================
+
+6) HAYVAN PROFİLİ STORY SİSTEMİ
+
+
+Hayvana özel hikaye sistemi.
+
+
+Özellik:
+
+- Hayvan fotoğrafı story paylaşma
+- 24 saat aktif
+- Görüntülenme
+
+
+stories tablosuna:
+
+pet_id
+
+alanı ekle.
+
+
+================================
+
+7) HAYVAN SAĞLIK KARTI
+
+
+Yeni bölüm:
+
+Sağlık Bilgileri
+
+
+Yeni tablo:
+
+pet_health
+
+
+Alanlar:
+
+id
+
+pet_id
+
+vaccine_name
+
+date
+
+next_date
+
+note
+
+
+Örnek:
+
+Kuduz Aşısı
+
+12.06.2026
+
+12.06.2027
+
+
+================================
+
+8) HAYVAN ALBÜMÜ
+
+
+Pet profilinde:
+
+Fotoğraf Albümü
+
+bölümü oluştur.
+
+
+Göster:
+
+- Fotoğraflar
+- Videolar
+
+
+================================
+
+9) GÖNDERİ OLUŞTURMA ENTEGRASYONU
+
+
+Gönderi paylaşırken seçim ekle:
+
+
+Bu gönderi kimin için?
+
+
+○ Kullanıcı
+
+○ Evcil Hayvanım
+
+
+Evcil hayvan seçilirse:
+
+Pet profilinde yayınlansın.
+
+
+================================
+
+10) COMPONENTLER
+
+
+Oluştur:
+
+
+PetList
+
+PetCard
+
+CreatePet
+
+PetProfileScreen
+
+PetEditScreen
+
+PetPostGrid
+
+PetHealthCard
+
+PetStoryViewer
+
+
+================================
+
+11) TASARIM
+
+
+Mevcut:
+
+canyoldaşı
+
+mor/beyaz premium iOS tasarımını koru.
+
+
+Hayvan profili:
+
+Instagram + Pet sosyal ağı görünümünde olsun.
+
+
+================================
+
+SONUÇ:
+
+Kullanıcı profili değiştirilmeyecek.
+
+Sadece kullanıcı kendi hesabına bağlı hayvan profilleri oluşturabilecek.
+
+Her hayvan:
+
+- Kendi profiline
+- Kendi fotoğraflarına
+- Kendi gönderilerine
+- Kendi takipçilerine
+- Kendi hikayelerine
+- Kendi sağlık bilgilerine
+
+sahip olacak.
