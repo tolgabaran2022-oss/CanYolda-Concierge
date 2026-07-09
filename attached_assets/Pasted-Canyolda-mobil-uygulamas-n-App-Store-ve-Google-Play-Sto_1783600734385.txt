@@ -1,0 +1,420 @@
+Canyoldaşı mobil uygulamasını App Store ve Google Play Store yayın standartlarına tamamen uygun hale getir.
+
+Amaç:
+Uygulamanın tüm özelliklerini, güvenlik altyapısını, ödeme sistemini, kullanıcı işlemlerini ve veri güvenliğini yayın öncesi profesyonel şekilde denetle.
+
+Eksik veya hatalı tüm noktaları tespit et ve düzelt.
+
+=================================
+1. SUPABASE GÜVENLİK VE DATABASE KONTROLÜ
+=================================
+
+Supabase altyapısını production seviyesine getir.
+
+Kontrol et:
+
+- Tüm database tabloları doğru ilişkili mi?
+- Foreign key yapıları doğru mu?
+- Kullanıcı verileri korunuyor mu?
+- Yetkisiz erişim engelleniyor mu?
+
+
+ZORUNLU:
+
+Supabase Row Level Security (RLS) aktif hale getir.
+
+Her tablo için policy oluştur.
+
+
+Kontrol edilecek tablolar:
+
+users
+
+profiles
+
+listings
+
+favorites
+
+messages
+
+notifications
+
+payments
+
+promotions
+
+
+Kurallar:
+
+- Kullanıcı sadece kendi profilini düzenleyebilir.
+- Kullanıcı sadece kendi ilanlarını değiştirebilir.
+- Başkasının ilanını silemez.
+- Mesajlar sadece ilgili kullanıcılar tarafından görülebilir.
+- Admin yetkileri korunmalı.
+
+
+API güvenliği:
+
+- Secret key frontend içinde bulunmayacak.
+- Environment variables kullanılacak.
+- Kullanıcı token kontrolü yapılacak.
+
+
+=================================
+2. APPLE SIGN IN ZORUNLULUĞU
+=================================
+
+iOS App Store gerekliliklerine uygun şekilde Apple giriş sistemi oluştur.
+
+
+Kontrol:
+
+- Sign in with Apple aktif mi?
+- OAuth akışı doğru mu?
+- Kullanıcı hesabı oluşturuluyor mu?
+- Session yönetimi çalışıyor mu?
+
+
+Desteklenecek:
+
+Email giriş
+
+Google Login
+
+Apple Login
+
+
+Apple kuralları:
+
+- Apple kullanıcı email gizleme desteği
+- Kullanıcı bilgileri güvenli kayıt
+- İlk girişte profil oluşturma
+- Tekrar girişte mevcut hesaba bağlanma
+
+
+Hata durumları:
+
+- Kullanıcı iptal ederse
+- Login başarısız olursa
+- İnternet yoksa
+
+
+uygun hata mesajları göster.
+
+
+=================================
+3. HESAP SİLME SİSTEMİ
+=================================
+
+Apple App Store zorunluluğu:
+
+Uygulama içinde kullanıcı hesabını tamamen silebilmeli.
+
+
+Ayarlar bölümüne ekle:
+
+Hesabımı Sil
+
+
+Akış:
+
+Kullanıcı butona basar.
+
+Onay ekranı:
+
+"Hesabınızı silmek istediğinize emin misiniz?"
+
+
+Silme işlemi:
+
+
+- Profil bilgileri silinsin.
+- İlanlar kaldırılmış duruma geçsin.
+- Mesaj geçmişi anonimleştirilsin.
+- Favoriler temizlensin.
+- Kullanıcı authentication hesabı silinsin.
+
+
+Database temizleme işlemleri oluştur.
+
+
+=================================
+4. ÖDEME SİSTEMİ VE STORE KURALLARI
+=================================
+
+İlan öne çıkarma sistemi gerçek ödeme altyapısına uygun hazırlanmalı.
+
+
+Önemli:
+
+Dijital hizmet satışı olduğu için:
+
+iOS:
+Apple In-App Purchase kullanılmalı.
+
+
+Android:
+Google Play Billing kullanılmalı.
+
+
+Kontrol:
+
+Paket satın alma:
+
+Standart:
+49 TL
+24 saat
+
+
+Premium:
+99 TL
+7 gün
+
+
+VIP:
+199 TL
+30 gün
+
+
+
+Ödeme sonrası:
+
+
+Başarılı:
+
+- Ödeme doğrulama
+- İlan featured aktifleşmesi
+- Süre başlatılması
+- Kullanıcı geçmişine kayıt
+
+
+Başarısız:
+
+- Hata mesajı
+- Tekrar deneme
+
+
+Database:
+
+
+payments:
+
+id
+
+user_id
+
+listing_id
+
+product_id
+
+amount
+
+platform
+
+status
+
+created_at
+
+
+promotions:
+
+id
+
+listing_id
+
+package_type
+
+start_date
+
+end_date
+
+status
+
+
+Otomatik sistem:
+
+Süre bitince:
+
+featured=false
+
+
+=================================
+5. KVKK / GDPR / PRIVACY UYUMU
+=================================
+
+Kullanıcı verileri için yasal uyumluluk hazırla.
+
+
+Uygulamaya ekle:
+
+
+Privacy Policy
+
+Terms of Service
+
+KVKK Aydınlatma Metni
+
+
+Ayarlar:
+
+
+- Gizlilik Politikası
+- Kullanım Koşulları
+- Verilerimi indir
+- Hesabımı sil
+
+
+Kontrol:
+
+
+Kullanıcı:
+
+- Hangi verilerin toplandığını görebilmeli.
+- Hesabını silebilmeli.
+- Verilerinin nasıl kullanıldığını bilmeli.
+
+
+Toplanan veriler:
+
+- Email
+- Profil bilgileri
+- İlan bilgileri
+- Mesajlar
+- Fotoğraflar
+
+
+Açık kullanıcı onayı oluştur.
+
+
+=================================
+6. İLAN SİSTEMİ KONTROLÜ
+=================================
+
+Sahibinden.com mantığı:
+
+
+İlan oluşturma:
+
+- Fotoğraf
+- Başlık
+- Açıklama
+- Tür
+- Cins
+- Yaş
+- Konum
+- Sağlık bilgisi
+
+
+Durumlar:
+
+Taslak
+
+Onay Bekliyor
+
+Aktif
+
+Pasif
+
+Sahiplendirildi
+
+Süresi Doldu
+
+
+Kontroller:
+
+- Boş ilan yayınlanamaz.
+- Fotoğraf limiti uygulanır.
+- Uygunsuz içerik kontrol edilir.
+
+
+=================================
+7. MESAJLAŞMA VE BİLDİRİM
+=================================
+
+Kontrol:
+
+Mesaj sistemi:
+
+- Gerçek zamanlı çalışmalı.
+- Mesaj geçmişi tutulmalı.
+- Spam koruması olmalı.
+
+
+Bildirim:
+
+- Yeni mesaj
+- Favori
+- İlan onayı
+- Öne çıkarma bitişi
+
+
+Push notification sistemi hazırla.
+
+
+=================================
+8. PERFORMANS TESTİ
+=================================
+
+Test et:
+
+
+Cihazlar:
+
+iPhone SE
+
+iPhone 15
+
+iPhone 15 Pro Max
+
+Orta segment Android cihaz
+
+
+Kontrol:
+
+- Açılış süresi
+- Liste performansı
+- Fotoğraf yükleme
+- Bellek kullanımı
+- Crash kontrolü
+
+
+=================================
+9. FINAL RELEASE CHECKLIST
+=================================
+
+Yayın öncesi rapor oluştur.
+
+
+Kontrol listesi:
+
+
+✅ Supabase RLS aktif
+
+✅ Apple Sign In çalışıyor
+
+✅ Google Login çalışıyor
+
+✅ Hesap silme çalışıyor
+
+✅ Ödeme sistemi store kurallarına uygun
+
+✅ KVKK/GDPR hazır
+
+✅ Privacy Policy hazır
+
+✅ Terms hazır
+
+✅ İlan sistemi çalışıyor
+
+✅ Mesaj sistemi çalışıyor
+
+✅ Bildirimler çalışıyor
+
+✅ Güvenlik açıkları kapalı
+
+✅ Crash yok
+
+
+Sonuç olarak:
+Canyoldaşı uygulamasını gerçek App Store ve Google Play yayınına hazır production seviyesine getir.
