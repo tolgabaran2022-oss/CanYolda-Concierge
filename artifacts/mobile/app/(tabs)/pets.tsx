@@ -1507,9 +1507,11 @@ const ml = StyleSheet.create({
     flexDirection: "row",
     alignItems: "center",
     gap: 10,
+    borderWidth: 1,
+    borderColor: "#E0E0E0",
     ...Platform.select({
-      ios:     { shadowColor: "#000", shadowOffset: { width: 0, height: 1 }, shadowOpacity: 0.05, shadowRadius: 4 },
-      android: { elevation: 1 },
+      ios:     { shadowColor: "#000", shadowOffset: { width: 0, height: 3 }, shadowOpacity: 0.10, shadowRadius: 8 },
+      android: { elevation: 4 },
       default: {},
     }),
   },
