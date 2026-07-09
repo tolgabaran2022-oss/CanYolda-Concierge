@@ -460,7 +460,31 @@ router.get("/feed/posts", async (req, res) => {
     } else if (filterUserId) {
       posts = await db.select().from(feedPosts).where(eq(feedPosts.userId, filterUserId)).orderBy(desc(feedPosts.createdAt));
     } else {
-      posts = await db.select().from(feedPosts).orderBy(desc(feedPosts.createdAt));
+      /* Discover: filter out posts from users with private profiles unless viewer is a follower */
+      const allPosts = await db.select().from(feedPosts).orderBy(desc(feedPosts.createdAt));
+      if (!userId) {
+        /* Unauthenticated: only show posts from public profiles */
+        const privateProfiles = await db
+          .select({ id: socialProfiles.id })
+          .from(socialProfiles)
+          .where(eq(socialProfiles.isProfilePublic, false));
+        const privateIds = new Set(privateProfiles.map((p) => p.id));
+        posts = allPosts.filter((p) => !p.userId || !privateIds.has(p.userId));
+      } else {
+        /* Authenticated: show all posts from public profiles + posts from private profiles the viewer follows */
+        const [privateProfiles, myFollowing] = await Promise.all([
+          db.select({ id: socialProfiles.id }).from(socialProfiles).where(eq(socialProfiles.isProfilePublic, false)),
+          db.select({ followingId: follows.followingId }).from(follows).where(eq(follows.followerId, userId)),
+        ]);
+        const privateIds  = new Set(privateProfiles.map((p) => p.id));
+        const followingSet = new Set(myFollowing.map((f) => f.followingId));
+        posts = allPosts.filter((p) => {
+          if (!p.userId) return true;
+          if (p.userId === userId) return true;
+          if (!privateIds.has(p.userId)) return true;
+          return followingSet.has(p.userId);
+        });
+      }
     }
 
     let likedIds     = new Set<string>();

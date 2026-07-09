@@ -31,18 +31,19 @@ const C = {
 
 export type Comment = { id: string; user: string; text: string };
 export type PostData = {
-  id:           string;
-  userId?:      string;
-  user:         { name: string; avatar: string };
-  image:        string;
-  caption:      string;
-  location:     string;
-  likes:        number;
-  liked:        boolean;
-  bookmarked:   boolean;
-  sharesCount?: number;
-  comments:     Comment[];
-  timestamp:    string;
+  id:            string;
+  userId?:       string;
+  user:          { name: string; avatar: string };
+  image:         string;
+  caption:       string;
+  location:      string;
+  likes:         number;
+  liked:         boolean;
+  bookmarked:    boolean;
+  sharesCount?:  number;
+  commentsCount?: number;
+  comments:      Comment[];
+  timestamp:     string;
 };
 
 interface Props {
@@ -51,12 +52,14 @@ interface Props {
   onBookmark:      (id: string) => void;
   onComment:       (id: string, text: string) => void;
   onShare?:        (id: string) => void;
-  onPressUser?:    (username: string) => void;
+  onPressUser?:    (userId: string) => void;
   onPressPost?:    (id: string) => void;
   onCommentPress?: (id: string) => void;
   isOwn?:          boolean;
   onEdit?:         (id: string) => void;
   onDelete?:       (id: string) => void;
+  onReport?:       (id: string) => void;
+  onBlock?:        (userId: string) => void;
 }
 
 export function PostCard({
@@ -71,6 +74,8 @@ export function PostCard({
   isOwn,
   onEdit,
   onDelete,
+  onReport,
+  onBlock,
 }: Props) {
   const [commentText, setCommentText] = useState("");
   const [showInput,   setShowInput]   = useState(false);
@@ -120,26 +125,42 @@ export function PostCard({
   };
 
   const handleMorePress = () => {
-    if (!isOwn) return;
-    if (Platform.OS === "ios") {
-      ActionSheetIOS.showActionSheetWithOptions(
-        {
-          options: ["İptal", "Düzenle", "Sil"],
-          cancelButtonIndex: 0,
-          destructiveButtonIndex: 2,
-          title: "Gönderi",
-        },
-        (idx) => {
-          if (idx === 1) onEdit?.(post.id);
-          if (idx === 2) confirmDelete();
-        }
-      );
+    if (isOwn) {
+      /* Own post: edit / delete */
+      if (Platform.OS === "ios") {
+        ActionSheetIOS.showActionSheetWithOptions(
+          { options: ["İptal", "Düzenle", "Sil"], cancelButtonIndex: 0, destructiveButtonIndex: 2, title: "Gönderi" },
+          (idx) => {
+            if (idx === 1) onEdit?.(post.id);
+            if (idx === 2) confirmDelete();
+          }
+        );
+      } else {
+        Alert.alert("Gönderi", "Ne yapmak istersin?", [
+          { text: "İptal", style: "cancel" },
+          { text: "Düzenle", onPress: () => onEdit?.(post.id) },
+          { text: "Sil", style: "destructive", onPress: confirmDelete },
+        ]);
+      }
     } else {
-      Alert.alert("Gönderi", "Ne yapmak istersin?", [
-        { text: "İptal", style: "cancel" },
-        { text: "Düzenle", onPress: () => onEdit?.(post.id) },
-        { text: "Sil", style: "destructive", onPress: confirmDelete },
-      ]);
+      /* Other's post: report / block / share */
+      if (Platform.OS === "ios") {
+        ActionSheetIOS.showActionSheetWithOptions(
+          { options: ["İptal", "Paylaş", "Şikayet et", "Kullanıcıyı engelle"], cancelButtonIndex: 0, destructiveButtonIndex: 3, title: post.user.name },
+          (idx) => {
+            if (idx === 1) handleShare();
+            if (idx === 2) onReport?.(post.id);
+            if (idx === 3) confirmBlock();
+          }
+        );
+      } else {
+        Alert.alert(post.user.name, "Ne yapmak istersin?", [
+          { text: "İptal", style: "cancel" },
+          { text: "Paylaş", onPress: handleShare },
+          { text: "Şikayet et", onPress: () => onReport?.(post.id) },
+          { text: "Engelle", style: "destructive", onPress: confirmBlock },
+        ]);
+      }
     }
   };
 
@@ -150,31 +171,39 @@ export function PostCard({
     ]);
   };
 
-  const visibleComments = showAll ? post.comments : post.comments.slice(-1);
-  const likeCount  = post.likes;
-  const shareCount = post.sharesCount ?? 0;
+  const confirmBlock = () => {
+    Alert.alert("Kullanıcıyı Engelle", `${post.user.name} adlı kullanıcıyı engellemek istiyor musun?`, [
+      { text: "İptal", style: "cancel" },
+      { text: "Engelle", style: "destructive", onPress: () => onBlock?.(post.userId ?? post.user.name) },
+    ]);
+  };
+
+  const displayCommentCount = post.commentsCount ?? post.comments.length;
+  const visibleComments     = showAll ? post.comments : post.comments.slice(-1);
+  const likeCount           = post.likes;
+  const shareCount          = post.sharesCount ?? 0;
 
   return (
     <View style={S.card}>
       {/* ── Card header ─────────────────────────── */}
       <View style={S.header}>
-        <Pressable style={S.avatarWrap} onPress={() => onPressUser?.(post.user.name)} hitSlop={6}>
+        <Pressable style={S.avatarWrap} onPress={() => onPressUser?.(post.userId ?? post.user.name)} hitSlop={6}>
           <Image source={{ uri: post.user.avatar }} style={S.avatar} contentFit="cover" />
         </Pressable>
         <View style={{ flex: 1 }}>
-          <Pressable onPress={() => onPressUser?.(post.user.name)} hitSlop={4}>
+          <Pressable onPress={() => onPressUser?.(post.userId ?? post.user.name)} hitSlop={4}>
             <Text style={S.username}>{post.user.name}</Text>
           </Pressable>
           <Text style={S.meta}>
             {post.timestamp}{post.location ? ` · ${post.location}` : ""}
           </Text>
         </View>
-        <Pressable hitSlop={12} onPress={isOwn ? handleMorePress : undefined}>
-          <Feather name="more-horizontal" size={20} color={isOwn ? C.purple : C.muted} />
+        <Pressable hitSlop={12} onPress={handleMorePress}>
+          <Feather name="more-horizontal" size={20} color={C.purple} />
         </Pressable>
       </View>
 
-      {/* ── Image (landscape) ───────────────────── */}
+      {/* ── Image ───────────────────────────────── */}
       <Pressable
         onPress={() => onPressPost ? onPressPost(post.id) : handleDoubleTap()}
         onLongPress={handleDoubleTap}
@@ -192,7 +221,6 @@ export function PostCard({
       {/* ── Actions ─────────────────────────────── */}
       <View style={S.actions}>
         <View style={S.leftActions}>
-          {/* Like */}
           <Pressable onPress={handleLike} style={S.actionBtn} hitSlop={8}>
             <Animated.View style={{ transform: [{ scale: heartScale }] }}>
               <Ionicons
@@ -202,7 +230,6 @@ export function PostCard({
               />
             </Animated.View>
           </Pressable>
-          {/* Comment */}
           <Pressable
             onPress={() => {
               if (onCommentPress) onCommentPress(post.id);
@@ -213,12 +240,10 @@ export function PostCard({
           >
             <Ionicons name="chatbubble-outline" size={22} color={C.text} />
           </Pressable>
-          {/* Share */}
           <Pressable onPress={handleShare} style={S.actionBtn} hitSlop={8}>
             <Feather name="send" size={21} color={C.text} />
           </Pressable>
         </View>
-        {/* Bookmark */}
         <Pressable onPress={handleBookmark} hitSlop={8}>
           <Ionicons
             name={post.bookmarked ? "bookmark" : "bookmark-outline"}
@@ -232,8 +257,8 @@ export function PostCard({
       <Pressable style={S.foot} onPress={() => onPressPost?.(post.id)}>
         <View style={S.statsRow}>
           <Text style={S.stat}>{likeCount} beğeni</Text>
-          {post.comments.length > 0 && (
-            <Text style={S.stat}>{post.comments.length} yorum</Text>
+          {displayCommentCount > 0 && (
+            <Text style={S.stat}>{displayCommentCount} yorum</Text>
           )}
           {shareCount > 0 && (
             <Text style={S.stat}>{shareCount} paylaşım</Text>
@@ -247,9 +272,9 @@ export function PostCard({
           </Text>
         ) : null}
 
-        {post.comments.length > 1 && !showAll && (
+        {displayCommentCount > 1 && !showAll && (
           <Pressable onPress={() => onPressPost ? onPressPost(post.id) : setShowAll(true)}>
-            <Text style={S.viewAll}>Tüm yorumları gör ({post.comments.length})</Text>
+            <Text style={S.viewAll}>Tüm yorumları gör ({displayCommentCount})</Text>
           </Pressable>
         )}
         {!onPressPost && visibleComments.map((c) => (
@@ -260,7 +285,7 @@ export function PostCard({
         ))}
       </Pressable>
 
-      {/* ── Comment input (only when no post-detail nav) ──── */}
+      {/* ── Comment input (only when no post-detail nav) ── */}
       {!onPressPost && showInput && (
         <View style={S.commentInputWrap}>
           <View style={S.inputRow}>
@@ -285,10 +310,7 @@ export function PostCard({
       )}
 
       {/* ── Share toast ──────────────────────────── */}
-      <Animated.View
-        pointerEvents="none"
-        style={[S.toast, { opacity: toastAnim }]}
-      >
+      <Animated.View pointerEvents="none" style={[S.toast, { opacity: toastAnim }]}>
         <Text style={S.toastText}>🔗 Bağlantı kopyalandı!</Text>
       </Animated.View>
     </View>
@@ -304,55 +326,21 @@ const S = StyleSheet.create({
     marginBottom: 20,
     overflow: "hidden",
     ...Platform.select({
-      ios: {
-        shadowColor: "#7B5EA7",
-        shadowOffset: { width: 0, height: 6 },
-        shadowOpacity: 0.12,
-        shadowRadius: 20,
-      },
+      ios:     { shadowColor: "#7B5EA7", shadowOffset: { width: 0, height: 6 }, shadowOpacity: 0.12, shadowRadius: 20 },
       android: { elevation: 5 },
-      default: {
-        shadowColor: "#7B5EA7",
-        shadowOffset: { width: 0, height: 6 },
-        shadowOpacity: 0.12,
-        shadowRadius: 20,
-      },
+      default: { shadowColor: "#7B5EA7", shadowOffset: { width: 0, height: 6 }, shadowOpacity: 0.12, shadowRadius: 20 },
     }),
   },
-
-  header: {
-    flexDirection: "row",
-    alignItems: "center",
-    paddingHorizontal: 14,
-    paddingVertical: 12,
-    gap: 10,
-  },
-  avatarWrap: {
-    width: 40,
-    height: 40,
-    borderRadius: 20,
-    borderWidth: 2,
-    borderColor: C.purple,
-    overflow: "hidden",
-  },
-  avatar:   { width: "100%", height: "100%" },
-  username: { fontSize: 14, fontFamily: "Inter_600SemiBold", color: C.text },
-  meta:     { fontSize: 11, fontFamily: "Inter_400Regular",  color: C.muted, marginTop: 1 },
-
-  imageWrap: { width: "100%", height: IMG_H },
-  image:     { width: "100%", height: "100%" },
-
-  actions: {
-    flexDirection: "row",
-    justifyContent: "space-between",
-    alignItems: "center",
-    paddingHorizontal: 14,
-    paddingTop: 10,
-    paddingBottom: 4,
-  },
+  header:      { flexDirection: "row", alignItems: "center", paddingHorizontal: 14, paddingVertical: 12, gap: 10 },
+  avatarWrap:  { width: 40, height: 40, borderRadius: 20, borderWidth: 2, borderColor: C.purple, overflow: "hidden" },
+  avatar:      { width: "100%", height: "100%" },
+  username:    { fontSize: 14, fontFamily: "Inter_600SemiBold", color: C.text },
+  meta:        { fontSize: 11, fontFamily: "Inter_400Regular", color: C.muted, marginTop: 1 },
+  imageWrap:   { width: "100%", height: IMG_H },
+  image:       { width: "100%", height: "100%" },
+  actions:     { flexDirection: "row", justifyContent: "space-between", alignItems: "center", paddingHorizontal: 14, paddingTop: 10, paddingBottom: 4 },
   leftActions: { flexDirection: "row", gap: 16 },
   actionBtn:   { padding: 2 },
-
   foot:        { paddingHorizontal: 14, paddingBottom: 14, gap: 3 },
   statsRow:    { flexDirection: "row", gap: 12 },
   stat:        { fontSize: 12, fontFamily: "Inter_700Bold", color: C.text },
@@ -361,42 +349,10 @@ const S = StyleSheet.create({
   viewAll:     { fontSize: 12, fontFamily: "Inter_400Regular", color: C.muted },
   commentRow:  { fontSize: 12, fontFamily: "Inter_400Regular", color: C.text },
   commentUser: { fontFamily: "Inter_600SemiBold" },
-
-  commentInputWrap: {
-    borderTopWidth: 1,
-    borderTopColor: C.border,
-    paddingHorizontal: 14,
-    paddingVertical: 8,
-  },
-  inputRow: {
-    flexDirection: "row",
-    alignItems: "center",
-    backgroundColor: C.inputBg,
-    borderRadius: 24,
-    paddingHorizontal: 14,
-    paddingVertical: 8,
-    gap: 8,
-  },
-  input: {
-    flex: 1,
-    fontSize: 13,
-    fontFamily: "Inter_400Regular",
-    color: C.text,
-  },
-  sendBtn: { padding: 2 },
-
-  toast: {
-    position: "absolute",
-    bottom: 60,
-    alignSelf: "center",
-    backgroundColor: "rgba(59,36,110,0.88)",
-    paddingHorizontal: 18,
-    paddingVertical: 9,
-    borderRadius: 24,
-  },
-  toastText: {
-    color: "#FFFFFF",
-    fontSize: 13,
-    fontFamily: "Inter_600SemiBold",
-  },
+  commentInputWrap: { borderTopWidth: 1, borderTopColor: C.border, paddingHorizontal: 14, paddingVertical: 8 },
+  inputRow:    { flexDirection: "row", alignItems: "center", backgroundColor: C.inputBg, borderRadius: 24, paddingHorizontal: 14, paddingVertical: 8, gap: 8 },
+  input:       { flex: 1, fontSize: 13, fontFamily: "Inter_400Regular", color: C.text },
+  sendBtn:     { padding: 2 },
+  toast:       { position: "absolute", bottom: 60, alignSelf: "center", backgroundColor: "rgba(59,36,110,0.88)", paddingHorizontal: 18, paddingVertical: 9, borderRadius: 24 },
+  toastText:   { color: "#FFFFFF", fontSize: 13, fontFamily: "Inter_600SemiBold" },
 });
