@@ -1,6 +1,6 @@
 import { Router } from "express";
 import { and, desc, eq, gt, inArray, sql } from "drizzle-orm";
-import { db, pool, stories, storyViews, storyLikes, storyReplies, socialProfiles, notifications, conversations, messages } from "@workspace/db";
+import { db, pool, stories, storyViews, storyLikes, storyReplies, socialProfiles, follows, notifications, conversations, messages } from "@workspace/db";
 import { logger } from "../lib/logger.js";
 
 const router = Router();
@@ -71,6 +71,82 @@ async function seedIfEmpty() {
     logger.error({ err }, "Stories seed failed");
   }
 }
+
+/* ── GET /api/stories/user/:userId — active stories for one user ── */
+router.get("/stories/user/:userId", async (req, res) => {
+  try {
+    const { userId } = req.params;
+    const viewerId = req.headers["x-user-id"] as string | undefined;
+    const now = new Date();
+
+    /* Privacy checks */
+    const [profile] = await db
+      .select({ areStoriesVisible: socialProfiles.areStoriesVisible, isProfilePublic: socialProfiles.isProfilePublic })
+      .from(socialProfiles)
+      .where(eq(socialProfiles.id, userId))
+      .limit(1);
+
+    if (profile && !profile.areStoriesVisible) { res.json(null); return; }
+
+    if (profile && !profile.isProfilePublic && viewerId && viewerId !== userId) {
+      const [followRow] = await db
+        .select({ id: follows.id })
+        .from(follows)
+        .where(and(eq(follows.followerId, viewerId), eq(follows.followingId, userId)))
+        .limit(1);
+      if (!followRow) { res.json(null); return; }
+    }
+
+    const rows = await db
+      .select()
+      .from(stories)
+      .where(and(eq(stories.userId, userId), gt(stories.expiresAt, now)))
+      .orderBy(desc(stories.createdAt));
+
+    if (rows.length === 0) { res.json(null); return; }
+
+    const storyIds = rows.map((r) => r.id);
+    const [views, myViews, likeRows, myLikes] = await Promise.all([
+      db.select({ storyId: storyViews.storyId, count: sql<number>`count(*)::int` })
+        .from(storyViews).where(inArray(storyViews.storyId, storyIds)).groupBy(storyViews.storyId),
+      viewerId
+        ? db.select({ storyId: storyViews.storyId }).from(storyViews)
+            .where(and(inArray(storyViews.storyId, storyIds), eq(storyViews.viewerId, viewerId)))
+        : Promise.resolve([]),
+      db.select({ storyId: storyLikes.storyId, count: sql<number>`count(*)::int` })
+        .from(storyLikes).where(inArray(storyLikes.storyId, storyIds)).groupBy(storyLikes.storyId),
+      viewerId
+        ? db.select({ storyId: storyLikes.storyId }).from(storyLikes)
+            .where(and(inArray(storyLikes.storyId, storyIds), eq(storyLikes.userId, viewerId)))
+        : Promise.resolve([]),
+    ]);
+
+    const viewMap  = new Map(views.map((v) => [v.storyId, v.count]));
+    const seenSet  = new Set(myViews.map((v) => v.storyId));
+    const likeMap  = new Map(likeRows.map((l) => [l.storyId, l.count]));
+    const likedSet = new Set(myLikes.map((l) => l.storyId));
+
+    res.json({
+      userId: rows[0]!.userId,
+      username:  rows[0]!.username,
+      avatarUrl: rows[0]!.avatarUrl,
+      hasUnseen: rows.some((s) => !seenSet.has(s.id)),
+      stories: rows.map((s) => ({
+        id:         s.id,
+        imageUrl:   s.imageUrl,
+        caption:    s.caption ?? "",
+        createdAt:  s.createdAt,
+        viewCount:  viewMap.get(s.id) ?? 0,
+        seen:       seenSet.has(s.id),
+        liked:      likedSet.has(s.id),
+        likesCount: likeMap.get(s.id) ?? 0,
+      })),
+    });
+  } catch (err) {
+    req.log.error({ err }, "GET /stories/user/:userId failed");
+    res.status(500).json({ error: "Internal server error" });
+  }
+});
 
 /* ── GET /api/stories — active stories with view/like counts ── */
 router.get("/stories", async (req, res) => {

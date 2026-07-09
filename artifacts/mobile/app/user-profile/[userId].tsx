@@ -27,6 +27,7 @@ import {
   apiToggleFollow,
   type FollowCounts,
 } from "@/lib/socialApi";
+import { ProfileStoryAvatar } from "@/components/ProfileStoryAvatar";
 
 const { width: SW } = Dimensions.get("window");
 const GRID_GAP  = 1.5;
@@ -229,15 +230,13 @@ export default function UserProfileScreen() {
         <View style={S.profileBlock}>
 
           <View style={S.avatarRow}>
-            <LinearGradient
-              colors={["#E040FB", "#9C27B0", "#5B3FD6"]}
-              start={{ x: 0, y: 1 }} end={{ x: 1, y: 0 }}
-              style={S.avatarRing}
-            >
-              <View style={S.avatarBorder}>
-                <Image source={{ uri: avatarUrl }} style={S.avatarImg} contentFit="cover" />
-              </View>
-            </LinearGradient>
+            <ProfileStoryAvatar
+              userId={userId ?? ""}
+              username={username}
+              avatarUrl={avatarUrl}
+              viewerId={user?.id}
+              size={90}
+            />
 
             <View style={S.statsRow}>
               <StatCol value={postCount}        label="Gönderi" />

@@ -4,7 +4,7 @@ import { LinearGradient } from "expo-linear-gradient";
 import React, { useEffect, useRef, useState } from "react";
 import { Animated, Easing, Pressable, StyleSheet, View } from "react-native";
 import { StoryViewer } from "@/components/StoryViewer";
-import { apiFetchStories } from "@/lib/storiesApi";
+import { apiFetchUserStories } from "@/lib/storiesApi";
 import type { ApiStoryGroup } from "@/lib/storiesApi";
 
 const CAT_AVATAR_DEFAULT = "https://loremflickr.com/300/300/cat?lock=500";
@@ -13,6 +13,7 @@ interface Props {
   userId: string;
   username: string;
   avatarUrl?: string | null;
+  viewerId?: string;
   size?: number;
 }
 
@@ -20,6 +21,7 @@ export function ProfileStoryAvatar({
   userId,
   username,
   avatarUrl,
+  viewerId,
   size = 90,
 }: Props) {
   const [storyGroup, setStoryGroup]   = useState<ApiStoryGroup | null>(null);
@@ -31,20 +33,19 @@ export function ProfileStoryAvatar({
   const hasActiveStories =
     storyGroup !== null && storyGroup.stories.length > 0;
 
-  /* ── Fetch own stories ──────────────────────────── */
+  /* ── Fetch user stories ─────────────────────────── */
   useEffect(() => {
     let cancelled = false;
     setLoading(true);
-    apiFetchStories(userId)
-      .then((groups) => {
+    apiFetchUserStories(userId, viewerId)
+      .then((group) => {
         if (cancelled) return;
-        const mine = groups.find((g) => g.userId === userId) ?? null;
-        setStoryGroup(mine);
+        setStoryGroup(group);
       })
       .catch(() => { if (!cancelled) setStoryGroup(null); })
       .finally(() => { if (!cancelled) setLoading(false); });
     return () => { cancelled = true; };
-  }, [userId]);
+  }, [userId, viewerId]);
 
   /* ── Pulse animation when stories exist ────────── */
   useEffect(() => {
@@ -88,6 +89,7 @@ export function ProfileStoryAvatar({
   const halfRing    = ringSize / 2;
   const halfInner   = innerSize / 2;
   const src         = avatarUrl ?? CAT_AVATAR_DEFAULT;
+  const effectiveViewerId = viewerId ?? userId;
 
   return (
     <>
@@ -130,7 +132,7 @@ export function ProfileStoryAvatar({
       <StoryViewer
         visible={viewerOpen}
         group={storyGroup}
-        viewerId={userId}
+        viewerId={effectiveViewerId}
         onClose={closeViewer}
         onNextGroup={closeViewer}
         onPrevGroup={closeViewer}

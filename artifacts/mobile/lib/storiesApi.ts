@@ -44,6 +44,19 @@ export async function apiFetchStories(userId?: string): Promise<ApiStoryGroup[]>
   return res.json() as Promise<ApiStoryGroup[]>;
 }
 
+export async function apiFetchUserStories(
+  profileUserId: string,
+  viewerId?: string
+): Promise<ApiStoryGroup | null> {
+  const res = await fetch(
+    `${API_BASE}/stories/user/${encodeURIComponent(profileUserId)}`,
+    { headers: hdrs(viewerId) }
+  );
+  if (!res.ok) return null;
+  const data = await res.json();
+  return (data as ApiStoryGroup | null) ?? null;
+}
+
 export async function apiCreateStory(
   userId: string,
   username: string,

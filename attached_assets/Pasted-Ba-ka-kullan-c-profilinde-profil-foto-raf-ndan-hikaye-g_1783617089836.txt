@@ -1,0 +1,65 @@
+Başka kullanıcı profilinde profil fotoğrafından hikaye görüntüleme özelliği ekle.
+
+Amaç:
+Bir kullanıcının profiline girdiğimde, eğer aktif hikayesi varsa sol üstteki profil fotoğrafı/hikaye halkasına tıklayınca hikayesi tam ekran açılsın. Instagram mantığında çalışsın.
+
+Yapılacaklar:
+
+1. Profil fotoğrafı hikaye kontrolü
+- Başka kullanıcı profil sayfasında profil fotoğrafı tıklanabilir olsun.
+- Kullanıcının aktif hikayesi varsa profil fotoğrafının çevresinde mor/gradyan hikaye halkası görünsün.
+- Aktif hikayesi yoksa halka görünmesin veya profil fotoğrafı normal kalsın.
+
+2. Aktif hikaye sorgusu
+Supabase stories tablosundan kontrol et:
+
+- user_id = profileUser.id
+- expires_at > now()
+- created_at son 24 saat içinde
+
+3. Tıklama mantığı
+- Eğer aktif hikaye varsa profil fotoğrafına basınca StoryViewer ekranı açılsın.
+- Eğer aktif hikaye yoksa hiçbir şey yapma veya küçük toast göster:
+  “Aktif hikaye yok.”
+
+4. StoryViewer ekranı
+- Kullanıcının tüm aktif hikayelerini sırayla göster.
+- Tam ekran Instagram tarzı hikaye görüntüleyici olsun.
+- Üstte progress bar olsun.
+- Sol üstte kullanıcı fotoğrafı ve kullanıcı adı görünsün.
+- Geri / kapat butonu çalışsın.
+- Sağ/sol dokunma ile önceki/sonraki hikayeye geçilsin.
+
+5. Hikaye görüntülendi kaydı
+story_views tablosuna kayıt ekle:
+
+- story_id
+- user_id
+- created_at
+
+Aynı kullanıcı aynı hikayeye tekrar tekrar view kaydı oluşturmasın.
+
+6. Gizlilik kuralları
+- Profil herkese açıksa hikaye görülebilsin.
+- Profil gizliyse sadece takipçileri hikayeyi görebilsin.
+- Kullanıcının “Hikayelerim görünür” ayarı kapalıysa hikaye gösterilmesin.
+- Engellenen kullanıcı hikaye göremesin.
+
+7. Hikaye beğen / yanıtla
+- StoryViewer altında “Mesaj gönder...” alanı olsun.
+- Kalp ile hikaye beğenme aktif olsun.
+- Yanıt gönderilirse hikaye sahibine DM olarak gitsin.
+- Kendi hikayemde beğen/yanıt alanı görünmesin.
+
+8. Geri dönüş
+- Hikaye kapatılınca kullanıcı tekrar baktığı profil sayfasına dönsün.
+- Navigation stack bozulmasın.
+
+9. Kod temizliği
+- Dummy hikaye verilerini kaldır.
+- Gerçek Supabase stories verisini kullan.
+- TypeScript route/import hatalarını düzelt.
+- iOS, Android ve Web’de sorunsuz çalışsın.
+
+Sonuç:
+Başkasının profiline girdiğimde aktif hikayesi varsa profil fotoğrafına basarak Instagram gibi hikayesini izleyebileyim.
