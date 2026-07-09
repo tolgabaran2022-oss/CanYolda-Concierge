@@ -1,0 +1,193 @@
+Canyoldaşı uygulamasında Supabase ve Authentication sistemi aktif çalışıyor.
+
+Şimdi uygulamayı gerçek bir sosyal ağ altyapısına dönüştürmek için Instagram tarzı gerçek kullanıcı profil sistemini kur.
+
+MEVCUT DURUM:
+- Login çalışıyor.
+- Supabase bağlantısı aktif.
+- Database mevcut.
+- Mevcut UI tasarımını değiştirme.
+- Mor/beyaz iOS premium tasarımı koru.
+
+YAPILACAKLAR:
+
+1) GERÇEK KULLANICI PROFİLİ BAĞLANTISI
+
+Profil ekranındaki tüm sabit/fake verileri kaldır.
+
+Supabase users tablosundan gerçek kullanıcı bilgilerini getir:
+
+Alanlar:
+
+id
+email
+username
+full_name
+avatar_url
+bio
+location
+created_at
+updated_at
+
+
+Profil ekranında göster:
+
+- Profil fotoğrafı
+- Kullanıcı adı
+- Biyografi
+- Konum
+- Gönderi sayısı
+- Takipçi sayısı
+- Takip edilen sayısı
+
+
+--------------------------------
+
+2) PROFİL DÜZENLEME SİSTEMİ
+
+Profil Düzenle ekranını tamamen çalışır hale getir.
+
+Kullanıcı değiştirebilsin:
+
+- Profil fotoğrafı
+- Kullanıcı adı
+- Ad soyad
+- Biyografi
+- Konum
+
+
+Kaydet butonuna basınca:
+
+Supabase users tablosu güncellensin.
+
+Profil fotoğrafı:
+
+Supabase Storage kullanılarak yüklensin.
+
+Fotoğraf güncellendiğinde uygulamanın tüm alanlarında yeni avatar görünsün.
+
+
+--------------------------------
+
+3) TAKİP SİSTEMİ KUR
+
+Yeni tablo oluştur:
+
+followers
+
+Kolonlar:
+
+id
+follower_id
+following_id
+created_at
+
+
+Mantık:
+
+Bir kullanıcı başka kullanıcıyı takip ettiğinde:
+
+follower_id = takip eden kişi
+
+following_id = takip edilen kişi
+
+
+Profilde:
+
+Takip Et butonu
+
+Takiptesin butonu
+
+Takibi bırak
+
+
+özellikleri çalışsın.
+
+
+--------------------------------
+
+4) TAKİPÇİ VE TAKİP EDİLEN SAYILARI
+
+Profilde bulunan:
+
+Takipçi
+Takip
+
+alanları gerçek database verisini göstermeli.
+
+
+Tıklanınca:
+
+Takipçiler listesi
+
+Takip edilenler listesi
+
+
+açılmalı.
+
+
+Liste içinde:
+
+- Profil fotoğrafı
+- Kullanıcı adı
+- Takip et butonu
+
+
+olmalı.
+
+
+--------------------------------
+
+5) GÖNDERİ SAYISI BAĞLANTISI
+
+Profildeki gönderi sayısı gerçek posts tablosundan hesaplanmalı.
+
+
+posts tablosu:
+
+id
+user_id
+image_url
+caption
+location
+created_at
+updated_at
+
+
+Kullanıcının toplam gönderisi gösterilmeli.
+
+
+--------------------------------
+
+6) KOD YAPISI
+
+Component yapısı oluştur:
+
+ProfileHeader
+ProfileStats
+ProfileEditScreen
+AvatarUploader
+FollowButton
+FollowersList
+
+
+Kod temiz ve ölçeklenebilir olsun.
+
+
+--------------------------------
+
+7) TEST
+
+Kontrol et:
+
+- Yeni kullanıcı kayıt oluyor mu?
+- Profil bilgileri kaydediliyor mu?
+- Avatar yükleniyor mu?
+- Takip sistemi çalışıyor mu?
+- Sayılar gerçek güncelleniyor mu?
+
+
+Fake veri kullanma.
+
+Sonuç:
+Canyoldaşı uygulamasındaki profil sistemi Instagram seviyesinde gerçek çalışan kullanıcı altyapısına sahip olmalı.

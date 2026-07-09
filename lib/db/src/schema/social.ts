@@ -1,6 +1,22 @@
 import { boolean, pgTable, text, timestamp, unique } from "drizzle-orm/pg-core";
 import { sql } from "drizzle-orm";
 
+/* ── Social profiles ─────────────────────────────────────── */
+export const socialProfiles = pgTable("social_profiles", {
+  id:        text("id").primaryKey(),
+  email:     text("email").notNull().default(""),
+  name:      text("name").notNull().default(""),
+  username:  text("username"),
+  bio:       text("bio").notNull().default(""),
+  location:  text("location").notNull().default(""),
+  avatarUrl: text("avatar_url").notNull().default(""),
+  createdAt: timestamp("created_at", { withTimezone: true }).defaultNow(),
+  updatedAt: timestamp("updated_at", { withTimezone: true }).defaultNow(),
+}, (t) => [unique("social_profiles_username_unique").on(t.username)]);
+
+export type SocialProfile       = typeof socialProfiles.$inferSelect;
+export type InsertSocialProfile = typeof socialProfiles.$inferInsert;
+
 export const follows = pgTable("follows", {
   id:          text("id").primaryKey().default(sql`gen_random_uuid()::text`),
   followerId:  text("follower_id").notNull(),

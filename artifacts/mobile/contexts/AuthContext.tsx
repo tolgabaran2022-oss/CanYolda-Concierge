@@ -7,6 +7,7 @@ import React, {
   useState,
 } from "react";
 import { generateId } from "@/utils/formatters";
+import { apiSyncProfile, apiUpdateProfile } from "@/lib/socialApi";
 
 export interface User {
   id: string;
@@ -70,6 +71,8 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       const { password: _p, ...safe } = newUser;
       await AsyncStorage.setItem(AUTH_KEY, JSON.stringify(safe));
       setUser(safe);
+      /* Sync to backend (non-blocking) */
+      apiSyncProfile({ id: safe.id, email: safe.email, name: safe.name }).catch(() => {});
     },
     []
   );
@@ -87,6 +90,16 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     const { password: _p, ...safe } = found;
     await AsyncStorage.setItem(AUTH_KEY, JSON.stringify(safe));
     setUser(safe);
+    /* Sync profile to backend (non-blocking) */
+    apiSyncProfile({
+      id:        safe.id,
+      email:     safe.email,
+      name:      safe.name,
+      username:  safe.username,
+      bio:       safe.bio,
+      location:  safe.location,
+      avatarUrl: safe.avatar && safe.avatar.startsWith("http") ? safe.avatar : undefined,
+    }).catch(() => {});
   }, []);
 
   /* ── Logout ───────────────────────────────────── */
@@ -126,10 +139,31 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       if (idx === -1) throw new Error("Kullanıcı bulunamadı.");
 
       if (updates.username && updates.username !== user.username) {
+        /* Check uniqueness locally */
         const taken = users.some(
           (u) => u.id !== user.id && u.username === updates.username
         );
         if (taken) throw new Error("Bu kullanıcı adı zaten kullanılıyor.");
+      }
+
+      /* Sync to backend — this also validates username uniqueness server-side */
+      const apiUpdates: Record<string, string | undefined> = {};
+      if (updates.name     !== undefined) apiUpdates.name     = updates.name;
+      if (updates.username !== undefined) apiUpdates.username = updates.username;
+      if (updates.bio      !== undefined) apiUpdates.bio      = updates.bio;
+      if (updates.location !== undefined) apiUpdates.location = updates.location;
+      if (updates.avatar && updates.avatar.startsWith("http")) {
+        apiUpdates.avatarUrl = updates.avatar;
+      }
+      if (Object.keys(apiUpdates).length > 0) {
+        try {
+          /* First ensure profile exists in backend */
+          await apiSyncProfile({ id: user.id, email: user.email });
+          await apiUpdateProfile(user.id, apiUpdates);
+        } catch (err) {
+          /* Re-throw meaningful errors (username conflict), ignore network errors */
+          if (err instanceof Error && err.message.includes("kullanıcı adı")) throw err;
+        }
       }
 
       const merged = { ...users[idx], ...updates };

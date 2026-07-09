@@ -64,6 +64,54 @@ export async function apiGetFollowCounts(userId: string): Promise<FollowCounts> 
   return res.json() as Promise<FollowCounts>;
 }
 
+/* ── Profile sync ──────────────────────────────────────── */
+export type FullProfile = {
+  id:             string;
+  email:          string;
+  name:           string;
+  username:       string | null;
+  bio:            string;
+  location:       string;
+  avatarUrl:      string;
+  followersCount: number;
+  followingCount: number;
+  postsCount:     number;
+};
+
+export async function apiSyncProfile(profile: {
+  id: string; email: string; name?: string; username?: string;
+  bio?: string; location?: string; avatarUrl?: string;
+}): Promise<void> {
+  await fetch(`${API_BASE}/users/sync`, {
+    method: "POST",
+    headers: hdrs(),
+    body: JSON.stringify(profile),
+  });
+}
+
+export async function apiUpdateProfile(
+  userId: string,
+  updates: { name?: string; username?: string; bio?: string; location?: string; avatarUrl?: string }
+): Promise<FullProfile> {
+  const res = await fetch(`${API_BASE}/users/${encodeURIComponent(userId)}`, {
+    method: "PATCH",
+    headers: hdrs(userId),
+    body: JSON.stringify(updates),
+  });
+  if (res.status === 409) {
+    const body = await res.json() as { error: string };
+    throw new Error(body.error ?? "Kullanıcı adı alınmış.");
+  }
+  if (!res.ok) throw new Error("Profile update failed");
+  return res.json() as Promise<FullProfile>;
+}
+
+export async function apiGetFullProfile(userId: string): Promise<FullProfile | null> {
+  const res = await fetch(`${API_BASE}/users/${encodeURIComponent(userId)}`);
+  if (!res.ok) return null;
+  return res.json() as Promise<FullProfile>;
+}
+
 /* ── User search ───────────────────────────────────────── */
 export async function apiSearchUsers(query: string): Promise<SocialUser[]> {
   const res = await fetch(`${API_BASE}/social/users?q=${encodeURIComponent(query)}`);
