@@ -85,11 +85,7 @@ function RootLayoutNav() {
         name="add-adoption"
         options={{
           presentation: "modal",
-          headerShown: true,
-          title: "Sahiplendirme İlanı",
-          headerStyle: { backgroundColor: "#FAF7F0" },
-          headerTintColor: "#E07A35",
-          headerTitleStyle: { fontFamily: "Inter_600SemiBold" },
+          headerShown: false,
         }}
       />
       <Stack.Screen

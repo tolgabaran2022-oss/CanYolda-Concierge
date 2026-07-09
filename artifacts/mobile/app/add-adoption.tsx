@@ -3,7 +3,7 @@ import * as Haptics from "expo-haptics";
 import * as ImagePicker from "expo-image-picker";
 import { Image } from "expo-image";
 import { LinearGradient } from "expo-linear-gradient";
-import { Stack, useRouter } from "expo-router";
+import { useRouter } from "expo-router";
 import React, { useState } from "react";
 import {
   ActivityIndicator,
@@ -146,7 +146,6 @@ export default function AddAdoptionScreen() {
 
   return (
     <>
-      <Stack.Screen options={{ headerShown: false }} />
       <View style={[S.root, { backgroundColor: C.bg }]}>
 
         {/* ── Custom header ──────────────────────────────── */}
