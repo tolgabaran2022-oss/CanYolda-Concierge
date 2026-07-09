@@ -32,7 +32,7 @@ const CAT_AVATAR = "https://loremflickr.com/300/300/cat?lock=500";
 export default function ProfileEditScreen() {
   const insets = useSafeAreaInsets();
   const router = useRouter();
-  const { user, updateProfile, changePassword, getSettings, updateSettings } = useAuth();
+  const { user, updateProfile, getSettings, updateSettings } = useAuth();
 
   const [name,      setName]      = useState(user?.name     ?? "");
   const [username,  setUsername]  = useState(user?.username ?? "");
@@ -55,12 +55,6 @@ export default function ProfileEditScreen() {
   const patchSetting = (key: keyof UserSettings, val: boolean) =>
     setSettings((prev) => ({ ...prev, [key]: val }));
 
-  /* ── Password change ─────────────────────────────────── */
-  const [pwExpanded, setPwExpanded]     = useState(false);
-  const [currentPw,  setCurrentPw]     = useState("");
-  const [newPw,      setNewPw]         = useState("");
-  const [confirmPw,  setConfirmPw]     = useState("");
-  const [pwLoading,  setPwLoading]     = useState(false);
 
   /* ── Avatar picker ───────────────────────────────────── */
   const pickFromLibrary = async () => {
@@ -136,32 +130,6 @@ export default function ProfileEditScreen() {
       Haptics.notificationAsync(Haptics.NotificationFeedbackType.Error);
     } finally {
       setSaving(false);
-    }
-  };
-
-  /* ── Change password ─────────────────────────────────── */
-  const handleChangePassword = async () => {
-    if (!currentPw || !newPw || !confirmPw) {
-      Alert.alert("Hata", "Tüm alanları doldurun."); return;
-    }
-    if (newPw.length < 6) {
-      Alert.alert("Hata", "Yeni şifre en az 6 karakter olmalıdır."); return;
-    }
-    if (newPw !== confirmPw) {
-      Alert.alert("Hata", "Yeni şifreler eşleşmiyor."); return;
-    }
-    setPwLoading(true);
-    try {
-      await changePassword(currentPw, newPw);
-      Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
-      Alert.alert("Başarılı", "Şifreniz güncellendi.");
-      setCurrentPw(""); setNewPw(""); setConfirmPw("");
-      setPwExpanded(false);
-    } catch (e: unknown) {
-      const msg = e instanceof Error ? e.message : "Şifre değiştirilemedi.";
-      Alert.alert("Hata", msg);
-    } finally {
-      setPwLoading(false);
     }
   };
 
@@ -282,43 +250,6 @@ export default function ProfileEditScreen() {
               onChange={setLocation}
               placeholder="İstanbul"
             />
-          </View>
-
-          {/* ── Hesap Ayarları ────────────────────── */}
-          <SectionHeader title="Hesap Ayarları" />
-          <View style={S.card}>
-            <Pressable
-              style={({ pressed }) => [S.settingsRow, { opacity: pressed ? 0.75 : 1 }]}
-              onPress={() => setPwExpanded((v) => !v)}
-            >
-              <View style={S.settingsIconWrap}>
-                <Ionicons name="lock-closed-outline" size={18} color={PURPLE} />
-              </View>
-              <Text style={S.settingsLabel}>Şifre Değiştir</Text>
-              <Ionicons
-                name={pwExpanded ? "chevron-up" : "chevron-down"}
-                size={18}
-                color="#AAAACC"
-              />
-            </Pressable>
-
-            {pwExpanded && (
-              <View style={S.pwExpanded}>
-                <PwField label="Mevcut Şifre" value={currentPw} onChange={setCurrentPw} />
-                <PwField label="Yeni Şifre" value={newPw} onChange={setNewPw} />
-                <PwField label="Yeni Şifre (Tekrar)" value={confirmPw} onChange={setConfirmPw} />
-                <Pressable
-                  style={({ pressed }) => [S.pwSaveBtn, { opacity: pressed ? 0.8 : 1 }]}
-                  onPress={handleChangePassword}
-                  disabled={pwLoading}
-                >
-                  {pwLoading
-                    ? <ActivityIndicator size="small" color="#FFF" />
-                    : <Text style={S.pwSaveBtnText}>Şifreyi Güncelle</Text>
-                  }
-                </Pressable>
-              </View>
-            )}
           </View>
 
           {/* ── Gizlilik ─────────────────────────── */}
@@ -453,32 +384,6 @@ function Field({
   );
 }
 
-function PwField({
-  label, value, onChange,
-}: {
-  label: string;
-  value: string;
-  onChange: (v: string) => void;
-}) {
-  const [show, setShow] = useState(false);
-  return (
-    <View style={S.pwField}>
-      <TextInput
-        style={S.pwInput}
-        value={value}
-        onChangeText={onChange}
-        placeholder={label}
-        placeholderTextColor="#ABABCC"
-        secureTextEntry={!show}
-        autoCapitalize="none"
-        autoCorrect={false}
-      />
-      <Pressable onPress={() => setShow((v) => !v)} hitSlop={8}>
-        <Ionicons name={show ? "eye-off-outline" : "eye-outline"} size={18} color={PURPLE} />
-      </Pressable>
-    </View>
-  );
-}
 
 function ToggleRow({
   icon, label, sub, value, onChange,
@@ -574,13 +479,6 @@ const S = StyleSheet.create({
   settingsIconWrap:{ width: 28, height: 28, borderRadius: 8, backgroundColor: `${PURPLE}15`, alignItems: "center", justifyContent: "center" },
   settingsLabel:   { fontSize: 14, fontFamily: "Inter_500Medium", color: PURPLE_DARK, flex: 1 },
   settingsSub:     { fontSize: 11, fontFamily: "Inter_400Regular", color: "#AAAACC", marginTop: 2 },
-
-  /* password */
-  pwExpanded: { borderTopWidth: 1, borderTopColor: "rgba(123,94,167,0.08)", paddingHorizontal: 14, paddingTop: 14, paddingBottom: 16, gap: 10 },
-  pwField:    { flexDirection: "row", alignItems: "center", borderWidth: 1, borderColor: "rgba(123,94,167,0.18)", borderRadius: 12, paddingHorizontal: 14, paddingVertical: 12, backgroundColor: "#FAFAFF", gap: 8 },
-  pwInput:    { flex: 1, fontSize: 15, fontFamily: "Inter_400Regular", color: PURPLE_DARK, paddingVertical: 0 },
-  pwSaveBtn:  { borderRadius: 12, backgroundColor: PURPLE, alignItems: "center", paddingVertical: 12, marginTop: 4 },
-  pwSaveBtnText: { fontSize: 14, fontFamily: "Inter_700Bold", color: "#FFF" },
 
   /* save button */
   bigSaveBtn:      { marginTop: 28, borderRadius: 16, overflow: "hidden" },
