@@ -109,6 +109,9 @@ const tab = StyleSheet.create({
   lblActive: { fontSize: 14, fontFamily: "Inter_700Bold", color: WHITE },
   lblInactive: { fontSize: 14, fontFamily: "Inter_400Regular", color: P, paddingVertical: 10, textAlign: "center" },
 });
+// NOTE: `tab.wrap` also mixes overflow (from `item`'s "overflow:hidden") is fine here because
+// the elevation (SHADOW) lives on `wrap`, and `overflow:hidden` lives on the inner `item` —
+// they're already on different layers, which is why the tab switcher never had this bug.
 
 // ── İlan Oluştur ──────────────────────────────────────────────────────────────
 function CreateSection({ onPress }: { onPress: () => void }) {
@@ -194,7 +197,11 @@ function CreateSection({ onPress }: { onPress: () => void }) {
 const cr = StyleSheet.create({
   card: { backgroundColor: WHITE, borderRadius: 16, borderWidth: 1, borderColor: BORDER, padding: 16, ...SHADOW },
 
+  // ✅ FIX: shadow lives on the OUTER wrapper (no overflow:hidden here, so Android elevation
+  // renders correctly and never gets clipped/glitched)
   heroCardShadow: { borderRadius: 20, ...SHADOW },
+  // ✅ FIX: clipping lives on the INNER wrapper (no elevation here, so overflow:hidden
+  // reliably clips the image to the rounded corners on both iOS and Android)
   heroCard: { backgroundColor: WHITE, borderRadius: 20, borderWidth: 1, borderColor: BORDER, flexDirection: "row", overflow: "hidden" },
 
   heroLeft: { flex: 1, padding: 18, gap: 8, justifyContent: "center" },
@@ -205,7 +212,10 @@ const cr = StyleSheet.create({
   ctaGrad: { flexDirection: "row", alignItems: "center", gap: 6, paddingVertical: 11, paddingHorizontal: 14, justifyContent: "center" },
   ctaTxt: { fontSize: 13, fontFamily: "Inter_700Bold", color: WHITE },
 
+  // ✅ FIX: widened slightly (106 → 132) to match the reference's proportions better
   heroRight: { width: 132, alignSelf: "stretch" },
+  // ✅ FIX: fill the parent exactly instead of a hardcoded height that can mismatch
+  // the actual stretched height of heroRight and cause a gap or crop mismatch
   dogImg: { width: "100%", height: "100%" },
 
   dot: { width: 6, height: 6, borderRadius: 3, backgroundColor: P, marginTop: 7, flexShrink: 0 },
@@ -261,10 +271,12 @@ function ListingCard({ listing, isFeatured }: { listing: AdoptionListing; isFeat
   const [liked, setLiked] = useState(false);
 
   return (
+    // ✅ FIX: shadow moved to the outer Pressable (no overflow:hidden here)
     <Pressable
       style={({ pressed }) => [lc.cardShadow, { opacity: pressed ? 0.94 : 1 }]}
       onPress={() => router.push(`/adoption/${listing.id}`)}
     >
+      {/* ✅ FIX: clipping lives on this inner View (no elevation here) */}
       <View style={[lc.card, isFeatured && lc.featured]}>
         {isFeatured && (
           <View style={lc.featuredBadge}>
@@ -317,7 +329,9 @@ function ListingCard({ listing, isFeatured }: { listing: AdoptionListing; isFeat
   );
 }
 const lc = StyleSheet.create({
+  // ✅ FIX: outer wrapper — shadow only, no clipping
   cardShadow: { marginHorizontal: 20, marginBottom: 12, borderRadius: 18, ...SHADOW },
+  // ✅ FIX: inner wrapper — clipping only, no elevation
   card: { flexDirection: "row", backgroundColor: WHITE, borderRadius: 18, borderWidth: 1, borderColor: BORDER, overflow: "hidden", minHeight: 120 },
   featured: { borderColor: "#E07A35", borderWidth: 1.5 },
   featuredBadge: { position: "absolute", top: 0, left: 0, zIndex: 2, flexDirection: "row", alignItems: "center", gap: 3, backgroundColor: "#E07A35", borderBottomRightRadius: 10, paddingHorizontal: 8, paddingVertical: 4 },
@@ -339,7 +353,9 @@ const lc = StyleSheet.create({
   chatBtn: { backgroundColor: P, borderRadius: 15 },
 });
 
-// ── Floating filter button ────────────────────────────────────────────────────
+// ── Floating filter button ───────────────────────────────────────────────────
+// ✅ NEW: referans tasarımda vardı, kodda hiç yoktu — eklendi.
+// Şu an bir filtre modalı bağlı değil (TODO), sadece görsel + haptics.
 function FloatingFilterButton({ bottom, onPress }: { bottom: number; onPress: () => void }) {
   return (
     <Pressable
@@ -439,9 +455,14 @@ export default function PetsScreen() {
               </View>
             }
           />
+          {/* ✅ NEW: eksik olan floating "Filtrele" butonu */}
           <FloatingFilterButton
             bottom={insets.bottom + 24}
-            onPress={() => {}}
+            onPress={() => {
+              // TODO: filtre modalı/bottom-sheet aç.
+              // Şimdilik FilterRow zaten aynı işi görüyor; bu buton isteğe bağlı
+              // bir gelişmiş filtre ekranına (fiyat/konum/yaş vb.) bağlanabilir.
+            }}
           />
         </View>
       )}
