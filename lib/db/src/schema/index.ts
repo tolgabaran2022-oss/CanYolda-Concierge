@@ -4,6 +4,7 @@ export * from "./feed.js";
 export { stories, storyViews } from "./feed.js";
 export * from "./social.js";
 export * from "./pets.js";
+export * from "./messages.js";
 
 export const featuredListings = pgTable("featured_listings", {
   id: text("id")

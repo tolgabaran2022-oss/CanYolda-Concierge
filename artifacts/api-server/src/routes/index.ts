@@ -8,6 +8,7 @@ import socialRouter from "./social.js";
 import notificationsRouter from "./notifications.js";
 import usersRouter from "./users.js";
 import petsRouter from "./pets.js";
+import messagesRouter from "./messages.js";
 
 const router: IRouter = Router();
 
@@ -20,5 +21,6 @@ router.use(socialRouter);
 router.use(notificationsRouter);
 router.use(usersRouter);
 router.use(petsRouter);
+router.use(messagesRouter);
 
 export default router;

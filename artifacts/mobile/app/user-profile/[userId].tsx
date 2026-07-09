@@ -20,6 +20,7 @@ import {
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { useAuth } from "@/contexts/AuthContext";
 import { apiFetchUserPosts, type ApiPost } from "@/lib/feedApi";
+import { apiGetOrCreateConversation } from "@/lib/messagesApi";
 import {
   apiCheckFollowing,
   apiGetFollowCounts,
@@ -281,7 +282,16 @@ export default function UserProfileScreen() {
 
                 <Pressable
                   style={({ pressed }) => [S.btnOutline, S.btnFlex, { opacity: pressed ? 0.7 : 1 }]}
-                  onPress={() => Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light)}
+                  onPress={async () => {
+                    if (!user || !userId) return;
+                    Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
+                    try {
+                      const conv = await apiGetOrCreateConversation(user.id, userId);
+                      router.push(`/messages/${encodeURIComponent(conv.id)}`);
+                    } catch {
+                      router.push("/messages");
+                    }
+                  }}
                 >
                   <Ionicons name="chatbubble-outline" size={16} color={PDARK} style={{ marginRight: 4 }} />
                   <Text style={S.btnOutlineTxt}>Mesaj Gönder</Text>

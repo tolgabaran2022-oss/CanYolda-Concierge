@@ -258,6 +258,15 @@ export default function ProfileScreen() {
               <Text style={S.editBtnText}>Profili Düzenle</Text>
             </Pressable>
             <Pressable
+              style={({ pressed }) => [S.msgBtn, { opacity: pressed ? 0.8 : 1 }]}
+              onPress={() => {
+                Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+                router.push("/messages");
+              }}
+            >
+              <Ionicons name="chatbubble-outline" size={19} color={PURPLE} />
+            </Pressable>
+            <Pressable
               style={({ pressed }) => [S.newPostBtn, { opacity: pressed ? 0.8 : 1 }]}
               onPress={() => {
                 Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
@@ -645,6 +654,15 @@ const S = StyleSheet.create({
     borderRadius: 10,
     alignItems: "center",
     justifyContent: "center",
+  },
+  msgBtn: {
+    width: 40,
+    backgroundColor: "rgba(123,94,167,0.10)",
+    borderRadius: 10,
+    alignItems: "center",
+    justifyContent: "center",
+    borderWidth: 1,
+    borderColor: "rgba(123,94,167,0.18)",
   },
   shareBtn: {
     width: 40,
