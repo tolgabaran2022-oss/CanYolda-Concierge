@@ -1,0 +1,458 @@
+Canyoldaşı uygulamasındaki "Evcil" sekmesini referans tasarıma göre düzelt ve premium App Store kalitesine getir.
+
+Mevcut tasarım genel olarak doğru ancak aşağıdaki UI/UX hatalarını düzelt.
+
+ÖNEMLİ:
+Mevcut mor/beyaz tasarım dilini koru.
+Fonksiyonları bozma.
+Sadece tasarım, düzen ve kullanıcı deneyimini iyileştir.
+
+====================================
+1. ALT NAVİGASYON ÇAKIŞMASINI DÜZELT
+====================================
+
+Sorun:
+Alt menü içeriklerin üzerine biniyor.
+
+Düzelt:
+
+- SafeAreaView kullan.
+- ScrollView alt padding ekle.
+- İçerik alanı bottom navigation arkasına geçmesin.
+
+Minimum:
+
+paddingBottom: 120px
+
+ekle.
+
+Şunlar tamamen görünür olmalı:
+
+- İstatistik kartları
+- Güvenli Sahiplendirme bannerı
+- Tüm ilan listesi
+
+
+====================================
+2. İLAN OLUŞTUR KARTINI GELİŞTİR
+====================================
+
+Mevcut:
+Sağdaki hayvan görseli kesilmiş görünüyor.
+
+
+Düzelt:
+
+Kart yapısı:
+
+Sol bölüm:
+
+Mor yuvarlak ikon içinde kalp.
+
+Başlık:
+
+"Evcil hayvanını sahiplendirme ilanına ekle"
+
+
+Açıklama:
+
+"Fotoğraf, açıklama ve konum ekleyerek ilan oluştur"
+
+
+Alt:
+
+Büyük gradient mor CTA butonu:
+
+"+ İlan Oluştur"
+
+
+Sağ bölüm:
+
+Gerçek köpek/kedi fotoğrafı.
+
+
+Fotoğraf:
+
+- Card içine tam otursun.
+- resizeMode: cover
+- Border radius kart ile aynı olsun.
+- Taşma olmasın.
+
+
+====================================
+3. İSTATİSTİK KARTLARINI DÜZELT
+====================================
+
+Mevcut:
+Kartlar küçük ve alt menü altında kalıyor.
+
+
+Yeni tasarım:
+
+3 adet eşit kart:
+
+Kart yüksekliği:
+120px
+
+
+Kart içerikleri:
+
+🐾
+
+2.4K+
+
+Aktif İlan
+
+
+❤️
+
+800+
+
+Sahiplendirilen
+
+
+👥
+
+12K+
+
+Hayvan Dostu
+
+
+Emoji kullanma.
+
+Profesyonel icon library kullan:
+
+Lucide Icons veya React Native Vector Icons.
+
+
+====================================
+4. GÜVENLİ SAHİPLENDİRME BANNER
+====================================
+
+Mevcut banner alt menü ile çakışıyor.
+
+
+Düzelt:
+
+Büyük mor gradient kart:
+
+Başlık:
+
+"Güvenli Sahiplendirme"
+
+
+Açıklama:
+
+"Doğrulanmış kullanıcılar ve güvenli iletişim ile patili dostlarımızı doğru yuvalara götürüyoruz."
+
+
+Sol:
+Shield icon
+
+
+Sağ:
+Pet house illustration
+
+
+Kart tamamen görünür olsun.
+
+
+====================================
+5. TÜM İLANLAR SAYFASINI GELİŞTİR
+====================================
+
+En büyük hata:
+
+İlanlarda hayvan görselleri görünmüyor.
+
+
+Düzelt:
+
+Her ilan kartında gerçek hayvan görseli göster.
+
+
+Kart yapısı:
+
+
+--------------------------------
+
+[ Kedi/Köpek Fotoğrafı ]
+
+
+Pamuk
+
+Kedi
+
+British Shorthair • 2 yaş
+
+
+"Sakin, oyuncu ve sevgi dolu bir patili dost."
+
+
+📍 Kadıköy, İstanbul
+
+
+Sağ üst:
+
+Favori kalp
+
+
+Sağ alt:
+
+Mesaj gönder butonu
+
+
+--------------------------------
+
+
+Kart özellikleri:
+
+- Beyaz kart
+- 20px border radius
+- Soft shadow
+- Premium görünüm
+
+
+====================================
+6. İLAN GÖRSELLERİ EKLE
+====================================
+
+Fake placeholder kalp kullanma.
+
+
+Örnek ilan görselleri:
+
+
+Pamuk:
+British Shorthair kedi
+
+
+Karamel:
+Golden Retriever köpek
+
+
+Misket:
+Tekir kedi
+
+
+Limon:
+Hollanda Lop tavşanı
+
+
+Atlas:
+Husky
+
+
+Her kartta farklı hayvan fotoğrafı olsun.
+
+
+====================================
+7. FİLTRE SİSTEMİNİ GELİŞTİR
+====================================
+
+
+Mevcut:
+
+Tümü
+Kedi
+Köpek
+Kuş
+
+
+Bunları chip tasarımında yap.
+
+
+Yeni filtreler:
+
+Tümü
+
+Kedi
+
+Köpek
+
+Kuş
+
+Tavşan
+
+Yakınımdakiler
+
+Yeni İlanlar
+
+
+Aktif filtre:
+
+Mor gradient arka plan.
+
+
+====================================
+8. FİLTRE BUTONU KONUMU
+====================================
+
+Mevcut:
+Alt menü ile çakışıyor.
+
+
+Düzelt:
+
+Filtre butonunu:
+
+- Sağ üst köşeye taşı
+
+veya
+
+- Filtre chiplerinin yanına koy.
+
+
+Floating button kullanma.
+
+
+====================================
+9. HEADER DÜZENİ
+====================================
+
+Üst bölüm sıkıştır.
+
+
+Yapı:
+
+
+❤️ canyoldaşı                 🔔
+
+
+Evcil Hayvan Merkezi
+
+
+"Sahiplendirme ilanları oluştur ve incele"
+
+
+Boşlukları azalt.
+
+
+====================================
+10. RENK VE YAZI DÜZENİ
+====================================
+
+Açık renk yazıları koyulaştır.
+
+
+Başlık:
+
+#4B267D
+
+
+Normal metin:
+
+#6E6290
+
+
+Mor:
+
+#7C4DCC
+
+
+Arka plan:
+
+#F8F4FF
+
+
+====================================
+11. İLAN DETAY SAYFASI HAZIRLA
+====================================
+
+
+Kart tıklanınca:
+
+
+PetDetailScreen açılsın.
+
+
+Göster:
+
+
+- Büyük fotoğraf galerisi
+- Hayvan adı
+- Tür
+- Yaş
+- Cins
+- Açıklama
+- Sağlık bilgisi
+- Sahip bilgisi
+- Konum
+
+
+Butonlar:
+
+
+💬 Mesaj Gönder
+
+
+❤️ Favori
+
+
+====================================
+12. BACKEND BAĞLANTISI
+====================================
+
+
+Mevcut Supabase sistemini kullan.
+
+
+pet_listings tablosundan gerçek veri çek.
+
+
+Fake liste kullanma.
+
+
+Alanlar:
+
+
+id
+
+owner_id
+
+pet_id
+
+name
+
+type
+
+breed
+
+age
+
+description
+
+location
+
+images
+
+status
+
+created_at
+
+
+====================================
+13. SON KONTROL
+
+
+Kontrol et:
+
+
+✓ Alt menü çakışmıyor
+
+✓ Görseller düzgün geliyor
+
+✓ Kartlar premium görünüyor
+
+✓ İlan detayına gidiliyor
+
+✓ Filtre çalışıyor
+
+✓ Responsive iPhone ekranına uygun
+
+✓ App Store kalitesinde görünüm
+
+
+Sonuç:
+
+Canyoldaşı Evcil sekmesi gerçek bir sahiplendirme uygulaması kalitesine ulaşmalı.
