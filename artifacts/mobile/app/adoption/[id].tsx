@@ -24,6 +24,7 @@ import { useAuth } from "@/contexts/AuthContext";
 import { useBoost } from "@/contexts/BoostContext";
 import { formatTimeAgo } from "@/utils/formatters";
 import { apiGetContactPrefs, apiRevealPhone, type ContactPrefs } from "@/lib/contactApi";
+import { apiGetOrCreateConversation } from "@/lib/messagesApi";
 
 // ── Palette (same as rest of app) ────────────────────────────────────────────
 const P     = "#7C4DCC";
@@ -103,6 +104,7 @@ export default function AdoptionDetailScreen() {
   const [revealedPhone,    setRevealedPhone]    = useState<string | null>(null);
   const [revealLoading,    setRevealLoading]    = useState(false);
   const [revealError,      setRevealError]      = useState<string | null>(null);
+  const [msgSending,       setMsgSending]       = useState(false);
 
   const listing = getListing(id ?? "");
   const isOwner = listing?.userId === user?.id;
@@ -174,9 +176,34 @@ export default function AdoptionDetailScreen() {
     }
   };
 
-  const handleSendMessage = () => {
+  const handleSendMessage = async () => {
+    if (!user) {
+      Alert.alert("Giriş Gerekli", "Mesaj göndermek için lütfen giriş yapın.");
+      return;
+    }
+    if (!listing) return;
+    if (listing.userId === "system") {
+      Alert.alert("Demo İlan", "Bu bir örnek ilandır, mesajlaşma aktif değil.");
+      return;
+    }
     Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
-    Alert.alert("Mesaj Gönder", "Bu özellik yakında kullanılabilir olacak.");
+    setMsgSending(true);
+    try {
+      const conv = await apiGetOrCreateConversation(
+        user.id,
+        listing.userId,
+        {
+          id:       listing.id,
+          title:    listing.petName,
+          imageUrl: listing.photo ?? "",
+        }
+      );
+      router.push(`/messages/${encodeURIComponent(conv.id)}` as any);
+    } catch {
+      Alert.alert("Hata", "Mesaj başlatılamadı, lütfen tekrar deneyin.");
+    } finally {
+      setMsgSending(false);
+    }
   };
 
   const handleDelete = () => {
@@ -442,11 +469,22 @@ export default function AdoptionDetailScreen() {
                   onPress={handleSendMessage}
                   onPressIn={onPressIn}
                   onPressOut={onPressOut}
+                  disabled={msgSending}
                   style={S.msgBtnOuter}
                 >
-                  <LinearGradient colors={[P2, P, DARK]} start={{ x: 0, y: 0 }} end={{ x: 1, y: 0 }} style={S.msgBtn}>
-                    <Ionicons name="chatbubble-ellipses" size={18} color={WHITE} />
-                    <Text style={S.msgBtnTxt}>Mesaj Gönder</Text>
+                  <LinearGradient
+                    colors={msgSending ? ["#C5BAE8", "#C5BAE8", "#C5BAE8"] : [P2, P, DARK]}
+                    start={{ x: 0, y: 0 }} end={{ x: 1, y: 0 }}
+                    style={S.msgBtn}
+                  >
+                    {msgSending ? (
+                      <ActivityIndicator size="small" color={WHITE} />
+                    ) : (
+                      <Ionicons name="chatbubble-ellipses" size={18} color={WHITE} />
+                    )}
+                    <Text style={S.msgBtnTxt}>
+                      {msgSending ? "Açılıyor…" : "Mesaj Gönder"}
+                    </Text>
                   </LinearGradient>
                 </Pressable>
               </Animated.View>

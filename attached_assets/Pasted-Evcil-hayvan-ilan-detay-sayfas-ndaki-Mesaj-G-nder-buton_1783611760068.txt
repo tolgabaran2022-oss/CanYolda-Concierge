@@ -1,0 +1,87 @@
+Evcil hayvan ilan detay sayfasındaki “Mesaj Gönder” butonunu aktif hale getir.
+
+Amaç:
+Kullanıcı ilan detayında “Mesaj Gönder” butonuna bastığında, ilanı paylaşan kişiye direkt mesaj gönderebilsin. Sistem Instagram DM mantığında çalışsın.
+
+Yapılacaklar:
+
+1. Mesaj Gönder butonu
+- Buton pasif kalmasın.
+- Tıklanınca ilan sahibine ait DM konuşması açılsın.
+- Eğer daha önce konuşma varsa mevcut konuşmaya yönlendir.
+- Eğer konuşma yoksa yeni konuşma oluştur.
+
+2. Konuşma oluşturma mantığı
+Supabase’de conversations tablosu oluştur veya mevcut tabloyu kullan:
+
+conversations:
+- id uuid primary key
+- participant_1 uuid
+- participant_2 uuid
+- created_at timestamp default now()
+- updated_at timestamp default now()
+
+messages:
+- id uuid primary key
+- conversation_id uuid
+- sender_id uuid
+- receiver_id uuid
+- text text
+- listing_id uuid nullable
+- created_at timestamp default now()
+- is_read boolean default false
+
+3. İlan referansı
+Mesaj ekranı açıldığında otomatik küçük ilan kartı görünsün:
+
+- İlan görseli
+- İlan adı
+- Konum
+- Durum
+- “Bu ilan hakkında mesaj gönderiyorsun” açıklaması
+
+İlk mesaj gönderildiğinde messages tablosuna listing_id de kaydedilsin.
+
+4. DM ekranı
+Mesaj ekranında:
+- Üstte ilan sahibinin adı ve profil fotoğrafı
+- Mesaj listesi
+- Alt tarafta mesaj yazma inputu
+- Gönder butonu
+
+5. Mesaj gönderme
+- Boş mesaj gönderilemesin.
+- Mesaj gönderilince Supabase messages tablosuna kaydedilsin.
+- Conversation updated_at güncellensin.
+- Mesaj anında ekranda görünsün.
+- Keyboard açılınca input yukarı taşınsın.
+
+6. Bildirim
+- Mesaj alıcısının message_notifications_enabled ayarı açıksa bildirim oluştur.
+- Kapalıysa bildirim oluşturma.
+- notifications tablosuna type = "message" olarak kaydet.
+
+7. Kendi ilanı kontrolü
+- Kullanıcı kendi ilanındaysa “Mesaj Gönder” butonu görünmesin veya pasif olsun.
+- Kendi ilanında bunun yerine:
+  “Bu senin ilanını”
+  veya
+  “İlanı Düzenle”
+  butonu göster.
+
+8. Güvenlik
+- Kullanıcı sadece dahil olduğu konuşmaları görebilsin.
+- Kullanıcı sadece kendi adına mesaj gönderebilsin.
+- Başkasının konuşmalarını okuyamasın.
+- RLS policy ekle.
+- Şifre, token veya kullanıcı bilgisi console.log ile yazdırılmasın.
+
+9. UI/UX
+- Mevcut mor/beyaz tasarım korunsun.
+- Mesaj ekranı Instagram DM tarzında modern olsun.
+- İlan kartı sade ve küçük olsun.
+- Loading, boş durum ve hata mesajları eklensin.
+- iOS, Android ve Web’de responsive çalışsın.
+
+Sonuç:
+Evcil hayvan ilan detayındaki “Mesaj Gönder” butonu gerçek çalışacak. Kullanıcı ilan sahibine direkt DM atabilecek ve mesajlar Supabase üzerinden kalıcı olarak saklanacak.
