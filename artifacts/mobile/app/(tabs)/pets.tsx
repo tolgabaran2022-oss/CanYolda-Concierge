@@ -113,7 +113,7 @@ const tab = StyleSheet.create({
 // ── İlan Oluştur ──────────────────────────────────────────────────────────────
 function CreateSection({ onPress }: { onPress: () => void }) {
   return (
-    <ScrollView showsVerticalScrollIndicator={false} contentContainerStyle={{ paddingHorizontal: 20, paddingBottom: 160, gap: 14 }}>
+    <ScrollView showsVerticalScrollIndicator={false} contentContainerStyle={{ paddingHorizontal: 20, paddingBottom: 100, gap: 10 }}>
 
       {/* Hero card — shadow and clipping are now on separate layers (Android fix) */}
       <View style={cr.heroCardShadow}>
