@@ -235,13 +235,14 @@ function FilterRow({ active, onChange }: { active: Filter; onChange: (f: Filter)
   );
 }
 const fc = StyleSheet.create({
-  root: { marginBottom: 12 },
+  root: { marginBottom: 12, overflow: "visible" },
   list: {
     paddingLeft: 20,
-    paddingRight: 24,   // ensures last chip not clipped
-    paddingVertical: 4,
+    paddingRight: 28,
+    paddingTop: 6,
+    paddingBottom: 10,  // enough room for shadow to breathe
   },
-  chipWrap: { width: CHIP_W },
+  chipWrap: { width: CHIP_W, overflow: "visible" },
   chip: {
     width: CHIP_W,
     height: CHIP_H,
@@ -250,20 +251,21 @@ const fc = StyleSheet.create({
     alignItems: "center",
     justifyContent: "center",
     gap: 4,
+    overflow: "visible",
   },
   chipInactive: {
     backgroundColor: WHITE,
     borderWidth: 1.5,
     borderColor: `${P}30`,
     ...Platform.select({
-      ios:     { shadowColor: "#4B267D", shadowOffset: { width: 0, height: 2 }, shadowOpacity: 0.07, shadowRadius: 8 },
+      ios:     { shadowColor: "#4B267D", shadowOffset: { width: 0, height: 3 }, shadowOpacity: 0.09, shadowRadius: 8 },
       android: { elevation: 2 },
       default: {},
     }),
   },
   chipActiveShadow: {
     ...Platform.select({
-      ios:     { shadowColor: P, shadowOffset: { width: 0, height: 4 }, shadowOpacity: 0.28, shadowRadius: 10 },
+      ios:     { shadowColor: P, shadowOffset: { width: 0, height: 4 }, shadowOpacity: 0.30, shadowRadius: 10 },
       android: { elevation: 5 },
       default: {},
     }),
