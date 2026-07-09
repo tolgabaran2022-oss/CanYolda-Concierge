@@ -67,6 +67,24 @@ export default function WelcomeScreen() {
           </LinearGradient>
         </Pressable>
 
+        {/* Şifremi Unuttum */}
+        <Pressable
+          onPress={() => {
+            Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+            router.push("/(auth)/forgot-password");
+          }}
+          style={({ pressed }) => ({
+            alignSelf: "center",
+            paddingVertical: 10,
+            paddingHorizontal: 20,
+            opacity: pressed ? 0.6 : 1,
+          })}
+        >
+          <Text style={{ fontSize: 14, fontFamily: "Inter_600SemiBold", color: PURPLE }}>
+            Şifremi Unuttum?
+          </Text>
+        </Pressable>
+
         {/* Kayıt Ol */}
         <Pressable
           onPress={() => {
