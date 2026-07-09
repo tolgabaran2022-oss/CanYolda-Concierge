@@ -1,6 +1,6 @@
 import { Router } from "express";
-import { and, desc, eq, ilike, ne, or, sql } from "drizzle-orm";
-import { db, feedPosts, follows, notifications } from "@workspace/db";
+import { and, desc, eq, ilike, inArray, ne, or, sql } from "drizzle-orm";
+import { db, feedPosts, follows, notifications, socialProfiles } from "@workspace/db";
 import { logger } from "../lib/logger.js";
 
 const router = Router();
@@ -165,6 +165,124 @@ router.get("/social/users/:userId", async (req, res) => {
     });
   } catch (err) {
     req.log.error({ err }, "GET /social/users/:userId failed");
+    res.status(500).json({ error: "Internal server error" });
+  }
+});
+
+/* ── GET /api/social/follow/followers/:userId ─ list ─── */
+router.get("/social/follow/followers/:userId", async (req, res) => {
+  try {
+    const { userId } = req.params;
+    const callerId   = req.query["callerId"] as string | undefined;
+
+    const rows = await db
+      .select({ followerId: follows.followerId })
+      .from(follows)
+      .where(eq(follows.followingId, userId));
+
+    if (rows.length === 0) { res.json([]); return; }
+
+    const ids = rows.map((r) => r.followerId);
+    const profiles = await db
+      .select({ id: socialProfiles.id, name: socialProfiles.name, username: socialProfiles.username, avatarUrl: socialProfiles.avatarUrl })
+      .from(socialProfiles)
+      .where(inArray(socialProfiles.id, ids));
+
+    const profileMap = new Map(profiles.map((p) => [p.id, p]));
+
+    /* Check which of these users the caller follows */
+    let callerFollowingIds = new Set<string>();
+    if (callerId) {
+      const cfRows = await db
+        .select({ followingId: follows.followingId })
+        .from(follows)
+        .where(and(eq(follows.followerId, callerId), inArray(follows.followingId, ids)));
+      callerFollowingIds = new Set(cfRows.map((r) => r.followingId));
+    }
+
+    /* Fallback: derive from feedPosts for users not in social_profiles */
+    const missingIds = ids.filter((id) => !profileMap.has(id));
+    if (missingIds.length > 0) {
+      const postRows = await db
+        .selectDistinctOn([feedPosts.userId], { userId: feedPosts.userId, username: feedPosts.username, avatarUrl: feedPosts.avatarUrl })
+        .from(feedPosts)
+        .where(inArray(feedPosts.userId, missingIds));
+      postRows.forEach((r) => {
+        if (r.userId) profileMap.set(r.userId, { id: r.userId, name: r.username, username: r.username, avatarUrl: r.avatarUrl });
+      });
+    }
+
+    const result = ids.map((id) => {
+      const p = profileMap.get(id);
+      return {
+        userId:     id,
+        username:   p?.username ?? p?.name ?? id,
+        avatarUrl:  p?.avatarUrl ?? "",
+        isFollowing: callerFollowingIds.has(id),
+      };
+    }).filter((r) => r.username);
+
+    res.json(result);
+  } catch (err) {
+    req.log.error({ err }, "GET /social/follow/followers failed");
+    res.status(500).json({ error: "Internal server error" });
+  }
+});
+
+/* ── GET /api/social/follow/following/:userId ─ list ─── */
+router.get("/social/follow/following/:userId", async (req, res) => {
+  try {
+    const { userId } = req.params;
+    const callerId   = req.query["callerId"] as string | undefined;
+
+    const rows = await db
+      .select({ followingId: follows.followingId })
+      .from(follows)
+      .where(eq(follows.followerId, userId));
+
+    if (rows.length === 0) { res.json([]); return; }
+
+    const ids = rows.map((r) => r.followingId);
+    const profiles = await db
+      .select({ id: socialProfiles.id, name: socialProfiles.name, username: socialProfiles.username, avatarUrl: socialProfiles.avatarUrl })
+      .from(socialProfiles)
+      .where(inArray(socialProfiles.id, ids));
+
+    const profileMap = new Map(profiles.map((p) => [p.id, p]));
+
+    let callerFollowingIds = new Set<string>();
+    if (callerId) {
+      const cfRows = await db
+        .select({ followingId: follows.followingId })
+        .from(follows)
+        .where(and(eq(follows.followerId, callerId), inArray(follows.followingId, ids)));
+      callerFollowingIds = new Set(cfRows.map((r) => r.followingId));
+    }
+
+    const missingIds = ids.filter((id) => !profileMap.has(id));
+    if (missingIds.length > 0) {
+      const postRows = await db
+        .selectDistinctOn([feedPosts.userId], { userId: feedPosts.userId, username: feedPosts.username, avatarUrl: feedPosts.avatarUrl })
+        .from(feedPosts)
+        .where(inArray(feedPosts.userId, missingIds));
+      postRows.forEach((r) => {
+        if (r.userId) profileMap.set(r.userId, { id: r.userId, name: r.username, username: r.username, avatarUrl: r.avatarUrl });
+      });
+    }
+
+    const result = ids.map((id) => {
+      const p = profileMap.get(id);
+      return {
+        userId:     id,
+        username:   p?.username ?? p?.name ?? id,
+        avatarUrl:  p?.avatarUrl ?? "",
+        isFollowing: callerFollowingIds.has(id),
+      };
+    }).filter((r) => r.username);
+
+    res.json(result);
+  } catch (err) {
+    req.log.error({ err }, "GET /social/follow/following failed");
     res.status(500).json({ error: "Internal server error" });
   }
 });

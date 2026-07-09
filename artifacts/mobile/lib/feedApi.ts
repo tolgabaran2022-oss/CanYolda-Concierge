@@ -39,6 +39,12 @@ export async function apiFetchPosts(userId?: string): Promise<ApiPost[]> {
   return res.json() as Promise<ApiPost[]>;
 }
 
+export async function apiFetchFollowingPosts(userId: string): Promise<ApiPost[]> {
+  const res = await fetch(`${API_BASE}/feed/posts?mode=following`, { headers: hdrs(userId) });
+  if (!res.ok) throw new Error("fetch following posts failed");
+  return res.json() as Promise<ApiPost[]>;
+}
+
 export async function apiFetchUserPosts(userId: string): Promise<ApiPost[]> {
   const res = await fetch(`${API_BASE}/feed/posts?userId=${encodeURIComponent(userId)}`, { headers: hdrs(userId) });
   if (!res.ok) throw new Error("fetch user posts failed");

@@ -31,6 +31,7 @@ import { useAuth } from "@/contexts/AuthContext";
 import { FEED_POSTS } from "@/data/feedData";
 import {
   apiFetchPosts,
+  apiFetchFollowingPosts,
   apiToggleLike,
   apiToggleBookmark,
   apiAddComment,
@@ -277,7 +278,9 @@ export default function FeedScreen() {
   const { user } = useAuth();
   const userId = user?.email ?? "anonymous";
 
+  const [feedTab,           setFeedTab]           = useState<"discover" | "following">("discover");
   const [posts,             setPosts]             = useState<PostData[]>(FEED_POSTS);
+  const [followingPosts,    setFollowingPosts]    = useState<PostData[]>([]);
   const [stories,           setStories]           = useState<ApiStoryGroup[]>([]);
   const [storyViewerOpen,   setStoryViewerOpen]   = useState(false);
   const [selectedGroup,     setSelectedGroup]      = useState<ApiStoryGroup | null>(null);
@@ -309,6 +312,16 @@ export default function FeedScreen() {
       });
     return () => { cancelled = true; };
   }, [userId]);
+
+  /* ── Fetch following posts ─────────────────────────────── */
+  useEffect(() => {
+    if (!user?.id) return;
+    let cancelled = false;
+    apiFetchFollowingPosts(user.id)
+      .then((apiPosts) => { if (!cancelled) setFollowingPosts(apiPosts.map(apiPostToPostData)); })
+      .catch(() => {});
+    return () => { cancelled = true; };
+  }, [user?.id]);
 
   /* ── Fetch stories on mount ────────────────────────────── */
   useEffect(() => {
@@ -437,6 +450,8 @@ export default function FeedScreen() {
 
   const BOTTOM_NAV_H = 68 + insets.bottom + 10;
 
+  const activePosts = feedTab === "following" ? followingPosts : posts;
+
   const renderHeader = useCallback(
     () => (
       <>
@@ -453,16 +468,30 @@ export default function FeedScreen() {
           onPressGroup={handleStoryGroupPress}
           onAddStory={() => setCreateStoryOpen(true)}
         />
-        <View style={F.divider} />
+        {/* ── Feed tabs ── */}
+        <View style={F.tabBar}>
+          <Pressable
+            style={[F.tabBtn, feedTab === "discover" && F.tabBtnActive]}
+            onPress={() => { Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light); setFeedTab("discover"); }}
+          >
+            <Text style={[F.tabTxt, feedTab === "discover" && F.tabTxtActive]}>Keşfet</Text>
+          </Pressable>
+          <Pressable
+            style={[F.tabBtn, feedTab === "following" && F.tabBtnActive]}
+            onPress={() => { Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light); setFeedTab("following"); }}
+          >
+            <Text style={[F.tabTxt, feedTab === "following" && F.tabTxtActive]}>Takip Ettiklerin</Text>
+          </Pressable>
+        </View>
       </>
     ),
-    [stories, userId, router]
+    [stories, userId, router, feedTab]
   );
 
   return (
     <View style={[F.root, { paddingTop: insets.top }]}>
       <FlatList
-        data={posts}
+        data={activePosts}
         keyExtractor={(p) => p.id}
         renderItem={({ item }) => (
           <PostCard
@@ -536,6 +565,32 @@ export default function FeedScreen() {
 const F = StyleSheet.create({
   root:        { flex: 1, backgroundColor: C.bg },
   list:        { flex: 1, backgroundColor: C.bg },
-  listContent: { paddingTop: 14 },
+  listContent: { paddingTop: 0 },
   divider:     { height: 12, backgroundColor: C.bg },
+
+  tabBar: {
+    flexDirection: "row",
+    backgroundColor: C.white,
+    borderBottomWidth: 1,
+    borderBottomColor: "rgba(123,94,167,0.10)",
+  },
+  tabBtn: {
+    flex: 1,
+    paddingVertical: 12,
+    alignItems: "center",
+    borderBottomWidth: 2,
+    borderBottomColor: "transparent",
+  },
+  tabBtnActive: {
+    borderBottomColor: C.purple,
+  },
+  tabTxt: {
+    fontSize: 14,
+    fontFamily: "Inter_500Medium",
+    color: C.muted,
+  },
+  tabTxtActive: {
+    color: C.purple,
+    fontFamily: "Inter_700Bold",
+  },
 });

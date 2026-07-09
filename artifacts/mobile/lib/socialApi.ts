@@ -112,6 +112,27 @@ export async function apiGetFullProfile(userId: string): Promise<FullProfile | n
   return res.json() as Promise<FullProfile>;
 }
 
+export type FollowUser = {
+  userId:      string;
+  username:    string;
+  avatarUrl:   string;
+  isFollowing: boolean;
+};
+
+export async function apiGetFollowersList(userId: string, callerId?: string): Promise<FollowUser[]> {
+  const params = callerId ? `?callerId=${encodeURIComponent(callerId)}` : "";
+  const res = await fetch(`${API_BASE}/social/follow/followers/${encodeURIComponent(userId)}${params}`);
+  if (!res.ok) throw new Error("get followers failed");
+  return res.json() as Promise<FollowUser[]>;
+}
+
+export async function apiGetFollowingList(userId: string, callerId?: string): Promise<FollowUser[]> {
+  const params = callerId ? `?callerId=${encodeURIComponent(callerId)}` : "";
+  const res = await fetch(`${API_BASE}/social/follow/following/${encodeURIComponent(userId)}${params}`);
+  if (!res.ok) throw new Error("get following failed");
+  return res.json() as Promise<FollowUser[]>;
+}
+
 /* ── User search ───────────────────────────────────────── */
 export async function apiSearchUsers(query: string): Promise<SocialUser[]> {
   const res = await fetch(`${API_BASE}/social/users?q=${encodeURIComponent(query)}`);

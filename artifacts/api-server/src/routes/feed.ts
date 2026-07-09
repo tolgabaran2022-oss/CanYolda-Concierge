@@ -1,5 +1,5 @@
 import { Router } from "express";
-import { and, desc, eq, sql } from "drizzle-orm";
+import { and, desc, eq, inArray, sql } from "drizzle-orm";
 import {
   db,
   feedPosts,
@@ -7,6 +7,7 @@ import {
   feedLikes,
   feedBookmarks,
   notifications,
+  follows,
 } from "@workspace/db";
 import { logger } from "../lib/logger.js";
 
@@ -434,10 +435,32 @@ router.get("/feed/posts", async (req, res) => {
     await seedIfEmpty();
     const userId       = req.headers["x-user-id"] as string | undefined;
     const filterUserId = req.query["userId"] as string | undefined;
+    const mode         = req.query["mode"]   as string | undefined;
 
-    const posts = filterUserId
-      ? await db.select().from(feedPosts).where(eq(feedPosts.userId, filterUserId)).orderBy(desc(feedPosts.createdAt))
-      : await db.select().from(feedPosts).orderBy(desc(feedPosts.createdAt));
+    let posts;
+    if (mode === "following" && userId) {
+      /* Fetch posts only from followed users + own posts */
+      const followingRows = await db
+        .select({ followingId: follows.followingId })
+        .from(follows)
+        .where(eq(follows.followerId, userId));
+      const followingIds = followingRows.map((r) => r.followingId);
+      followingIds.push(userId); /* include own posts */
+
+      if (followingIds.length > 0) {
+        posts = await db
+          .select()
+          .from(feedPosts)
+          .where(inArray(feedPosts.userId, followingIds))
+          .orderBy(desc(feedPosts.createdAt));
+      } else {
+        posts = [];
+      }
+    } else if (filterUserId) {
+      posts = await db.select().from(feedPosts).where(eq(feedPosts.userId, filterUserId)).orderBy(desc(feedPosts.createdAt));
+    } else {
+      posts = await db.select().from(feedPosts).orderBy(desc(feedPosts.createdAt));
+    }
 
     let likedIds     = new Set<string>();
     let bookmarkedIds = new Set<string>();
