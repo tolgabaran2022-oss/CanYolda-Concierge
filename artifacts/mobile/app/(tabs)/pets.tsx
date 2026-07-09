@@ -88,10 +88,6 @@ function PetHeader({ topPad }: { topPad: number }) {
           <Text style={hdr.logoSub}>Sahiplendirme İlanları</Text>
         </View>
       </View>
-      <Pressable style={hdr.bell} hitSlop={8}>
-        <Ionicons name="notifications-outline" size={19} color={DARK} />
-        <View style={hdr.badge} />
-      </Pressable>
     </View>
   );
 }
@@ -101,8 +97,6 @@ const hdr = StyleSheet.create({
   logoIcon:{ width: 34, height: 34, borderRadius: 10, alignItems: "center", justifyContent: "center" },
   logoTxt: { fontSize: 16, fontFamily: "Inter_700Bold", color: DARK, letterSpacing: -0.3 },
   logoSub: { fontSize: 10, fontFamily: "Inter_400Regular", color: BODY, marginTop: 1 },
-  bell:    { width: 40, height: 40, alignItems: "center", justifyContent: "center", backgroundColor: WHITE, borderRadius: 20, borderWidth: 1, borderColor: BORDER, ...IOS_SHADOW },
-  badge:   { position: "absolute", top: 7, right: 7, width: 8, height: 8, borderRadius: 4, backgroundColor: "#FF4444", borderWidth: 1.5, borderColor: BG },
 });
 
 // ── Tab switcher (3-segment) ──────────────────────────────────────────────────
