@@ -1,0 +1,373 @@
+Canyoldaşı uygulamasındaki "İlanlarım" bölümünü Sahibinden.com mantığında profesyonel ilan yönetim sistemi olarak yeniden geliştir.
+
+Amaç:
+Kullanıcı kendi verdiği evcil hayvan ilanlarını tamamen yönetebilsin.
+İlan oluşturma, düzenleme, yayından kaldırma, öne çıkarma, istatistik takip etme ve durum yönetimi çalışsın.
+
+=================================
+İLANLARIM ANA SAYFA
+=================================
+
+Başlık:
+
+"İlanlarım"
+
+Alt açıklama:
+
+"Verdiğin ilanları yönet, performansını takip et"
+
+
+Üst bölüm:
+
+3 istatistik kartı oluştur:
+
+1.
+Toplam İlan
+
+2.
+Aktif İlan
+
+3.
+Toplam Görüntülenme
+
+
+Ek olarak:
+
+Favoriler
+Mesajlar
+Sahiplendirilen
+
+
+=================================
+İLAN DURUM SİSTEMİ
+=================================
+
+Her ilan aşağıdaki durumlardan birine sahip olacak:
+
+
+🟢 Aktif
+
+İlan yayında ve kullanıcılar görebilir.
+
+
+🟡 Onay Bekliyor
+
+Admin kontrolünde.
+
+
+🔴 Pasif
+
+Kullanıcı ilanı kapattı.
+
+
+⚫ Sahiplendirildi
+
+Hayvan yeni yuvasını buldu.
+
+
+⏳ Süresi Doldu
+
+Öne çıkarma veya ilan süresi bitti.
+
+
+=================================
+FİLTRE SİSTEMİ
+=================================
+
+Yatay filtre:
+
+[Tümü]
+[Aktif]
+[Onay Bekleyen]
+[Pasif]
+[Sahiplendirilen]
+
+
+=================================
+İLAN KART TASARIMI
+=================================
+
+Her ilan kartında:
+
+
+Hayvan fotoğrafı
+
+
+İlan başlığı
+
+Örnek:
+
+"Misket"
+
+
+Tür:
+Kedi
+
+
+Yaş:
+3 aylık
+
+
+Konum:
+
+Kadıköy İstanbul
+
+
+Durum etiketi
+
+
+İlan tarihi
+
+
+İstatistik:
+
+👁 Görüntülenme
+
+❤️ Favori
+
+💬 Mesaj
+
+
+Butonlar:
+
+
+Düzenle
+
+İlan bilgilerini değiştirsin.
+
+
+Önizle
+
+Kullanıcının gördüğü ilan detayını açsın.
+
+
+Pasife Al
+
+İlanı yayından kaldırsın.
+
+
+Sahiplendirildi
+
+İlan durumunu değiştirsin.
+
+
+Sil
+
+Onay ekranı göstererek silsin.
+
+
+
+=================================
+İLAN PERFORMANS EKRANI
+=================================
+
+Her ilanda:
+
+"Performans"
+
+bölümü olsun.
+
+
+Göster:
+
+Son 7 gün:
+
+Görüntülenme grafiği
+
+Favori artışı
+
+Mesaj sayısı
+
+
+Örnek:
+
+Bu hafta:
+
+👁 245 görüntülenme
+
+❤️ 32 favori
+
+💬 8 mesaj
+
+
+
+=================================
+ÖNE ÇIKARMA SİSTEMİ
+=================================
+
+Her aktif ilanda:
+
+
+⭐ İlanı Öne Çıkar
+
+
+butonu olsun.
+
+
+Paketler:
+
+
+Standart
+
+49 TL
+
+24 saat
+
+
+
+Premium
+
+99 TL
+
+7 gün
+
+⭐ Önerilen
+
+
+
+VIP
+
+199 TL
+
+30 gün
+
+
+
+Öne çıkan ilan:
+
+- Liste başına çıkar
+- Ana sayfada gösterilir
+- Mor premium rozet alır
+
+
+
+=================================
+İLAN DÜZENLEME
+=================================
+
+Kullanıcı düzenleyebilsin:
+
+
+Fotoğraf değiştir
+
+Başlık değiştir
+
+Açıklama değiştir
+
+Konum değiştir
+
+Yaş değiştir
+
+Sağlık bilgisi değiştir
+
+Aşı bilgisi değiştir
+
+
+
+=================================
+VERİTABANI
+=================================
+
+listings tablosu:
+
+
+id
+
+user_id
+
+title
+
+animal_type
+
+breed
+
+age
+
+gender
+
+description
+
+location
+
+images
+
+status
+
+views_count
+
+favorite_count
+
+message_count
+
+created_at
+
+updated_at
+
+
+
+featured tablosu:
+
+
+id
+
+listing_id
+
+package
+
+start_date
+
+end_date
+
+status
+
+
+
+favorites tablosu:
+
+
+id
+
+user_id
+
+listing_id
+
+
+
+messages tablosu:
+
+
+id
+
+sender_id
+
+receiver_id
+
+listing_id
+
+message
+
+created_at
+
+
+
+=================================
+OTOMATİK SİSTEMLER
+=================================
+
+
+- İlan silinince geri alınamaz onay iste.
+- Sahiplendirildi yapılınca ilan aramalardan kalksın.
+- Öne çıkarma süresi bitince otomatik normale dönsün.
+- En çok görüntülenen ilanları üst sıraya taşı.
+- Kullanıcı kendi ilanını görebilsin.
+- Başka kullanıcı kendi ilanını düzenleyemesin.
+
+
+
+Tasarım:
+
+Sahibinden.com ilan yönetimi + Instagram profil yönetimi + Apple iOS premium tasarım.
+
+Mevcut Canyoldaşı mor renk sistemi korunacak.
+
+Mobil uygulama kalitesinde responsive yap.

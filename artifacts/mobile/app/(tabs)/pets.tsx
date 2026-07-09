@@ -3,10 +3,11 @@ import * as Haptics from "expo-haptics";
 import { Image } from "expo-image";
 import { LinearGradient } from "expo-linear-gradient";
 import { useRouter } from "expo-router";
-import React, { useMemo, useRef, useState } from "react";
+import React, { useCallback, useMemo, useRef, useState } from "react";
 import {
   Alert,
   FlatList,
+  KeyboardAvoidingView,
   Modal,
   Platform,
   Pressable,
@@ -48,8 +49,8 @@ const DOG_IMG = require("../../assets/hero-puppy.png");
 
 type Tab        = "create" | "mylistings" | "listings";
 type Filter     = "all" | "cat" | "dog" | "bird" | "rabbit" | "new" | "other";
-type MyFilter   = "all" | "active" | "passive" | "pending";
-type ListStatus = "Aktif" | "Onay Bekliyor" | "Pasif" | "Süresi Doldu";
+type MyFilter   = "all" | "active" | "passive" | "pending" | "adopted";
+type ListStatus = "Aktif" | "Onay Bekliyor" | "Pasif" | "Sahiplendirildi" | "Süresi Doldu";
 
 const TYPE_NORMALIZE: Record<string, Filter> = {
   Kedi: "cat", kedi: "cat", cat: "cat",
@@ -561,17 +562,19 @@ const sm = StyleSheet.create({
 
 // ── My Listings Section (Premium Redesign) ────────────────────────────────────
 const MY_FILTERS: { key: MyFilter; label: string }[] = [
-  { key: "all",     label: "Tümü"     },
-  { key: "active",  label: "Aktif"    },
-  { key: "passive", label: "Pasif"    },
-  { key: "pending", label: "Bekleyen" },
+  { key: "all",     label: "Tümü"          },
+  { key: "active",  label: "Aktif"         },
+  { key: "passive", label: "Pasif"         },
+  { key: "pending", label: "Bekleyen"      },
+  { key: "adopted", label: "Sahiplendirilen" },
 ];
 
 const STATUS_CFG: Record<ListStatus, { color: string; bg: string; icon: keyof typeof Ionicons.glyphMap }> = {
-  "Aktif":         { color: "#18A558", bg: "#E6F7EE", icon: "checkmark-circle"     },
-  "Onay Bekliyor": { color: "#D97706", bg: "#FEF3C7", icon: "time-outline"         },
-  "Pasif":         { color: BODY,      bg: `${BODY}14`, icon: "pause-circle-outline" },
-  "Süresi Doldu":  { color: "#DC2626", bg: "#FEE2E2", icon: "close-circle-outline"  },
+  "Aktif":           { color: "#18A558", bg: "#E6F7EE",    icon: "checkmark-circle"     },
+  "Onay Bekliyor":   { color: "#D97706", bg: "#FEF3C7",    icon: "time-outline"         },
+  "Pasif":           { color: BODY,      bg: `${BODY}14`,  icon: "pause-circle-outline" },
+  "Sahiplendirildi": { color: P,         bg: `${P}14`,     icon: "heart-circle"         },
+  "Süresi Doldu":    { color: "#DC2626", bg: "#FEE2E2",    icon: "close-circle-outline" },
 };
 
 const BOOST_PKGS = [
@@ -600,18 +603,26 @@ function mockFavs(id: string): number {
   for (let i = 0; i < id.length; i++) h = ((h << 3) + id.charCodeAt(i)) | 0;
   return 1 + Math.abs(h % 47);
 }
+function mockMsgs(id: string): number {
+  let h = 0;
+  for (let i = 0; i < id.length; i++) h = ((h << 2) ^ id.charCodeAt(i)) | 0;
+  return Math.abs(h % 19);
+}
 
 interface MyCard {
   listing: AdoptionListing;
   status:  ListStatus;
   views:   number;
   favs:    number;
+  msgs:    number;
 }
 
 function MyListingCard({
   card,
   onEdit,
   onTogglePassive,
+  onAdopted,
+  onPreview,
   onDelete,
   onBoost,
   isFeatured,
@@ -620,21 +631,28 @@ function MyListingCard({
   card: MyCard;
   onEdit: () => void;
   onTogglePassive: () => void;
+  onAdopted: () => void;
+  onPreview: () => void;
   onDelete: () => void;
   onBoost: (packageId: string) => Promise<void>;
   isFeatured?: boolean;
   featuredUntil?: string | null;
 }) {
-  const { listing, status, views, favs } = card;
+  const { listing, status, views, favs, msgs } = card;
   const cfg = STATUS_CFG[status];
   const [selectedPkg, setSelectedPkg] = useState<string | null>(null);
   const [boosting, setBoosting] = useState(false);
+  const [perfOpen, setPerfOpen] = useState(false);
+
+  const isAdopted  = status === "Sahiplendirildi";
+  const canBoost   = status === "Aktif" && !isFeatured;
+  const canPassive = status === "Aktif" || status === "Pasif";
 
   return (
     <View style={ml.cardOuter}>
 
       {/* ── Main card ── */}
-      <View style={ml.card}>
+      <View style={[ml.card, isFeatured && ml.cardFeatured]}>
 
         {/* Hero photo */}
         <View style={ml.heroWrap}>
@@ -689,58 +707,126 @@ function MyListingCard({
           <View style={ml.locRow}>
             <Ionicons name="location-sharp" size={12} color={P} />
             <Text style={ml.locTxt} numberOfLines={1}>{listing.location}</Text>
-          </View>
-
-          <View style={ml.statsBar}>
-            <View style={ml.statChip}>
-              <Ionicons name="eye-outline" size={12} color={P} />
-              <Text style={ml.statChipTxt}>{views} görüntülenme</Text>
-            </View>
-            <View style={[ml.statChip, ml.statChipHeart]}>
-              <Ionicons name="heart-outline" size={12} color="#DC2626" />
-              <Text style={[ml.statChipTxt, { color: "#DC2626" }]}>{favs} favori</Text>
-            </View>
             <Text style={ml.timeTxt}>{formatTimeAgo(listing.createdAt)}</Text>
           </View>
 
+          {/* Stats bar */}
+          <View style={ml.statsBar}>
+            <View style={ml.statChip}>
+              <Ionicons name="eye-outline" size={12} color={P} />
+              <Text style={ml.statChipTxt}>{views}</Text>
+            </View>
+            <View style={[ml.statChip, ml.statChipHeart]}>
+              <Ionicons name="heart-outline" size={12} color="#DC2626" />
+              <Text style={[ml.statChipTxt, { color: "#DC2626" }]}>{favs}</Text>
+            </View>
+            <View style={[ml.statChip, ml.statChipMsg]}>
+              <Ionicons name="chatbubble-outline" size={12} color="#0070F3" />
+              <Text style={[ml.statChipTxt, { color: "#0070F3" }]}>{msgs}</Text>
+            </View>
+            <Pressable
+              style={ml.perfBtn}
+              onPress={() => { Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light); setPerfOpen((v) => !v); }}
+            >
+              <Ionicons name={perfOpen ? "chevron-up" : "bar-chart-outline"} size={12} color={BODY} />
+              <Text style={ml.perfBtnTxt}>Performans</Text>
+            </Pressable>
+          </View>
+
+          {/* ── Performance panel ── */}
+          {perfOpen && (
+            <View style={ml.perfPanel}>
+              <Text style={ml.perfPanelTitle}>Son 7 Gün</Text>
+              <View style={ml.perfRow}>
+                <View style={ml.perfItem}>
+                  <Ionicons name="eye" size={16} color={P} />
+                  <Text style={ml.perfVal}>{views}</Text>
+                  <Text style={ml.perfLbl}>Görüntülenme</Text>
+                </View>
+                <View style={ml.perfDivV} />
+                <View style={ml.perfItem}>
+                  <Ionicons name="heart" size={16} color="#DC2626" />
+                  <Text style={[ml.perfVal, { color: "#DC2626" }]}>{favs}</Text>
+                  <Text style={ml.perfLbl}>Favori</Text>
+                </View>
+                <View style={ml.perfDivV} />
+                <View style={ml.perfItem}>
+                  <Ionicons name="chatbubble" size={16} color="#0070F3" />
+                  <Text style={[ml.perfVal, { color: "#0070F3" }]}>{msgs}</Text>
+                  <Text style={ml.perfLbl}>Mesaj</Text>
+                </View>
+              </View>
+            </View>
+          )}
+
           <View style={ml.divider} />
 
+          {/* ── Action row 1: Düzenle | Önizle | Pasife Al ── */}
           <View style={ml.actions}>
             <Pressable
               style={({ pressed }) => [ml.btn, ml.btnEdit, { opacity: pressed ? 0.8 : 1 }]}
-              onPress={onEdit}
+              onPress={() => { Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light); onEdit(); }}
             >
               <Ionicons name="create-outline" size={13} color={P} />
               <Text style={[ml.btnTxt, { color: P }]}>Düzenle</Text>
             </Pressable>
 
             <Pressable
-              style={({ pressed }) => [ml.btn, ml.btnPassive, { opacity: pressed ? 0.8 : 1 }]}
-              onPress={onTogglePassive}
+              style={({ pressed }) => [ml.btn, ml.btnPreview, { opacity: pressed ? 0.8 : 1 }]}
+              onPress={() => { Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light); onPreview(); }}
             >
-              <Ionicons
-                name={status === "Pasif" ? "play-circle-outline" : "pause-circle-outline"}
-                size={13}
-                color={BODY}
-              />
-              <Text style={[ml.btnTxt, { color: BODY }]}>
-                {status === "Pasif" ? "Aktif Et" : "Pasife Al"}
-              </Text>
+              <Ionicons name="eye-outline" size={13} color={BODY} />
+              <Text style={[ml.btnTxt, { color: BODY }]}>Önizle</Text>
             </Pressable>
 
-            <Pressable
-              style={({ pressed }) => [ml.btn, ml.btnDel, { opacity: pressed ? 0.8 : 1 }]}
-              onPress={onDelete}
-            >
-              <Ionicons name="trash-outline" size={13} color="#DC2626" />
-              <Text style={[ml.btnTxt, { color: "#DC2626" }]}>Sil</Text>
-            </Pressable>
+            {canPassive && (
+              <Pressable
+                style={({ pressed }) => [ml.btn, ml.btnPassive, { opacity: pressed ? 0.8 : 1 }]}
+                onPress={() => { Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium); onTogglePassive(); }}
+              >
+                <Ionicons
+                  name={status === "Pasif" ? "play-circle-outline" : "pause-circle-outline"}
+                  size={13}
+                  color={BODY}
+                />
+                <Text style={[ml.btnTxt, { color: BODY }]}>
+                  {status === "Pasif" ? "Aktif Et" : "Pasife Al"}
+                </Text>
+              </Pressable>
+            )}
           </View>
+
+          {/* ── Action row 2: Sahiplendirildi + Sil ── */}
+          {!isAdopted && (
+            <View style={ml.actions}>
+              <Pressable
+                style={({ pressed }) => [ml.btn, ml.btnAdopted, { flex: 2, opacity: pressed ? 0.8 : 1 }]}
+                onPress={() => { Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium); onAdopted(); }}
+              >
+                <Ionicons name="heart-circle-outline" size={13} color="#18A558" />
+                <Text style={[ml.btnTxt, { color: "#18A558" }]}>Sahiplendirildi 🏠</Text>
+              </Pressable>
+              <Pressable
+                style={({ pressed }) => [ml.btn, ml.btnDel, { opacity: pressed ? 0.8 : 1 }]}
+                onPress={() => { Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium); onDelete(); }}
+              >
+                <Ionicons name="trash-outline" size={13} color="#DC2626" />
+                <Text style={[ml.btnTxt, { color: "#DC2626" }]}>Sil</Text>
+              </Pressable>
+            </View>
+          )}
+
+          {isAdopted && (
+            <View style={ml.adoptedBanner}>
+              <Ionicons name="heart-circle" size={16} color={P} />
+              <Text style={ml.adoptedBannerTxt}>Tebrikler! Bu hayvan yeni yuvasını buldu 🏠</Text>
+            </View>
+          )}
         </View>
       </View>
 
       {/* ── Boost card (active & not featured) ── */}
-      {status === "Aktif" && !isFeatured && (
+      {canBoost && (
         <View style={ml.boostCard}>
 
           <View style={ml.boostHeader}>
@@ -847,6 +933,15 @@ function MyListingCard({
   );
 }
 
+interface EditForm {
+  petName: string;
+  petType: string;
+  petAge: string;
+  location: string;
+  description: string;
+  contactInfo: string;
+}
+
 function MyListingsSection({
   userId,
   userEmail,
@@ -864,47 +959,86 @@ function MyListingsSection({
   botPad: number;
   onAdd: () => void;
 }) {
-  const router = useRouter();
   const { activateBoost } = useBoost();
+  const { updateListing } = useAdoption();
+
+  // ── Boost success modal ──
   const [successModal, setSuccessModal] = useState<{
     petName: string;
     pkgLabel: string;
     expiresAt: string;
   } | null>(null);
 
-  const handleBoost = async (listingId: string, petName: string, packageId: string) => {
-    const pkg = BOOST_PKGS.find((p) => p.id === packageId);
-    const result = await activateBoost({ listingId, userEmail, packageId });
-    setSuccessModal({
-      petName,
-      pkgLabel: pkg?.label ?? packageId,
-      expiresAt: result.expiresAt,
-    });
-    Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
-  };
+  // ── Edit modal ──
+  const [editTarget, setEditTarget] = useState<AdoptionListing | null>(null);
+  const [editForm, setEditForm] = useState<EditForm>({ petName: "", petType: "", petAge: "", location: "", description: "", contactInfo: "" });
+  const [saving, setSaving] = useState(false);
 
-  const myListings = useMemo(
-    () => listings.filter((l) => l.userId === userId),
-    [listings, userId]
-  );
+  const openEdit = useCallback((listing: AdoptionListing) => {
+    setEditForm({
+      petName: listing.petName,
+      petType: listing.petType,
+      petAge: listing.petAge ?? "",
+      location: listing.location,
+      description: listing.description,
+      contactInfo: listing.contactInfo,
+    });
+    setEditTarget(listing);
+  }, []);
+
+  const saveEdit = useCallback(async () => {
+    if (!editTarget || saving) return;
+    setSaving(true);
+    try {
+      await updateListing(editTarget.id, {
+        petName:     editForm.petName.trim()     || editTarget.petName,
+        petType:     editForm.petType.trim()     || editTarget.petType,
+        petAge:      editForm.petAge.trim()      || undefined,
+        location:    editForm.location.trim()    || editTarget.location,
+        description: editForm.description.trim() || editTarget.description,
+        contactInfo: editForm.contactInfo.trim() || editTarget.contactInfo,
+      });
+      Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
+      setEditTarget(null);
+    } finally {
+      setSaving(false);
+    }
+  }, [editTarget, editForm, saving, updateListing]);
+
+  // ── Status map (local, not persisted) ──
   const [statusMap, setStatusMap] = useState<Record<string, ListStatus>>({});
   const [myFilter, setMyFilter] = useState<MyFilter>("all");
 
-  const getStatus = (id: string): ListStatus => statusMap[id] ?? "Aktif";
+  const getStatus = useCallback((id: string): ListStatus => statusMap[id] ?? "Aktif", [statusMap]);
 
-  const togglePassive = (id: string) => {
-    Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
+  const togglePassive = useCallback((id: string) => {
     setStatusMap((prev) => ({
       ...prev,
       [id]: prev[id] === "Pasif" ? "Aktif" : "Pasif",
     }));
-  };
+  }, []);
 
-  const handleDelete = (listing: AdoptionListing) => {
-    Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
+  const handleAdopted = useCallback((id: string, petName: string) => {
+    Alert.alert(
+      "Sahiplendirildi 🏠",
+      `"${petName}" artık yeni yuvasında. İlanı sahiplendirildi olarak işaretlensin mi?`,
+      [
+        { text: "İptal", style: "cancel" },
+        {
+          text: "Evet, İşaretle",
+          onPress: () => {
+            Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
+            setStatusMap((prev) => ({ ...prev, [id]: "Sahiplendirildi" }));
+          },
+        },
+      ]
+    );
+  }, []);
+
+  const handleDelete = useCallback((listing: AdoptionListing) => {
     Alert.alert(
       "İlanı Sil",
-      `"${listing.petName}" ilanını kalıcı olarak silmek istiyor musun?`,
+      `"${listing.petName}" ilanını kalıcı olarak silmek istiyor musun? Bu işlem geri alınamaz.`,
       [
         { text: "İptal", style: "cancel" },
         {
@@ -917,7 +1051,19 @@ function MyListingsSection({
         },
       ]
     );
-  };
+  }, [deleteListing]);
+
+  const handleBoost = useCallback(async (listingId: string, petName: string, packageId: string) => {
+    const pkg = BOOST_PKGS.find((p) => p.id === packageId);
+    const result = await activateBoost({ listingId, userEmail, packageId });
+    setSuccessModal({ petName, pkgLabel: pkg?.label ?? packageId, expiresAt: result.expiresAt });
+    Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
+  }, [activateBoost, userEmail]);
+
+  const myListings = useMemo(
+    () => listings.filter((l) => l.userId === userId),
+    [listings, userId]
+  );
 
   const cards: MyCard[] = useMemo(
     () =>
@@ -926,30 +1072,30 @@ function MyListingsSection({
         status: getStatus(l.id),
         views: mockViews(l.id),
         favs: mockFavs(l.id),
+        msgs: mockMsgs(l.id),
       })),
     [myListings, statusMap]
   );
 
-  const totalViews  = useMemo(() => cards.reduce((s, c) => s + c.views, 0), [cards]);
-  const totalFavs   = useMemo(() => cards.reduce((s, c) => s + c.favs,  0), [cards]);
-  const activeCount = useMemo(() => cards.filter((c) => c.status === "Aktif").length, [cards]);
+  const totalViews    = useMemo(() => cards.reduce((s, c) => s + c.views, 0), [cards]);
+  const totalFavs     = useMemo(() => cards.reduce((s, c) => s + c.favs,  0), [cards]);
+  const totalMsgs     = useMemo(() => cards.reduce((s, c) => s + c.msgs,  0), [cards]);
+  const activeCount   = useMemo(() => cards.filter((c) => c.status === "Aktif").length, [cards]);
+  const adoptedCount  = useMemo(() => cards.filter((c) => c.status === "Sahiplendirildi").length, [cards]);
 
   const FILTER_MAP: Record<MyFilter, (c: MyCard) => boolean> = {
     all:     () => true,
     active:  (c) => c.status === "Aktif",
     passive: (c) => c.status === "Pasif",
     pending: (c) => c.status === "Onay Bekliyor",
+    adopted: (c) => c.status === "Sahiplendirildi",
   };
   const visible = cards.filter(FILTER_MAP[myFilter]);
 
   return (
     <>
-    <Modal
-      visible={successModal !== null}
-      transparent
-      animationType="fade"
-      onRequestClose={() => setSuccessModal(null)}
-    >
+    {/* ── Boost success modal ── */}
+    <Modal visible={successModal !== null} transparent animationType="fade" onRequestClose={() => setSuccessModal(null)}>
       <Pressable style={sm.overlay} onPress={() => setSuccessModal(null)}>
         <View style={sm.card}>
           <Text style={sm.emoji}>🎉</Text>
@@ -982,13 +1128,109 @@ function MyListingsSection({
         </View>
       </Pressable>
     </Modal>
+
+    {/* ── Edit listing modal ── */}
+    <Modal visible={editTarget !== null} transparent animationType="slide" onRequestClose={() => setEditTarget(null)}>
+      <KeyboardAvoidingView behavior={Platform.OS === "ios" ? "padding" : undefined} style={{ flex: 1 }}>
+        <Pressable style={ed.overlay} onPress={() => setEditTarget(null)}>
+          <Pressable style={ed.sheet} onPress={(e) => e.stopPropagation()}>
+            {/* Header */}
+            <View style={ed.sheetHeader}>
+              <View>
+                <Text style={ed.sheetTitle}>İlanı Düzenle</Text>
+                <Text style={ed.sheetSub}>{editTarget?.petName}</Text>
+              </View>
+              <Pressable onPress={() => setEditTarget(null)} style={ed.closeBtn}>
+                <Ionicons name="close" size={20} color={BODY} />
+              </Pressable>
+            </View>
+
+            <ScrollView showsVerticalScrollIndicator={false} contentContainerStyle={{ gap: 12 }}>
+              {/* Photo hint */}
+              {editTarget?.photo && (
+                <View style={ed.photoRow}>
+                  <Image source={{ uri: editTarget.photo }} style={ed.photoThumb} contentFit="cover" />
+                  <View style={{ flex: 1 }}>
+                    <Text style={ed.fieldLabel}>Fotoğraf</Text>
+                    <Text style={ed.fieldHint}>Fotoğraf değiştirme yeni ilan oluşturarak yapılabilir</Text>
+                  </View>
+                </View>
+              )}
+
+              {([ 
+                { label: "Hayvan Adı", key: "petName", placeholder: "örn. Misket", multiline: false },
+                { label: "Tür",        key: "petType", placeholder: "örn. Kedi, Köpek, Tavşan", multiline: false },
+                { label: "Yaş / Cins", key: "petAge",  placeholder: "örn. Tekir • 3 aylık", multiline: false },
+                { label: "Konum",      key: "location", placeholder: "örn. Kadıköy, İstanbul", multiline: false },
+              ] as const).map((f) => (
+                <View key={f.key} style={ed.fieldWrap}>
+                  <Text style={ed.fieldLabel}>{f.label}</Text>
+                  <TextInput
+                    style={ed.input}
+                    value={editForm[f.key]}
+                    onChangeText={(t) => setEditForm((prev) => ({ ...prev, [f.key]: t }))}
+                    placeholder={f.placeholder}
+                    placeholderTextColor={`${BODY}60`}
+                  />
+                </View>
+              ))}
+
+              <View style={ed.fieldWrap}>
+                <Text style={ed.fieldLabel}>Açıklama</Text>
+                <TextInput
+                  style={[ed.input, ed.inputMulti]}
+                  value={editForm.description}
+                  onChangeText={(t) => setEditForm((prev) => ({ ...prev, description: t }))}
+                  placeholder="Hayvanınız hakkında bilgi verin..."
+                  placeholderTextColor={`${BODY}60`}
+                  multiline
+                  numberOfLines={4}
+                />
+              </View>
+
+              <View style={ed.fieldWrap}>
+                <Text style={ed.fieldLabel}>İletişim Bilgisi</Text>
+                <TextInput
+                  style={ed.input}
+                  value={editForm.contactInfo}
+                  onChangeText={(t) => setEditForm((prev) => ({ ...prev, contactInfo: t }))}
+                  placeholder="Email veya telefon"
+                  placeholderTextColor={`${BODY}60`}
+                  keyboardType="email-address"
+                />
+              </View>
+            </ScrollView>
+
+            <View style={ed.footer}>
+              <Pressable
+                style={({ pressed }) => [ed.cancelBtn, { opacity: pressed ? 0.8 : 1 }]}
+                onPress={() => setEditTarget(null)}
+              >
+                <Text style={ed.cancelTxt}>Vazgeç</Text>
+              </Pressable>
+              <Pressable
+                style={[ed.saveBtn, { flex: 2, opacity: saving ? 0.7 : 1 }]}
+                onPress={saveEdit}
+                disabled={saving}
+              >
+                <LinearGradient colors={[P2, P]} start={{ x: 0, y: 0 }} end={{ x: 1, y: 0 }} style={ed.saveGrad}>
+                  <Ionicons name={saving ? "sync-outline" : "checkmark-circle-outline"} size={16} color={WHITE} />
+                  <Text style={ed.saveTxt}>{saving ? "Kaydediliyor..." : "Kaydet"}</Text>
+                </LinearGradient>
+              </Pressable>
+            </View>
+          </Pressable>
+        </Pressable>
+      </KeyboardAvoidingView>
+    </Modal>
+
     <ScrollView showsVerticalScrollIndicator={false} contentContainerStyle={{ paddingBottom: botPad + 24 }}>
 
       {/* ── Section header ── */}
       <View style={ml.secHeader}>
         <View>
           <Text style={ml.secTitle}>İlanlarım</Text>
-          <Text style={ml.secSub}>Evcil dostlarının ilanlarını yönet</Text>
+          <Text style={ml.secSub}>Verdiğin ilanları yönet, performansını takip et</Text>
         </View>
         <Pressable
           style={({ pressed }) => [{ opacity: pressed ? 0.85 : 1 }]}
@@ -1001,21 +1243,30 @@ function MyListingsSection({
         </Pressable>
       </View>
 
-      {/* ── Premium stat cards ── */}
+      {/* ── Stat cards — row 1 ── */}
       <View style={ml.statsRow}>
         {([
-          { label: "Aktif İlan",   val: activeCount, icon: "checkmark-circle" as const, g: ["#34D399", "#059669"] as const },
-          { label: "Görüntülenme", val: totalViews,  icon: "eye"              as const, g: [P2, P]                as const },
-          { label: "Favori",       val: totalFavs,   icon: "heart"            as const, g: ["#F87171", "#DC2626"] as const },
+          { label: "Toplam İlan",   val: myListings.length, icon: "list"            as const, g: [DARK, P]              as const },
+          { label: "Aktif İlan",    val: activeCount,        icon: "checkmark-circle" as const, g: ["#34D399", "#059669"] as const },
+          { label: "Görüntülenme",  val: totalViews,         icon: "eye"              as const, g: [P2, P]               as const },
         ] as const).map((stat) => (
-          <LinearGradient
-            key={stat.label}
-            colors={stat.g}
-            start={{ x: 0, y: 0 }}
-            end={{ x: 1, y: 1 }}
-            style={ml.statCard}
-          >
-            <Ionicons name={stat.icon} size={22} color="rgba(255,255,255,0.9)" />
+          <LinearGradient key={stat.label} colors={stat.g} start={{ x: 0, y: 0 }} end={{ x: 1, y: 1 }} style={ml.statCard}>
+            <Ionicons name={stat.icon} size={20} color="rgba(255,255,255,0.9)" />
+            <Text style={ml.statVal}>{stat.val}</Text>
+            <Text style={ml.statLbl}>{stat.label}</Text>
+          </LinearGradient>
+        ))}
+      </View>
+
+      {/* ── Stat cards — row 2 ── */}
+      <View style={[ml.statsRow, { marginTop: 0, marginBottom: 14 }]}>
+        {([
+          { label: "Favori",          val: totalFavs,     icon: "heart"        as const, g: ["#F87171", "#DC2626"] as const },
+          { label: "Mesaj",           val: totalMsgs,     icon: "chatbubble"   as const, g: ["#60A5FA", "#0070F3"] as const },
+          { label: "Sahiplendirilen", val: adoptedCount,  icon: "home"         as const, g: ["#A78BFA", DARK]     as const },
+        ] as const).map((stat) => (
+          <LinearGradient key={stat.label} colors={stat.g} start={{ x: 0, y: 0 }} end={{ x: 1, y: 1 }} style={ml.statCard}>
+            <Ionicons name={stat.icon} size={20} color="rgba(255,255,255,0.9)" />
             <Text style={ml.statVal}>{stat.val}</Text>
             <Text style={ml.statLbl}>{stat.label}</Text>
           </LinearGradient>
@@ -1032,13 +1283,7 @@ function MyListingsSection({
         {MY_FILTERS.map((f) => {
           const isA = myFilter === f.key;
           return isA ? (
-            <LinearGradient
-              key={f.key}
-              colors={[P2, P]}
-              start={{ x: 0, y: 0 }}
-              end={{ x: 1, y: 0 }}
-              style={ml.filterChipActive}
-            >
+            <LinearGradient key={f.key} colors={[P2, P]} start={{ x: 0, y: 0 }} end={{ x: 1, y: 0 }} style={ml.filterChipActive}>
               <Text style={ml.filterLblActive}>{f.label}</Text>
             </LinearGradient>
           ) : (
@@ -1090,8 +1335,10 @@ function MyListingsSection({
           card={c}
           isFeatured={boostStatuses[c.listing.id]?.isFeatured ?? false}
           featuredUntil={boostStatuses[c.listing.id]?.expiresAt ?? null}
-          onEdit={() => router.push(`/adoption/${c.listing.id}`)}
+          onEdit={() => openEdit(c.listing)}
           onTogglePassive={() => togglePassive(c.listing.id)}
+          onAdopted={() => handleAdopted(c.listing.id, c.listing.petName)}
+          onPreview={() => Alert.alert("Önizleme", `"${c.listing.petName}" ilanı kullanıcılara bu şekilde görünüyor.\n\n📍 ${c.listing.location}\n\n${c.listing.description}`)}
           onDelete={() => handleDelete(c.listing)}
           onBoost={(packageId) => handleBoost(c.listing.id, c.listing.petName, packageId)}
         />
@@ -1114,6 +1361,7 @@ const ml = StyleSheet.create({
     overflow: "hidden",
     ...CARD_SHADOW,
   },
+  cardFeatured: { borderColor: P, borderWidth: 2 },
 
   // Hero photo
   heroWrap:     { width: "100%", height: 190, position: "relative" },
@@ -1155,21 +1403,41 @@ const ml = StyleSheet.create({
   locRow: { flexDirection: "row", alignItems: "center", gap: 4 },
   locTxt: { flex: 1, fontSize: 12, fontFamily: "Inter_400Regular", color: BODY },
 
-  statsBar:      { flexDirection: "row", alignItems: "center", gap: 8, flexWrap: "wrap" },
+  statsBar:      { flexDirection: "row", alignItems: "center", gap: 6, flexWrap: "wrap" },
   statChip:      { flexDirection: "row", alignItems: "center", gap: 4, backgroundColor: `${P}0D`, borderRadius: 8, paddingHorizontal: 8, paddingVertical: 4 },
   statChipHeart: { backgroundColor: "rgba(220,38,38,0.07)" },
+  statChipMsg:   { backgroundColor: "rgba(0,112,243,0.07)" },
   statChipTxt:   { fontSize: 11, fontFamily: "Inter_600SemiBold", color: P },
   timeTxt:       { fontSize: 11, fontFamily: "Inter_400Regular", color: `${BODY}80`, marginLeft: "auto" as any },
+
+  // Performance button
+  perfBtn:    { flexDirection: "row", alignItems: "center", gap: 3, marginLeft: "auto" as any, paddingHorizontal: 8, paddingVertical: 4, backgroundColor: `${BODY}0D`, borderRadius: 8 },
+  perfBtnTxt: { fontSize: 10, fontFamily: "Inter_500Medium", color: BODY },
+
+  // Performance panel
+  perfPanel:      { backgroundColor: `${P}07`, borderRadius: 14, padding: 12, borderWidth: 1, borderColor: `${P}12` },
+  perfPanelTitle: { fontSize: 11, fontFamily: "Inter_700Bold", color: P, marginBottom: 10, letterSpacing: 0.5 },
+  perfRow:        { flexDirection: "row", alignItems: "center", justifyContent: "space-around" },
+  perfItem:       { alignItems: "center", gap: 4 },
+  perfDivV:       { width: 1, height: 40, backgroundColor: `${P}18` },
+  perfVal:        { fontSize: 18, fontFamily: "Inter_700Bold", color: DARK },
+  perfLbl:        { fontSize: 10, fontFamily: "Inter_400Regular", color: BODY },
 
   divider: { height: 1, backgroundColor: `${P}08` },
 
   // Actions
-  actions:   { flexDirection: "row", gap: 8 },
-  btn:       { flex: 1, flexDirection: "row", alignItems: "center", justifyContent: "center", gap: 5, paddingVertical: 10, borderRadius: 12, borderWidth: 1 },
-  btnEdit:   { backgroundColor: `${P}08`,     borderColor: `${P}28`    },
-  btnPassive:{ backgroundColor: `${BODY}08`,  borderColor: `${BODY}28` },
-  btnDel:    { backgroundColor: "#FFF5F5",    borderColor: "#FFD5D5"   },
-  btnTxt:    { fontSize: 11, fontFamily: "Inter_600SemiBold" },
+  actions:    { flexDirection: "row", gap: 7 },
+  btn:        { flex: 1, flexDirection: "row", alignItems: "center", justifyContent: "center", gap: 5, paddingVertical: 10, borderRadius: 12, borderWidth: 1 },
+  btnEdit:    { backgroundColor: `${P}08`,         borderColor: `${P}28`         },
+  btnPreview: { backgroundColor: `${BODY}08`,       borderColor: `${BODY}28`      },
+  btnPassive: { backgroundColor: `${BODY}08`,       borderColor: `${BODY}28`      },
+  btnAdopted: { backgroundColor: "rgba(24,165,88,0.07)", borderColor: "rgba(24,165,88,0.25)" },
+  btnDel:     { backgroundColor: "#FFF5F5",         borderColor: "#FFD5D5"        },
+  btnTxt:     { fontSize: 11, fontFamily: "Inter_600SemiBold" },
+
+  // Adopted banner
+  adoptedBanner:    { flexDirection: "row", alignItems: "center", gap: 8, backgroundColor: `${P}07`, borderRadius: 12, padding: 10, borderWidth: 1, borderColor: `${P}18` },
+  adoptedBannerTxt: { flex: 1, fontSize: 12, fontFamily: "Inter_500Medium", color: P, lineHeight: 17 },
 
   // Boost card
   boostCard: {
@@ -1275,6 +1543,44 @@ const ml = StyleSheet.create({
   emptySub:       { fontSize: 13, fontFamily: "Inter_400Regular", color: BODY, textAlign: "center", lineHeight: 20 },
   emptyFilter:    { alignItems: "center", paddingTop: 40, gap: 10 },
   emptyFilterTxt: { fontSize: 14, fontFamily: "Inter_400Regular", color: BODY },
+});
+
+// ── Edit modal styles ─────────────────────────────────────────────────────────
+const ed = StyleSheet.create({
+  overlay:    { flex: 1, backgroundColor: "rgba(20,8,46,0.55)", justifyContent: "flex-end" },
+  sheet:      {
+    backgroundColor: WHITE, borderTopLeftRadius: 28, borderTopRightRadius: 28,
+    padding: 22, paddingBottom: 32, maxHeight: "92%",
+    ...Platform.select({
+      ios:     { shadowColor: DARK, shadowOffset: { width: 0, height: -8 }, shadowOpacity: 0.18, shadowRadius: 24 },
+      android: { elevation: 16 },
+      default: {},
+    }),
+  },
+  sheetHeader: { flexDirection: "row", alignItems: "center", justifyContent: "space-between", marginBottom: 18 },
+  sheetTitle:  { fontSize: 18, fontFamily: "Inter_700Bold",    color: DARK, letterSpacing: -0.3 },
+  sheetSub:    { fontSize: 12, fontFamily: "Inter_400Regular", color: BODY, marginTop: 2 },
+  closeBtn:    { width: 32, height: 32, borderRadius: 16, backgroundColor: `${BODY}12`, alignItems: "center", justifyContent: "center" },
+
+  photoRow:   { flexDirection: "row", alignItems: "center", gap: 12, backgroundColor: `${P}07`, borderRadius: 14, padding: 12 },
+  photoThumb: { width: 52, height: 52, borderRadius: 10 },
+
+  fieldWrap:  { gap: 5 },
+  fieldLabel: { fontSize: 12, fontFamily: "Inter_700Bold", color: DARK, letterSpacing: 0.3 },
+  fieldHint:  { fontSize: 11, fontFamily: "Inter_400Regular", color: BODY, lineHeight: 16 },
+  input: {
+    backgroundColor: BG, borderRadius: 12, paddingHorizontal: 14, paddingVertical: 12,
+    fontSize: 14, fontFamily: "Inter_400Regular", color: DARK,
+    borderWidth: 1.5, borderColor: `${P}18`,
+  },
+  inputMulti: { minHeight: 90, textAlignVertical: "top" },
+
+  footer:    { flexDirection: "row", gap: 10, marginTop: 18 },
+  cancelBtn: { flex: 1, backgroundColor: `${BODY}10`, borderRadius: 16, alignItems: "center", justifyContent: "center", paddingVertical: 14 },
+  cancelTxt: { fontSize: 14, fontFamily: "Inter_600SemiBold", color: BODY },
+  saveBtn:   { borderRadius: 16, overflow: "hidden" },
+  saveGrad:  { flexDirection: "row", alignItems: "center", justifyContent: "center", gap: 7, paddingVertical: 14, paddingHorizontal: 20 },
+  saveTxt:   { fontSize: 14, fontFamily: "Inter_700Bold", color: WHITE },
 });
 
 // ── Main ──────────────────────────────────────────────────────────────────────

@@ -13,18 +13,27 @@ export interface AdoptionListing {
   petName: string;
   petType: string;
   petAge?: string;
+  breed?: string;
+  gender?: string;
+  vaccinated?: boolean;
   photo?: string;
   location: string;
   description: string;
   userId: string;
   userName: string;
   contactInfo: string;
+  status?: "Aktif" | "Onay Bekliyor" | "Pasif" | "Sahiplendirildi" | "Süresi Doldu";
+  viewsCount?: number;
+  favoriteCount?: number;
+  messageCount?: number;
   createdAt: string;
+  updatedAt?: string;
 }
 
 interface AdoptionContextType {
   listings: AdoptionListing[];
   addListing: (listing: Omit<AdoptionListing, "id" | "createdAt">) => Promise<void>;
+  updateListing: (id: string, updates: Partial<Omit<AdoptionListing, "id" | "createdAt">>) => Promise<void>;
   deleteListing: (id: string) => Promise<void>;
   getListing: (id: string) => AdoptionListing | undefined;
 }
@@ -131,6 +140,17 @@ export function AdoptionProvider({ children }: { children: React.ReactNode }) {
     [listings, save]
   );
 
+  const updateListing = useCallback(
+    async (id: string, updates: Partial<Omit<AdoptionListing, "id" | "createdAt">>) => {
+      await save(
+        listings.map((l) =>
+          l.id === id ? { ...l, ...updates, updatedAt: new Date().toISOString() } : l
+        )
+      );
+    },
+    [listings, save]
+  );
+
   const deleteListing = useCallback(
     async (id: string) => {
       await save(listings.filter((l) => l.id !== id));
@@ -144,7 +164,7 @@ export function AdoptionProvider({ children }: { children: React.ReactNode }) {
   );
 
   return (
-    <AdoptionContext.Provider value={{ listings, addListing, deleteListing, getListing }}>
+    <AdoptionContext.Provider value={{ listings, addListing, updateListing, deleteListing, getListing }}>
       {children}
     </AdoptionContext.Provider>
   );
