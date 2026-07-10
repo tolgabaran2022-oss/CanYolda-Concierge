@@ -1,0 +1,67 @@
+Harita ekranına kullanıcının mevcut konumunu gösteren sabit bir konum butonu ekle.
+
+TASARIM:
+- Konum butonu ekranın sağ üst tarafında, haritanın üzerinde sabit dursun.
+- Safe Area sınırlarına uysun; Dynamic Island, saat ve üst çubukla çakışmasın.
+- Header’ın hemen altında sağdan 16 px boşlukla konumlansın.
+- 48x48 px yuvarlak beyaz buton kullan.
+- Hafif gölge ve ince açık gri border ekle.
+- Butonun içinde mor renkte “navigation/location” ikonu olsun.
+- Harita hareket ettirilse veya aşağıdaki panel açılıp kapansa bile buton yerini değiştirmesin.
+- Buton alt menü veya “Yakındaki Hayvanlar” panelinin içinde olmasın; doğrudan harita katmanının üzerinde bulunsun.
+
+İŞLEV:
+1. Kullanıcı konum ikonuna bastığında cihazın konum iznini kontrol et.
+2. İzin verilmemişse sistem konum izni penceresini aç.
+3. İzin verilirse cihazın güncel enlem ve boylam bilgisini al.
+4. Haritayı animasyonlu şekilde kullanıcının bulunduğu konuma yaklaştır:
+   - latitudeDelta: 0.008
+   - longitudeDelta: 0.008
+5. Kullanıcının gerçek konumunda mor veya mavi bir konum işaretçisi göster.
+6. İşaretçinin çevresinde yarı saydam doğruluk çemberi veya pulse efekti kullan.
+7. Kullanıcı konumunu tekrar almak için butona yeniden basabilsin.
+8. Butona basıldığında konum alınırken ikon yerine küçük bir loading spinner göster.
+9. İşlem tamamlandığında loading kapansın.
+10. Kullanıcının konumu, hayvan bildirim markerlarından farklı görünsün.
+
+HATA DURUMLARI:
+- Kullanıcı konum iznini reddederse:
+  “Konumunuzu gösterebilmemiz için konum izni vermeniz gerekiyor.”
+  mesajını göster.
+- İzin kalıcı olarak kapatılmışsa “Ayarlara Git” butonu göster ve cihaz ayarlarını aç.
+- GPS kapalıysa:
+  “Konum bilgisi alınamadı. Lütfen cihazınızın konum hizmetlerini açın.”
+  mesajını göster.
+- Konum alınamazsa uygulama çökmemeli ve mevcut harita konumu korunmalı.
+- Konum isteğine maksimum 10 saniyelik timeout ekle.
+
+TEKNİK UYGULAMA:
+- Proje Expo React Native kullanıyorsa `expo-location` kullan.
+- Paket kurulu değilse:
+  `npx expo install expo-location`
+- Harita referansı için `useRef<MapView>(null)` kullan.
+- Haritayı ortalamak için `animateToRegion` veya uygun olan `animateCamera` fonksiyonunu kullan.
+- State yapısı:
+  - userLocation
+  - isLocating
+  - locationPermission
+  - locationError
+- Konum butonunun dokunma alanını en az 48x48 px yap.
+- Android ve iOS izinlerini doğru şekilde yapılandır.
+- app.json / app.config dosyasına gerekli izin açıklamalarını ekle:
+  iOS:
+  “Yakınınızdaki hayvanları ve mevcut konumunuzu haritada göstermek için konum erişimi gereklidir.”
+  Android:
+  ACCESS_FINE_LOCATION ve ACCESS_COARSE_LOCATION.
+- Uygulama açılır açılmaz zorunlu olarak izin isteme. Sadece kullanıcı konum butonuna bastığında izin iste.
+- Kullanıcının konum bilgilerini veritabanına kaydetme veya başka kullanıcılarla paylaşma.
+- Mevcut harita markerlarını, filtreleri, alt paneli ve navigasyon tasarımını bozma.
+
+KABUL KRİTERLERİ:
+- Sağ üstte sabit bir konum ikonu görünüyor.
+- Butona tıklanınca izin akışı düzgün çalışıyor.
+- Konum alındığında harita kullanıcının bulunduğu noktaya animasyonlu şekilde gidiyor.
+- Kullanıcının konum markerı haritada görünüyor.
+- Harita sürüklendiğinde buton sabit kalıyor.
+- İzin reddi, GPS kapalı olması ve konum alınamaması durumlarında uygulama çökmüyor.
+- Hem Android hem iOS üzerinde test edilip TypeScript hataları gideriliyor.

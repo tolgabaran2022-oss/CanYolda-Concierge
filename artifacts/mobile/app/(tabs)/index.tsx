@@ -4,8 +4,11 @@ import * as Location from "expo-location";
 import { useRouter } from "expo-router";
 import React, { useEffect, useRef, useState } from "react";
 import {
+  ActivityIndicator,
+  Alert,
   Animated,
   Dimensions,
+  Linking,
   Platform,
   useColorScheme,
   useWindowDimensions,
@@ -55,25 +58,88 @@ export default function MapScreen() {
   const [region, setRegion] = useState(DEFAULT_REGION);
   const [filter, setFilter] = useState("all");
   const [expanded, setExpanded] = useState(false);
+  const [userLocation, setUserLocation] = useState<{ latitude: number; longitude: number } | null>(null);
+  const [isLocating, setIsLocating] = useState(false);
   const [locPermission, requestLocPermission] = Location.useForegroundPermissions();
   const mapRef = useRef<MapView>(null);
   const sheetAnim = useRef(new Animated.Value(SNAP_COLLAPSED)).current;
+  const pulseAnim = useRef(new Animated.Value(1)).current;
 
   useEffect(() => {
-    if (Platform.OS === "web") return;
-    if (locPermission?.granted) {
-      Location.getCurrentPositionAsync({ accuracy: Location.Accuracy.Balanced })
-        .then((loc) => {
-          setRegion({
-            latitude: loc.coords.latitude,
-            longitude: loc.coords.longitude,
-            latitudeDelta: 0.05,
-            longitudeDelta: 0.05,
-          });
-        })
-        .catch(() => {});
+    if (!userLocation) return;
+    const pulse = Animated.loop(
+      Animated.sequence([
+        Animated.timing(pulseAnim, { toValue: 2.2, duration: 900, useNativeDriver: true }),
+        Animated.timing(pulseAnim, { toValue: 1, duration: 900, useNativeDriver: true }),
+      ])
+    );
+    pulse.start();
+    return () => pulse.stop();
+  }, [userLocation]);
+
+  const locateMe = async () => {
+    if (Platform.OS === "web") {
+      if (typeof navigator === "undefined" || !navigator.geolocation) return;
+      setIsLocating(true);
+      navigator.geolocation.getCurrentPosition(
+        (pos) => {
+          const coords = { latitude: pos.coords.latitude, longitude: pos.coords.longitude };
+          setUserLocation(coords);
+          mapRef.current?.animateToRegion({ ...coords, latitudeDelta: 0.008, longitudeDelta: 0.008 }, 800);
+          setIsLocating(false);
+        },
+        () => {
+          Alert.alert("Konum Bilgisi Alınamadı", "Lütfen cihazınızın konum hizmetlerini açın.");
+          setIsLocating(false);
+        },
+        { timeout: 10000 }
+      );
+      return;
     }
-  }, [locPermission?.granted]);
+
+    setIsLocating(true);
+    try {
+      let perm = locPermission;
+      if (!perm?.granted) {
+        perm = await requestLocPermission();
+      }
+
+      if (!perm?.granted) {
+        if (perm?.canAskAgain === false) {
+          Alert.alert(
+            "Konum İzni Gerekli",
+            "Konumunuzu gösterebilmemiz için konum izni vermeniz gerekiyor.",
+            [
+              { text: "İptal", style: "cancel" },
+              { text: "Ayarlara Git", onPress: () => Linking.openSettings() },
+            ]
+          );
+        } else {
+          Alert.alert("Konum İzni Gerekli", "Konumunuzu gösterebilmemiz için konum izni vermeniz gerekiyor.");
+        }
+        return;
+      }
+
+      const locationPromise = Location.getCurrentPositionAsync({ accuracy: Location.Accuracy.Balanced });
+      const timeoutPromise = new Promise<never>((_, reject) =>
+        setTimeout(() => reject(new Error("timeout")), 10000)
+      );
+
+      const loc = await (Promise.race([locationPromise, timeoutPromise]) as Promise<Location.LocationObject>);
+      const coords = { latitude: loc.coords.latitude, longitude: loc.coords.longitude };
+      setUserLocation(coords);
+      mapRef.current?.animateToRegion({ ...coords, latitudeDelta: 0.008, longitudeDelta: 0.008 }, 800);
+    } catch (err: unknown) {
+      const msg = err instanceof Error ? err.message : "";
+      if (msg === "timeout") {
+        Alert.alert("Konum Alınamadı", "Konum bilgisi alınamadı. Lütfen cihazınızın konum hizmetlerini açın.");
+      } else {
+        Alert.alert("Konum Hatası", "Konum bilgisi alınamadı. Lütfen cihazınızın konum hizmetlerini açın.");
+      }
+    } finally {
+      setIsLocating(false);
+    }
+  };
 
   const toggleSheet = () => {
     const next = !expanded;
@@ -138,6 +204,22 @@ export default function MapScreen() {
             </View>
           </Marker>
         ))}
+
+        {userLocation && Platform.OS !== "web" && (
+          <Marker coordinate={userLocation} anchor={{ x: 0.5, y: 0.5 }} tracksViewChanges={false}>
+            <View style={styles.userMarkerWrapper}>
+              <Animated.View
+                style={[
+                  styles.userPulse,
+                  { transform: [{ scale: pulseAnim }] },
+                ]}
+              />
+              <View style={styles.userDot}>
+                <Ionicons name="navigate" size={12} color="white" />
+              </View>
+            </View>
+          </Marker>
+        )}
       </MapView>
 
       {/* Top bar */}
@@ -153,15 +235,26 @@ export default function MapScreen() {
             {animals.length} hayvan
           </Text>
         </View>
-        {!locPermission?.granted && Platform.OS !== "web" && (
-          <Pressable
-            style={[styles.locBtn, { backgroundColor: `${colors.secondary}18` }]}
-            onPress={requestLocPermission}
-          >
-            <Ionicons name="location-outline" size={18} color={colors.secondary} />
-          </Pressable>
-        )}
       </View>
+
+      {/* Location button — fixed, right side, below header */}
+      <Pressable
+        style={({ pressed }) => [
+          styles.locateBtn,
+          { top: topPad + 72, opacity: pressed ? 0.85 : 1 },
+        ]}
+        onPress={() => {
+          locateMe();
+          Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+        }}
+        hitSlop={8}
+      >
+        {isLocating ? (
+          <ActivityIndicator size="small" color="#7C3AED" />
+        ) : (
+          <Ionicons name="navigate" size={20} color="#7C3AED" />
+        )}
+      </Pressable>
 
       {/* FAB */}
       <Pressable
@@ -405,12 +498,51 @@ const styles = StyleSheet.create({
     fontSize: 13,
     fontFamily: "Inter_600SemiBold",
   },
-  locBtn: {
-    width: 34,
-    height: 34,
-    borderRadius: 17,
+  locateBtn: {
+    position: "absolute",
+    right: 16,
+    width: 48,
+    height: 48,
+    borderRadius: 24,
+    backgroundColor: "white",
     alignItems: "center",
     justifyContent: "center",
+    borderWidth: 1,
+    borderColor: "rgba(0,0,0,0.08)",
+    shadowColor: "#000",
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.12,
+    shadowRadius: 8,
+    elevation: 5,
+  },
+
+  userMarkerWrapper: {
+    width: 36,
+    height: 36,
+    alignItems: "center",
+    justifyContent: "center",
+  },
+  userPulse: {
+    position: "absolute",
+    width: 28,
+    height: 28,
+    borderRadius: 14,
+    backgroundColor: "rgba(99,102,241,0.25)",
+  },
+  userDot: {
+    width: 24,
+    height: 24,
+    borderRadius: 12,
+    backgroundColor: "#6366F1",
+    alignItems: "center",
+    justifyContent: "center",
+    borderWidth: 2.5,
+    borderColor: "white",
+    shadowColor: "#6366F1",
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.45,
+    shadowRadius: 6,
+    elevation: 6,
   },
 
   fab: {
