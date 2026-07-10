@@ -82,25 +82,25 @@ export default function SearchScreen() {
       </View>
 
       {/* Search bar */}
-      <View style={S.searchBar}>
-        <Ionicons name="search-outline" size={18} color="#ABABCC" />
+      <View style={[S.searchBar, { backgroundColor: T.card, borderColor: T.border }]}>
+        <Ionicons name="search-outline" size={18} color={T.textFaint} />
         <TextInput
-          style={S.searchInput}
+          style={[S.searchInput, { color: T.text, outlineStyle: "none" } as any]}
           value={query}
           onChangeText={setQuery}
           placeholder="Kullanıcı ara..."
-          placeholderTextColor="#ABABCC"
+          placeholderTextColor={T.placeholder}
           autoCapitalize="none"
           autoCorrect={false}
           returnKeyType="search"
           clearButtonMode="while-editing"
           autoFocus
         />
-        {loading && <ActivityIndicator size="small" color={PURPLE} />}
+        {loading && <ActivityIndicator size="small" color={T.purple} />}
       </View>
 
       {/* Section label */}
-      <Text style={S.sectionLabel}>
+      <Text style={[S.sectionLabel, { color: T.textFaint }]}>
         {query.trim() ? `"${query}" için sonuçlar` : "Önerilen Kullanıcılar"}
       </Text>
 
@@ -113,13 +113,13 @@ export default function SearchScreen() {
           !loading && query.trim() ? (
             <View style={S.empty}>
               <Ionicons name="person-outline" size={48} color="#C5BAE8" />
-              <Text style={S.emptyText}>Kullanıcı bulunamadı</Text>
+              <Text style={[S.emptyText, { color: T.textMuted }]}>Kullanıcı bulunamadı</Text>
             </View>
           ) : null
         }
         renderItem={({ item: u }) => (
           <Pressable
-            style={({ pressed }) => [S.userRow, { opacity: pressed ? 0.8 : 1 }]}
+            style={({ pressed }) => [S.userRow, { backgroundColor: T.card, opacity: pressed ? 0.8 : 1 }]}
             onPress={() => goProfile(u)}
           >
             <Image
@@ -128,10 +128,10 @@ export default function SearchScreen() {
               contentFit="cover"
             />
             <View style={S.userInfo}>
-              <Text style={S.userName}>@{u.username}</Text>
-              <Text style={S.userMeta}>{u.postCount} gönderi</Text>
+              <Text style={[S.userName, { color: T.text }]}>@{u.username}</Text>
+              <Text style={[S.userMeta, { color: T.textMuted }]}>{u.postCount} gönderi</Text>
             </View>
-            <Ionicons name="chevron-forward" size={18} color="#AAAACC" />
+            <Ionicons name="chevron-forward" size={18} color={T.textFaint} />
           </Pressable>
         )}
       />

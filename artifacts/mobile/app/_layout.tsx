@@ -59,12 +59,7 @@ function RootLayoutNav() {
       />
       <Stack.Screen
         name="animal/[id]"
-        options={{
-          headerShown: true,
-          title: "",
-          headerTransparent: true,
-          headerTintColor: "#FFFFFF",
-        }}
+        options={{ headerShown: false }}
       />
       <Stack.Screen
         name="add-pet"

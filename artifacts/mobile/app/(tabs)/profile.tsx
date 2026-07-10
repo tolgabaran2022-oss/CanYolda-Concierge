@@ -223,10 +223,11 @@ export default function ProfileScreen() {
 
 /* ── StatPill ──────────────────────────────────────────────── */
 function StatPill({ value, label }: { value: number; label: string }) {
+  const T = useTheme();
   return (
     <View style={S.statPill}>
-      <Text style={S.statValue}>{value}</Text>
-      <Text style={S.statLabel}>{label}</Text>
+      <Text style={[S.statValue, { color: T.text }]}>{value}</Text>
+      <Text style={[S.statLabel, { color: T.textMuted }]}>{label}</Text>
     </View>
   );
 }

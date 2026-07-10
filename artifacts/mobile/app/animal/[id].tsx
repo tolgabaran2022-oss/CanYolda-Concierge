@@ -4,6 +4,7 @@ import { Image } from "expo-image";
 import { LinearGradient } from "expo-linear-gradient";
 import { useLocalSearchParams, useRouter } from "expo-router";
 import React, { useRef, useState } from "react";
+import { useTheme } from "@/hooks/useTheme";
 import {
   Alert,
   Animated,
@@ -67,6 +68,7 @@ function PressableScale({
 }
 
 export default function AnimalDetailScreen() {
+  const T        = useTheme();
   const { id }   = useLocalSearchParams<{ id: string }>();
   const router   = useRouter();
   const insets   = useSafeAreaInsets();
@@ -147,7 +149,7 @@ export default function AnimalDetailScreen() {
   const topPad = Platform.OS === "web" ? 16 : insets.top;
 
   return (
-    <View style={{ flex: 1, backgroundColor: C.bg }}>
+    <View style={{ flex: 1, backgroundColor: T.bg }}>
       <KeyboardAvoidingView
         style={{ flex: 1 }}
         behavior={Platform.OS === "ios" ? "padding" : undefined}
@@ -215,7 +217,7 @@ export default function AnimalDetailScreen() {
           </View>
 
           {/* ── White content card ───────────────────── */}
-          <View style={D.card}>
+          <View style={[D.card, { backgroundColor: T.card }]}>
 
             {/* Status indicator row (always visible) */}
             <View style={D.statusRow}>
@@ -233,16 +235,16 @@ export default function AnimalDetailScreen() {
             </View>
 
             {/* Title */}
-            <Text style={D.noteTitle}>{animal.notes}</Text>
+            <Text style={[D.noteTitle, { color: T.text }]}>{animal.notes}</Text>
 
             {/* Reporter row */}
             <View style={D.reporterRow}>
               <View style={D.avatarCircle}>
-                <Ionicons name="person" size={15} color={C.purple} />
+                <Ionicons name="person" size={15} color={T.purple} />
               </View>
               <View style={{ flex: 1, gap: 1 }}>
-                <Text style={D.reporterName}>{animal.userName}</Text>
-                <Text style={D.reporterTime}>{formatTimeAgo(animal.timestamp)}</Text>
+                <Text style={[D.reporterName, { color: T.text }]}>{animal.userName}</Text>
+                <Text style={[D.reporterTime, { color: T.textMuted }]}>{formatTimeAgo(animal.timestamp)}</Text>
               </View>
               <View style={D.locPill}>
                 <Ionicons name="location-outline" size={12} color={C.purple} />
@@ -252,16 +254,16 @@ export default function AnimalDetailScreen() {
               </View>
             </View>
 
-            <View style={D.divider} />
+            <View style={[D.divider, { backgroundColor: T.divider }]} />
 
             {/* Description */}
-            <Text style={D.sectionTitle}>Hayvanın Durumu</Text>
-            <Text style={D.descText}>{animal.notes}</Text>
+            <Text style={[D.sectionTitle, { color: T.text }]}>Hayvanın Durumu</Text>
+            <Text style={[D.descText, { color: T.textMuted }]}>{animal.notes}</Text>
 
-            <View style={D.divider} />
+            <View style={[D.divider, { backgroundColor: T.divider }]} />
 
             {/* Info grid — 2×3 */}
-            <Text style={D.sectionTitle}>Durum Bilgileri</Text>
+            <Text style={[D.sectionTitle, { color: T.text }]}>Durum Bilgileri</Text>
             <View style={D.infoGrid}>
               <InfoCard
                 icon="time-outline"
@@ -296,10 +298,10 @@ export default function AnimalDetailScreen() {
               />
             </View>
 
-            <View style={D.divider} />
+            <View style={[D.divider, { backgroundColor: T.divider }]} />
 
             {/* Map preview section */}
-            <Text style={D.sectionTitle}>Konum</Text>
+            <Text style={[D.sectionTitle, { color: T.text }]}>Konum</Text>
             <Pressable
               style={D.mapPreview}
               onPress={handleMapOpen}
@@ -317,17 +319,17 @@ export default function AnimalDetailScreen() {
                     : `${animal.latitude.toFixed(4)}, ${animal.longitude.toFixed(4)}`}
                 </Text>
               </LinearGradient>
-              <View style={D.mapOpenRow}>
-                <Ionicons name="map-outline" size={15} color={C.purple} />
-                <Text style={D.mapOpenText}>Haritada Aç</Text>
-                <Ionicons name="chevron-forward" size={14} color={C.purple} />
+              <View style={[D.mapOpenRow, { backgroundColor: T.card, borderTopColor: T.border }]}>
+                <Ionicons name="map-outline" size={15} color={T.purple} />
+                <Text style={[D.mapOpenText, { color: T.purple }]}>Haritada Aç</Text>
+                <Ionicons name="chevron-forward" size={14} color={T.purple} />
               </View>
             </Pressable>
 
-            <View style={D.divider} />
+            <View style={[D.divider, { backgroundColor: T.divider }]} />
 
             {/* Interaction stats */}
-            <Text style={D.sectionTitle}>Etkileşim</Text>
+            <Text style={[D.sectionTitle, { color: T.text }]}>Etkileşim</Text>
             <View style={D.statsRow}>
               <StatCard
                 icon={helped ? "heart" : "heart-outline"}
@@ -353,42 +355,42 @@ export default function AnimalDetailScreen() {
               />
             </View>
 
-            <View style={D.divider} />
+            <View style={[D.divider, { backgroundColor: T.divider }]} />
 
             {/* Comments */}
-            <Text style={D.sectionTitle}>
+            <Text style={[D.sectionTitle, { color: T.text }]}>
               Yorumlar{animal.comments.length > 0 ? ` (${animal.comments.length})` : ""}
             </Text>
             {animal.comments.length === 0 ? (
-              <View style={D.emptyComments}>
+              <View style={[D.emptyComments, { backgroundColor: T.bgSecondary }]}>
                 <Ionicons name="chatbubbles-outline" size={24} color="#C0B8D8" />
-                <Text style={D.noComment}>Henüz yorum yok. İlk yorumu sen yap!</Text>
+                <Text style={[D.noComment, { color: T.textMuted }]}>Henüz yorum yok. İlk yorumu sen yap!</Text>
               </View>
             ) : (
               animal.comments.map((c) => (
                 <View key={c.id} style={D.commentRow}>
                   <View style={D.commentAvatar}>
-                    <Ionicons name="person" size={12} color={C.purple} />
+                    <Ionicons name="person" size={12} color={T.purple} />
                   </View>
                   <View style={{ flex: 1 }}>
                     <View style={D.commentHeader}>
-                      <Text style={D.commentUser}>{c.userName}</Text>
-                      <Text style={D.commentTime}>{formatTimeAgo(c.timestamp)}</Text>
+                      <Text style={[D.commentUser, { color: T.text }]}>{c.userName}</Text>
+                      <Text style={[D.commentTime, { color: T.textFaint }]}>{formatTimeAgo(c.timestamp)}</Text>
                     </View>
-                    <Text style={D.commentText}>{c.text}</Text>
+                    <Text style={[D.commentText, { color: T.textMuted }]}>{c.text}</Text>
                   </View>
                 </View>
               ))
             )}
 
             {/* Comment input */}
-            <View style={D.inputRow}>
+            <View style={[D.inputRow, { backgroundColor: T.bgSecondary, borderColor: T.border }]}>
               <TextInput
-                style={D.input}
+                style={[D.input, { color: T.text }]}
                 value={commentText}
                 onChangeText={setCommentText}
                 placeholder="Yorum ekle..."
-                placeholderTextColor="#ABABBB"
+                placeholderTextColor={T.placeholder}
                 returnKeyType="send"
                 onSubmitEditing={handleComment}
               />
@@ -399,13 +401,13 @@ export default function AnimalDetailScreen() {
               </Pressable>
             </View>
 
-            <Text style={D.footer}>Küçük bir destek, büyük bir hayat kurtarır. 🙏</Text>
+            <Text style={[D.footer, { color: T.textFaint }]}>Küçük bir destek, büyük bir hayat kurtarır. 🙏</Text>
           </View>
         </ScrollView>
       </KeyboardAvoidingView>
 
       {/* ── Sticky action bar ───────────────────── */}
-      <View style={D.actionBar}>
+      <View style={[D.actionBar, { backgroundColor: T.card, borderTopColor: T.border }]}>
         <PressableScale onPress={handleMapOpen} style={D.actionOutline}>
           <Ionicons name="chatbubble-outline" size={19} color={C.purple} />
           <Text style={D.actionOutlineText}>Yorum Yap</Text>
@@ -448,13 +450,14 @@ function InfoCard({
   value: string;
   accent?: string;
 }) {
+  const T = useTheme();
   return (
-    <View style={D.infoBox}>
+    <View style={[D.infoBox, { backgroundColor: T.bgSecondary, borderColor: T.border }]}>
       <View style={D.infoIconWrap}>
-        <Ionicons name={icon as any} size={16} color="#7B5EA7" />
+        <Ionicons name={icon as any} size={16} color={T.purple} />
       </View>
-      <Text style={D.infoLabel}>{label}</Text>
-      <Text style={[D.infoValue, accent ? { color: accent } : undefined]} numberOfLines={2}>
+      <Text style={[D.infoLabel, { color: T.textMuted }]}>{label}</Text>
+      <Text style={[D.infoValue, { color: T.text }, accent ? { color: accent } : undefined]} numberOfLines={2}>
         {value}
       </Text>
     </View>
@@ -476,11 +479,12 @@ function StatCard({
   onPress: () => void;
   scale?: Animated.Value;
 }) {
+  const T = useTheme();
   const localScale = useRef(new Animated.Value(1)).current;
   const s = scale ?? localScale;
   return (
     <Pressable
-      style={D.statBox}
+      style={[D.statBox, { backgroundColor: T.bgSecondary, borderColor: T.border }]}
       onPress={onPress}
       onPressIn={() =>
         Animated.timing(s, { toValue: 0.93, duration: 70, useNativeDriver: true }).start()
@@ -493,8 +497,8 @@ function StatCard({
         <View style={D.statIconWrap}>
           <Ionicons name={icon as any} size={22} color={iconColor} />
         </View>
-        <Text style={D.statNum}>{value}</Text>
-        <Text style={D.statLabel}>{label}</Text>
+        <Text style={[D.statNum, { color: T.text }]}>{value}</Text>
+        <Text style={[D.statLabel, { color: T.textMuted }]}>{label}</Text>
       </Animated.View>
     </Pressable>
   );

@@ -1,0 +1,51 @@
+Koyu mod düzeltmelerine devam. Kural aynı: sabit renk yok, her şey
+merkezi tema değişkenlerinden gelecek. Açık moda dokunma.
+
+1. AKIŞ SEKME ÇUBUĞU: "Keşfet / Takip Ettiklerin" sekme çubuğunda iki
+   sekmenin zemin rengi farklı görünüyor. Sekme çubuğu tek parça aynı
+   zeminde olsun; aktif sekme sadece mor alt çizgi ve mor metinle
+   ayrılsın. Ayrıca Keşfet akışında gönderi kartının sağında görünen
+   açık renkli ince şeridi bul ve kaldır (kartın arkasındaki konteyner
+   temalanmamış olabilir).
+
+2. TAKİP ETTİKLERİN BOŞ DURUMU: Sekmelerin altındaki içerik alanı
+   koyu modda beyaz kalıyor. İçerik/boş durum konteynerinin arka
+   planını tema değişkenine bağla; "Henüz yeni gönderi yok" başlığı
+   açık renk, açıklama metni gri olsun.
+
+3. ARA SAYFASI: Önerilen kullanıcılar listesi beyaz kalmış; satır
+   zeminlerini koyu temaya bağla, kullanıcı adları açık renk, gönderi
+   sayısı gri olsun. Arama kutusundaki varsayılan siyah odak
+   çerçevesini kaldır (outline: none) ve yerine ince mor bir odak
+   halkası (focus ring) ekle; bu odak stili tüm input'larda geçerli
+   olsun.
+
+4. PROFİL İSTATİSTİKLERİ: Profil sayfasında Gönderi/Takipçi/Takip
+   sayıları koyu modda görünmüyor (koyu zeminde koyu rakam). Rakam
+   rengini tema değişkenine bağla; koyu modda beyaz görünsün.
+
+5. MESAJLAR SAYFASI: Sayfa koyu moddan hiç etkilenmemiş, komple açık
+   temada. Header, sohbet listesi, satırlar ve zaman metinleri dahil
+   tamamını temaya bağla. Ayrıca iki hata daha: (a) tüm sohbetlerde
+   aynı avatar görünüyor; her satırda karşıdaki kullanıcının kendi
+   profil fotoğrafı gösterilsin, fotoğrafı yoksa baş harfli
+   placeholder kullan. (b) Zaman etiketleri tutarsız ("44d", "20s",
+   "1g"); hepsini Türkçe tek formata çevir: sn, dk, sa, g.
+
+6. PROFİL DÜZENLE OKUNURLUK: Koyu modda ayar başlıkları ("Profil
+   herkese açık", "Beğeni bildirimleri" vb.) koyu mor kaldığı için
+   okunmuyor. Koyu modda bu başlıklar açık mor/beyaz tona geçsin;
+   açık moddaki halleri değişmesin. Toggle'ların açık (aktif) rengini
+   yeşilden marka moruna çevir.
+
+7. DURUM DETAY SAYFASI: (a) Sayfa içeriği (beyaz kart, Durum
+   Bilgileri kutuları, alt eylem çubuğu) koyu modda açık kalıyor,
+   tamamını temaya bağla. (b) Sol üstte iki geri butonu üst üste
+   render ediliyor; çift render'ı bul ve tek geri butonu bırak.
+   (c) Alt eylem çubuğunda "Yardım Et" butonu iki satıra kırılıyor;
+   butonlara yeterli genişlik ver, metin tek satırda kalsın.
+
+BİTİRMEDEN KONTROL: Koyu modda şu ekranları gez: Akış (iki sekme de),
+Ara, Profil, Mesajlar, Profil Düzenle, Hayvanlar'dan bir durumun
+detay sayfası. Beyaz kalan blok, koyu zeminde kaybolan metin/rakam
+ve çift geri butonu kalmamalı.

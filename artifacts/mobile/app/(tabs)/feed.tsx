@@ -650,10 +650,10 @@ export default function FeedScreen() {
     }
     if (hasError) {
       return (
-        <View style={F.centeredState}>
-          <Ionicons name="cloud-offline-outline" size={48} color={C.muted} />
-          <Text style={F.emptyTitle}>Akış yüklenemedi</Text>
-          <Text style={F.emptySubtitle}>Lütfen tekrar deneyin.</Text>
+        <View style={[F.centeredState, { backgroundColor: T.bg }]}>
+          <Ionicons name="cloud-offline-outline" size={48} color={T.textMuted} />
+          <Text style={[F.emptyTitle, { color: T.text }]}>Akış yüklenemedi</Text>
+          <Text style={[F.emptySubtitle, { color: T.textMuted }]}>Lütfen tekrar deneyin.</Text>
           <Pressable
             style={F.retryBtn}
             onPress={() => feedTab === "discover" ? fetchDiscover() : fetchFollowing()}
@@ -667,7 +667,7 @@ export default function FeedScreen() {
       /* Still loading follow count — avoid premature empty state */
       if (followingCount === null) {
         return (
-          <View style={F.centeredState}>
+          <View style={[F.centeredState, { backgroundColor: T.bg }]}>
             {[0, 1, 2].map((i) => <SkeletonCard key={i} />)}
           </View>
         );
@@ -675,10 +675,10 @@ export default function FeedScreen() {
       /* User follows nobody */
       if (followingCount === 0) {
         return (
-          <View style={F.centeredState}>
+          <View style={[F.centeredState, { backgroundColor: T.bg }]}>
             <Ionicons name="people-outline" size={52} color="#C4B8E8" />
-            <Text style={F.emptyTitle}>Henüz kimseyi takip etmiyorsun</Text>
-            <Text style={F.emptySubtitle}>Keşfet'ten yeni dostlar bulabilirsin.</Text>
+            <Text style={[F.emptyTitle, { color: T.text }]}>Henüz kimseyi takip etmiyorsun</Text>
+            <Text style={[F.emptySubtitle, { color: T.textMuted }]}>Keşfet'ten yeni dostlar bulabilirsin.</Text>
             <Pressable style={F.retryBtn} onPress={() => handleTabChange("discover")}>
               <Text style={F.retryText}>Keşfet'e Bak</Text>
             </Pressable>
@@ -687,20 +687,20 @@ export default function FeedScreen() {
       }
       /* Follows people but no posts yet */
       return (
-        <View style={F.centeredState}>
+        <View style={[F.centeredState, { backgroundColor: T.bg }]}>
           <Ionicons name="newspaper-outline" size={52} color="#C4B8E8" />
-          <Text style={F.emptyTitle}>Henüz yeni gönderi yok</Text>
-          <Text style={F.emptySubtitle}>
+          <Text style={[F.emptyTitle, { color: T.text }]}>Henüz yeni gönderi yok</Text>
+          <Text style={[F.emptySubtitle, { color: T.textMuted }]}>
             Takip ettiğin kişiler paylaşım yaptığında burada göreceksin.
           </Text>
         </View>
       );
     }
     return (
-      <View style={F.centeredState}>
+      <View style={[F.centeredState, { backgroundColor: T.bg }]}>
         <Ionicons name="camera-outline" size={52} color="#C4B8E8" />
-        <Text style={F.emptyTitle}>Henüz gönderi yok</Text>
-        <Text style={F.emptySubtitle}>İlk gönderiyi sen paylaş!</Text>
+        <Text style={[F.emptyTitle, { color: T.text }]}>Henüz gönderi yok</Text>
+        <Text style={[F.emptySubtitle, { color: T.textMuted }]}>İlk gönderiyi sen paylaş!</Text>
       </View>
     );
   };
@@ -766,7 +766,7 @@ export default function FeedScreen() {
         onEndReachedThreshold={0.3}
         contentContainerStyle={[F.listContent, { paddingBottom: BOTTOM_NAV_H + 16 }]}
         showsVerticalScrollIndicator={false}
-        style={F.list}
+        style={[F.list, { backgroundColor: T.bg }]}
         refreshControl={
           <RefreshControl
             refreshing={refreshing}
@@ -853,8 +853,8 @@ const F = StyleSheet.create({
   tabTxtActive: { fontSize: 14, fontFamily: "Inter_700Bold",   color: C.purple },
 
   centeredState: { alignItems: "center", paddingTop: 40, paddingHorizontal: 24, gap: 12 },
-  emptyTitle:    { fontSize: 16, fontFamily: "Inter_700Bold",   color: C.text, textAlign: "center", marginTop: 8 },
-  emptySubtitle: { fontSize: 14, fontFamily: "Inter_400Regular", color: C.muted, textAlign: "center" },
+  emptyTitle:    { fontSize: 16, fontFamily: "Inter_700Bold",   textAlign: "center", marginTop: 8 },
+  emptySubtitle: { fontSize: 14, fontFamily: "Inter_400Regular", textAlign: "center" },
   retryBtn:      { marginTop: 8, paddingHorizontal: 24, paddingVertical: 10, backgroundColor: C.purple, borderRadius: 20 },
   retryText:     { fontSize: 14, fontFamily: "Inter_600SemiBold", color: "#FFF" },
 });

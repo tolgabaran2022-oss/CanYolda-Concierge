@@ -338,7 +338,8 @@ export default function ProfileEditScreen() {
 /* ── Sub-components ──────────────────────────────────────── */
 
 function SectionHeader({ title }: { title: string }) {
-  return <Text style={S.sectionHeader}>{title}</Text>;
+  const T = useTheme();
+  return <Text style={[S.sectionHeader, { color: T.textMuted }]}>{title}</Text>;
 }
 
 function FieldDivider() {
@@ -396,19 +397,20 @@ function ToggleRow({
   value: boolean;
   onChange: (v: boolean) => void;
 }) {
+  const T = useTheme();
   return (
     <View style={S.settingsRow}>
       <View style={S.settingsIconWrap}>
-        <Ionicons name={icon} size={18} color={PURPLE} />
+        <Ionicons name={icon} size={18} color={T.purple} />
       </View>
       <View style={{ flex: 1 }}>
-        <Text style={S.settingsLabel}>{label}</Text>
-        {sub ? <Text style={S.settingsSub}>{sub}</Text> : null}
+        <Text style={[S.settingsLabel, { color: T.text }]}>{label}</Text>
+        {sub ? <Text style={[S.settingsSub, { color: T.textMuted }]}>{sub}</Text> : null}
       </View>
       <Switch
         value={value}
         onValueChange={onChange}
-        trackColor={{ false: "#E0DAF0", true: PURPLE }}
+        trackColor={{ false: "#E0DAF0", true: T.purple }}
         thumbColor="#FFF"
         ios_backgroundColor="#E0DAF0"
       />
