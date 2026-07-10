@@ -1,0 +1,166 @@
+Harita ekranındaki “Yakındaki Hayvanlar” kartını, parmak hareketiyle yukarı ve aşağı kaydırılabilen profesyonel bir Bottom Sheet yapısına dönüştür.
+
+AMAÇ:
+Kullanıcı “Yakındaki Hayvanlar” kartına veya üstündeki gri tutma çubuğuna dokunup yukarı sürüklediğinde panel açılmalı. Aşağı sürüklediğinde tekrar küçülmeli. Google Maps ve Apple Maps uygulamalarındaki alt panel mantığında çalışmalı.
+
+MEVCUT TASARIMI KORU:
+- Harita, hayvan markerları, sağ üst konum butonu ve üst başlık aynı kalmalı.
+- Alt navigasyon menüsünün tasarımını bozma.
+- “Yakındaki Hayvanlar” başlığı, hayvan sayısı, “Hepsini Gör” butonu, filtreler ve hayvan kartları korunmalı.
+- Panelin mevcut beyaz/lila arka planı, yuvarlatılmış üst köşeleri ve gölgesi korunmalı.
+
+BOTTOM SHEET DAVRANIŞI:
+Panelin 3 farklı yüksekliği olsun:
+
+1. Küçük durum:
+   - Ekranın yaklaşık %28–32’sini kaplasın.
+   - “Yakındaki Hayvanlar” başlığı ve filtreler görünsün.
+   - Harita büyük ölçüde görünür kalsın.
+
+2. Orta durum:
+   - Ekranın yaklaşık %55’ini kaplasın.
+   - Başlık, filtreler ve birkaç hayvan kartı görünsün.
+
+3. Tam açık durum:
+   - Ekranın yaklaşık %85–90’ını kaplasın.
+   - Üst Safe Area sınırına kadar çıkabilsin ancak üst başlığı ve Dynamic Island alanını kapatmasın.
+   - İçerideki hayvan listesi dikey olarak kaydırılabilsin.
+
+Örnek snap noktaları:
+- %30
+- %55
+- %88
+
+KAYDIRMA HAREKETLERİ:
+- Kullanıcı panelin üstündeki gri tutma çubuğunu yukarı çektiğinde panel açılmalı.
+- Kullanıcı “Yakındaki Hayvanlar” başlık alanından da paneli sürükleyebilmeli.
+- Hızlı yukarı kaydırmada bir sonraki seviyeye geçmeli.
+- Hızlı aşağı kaydırmada bir önceki seviyeye dönmeli.
+- Kullanıcı paneli tamamen ekran dışına kapatamamalı.
+- Panel her zaman en az küçük durumda görünür kalmalı.
+- Hareketler akıcı, yay animasyonlu ve doğal olmalı.
+- Panel bırakıldığında en yakın snap noktasına otomatik oturmalı.
+- Takılma, titreme veya ani sıçrama olmamalı.
+
+İÇERİK KAYDIRMA:
+- Panel tam veya orta açıkken hayvan listesi panelin içinde dikey kaydırılabilsin.
+- Kullanıcı listenin en üstündeyken aşağı çekerse panel küçülmeye başlamalı.
+- Liste kaydırması ile panel kaydırması birbiriyle çakışmamalı.
+- Filtre butonları yatay kaydırılabilir kalmalı.
+- Dikey hayvan listesi ile yatay filtre hareketleri birbirini engellememeli.
+- Android’de nested scroll davranışını aktif et.
+
+ALT NAVİGASYON:
+- Alt navigasyon menüsü ekranın en altında sabit kalmalı.
+- Bottom Sheet alt navigasyonun arkasında kaybolmamalı.
+- Küçük durumda panelin alt kısmı navigasyon tarafından kapatılmamalı.
+- Panel içeriğine alt navigasyon yüksekliği kadar bottom padding ekle.
+- Alt navigasyondaki butonlara basıldığında panelin sürükleme hareketi yanlışlıkla tetiklenmemeli.
+
+TEKNİK UYGULAMA:
+Proje Expo React Native ise tercihen şu yapıyı kullan:
+- `@gorhom/bottom-sheet`
+- `react-native-reanimated`
+- `react-native-gesture-handler`
+
+Paketler kurulu değilse Expo uyumlu şekilde yükle.
+
+Bottom Sheet yapısında:
+- `snapPoints` değerlerini `['30%', '55%', '88%']` olarak tanımla.
+- Başlangıç seviyesi küçük durum olsun.
+- `enablePanDownToClose={false}` kullan.
+- Panelin tamamen kapanmasını engelle.
+- `BottomSheetFlatList` veya `BottomSheetScrollView` kullan.
+- Normal `FlatList` ile Bottom Sheet gesture sisteminin çakışmasına izin verme.
+- `useMemo` ile snapPoints değerlerini oluştur.
+- Panel referansı için `useRef` kullan.
+- Açılma durumunu takip etmek için `onChange` callback’i ekle.
+- Reanimated ve Gesture Handler yapılandırmalarını doğru şekilde tamamla.
+- Uygulamanın root seviyesinde gerekli Gesture Handler yapısını kontrol et.
+- Mevcut projede zaten bir gesture/bottom-sheet kütüphanesi varsa ikinci ve çakışan bir sistem kurma.
+
+ÖRNEK YAPI:
+
+const snapPoints = useMemo(() => ['30%', '55%', '88%'], []);
+
+<BottomSheet
+  ref={bottomSheetRef}
+  index={0}
+  snapPoints={snapPoints}
+  enablePanDownToClose={false}
+  enableContentPanningGesture={true}
+  enableHandlePanningGesture={true}
+  animateOnMount={true}
+  onChange={handleSheetChange}
+>
+  <BottomSheetFlatList
+    data={nearbyAnimals}
+    keyExtractor={(item) => item.id}
+    renderItem={renderAnimalCard}
+    nestedScrollEnabled
+    contentContainerStyle={{
+      paddingBottom: bottomTabHeight + 24
+    }}
+  />
+</BottomSheet>
+
+Bu kod sadece örnek mantıktır. Mevcut bileşen yapısına ve veri sistemine uygun şekilde entegre et.
+
+TUTMA ÇUBUĞU:
+- Panelin üst orta kısmında gri bir handle bar bulunsun.
+- Genişlik: 38–44 px.
+- Yükseklik: 4–5 px.
+- Border radius tam yuvarlak olsun.
+- Üstten yaklaşık 10 px boşluk bırak.
+- Kullanıcının rahat tutabilmesi için görünür çubuktan daha büyük dokunma alanı kullan.
+
+TASARIM:
+- Panelin üst köşeleri 28–32 px yuvarlak olsun.
+- Panel haritadan hafif gölgeyle ayrılsın.
+- Arka plan mevcut açık beyaz/lila tasarımla aynı olsun.
+- Açılma sırasında panelin köşe yapısı bozulmasın.
+- Panel genişliği ekranı tamamen kaplasın.
+- Sağda veya solda istenmeyen boşluk oluşmasın.
+- iPhone ve Android ekran genişliklerine responsive çalışsın.
+
+HARİTA ETKİLEŞİMİ:
+- Panel küçük durumdayken panel dışında kalan harita alanı sürüklenebilmeli ve yakınlaştırılabilmeli.
+- Haritayı hareket ettirmek paneli yanlışlıkla açmamalı.
+- Panelin üzerine dokunmak haritadaki markerlara basılmasına neden olmamalı.
+- Panel açıldığında harita bileşeni yeniden yüklenmemeli.
+- Haritadaki markerlar ve kullanıcının konumu kaybolmamalı.
+
+“HEPSİNİ GÖR” BUTONU:
+- “Hepsini Gör” butonuna basıldığında panel doğrudan tam açık seviyeye gelsin.
+- Bottom Sheet referansıyla en yüksek snap noktasına geç:
+  `bottomSheetRef.current?.snapToIndex(2)`
+- Buton mevcut sayfa tasarımındaki yerinde kalmalı.
+
+FİLTRELER:
+- “Hepsi”, “Aç”, “Yaralı”, “Sağlıklı” filtreleri yatay kaydırılabilir olsun.
+- Filtre seçildiğinde sadece liste verileri değişsin.
+- Bottom Sheet konumu sıfırlanmasın.
+- Filtreye basıldığında panel yanlışlıkla hareket etmemeli.
+
+PERFORMANS:
+- Panel kaydırılırken 60 FPS’e yakın akıcı animasyon hedefle.
+- Her frame’de React state güncellemesi yapma.
+- Harita ve hayvan listesi gereksiz yere yeniden render edilmesin.
+- `renderItem`, filtreleme ve marker verilerinde gerekli memo optimizasyonlarını kullan.
+- Büyük listelerde FlatList sanallaştırmasını koru.
+
+KABUL KRİTERLERİ:
+1. Kullanıcı kartı parmağıyla yukarı ittiğinde panel açılıyor.
+2. Aşağı çekildiğinde panel küçülüyor.
+3. Panel %30, %55 ve %88 seviyelerine oturuyor.
+4. Panel tamamen ekran dışına kapanmıyor.
+5. Tam açık durumda hayvan listesi panel içinde kaydırılabiliyor.
+6. Liste ve panel hareketleri birbiriyle çakışmıyor.
+7. “Hepsini Gör” butonu paneli tam açıyor.
+8. Alt navigasyon ekranın altında sabit kalıyor.
+9. Harita küçük panel durumunda kullanılmaya devam ediyor.
+10. iOS ve Android’de gesture davranışı test ediliyor.
+11. TypeScript, Reanimated ve Gesture Handler hataları tamamen gideriliyor.
+12. Mevcut tasarım, markerlar, filtreler ve gerçek veriler korunuyor.
+
+Uygulamayı çalıştırarak gerçek dokunma ve sürükleme hareketleriyle test et. Yalnızca statik tasarım oluşturma; Bottom Sheet davranışının gerçekten çalıştığını doğrula.

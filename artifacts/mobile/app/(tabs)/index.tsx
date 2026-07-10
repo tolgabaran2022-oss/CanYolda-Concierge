@@ -1,8 +1,15 @@
+import BottomSheet, { BottomSheetFlatList } from "@gorhom/bottom-sheet";
 import { Ionicons } from "@expo/vector-icons";
 import * as Haptics from "expo-haptics";
 import * as Location from "expo-location";
 import { useRouter } from "expo-router";
-import React, { useEffect, useRef, useState } from "react";
+import React, {
+  useCallback,
+  useEffect,
+  useMemo,
+  useRef,
+  useState,
+} from "react";
 import {
   ActivityIndicator,
   Alert,
@@ -10,7 +17,6 @@ import {
   Dimensions,
   Linking,
   Platform,
-  useColorScheme,
   useWindowDimensions,
   Pressable,
   ScrollView,
@@ -21,22 +27,10 @@ import {
 import MapView, { Marker, PROVIDER_DEFAULT } from "react-native-maps";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { StatusBadge, STATUS_COLORS } from "@/components/StatusBadge";
-import type { AnimalStatus } from "@/contexts/AnimalsContext";
+import type { AnimalStatus, StrayAnimal } from "@/contexts/AnimalsContext";
 import { useAnimals } from "@/contexts/AnimalsContext";
 import { useColors } from "@/hooks/useColors";
 import { formatTimeAgo } from "@/utils/formatters";
-
-const { height: SCREEN_H } = Dimensions.get("window");
-const SNAP_COLLAPSED = 270;
-const SNAP_EXPANDED = Math.floor(SCREEN_H * 0.6);
-
-const STATUS_FILTERS: { key: string; label: string; emoji: string | null; accent: string | null }[] = [
-  { key: "all",        label: "Hepsi",     emoji: null,  accent: null },
-  { key: "aç",        label: "Aç",        emoji: "🍽️", accent: "#F97316" },
-  { key: "yaralı",    label: "Yaralı",    emoji: "🩹",  accent: "#EF4444" },
-  { key: "sağlıklı",  label: "Sağlıklı",  emoji: "✅",  accent: "#16A34A" },
-  { key: "bilinmiyor",label: "Bilinmiyor",emoji: "❓",  accent: "#71717A" },
-];
 
 const DEFAULT_REGION = {
   latitude: 41.0082,
@@ -45,51 +39,99 @@ const DEFAULT_REGION = {
   longitudeDelta: 0.05,
 };
 
+const PURPLE = "#7C3AED";
+
+const STATUS_FILTERS: {
+  key: string;
+  label: string;
+  emoji: string | null;
+  accent: string | null;
+}[] = [
+  { key: "all", label: "Hepsi", emoji: null, accent: null },
+  { key: "aç", label: "Aç", emoji: "🍽️", accent: "#F97316" },
+  { key: "yaralı", label: "Yaralı", emoji: "🩹", accent: "#EF4444" },
+  { key: "sağlıklı", label: "Sağlıklı", emoji: "✅", accent: "#16A34A" },
+  {
+    key: "bilinmiyor",
+    label: "Bilinmiyor",
+    emoji: "❓",
+    accent: "#71717A",
+  },
+];
+
 const TAB_FLOAT_H = 64;
 const TAB_BOTTOM_GAP = Platform.OS === "web" ? 12 : 10;
 
 export default function MapScreen() {
-  const colors       = useColors();
-  const insets       = useSafeAreaInsets();
+  const colors = useColors();
+  const insets = useSafeAreaInsets();
   const { width: SW } = useWindowDimensions();
-  const router       = useRouter();
+  const router = useRouter();
   const { animals } = useAnimals();
+
   const [selectedId, setSelectedId] = useState<string | null>(null);
   const [region, setRegion] = useState(DEFAULT_REGION);
   const [filter, setFilter] = useState("all");
-  const [expanded, setExpanded] = useState(false);
-  const [userLocation, setUserLocation] = useState<{ latitude: number; longitude: number } | null>(null);
+  const [userLocation, setUserLocation] = useState<{
+    latitude: number;
+    longitude: number;
+  } | null>(null);
   const [isLocating, setIsLocating] = useState(false);
-  const [locPermission, requestLocPermission] = Location.useForegroundPermissions();
+  const [locPermission, requestLocPermission] =
+    Location.useForegroundPermissions();
+
   const mapRef = useRef<MapView>(null);
-  const sheetAnim = useRef(new Animated.Value(SNAP_COLLAPSED)).current;
+  const bottomSheetRef = useRef<BottomSheet>(null);
   const pulseAnim = useRef(new Animated.Value(1)).current;
 
+  const snapPoints = useMemo(() => ["30%", "55%", "88%"], []);
+  const tabClearance = insets.bottom + TAB_BOTTOM_GAP + TAB_FLOAT_H;
+  const topPad = Platform.OS === "web" ? (SW < 1024 ? 54 : 16) : insets.top;
+
+  /* ── Pulse animation for user location marker ─────────── */
   useEffect(() => {
     if (!userLocation) return;
     const pulse = Animated.loop(
       Animated.sequence([
-        Animated.timing(pulseAnim, { toValue: 2.2, duration: 900, useNativeDriver: true }),
-        Animated.timing(pulseAnim, { toValue: 1, duration: 900, useNativeDriver: true }),
+        Animated.timing(pulseAnim, {
+          toValue: 2.2,
+          duration: 900,
+          useNativeDriver: true,
+        }),
+        Animated.timing(pulseAnim, {
+          toValue: 1,
+          duration: 900,
+          useNativeDriver: true,
+        }),
       ])
     );
     pulse.start();
     return () => pulse.stop();
   }, [userLocation]);
 
+  /* ── Locate me ────────────────────────────────────────── */
   const locateMe = async () => {
     if (Platform.OS === "web") {
       if (typeof navigator === "undefined" || !navigator.geolocation) return;
       setIsLocating(true);
       navigator.geolocation.getCurrentPosition(
         (pos) => {
-          const coords = { latitude: pos.coords.latitude, longitude: pos.coords.longitude };
+          const coords = {
+            latitude: pos.coords.latitude,
+            longitude: pos.coords.longitude,
+          };
           setUserLocation(coords);
-          mapRef.current?.animateToRegion({ ...coords, latitudeDelta: 0.008, longitudeDelta: 0.008 }, 800);
+          mapRef.current?.animateToRegion(
+            { ...coords, latitudeDelta: 0.008, longitudeDelta: 0.008 },
+            800
+          );
           setIsLocating(false);
         },
         () => {
-          Alert.alert("Konum Bilgisi Alınamadı", "Lütfen cihazınızın konum hizmetlerini açın.");
+          Alert.alert(
+            "Konum Bilgisi Alınamadı",
+            "Lütfen cihazınızın konum hizmetlerini açın."
+          );
           setIsLocating(false);
         },
         { timeout: 10000 }
@@ -115,62 +157,245 @@ export default function MapScreen() {
             ]
           );
         } else {
-          Alert.alert("Konum İzni Gerekli", "Konumunuzu gösterebilmemiz için konum izni vermeniz gerekiyor.");
+          Alert.alert(
+            "Konum İzni Gerekli",
+            "Konumunuzu gösterebilmemiz için konum izni vermeniz gerekiyor."
+          );
         }
         return;
       }
 
-      const locationPromise = Location.getCurrentPositionAsync({ accuracy: Location.Accuracy.Balanced });
+      const locationPromise = Location.getCurrentPositionAsync({
+        accuracy: Location.Accuracy.Balanced,
+      });
       const timeoutPromise = new Promise<never>((_, reject) =>
         setTimeout(() => reject(new Error("timeout")), 10000)
       );
 
-      const loc = await (Promise.race([locationPromise, timeoutPromise]) as Promise<Location.LocationObject>);
-      const coords = { latitude: loc.coords.latitude, longitude: loc.coords.longitude };
+      const loc = await (Promise.race([
+        locationPromise,
+        timeoutPromise,
+      ]) as Promise<Location.LocationObject>);
+      const coords = {
+        latitude: loc.coords.latitude,
+        longitude: loc.coords.longitude,
+      };
       setUserLocation(coords);
-      mapRef.current?.animateToRegion({ ...coords, latitudeDelta: 0.008, longitudeDelta: 0.008 }, 800);
+      mapRef.current?.animateToRegion(
+        { ...coords, latitudeDelta: 0.008, longitudeDelta: 0.008 },
+        800
+      );
     } catch (err: unknown) {
       const msg = err instanceof Error ? err.message : "";
       if (msg === "timeout") {
-        Alert.alert("Konum Alınamadı", "Konum bilgisi alınamadı. Lütfen cihazınızın konum hizmetlerini açın.");
+        Alert.alert(
+          "Konum Alınamadı",
+          "Konum bilgisi alınamadı. Lütfen cihazınızın konum hizmetlerini açın."
+        );
       } else {
-        Alert.alert("Konum Hatası", "Konum bilgisi alınamadı. Lütfen cihazınızın konum hizmetlerini açın.");
+        Alert.alert(
+          "Konum Hatası",
+          "Konum bilgisi alınamadı. Lütfen cihazınızın konum hizmetlerini açın."
+        );
       }
     } finally {
       setIsLocating(false);
     }
   };
 
-  const toggleSheet = () => {
-    const next = !expanded;
-    setExpanded(next);
-    Animated.spring(sheetAnim, {
-      toValue: next ? SNAP_EXPANDED : SNAP_COLLAPSED,
-      useNativeDriver: false,
-      damping: 20,
-      stiffness: 200,
-      mass: 0.9,
-    }).start();
-    Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
-  };
+  /* ── Data ─────────────────────────────────────────────── */
+  const filtered = useMemo(
+    () =>
+      filter === "all"
+        ? animals
+        : animals.filter((a) => a.status === (filter as AnimalStatus)),
+    [animals, filter]
+  );
 
-  const filtered = filter === "all"
-    ? animals
-    : animals.filter((a) => a.status === (filter as AnimalStatus));
+  const countPerFilter = useMemo(
+    () =>
+      STATUS_FILTERS.reduce<Record<string, number>>((acc, f) => {
+        acc[f.key] =
+          f.key === "all"
+            ? animals.length
+            : animals.filter((a) => a.status === f.key).length;
+        return acc;
+      }, {}),
+    [animals]
+  );
 
-  const countPerFilter = STATUS_FILTERS.reduce<Record<string, number>>((acc, f) => {
-    acc[f.key] = f.key === "all"
-      ? animals.length
-      : animals.filter((a) => a.status === f.key).length;
-    return acc;
-  }, {});
+  /* ── Sheet list header ────────────────────────────────── */
+  const ListHeader = useMemo(
+    () => (
+      <>
+        {/* Title row */}
+        <View style={styles.sheetTitleRow}>
+          <View style={styles.sheetTitleGroup}>
+            <Text style={[styles.sheetTitle, { color: colors.foreground }]}>
+              Yakındaki Hayvanlar
+            </Text>
+            <View
+              style={[
+                styles.countBadge,
+                { backgroundColor: `${colors.primary}18` },
+              ]}
+            >
+              <Text
+                style={[styles.countBadgeText, { color: colors.primary }]}
+              >
+                {animals.length} hayvan
+              </Text>
+            </View>
+          </View>
+          <Pressable
+            onPress={() => bottomSheetRef.current?.snapToIndex(2)}
+            hitSlop={8}
+          >
+            <Text style={[styles.seeAll, { color: colors.primary }]}>
+              Hepsini Gör
+            </Text>
+          </Pressable>
+        </View>
 
-  const topPad = Platform.OS === "web" ? (SW < 1024 ? 54 : 16) : insets.top;
-  const tabClearance = insets.bottom + TAB_BOTTOM_GAP + TAB_FLOAT_H;
-  const isIOS = Platform.OS === "ios";
+        {/* Horizontal filters */}
+        <ScrollView
+          horizontal
+          showsHorizontalScrollIndicator={false}
+          style={{ flexGrow: 0 }}
+          contentContainerStyle={styles.filterRow}
+        >
+          {STATUS_FILTERS.map((f) => {
+            const active = filter === f.key;
+            const accentColor = f.accent ?? colors.primary;
+            const activeBg = accentColor;
+            const inactiveBg = `${accentColor}12`;
+            const count = countPerFilter[f.key] ?? 0;
+            return (
+              <Pressable
+                key={f.key}
+                style={[
+                  styles.pill,
+                  {
+                    backgroundColor: active ? activeBg : inactiveBg,
+                    borderColor: active ? activeBg : `${accentColor}30`,
+                  },
+                ]}
+                onPress={() => {
+                  setFilter(f.key);
+                  Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+                }}
+              >
+                {f.emoji && (
+                  <Text style={styles.pillEmoji}>{f.emoji}</Text>
+                )}
+                <Text
+                  style={[
+                    styles.pillText,
+                    { color: active ? "white" : colors.text },
+                  ]}
+                >
+                  {f.label}
+                </Text>
+                <View
+                  style={[
+                    styles.pillCount,
+                    {
+                      backgroundColor: active
+                        ? "rgba(255,255,255,0.25)"
+                        : `${accentColor}20`,
+                    },
+                  ]}
+                >
+                  <Text
+                    style={[
+                      styles.pillCountText,
+                      { color: active ? "white" : accentColor },
+                    ]}
+                  >
+                    {count}
+                  </Text>
+                </View>
+              </Pressable>
+            );
+          })}
+        </ScrollView>
+      </>
+    ),
+    [filter, countPerFilter, animals.length, colors]
+  );
 
+  /* ── Animal row renderer ──────────────────────────────── */
+  const renderAnimalRow = useCallback(
+    ({ item: animal }: { item: StrayAnimal }) => (
+      <Pressable
+        style={({ pressed }) => [
+          styles.animalRow,
+          {
+            backgroundColor:
+              selectedId === animal.id
+                ? `${colors.primary}10`
+                : pressed
+                ? `${colors.primary}07`
+                : "transparent",
+            borderBottomColor: colors.border,
+          },
+        ]}
+        onPress={() => {
+          setSelectedId(animal.id);
+          router.push(`/animal/${animal.id}` as const);
+        }}
+      >
+        <View
+          style={[
+            styles.animalIcon,
+            { backgroundColor: STATUS_COLORS[animal.status] },
+          ]}
+        >
+          <Ionicons name="paw" size={16} color="white" />
+        </View>
+        <View style={{ flex: 1 }}>
+          <View style={styles.rowTop}>
+            <StatusBadge status={animal.status} size="sm" />
+            {animal.needsHelpByUsers.length > 0 && (
+              <View style={styles.urgentBadge}>
+                <Text style={styles.urgentBadgeText}>Acil</Text>
+              </View>
+            )}
+          </View>
+          <Text
+            style={[styles.animalNote, { color: colors.foreground }]}
+            numberOfLines={1}
+          >
+            {animal.notes || "Not eklenmemiş"}
+          </Text>
+          <Text
+            style={[styles.animalMeta, { color: colors.mutedForeground }]}
+          >
+            {animal.userName} · {formatTimeAgo(animal.timestamp)}
+          </Text>
+        </View>
+        <Ionicons name="chevron-forward" size={16} color={colors.mutedForeground} />
+      </Pressable>
+    ),
+    [selectedId, colors, router]
+  );
+
+  const EmptyList = useMemo(
+    () => (
+      <View style={styles.emptyRow}>
+        <Ionicons name="paw-outline" size={22} color={colors.mutedForeground} />
+        <Text style={[styles.emptyText, { color: colors.mutedForeground }]}>
+          Bu filtrede hayvan yok
+        </Text>
+      </View>
+    ),
+    [colors.mutedForeground]
+  );
+
+  /* ── Render ───────────────────────────────────────────── */
   return (
     <View style={styles.container}>
+      {/* Map fills the whole screen */}
       <MapView
         ref={mapRef}
         style={StyleSheet.absoluteFill}
@@ -184,7 +409,10 @@ export default function MapScreen() {
         {animals.map((animal) => (
           <Marker
             key={animal.id}
-            coordinate={{ latitude: animal.latitude, longitude: animal.longitude }}
+            coordinate={{
+              latitude: animal.latitude,
+              longitude: animal.longitude,
+            }}
             onPress={() => {
               setSelectedId(animal.id);
               Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
@@ -195,18 +423,26 @@ export default function MapScreen() {
                 styles.marker,
                 {
                   backgroundColor: STATUS_COLORS[animal.status],
-                  transform: [{ scale: selectedId === animal.id ? 1.25 : 1 }],
+                  transform: [
+                    { scale: selectedId === animal.id ? 1.25 : 1 },
+                  ],
                 },
               ]}
             >
               <Ionicons name="paw" size={13} color="white" />
-              {animal.needsHelpByUsers.length > 0 && <View style={styles.urgentDot} />}
+              {animal.needsHelpByUsers.length > 0 && (
+                <View style={styles.urgentDot} />
+              )}
             </View>
           </Marker>
         ))}
 
         {userLocation && Platform.OS !== "web" && (
-          <Marker coordinate={userLocation} anchor={{ x: 0.5, y: 0.5 }} tracksViewChanges={false}>
+          <Marker
+            coordinate={userLocation}
+            anchor={{ x: 0.5, y: 0.5 }}
+            tracksViewChanges={false}
+          >
             <View style={styles.userMarkerWrapper}>
               <Animated.View
                 style={[
@@ -225,19 +461,29 @@ export default function MapScreen() {
       {/* Top bar */}
       <View style={[styles.topBar, { top: topPad + 12 }]}>
         <View
-          style={[StyleSheet.absoluteFill, { backgroundColor: colors.background }]}
+          style={[
+            StyleSheet.absoluteFill,
+            { backgroundColor: colors.background },
+          ]}
         />
         <Ionicons name="paw" size={17} color={colors.primary} />
-        <Text style={[styles.topTitle, { color: colors.foreground }]}>CanYoldaşı</Text>
+        <Text style={[styles.topTitle, { color: colors.foreground }]}>
+          CanYoldaşı
+        </Text>
         <View style={{ flex: 1 }} />
-        <View style={[styles.countPill, { backgroundColor: `${colors.primary}18` }]}>
+        <View
+          style={[
+            styles.countPill,
+            { backgroundColor: `${colors.primary}18` },
+          ]}
+        >
           <Text style={[styles.countText, { color: colors.primary }]}>
             {animals.length} hayvan
           </Text>
         </View>
       </View>
 
-      {/* Location button — fixed, right side, below header */}
+      {/* Location button — fixed right side, below header */}
       <Pressable
         style={({ pressed }) => [
           styles.locateBtn,
@@ -250,13 +496,13 @@ export default function MapScreen() {
         hitSlop={8}
       >
         {isLocating ? (
-          <ActivityIndicator size="small" color="#7C3AED" />
+          <ActivityIndicator size="small" color={PURPLE} />
         ) : (
-          <Ionicons name="navigate" size={20} color="#7C3AED" />
+          <Ionicons name="navigate" size={20} color={PURPLE} />
         )}
       </Pressable>
 
-      {/* FAB */}
+      {/* FAB — add animal */}
       <Pressable
         style={({ pressed }) => [
           styles.fab,
@@ -276,167 +522,39 @@ export default function MapScreen() {
       </Pressable>
 
       {/* Bottom Sheet */}
-      <Animated.View style={[styles.sheet, { height: sheetAnim }]}>
-        <View
-          style={[
-            StyleSheet.absoluteFill,
-            styles.sheetRadius,
-            { backgroundColor: colors.background },
-          ]}
-        />
-
-        {/* Drag handle */}
-        <Pressable style={styles.handleRow} onPress={toggleSheet} hitSlop={12}>
-          <View style={styles.handle} />
-        </Pressable>
-
-        {/* Title row */}
-        <View style={styles.sheetTitleRow}>
-          <View style={styles.sheetTitleGroup}>
-            <Text style={[styles.sheetTitle, { color: colors.foreground }]}>
-              Yakındaki Hayvanlar
-            </Text>
-            <View style={[styles.countBadge, { backgroundColor: `${colors.primary}18` }]}>
-              <Text style={[styles.countBadgeText, { color: colors.primary }]}>
-                {animals.length} hayvan
-              </Text>
-            </View>
-          </View>
-          <Pressable
-            onPress={() => router.push("/(tabs)/animals" as any)}
-            hitSlop={8}
-          >
-            <Text style={[styles.seeAll, { color: colors.primary }]}>Hepsini Gör</Text>
-          </Pressable>
-        </View>
-
-        {/* Filters — horizontal scroll with right-fade hint */}
-        <View style={styles.filterWrapper}>
-          <ScrollView
-            horizontal
-            showsHorizontalScrollIndicator={false}
-            style={{ flexGrow: 0 }}
-            contentContainerStyle={styles.filterRow}
-          >
-            {STATUS_FILTERS.map((f) => {
-              const active = filter === f.key;
-              const count = countPerFilter[f.key] ?? 0;
-              const accentColor = f.accent ?? colors.primary;
-              const activeBg = accentColor;
-              const inactiveBg = `${accentColor}12`;
-              return (
-                <Pressable
-                  key={f.key}
-                  style={[
-                    styles.pill,
-                    {
-                      backgroundColor: active ? activeBg : inactiveBg,
-                      borderColor: active ? activeBg : `${accentColor}30`,
-                    },
-                  ]}
-                  onPress={() => {
-                    setFilter(f.key);
-                    Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
-                  }}
-                >
-                  {f.emoji && (
-                    <Text style={styles.pillEmoji}>{f.emoji}</Text>
-                  )}
-                  <Text
-                    style={[
-                      styles.pillText,
-                      { color: active ? "white" : colors.text },
-                    ]}
-                  >
-                    {f.label}
-                  </Text>
-                  <View style={[
-                    styles.pillCount,
-                    { backgroundColor: active ? "rgba(255,255,255,0.25)" : `${accentColor}20` },
-                  ]}>
-                    <Text style={[
-                      styles.pillCountText,
-                      { color: active ? "white" : accentColor },
-                    ]}>
-                      {count}
-                    </Text>
-                  </View>
-                </Pressable>
-              );
-            })}
-          </ScrollView>
-        </View>
-
-        {/* Animal rows */}
-        <ScrollView
+      <BottomSheet
+        ref={bottomSheetRef}
+        index={0}
+        snapPoints={snapPoints}
+        enablePanDownToClose={false}
+        enableContentPanningGesture
+        enableHandlePanningGesture
+        animateOnMount
+        handleIndicatorStyle={styles.handleBar}
+        handleStyle={styles.handleWrapper}
+        backgroundStyle={[
+          styles.sheetBackground,
+          { backgroundColor: colors.background },
+        ]}
+        style={styles.sheetShadow}
+      >
+        <BottomSheetFlatList
+          data={filtered}
+          keyExtractor={(item) => item.id}
+          renderItem={renderAnimalRow}
+          ListHeaderComponent={ListHeader}
+          ListEmptyComponent={EmptyList}
+          nestedScrollEnabled
           showsVerticalScrollIndicator={false}
-          contentContainerStyle={{ paddingBottom: tabClearance + 8 }}
-        >
-          {filtered.length === 0 ? (
-            <View style={styles.emptyRow}>
-              <Ionicons name="paw-outline" size={22} color={colors.mutedForeground} />
-              <Text style={[styles.emptyText, { color: colors.mutedForeground }]}>
-                Bu filtrede hayvan yok
-              </Text>
-            </View>
-          ) : (
-            filtered.map((animal) => (
-              <Pressable
-                key={animal.id}
-                style={({ pressed }) => [
-                  styles.animalRow,
-                  {
-                    backgroundColor:
-                      selectedId === animal.id
-                        ? `${colors.primary}10`
-                        : pressed
-                        ? `${colors.primary}07`
-                        : "transparent",
-                    borderBottomColor: colors.border,
-                  },
-                ]}
-                onPress={() => {
-                  setSelectedId(animal.id);
-                  router.push(`/animal/${animal.id}` as const);
-                }}
-              >
-                <View
-                  style={[
-                    styles.animalIcon,
-                    { backgroundColor: STATUS_COLORS[animal.status] },
-                  ]}
-                >
-                  <Ionicons name="paw" size={16} color="white" />
-                </View>
-                <View style={{ flex: 1 }}>
-                  <View style={styles.rowTop}>
-                    <StatusBadge status={animal.status} size="sm" />
-                    {animal.needsHelpByUsers.length > 0 && (
-                      <View style={styles.urgentBadge}>
-                        <Text style={styles.urgentBadgeText}>Acil</Text>
-                      </View>
-                    )}
-                  </View>
-                  <Text
-                    style={[styles.animalNote, { color: colors.foreground }]}
-                    numberOfLines={1}
-                  >
-                    {animal.notes || "Not eklenmemiş"}
-                  </Text>
-                  <Text style={[styles.animalMeta, { color: colors.mutedForeground }]}>
-                    {animal.userName} · {formatTimeAgo(animal.timestamp)}
-                  </Text>
-                </View>
-                <Ionicons name="chevron-forward" size={16} color={colors.mutedForeground} />
-              </Pressable>
-            ))
-          )}
-        </ScrollView>
-      </Animated.View>
+          contentContainerStyle={{ paddingBottom: tabClearance + 16 }}
+          ItemSeparatorComponent={() => <View style={{ height: StyleSheet.hairlineWidth, backgroundColor: colors.border }} />}
+        />
+      </BottomSheet>
     </View>
   );
 }
 
+/* ── Styles ──────────────────────────────────────────────── */
 const styles = StyleSheet.create({
   container: { flex: 1 },
 
@@ -464,6 +582,35 @@ const styles = StyleSheet.create({
     backgroundColor: "#EF4444",
     borderWidth: 1.5,
     borderColor: "white",
+  },
+
+  userMarkerWrapper: {
+    width: 36,
+    height: 36,
+    alignItems: "center",
+    justifyContent: "center",
+  },
+  userPulse: {
+    position: "absolute",
+    width: 28,
+    height: 28,
+    borderRadius: 14,
+    backgroundColor: "rgba(99,102,241,0.25)",
+  },
+  userDot: {
+    width: 24,
+    height: 24,
+    borderRadius: 12,
+    backgroundColor: "#6366F1",
+    alignItems: "center",
+    justifyContent: "center",
+    borderWidth: 2.5,
+    borderColor: "white",
+    shadowColor: "#6366F1",
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.45,
+    shadowRadius: 6,
+    elevation: 6,
   },
 
   topBar: {
@@ -498,6 +645,7 @@ const styles = StyleSheet.create({
     fontSize: 13,
     fontFamily: "Inter_600SemiBold",
   },
+
   locateBtn: {
     position: "absolute",
     right: 16,
@@ -516,35 +664,6 @@ const styles = StyleSheet.create({
     elevation: 5,
   },
 
-  userMarkerWrapper: {
-    width: 36,
-    height: 36,
-    alignItems: "center",
-    justifyContent: "center",
-  },
-  userPulse: {
-    position: "absolute",
-    width: 28,
-    height: 28,
-    borderRadius: 14,
-    backgroundColor: "rgba(99,102,241,0.25)",
-  },
-  userDot: {
-    width: 24,
-    height: 24,
-    borderRadius: 12,
-    backgroundColor: "#6366F1",
-    alignItems: "center",
-    justifyContent: "center",
-    borderWidth: 2.5,
-    borderColor: "white",
-    shadowColor: "#6366F1",
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.45,
-    shadowRadius: 6,
-    elevation: 6,
-  },
-
   fab: {
     position: "absolute",
     width: 50,
@@ -559,38 +678,32 @@ const styles = StyleSheet.create({
     elevation: 8,
   },
 
-  sheet: {
-    position: "absolute",
-    bottom: 0,
-    left: 0,
-    right: 0,
-    borderTopLeftRadius: 30,
-    borderTopRightRadius: 30,
+  /* Bottom sheet chrome */
+  sheetShadow: {
     shadowColor: "#000",
     shadowOffset: { width: 0, height: -6 },
     shadowOpacity: 0.1,
     shadowRadius: 24,
     elevation: 20,
   },
-  sheetRadius: {
+  sheetBackground: {
     borderTopLeftRadius: 30,
     borderTopRightRadius: 30,
     borderTopWidth: 0.5,
     borderColor: "rgba(255,255,255,0.75)",
   },
-
-  handleRow: {
-    alignItems: "center",
-    paddingTop: 14,
-    paddingBottom: 10,
+  handleWrapper: {
+    paddingTop: 12,
+    paddingBottom: 8,
   },
-  handle: {
+  handleBar: {
     width: 40,
     height: 4,
     borderRadius: 2,
     backgroundColor: "rgba(0,0,0,0.14)",
   },
 
+  /* Sheet content */
   sheetTitleRow: {
     flexDirection: "row",
     alignItems: "center",
@@ -623,10 +736,6 @@ const styles = StyleSheet.create({
     fontFamily: "Inter_500Medium",
   },
 
-  filterWrapper: {
-    position: "relative",
-    marginBottom: 4,
-  },
   filterRow: {
     paddingHorizontal: 20,
     paddingTop: 2,
@@ -674,7 +783,6 @@ const styles = StyleSheet.create({
     gap: 12,
     paddingHorizontal: 20,
     paddingVertical: 13,
-    borderBottomWidth: StyleSheet.hairlineWidth,
   },
   animalIcon: {
     width: 42,
@@ -715,7 +823,8 @@ const styles = StyleSheet.create({
     alignItems: "center",
     justifyContent: "center",
     gap: 8,
-    paddingVertical: 28,
+    paddingVertical: 32,
+    paddingHorizontal: 20,
   },
   emptyText: {
     fontSize: 14,
