@@ -975,6 +975,7 @@ function MyListingsSection({
 }) {
   const { createCheckout, packages, fetchBoostStatus } = useBoost();
   const { updateListing } = useAdoption();
+  const router = useRouter();
 
   // ── Boost success modal ──
   const [successModal, setSuccessModal] = useState<{
@@ -1331,7 +1332,10 @@ function MyListingsSection({
           onEdit={() => openEdit(c.listing)}
           onTogglePassive={() => togglePassive(c.listing.id)}
           onAdopted={() => handleAdopted(c.listing.id, c.listing.petName)}
-          onPreview={() => Alert.alert("Önizleme", `"${c.listing.petName}" ilanı kullanıcılara bu şekilde görünüyor.\n\n📍 ${c.listing.location}\n\n${c.listing.description}`)}
+          onPreview={() => {
+            Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+            router.push({ pathname: "/adoption/[id]", params: { id: c.listing.id, preview: "true" } } as any);
+          }}
           onDelete={() => handleDelete(c.listing)}
           onBoost={(pkg) => handleBoost(c.listing.id, c.listing.petName, pkg)}
         />

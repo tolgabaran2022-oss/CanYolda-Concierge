@@ -90,7 +90,8 @@ function SectionHead({ title }: { title: string }) {
 
 // ── Main ──────────────────────────────────────────────────────────────────────
 export default function AdoptionDetailScreen() {
-  const { id } = useLocalSearchParams<{ id: string }>();
+  const { id, preview } = useLocalSearchParams<{ id: string; preview?: string }>();
+  const isPreviewMode = preview === "true";
   const insets = useSafeAreaInsets();
   const router = useRouter();
   const { getListing, deleteListing } = useAdoption();
@@ -293,6 +294,26 @@ export default function AdoptionDetailScreen() {
           {/* ── Bottom sheet card ── */}
           <View style={S.sheet}>
 
+            {/* ── Preview mode banner ── */}
+            {isPreviewMode && (
+              <View style={S.previewBanner}>
+                <View style={S.previewBannerIcon}>
+                  <Ionicons name="eye-outline" size={15} color={P} />
+                </View>
+                <View style={{ flex: 1 }}>
+                  <Text style={S.previewBannerTitle}>Önizleme Modu</Text>
+                  <Text style={S.previewBannerSub}>Bu ilan diğer kullanıcılara bu şekilde görünecek.</Text>
+                </View>
+                <Pressable
+                  onPress={() => router.back()}
+                  hitSlop={10}
+                  style={({ pressed }) => [S.previewBannerClose, { opacity: pressed ? 0.7 : 1 }]}
+                >
+                  <Ionicons name="close" size={18} color={`${P}80`} />
+                </Pressable>
+              </View>
+            )}
+
             {/* Name + status badge */}
             <View style={S.nameRow}>
               <View style={{ flex: 1 }}>
@@ -406,8 +427,8 @@ export default function AdoptionDetailScreen() {
               <Text style={S.contactInfoTxt}>{listing.contactInfo}</Text>
             </View>
 
-            {/* Owner actions */}
-            {isOwner && (
+            {/* Owner actions — hidden in preview mode */}
+            {isOwner && !isPreviewMode && (
               <View style={S.ownerActionsWrap}>
                 <View style={S.divider} />
                 <SectionHead title="İlan Yönetimi" />
@@ -457,7 +478,33 @@ export default function AdoptionDetailScreen() {
         </ScrollView>
 
         {/* ── Sticky bottom action buttons ── */}
-        {!isOwner && (
+        {isPreviewMode ? (
+          <View style={[S.stickyBottom, { paddingBottom: botPad + 12 }]}>
+            <Animated.View style={[{ flex: 1 }, { transform: [{ scale: pressScale }] }]}>
+              <Pressable
+                onPress={() => {
+                  Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
+                  router.push(`/adoption/edit/${listing.id}` as any);
+                }}
+                onPressIn={onPressIn}
+                onPressOut={onPressOut}
+                style={S.msgBtnOuter}
+              >
+                <LinearGradient colors={[P2, P, DARK]} start={{ x: 0, y: 0 }} end={{ x: 1, y: 0 }} style={S.msgBtn}>
+                  <Ionicons name="create-outline" size={18} color={WHITE} />
+                  <Text style={S.msgBtnTxt}>İlanı Düzenle</Text>
+                </LinearGradient>
+              </Pressable>
+            </Animated.View>
+            <Pressable
+              style={({ pressed }) => [S.callBtn, { opacity: pressed ? 0.85 : 1 }]}
+              onPress={() => router.back()}
+              hitSlop={8}
+            >
+              <Ionicons name="eye-off-outline" size={20} color={P} />
+            </Pressable>
+          </View>
+        ) : !isOwner ? (
           <View style={[S.stickyBottom, { paddingBottom: botPad + 12 }]}>
             {contactPrefs.allowMessages && (
               <Animated.View style={[{ flex: 1 }, { transform: [{ scale: pressScale }] }]}>
@@ -495,7 +542,7 @@ export default function AdoptionDetailScreen() {
               </Pressable>
             )}
           </View>
-        )}
+        ) : null}
       </View>
 
       {/* ── Phone Reveal Modal ── */}
@@ -557,7 +604,13 @@ export default function AdoptionDetailScreen() {
 const S = StyleSheet.create({
   root:    { flex: 1, backgroundColor: BG },
 
-  // Not found
+  // Preview mode banner
+  previewBanner:     { flexDirection: "row", alignItems: "center", gap: 12, backgroundColor: `${P}10`, borderRadius: 18, borderWidth: 1, borderColor: `${P}20`, padding: 14 },
+  previewBannerIcon: { width: 30, height: 30, borderRadius: 15, backgroundColor: `${P}20`, alignItems: "center", justifyContent: "center" },
+  previewBannerTitle:{ fontSize: 13, fontFamily: "Inter_700Bold", color: P },
+  previewBannerSub:  { fontSize: 11, fontFamily: "Inter_400Regular", color: BODY, marginTop: 1 },
+  previewBannerClose:{ padding: 4 },
+
   notFound:      { flex: 1, backgroundColor: BG, alignItems: "center", justifyContent: "center", gap: 10 },
   notFoundIllo:  { width: 90, height: 90, borderRadius: 45, backgroundColor: `${P}14`, alignItems: "center", justifyContent: "center", marginBottom: 6 },
   notFoundTitle: { fontSize: 20, fontFamily: "Inter_700Bold", color: DARK },

@@ -1,0 +1,412 @@
+Mevcut “İlanlarım” kartındaki “Önizle” butonunu tamamen çalışır hale getir.
+
+AMAÇ:
+Kullanıcı kendi ilan kartında “Önizle” butonuna tıkladığında, ilan sahibinden.com mantığında gerçek ilan detay sayfası olarak açılsın. Önizleme ekranı, ilanın diğer kullanıcılar tarafından nasıl görüleceğini göstermelidir.
+
+ÖNEMLİ:
+- Sahte veya boş bir modal açma.
+- Mevcut ilan verilerini kullan.
+- İlan başlığı, açıklaması, fiyatı, konumu, görselleri, özellikleri ve ilan sahibi bilgileri Supabase’den gelsin.
+- Mevcut backend, auth ve veritabanı yapısını bozma.
+- “Önizle” butonu sadece görsel bir buton olarak kalmasın.
+- Web ve mobil görünümde çalışsın.
+- İlan kartındaki mevcut tasarımı değiştirme.
+
+1. ÖNİZLE BUTONU DAVRANIŞI
+
+Karttaki “Önizle” butonuna tıklanınca:
+
+- İlanın gerçek detail/preview sayfasına yönlendir.
+- Route örneği:
+  /ilan/[listingId]
+  veya
+  /listings/[listingId]/preview
+
+- listingId karttaki gerçek ilan id değerinden gelsin.
+- Sabit, rastgele veya örnek id kullanma.
+- İlan bulunamazsa düzgün bir “İlan bulunamadı” ekranı göster.
+- Yüklenirken skeleton/loading göster.
+- Butona art arda basıldığında birden fazla navigation oluşmasın.
+
+Örnek davranış:
+
+onPreview={() => router.push(`/ilan/${listing.id}?preview=true`)}
+
+Proje Expo Router kullanıyorsa:
+router.push({
+  pathname: "/ilan/[id]",
+  params: {
+    id: listing.id,
+    preview: "true"
+  }
+})
+
+React Router kullanıyorsa:
+navigate(`/ilan/${listing.id}?preview=true`)
+
+Next.js kullanıyorsa:
+router.push(`/ilan/${listing.id}?preview=true`)
+
+Projede hangi routing sistemi varsa ona uygun olanı kullan.
+
+2. ÖNİZLEME EKRANININ AMACI
+
+Bu ekran, ilan yayınlandığında diğer kullanıcıların göreceği ilan detay ekranıyla aynı olmalıdır.
+
+Ancak ilan sahibi önizleme modundayken:
+- Üstte küçük bir “Önizleme Modu” etiketi göster.
+- “Bu ilan diğer kullanıcılara bu şekilde görünecek.” açıklaması göster.
+- İlan sahibine ait “Mesaj Gönder” veya “Ara” butonları kendisine karşı aktif olmasın.
+- Bunun yerine “İlanı Düzenle” ve “Önizlemeden Çık” butonları gösterilebilir.
+- Görüntülenme sayısını önizleme sırasında artırma.
+- Önizleme açılması gerçek ilan görüntülenmesi olarak kaydedilmesin.
+
+3. İLAN DETAY SAYFASI
+
+Sayfa sahibinden.com ilan detay mantığında düzenlensin.
+
+ÜST ALAN:
+- Geri butonu
+- “İlan Detayı” başlığı
+- Favoriye ekleme ikonu
+- Paylaşma ikonu
+- Önizleme modundaysa “Önizleme” etiketi
+
+GÖRSEL GALERİSİ:
+- İlanın tüm görselleri gösterilsin.
+- İlk görsel büyük ana görsel olsun.
+- Diğer görseller küçük thumbnail olarak gösterilsin.
+- Görsele tıklanınca tam ekran galeri açılsın.
+- Mobilde swipe ile görseller arasında geçiş yapılabilsin.
+- Görsel sayacı göster:
+  “1 / 5”
+- Görsel yoksa ilan türüne uygun placeholder göster.
+- object-fit: cover kullan.
+- Görseller kırpılmış veya ezilmiş görünmesin.
+
+İLAN BAŞLIĞI:
+- Büyük ve okunabilir başlık
+- Altında ilan numarası
+- Yayınlanma tarihi
+- Konum bilgisi
+- İlan durumu: Aktif / Pasif
+
+Örnek:
+“Golden Retriever 3 Aylık Yavru”
+“İlan No: 12345678”
+“Çıldır, Ardahan”
+“Bugün yayınlandı”
+
+FİYAT ALANI:
+İlanda fiyat varsa:
+- Büyük ve dikkat çekici şekilde göster.
+- Para birimini doğru göster.
+- Örnek: “12.500 TL”
+
+İlan ücretsiz sahiplendirme ise:
+- Fiyat yerine “Ücretsiz Sahiplendirme” göster.
+
+İlan fiyat alanı boşsa:
+- Rastgele fiyat üretme.
+- “Fiyat belirtilmedi” göster.
+
+4. İLAN ÖZELLİKLERİ
+
+“İlan Bilgileri” başlığı altında mevcut ilan alanlarını göster.
+
+Evcil hayvan ilanı için örnek alanlar:
+- Hayvan türü
+- Irk
+- Yaş
+- Cinsiyet
+- Aşı durumu
+- Kısırlaştırma durumu
+- Mikroçip durumu
+- Sahiplendirme türü
+- Şehir
+- İlçe
+- İlan tarihi
+
+Sadece veritabanında dolu olan alanları göster.
+Boş alanlar için rastgele bilgi yazma.
+Telefon alanına metin veya örnek telefon üretme.
+Veri yoksa ilgili satırı gizle veya “Belirtilmedi” göster.
+
+Bilgileri iki sütunlu temiz bir tablo/kart yapısında göster:
+
+Hayvan Türü       Kedi
+Irk               British Shorthair
+Yaş               3–6 ay
+Cinsiyet          Erkek
+Aşı Durumu        Tamamlandı
+
+Mobilde tek sütuna düşebilir.
+
+5. İLAN AÇIKLAMASI
+
+“İlan Açıklaması” başlığı oluştur.
+
+- İlan sahibinin yazdığı gerçek açıklamayı göster.
+- Satır sonlarını koru.
+- Uzun açıklama varsa okunabilir paragraf yapısı kullan.
+- HTML veya script çalıştırma.
+- Kullanıcı içeriğini sanitize et.
+- Açıklama yoksa “İlan sahibi açıklama eklememiş.” göster.
+
+6. KONUM BÖLÜMÜ
+
+Konum alanında:
+- Şehir
+- İlçe
+- Mahalle varsa mahalle
+
+göster.
+
+Harita verisi varsa:
+- Küçük harita önizlemesi göster.
+- Kullanıcının tam ev adresini izinsiz gösterme.
+- Yaklaşık konum göster.
+- “Haritada Gör” butonu ekle.
+
+Konum yoksa boş harita gösterme.
+
+7. İLAN SAHİBİ KARTI
+
+Sağ tarafta veya mobilde içeriğin altında ilan sahibi kartı göster.
+
+Kartta:
+- Profil fotoğrafı
+- Kullanıcı adı
+- Üyelik tarihi
+- Doğrulanmış hesap durumu varsa rozet
+- Diğer ilanlarını görüntüle butonu
+
+İlan başkasına ait olduğunda:
+- “Mesaj Gönder”
+- “Ara”
+- “WhatsApp” yalnızca sistemde aktifse
+- “Profilini Gör”
+
+butonları göster.
+
+İlan sahibinin telefon numarası varsa:
+- İlk açılışta tamamen gösterme.
+- “Numarayı Göster” butonuna basınca göster.
+- Telefon numarasını backend’den yetki kontrollü al.
+- Telefon bilgisi yoksa “Ara” butonunu gizle.
+
+Kullanıcı kendi ilanını önizliyorsa:
+- Kendisine mesaj atma butonu gösterme.
+- Kendini arama butonu gösterme.
+- Şunları göster:
+  “İlanı Düzenle”
+  “Önizlemeden Çık”
+
+8. SABİT İLETİŞİM ALANI
+
+Mobil görünümde ekranın altında sticky action bar oluştur.
+
+Başkasının ilanında:
+- Mesaj Gönder
+- Ara
+
+Kendi ilanının önizlemesinde:
+- Düzenle
+- Önizlemeden Çık
+
+Bu bar:
+- Alt menünün üstünde kalsın.
+- İçeriği kapatmasın.
+- Safe area ile uyumlu olsun.
+- iPhone ve Android cihazlarda taşma yapmasın.
+
+9. ÖNİZLEME VE NORMAL DETAY AYRIMI
+
+URL’de preview=true varsa:
+- previewMode = true yap.
+- Görüntülenme sayısını artırma.
+- İletişim butonlarını ilan sahibine göre değiştir.
+- Üstte önizleme bilgilendirme bandı göster.
+
+preview parametresi yoksa:
+- Normal ilan detay ekranı olarak aç.
+- Kullanıcı ilan sahibi değilse görüntülenme sayısını bir kez artır.
+- Aynı kullanıcının sayfayı sürekli yenilemesi görüntülenmeyi spam şekilde artırmasın.
+- Oturum veya kullanıcı bazlı view deduplication uygula.
+
+10. VERİ ÇEKME
+
+İlan detay sorgusunda şu ilişkili verileri getir:
+- listing
+- listing_images
+- listing_owner/profile
+- pet/category details
+- location
+- active promotion
+- favorite status
+- view count
+- message availability
+
+Tek bir listingId üzerinden gerçek veriyi getir.
+
+Örnek:
+getListingDetail(listingId)
+
+Bu servis şu kontrolleri yapsın:
+- İlan var mı
+- İlan silinmiş mi
+- Kullanıcı ilan sahibi mi
+- İlan yayınlanmış mı
+- Preview modunda sahibi taslak ilanı görebilir mi
+
+11. TASLAK VE PASİF İLANLAR
+
+- Normal kullanıcılar taslak veya pasif ilanları göremesin.
+- İlan sahibi önizleme modunda kendi taslak/pasif ilanını görebilsin.
+- Admin görebilsin.
+- Başka kullanıcı URL’yi bilse bile taslak ilana erişemesin.
+- Yetki kontrolü sadece frontend’de yapılmasın.
+- Backend ve Supabase RLS ile de kontrol et.
+
+12. PAYLAŞ BUTONU
+
+Paylaş butonuna tıklanınca:
+- Web Share API varsa onu kullan.
+- Yoksa ilan linkini panoya kopyala.
+- Kullanıcıya “İlan bağlantısı kopyalandı” bildirimi göster.
+- Önizleme linkini değil, normal ilan linkini paylaş.
+- Paylaşım linki:
+  /ilan/[listingId]
+
+13. FAVORİ BUTONU
+
+Normal ilan detayında:
+- Kullanıcı başkasının ilanını favoriye ekleyebilsin.
+- Kullanıcı kendi ilanını favoriye ekleyemesin.
+- Giriş yapmamışsa login ekranına yönlendir.
+- Favori durumu veritabanına kaydedilsin.
+- Buton loading durumunda tekrar tıklanamasın.
+
+14. TASARIM
+
+Tasarım:
+- Sahibinden.com ilan detay mantığı
+- Modern ve uygulamanın mevcut mor tasarım diliyle uyumlu
+- Beyaz kartlar
+- Açık lavanta arka plan
+- 16–20px border-radius
+- Hafif border
+- Abartısız gölge
+- Düzenli spacing
+- Mobil ve web responsive
+
+Web görünümü:
+- Sol bölüm: görseller ve ilan açıklaması
+- Sağ bölüm: fiyat, ilan sahibi ve iletişim kartı
+- İçerik max-width ile ortalansın
+
+Mobil görünüm:
+- Tek sütun
+- Görsel galerisi üstte
+- Bilgiler altında
+- İlan sahibi kartı en altta
+- İletişim butonları sticky bottom bar içinde
+
+15. COMPONENT YAPISI
+
+Tek büyük dosya oluşturma.
+
+Şu componentleri kullan veya mevcut yapıya göre benzer şekilde ayır:
+
+ListingPreviewPage
+ListingImageGallery
+ListingHeader
+ListingPriceCard
+ListingInfoTable
+ListingDescription
+ListingLocation
+ListingOwnerCard
+ListingContactActions
+ListingPreviewBanner
+ListingStickyActions
+
+Servisler:
+listing-service
+listing-view-service
+favorite-service
+
+16. ÖNİZLE BUTONUNU BAĞLA
+
+Mevcut kart componentinde Önizle butonunun onPress/onClick olayını bul.
+
+Şu hataları kontrol et:
+- onPress verilmemiş olması
+- yanlış fonksiyon adı kullanılması
+- listing.id undefined olması
+- TouchableOpacity veya Pressable disabled olması
+- üstünde başka görünmez component bulunması
+- pointerEvents nedeniyle tıklanmaması
+- web tarafında button type hatası
+- route dosyasının eksik olması
+- yanlış pathname kullanılması
+
+Buton yapısı örnek:
+
+<Pressable
+  onPress={() => handlePreview(listing.id)}
+  disabled={isNavigating}
+  accessibilityRole="button"
+  accessibilityLabel="İlanı önizle"
+>
+  <EyeIcon />
+  <Text>Önizle</Text>
+</Pressable>
+
+handlePreview fonksiyonu:
+
+const handlePreview = (listingId: string) => {
+  if (!listingId || isNavigating) return;
+
+  setIsNavigating(true);
+
+  router.push({
+    pathname: "/ilan/[id]",
+    params: {
+      id: listingId,
+      preview: "true"
+    }
+  });
+};
+
+Navigation sonrası loading state düzgün temizlensin.
+
+17. TESTLER
+
+Şunları test et:
+- Karttaki Önizle butonuna tıklama
+- Doğru ilanın açılması
+- İlan id bilgisinin route’a doğru gitmesi
+- Görsellerin doğru gelmesi
+- Açıklamanın doğru gelmesi
+- İlan sahibinin doğru gelmesi
+- Kendi ilanında iletişim butonlarının gizlenmesi
+- Önizleme görüntülenmesinin view sayısını artırmaması
+- Başka kullanıcının ilanında mesaj butonunun çalışması
+- Taslak ilana başka kullanıcının erişememesi
+- Web geri butonu
+- Android geri butonu
+- iOS geri hareketi
+- Mobil sticky action bar
+- İlan bulunamadı durumu
+- İnternet hatası
+- Eksik görsel durumu
+- Çok uzun başlık
+- Çok uzun açıklama
+
+İşlem sonunda:
+- Değiştirilen dosyaları listele.
+- Önizle butonunun eski sorununun nedenini belirt.
+- Oluşturulan route’u belirt.
+- Hangi verilerin Supabase’den geldiğini belirt.
+- Web ve mobil test sonucunu yaz.
+- Console error ve TypeScript hatası bırakma.
