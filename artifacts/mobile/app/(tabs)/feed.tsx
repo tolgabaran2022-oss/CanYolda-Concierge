@@ -19,6 +19,7 @@ import {
   StyleSheet,
   Text,
   TextInput,
+  useWindowDimensions,
   View,
 } from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
@@ -299,8 +300,9 @@ const H = StyleSheet.create({
 
 /* ── Main screen ──────────────────────────────────────────── */
 export default function FeedScreen() {
-  const insets = useSafeAreaInsets();
-  const router = useRouter();
+  const insets       = useSafeAreaInsets();
+  const { width: SW } = useWindowDimensions();
+  const router       = useRouter();
   const { user } = useAuth();
   const userId = user?.id ?? user?.email ?? "anonymous";
 
@@ -627,7 +629,7 @@ export default function FeedScreen() {
   );
 
   return (
-    <View style={[F.root, { paddingTop: Platform.OS === "web" ? 12 : insets.top }]}>
+    <View style={[F.root, { paddingTop: Platform.OS === "web" ? (SW < 1024 ? 54 : 16) : insets.top }]}>
       <FlatList
         data={isLoading ? [] : activePosts}
         keyExtractor={(p) => p.id}
