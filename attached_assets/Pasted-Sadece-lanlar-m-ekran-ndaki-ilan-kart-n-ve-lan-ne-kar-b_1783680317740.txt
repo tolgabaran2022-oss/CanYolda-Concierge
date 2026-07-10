@@ -1,0 +1,49 @@
+Sadece “İlanlarım” ekranındaki ilan kartını ve “İlanı Öne Çıkar” bölümünü yeniden optimize et. Mevcut backend işlevlerini bozma. Mobil görünümü profesyonel, sade ve App Store kalitesinde yap.
+
+İLAN KARTI:
+
+1. İlan kartındaki görsel alanını 16:9 oranında düzenle.
+2. Görsel için width: 100%, object-fit: cover kullan.
+3. İlan başlığını maksimum 2 satır göster ve uzun metinleri ellipsis ile kes.
+4. Başlığın altında konum ve yayın tarihini tek satırda göster.
+5. Yaş bilgisini küçük bir badge olarak görselin sağ üst köşesine taşı.
+6. Görüntülenme, favori ve mesaj sayılarını tek bir kompakt istatistik satırında göster.
+7. “Performans” seçeneğini küçük bir metin butonu olarak istatistiklerin sağında göster.
+8. Ana işlem olarak “Düzenle” butonunu göster.
+9. İkincil işlem olarak “Önizle” butonunu göster.
+10. “Pasife Al”, “Sahiplendirildi Olarak İşaretle” ve “Sil” işlemlerini üç nokta menüsüne taşı.
+11. Silme işleminde mutlaka onay modalı göster.
+12. “Sahiplendirildi” yazısını durum etiketi gibi kullanma. İşlem adı “Sahiplendirildi Olarak İşaretle” olsun.
+13. Butonların yüksekliğini 42px yap ve ikonlarla metinleri ortala.
+14. Kart iç boşluğunu 16px, border-radius değerini 20px yap.
+15. İlan başlığında minimum ve maksimum karakter doğrulaması uygula.
+
+İLANI ÖNE ÇIKAR BÖLÜMÜ:
+
+1. İlan kartı ile öne çıkarma kartı arasında en az 16px boşluk bırak.
+2. Başlık olarak “İlanını Öne Çıkar” kullan.
+3. Alt açıklama olarak “Daha fazla kişiye ulaş ve daha hızlı sahiplendir” yaz.
+4. Paket seçeneklerini Standart, Premium ve VIP olarak göster.
+5. Her pakette fiyat, süre ve tahmini görünürlük artışını göster:
+   - Standart: ₺49, 24 saat, yaklaşık 2× görünürlük
+   - Premium: ₺99, 7 gün, yaklaşık 5× görünürlük
+   - VIP: ₺199, 30 gün, yaklaşık 10× görünürlük
+6. Premium paket üzerinde “En Popüler” etiketi göster.
+7. Seçili pakette mor border, açık mor arka plan, hafif gölge ve onay ikonu kullan.
+8. Paket seçildiğinde ana buton aktif hale gelsin.
+9. Buton metni seçilen pakete göre dinamik olsun:
+   “₺99 ile Öne Çıkar”
+10. Paket seçilmemişse buton pasif olsun ve “Bir Paket Seç” yazsın.
+11. Butonun üstünde seçilen paket özeti göster:
+   “Premium Paket · 7 Gün”
+   “Toplam: ₺99”
+12. Butonun altında küçük açıklama göster:
+   “Ödeme onayından sonra ilanınız otomatik olarak öne çıkarılır.”
+13. Paket seçimi ve ödeme butonu gerçek state ile çalışsın.
+14. Ödeme başarılı olduğunda ilan boosted/premium durumuna geçsin.
+15. Öne çıkarılmış ilanda başlangıç ve bitiş tarihi veritabanına kaydedilsin.
+16. Süre dolduğunda ilan otomatik olarak normal duruma dönsün.
+17. Alt navigasyon bu kartların üzerine binmesin. Ekrana yeterli padding-bottom ekle.
+18. Tüm alanları iPhone küçük ekranları, Android ve web responsive görünümünde test et.
+
+Tasarım sade, modern, beyaz ve açık mor arka planlı olsun. Fazla buton ve gereksiz renk kullanma. Kullanıcı ilk bakışta ilanını düzenleyebilmeli veya bir paket seçip öne çıkarabilmelidir.

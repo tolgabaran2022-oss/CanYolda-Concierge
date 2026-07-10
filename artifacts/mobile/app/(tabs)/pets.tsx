@@ -573,9 +573,9 @@ const STATUS_CFG: Record<ListStatus, { color: string; bg: string; icon: keyof ty
 };
 
 const BOOST_PKGS = [
-  { id: "standart", label: "Standart", price: "49",  daysLabel: "24 saat", popular: false },
-  { id: "premium",  label: "Premium",  price: "99",  daysLabel: "7 gün",   popular: true  },
-  { id: "vip",      label: "VIP",      price: "199", daysLabel: "30 gün",  popular: false },
+  { id: "standart", label: "Standart", price: "49",  daysLabel: "24 saat", popular: false, multiplier: "2×"  },
+  { id: "premium",  label: "Premium",  price: "99",  daysLabel: "7 gün",   popular: true,  multiplier: "5×"  },
+  { id: "vip",      label: "VIP",      price: "199", daysLabel: "30 gün",  popular: false, multiplier: "10×" },
 ] as const;
 
 function remainingTime(expiresAt: string): string {
@@ -639,9 +639,35 @@ function MyListingCard({
   const [boosting, setBoosting] = useState(false);
   const [perfOpen, setPerfOpen] = useState(false);
 
-  const isAdopted  = status === "Sahiplendirildi";
-  const canBoost   = status === "Aktif" && !isFeatured;
+  const isAdopted = status === "Sahiplendirildi";
+  const canBoost  = status === "Aktif" && !isFeatured;
   const canPassive = status === "Aktif" || status === "Pasif";
+
+  const selectedPkgData = BOOST_PKGS.find((p) => p.id === selectedPkg);
+
+  const openMenu = () => {
+    Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+    const buttons: Parameters<typeof Alert.alert>[2] = [];
+    if (canPassive) {
+      buttons.push({
+        text: status === "Pasif" ? "Aktif Et" : "Pasife Al",
+        onPress: onTogglePassive,
+      });
+    }
+    if (!isAdopted) {
+      buttons.push({
+        text: "Sahiplendirildi Olarak İşaretle",
+        onPress: onAdopted,
+      });
+    }
+    buttons.push({
+      text: "Sil",
+      style: "destructive",
+      onPress: onDelete,
+    });
+    buttons.push({ text: "İptal", style: "cancel" });
+    Alert.alert("İşlemler", listing.petName, buttons);
+  };
 
   return (
     <View style={ml.cardOuter}>
@@ -649,7 +675,7 @@ function MyListingCard({
       {/* ── Main card ── */}
       <View style={[ml.card, isFeatured && ml.cardFeatured]}>
 
-        {/* Hero photo */}
+        {/* Hero photo — 16:9 */}
         <View style={ml.heroWrap}>
           {listing.photo ? (
             <Image
@@ -665,40 +691,39 @@ function MyListingCard({
           )}
 
           <LinearGradient
-            colors={["transparent", "rgba(26,8,56,0.65)"]}
+            colors={["transparent", "rgba(26,8,56,0.55)"]}
             style={ml.heroScrim}
             pointerEvents="none"
           />
 
-          {isFeatured && (
+          {/* Status badge — top-left (replaced by feat badge when featured) */}
+          {isFeatured ? (
             <LinearGradient colors={[P2, DARK]} start={{ x: 0, y: 0 }} end={{ x: 1, y: 1 }} style={ml.featBadge}>
               <Ionicons name="star" size={10} color={WHITE} />
               <Text style={ml.featBadgeTxt}>⭐ ÖNE ÇIKAN</Text>
             </LinearGradient>
+          ) : (
+            <View style={[ml.statusBadge, { backgroundColor: cfg.bg }]}>
+              <Ionicons name={cfg.icon} size={11} color={cfg.color} />
+              <Text style={[ml.statusTxt, { color: cfg.color }]}>{status}</Text>
+            </View>
           )}
 
-          <View style={[ml.statusBadge, { backgroundColor: cfg.bg }]}>
-            <Ionicons name={cfg.icon} size={11} color={cfg.color} />
-            <Text style={[ml.statusTxt, { color: cfg.color }]}>{status}</Text>
-          </View>
-
-          <View style={ml.typePill}>
-            <Text style={ml.typePillTxt}>{listing.petType}</Text>
-          </View>
+          {/* Age badge — top-right on image */}
+          {listing.petAge ? (
+            <View style={ml.agePillImg}>
+              <Text style={ml.ageTxtImg}>{listing.petAge}</Text>
+            </View>
+          ) : null}
         </View>
 
         {/* Content */}
         <View style={ml.content}>
 
-          <View style={ml.nameRow}>
-            <Text style={ml.petName} numberOfLines={1}>{listing.petName}</Text>
-            {listing.petAge ? (
-              <View style={ml.agePill}>
-                <Text style={ml.ageTxt}>{listing.petAge}</Text>
-              </View>
-            ) : null}
-          </View>
+          {/* Title — max 2 lines */}
+          <Text style={ml.petName} numberOfLines={2}>{listing.petName}</Text>
 
+          {/* Location + date — single row */}
           <View style={ml.locRow}>
             <Ionicons name="location-sharp" size={12} color={P} />
             <Text style={ml.locTxt} numberOfLines={1}>{listing.location}</Text>
@@ -723,15 +748,15 @@ function MyListingCard({
               style={ml.perfBtn}
               onPress={() => { Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light); setPerfOpen((v) => !v); }}
             >
-              <Ionicons name={perfOpen ? "chevron-up" : "bar-chart-outline"} size={12} color={BODY} />
               <Text style={ml.perfBtnTxt}>Performans</Text>
+              <Ionicons name={perfOpen ? "chevron-up" : "chevron-down"} size={10} color={BODY} />
             </Pressable>
           </View>
 
-          {/* ── Performance panel ── */}
+          {/* Performance panel */}
           {perfOpen && (
             <View style={ml.perfPanel}>
-              <Text style={ml.perfPanelTitle}>Son 7 Gün</Text>
+              <Text style={ml.perfPanelTitle}>SON 7 GÜN</Text>
               <View style={ml.perfRow}>
                 <View style={ml.perfItem}>
                   <Ionicons name="eye" size={16} color={P} />
@@ -756,13 +781,21 @@ function MyListingCard({
 
           <View style={ml.divider} />
 
-          {/* ── Action row 1: Düzenle | Önizle | Pasife Al ── */}
+          {/* Adopted banner */}
+          {isAdopted && (
+            <View style={ml.adoptedBanner}>
+              <Ionicons name="heart-circle" size={16} color={P} />
+              <Text style={ml.adoptedBannerTxt}>Tebrikler! Bu hayvan yeni yuvasını buldu 🏠</Text>
+            </View>
+          )}
+
+          {/* Action buttons: Düzenle | Önizle | ••• */}
           <View style={ml.actions}>
             <Pressable
               style={({ pressed }) => [ml.btn, ml.btnEdit, { opacity: pressed ? 0.8 : 1 }]}
               onPress={() => { Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light); onEdit(); }}
             >
-              <Ionicons name="create-outline" size={13} color={P} />
+              <Ionicons name="create-outline" size={15} color={P} />
               <Text style={[ml.btnTxt, { color: P }]}>Düzenle</Text>
             </Pressable>
 
@@ -770,53 +803,17 @@ function MyListingCard({
               style={({ pressed }) => [ml.btn, ml.btnPreview, { opacity: pressed ? 0.8 : 1 }]}
               onPress={() => { Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light); onPreview(); }}
             >
-              <Ionicons name="eye-outline" size={13} color={BODY} />
+              <Ionicons name="eye-outline" size={15} color={BODY} />
               <Text style={[ml.btnTxt, { color: BODY }]}>Önizle</Text>
             </Pressable>
 
-            {canPassive && (
-              <Pressable
-                style={({ pressed }) => [ml.btn, ml.btnPassive, { opacity: pressed ? 0.8 : 1 }]}
-                onPress={() => { Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium); onTogglePassive(); }}
-              >
-                <Ionicons
-                  name={status === "Pasif" ? "play-circle-outline" : "pause-circle-outline"}
-                  size={13}
-                  color={BODY}
-                />
-                <Text style={[ml.btnTxt, { color: BODY }]}>
-                  {status === "Pasif" ? "Aktif Et" : "Pasife Al"}
-                </Text>
-              </Pressable>
-            )}
+            <Pressable
+              style={({ pressed }) => [ml.btn, ml.btnMenu, { opacity: pressed ? 0.8 : 1 }]}
+              onPress={openMenu}
+            >
+              <Ionicons name="ellipsis-horizontal" size={18} color={BODY} />
+            </Pressable>
           </View>
-
-          {/* ── Action row 2: Sahiplendirildi + Sil ── */}
-          {!isAdopted && (
-            <View style={ml.actions}>
-              <Pressable
-                style={({ pressed }) => [ml.btn, ml.btnAdopted, { flex: 2, opacity: pressed ? 0.8 : 1 }]}
-                onPress={() => { Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium); onAdopted(); }}
-              >
-                <Ionicons name="heart-circle-outline" size={13} color="#18A558" />
-                <Text style={[ml.btnTxt, { color: "#18A558" }]}>Sahiplendirildi 🏠</Text>
-              </Pressable>
-              <Pressable
-                style={({ pressed }) => [ml.btn, ml.btnDel, { opacity: pressed ? 0.8 : 1 }]}
-                onPress={() => { Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium); onDelete(); }}
-              >
-                <Ionicons name="trash-outline" size={13} color="#DC2626" />
-                <Text style={[ml.btnTxt, { color: "#DC2626" }]}>Sil</Text>
-              </Pressable>
-            </View>
-          )}
-
-          {isAdopted && (
-            <View style={ml.adoptedBanner}>
-              <Ionicons name="heart-circle" size={16} color={P} />
-              <Text style={ml.adoptedBannerTxt}>Tebrikler! Bu hayvan yeni yuvasını buldu 🏠</Text>
-            </View>
-          )}
         </View>
       </View>
 
@@ -829,8 +826,8 @@ function MyListingCard({
               <Ionicons name="rocket" size={14} color={WHITE} />
             </LinearGradient>
             <View style={{ flex: 1 }}>
-              <Text style={ml.boostTitle}>İlanı Öne Çıkar</Text>
-              <Text style={ml.boostSub}>Daha fazla kişiye ulaş, daha hızlı sahiplendir</Text>
+              <Text style={ml.boostTitle}>İlanını Öne Çıkar</Text>
+              <Text style={ml.boostSub}>Daha fazla kişiye ulaş ve daha hızlı sahiplendir</Text>
             </View>
           </View>
 
@@ -847,39 +844,30 @@ function MyListingCard({
                   }}
                   style={{ flex: 1 }}
                 >
-                  {isSel ? (
-                    <LinearGradient
-                      colors={[P2, DARK]}
-                      start={{ x: 0, y: 0 }}
-                      end={{ x: 1, y: 1 }}
-                      style={ml.pkgCard}
-                    >
-                      {pkg.popular && (
-                        <View style={ml.popBadge}>
-                          <Text style={ml.popBadgeTxt}>Popüler</Text>
-                        </View>
-                      )}
-                      <Text style={ml.pkgNameSel}>{pkg.label}</Text>
-                      <Text style={ml.pkgPriceSel}>₺{pkg.price}</Text>
-                      <Text style={ml.pkgDaysSel}>{pkg.daysLabel}</Text>
-                      <Ionicons name="checkmark-circle" size={16} color={WHITE} style={{ marginTop: 4 }} />
-                    </LinearGradient>
-                  ) : (
-                    <View style={[ml.pkgCard, ml.pkgIdle, pkg.popular && ml.pkgPop]}>
-                      {pkg.popular && (
-                        <View style={ml.popBadge}>
-                          <Text style={ml.popBadgeTxt}>Popüler</Text>
-                        </View>
-                      )}
-                      <Text style={ml.pkgName}>{pkg.label}</Text>
-                      <Text style={ml.pkgPrice}>₺{pkg.price}</Text>
-                      <Text style={ml.pkgDays}>{pkg.daysLabel}</Text>
-                    </View>
-                  )}
+                  <View style={[ml.pkgCard, isSel ? ml.pkgCardSel : ml.pkgIdle, pkg.popular && !isSel && ml.pkgPop]}>
+                    {pkg.popular && (
+                      <View style={[ml.popBadge, isSel && { backgroundColor: "rgba(255,255,255,0.25)" }]}>
+                        <Text style={ml.popBadgeTxt}>En Popüler</Text>
+                      </View>
+                    )}
+                    <Text style={[ml.pkgName, isSel && ml.pkgNameSel]}>{pkg.label}</Text>
+                    <Text style={[ml.pkgPrice, isSel && ml.pkgPriceSel]}>₺{pkg.price}</Text>
+                    <Text style={[ml.pkgDays, isSel && ml.pkgDaysSel]}>{pkg.daysLabel}</Text>
+                    <Text style={[ml.pkgMult, isSel && ml.pkgMultSel]}>≈{pkg.multiplier} görünürlük</Text>
+                    {isSel && <Ionicons name="checkmark-circle" size={16} color={WHITE} style={{ marginTop: 4 }} />}
+                  </View>
                 </Pressable>
               );
             })}
           </View>
+
+          {/* Summary above button */}
+          {selectedPkgData && (
+            <View style={ml.boostSummary}>
+              <Text style={ml.boostSummaryPkg}>{selectedPkgData.label} Paket · {selectedPkgData.daysLabel}</Text>
+              <Text style={ml.boostSummaryPrice}>Toplam: ₺{selectedPkgData.price}</Text>
+            </View>
+          )}
 
           <Pressable
             onPress={async () => {
@@ -895,23 +883,33 @@ function MyListingCard({
               }
             }}
             disabled={!selectedPkg || boosting}
-            style={ml.boostCta}
+            style={({ pressed }) => [
+              ml.boostCta,
+              (!selectedPkg || boosting) && ml.boostCtaDisabled,
+              { opacity: pressed ? 0.9 : 1 },
+            ]}
           >
-            <LinearGradient
-              colors={selectedPkg && !boosting ? [P2, DARK] : [`${BODY}50`, `${BODY}70`]}
-              start={{ x: 0, y: 0 }}
-              end={{ x: 1, y: 0 }}
-              style={ml.boostCtaGrad}
-            >
-              <Ionicons name={boosting ? "sync-outline" : "rocket-outline"} size={15} color={WHITE} />
-              <Text style={ml.boostCtaTxt}>
-                {boosting ? "Aktif Ediliyor..." : selectedPkg ? "Öne Çıkarmaya Başla" : "Paket Seçin"}
-              </Text>
-            </LinearGradient>
+            <Ionicons
+              name={boosting ? "sync-outline" : "rocket-outline"}
+              size={15}
+              color={selectedPkg && !boosting ? WHITE : `${BODY}90`}
+            />
+            <Text style={[ml.boostCtaTxt, (!selectedPkg || boosting) && { color: `${BODY}90` }]}>
+              {boosting
+                ? "Aktif Ediliyor..."
+                : selectedPkgData
+                ? `₺${selectedPkgData.price} ile Öne Çıkar`
+                : "Bir Paket Seç"}
+            </Text>
           </Pressable>
+
+          <Text style={ml.boostNote}>
+            Ödeme onayından sonra ilanınız otomatik olarak öne çıkarılır.
+          </Text>
         </View>
       )}
 
+      {/* Featured active banner */}
       {isFeatured && (
         <LinearGradient colors={[`${P}12`, `${P2}08`]} style={ml.featuredBanner}>
           <Ionicons name="star" size={13} color={P} />
@@ -1334,13 +1332,13 @@ function MyListingsSection({
 }
 
 const ml = StyleSheet.create({
-  // Outer wrapper (card + boost card stacked)
-  cardOuter: { marginHorizontal: 20, marginBottom: 18 },
+  // Outer wrapper
+  cardOuter: { marginHorizontal: 20, marginBottom: 20 },
 
   // Main listing card
   card: {
     backgroundColor: WHITE,
-    borderRadius: 22,
+    borderRadius: 20,
     borderWidth: 1,
     borderColor: BORDER,
     overflow: "hidden",
@@ -1348,11 +1346,11 @@ const ml = StyleSheet.create({
   },
   cardFeatured: { borderColor: P, borderWidth: 2 },
 
-  // Hero photo
-  heroWrap:     { width: "100%", height: 190, position: "relative" },
+  // Hero photo — 16:9 ratio
+  heroWrap:     { width: "100%", aspectRatio: 16 / 9, position: "relative" },
   heroImg:      { width: "100%", height: "100%" },
   heroFallback: { flex: 1, alignItems: "center", justifyContent: "center" },
-  heroScrim:    { position: "absolute", bottom: 0, left: 0, right: 0, height: 90 },
+  heroScrim:    { position: "absolute", bottom: 0, left: 0, right: 0, height: 60 },
 
   featBadge: {
     position: "absolute", top: 10, left: 10,
@@ -1363,45 +1361,41 @@ const ml = StyleSheet.create({
   featBadgeTxt: { fontSize: 11, fontFamily: "Inter_700Bold", color: WHITE },
 
   statusBadge: {
-    position: "absolute", top: 10, right: 10,
+    position: "absolute", top: 10, left: 10,
     flexDirection: "row", alignItems: "center", gap: 4,
     borderRadius: 10, paddingHorizontal: 9, paddingVertical: 5,
   },
   statusTxt: { fontSize: 11, fontFamily: "Inter_700Bold" },
 
-  typePill: {
-    position: "absolute", bottom: 10, left: 10,
-    backgroundColor: "rgba(255,255,255,0.18)", borderRadius: 9,
-    paddingHorizontal: 10, paddingVertical: 4,
-    borderWidth: 1, borderColor: "rgba(255,255,255,0.30)",
+  // Age badge — top-right overlay on image
+  agePillImg: {
+    position: "absolute", top: 10, right: 10,
+    backgroundColor: "rgba(0,0,0,0.42)",
+    borderRadius: 8, paddingHorizontal: 8, paddingVertical: 4,
+    borderWidth: 1, borderColor: "rgba(255,255,255,0.22)",
   },
-  typePillTxt: { fontSize: 12, fontFamily: "Inter_700Bold", color: WHITE },
+  ageTxtImg: { fontSize: 11, fontFamily: "Inter_600SemiBold", color: WHITE },
 
   // Content
-  content: { padding: 14, gap: 9 },
+  content: { padding: 16, gap: 10 },
 
-  nameRow: { flexDirection: "row", alignItems: "center", justifyContent: "space-between", gap: 8 },
-  petName: { flex: 1, fontSize: 18, fontFamily: "Inter_700Bold", color: DARK, letterSpacing: -0.3 },
-  agePill: { backgroundColor: `${P}12`, borderRadius: 8, paddingHorizontal: 8, paddingVertical: 3 },
-  ageTxt:  { fontSize: 11, fontFamily: "Inter_600SemiBold", color: P },
+  petName: { fontSize: 17, fontFamily: "Inter_700Bold", color: DARK, letterSpacing: -0.3, lineHeight: 23 },
 
   locRow: { flexDirection: "row", alignItems: "center", gap: 4 },
   locTxt: { flex: 1, fontSize: 12, fontFamily: "Inter_400Regular", color: BODY },
+  timeTxt: { fontSize: 11, fontFamily: "Inter_400Regular", color: `${BODY}80` },
 
-  statsBar:      { flexDirection: "row", alignItems: "center", gap: 6, flexWrap: "wrap" },
+  statsBar:      { flexDirection: "row", alignItems: "center", gap: 6 },
   statChip:      { flexDirection: "row", alignItems: "center", gap: 4, backgroundColor: `${P}0D`, borderRadius: 8, paddingHorizontal: 8, paddingVertical: 4 },
   statChipHeart: { backgroundColor: "rgba(220,38,38,0.07)" },
   statChipMsg:   { backgroundColor: "rgba(0,112,243,0.07)" },
   statChipTxt:   { fontSize: 11, fontFamily: "Inter_600SemiBold", color: P },
-  timeTxt:       { fontSize: 11, fontFamily: "Inter_400Regular", color: `${BODY}80`, marginLeft: "auto" as any },
 
-  // Performance button
   perfBtn:    { flexDirection: "row", alignItems: "center", gap: 3, marginLeft: "auto" as any, paddingHorizontal: 8, paddingVertical: 4, backgroundColor: `${BODY}0D`, borderRadius: 8 },
   perfBtnTxt: { fontSize: 10, fontFamily: "Inter_500Medium", color: BODY },
 
-  // Performance panel
   perfPanel:      { backgroundColor: `${P}07`, borderRadius: 14, padding: 12, borderWidth: 1, borderColor: `${P}12` },
-  perfPanelTitle: { fontSize: 11, fontFamily: "Inter_700Bold", color: P, marginBottom: 10, letterSpacing: 0.5 },
+  perfPanelTitle: { fontSize: 10, fontFamily: "Inter_700Bold", color: P, marginBottom: 10, letterSpacing: 0.8 },
   perfRow:        { flexDirection: "row", alignItems: "center", justifyContent: "space-around" },
   perfItem:       { alignItems: "center", gap: 4 },
   perfDivV:       { width: 1, height: 40, backgroundColor: `${P}18` },
@@ -1410,46 +1404,49 @@ const ml = StyleSheet.create({
 
   divider: { height: 1, backgroundColor: `${P}08` },
 
-  // Actions
-  actions:    { flexDirection: "row", gap: 7 },
-  btn:        { flex: 1, flexDirection: "row", alignItems: "center", justifyContent: "center", gap: 5, paddingVertical: 10, borderRadius: 12, borderWidth: 1 },
-  btnEdit:    { backgroundColor: `${P}08`,         borderColor: `${P}28`         },
-  btnPreview: { backgroundColor: `${BODY}08`,       borderColor: `${BODY}28`      },
-  btnPassive: { backgroundColor: `${BODY}08`,       borderColor: `${BODY}28`      },
-  btnAdopted: { backgroundColor: "rgba(24,165,88,0.07)", borderColor: "rgba(24,165,88,0.25)" },
-  btnDel:     { backgroundColor: "#FFF5F5",         borderColor: "#FFD5D5"        },
-  btnTxt:     { fontSize: 11, fontFamily: "Inter_600SemiBold" },
-
-  // Adopted banner
   adoptedBanner:    { flexDirection: "row", alignItems: "center", gap: 8, backgroundColor: `${P}07`, borderRadius: 12, padding: 10, borderWidth: 1, borderColor: `${P}18` },
   adoptedBannerTxt: { flex: 1, fontSize: 12, fontFamily: "Inter_500Medium", color: P, lineHeight: 17 },
 
+  // Action buttons — 42px height
+  actions:    { flexDirection: "row", gap: 8 },
+  btn:        { flex: 1, flexDirection: "row", alignItems: "center", justifyContent: "center", gap: 6, height: 42, borderRadius: 12, borderWidth: 1 },
+  btnEdit:    { backgroundColor: `${P}08`,   borderColor: `${P}28`   },
+  btnPreview: { backgroundColor: `${BODY}08`, borderColor: `${BODY}28` },
+  btnMenu:    { flex: 0, width: 42, backgroundColor: `${BODY}08`, borderColor: `${BODY}28` },
+  btnTxt:     { fontSize: 13, fontFamily: "Inter_600SemiBold" },
+
   // Boost card
   boostCard: {
-    marginTop: 10,
+    marginTop: 16,
     backgroundColor: WHITE,
     borderRadius: 20,
     borderWidth: 1.5,
     borderColor: BORDER,
-    padding: 14,
+    padding: 16,
     ...Platform.select({
       ios:     { shadowColor: P, shadowOffset: { width: 0, height: 4 }, shadowOpacity: 0.12, shadowRadius: 14 },
       android: { elevation: 3 },
       default: {},
     }),
   },
-  boostHeader:  { flexDirection: "row", alignItems: "center", gap: 10, marginBottom: 12 },
+  boostHeader:  { flexDirection: "row", alignItems: "center", gap: 10, marginBottom: 14 },
   boostIconWrap:{ width: 34, height: 34, borderRadius: 10, alignItems: "center", justifyContent: "center" },
-  boostTitle:   { fontSize: 14, fontFamily: "Inter_700Bold",    color: DARK },
+  boostTitle:   { fontSize: 15, fontFamily: "Inter_700Bold",    color: DARK },
   boostSub:     { fontSize: 11, fontFamily: "Inter_400Regular", color: BODY, lineHeight: 16, marginTop: 1 },
 
   // Package cards
-  pkgRow: { flexDirection: "row", gap: 8, marginBottom: 12 },
-  pkgCard:{ flex: 1, borderRadius: 14, padding: 10, alignItems: "center", gap: 3, overflow: "hidden" },
-  pkgIdle:{
-    backgroundColor: WHITE,
-    borderWidth: 1.5,
-    borderColor: `${P}22`,
+  pkgRow:     { flexDirection: "row", gap: 8, marginBottom: 12 },
+  pkgCard:    { flex: 1, borderRadius: 14, padding: 10, alignItems: "center", gap: 2 },
+  pkgCardSel: {
+    backgroundColor: P, borderWidth: 2, borderColor: P,
+    ...Platform.select({
+      ios:     { shadowColor: P, shadowOffset: { width: 0, height: 4 }, shadowOpacity: 0.30, shadowRadius: 10 },
+      android: { elevation: 5 },
+      default: {},
+    }),
+  },
+  pkgIdle: {
+    backgroundColor: WHITE, borderWidth: 1.5, borderColor: `${P}22`,
     ...Platform.select({
       ios:     { shadowColor: P, shadowOffset: { width: 0, height: 2 }, shadowOpacity: 0.07, shadowRadius: 6 },
       android: { elevation: 1 },
@@ -1458,22 +1455,39 @@ const ml = StyleSheet.create({
   },
   pkgPop: { borderColor: P, borderWidth: 2 },
 
-  popBadge:   { backgroundColor: P, borderRadius: 5, paddingHorizontal: 6, paddingVertical: 2, marginBottom: 2 },
-  popBadgeTxt:{ fontSize: 9, fontFamily: "Inter_700Bold", color: WHITE },
+  popBadge:    { backgroundColor: P, borderRadius: 5, paddingHorizontal: 6, paddingVertical: 2, marginBottom: 2 },
+  popBadgeTxt: { fontSize: 9, fontFamily: "Inter_700Bold", color: WHITE },
 
   pkgName:    { fontSize: 11, fontFamily: "Inter_700Bold",    color: DARK },
   pkgPrice:   { fontSize: 17, fontFamily: "Inter_700Bold",    color: DARK },
   pkgDays:    { fontSize: 10, fontFamily: "Inter_400Regular", color: BODY },
-  pkgNameSel: { fontSize: 11, fontFamily: "Inter_700Bold",    color: WHITE },
-  pkgPriceSel:{ fontSize: 17, fontFamily: "Inter_700Bold",    color: WHITE },
-  pkgDaysSel: { fontSize: 10, fontFamily: "Inter_400Regular", color: "rgba(255,255,255,0.80)" },
+  pkgMult:    { fontSize: 9,  fontFamily: "Inter_400Regular", color: BODY, textAlign: "center" },
+  pkgNameSel: { color: WHITE },
+  pkgPriceSel:{ color: WHITE },
+  pkgDaysSel: { color: "rgba(255,255,255,0.80)" },
+  pkgMultSel: { color: "rgba(255,255,255,0.70)" },
 
-  boostCta:     { borderRadius: 14, overflow: "hidden" },
-  boostCtaGrad: { flexDirection: "row", alignItems: "center", justifyContent: "center", gap: 7, paddingVertical: 13 },
-  boostCtaTxt:  { fontSize: 13, fontFamily: "Inter_700Bold", color: WHITE },
+  // Summary row above CTA
+  boostSummary:      { backgroundColor: `${P}08`, borderRadius: 12, padding: 12, gap: 3, marginBottom: 10, borderWidth: 1, borderColor: `${P}18` },
+  boostSummaryPkg:   { fontSize: 12, fontFamily: "Inter_600SemiBold", color: P },
+  boostSummaryPrice: { fontSize: 14, fontFamily: "Inter_700Bold",    color: DARK },
+
+  // CTA button
+  boostCta: {
+    flexDirection: "row", alignItems: "center", justifyContent: "center", gap: 7,
+    height: 42, borderRadius: 12, backgroundColor: P,
+    ...Platform.select({
+      ios:     { shadowColor: P, shadowOffset: { width: 0, height: 4 }, shadowOpacity: 0.28, shadowRadius: 10 },
+      android: { elevation: 4 },
+      default: {},
+    }),
+  },
+  boostCtaDisabled: { backgroundColor: `${BODY}30` },
+  boostCtaTxt:      { fontSize: 14, fontFamily: "Inter_700Bold", color: WHITE },
+  boostNote:        { fontSize: 11, fontFamily: "Inter_400Regular", color: BODY, textAlign: "center", marginTop: 8, lineHeight: 15 },
 
   // Featured active banner
-  featuredBanner:    { marginTop: 10, flexDirection: "row", alignItems: "center", justifyContent: "center", gap: 7, borderRadius: 14, borderWidth: 1.5, borderColor: `${P}30`, paddingVertical: 10, paddingHorizontal: 14 },
+  featuredBanner:    { marginTop: 16, flexDirection: "row", alignItems: "center", justifyContent: "center", gap: 7, borderRadius: 14, borderWidth: 1.5, borderColor: `${P}30`, paddingVertical: 10, paddingHorizontal: 14 },
   featuredBannerTxt: { fontSize: 12, fontFamily: "Inter_700Bold", color: P, flex: 1 },
   featuredTimeChip:  { flexDirection: "row", alignItems: "center", gap: 3, backgroundColor: `${P}12`, borderRadius: 7, paddingHorizontal: 7, paddingVertical: 3 },
   featuredTimeTxt:   { fontSize: 10, fontFamily: "Inter_600SemiBold", color: P },
@@ -1486,24 +1500,11 @@ const ml = StyleSheet.create({
   addBtnTxt: { fontSize: 13, fontFamily: "Inter_700Bold", color: WHITE },
 
   // Stat cards — 2-column grid
-  statsGrid: {
-    flexDirection: "row",
-    flexWrap: "wrap",
-    marginHorizontal: 20,
-    marginBottom: 14,
-    gap: 8,
-  },
+  statsGrid: { flexDirection: "row", flexWrap: "wrap", marginHorizontal: 20, marginBottom: 14, gap: 8 },
   statCard: {
-    width: "47%",
-    backgroundColor: "#F2F2F2",
-    borderRadius: 14,
-    paddingVertical: 10,
-    paddingHorizontal: 12,
-    flexDirection: "row",
-    alignItems: "center",
-    gap: 10,
-    borderWidth: 1,
-    borderColor: "#E0E0E0",
+    width: "47%", backgroundColor: "#F2F2F2", borderRadius: 14,
+    paddingVertical: 10, paddingHorizontal: 12, flexDirection: "row", alignItems: "center", gap: 10,
+    borderWidth: 1, borderColor: "#E0E0E0",
     ...Platform.select({
       ios:     { shadowColor: "#000", shadowOffset: { width: 0, height: 3 }, shadowOpacity: 0.10, shadowRadius: 8 },
       android: { elevation: 4 },
