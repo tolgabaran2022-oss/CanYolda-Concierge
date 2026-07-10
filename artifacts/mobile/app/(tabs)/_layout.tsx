@@ -27,7 +27,7 @@ const TABS: TabItem[] = [
   { name: "index",   path: "/",        title: "Harita",    sfSymbol: "map",           featherIcon: "map-pin" },
   { name: "feed",    path: "/feed",    title: "Akış",      sfSymbol: "house",         featherIcon: "home"    },
   { name: "animals", path: "/animals", title: "Hayvanlar", sfSymbol: "pawprint",      featherIcon: "list"    },
-  { name: "pets",    path: "/pets",    title: "Evcil",     sfSymbol: "heart",         featherIcon: "heart"   },
+  { name: "pets",    path: "/pets",    title: "Evcilim",   sfSymbol: "heart",         featherIcon: "heart"   },
   { name: "account", path: "/account", title: "Hesap",     sfSymbol: "person.circle", featherIcon: "user"    },
 ];
 

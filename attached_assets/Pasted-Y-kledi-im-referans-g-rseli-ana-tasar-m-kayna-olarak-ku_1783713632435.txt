@@ -1,0 +1,1135 @@
+Yüklediğim referans görseli ana tasarım kaynağı olarak kullan ve mevcut CanYoldaşı uygulamasındaki “Evcil” bölümünü yeniden geliştir.
+
+ÖNEMLİ:
+- Referans görseldeki tasarım dilini mümkün olduğunca birebir uygula.
+- Mevcut uygulamanın çalışan özelliklerini bozma.
+- Sahiplendirme ilanlarını silme.
+- Yeni “Evcilim” sistemi ile “Sahiplendirme” sistemini birbirinden ayır.
+- Yalnızca statik arayüz hazırlama; tüm butonları, formları, veritabanını, bildirimleri ve kayıt işlemlerini gerçekten çalışır hale getir.
+- Sahte veya sabit veriler yerine oturum açmış kullanıcının Supabase verilerini kullan.
+- iOS ve Android görünümünü test et.
+- TypeScript ve konsol hatalarını tamamen gider.
+
+==================================================
+1. ANA MENÜ YAPISI
+==================================================
+
+Mevcut Evcil sayfasının üst bölümünü iki ana kategoriye ayır:
+
+- Evcilim
+- Sahiplendirme
+
+Başlangıçta “Evcilim” sekmesi seçili olsun.
+
+Sekme tasarımı:
+- Referans görseldeki gibi sade ve premium olsun.
+- Seçili sekmenin altında mor çizgi bulunsun.
+- Seçili sekme koyu lacivert veya koyu mor yazı kullansın.
+- Seçili olmayan sekme gri görünsün.
+- Sağ üstte bildirim ikonu bulunabilir.
+- Safe Area ile çakışmasın.
+
+“Sahiplendirme” seçildiğinde mevcut sistem açılmalı:
+
+- İlan Oluştur
+- İlanlarım
+- Tüm İlanlar
+
+Mevcut sahiplendirme ilanları, ilan oluşturma formu, ilan detayları ve mesajlaşma özellikleri korunmalı.
+
+“Evcilim” bölümü sahiplendirme ilanı değildir. Kullanıcının kendi evcil hayvanlarını, sağlık bilgilerini, aşılarını, randevularını ve beslenmesini yönetebileceği kişisel bir paneldir.
+
+==================================================
+2. EVCİLİM ANA EKRANI
+==================================================
+
+Referans görseldeki sol üst ekranı temel al.
+
+Ekran sıralaması:
+
+1. Evcilim / Sahiplendirme sekmeleri
+2. Evcil hayvan profil kartı
+3. Evcil Hayvan Ekle butonu
+4. Hızlı Durum kartları
+5. Yönetim seçenekleri
+6. Yaklaşan Hatırlatmalar
+7. Sabit alt navigasyon
+
+--------------------------------------------------
+2.1 EVCİL HAYVAN PROFİL KARTI
+--------------------------------------------------
+
+Kartta şunlar yer alsın:
+
+- Evcil hayvanın yuvarlak profil fotoğrafı
+- Adı
+- Türü
+- Irkı
+- Cinsiyeti
+- Yaşı
+- Kilosu
+- Küçük aşağı ok ikonu
+- Sağlık durumuna göre küçük durum rozeti
+
+Örnek:
+
+Luna
+Golden Retriever • Dişi
+2 yaş 4 ay • 18,5 kg
+
+Kart tasarımı:
+- Beyaz veya çok açık lila zemin
+- 22–26 px köşe yuvarlaklığı
+- İnce açık mor border
+- Hafif gölge
+- Referans görseldeki boşluk ve tipografi yapısı
+- Hayvan fotoğrafının arkasında çok açık mor dairesel alan
+
+Kullanıcının birden fazla evcil hayvanı varsa:
+- Karttaki aşağı oka basıldığında hayvan seçim menüsü açılsın.
+- Kullanıcının kayıtlı hayvanları listelensin.
+- Seçilen hayvan tüm sayfadaki aktif evcil hayvan olsun.
+- Hızlı durum, aşılar, randevular ve beslenme kayıtları seçilen hayvana göre değişsin.
+- Hayvan değiştirildiğinde sayfa tamamen yeniden yüklenmesin.
+
+Profil kartına basıldığında “Evcil Hayvan Detayı” ekranına git.
+
+--------------------------------------------------
+2.2 EVCİL HAYVAN EKLE
+--------------------------------------------------
+
+Profil kartının altında referans görseldeki gibi:
+
+“+ Evcil Hayvan Ekle”
+
+butonu bulunsun.
+
+Kullanıcı henüz hayvan eklememişse profil kartı yerine boş durum göster:
+
+Başlık:
+“Evcil dostunu ekle”
+
+Açıklama:
+“Aşılarını, randevularını, kimlik bilgilerini ve beslenmesini tek yerden yönet.”
+
+Buton:
+“Evcil Hayvan Ekle”
+
+Hayvan ekleme formunda:
+
+- Profil fotoğrafı
+- Adı
+- Türü
+- Irkı
+- Cinsiyeti
+- Doğum tarihi
+- Doğum tarihi bilinmiyorsa tahmini yaş
+- Rengi
+- Kilosu
+- Boyu
+- Kısırlaştırılmış mı?
+- Sahiplenme tarihi
+- Mizacı
+- Alerjileri
+- Özel not
+
+Tür seçenekleri:
+- Kedi
+- Köpek
+- Kuş
+- Tavşan
+- Hamster
+- Balık
+- Sürüngen
+- Diğer
+
+Doğum tarihi girildiğinde yaş otomatik hesaplansın.
+
+Kullanıcı yaşı her yıl elle güncellemek zorunda kalmasın.
+
+Fotoğraf yükleme seçenekleri:
+- Fotoğraf çek
+- Galeriden seç
+- Vazgeç
+
+Kamera ve galeri izinleri yalnızca kullanıcı ilgili seçeneğe bastığında istensin.
+
+Form doğrulaması:
+- Ad zorunlu
+- Tür zorunlu
+- Doğum tarihi gelecekte olamaz
+- Kilo negatif olamaz
+- Yalnızca geçerli fotoğraf formatları kabul edilsin
+- Kaydet butonuna arka arkaya basıldığında çift kayıt oluşmasın
+
+--------------------------------------------------
+2.3 HIZLI DURUM
+--------------------------------------------------
+
+“Evcil Hayvan Ekle” butonunun altında:
+
+“Hızlı Durum”
+
+başlığı bulunsun.
+
+Yan yana üç kart göster:
+
+1. Sonraki Aşı
+2. Yaklaşan Randevu
+3. Mama Durumu
+
+SONRAKİ AŞI KARTI:
+- En yakın planlanan aşının adı
+- Tarihi
+- Durum rengi
+- Takvim veya aşı ikonu
+
+Örnek:
+Sonraki Aşı
+Kuduz Aşısı
+12 Ağustos 2026
+
+YAKLAŞAN RANDEVU:
+- Randevu başlığı
+- Tarihi
+- Saat bilgisi
+- Takvim ikonu
+
+MAMA DURUMU:
+- Tahmini kalan gün
+- Kalan mama miktarı
+- Mama çantası ikonu
+
+Örnek:
+Mama Durumu
+6 gün kaldı
+3 kg
+
+Kart renkleri:
+- Sonraki aşı: açık turuncu
+- Randevu: açık mor
+- Mama: açık yeşil
+
+Kartlar gerçek veritabanı kayıtlarına göre güncellensin.
+
+Kayıt yoksa:
+- “Planlanmadı”
+- “Randevu yok”
+- “Mama bilgisi eklenmedi”
+
+gibi boş durum metinleri göster.
+
+--------------------------------------------------
+2.4 YÖNETİM SEÇENEKLERİ
+--------------------------------------------------
+
+“Hızlı Durum” alanının altında:
+
+“Yönetim”
+
+başlığı bulunsun.
+
+Referans görseldeki gibi 4 sütunlu ikon kartları oluştur:
+
+- Kimlik
+- Sağlık
+- Aşılar
+- Randevular
+- Beslenme
+- Belgeler
+- İlaçlar
+- Notlar
+
+Her kart:
+- Yuvarlatılmış beyaz zemin
+- Ortada açık mor daire içinde mor ikon
+- Altında kısa başlık
+- Hafif border
+- Dokunma alanı minimum 48x48 px
+- Basıldığında ilgili detay sayfasına gitmeli
+
+--------------------------------------------------
+2.5 YAKLAŞAN HATIRLATMALAR
+--------------------------------------------------
+
+Yönetim kartlarının altında:
+
+“Yaklaşan Hatırlatmalar”
+
+başlığı ve sağ tarafta:
+
+“Tümünü Gör”
+
+butonu bulunsun.
+
+Listede en yakın üç kayıt gösterilsin:
+
+- Aşı
+- Veteriner randevusu
+- Parazit uygulaması
+- İlaç
+- Mama satın alma
+- Tıraş
+- Banyo
+- Diğer bakım işlemleri
+
+Her satırda:
+- Kategori ikonu
+- Başlık
+- Tarih
+- Saat
+- Sağ tarafta renkli durum ikonu
+- Tıklanınca kayıt detayına gitme
+
+Örnek:
+
+Dış Parazit Uygulaması
+12 Temmuz 2026
+
+Veteriner Kontrolü
+18 Temmuz 2026
+
+Mama Satın Al
+22 Temmuz 2026
+
+Geçmiş kayıtlar yaklaşan listede gösterilmesin.
+
+==================================================
+3. EVCİL HAYVAN DETAY EKRANI
+==================================================
+
+Referans görseldeki sağ üst ekranı temel al.
+
+Üst bar:
+- Geri butonu
+- Ortada hayvanın adı
+- Sağda düzenleme ikonu
+
+Üst profil alanında:
+- Büyük yuvarlak hayvan fotoğrafı
+- Fotoğraf düzenleme ikonu
+- Hayvanın adı
+- Irkı
+- Cinsiyeti
+- Yaşı
+- Kilosu
+
+Altında yatay sekmeler:
+
+- Genel Bilgiler
+- Kimlik
+- Sağlık
+- Notlar
+
+--------------------------------------------------
+3.1 GENEL BİLGİLER
+--------------------------------------------------
+
+Liste satırları:
+
+- Doğum Tarihi
+- Sahiplenme Tarihi
+- Renk
+- Cinsiyet
+- Kısırlaştırıldı mı?
+- Kilo
+- Boy
+- Mizaç
+- Alerji
+- Özel Not
+
+Her satırda:
+- Sol tarafta ikon
+- Alan adı
+- Sağ tarafta değer
+- Sağ ok ikonu
+
+Satıra basıldığında ilgili bilgi düzenlenebilsin.
+
+--------------------------------------------------
+3.2 KİMLİK
+--------------------------------------------------
+
+Alanlar:
+
+- Mikroçip numarası
+- Pasaport numarası
+- Karne numarası
+- Resmî kayıt numarası
+- Sigorta bilgisi
+- Veteriner adı
+- Veteriner telefonu
+- Acil durumda aranacak kişi
+- Acil durum telefonu
+
+Mikroçip numarası gibi bilgiler yalnızca hayvanın sahibi tarafından görülsün.
+
+Bu bilgileri sosyal profil veya sahiplendirme ilanlarında otomatik olarak gösterme.
+
+--------------------------------------------------
+3.3 SAĞLIK
+--------------------------------------------------
+
+Alanlar:
+
+- Genel sağlık durumu
+- Kronik hastalıklar
+- Alerjiler
+- Geçirdiği ameliyatlar
+- Devam eden ilaçlar
+- Kan grubu
+- Son kontrol tarihi
+- Sonraki kontrol tarihi
+- Veteriner notu
+
+Kullanıcı birden fazla sağlık kaydı ekleyebilsin.
+
+--------------------------------------------------
+3.4 NOTLAR
+--------------------------------------------------
+
+Kullanıcı serbest metin notları oluşturabilsin.
+
+Her notta:
+- Başlık
+- Açıklama
+- Oluşturma tarihi
+- Güncellenme tarihi
+
+Not:
+- Düzenlenebilsin
+- Silinebilsin
+- En yeniler üstte sıralansın
+
+==================================================
+4. AŞI TAKİP EKRANI
+==================================================
+
+Referans görseldeki sol alt ekranı temel al.
+
+Üst bar:
+- Geri butonu
+- Ortada “Aşılar”
+- Sağda “+ Ekle” butonu
+
+Üst bilgilendirme kartı:
+
+Başlık:
+“Aşı Takibi”
+
+Açıklama:
+“Aşı takvimini düzenli olarak takip ederek dostunuzun sağlığını koruyabilirsiniz.”
+
+Sağ tarafta mor kalkan veya aşı ikonu bulunsun.
+
+Filtreler:
+
+- Tümü
+- Güncel
+- Yaklaşan
+- Gecikmiş
+
+Her aşı kartında:
+
+- Aşı ikonu
+- Aşı adı
+- Yapılma tarihi
+- Sonraki tarih
+- Durum rozeti
+- Sağ ok ikonu
+
+Durumlar:
+
+Güncel:
+- Yeşil
+
+Yaklaşan:
+- Turuncu
+
+Gecikmiş:
+- Kırmızı
+
+Planlandı:
+- Mor
+
+Aşı kaydı alanları:
+
+- Aşı adı
+- Aşı türü
+- Yapılma tarihi
+- Sonraki tekrar tarihi
+- Veteriner adı
+- Klinik adı
+- Aşı seri numarası
+- Açıklama
+- Belge veya aşı kartı fotoğrafı
+- Durum
+
+Örnek aşı seçenekleri:
+
+- Karma Aşı
+- Kuduz Aşısı
+- Bronşin
+- Lösemi
+- İç Parazit
+- Dış Parazit
+- Özel Aşı
+
+Kullanıcı özel aşı adı da girebilsin.
+
+Aşıya basıldığında detay ekranı açılmalı.
+
+Kullanıcı kendi aşı kaydını:
+- Düzenleyebilsin
+- Silebilsin
+- Tamamlandı olarak işaretleyebilsin
+
+==================================================
+5. RANDEVU SİSTEMİ
+==================================================
+
+Randevular ekranında yaklaşan ve geçmiş randevular listelensin.
+
+Randevu türleri:
+
+- Veteriner kontrolü
+- Aşı
+- İç parazit
+- Dış parazit
+- İlaç
+- Tıraş
+- Banyo
+- Tırnak kesimi
+- Diş bakımı
+- Mama satın alma
+- Özel hatırlatıcı
+
+Yeni randevu formunda:
+
+- Evcil hayvan
+- Randevu türü
+- Başlık
+- Tarih
+- Saat
+- Konum
+- Klinik adı
+- Veteriner adı
+- Açıklama
+- Hatırlatma zamanı
+- Tekrarlama seçeneği
+
+Tekrarlama seçenekleri:
+
+- Tekrarlanmaz
+- Her gün
+- Her hafta
+- Her ay
+- 3 ayda bir
+- 6 ayda bir
+- Her yıl
+
+==================================================
+6. RANDEVU DETAY EKRANI
+==================================================
+
+Referans görseldeki sağ alt ekranı temel al.
+
+Üst bar:
+- Geri butonu
+- “Randevu Detayı”
+- Düzenleme ikonu
+- Üç nokta menüsü
+
+Ana kartta:
+
+- Randevu ikonu
+- Randevu başlığı
+- Durum rozeti
+- Tarih
+- Saat
+- Klinik
+- Konum
+- Veteriner
+- Hatırlatma
+- Hatırlatma aç/kapat switch’i
+
+Altında:
+
+Notlar kartı
+
+Tekrarlama kartı
+
+En altta kırmızı:
+
+“Randevuyu İptal Et”
+
+butonu bulunsun.
+
+Üç nokta menüsünde:
+- Düzenle
+- Tamamlandı olarak işaretle
+- İptal et
+- Sil
+
+Randevu iptal edilmeden önce onay dialogu göster.
+
+==================================================
+7. BESLENME VE MAMA TAKİBİ
+==================================================
+
+Beslenme ekranında:
+
+- Mama markası
+- Mama adı
+- Mama türü
+- Kuru mama / yaş mama
+- Günlük miktar
+- Öğün sayısı
+- Öğün saatleri
+- Paket ağırlığı
+- Mevcut kalan miktar
+- Paketin açıldığı tarih
+- Tahmini bitiş tarihi
+- Mama alerjileri
+- Kullanılmaması gereken içerikler
+- Veteriner beslenme notu
+
+Mama stok hesabı:
+
+Kalan gün =
+Mevcut mama miktarı / günlük tüketim miktarı
+
+Örnek:
+
+3.000 gram mama
+Günlük 500 gram tüketim
+6 gün kaldı
+
+Mama miktarı azaldığında hatırlatma oluşturulabilsin.
+
+Mama ekranında:
+- Günlük miktarı güncelle
+- Yeni paket ekle
+- Mama bitti olarak işaretle
+- Mama satın alma hatırlatıcısı oluştur
+
+özellikleri bulunsun.
+
+==================================================
+8. İLAÇ TAKİBİ
+==================================================
+
+İlaç kayıtlarında:
+
+- İlaç adı
+- Doz
+- Kullanım sıklığı
+- Başlangıç tarihi
+- Bitiş tarihi
+- Kullanım saatleri
+- Açıklama
+- Veteriner notu
+- Aktif / tamamlandı durumu
+
+İlaç saati geldiğinde yerel bildirim gönderilebilsin.
+
+Kullanıcı:
+- İlacı verildi olarak işaretleyebilsin
+- Dozu atlandı olarak işaretleyebilsin
+- İlaç geçmişini görebilsin
+
+==================================================
+9. BELGELER
+==================================================
+
+Belge türleri:
+
+- Evcil hayvan pasaportu
+- Aşı karnesi
+- Mikroçip belgesi
+- Sahiplenme belgesi
+- Sağlık raporu
+- Sigorta belgesi
+- Laboratuvar sonucu
+- Reçete
+- Diğer
+
+Belge yükleme:
+
+- Fotoğraf
+- PDF
+
+Her belgede:
+- Belge adı
+- Türü
+- Belge tarihi
+- Açıklama
+- Dosya URL’si
+- Oluşturma tarihi
+
+Kullanıcı yalnızca kendi evcil hayvanına ait belgeleri görebilsin.
+
+==================================================
+10. BİLDİRİMLER
+==================================================
+
+Expo React Native kullanılıyorsa `expo-notifications` ile yerel bildirim sistemini kur.
+
+Bildirim türleri:
+
+- Aşı yaklaşımı
+- Veteriner randevusu
+- İlaç saati
+- İç parazit
+- Dış parazit
+- Mama bitişi
+- Bakım hatırlatıcısı
+
+Örnek:
+
+“Luna’nın kuduz aşısına 3 gün kaldı.”
+
+“Luna’nın veteriner randevusu yarın saat 15:00’te.”
+
+“Luna’nın maması yaklaşık 6 gün sonra bitecek.”
+
+Bildirim izni:
+- Uygulama açıldığı anda istenmesin.
+- Kullanıcı ilk kez hatırlatıcı oluşturduğunda istensin.
+- İzin reddedilirse anlaşılır mesaj göster.
+- Kalıcı reddedildiyse “Ayarlara Git” butonu göster.
+
+Randevu veya aşı güncellendiğinde eski bildirim iptal edilip yeni bildirim oluşturulsun.
+
+Kayıt silindiğinde ilgili bildirim de iptal edilsin.
+
+==================================================
+11. SUPABASE VERİTABANI
+==================================================
+
+Önce mevcut Supabase tablolarını kontrol et.
+
+Aynı amaçla kullanılan tablo varsa yeniden tablo oluşturma.
+
+Gerekli yeni yapıları mevcut sisteme uyumlu migration ile ekle.
+
+Önerilen tablolar:
+
+pets:
+- id
+- user_id
+- name
+- species
+- breed
+- gender
+- birth_date
+- estimated_age_months
+- color
+- weight_kg
+- height_cm
+- is_neutered
+- adoption_date
+- temperament
+- allergies
+- special_notes
+- profile_image_url
+- created_at
+- updated_at
+
+pet_identification:
+- id
+- pet_id
+- user_id
+- microchip_number
+- passport_number
+- health_book_number
+- registration_number
+- insurance_info
+- veterinarian_name
+- veterinarian_phone
+- emergency_contact_name
+- emergency_contact_phone
+- created_at
+- updated_at
+
+pet_health_records:
+- id
+- pet_id
+- user_id
+- health_status
+- chronic_conditions
+- allergies
+- surgeries
+- blood_type
+- veterinarian_notes
+- record_date
+- next_checkup_date
+- created_at
+- updated_at
+
+pet_vaccinations:
+- id
+- pet_id
+- user_id
+- vaccine_name
+- vaccine_type
+- administered_date
+- next_due_date
+- veterinarian_name
+- clinic_name
+- serial_number
+- description
+- document_url
+- status
+- notification_id
+- created_at
+- updated_at
+
+pet_appointments:
+- id
+- pet_id
+- user_id
+- appointment_type
+- title
+- appointment_date
+- appointment_time
+- location
+- clinic_name
+- veterinarian_name
+- description
+- reminder_at
+- recurrence_rule
+- status
+- notification_id
+- created_at
+- updated_at
+
+pet_nutrition:
+- id
+- pet_id
+- user_id
+- food_brand
+- food_name
+- food_type
+- daily_amount_grams
+- meals_per_day
+- meal_times
+- package_amount_grams
+- remaining_amount_grams
+- opened_at
+- estimated_finish_date
+- allergies
+- restricted_ingredients
+- veterinarian_notes
+- created_at
+- updated_at
+
+pet_medications:
+- id
+- pet_id
+- user_id
+- medication_name
+- dosage
+- frequency
+- start_date
+- end_date
+- usage_times
+- description
+- veterinarian_notes
+- status
+- notification_ids
+- created_at
+- updated_at
+
+pet_documents:
+- id
+- pet_id
+- user_id
+- document_name
+- document_type
+- document_date
+- description
+- file_url
+- created_at
+- updated_at
+
+pet_notes:
+- id
+- pet_id
+- user_id
+- title
+- content
+- created_at
+- updated_at
+
+RLS politikalarını eksiksiz uygula.
+
+Her kullanıcı yalnızca:
+- Kendi evcil hayvanlarını
+- Kendi evcil hayvanlarının sağlık bilgilerini
+- Kendi aşılarını
+- Kendi randevularını
+- Kendi belgelerini
+- Kendi mama ve ilaç kayıtlarını
+
+görebilsin, ekleyebilsin, düzenleyebilsin ve silebilsin.
+
+`user_id = auth.uid()` sahiplik kontrolü kullan.
+
+Pet’e ait alt kayıt eklenirken pet’in gerçekten giriş yapan kullanıcıya ait olduğunu doğrula.
+
+==================================================
+12. STORAGE
+==================================================
+
+Supabase Storage içinde mevcut bucket yapısını kontrol et.
+
+Gerekirse:
+
+- pet-profile-images
+- pet-documents
+- pet-health-files
+
+bucketlarını oluştur.
+
+Dosya yolları:
+
+userId/petId/benzersiz-dosya-adi.ext
+
+şeklinde olsun.
+
+Kurallar:
+- Orijinal dosya adını doğrudan kullanma.
+- UUID tabanlı benzersiz isim oluştur.
+- Dosya türü kontrolü yap.
+- Dosya boyutu kontrolü yap.
+- Başka kullanıcıların dosyalarına erişimi engelle.
+- Veritabanı kaydı başarısız olursa yüklenen dosyayı temizle.
+- Belge silindiğinde Storage dosyasını da sil.
+- Profil resmi değiştirildiğinde kullanılmayan eski dosyayı temizle.
+
+==================================================
+13. TASARIM SİSTEMİ
+==================================================
+
+Yüklediğim referans görselin tasarımını uygula.
+
+Renkler:
+- Ana mor: #7C45D9 veya mevcut uygulamanın mor tonu
+- Koyu metin: #191330
+- İkincil metin: #8F8A9D
+- Açık mor zemin: #F6F1FF
+- Kart zemini: #FFFFFF
+- Border: #EEE8F5
+- Başarılı: yeşil
+- Yaklaşan: turuncu
+- Gecikmiş: kırmızı
+
+Tipografi:
+- Başlıklar güçlü ve okunaklı
+- Gövde metinleri sade
+- Küçük metinler minimum okunabilir boyutta
+- Font kalınlıkları referans görseldeki gibi düzenli hiyerarşi kullansın
+
+Kartlar:
+- 18–26 px border radius
+- Hafif gölge
+- Aşırı koyu gölge kullanma
+- İç boşluklar tutarlı olsun
+- Sağ ve sol kenarlarda 16–20 px boşluk
+
+İkonlar:
+- Tek bir ikon kütüphanesi kullan
+- Rastgele emoji kullanma
+- Mor çizgisel ikon stili
+- Aynı bölümde farklı ikon tasarım dilleri karıştırma
+
+Animasyonlar:
+- Sayfa geçişleri yumuşak
+- Kart basma animasyonu
+- Sekme geçişi
+- Modal ve bottom sheet açılma animasyonu
+- Aşırı veya yavaş animasyon kullanma
+
+==================================================
+14. ALT NAVİGASYON
+==================================================
+
+Mevcut alt navigasyonu koru:
+
+- Harita
+- Akış
+- Hayvanlar
+- Evcilim
+- Hesap
+
+“Evcil” yazısını “Evcilim” olarak güncelle.
+
+Seçili sekme:
+- Dolu mor ikon
+- Mor yazı
+- Üstte küçük mor gösterge veya referans görseldeki vurgu
+
+Alt navigasyon:
+- Safe Area üzerinde olsun
+- İçeriğin üstünü kapatmasın
+- Scroll içeriklerine alt padding ekle
+- iOS ve Android’de sabit kalsın
+
+==================================================
+15. HATA VE BOŞ DURUMLAR
+==================================================
+
+Her ekranda:
+
+- Loading state
+- Empty state
+- Error state
+- Retry butonu
+- Pull to refresh
+
+olmalı.
+
+Örnek hata:
+“Bilgiler yüklenemedi. Lütfen tekrar deneyin.”
+
+Örnek boş aşı ekranı:
+“Henüz aşı kaydı eklenmedi.”
+
+Buton:
+“İlk Aşıyı Ekle”
+
+Örnek boş randevu ekranı:
+“Yaklaşan randevunuz bulunmuyor.”
+
+Buton:
+“Randevu Oluştur”
+
+Kayıt işlemi başarısızsa sahte başarı mesajı gösterme.
+
+Yükleme tamamlanmadan butonu tekrar aktif hale getirme.
+
+==================================================
+16. PERFORMANS
+==================================================
+
+- Gereksiz React renderlarını azalt.
+- `useMemo`, `useCallback` ve memo kullanılması gereken yerleri optimize et.
+- Büyük listelerde FlatList kullan.
+- Liste itemlarını stabilize et.
+- Aynı veriyi tekrar tekrar Supabase’den çekme.
+- Mevcut React Query veya cache sistemini kullan.
+- Form gönderiminden sonra ilgili cache’i güncelle.
+- Yeni kayıt eklendiğinde tüm uygulamayı yeniden yükleme.
+- Görselleri yüklemeden önce sıkıştır.
+- Thumbnail gereken yerlerde tam boyutlu görsel kullanma.
+
+==================================================
+17. NAVİGASYON
+==================================================
+
+Gerekli ekranlar:
+
+- Evcilim Ana Sayfa
+- Evcil Hayvan Ekle
+- Evcil Hayvan Düzenle
+- Evcil Hayvan Detayı
+- Kimlik Bilgileri
+- Sağlık Kayıtları
+- Aşılar
+- Aşı Ekle
+- Aşı Detayı
+- Randevular
+- Randevu Ekle
+- Randevu Detayı
+- Beslenme
+- İlaçlar
+- İlaç Ekle
+- Belgeler
+- Belge Ekle
+- Notlar
+- Hatırlatmalar
+
+Geri butonları doğru çalışsın.
+
+Form gönderildikten sonra doğru ekrana dönsün.
+
+Yanlış sekmeye veya sahiplendirme sayfasına yönlendirme oluşmasın.
+
+==================================================
+18. KABUL KRİTERLERİ
+==================================================
+
+Tüm geliştirme tamamlandığında şunları tek tek doğrula:
+
+1. Evcilim ve Sahiplendirme ayrı sekmeler olarak çalışıyor.
+2. Mevcut sahiplendirme ilanları bozulmadı.
+3. Kullanıcı evcil hayvan ekleyebiliyor.
+4. Birden fazla evcil hayvan eklenebiliyor.
+5. Aktif evcil hayvan değiştirilebiliyor.
+6. Evcil hayvan bilgileri düzenlenebiliyor.
+7. Profil fotoğrafı yüklenebiliyor.
+8. Kimlik bilgileri kaydediliyor.
+9. Mikroçip bilgisi diğer kullanıcılara görünmüyor.
+10. Aşı eklenebiliyor.
+11. Aşı durumu otomatik hesaplanıyor.
+12. Aşı düzenlenebiliyor ve silinebiliyor.
+13. Randevu oluşturulabiliyor.
+14. Randevu detayı açılıyor.
+15. Randevu düzenlenebiliyor, tamamlanabiliyor ve iptal edilebiliyor.
+16. Hatırlatma bildirimi oluşturuluyor.
+17. Randevu güncellendiğinde eski bildirim yenileniyor.
+18. Mama bilgisi eklenebiliyor.
+19. Mama kalan gün hesabı doğru çalışıyor.
+20. İlaç kaydı eklenebiliyor.
+21. Belge ve PDF yüklenebiliyor.
+22. Kullanıcı yalnızca kendi verilerini görebiliyor.
+23. RLS politikaları test ediliyor.
+24. Alt navigasyon içeriği kapatmıyor.
+25. Tasarım referans görsele uyuyor.
+26. iOS görünümü düzgün.
+27. Android görünümü düzgün.
+28. TypeScript hatası bulunmuyor.
+29. Konsolda kırmızı hata bulunmuyor.
+30. Uygulama yeniden açıldığında veriler kalıcı olarak yükleniyor.
+
+==================================================
+19. ÇALIŞMA VE RAPORLAMA
+==================================================
+
+Geliştirmeyi bölümler halinde yap:
+
+Bölüm 1:
+- Veritabanı ve RLS
+
+Bölüm 2:
+- Evcilim ana ekranı
+
+Bölüm 3:
+- Evcil hayvan ekleme ve detay
+
+Bölüm 4:
+- Kimlik ve sağlık
+
+Bölüm 5:
+- Aşı sistemi
+
+Bölüm 6:
+- Randevu ve bildirim sistemi
+
+Bölüm 7:
+- Mama, ilaç, belge ve notlar
+
+Bölüm 8:
+- UI iyileştirmeleri ve testler
+
+Her bölümün sonunda kısa rapor yaz:
+
+- Hangi dosyalar değiştirildi?
+- Hangi özellikler eklendi?
+- Hangi hatalar bulundu?
+- Hangi hatalar düzeltildi?
+- Hangi testler yapıldı?
+- Eksik veya çalışmayan bir şey kaldı mı?
+
+Kullanıcıdan gereksiz onay istemeden mevcut proje yapısını incele ve uyumlu şekilde uygula. Var olan çalışan kodu tamamen sıfırdan yazmak yerine güvenli şekilde geliştir.

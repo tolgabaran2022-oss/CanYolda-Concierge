@@ -26,6 +26,7 @@ import { useAuth } from "@/contexts/AuthContext";
 import { useBoost, type BoostPackage } from "@/contexts/BoostContext";
 import { useTheme } from "@/hooks/useTheme";
 import { formatTimeAgo } from "@/utils/formatters";
+import { EvcilimTab } from "@/components/EvcilimTab";
 
 // ── Palette ───────────────────────────────────────────────────────────────────
 const P      = "#7C4DCC";
@@ -50,6 +51,7 @@ const CARD_SHADOW = Platform.select({
 
 const DOG_IMG = require("../../assets/hero-puppy.png");
 
+type MainTab    = "evcilim" | "adoption";
 type Tab        = "create" | "mylistings" | "listings";
 type Filter     = "all" | "cat" | "dog" | "bird" | "rabbit" | "new" | "other";
 type MyFilter   = "all" | "active" | "passive" | "pending" | "adopted";
@@ -79,7 +81,7 @@ const TIPS = [
 ];
 
 // ── Header ────────────────────────────────────────────────────────────────────
-function PetHeader({ topPad }: { topPad: number }) {
+function PetHeader({ topPad, mainTab }: { topPad: number; mainTab?: MainTab }) {
   const T = useTheme();
   return (
     <View style={[hdr.wrap, { paddingTop: topPad + 8, backgroundColor: T.bg }]}>
@@ -89,7 +91,7 @@ function PetHeader({ topPad }: { topPad: number }) {
         </LinearGradient>
         <View>
           <Text style={[hdr.logoTxt, { color: T.text }]}>canyoldaşı</Text>
-          <Text style={[hdr.logoSub, { color: T.textMuted }]}>Sahiplendirme İlanları</Text>
+          <Text style={[hdr.logoSub, { color: T.textMuted }]}>{mainTab === "evcilim" ? "Evcil Hayvan Yönetimi" : "Sahiplendirme İlanları"}</Text>
         </View>
       </View>
     </View>
@@ -101,6 +103,45 @@ const hdr = StyleSheet.create({
   logoIcon:{ width: 34, height: 34, borderRadius: 10, alignItems: "center", justifyContent: "center" },
   logoTxt: { fontSize: 16, fontFamily: "Inter_700Bold", color: DARK, letterSpacing: -0.3 },
   logoSub: { fontSize: 10, fontFamily: "Inter_400Regular", color: BODY, marginTop: 1 },
+});
+
+// ── Outer tab switcher (Evcilim / Sahiplendirme) ──────────────────────────────
+function OuterTabSwitcher({ active, onChange }: { active: MainTab; onChange: (t: MainTab) => void }) {
+  const T = useTheme();
+  const OUTER: { key: MainTab; label: string; icon: keyof typeof Ionicons.glyphMap }[] = [
+    { key: "evcilim",  label: "Evcilim",      icon: "heart"            },
+    { key: "adoption", label: "Sahiplendirme", icon: "hand-left-outline" },
+  ];
+  return (
+    <View style={[ots.wrap, { backgroundColor: T.card, borderColor: T.border }]}>
+      {OUTER.map((t) => {
+        const isActive = active === t.key;
+        return (
+          <Pressable key={t.key} style={ots.item} onPress={() => onChange(t.key)}>
+            {isActive ? (
+              <LinearGradient colors={[P2, P]} start={{ x: 0, y: 0 }} end={{ x: 1, y: 0 }} style={ots.grad}>
+                <Ionicons name={t.icon} size={14} color={WHITE} />
+                <Text style={ots.lblActive}>{t.label}</Text>
+              </LinearGradient>
+            ) : (
+              <View style={ots.inactiveRow}>
+                <Ionicons name={t.icon} size={14} color={P} />
+                <Text style={[ots.lblInactive, { color: T.textMuted }]}>{t.label}</Text>
+              </View>
+            )}
+          </Pressable>
+        );
+      })}
+    </View>
+  );
+}
+const ots = StyleSheet.create({
+  wrap:        { flexDirection: "row", marginHorizontal: 20, marginBottom: 10, backgroundColor: WHITE, borderRadius: 16, padding: 4, borderWidth: 1, borderColor: BORDER, ...IOS_SHADOW },
+  item:        { flex: 1, borderRadius: 12, overflow: "hidden" },
+  grad:        { flexDirection: "row", alignItems: "center", justifyContent: "center", gap: 6, paddingVertical: 11 },
+  inactiveRow: { flexDirection: "row", alignItems: "center", justifyContent: "center", gap: 6, paddingVertical: 11 },
+  lblActive:   { fontSize: 13, fontFamily: "Inter_700Bold",    color: WHITE },
+  lblInactive: { fontSize: 13, fontFamily: "Inter_500Medium",  color: P },
 });
 
 // ── Tab switcher (3-segment) ──────────────────────────────────────────────────
@@ -1649,7 +1690,8 @@ export default function PetsScreen() {
   const { listings, deleteListing } = useAdoption();
   const { boostStatuses }           = useBoost();
   const { user }                    = useAuth();
-  const [activeTab, setActiveTab]   = useState<Tab>("create");
+  const [mainTab, setMainTab]       = useState<MainTab>("evcilim");
+  const [activeTab, setActiveTab]   = useState<Tab>("listings");
   const [filter, setFilter]         = useState<Filter>("all");
   const [query, setQuery]           = useState("");
 
@@ -1688,15 +1730,26 @@ export default function PetsScreen() {
     <View style={[s.root, { backgroundColor: T.bg }]}>
       {/* Sticky header */}
       <View style={[s.stickyTop, { backgroundColor: T.bg }]}>
-        <PetHeader topPad={topPad} />
-        <TabSwitcher active={activeTab} onChange={setActiveTab} />
+        <PetHeader topPad={topPad} mainTab={mainTab} />
+        <OuterTabSwitcher
+          active={mainTab}
+          onChange={(t) => {
+            Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+            setMainTab(t);
+          }}
+        />
+        {mainTab === "adoption" && (
+          <TabSwitcher active={activeTab} onChange={setActiveTab} />
+        )}
       </View>
 
-      {activeTab === "create" && (
+      {mainTab === "evcilim" && <EvcilimTab botPad={botPad} />}
+
+      {mainTab === "adoption" && activeTab === "create" && (
         <CreateSection onPress={() => router.push("/add-adoption")} botPad={botPad} />
       )}
 
-      {activeTab === "mylistings" && (
+      {mainTab === "adoption" && activeTab === "mylistings" && (
         <MyListingsSection
           userId={user?.id ?? ""}
           userEmail={user?.email ?? ""}
@@ -1708,7 +1761,7 @@ export default function PetsScreen() {
         />
       )}
 
-      {activeTab === "listings" && (
+      {mainTab === "adoption" && activeTab === "listings" && (
         <View style={s.listingShell}>
           <SearchBar query={query} onQuery={setQuery} onFilter={() => {}} />
           <FilterRow active={filter} onChange={setFilter} />

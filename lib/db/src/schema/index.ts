@@ -4,6 +4,7 @@ export * from "./feed.js";
 export { stories, storyViews } from "./feed.js";
 export * from "./social.js";
 export * from "./pets.js";
+export * from "./petManagement.js";
 export * from "./messages.js";
 export * from "./animals.js";
 
