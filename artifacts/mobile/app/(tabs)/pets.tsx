@@ -1236,26 +1236,6 @@ function MyListingsSection({
         </Pressable>
       </View>
 
-      {/* ── Stat cards — 2 column × 3 row grid ── */}
-      <View style={ml.statsGrid}>
-        {([
-          { label: "Toplam İlan",    val: myListings.length, icon: "list"             as const },
-          { label: "Aktif İlan",     val: activeCount,        icon: "checkmark-circle" as const },
-          { label: "Görüntülenme",   val: totalViews,         icon: "eye"              as const },
-          { label: "Favori",         val: totalFavs,          icon: "heart"            as const },
-          { label: "Mesaj",          val: totalMsgs,          icon: "chatbubble"       as const },
-          { label: "Sahiplendirilen",val: adoptedCount,       icon: "home"             as const },
-        ] as const).map((stat) => (
-          <View key={stat.label} style={ml.statCard}>
-            <Ionicons name={stat.icon} size={18} color="#333" />
-            <View style={{ flex: 1 }}>
-              <Text style={ml.statVal}>{stat.val}</Text>
-              <Text style={ml.statLbl}>{stat.label}</Text>
-            </View>
-          </View>
-        ))}
-      </View>
-
       {/* ── Filter chips ── */}
       <ScrollView
         horizontal
