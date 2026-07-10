@@ -1,0 +1,33 @@
+Sadece web görünümündeki responsive tasarım sorunlarını düzelt. Mobil uygulama tasarımını ve mobil ekranları değiştirme.
+
+Web görünümünde telefon cihaz çerçevesini, siyah kasa görselini, kamera çentiğini ve home indicator alanını tamamen kaldır. Gerçek bir responsive web arayüzü oluştur.
+
+Yapılacaklar:
+
+1. Ana içerik masaüstünde sayfanın ortasında konumlandırılsın.
+2. Feed alanına max-width: 680px verilsin.
+3. 1024px üzerindeki ekranlarda sol tarafta masaüstü navigasyon menüsü gösterilsin.
+4. Mobil alt navigasyon yalnızca 768px altındaki ekranlarda görünsün.
+5. Web görünümünde alt navigasyon içeriğin üzerine binmesin.
+6. Feed container alanına mobilde minimum 100px padding-bottom ekle.
+7. Header içerisindeki logo, artı butonu, bildirim ve profil resmi aynı yatay çizgide hizalansın.
+8. Header kamera çentiği veya telefon kasasına göre konumlanmasın.
+9. Header yüksekliğini 64px yap ve yatay padding değerini 20px olarak ayarla.
+10. Hikâyeler alanının yüksekliğini azalt. Yatay kaydırılabilir kompakt bir story row oluştur.
+11. Keşfet ve Takip Ettiklerin sekmelerini eşit genişlikte yap.
+12. Aktif sekme çizgisi yalnızca ilgili sekmenin altında ve düzgün ortalanmış şekilde görünsün.
+13. Gönderi kartlarının genişlik, padding, border-radius ve aralıklarını standartlaştır.
+14. Kartlar için border-radius 18px, iç padding 16px ve kartlar arası boşluk 16px kullan.
+15. Görseli olmayan gönderilerde boş alan bırakma. Metin gönderisi tasarımı veya görsel placeholder göster.
+16. Gönderi görsellerinde width: 100%, object-fit: cover ve uygun aspect-ratio kullan.
+17. Fotoğrafların alt menünün altında kalmasını engelle.
+18. Beğeni, yorum, paylaş ve kaydet ikonlarını aynı boyutta ve aynı hizada göster.
+19. Kullanıcı adı, konum, beğeni ve açıklama metinleri arasında net tipografi hiyerarşisi oluştur.
+20. Sabit piksel ekran genişliği kullanma. width: 100%, max-width ve CSS breakpoint sistemi kullan.
+21. Yatay taşmayı engelle: body ve ana container için overflow-x: hidden uygula.
+22. Safe-area boşluklarını yalnızca gerçek iOS mobil cihazlarda kullan, web görünümünde devre dışı bırak.
+23. 768px–1200px tablet görünümünü ayrıca kontrol et.
+24. Chrome web, Safari web ve Firefox görünümünde taşma olmadığını test et.
+
+Beklenen sonuç:
+Web görünümünde telefon simülatörü gibi dar ve çerçeveli bir tasarım değil; ortalanmış, genişliği kontrollü, profesyonel ve responsive bir sosyal medya web arayüzü görünmelidir. Mobil tasarım mevcut haliyle korunmalıdır.

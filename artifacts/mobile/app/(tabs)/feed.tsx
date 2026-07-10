@@ -276,7 +276,15 @@ function FeedHeader({
 }
 
 const H = StyleSheet.create({
-  root:     { flexDirection: "row", alignItems: "center", justifyContent: "space-between", paddingHorizontal: 18, paddingTop: 10, paddingBottom: 8 },
+  root:     {
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "space-between",
+    paddingHorizontal: Platform.OS === "web" ? 20 : 18,
+    paddingTop: Platform.OS === "web" ? 14 : 10,
+    paddingBottom: Platform.OS === "web" ? 12 : 8,
+    minHeight: Platform.OS === "web" ? 64 : undefined,
+  },
   left:     { flexDirection: "row", alignItems: "center", gap: 6 },
   logo:     { fontSize: 20, fontFamily: "Inter_700Bold", color: "#3D2080", letterSpacing: -0.5 },
   right:    { flexDirection: "row", alignItems: "center", gap: 12 },
@@ -619,7 +627,7 @@ export default function FeedScreen() {
   );
 
   return (
-    <View style={[F.root, { paddingTop: insets.top }]}>
+    <View style={[F.root, { paddingTop: Platform.OS === "web" ? 0 : insets.top }]}>
       <FlatList
         data={isLoading ? [] : activePosts}
         keyExtractor={(p) => p.id}

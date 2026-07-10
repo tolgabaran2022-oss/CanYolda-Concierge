@@ -3,10 +3,14 @@ import * as Haptics from "expo-haptics";
 import { Image } from "expo-image";
 import { LinearGradient } from "expo-linear-gradient";
 import React from "react";
-import { Pressable, ScrollView, StyleSheet, Text, View } from "react-native";
+import { Platform, Pressable, ScrollView, StyleSheet, Text, View } from "react-native";
 import type { ApiStoryGroup } from "@/lib/storiesApi";
 
 const PURPLE = "#7B5EA7";
+const IS_WEB = Platform.OS === "web";
+const AV     = IS_WEB ? 50 : 68;   // avatar circle diameter
+const AVR    = AV / 2;
+const IW     = IS_WEB ? 60 : 72;   // item column width
 
 interface Props {
   stories: ApiStoryGroup[];
@@ -16,9 +20,8 @@ interface Props {
 }
 
 export function StoryBar({ stories, currentUserId, onPressGroup, onAddStory }: Props) {
-  // Current user first if they have stories, otherwise show add button
   const currentUserGroup = stories.find((g) => g.userId === currentUserId);
-  const otherGroups = stories.filter((g) => g.userId !== currentUserId);
+  const otherGroups      = stories.filter((g) => g.userId !== currentUserId);
 
   return (
     <ScrollView
@@ -27,7 +30,7 @@ export function StoryBar({ stories, currentUserId, onPressGroup, onAddStory }: P
       style={S.scroll}
       contentContainerStyle={S.content}
     >
-      {/* Add story button */}
+      {/* ── Add story ── */}
       <Pressable
         style={S.item}
         onPress={() => {
@@ -37,7 +40,7 @@ export function StoryBar({ stories, currentUserId, onPressGroup, onAddStory }: P
       >
         <View style={S.addCircle}>
           <View style={S.addInner}>
-            <Ionicons name="add" size={22} color={PURPLE} />
+            <Ionicons name="add" size={IS_WEB ? 18 : 22} color={PURPLE} />
           </View>
         </View>
         <Text style={S.name} numberOfLines={1}>
@@ -45,7 +48,7 @@ export function StoryBar({ stories, currentUserId, onPressGroup, onAddStory }: P
         </Text>
       </Pressable>
 
-      {/* Current user's stories (if any) */}
+      {/* ── Current user's stories ── */}
       {currentUserGroup && (
         <Pressable
           style={S.item}
@@ -70,13 +73,11 @@ export function StoryBar({ stories, currentUserId, onPressGroup, onAddStory }: P
               <Image source={{ uri: currentUserGroup.avatarUrl }} style={S.avatar} contentFit="cover" />
             </View>
           )}
-          <Text style={S.name} numberOfLines={1}>
-            {currentUserGroup.username}
-          </Text>
+          <Text style={S.name} numberOfLines={1}>{currentUserGroup.username}</Text>
         </Pressable>
       )}
 
-      {/* Other users' stories */}
+      {/* ── Other users' stories ── */}
       {otherGroups.map((group) => (
         <Pressable
           key={group.userId}
@@ -102,9 +103,7 @@ export function StoryBar({ stories, currentUserId, onPressGroup, onAddStory }: P
               <Image source={{ uri: group.avatarUrl }} style={S.avatar} contentFit="cover" />
             </View>
           )}
-          <Text style={S.name} numberOfLines={1}>
-            {group.username}
-          </Text>
+          <Text style={S.name} numberOfLines={1}>{group.username}</Text>
         </Pressable>
       ))}
     </ScrollView>
@@ -113,14 +112,18 @@ export function StoryBar({ stories, currentUserId, onPressGroup, onAddStory }: P
 
 const S = StyleSheet.create({
   scroll:   { flexGrow: 0 },
-  content:  { paddingHorizontal: 16, paddingVertical: 12, gap: 16 },
+  content:  {
+    paddingHorizontal: 16,
+    paddingVertical: IS_WEB ? 8 : 12,
+    gap: IS_WEB ? 12 : 16,
+  },
 
-  item:     { alignItems: "center", gap: 6, width: 72 },
+  item: { alignItems: "center", gap: IS_WEB ? 4 : 6, width: IW },
 
   addCircle: {
-    width: 68,
-    height: 68,
-    borderRadius: 34,
+    width: AV,
+    height: AV,
+    borderRadius: AVR,
     borderWidth: 1.5,
     borderColor: "rgba(123,94,167,0.25)",
     borderStyle: "dashed",
@@ -129,34 +132,34 @@ const S = StyleSheet.create({
     backgroundColor: "rgba(123,94,167,0.04)",
   },
   addInner: {
-    width: 56,
-    height: 56,
-    borderRadius: 28,
+    width: IS_WEB ? 40 : 56,
+    height: IS_WEB ? 40 : 56,
+    borderRadius: IS_WEB ? 20 : 28,
     backgroundColor: "rgba(123,94,167,0.10)",
     alignItems: "center",
     justifyContent: "center",
   },
 
   gradientRing: {
-    width: 68,
-    height: 68,
-    borderRadius: 34,
+    width: AV,
+    height: AV,
+    borderRadius: AVR,
     alignItems: "center",
     justifyContent: "center",
     padding: 2.5,
   },
   avatarWrap: {
-    width: 63,
-    height: 63,
-    borderRadius: 31.5,
-    borderWidth: 2.5,
+    width: AV - 7,
+    height: AV - 7,
+    borderRadius: (AV - 7) / 2,
+    borderWidth: 2,
     borderColor: "#FFFFFF",
     overflow: "hidden",
   },
   seenCircle: {
-    width: 68,
-    height: 68,
-    borderRadius: 34,
+    width: AV,
+    height: AV,
+    borderRadius: AVR,
     borderWidth: 2,
     borderColor: "#DDDDE8",
     overflow: "hidden",
@@ -164,10 +167,10 @@ const S = StyleSheet.create({
   avatar: { width: "100%", height: "100%" },
 
   name: {
-    fontSize: 11,
+    fontSize: IS_WEB ? 10 : 11,
     fontFamily: "Inter_500Medium",
     color: "#333",
     textAlign: "center",
-    lineHeight: 14,
+    lineHeight: IS_WEB ? 13 : 14,
   },
 });
