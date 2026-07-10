@@ -702,17 +702,20 @@ function MyListingCard({
 
         {/* ── Hero photo — 16:9 ── */}
         <View style={ml.heroWrap}>
-          {listing.photo ? (
-            <Image
-              source={{ uri: listing.photo }}
-              style={ml.heroImg}
-              contentFit="cover"
-              contentPosition={{ top: 0.3 }}
-            />
-          ) : (
-            <LinearGradient colors={[`${P2}50`, `${P}30`]} style={ml.heroFallback}>
-              <Ionicons name="paw" size={48} color={`${P}60`} />
-            </LinearGradient>
+          <Image
+            source={listing.photo
+              ? { uri: listing.photo }
+              : { uri: `https://loremflickr.com/600/338/cat,dog?lock=${listing.id?.charCodeAt(0) ?? 42}` }
+            }
+            style={ml.heroImg}
+            contentFit="cover"
+            contentPosition={{ top: 0.3 }}
+          />
+          {!listing.photo && (
+            <View style={ml.heroNoPhotoOverlay}>
+              <Ionicons name="paw" size={22} color="rgba(255,255,255,0.85)" />
+              <Text style={ml.heroNoPhotoTxt}>Fotoğraf eklenmedi</Text>
+            </View>
           )}
         </View>
 
@@ -1398,6 +1401,12 @@ const ml = StyleSheet.create({
   },
   heroImg:      { width: "100%", height: "100%" },
   heroFallback: { flex: 1, alignItems: "center", justifyContent: "center" },
+  heroNoPhotoOverlay: {
+    position: "absolute", bottom: 0, left: 0, right: 0,
+    flexDirection: "row", alignItems: "center", gap: 6,
+    backgroundColor: "rgba(0,0,0,0.42)", paddingHorizontal: 12, paddingVertical: 7,
+  },
+  heroNoPhotoTxt: { fontSize: 12, fontFamily: "Inter_500Medium", color: "rgba(255,255,255,0.85)" },
 
   // Content area
   content: { padding: 14, gap: 10 },
