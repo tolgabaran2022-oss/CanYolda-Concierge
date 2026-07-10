@@ -8,6 +8,7 @@ import {
   Dimensions,
   Platform,
   useColorScheme,
+  useWindowDimensions,
   Pressable,
   ScrollView,
   StyleSheet,
@@ -45,9 +46,10 @@ const TAB_FLOAT_H = 64;
 const TAB_BOTTOM_GAP = Platform.OS === "web" ? 12 : 10;
 
 export default function MapScreen() {
-  const colors = useColors();
-  const insets = useSafeAreaInsets();
-  const router = useRouter();
+  const colors       = useColors();
+  const insets       = useSafeAreaInsets();
+  const { width: SW } = useWindowDimensions();
+  const router       = useRouter();
   const { animals } = useAnimals();
   const [selectedId, setSelectedId] = useState<string | null>(null);
   const [region, setRegion] = useState(DEFAULT_REGION);
@@ -97,7 +99,7 @@ export default function MapScreen() {
     return acc;
   }, {});
 
-  const topPad = Platform.OS === "web" ? 67 : insets.top;
+  const topPad = Platform.OS === "web" ? (SW < 1024 ? 54 : 16) : insets.top;
   const tabClearance = insets.bottom + TAB_BOTTOM_GAP + TAB_FLOAT_H;
   const isIOS = Platform.OS === "ios";
 

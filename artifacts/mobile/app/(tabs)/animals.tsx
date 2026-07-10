@@ -7,6 +7,7 @@ import {
   Animated,
   FlatList,
   Platform,
+  useWindowDimensions,
   Pressable,
   ScrollView,
   StyleSheet,
@@ -101,14 +102,15 @@ function FilterChip({
 }
 
 export default function AnimalsScreen() {
-  const insets = useSafeAreaInsets();
-  const router = useRouter();
-  const { animals } = useAnimals();
+  const insets        = useSafeAreaInsets();
+  const { width: SW } = useWindowDimensions();
+  const router        = useRouter();
+  const { animals }   = useAnimals();
   const [filter, setFilter] = useState<FilterKey>("all");
 
-  const filtered    = useMemo(() => filterAnimals(animals, filter), [animals, filter]);
-  const topPad      = Platform.OS === "web" ? 20 : insets.top;
-  const bottomNavH  = 84 + insets.bottom + 10;
+  const filtered   = useMemo(() => filterAnimals(animals, filter), [animals, filter]);
+  const topPad     = Platform.OS === "web" ? (SW < 1024 ? 54 : 16) : insets.top;
+  const bottomNavH = Platform.OS === "web" ? (SW < 1024 ? 100 : 24) : (84 + insets.bottom + 10);
 
   const addBtnScale = useRef(new Animated.Value(1)).current;
 

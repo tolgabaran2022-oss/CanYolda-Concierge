@@ -10,6 +10,7 @@ import {
   KeyboardAvoidingView,
   Modal,
   Platform,
+  useWindowDimensions,
   Pressable,
   ScrollView,
   StyleSheet,
@@ -1584,8 +1585,9 @@ const ed = StyleSheet.create({
 
 // ── Main ──────────────────────────────────────────────────────────────────────
 export default function PetsScreen() {
-  const insets    = useSafeAreaInsets();
-  const router    = useRouter();
+  const insets        = useSafeAreaInsets();
+  const { width: SW } = useWindowDimensions();
+  const router        = useRouter();
   const { listings, deleteListing } = useAdoption();
   const { boostStatuses }           = useBoost();
   const { user }                    = useAuth();
@@ -1593,8 +1595,8 @@ export default function PetsScreen() {
   const [filter, setFilter]         = useState<Filter>("all");
   const [query, setQuery]           = useState("");
 
-  const topPad = Platform.OS === "web" ? 0 : insets.top;
-  const botPad = (Platform.OS === "web" ? 0 : insets.bottom) + TAB_H;
+  const topPad = Platform.OS === "web" ? (SW < 1024 ? 54 : 16) : insets.top;
+  const botPad = Platform.OS === "web" ? (SW < 1024 ? 100 : 24) : (insets.bottom + TAB_H);
 
   const NOW_THRESHOLD = Date.now() - 24 * 3_600_000;
 

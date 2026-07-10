@@ -9,6 +9,7 @@ import {
   KeyboardAvoidingView,
   Modal,
   Platform,
+  useWindowDimensions,
   Pressable,
   ScrollView,
   StyleSheet,
@@ -27,12 +28,13 @@ const TAB_FLOAT_H    = 64;
 const TAB_BOTTOM_GAP = Platform.OS === "web" ? 12 : 10;
 
 export default function AccountScreen() {
-  const insets = useSafeAreaInsets();
+  const insets        = useSafeAreaInsets();
+  const { width: SW } = useWindowDimensions();
   const { user, logout, changePassword } = useAuth();
-  const router = useRouter();
+  const router        = useRouter();
 
-  const topPad       = Platform.OS === "web" ? 67 : insets.top;
-  const tabClearance = insets.bottom + TAB_BOTTOM_GAP + TAB_FLOAT_H;
+  const topPad       = Platform.OS === "web" ? (SW < 1024 ? 54 : 16) : insets.top;
+  const tabClearance = Platform.OS === "web" ? (SW < 1024 ? 100 : 24) : (insets.bottom + TAB_BOTTOM_GAP + TAB_FLOAT_H);
 
   /* ── Password modal state ── */
   const [pwModalVisible, setPwModalVisible] = useState(false);
