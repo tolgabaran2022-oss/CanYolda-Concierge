@@ -1,5 +1,4 @@
 uploads = []
-outputs = []
 
 [[generated]]
 id = "urF2HaCLoYCZvisEzw3dK"
@@ -30,3 +29,9 @@ id = "mkDTa142fnYB59OBnvSjz"
 uri = "file://artifacts/mobile/assets/images/animal-default-other.png"
 type = "image"
 title = "default other animal icon"
+
+[[outputs]]
+id = "AJSrf0SjnfrFRB-FTJzYa"
+uri = "file://screenshots/canyoldasi-ekranlar.zip"
+type = "unspecified"
+title = "CanYoldaşı — Tüm Ekranlar (JPEG)"
