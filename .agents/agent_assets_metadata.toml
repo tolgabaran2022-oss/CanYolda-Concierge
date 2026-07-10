@@ -47,3 +47,9 @@ id = "4jB4J3IkI4FYVnjYuXIpz"
 uri = "file://screenshots/app-preview.jpg"
 type = "image"
 title = "CanYoldaşı — Karşılama Ekranı"
+
+[[outputs]]
+id = "8QUydMOdtSV2uxWHM4yhZ"
+uri = "file://screenshots/harita-light.jpg"
+type = "image"
+title = "Harita — Aydınlık Tema"
