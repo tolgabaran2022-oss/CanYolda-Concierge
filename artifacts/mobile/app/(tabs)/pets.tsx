@@ -941,13 +941,6 @@ function MyListingCard({
               <Text style={[ml.btnTxt, { color: "#DC2626" }]}>Sil</Text>
             </Pressable>
 
-            <View style={ml.btnMenuSep} />
-            <Pressable
-              style={({ pressed }) => [ml.btn, ml.btnMenu, { opacity: pressed ? 0.8 : 1 }]}
-              onPress={openMenu}
-            >
-              <Ionicons name="ellipsis-horizontal" size={18} color={BODY} />
-            </Pressable>
           </View>
         </View>
       </View>
