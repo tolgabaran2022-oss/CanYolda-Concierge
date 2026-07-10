@@ -130,6 +130,7 @@ export default function AnimalsScreen() {
 
   const injured = countForFilter(animals, "injured");
   const hungry  = countForFilter(animals, "hungry");
+  const healthy = countForFilter(animals, "healthy");
 
   const renderHeader = () => (
     <>
@@ -166,7 +167,7 @@ export default function AnimalsScreen() {
           <Text style={H.subtitle}>Yakınındaki canlı durumları keşfet</Text>
         </View>
 
-        {/* Status summary row */}
+        {/* Status summary row — Acil + Bekleyen + Sağlıklı + Toplam */}
         <View style={H.summaryRow}>
           <View style={H.summaryCard}>
             <View style={[H.summaryDot, { backgroundColor: "#DC2626" }]} />
@@ -185,6 +186,14 @@ export default function AnimalsScreen() {
           </View>
           <View style={H.summaryDivider} />
           <View style={H.summaryCard}>
+            <View style={[H.summaryDot, { backgroundColor: "#16A34A" }]} />
+            <View>
+              <Text style={H.summaryNum}>{healthy}</Text>
+              <Text style={H.summaryLabel}>Sağlıklı</Text>
+            </View>
+          </View>
+          <View style={H.summaryDivider} />
+          <View style={H.summaryCard}>
             <View style={[H.summaryDot, { backgroundColor: PURPLE }]} />
             <View>
               <Text style={H.summaryNum}>{animals.length}</Text>
@@ -192,23 +201,6 @@ export default function AnimalsScreen() {
             </View>
           </View>
         </View>
-
-        {/* Count banner */}
-        <Pressable
-          style={({ pressed }) => [H.countBanner, pressed && { opacity: 0.88 }]}
-          onPress={() => {}}
-        >
-          <View style={H.countIconWrap}>
-            <Ionicons name="paw" size={18} color={PURPLE} />
-          </View>
-          <View style={{ flex: 1 }}>
-            <Text style={H.countMain}>{animals.length} aktif durum bulundu</Text>
-            <Text style={H.countSub}>Onların hayatına dokunabilirsin</Text>
-          </View>
-          <View style={H.countArrow}>
-            <Ionicons name="chevron-forward" size={15} color={PURPLE} />
-          </View>
-        </Pressable>
       </View>
 
       {/* ── Filter chips ──────────────────────── */}
@@ -327,7 +319,7 @@ const H = StyleSheet.create({
     backgroundColor: "#FFFFFF",
     borderRadius: 20,
     paddingVertical: 14,
-    paddingHorizontal: 20,
+    paddingHorizontal: 10,
     borderWidth: 1,
     borderColor: "rgba(123,94,167,0.08)",
     shadowColor: "#2D1B4E",
@@ -336,7 +328,7 @@ const H = StyleSheet.create({
     shadowRadius: 12,
     elevation: 2,
     alignItems: "center",
-    justifyContent: "space-around",
+    justifyContent: "space-evenly",
   },
   summaryCard: {
     alignItems: "center",
@@ -417,12 +409,14 @@ const F = StyleSheet.create({
   container: {
     backgroundColor: BG,
     paddingBottom: 4,
+    width: "100%",
   },
   scroll: {
     paddingHorizontal: 16,
     paddingVertical: 10,
     gap: 8,
     alignItems: "center",
+    flexGrow: 1,
   },
   chipActive: {
     flexDirection: "row",

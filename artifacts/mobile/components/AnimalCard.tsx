@@ -208,13 +208,6 @@ export function AnimalCard({ animal, onLike, index = 0 }: Props) {
 
         <View style={{ flex: 1 }} />
 
-        {/* Needs help badge */}
-        {animal.needsHelpByUsers.length > 0 && (
-          <View style={S.urgentBadge}>
-            <Ionicons name="alert-circle" size={12} color="#DC2626" />
-            <Text style={S.urgentText}>Acil</Text>
-          </View>
-        )}
       </View>
     </Animated.View>
   );
