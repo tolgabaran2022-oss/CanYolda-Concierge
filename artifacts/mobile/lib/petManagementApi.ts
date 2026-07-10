@@ -145,6 +145,12 @@ export async function apiGetAppointments(petId: string, userId: string): Promise
   return res.json() as Promise<ApiAppointment[]>;
 }
 
+export async function apiGetAppointment(petId: string, apptId: string, userId: string): Promise<ApiAppointment | null> {
+  const res = await fetch(`${API_BASE}/pets/${petId}/appointments/${apptId}`, { headers: hdrs(userId) });
+  if (!res.ok) return null;
+  return res.json() as Promise<ApiAppointment>;
+}
+
 export async function apiCreateAppointment(
   petId: string,
   userId: string,
@@ -297,13 +303,13 @@ export function buildReminders(
     .filter((v) => v.nextDueDate && new Date(v.nextDueDate) >= today)
     .forEach((v) => {
       reminders.push({
-        id: `vacc-${v.id}`,
-        type: "vaccination",
-        title: v.vaccineName,
-        date: v.nextDueDate,
+        id:     `vacc-${v.id}`,
+        type:   "vaccination",
+        title:  v.vaccineName,
+        date:   v.nextDueDate,
         status: v.status,
-        icon: "shield-checkmark-outline",
-        color: "#FF9500",
+        icon:   "shield-checkmark-outline",
+        color:  "#FF9500",
       });
     });
 
@@ -311,14 +317,14 @@ export function buildReminders(
     .filter((a) => a.status === "upcoming" && new Date(a.appointmentDate) >= today)
     .forEach((a) => {
       reminders.push({
-        id: `appt-${a.id}`,
-        type: "appointment",
-        title: a.title,
-        date: a.appointmentDate,
-        time: a.appointmentTime,
+        id:     `appt-${a.id}`,
+        type:   "appointment",
+        title:  a.title,
+        date:   a.appointmentDate,
+        time:   a.appointmentTime,
         status: a.status,
-        icon: "calendar-outline",
-        color: "#7B5EA7",
+        icon:   "calendar-outline",
+        color:  "#7B5EA7",
       });
     });
 
@@ -328,13 +334,13 @@ export function buildReminders(
       const targetDate = new Date(today);
       targetDate.setDate(targetDate.getDate() + daysLeft);
       reminders.push({
-        id: `nutr-${nutrition.id}`,
-        type: "nutrition",
-        title: "Mama Satın Al",
-        date: targetDate.toISOString().split("T")[0]!,
+        id:     `nutr-${nutrition.id}`,
+        type:   "nutrition",
+        title:  "Mama Satın Al",
+        date:   targetDate.toISOString().split("T")[0]!,
         status: daysLeft <= 3 ? "overdue" : "upcoming",
-        icon: "bag-handle-outline",
-        color: "#34C759",
+        icon:   "nutrition-outline",
+        color:  "#34C759",
       });
     }
   }

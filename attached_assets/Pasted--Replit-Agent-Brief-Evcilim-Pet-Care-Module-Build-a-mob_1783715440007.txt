@@ -1,0 +1,121 @@
+# Replit Agent Brief — "Evcilim" Pet Care Module
+
+Build a mobile-first web app (PWA) for pet care tracking. The UI language is TURKISH — use the exact Turkish strings provided below. Follow the design system strictly.
+
+## Tech requirements
+- Mobile-first responsive web app (max content width ~430px, centered on desktop)
+- React + Tailwind CSS (or similar modern stack you prefer)
+- Persistent database (Postgres or built-in Replit DB) — no mock-only data
+- PWA-ready: installable, works as standalone app on a phone
+- All dates displayed in Turkish format: "18 Temmuz 2024, Perşembe"
+
+## Design system
+- Primary color: purple/violet (#7C3AED family), used for active states, icons, buttons, active tab underline
+- Backgrounds: very light lavender (#F7F5FF) page background, white cards
+- Cards: large border radius (16–24px), soft subtle shadows, generous padding
+- Status colors:
+  - Orange (#F97316 family) = upcoming / due soon ("Yaklaşıyor")
+  - Green (#16A34A family) = up to date / ok ("Güncel")
+  - Red (#EF4444 family) = overdue ("Gecikmiş") and destructive buttons
+- Pills/badges: rounded-full, tinted background with darker text of same hue
+- Icons: outline style (Lucide or Tabler)
+- Typography: clean sans-serif; bold section titles; secondary text in gray
+
+## Navigation
+Bottom tab bar with 5 tabs (icons + labels):
+Harita · Akış · Hayvanlar · Evcilim (active, heart icon) · Hesap
+Only "Evcilim" needs to be functional; other tabs can be placeholder pages.
+
+Top of Evcilim page: two-tab switcher "Evcilim" | "Sahiplendirme" (Sahiplendirme is a placeholder), plus a notification bell icon with unread dot.
+
+---
+
+## Screen 1 — Evcilim Dashboard
+
+1. **Pet profile card (carousel):** circular pet photo, name with verified badge (e.g. "Luna"), subtitle "Golden Retriever • Dişi", pill showing "2 yaş 4 ay • 18,5 kg", expandable chevron. Dot indicators below for multiple pets. Button underneath: "+ Evcil Hayvan Ekle".
+
+2. **Section "Hızlı Durum"** — 3 status cards side by side:
+   - Orange card: label "Sonraki Aşı", title "Kuduz Aşısı", date "12 Ağustos 2024", calendar icon
+   - Purple card: label "Yaklaşan Randevu", title "Veteriner Kontrolü", date "18 Temmuz 2024", calendar icon
+   - Green card: label "Mama Durumu", title "6 gün kaldı", subtitle "3 kg", food-bowl icon
+
+3. **Section "Yönetim"** — grid of 8 icon buttons (2 rows × 4):
+   Kimlik · Sağlık · Aşılar · Randevular · Beslenme · Belgeler · İlaçlar · Notlar
+   Each navigates to its own page. "Aşılar" and "Randevular" must be fully functional; the others can be simple CRUD list pages.
+
+4. **Section "Yaklaşan Hatırlatmalar"** with "Tümünü Gör" link — list of reminder rows (icon, title, date, alarm-clock icon on the right):
+   - "Dış Parazit Uygulaması — 12 Temmuz 2024" (orange alarm)
+   - "Veteriner Kontrolü — 18 Temmuz 2024" (purple alarm)
+   - "Mama Satın Al — 22 Temmuz 2024" (green alarm)
+
+---
+
+## Screen 2 — Pet Profile Detail ("Luna")
+
+- Header: back arrow, pet name centered, edit (pencil) icon right
+- Hero: large circular photo with camera-badge button (photo upload), name, "Golden Retriever • Dişi", pill "2 yaş 4 ay • 18,5 kg"
+- Tab bar: **Genel Bilgiler** (active) · Kimlik · Sağlık · Notlar
+- "Genel Bilgiler" tab = editable list rows (label left, value right, chevron):
+  - Doğum Tarihi → 10 Mart 2022
+  - Sahiplenme Tarihi → 15 Mayıs 2022
+  - Renk → Açık Altın
+  - Cinsiyet → Dişi
+  - Kısırlaştırıldı mı? → Evet
+  - Kilo → 18,5 kg
+  - Boy → 60 cm (omuz)
+  - Mizaç → Sakin, dost canlısı
+  - Alerji → Tavuk eti, Soya
+  - Özel Not → "Topa bayılır. Yabancılara önce havlar."
+- Tapping a row opens an edit sheet/modal; changes persist to DB.
+- Kimlik tab: microchip no, passport no, breed registry (simple fields). Sağlık tab: links to vaccines, medications, vet visits. Notlar tab: free-form notes list.
+
+---
+
+## Screen 3 — Vaccines ("Aşılar")
+
+- Header: back arrow, title "Aşılar", "+ Ekle" button
+- Info banner card: title "Aşı Takibi", text "Aşı takvimini düzenli olarak takip ederek dostunuzun sağlığını koruyabilirsiniz.", shield icon
+- Filter chips: **Tümü** (active) · Güncel · Yaklaşan · Gecikmiş
+- Vaccine cards, each with syringe icon, name, status badge top-right, and two columns:
+  "Yapılma Tarihi" and "Sonraki Tarih", chevron to detail:
+  - Karma Aşı (DHPPi) — 12 Mayıs 2024 → 12 Mayıs 2025 — badge "Güncel" (green)
+  - Kuduz Aşısı — 12 Ağustos 2023 → 12 Ağustos 2024 — badge "Yaklaşıyor" (orange)
+  - İç Parazit — 20 Haziran 2024 → 20 Eylül 2024 — badge "Güncel"
+  - Dış Parazit — 20 Haziran 2024 → 20 Temmuz 2024 — badge "Güncel"
+- Status auto-computed from next-due date: >30 days = Güncel, ≤30 days = Yaklaşıyor, past = Gecikmiş
+- Footer note with clock icon: "Aşı zamanları yaklaştığında size bildirim göndereceğiz."
+- "+ Ekle" opens a form: vaccine name, date given, next due date (or auto-suggest +12 months), notes.
+
+---
+
+## Screen 4 — Appointment Detail ("Randevu Detayı")
+
+- Header: back arrow, title "Randevu Detayı", edit icon, kebab menu
+- Main card: calendar icon, title "Veteriner Kontrolü", badge "Yaklaşan" (purple), rows with icons:
+  - Date: "18 Temmuz 2024, Perşembe"
+  - Time: "15:00"
+  - Location: "Pati Veteriner Kliniği — Alsancak, İzmir"
+  - Person: "Veteriner Hekim — Dr. Ayşe Yılmaz"
+  - "Hatırlatma — 17 Temmuz 2024, 20:00" with a toggle switch (on, purple)
+- "Notlar" card: "Genel sağlık kontrolü yapılacak. Tüy dökümü için destek ürünü konuşulacak. Tırnak kontrolü de yapılacak."
+- Row: "Tekrarlama → Her 6 Ayda Bir" (recurrence selector: Yok / Her Ay / Her 3 Ayda Bir / Her 6 Ayda Bir / Her Yıl)
+- Full-width red button: "Randevuyu İptal Et" (confirm dialog before deleting)
+
+---
+
+## Data model (minimum)
+
+- **pets**: id, name, species, breed, sex, birth_date, adoption_date, color, neutered (bool), weight_kg, height_cm, temperament, allergies, special_note, photo_url
+- **vaccines**: id, pet_id, name, date_given, next_due, notes, status (computed)
+- **appointments**: id, pet_id, title, date, time, clinic_name, clinic_location, vet_name, reminder_at, reminder_enabled (bool), notes, recurrence (none|1m|3m|6m|12m), status (upcoming|done|cancelled)
+- **reminders**: id, pet_id, title, due_date, type (vaccine|appointment|food|custom), color
+- **feeding**: id, pet_id, food_stock_kg, daily_amount_g (days-left computed)
+
+Seed the database with the sample pet "Luna" and all the sample data above so the app looks exactly like the design on first run.
+
+## Behaviors
+- Multiple pets supported; dashboard carousel switches the active pet and all sections update accordingly
+- All lists support add / edit / delete
+- Reminders sorted by date ascending; overdue items highlighted red
+- Empty states with friendly Turkish messages (e.g. "Henüz aşı kaydı yok")
+- No login required for v1 (single-user); structure code so auth can be added later

@@ -90,6 +90,17 @@ router.get("/pets/:petId/appointments", async (req, res) => {
   } catch { res.status(500).json({ error: "Failed" }); }
 });
 
+router.get("/pets/:petId/appointments/:id", async (req, res) => {
+  const userId = uid(req);
+  if (!userId) { res.status(401).json({ error: "Unauthorized" }); return; }
+  try {
+    const [row] = await db.select().from(petAppointments)
+      .where(and(eq(petAppointments.id, req.params.id), eq(petAppointments.userId, userId)));
+    if (!row) { res.status(404).json({ error: "Not found" }); return; }
+    res.json(row);
+  } catch { res.status(500).json({ error: "Failed" }); }
+});
+
 router.post("/pets/:petId/appointments", async (req, res) => {
   const userId = uid(req);
   if (!userId) { res.status(401).json({ error: "Unauthorized" }); return; }
