@@ -53,3 +53,9 @@ id = "8QUydMOdtSV2uxWHM4yhZ"
 uri = "file://screenshots/harita-light.jpg"
 type = "image"
 title = "Harita — Aydınlık Tema"
+
+[[outputs]]
+id = "t-mX5kPfqfDfkSJCvOUoU"
+uri = "file://screenshots/vector/harita-light.svg"
+type = "image"
+title = "Harita — Aydınlık Tema (SVG Vektör)"

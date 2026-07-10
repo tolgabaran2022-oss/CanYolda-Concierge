@@ -1,0 +1,133 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 390 844" width="390" height="844" font-family="system-ui, -apple-system, sans-serif">
+
+  <!-- Background -->
+  <rect width="390" height="844" fill="#F9F8FF"/>
+
+  <!-- ── TOP BAR ── -->
+  <rect x="12" y="52" width="366" height="44" rx="22" fill="white" filter="url(#shadow)"/>
+  <!-- Paw icon circle -->
+  <circle cx="38" cy="74" r="13" fill="#7C3AED" opacity="0.12"/>
+  <text x="38" y="79" text-anchor="middle" font-size="13">🐾</text>
+  <!-- Logo text -->
+  <text x="58" y="79" font-size="15" font-weight="700" fill="#1A1A2E">CanYoldaşı</text>
+  <!-- Badge "4 hayvan" -->
+  <rect x="304" y="62" width="66" height="24" rx="12" fill="#7C3AED" opacity="0.12"/>
+  <text x="337" y="78" text-anchor="middle" font-size="11" font-weight="600" fill="#7C3AED">4 hayvan</text>
+
+  <!-- ── MAP AREA ── -->
+  <rect x="0" y="108" width="390" height="450" fill="#E8E4D8"/>
+  <!-- Map grid lines (subtle) -->
+  <line x1="0" y1="175" x2="390" y2="175" stroke="#D5D0C3" stroke-width="0.5"/>
+  <line x1="0" y1="243" x2="390" y2="243" stroke="#D5D0C3" stroke-width="0.5"/>
+  <line x1="0" y1="311" x2="390" y2="311" stroke="#D5D0C3" stroke-width="0.5"/>
+  <line x1="0" y1="379" x2="390" y2="379" stroke="#D5D0C3" stroke-width="0.5"/>
+  <line x1="0" y1="447" x2="390" y2="447" stroke="#D5D0C3" stroke-width="0.5"/>
+  <line x1="78" y1="108" x2="78" y2="558" stroke="#D5D0C3" stroke-width="0.5"/>
+  <line x1="156" y1="108" x2="156" y2="558" stroke="#D5D0C3" stroke-width="0.5"/>
+  <line x1="234" y1="108" x2="234" y2="558" stroke="#D5D0C3" stroke-width="0.5"/>
+  <line x1="312" y1="108" x2="312" y2="558" stroke="#D5D0C3" stroke-width="0.5"/>
+  <!-- Map roads (decorative) -->
+  <rect x="0" y="260" width="390" height="8" rx="0" fill="#CCC7B5" opacity="0.8"/>
+  <rect x="170" y="108" width="8" height="450" fill="#CCC7B5" opacity="0.8"/>
+  <rect x="60" y="200" width="180" height="5" rx="0" fill="#CCC7B5" opacity="0.6"/>
+  <rect x="240" y="330" width="150" height="5" rx="0" fill="#CCC7B5" opacity="0.6"/>
+  <!-- Map placeholder label -->
+  <text x="195" y="345" text-anchor="middle" font-size="12" fill="#8A8070" opacity="0.9">Harita (mobil uygulamada görüntülenir)</text>
+  <!-- Map marker pin -->
+  <circle cx="195" cy="295" r="14" fill="#7C3AED"/>
+  <circle cx="195" cy="295" r="6" fill="white"/>
+  <text x="195" y="300" text-anchor="middle" font-size="10">🐾</text>
+  <!-- Second pin -->
+  <circle cx="120" cy="230" r="11" fill="#F97316"/>
+  <circle cx="120" cy="230" r="5" fill="white"/>
+  <!-- Third pin -->
+  <circle cx="280" cy="350" r="11" fill="#22C55E"/>
+  <circle cx="280" cy="350" r="5" fill="white"/>
+
+  <!-- ── BOTTOM SHEET ── -->
+  <rect x="0" y="558" width="390" height="220" rx="0" fill="white"/>
+  <rect x="0" y="558" width="390" height="220" rx="24" fill="white"/>
+  <!-- Handle -->
+  <rect x="168" y="568" width="54" height="4" rx="2" fill="#E2DFF5"/>
+
+  <!-- "Yakındaki Hayvanlar" header -->
+  <text x="20" y="600" font-size="16" font-weight="700" fill="#1A1A2E">Yakındaki Hayvanlar</text>
+  <rect x="216" y="585" width="60" height="20" rx="10" fill="#7C3AED" opacity="0.12"/>
+  <text x="246" y="599" text-anchor="middle" font-size="11" font-weight="600" fill="#7C3AED">4 hayvan</text>
+  <text x="350" y="600" text-anchor="end" font-size="13" font-weight="500" fill="#7C3AED">Hepsini Gör</text>
+
+  <!-- Filter pills -->
+  <!-- Hepsi 4 - active -->
+  <rect x="20" y="612" width="74" height="28" rx="14" fill="#7C3AED"/>
+  <text x="57" y="631" text-anchor="middle" font-size="12" font-weight="600" fill="white">Hepsi  4</text>
+  <!-- Aç 1 -->
+  <rect x="102" y="612" width="54" height="28" rx="14" fill="#FFF7ED"/>
+  <circle cx="116" cy="626" r="5" fill="#F97316"/>
+  <text x="133" y="631" text-anchor="middle" font-size="12" font-weight="500" fill="#C2410C">Aç  1</text>
+  <!-- Yaralı 0 -->
+  <rect x="164" y="612" width="68" height="28" rx="14" fill="#FFF1F2"/>
+  <circle cx="178" cy="626" r="5" fill="#EF4444"/>
+  <text x="200" y="631" text-anchor="middle" font-size="12" font-weight="500" fill="#B91C1C">Yaralı  0</text>
+  <!-- Sağlıklı -->
+  <rect x="240" y="612" width="78" height="28" rx="14" fill="#F0FDF4"/>
+  <circle cx="254" cy="626" r="5" fill="#22C55E"/>
+  <text x="278" y="631" text-anchor="middle" font-size="12" font-weight="500" fill="#15803D">Sağlıklı</text>
+
+  <!-- Animal item 1 -->
+  <circle cx="40" cy="675" r="22" fill="#FFF7ED"/>
+  <text x="40" y="681" text-anchor="middle" font-size="18">🐕</text>
+  <!-- Badge Aç -->
+  <rect x="54" y="655" width="24" height="14" rx="7" fill="#F97316"/>
+  <text x="66" y="665" text-anchor="middle" font-size="8" font-weight="700" fill="white">Aç</text>
+  <text x="72" y="668" font-size="13" font-weight="600" fill="#1A1A2E">Köprü altında bekliyor...</text>
+  <text x="72" y="685" font-size="11" fill="#9CA3AF">Ayşe Y. · 1 sa önce</text>
+  <text x="72" y="700" font-size="11" fill="#9CA3AF">📍 Eyüp, İstanbul</text>
+  <polyline points="372,673 378,678 372,683" fill="none" stroke="#C4B5FD" stroke-width="2" stroke-linecap="round"/>
+
+  <!-- Divider -->
+  <line x1="72" y1="712" x2="378" y2="712" stroke="#F3F0FF" stroke-width="1"/>
+
+  <!-- Animal item 2 -->
+  <circle cx="40" cy="742" r="22" fill="#F0FDF4"/>
+  <text x="40" y="748" text-anchor="middle" font-size="18">🐈</text>
+  <!-- Badge Sağlıklı -->
+  <rect x="46" y="722" width="42" height="14" rx="7" fill="#22C55E"/>
+  <text x="67" y="732" text-anchor="middle" font-size="8" font-weight="700" fill="white">Sağlıklı</text>
+  <text x="72" y="735" font-size="13" font-weight="600" fill="#1A1A2E">Park girişinde yaşıyor...</text>
+  <text x="72" y="752" font-size="11" fill="#9CA3AF">Mehmet K. · 2 sa önce</text>
+  <text x="72" y="767" font-size="11" fill="#9CA3AF">📍 Kadıköy, İstanbul</text>
+  <polyline points="372,740 378,745 372,750" fill="none" stroke="#C4B5FD" stroke-width="2" stroke-linecap="round"/>
+
+  <!-- ── BOTTOM TAB BAR ── -->
+  <rect x="0" y="778" width="390" height="66" fill="white"/>
+  <line x1="0" y1="778" x2="390" y2="778" stroke="#EDE9FB" stroke-width="1"/>
+
+  <!-- Tab: Harita (active) -->
+  <rect x="18" y="778" width="60" height="3" rx="1.5" fill="#7C3AED"/>
+  <text x="48" y="802" text-anchor="middle" font-size="22">🗺️</text>
+  <text x="48" y="820" text-anchor="middle" font-size="10" font-weight="600" fill="#7C3AED">Harita</text>
+
+  <!-- Tab: Akış -->
+  <text x="126" y="802" text-anchor="middle" font-size="22">🏠</text>
+  <text x="126" y="820" text-anchor="middle" font-size="10" fill="#9CA3AF">Akış</text>
+
+  <!-- Tab: Hayvanlar -->
+  <text x="195" y="802" text-anchor="middle" font-size="22">📋</text>
+  <text x="195" y="820" text-anchor="middle" font-size="10" fill="#9CA3AF">Hayvanlar</text>
+
+  <!-- Tab: Evcil -->
+  <text x="264" y="802" text-anchor="middle" font-size="22">🐾</text>
+  <text x="264" y="820" text-anchor="middle" font-size="10" fill="#9CA3AF">Evcil</text>
+
+  <!-- Tab: Hesap -->
+  <text x="342" y="802" text-anchor="middle" font-size="22">👤</text>
+  <text x="342" y="820" text-anchor="middle" font-size="10" fill="#9CA3AF">Hesap</text>
+
+  <!-- Drop shadow filter -->
+  <defs>
+    <filter id="shadow" x="-5%" y="-5%" width="110%" height="130%">
+      <feDropShadow dx="0" dy="2" stdDeviation="4" flood-color="#7C3AED" flood-opacity="0.08"/>
+    </filter>
+  </defs>
+
+</svg>
