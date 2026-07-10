@@ -141,9 +141,18 @@ function CreatePostModal({
       mediaTypes: ["images"],
       allowsEditing: true,
       aspect: [4, 5],
-      quality: 0.8,
+      quality: 0.6,
+      base64: true,
     });
-    if (!result.canceled && result.assets[0]) setImage(result.assets[0].uri);
+    if (!result.canceled && result.assets[0]) {
+      const asset = result.assets[0];
+      if (asset.base64) {
+        const mime = asset.mimeType ?? "image/jpeg";
+        setImage(`data:${mime};base64,${asset.base64}`);
+      } else {
+        setImage(asset.uri);
+      }
+    }
   };
 
   const reset = () => { setImage(null); setCaption(""); setLoc(""); setLoading(false); };
@@ -172,8 +181,8 @@ function CreatePostModal({
               <Text style={M.cancel}>İptal</Text>
             </Pressable>
             <Text style={M.title}>Yeni Gönderi</Text>
-            <Pressable onPress={() => { void handleSubmit(); }} hitSlop={12} disabled={loading}>
-              <Text style={[M.share, loading && { opacity: 0.5 }]}>{loading ? "Paylaşılıyor..." : "Paylaş"}</Text>
+            <Pressable onPress={() => { void handleSubmit(); }} hitSlop={12} disabled={loading || !image}>
+              <Text style={[M.share, (!image || loading) && { opacity: 0.35 }]}>{loading ? "Paylaşılıyor..." : "Paylaş"}</Text>
             </Pressable>
           </View>
 
