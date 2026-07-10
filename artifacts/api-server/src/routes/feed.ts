@@ -1,5 +1,5 @@
 import { Router } from "express";
-import { and, desc, eq, inArray, sql } from "drizzle-orm";
+import { and, desc, eq, inArray, or, sql } from "drizzle-orm";
 import {
   db,
   feedPosts,
@@ -455,14 +455,20 @@ router.get("/feed/posts", async (req, res) => {
         .select({ followingId: follows.followingId })
         .from(follows)
         .where(eq(follows.followerId, userId));
+      /* following_id stores either a real user UUID or a seed username (no seed- prefix) */
       const followingIds = followingRows.map((r) => r.followingId);
       followingIds.push(userId); /* include own posts */
 
       if (followingIds.length > 0) {
+        /* Seed posts have user_id="" but username set; real posts have user_id=UUID.
+           Match on username (covers seed posts) OR user_id (covers real user posts). */
         posts = await db
           .select()
           .from(feedPosts)
-          .where(inArray(feedPosts.userId, followingIds))
+          .where(or(
+            inArray(feedPosts.username, followingIds),
+            inArray(feedPosts.userId, followingIds),
+          ))
           .orderBy(desc(feedPosts.createdAt));
       } else {
         posts = [];

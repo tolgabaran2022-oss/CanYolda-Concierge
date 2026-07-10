@@ -19,7 +19,10 @@ pool.query(`
 router.post("/social/follow/:targetId", async (req, res) => {
   try {
     const followerId  = req.headers["x-user-id"] as string;
-    const followingId = req.params.targetId;
+    /* Normalize: seed posts are returned with userId="seed-<username>"; strip the prefix
+       so follows always store the plain username (or real UUID). */
+    const rawTarget   = req.params.targetId;
+    const followingId = rawTarget.startsWith("seed-") ? rawTarget.slice("seed-".length) : rawTarget;
 
     if (!followerId) {
       res.status(400).json({ error: "x-user-id header required" });
@@ -72,7 +75,8 @@ router.post("/social/follow/:targetId", async (req, res) => {
 router.get("/social/follow/check", async (req, res) => {
   try {
     const followerId  = req.query["followerId"] as string;
-    const targetId    = req.query["targetId"]   as string;
+    const rawTarget   = req.query["targetId"]   as string;
+    const targetId    = rawTarget?.startsWith("seed-") ? rawTarget.slice("seed-".length) : rawTarget;
     if (!followerId || !targetId) {
       res.status(400).json({ error: "followerId and targetId required" });
       return;
