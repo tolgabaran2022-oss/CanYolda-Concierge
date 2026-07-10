@@ -1,0 +1,1464 @@
+# UYGULAMAYI MAĞAZA YAYININA HAZIRLAMA — UÇTAN UCA DENETİM, TEST VE DÜZELTME PROMPTU
+
+Mevcut uygulamayı **Google Play Store ve Apple App Store yayınına hazır, güvenli, kararlı ve üretim kalitesinde** hâle getir.
+
+Bu çalışma yalnızca tasarım düzenlemesi değildir. Uygulamanın frontend, backend, Supabase veritabanı, authentication, storage, bildirimler, güvenlik kuralları, mobil uyumluluk ve kullanıcı akışlarını uçtan uca incele.
+
+Aşağıdaki bölümleri **belirtilen sırayla** tamamla.
+
+Her bölümde:
+
+1. Önce mevcut sistemi analiz et.
+2. İlgili özelliği gerçek kullanıcı gibi baştan sona test et.
+3. Çalışmayan veya eksik olan noktaları tespit et.
+4. Gerekli frontend, backend, database, storage ve güvenlik düzeltmelerini uygula.
+5. Düzeltmeden sonra aynı testi yeniden çalıştır.
+6. Test sonucu doğrulanmadan ilgili maddeyi tamamlanmış sayma.
+7. Her bölümün sonunda kısa bir denetim raporu oluştur.
+
+## TEMEL ÇALIŞMA KURALLARI
+
+* Mevcut çalışan özellikleri bozma.
+* Mevcut tasarım dilini mümkün olduğunca koru.
+* Geçici çözüm, sahte buton, sabit örnek veri veya yalnızca görsel olarak çalışan özellik bırakma.
+* Bir buton görünüyorsa mutlaka gerçek bir işlevi olmalı.
+* İşlevi geliştirilmeyecek bir buton veya menü varsa arayüzden kaldır.
+* Mock data yerine gerçek Supabase verileri kullan.
+* İşlem başarılı olmadan kullanıcıya başarı mesajı gösterme.
+* Her veri işlemi için loading, success, empty state ve error state oluştur.
+* Ham Supabase, JavaScript veya HTTP hata kodlarını kullanıcıya gösterme.
+* Kullanıcıya gösterilen tüm mesajlar anlaşılır Türkçe olsun.
+* Kullanıcı verilerini yalnızca yetkili kullanıcıların görebilmesini sağla.
+* Row Level Security politikalarını yalnızca geçici olarak kapatma. Doğru RLS politikaları oluştur.
+* Gizli anahtarları frontend kodunda tutma.
+* Service role key, admin anahtarı veya özel API anahtarlarını istemci tarafına yerleştirme.
+* Yapılan işlemleri “çalışıyor olabilir” şeklinde raporlama. Gerçek test sonucu belirt.
+* Test edilemeyen bir özellik varsa neden test edilemediğini açıkça yaz.
+* Bir hatayı yalnızca gizleme; hatanın gerçek nedenini bulup düzelt.
+* Kod içinde gereksiz tekrar, kullanılmayan component, kullanılmayan import ve eski kod bırakma.
+* Uygulama genelinde TypeScript hatası, build hatası, console error veya unhandled promise rejection bırakma.
+
+---
+
+# BÖLÜM 0 — PROJEYİ ANALİZ ET VE TEST ORTAMINI HAZIRLA
+
+İşlevsel testlere başlamadan önce:
+
+* Projenin kullandığı teknoloji yapısını analiz et.
+* React, React Native, Expo, Next.js, Supabase veya kullanılan diğer altyapıları tespit et.
+* Authentication yapısını kontrol et.
+* Supabase tablolarını, ilişkileri, foreign key alanlarını ve RLS politikalarını incele.
+* Storage bucket yapılarını ve erişim politikalarını kontrol et.
+* Bildirim sisteminin nasıl çalıştığını tespit et.
+* Uygulamanın mobile, web veya her iki platform için mi geliştirildiğini belirle.
+* Test için en az iki farklı kullanıcı hesabı oluştur veya mevcut test hesaplarını kullan.
+* İki kullanıcıyla takip, mesajlaşma, engelleme, gizlilik ve bildirim testleri yap.
+* Test verilerinin gerçek kullanıcı verilerini etkilememesine dikkat et.
+* Gerekirse test sonunda oluşturulan test verilerini temizle.
+
+Başlangıç raporunda şunları yaz:
+
+* Kullanılan teknoloji altyapısı
+* Tespit edilen ana veri tabloları
+* Authentication yöntemi
+* Storage yapısı
+* Mevcut kritik sorunlar
+* Denetim sırasında korunması gereken çalışan özellikler
+
+---
+
+# BÖLÜM 1 — AUTHENTICATION VE HESAP YÖNETİMİ
+
+Aşağıdaki akışların tamamını gerçek kullanıcı gibi test et:
+
+## 1.1 Kayıt olma
+
+* Geçerli bilgilerle yeni hesap oluştur.
+* Aynı e-posta adresiyle ikinci kez kayıt olmayı dene.
+* Geçersiz e-posta adresi gir.
+* Kısa veya güvenlik şartlarını karşılamayan parola gir.
+* Boş alanlarla kayıt olmayı dene.
+* Kayıt sırasında butona art arda basıldığında birden fazla hesap veya istek oluşmadığını doğrula.
+* Başarılı kayıt sonrasında doğru sayfaya yönlendirildiğini doğrula.
+
+## 1.2 Giriş yapma
+
+* Doğru e-posta ve parola ile giriş yap.
+* Yanlış parola ile giriş yap.
+* Kayıtlı olmayan e-posta ile giriş yap.
+* Oturumun sayfa yenilendiğinde korunmasını kontrol et.
+* Kullanıcı oturumu yokken korumalı sayfalara erişilemediğini doğrula.
+* Kullanıcı oturumu varken login sayfasına dönüldüğünde doğru yönlendirme yapıldığını doğrula.
+
+## 1.3 Çıkış yapma
+
+* Çıkış yaptıktan sonra auth token ve kullanıcıya özel state’in temizlendiğini doğrula.
+* Tarayıcı geri butonuyla özel sayfalara tekrar erişilemediğini kontrol et.
+* Başka kullanıcıyla giriş yapıldığında önceki kullanıcının verilerinin kısa süreliğine bile görünmediğini doğrula.
+
+## 1.4 Şifre değiştirme
+
+* Doğru mevcut parola ile şifre değiştir.
+* Yanlış mevcut parola ile dene.
+* Yeni parola ve parola tekrarının eşleşmediği durumu test et.
+* Şifre değiştikten sonra eski parolayla giriş yapılamadığını doğrula.
+* Yeni parolayla giriş yapıldığını doğrula.
+
+## 1.5 Şifremi unuttum
+
+* Şifre sıfırlama e-postasının gönderildiğini doğrula.
+* Geçersiz veya kayıtlı olmayan e-posta için güvenli ve anlaşılır mesaj göster.
+* Reset bağlantısının gerçek şifre yenileme ekranını açmasını sağla.
+* Yeni şifre kaydedildikten sonra giriş yapılabildiğini test et.
+* Süresi geçmiş veya geçersiz bağlantıda uygun hata mesajı göster.
+
+## 1.6 Sosyal girişler
+
+Google veya Apple giriş seçenekleri görünüyorsa:
+
+* Gerçekten yapılandırılmış ve çalışıyor olmasını sağla.
+* Yapılandırılmamış bir sosyal giriş butonunu kullanıcıya gösterme.
+* Sosyal giriş sonrasında eksik profil bilgilerinin güvenli biçimde tamamlanmasını sağla.
+
+### Bölüm 1 raporu
+
+Şunları yaz:
+
+* Test edilen authentication akışları
+* Bulunan hatalar
+* Uygulanan düzeltmeler
+* Düzeltme sonrası doğrulanan sonuçlar
+* Test edilemeyen sosyal giriş yöntemi varsa nedeni
+
+---
+
+# BÖLÜM 2 — GÖNDERİ VE AKIŞ SİSTEMİ
+
+Aşağıdaki işlemleri gerçek kullanıcı hesabıyla uçtan uca test et:
+
+## 2.1 Gönderi oluşturma
+
+* Galeriden fotoğraf seç.
+* Destekleniyorsa kamera ile fotoğraf çek.
+* Açıklama ekle.
+* Çok uzun açıklama gir.
+* Fotoğrafsız gönderi paylaşılmasına izin veriliyorsa test et; izin verilmiyorsa doğru uyarıyı göster.
+* Çok büyük boyutlu fotoğraf yükle.
+* Desteklenmeyen dosya türü seç.
+* Yükleme sırasında ilerleme veya loading durumu göster.
+* Butona tekrar tekrar basıldığında gönderinin çoğalmadığını doğrula.
+
+## 2.2 Akışta görünme
+
+* Yeni gönderinin kullanıcı profilinde ve ilgili akışta görünmesini doğrula.
+* Takip edilen kullanıcının gönderisinin “Takip Ettiklerin” akışında görünmesini sağla.
+* Takip edilmeyen kullanıcının gönderisinin bu filtrede görünmediğini doğrula.
+* Akış sıralamasının belirlenen kurala göre çalıştığını kontrol et.
+* Silinmiş gönderilerin akışta kalmadığını doğrula.
+
+## 2.3 Beğeni
+
+* Gönderiyi beğen.
+* Beğeniyi geri al.
+* Sayaçların gerçek zamanlı veya ekran yenilemeden doğru güncellendiğini doğrula.
+* Aynı kullanıcının aynı gönderiyi birden fazla beğenemediğini doğrula.
+* Gönderi sahibine bildirim oluşturulduğunu kontrol et.
+* Kullanıcının kendi gönderisini beğenmesi için uygulanacak mevcut ürün kararını tutarlı hâle getir.
+
+## 2.4 Yorum
+
+* Gönderiye yorum yap.
+* Boş yorum gönderilemediğini doğrula.
+* Çok uzun yorumları sınırla veya uygun şekilde göster.
+* Yorumun gönderi altında hemen görünmesini sağla.
+* Yorum sahibinin kendi yorumunu silebilmesini sağla.
+* Gönderi sahibinin yorum yönetim yetkisini mevcut ürün politikasına göre uygula.
+* Yorum sahibine ait olmayan yorumun silinemediğini doğrula.
+* Yorum bildiriminin doğru kullanıcıya gittiğini doğrula.
+
+## 2.5 Kaydetme
+
+* Gönderiyi kaydet.
+* Profildeki “Kaydettiklerim” bölümünde görünmesini doğrula.
+* Kaydedilen gönderiye tıklandığında doğru gönderi detayının açıldığını doğrula.
+* Kaydı kaldır.
+* Silinmiş veya erişimi kapanmış gönderiler için güvenli empty state göster.
+
+## 2.6 Gönderi silme
+
+* Yalnızca gönderi sahibinin silme işlemi yapabildiğini doğrula.
+* Silme öncesinde onay iste.
+* Gönderiyi, ilişkili beğenileri, yorumları, kayıt kayıtlarını ve storage dosyalarını doğru şekilde temizle veya uygun cascade işlemi uygula.
+* Silinen gönderinin akış, profil, kaydedilenler ve bildirimlerde bozuk bağlantı bırakmadığını doğrula.
+
+## 2.7 Gönderi menüsü
+
+Her gönderinin üç nokta menüsünde kullanıcı yetkisine göre doğru seçenekler görünsün:
+
+Gönderi sahibi için:
+
+* Düzenle
+* Sil
+* Paylaş veya bağlantı kopyala
+* Yorumları yönet
+
+Başka kullanıcı için:
+
+* Şikâyet et
+* Kullanıcıyı engelle
+* Paylaş veya bağlantı kopyala
+
+### Bölüm 2 raporu
+
+* Çalıştığı doğrulanan gönderi akışları
+* Düzeltilen veri ilişkileri
+* Silinen işlevsiz öğeler
+* Bildirim ve sayaç sonuçları
+* Storage temizleme sonuçları
+
+---
+
+# BÖLÜM 3 — TAKİP SİSTEMİ VE PROFİL GİZLİLİĞİ
+
+En az iki kullanıcı hesabıyla aşağıdaki akışları test et:
+
+## 3.1 Takip etme
+
+* Bir kullanıcıyı takip et.
+* Takipçi ve takip edilen sayaçlarının her iki profilde doğru değiştiğini doğrula.
+* Aynı kullanıcıya birden fazla takip kaydı oluşturulamadığını kontrol et.
+* Kullanıcının kendisini takip edemediğini doğrula.
+* Takip bildiriminin doğru kullanıcıya gittiğini test et.
+
+## 3.2 Takibi bırakma
+
+* Takibi bırak.
+* Sayaçların doğru azalmasını doğrula.
+* Kullanıcının gönderilerinin “Takip Ettiklerin” akışından kalktığını doğrula.
+* Takip ilişkisine bağlı gereksiz verilerin kalmadığını kontrol et.
+
+## 3.3 Takipçi ve takip edilen listeleri
+
+* Sayaçlara tıklandığında doğru liste açılsın.
+* Listedeki kullanıcıya tıklandığında doğru profil açılsın.
+* Arama ve uzun liste performansını kontrol et.
+* Engellenen kullanıcıların listelerde gösterilmemesini sağla.
+
+## 3.4 Kapalı profil
+
+* Hesap gizlilik ayarını “Kapalı profil” yap.
+* Takipçi olmayan kullanıcı profil gönderilerini, hikâyeleri ve özel içerikleri göremesin.
+* Profil başlığı, kullanıcı adı ve ürün gereği gösterilmesi gereken temel bilgiler dışında özel içerik gösterme.
+* Takip isteği sistemi mevcutsa takip isteği oluştur, kabul et ve reddet akışlarını test et.
+* Takip isteği sistemi yoksa kapalı profil özelliğini gerçek anlamda çalıştıracak şekilde geliştir.
+* Engellenen kullanıcı gizli profile takip isteği gönderemesin.
+
+## 3.5 Profil düzenleme
+
+Aşağıdaki tüm alanları ayrı ayrı güncelle ve sayfa yenilendikten sonra korunduğunu doğrula:
+
+* Profil fotoğrafı
+* Kullanıcı adı
+* Görünen ad
+* Biyografi
+* Şehir veya konum
+* İletişim tercihleri
+* Evcil hayvan bilgileri
+* Gizlilik ayarları
+* Bildirim ayarları
+
+Kullanıcı adı değişikliklerinde:
+
+* Benzersizliği kontrol et.
+* Boşluk ve geçersiz karakterleri engelle.
+* Kullanıcı adıyla açılan profil bağlantılarının bozulmamasını sağla.
+
+### Bölüm 3 raporu
+
+* Takip akışlarının sonucu
+* Sayaç sorunları
+* Kapalı profil erişim testleri
+* RLS veya backend yetki düzeltmeleri
+* Profil alanlarının kayıt sonuçları
+
+---
+
+# BÖLÜM 4 — DM VE MESAJLAŞMA SİSTEMİ
+
+İki ayrı kullanıcı hesabıyla gerçek mesajlaşma testi yap.
+
+## 4.1 Sohbet başlatma
+
+* Bir kullanıcının profilinden “Mesaj Gönder” butonuna bas.
+* Aynı iki kullanıcı için gereksiz mükerrer sohbet odası oluşmadığını doğrula.
+* Sohbet listesinin son mesaja göre sıralandığını kontrol et.
+
+## 4.2 Metin mesajı
+
+* Kullanıcı A’dan Kullanıcı B’ye mesaj gönder.
+* Mesajın her iki kullanıcı ekranında görünmesini doğrula.
+* Mesajın gönderim zamanı doğru gösterilsin.
+* Boş mesaj gönderilemesin.
+* Butona seri basıldığında aynı mesaj çoğalmasın.
+* Mesaj gönderilemezse “Tekrar dene” seçeneği göster.
+
+## 4.3 Fotoğraf mesajı
+
+* Galeriden fotoğraf gönder.
+* Büyük fotoğrafı optimize et.
+* Upload tamamlanmadan gönderilmiş gibi gösterme.
+* Başarısız upload durumunda bozuk mesaj kartı bırakma.
+* Fotoğrafa basıldığında tam ekran önizleme aç.
+
+## 4.4 Okundu bilgisi ve okunmamış sayacı
+
+* Mesaj alındığında okunmamış mesaj sayacının artmasını sağla.
+* Sohbet açıldığında mesajları okundu olarak işaretle.
+* Bildirim ve sayaçların doğru güncellendiğini doğrula.
+
+## 4.5 Güvenlik
+
+* Sohbete dahil olmayan üçüncü bir kullanıcının mesajları okuyamadığını doğrula.
+* RLS politikalarını buna göre kontrol et.
+* Engellenen kullanıcı mesaj gönderemesin.
+* Engelleme sonrasında mevcut sohbetin davranışını güvenli ve anlaşılır hâle getir.
+* Mesajlarda script veya zararlı HTML çalıştırılmasını engelle.
+
+## 4.6 Gerçek zamanlı mesajlar
+
+Supabase Realtime veya mevcut sistem kullanılıyorsa:
+
+* Yeni mesajların sayfa yenilemeden görünmesini sağla.
+* Aynı subscription’ın her sayfa girişinde çoğalmadığını doğrula.
+* Sayfadan çıkıldığında subscription temizlensin.
+* Yinelenen mesaj render sorunlarını düzelt.
+
+### Bölüm 4 raporu
+
+* Mesaj gönderim sonuçları
+* Realtime bağlantı sorunları
+* Güvenlik ve RLS düzeltmeleri
+* Fotoğraf yükleme sonuçları
+* Okundu ve bildirim sonuçları
+
+---
+
+# BÖLÜM 5 — SOKAK HAYVANI DURUM BİLDİRİMİ VE HARİTA
+
+Aşağıdaki akışı baştan sona test et:
+
+## 5.1 Durum oluşturma
+
+* Fotoğraf ekle.
+* Durum türü seç.
+* Açıklama gir.
+* Konum seç veya mevcut konumu kullan.
+* Konum izni verilmediğinde anlaşılır açıklama göster.
+* Kullanıcının konum iznini sonradan açabilmesini sağla.
+* Geçersiz koordinat kaydedilmesini engelle.
+* Çok büyük fotoğrafı optimize et.
+
+## 5.2 Liste ve harita
+
+* Oluşturulan durumun listede görünmesini doğrula.
+* Aynı kaydın haritada doğru koordinatta görünmesini doğrula.
+* Harita işaretçisine tıklanınca doğru detay kartı açılsın.
+* Liste kartına tıklanınca doğru detay sayfası açılsın.
+* Haritadaki marker ve liste verisinin aynı kaydı temsil ettiğini doğrula.
+
+## 5.3 Filtreler
+
+Aşağıdaki filtreleri test et:
+
+* Durum türü
+* Hayvan türü
+* Tarih
+* Mesafe
+* Aciliyet
+* Çözüldü veya aktif durumu
+
+Filtrelerin sadece arayüzde değişmediğini, gerçek sorguya uygulandığını doğrula.
+
+## 5.4 Konumu aç
+
+* “Konumu Aç” butonunun Google Maps, Apple Maps veya cihazın varsayılan harita uygulamasını doğru koordinatla açmasını sağla.
+* Web ortamında uygun harita bağlantısı aç.
+* Koordinat yoksa butonu gösterme veya doğru hata mesajı ver.
+
+## 5.5 Durum yönetimi
+
+* Durum sahibi kaydı düzenleyebilsin.
+* Durum sahibi “Çözüldü” olarak işaretleyebilsin.
+* Yalnızca yetkili kullanıcı kaydı silebilsin.
+* Silinen kaydın listeden ve haritadan kalktığını doğrula.
+* Storage görsellerini temizle.
+
+### Bölüm 5 raporu
+
+* Konum izni sonuçları
+* Harita ve liste senkronizasyonu
+* Filtre sonuçları
+* Düzeltilen koordinat veya marker sorunları
+* Silme ve güncelleme sonuçları
+
+---
+
+# BÖLÜM 6 — SAHİPLENDİRME İLANLARI
+
+## 6.1 İlan oluşturma
+
+Aşağıdaki alanları test et:
+
+* İlan başlığı
+* Açıklama
+* Hayvan türü
+* Cins
+* Yaş
+* Cinsiyet
+* Şehir
+* İlçe
+* Sağlık bilgileri
+* Aşı durumu
+* İletişim yöntemi
+* Telefon numarası
+* Birden fazla fotoğraf
+
+Doğrulamalar:
+
+* Telefon alanına harf girilemesin.
+* Yaş alanına geçersiz değer girilemesin.
+* Zorunlu alanlar boş bırakılamasın.
+* Fotoğraf sayısı ve boyutu sınırlandırılsın.
+* İlan oluşturulurken çift kayıt oluşmasın.
+
+## 6.2 İlan görünürlüğü
+
+Yeni ilan:
+
+* “İlanlarım” sayfasında görünsün.
+* “Tüm İlanlar” sayfasında görünsün.
+* Filtre sonuçlarında doğru şekilde listelensin.
+* Detay sayfasına doğru veriyle açılsın.
+* İlan sahibinin profil bilgileri doğru gösterilsin.
+
+## 6.3 İlan düzenleme
+
+* Alanları güncelle.
+* Yeni fotoğraf ekle.
+* Mevcut fotoğrafı kaldır.
+* Fotoğraf sıralamasını değiştir.
+* Silinen fotoğrafın storage alanından temizlendiğini doğrula.
+* Güncellemeden sonra kart ve detay sayfasındaki verilerin yenilendiğini doğrula.
+
+## 6.4 İlan silme
+
+* Silme öncesinde onay iste.
+* Yalnızca ilan sahibi silebilsin.
+* İlişkili favori, mesaj bağlantısı, şikâyet ve görselleri güvenli şekilde yönet.
+* İlan silindikten sonra tüm listelerden kalktığını doğrula.
+
+## 6.5 İlan sahibiyle iletişim
+
+* Mesaj gönder butonu doğru kullanıcıyla DM başlatsın.
+* Telefon numarası varsa “Ara” butonu doğru numarayı açsın.
+* Telefon numarası yoksa işlevsiz buton gösterme.
+* Kullanıcı kendi ilanında kendisine mesaj gönder butonu görmesin.
+
+## 6.6 İlanı öne çıkarma
+
+Bu özellik görünüyorsa:
+
+* Ödeme altyapısı gerçekten bağlı değilse sahte ödeme işlemi gösterme.
+* Test ortamı ve üretim ortamı ayrımını yap.
+* Başarılı ödeme doğrulanmadan ilanı öne çıkarma.
+* Öne çıkarma başlangıç ve bitiş tarihlerini sakla.
+* Süresi dolmuş ilanı otomatik olarak normal sıralamaya al.
+* Ödeme altyapısı henüz kurulmayacaksa özelliği açıkça “Yakında” şeklinde pasif göster veya tamamen kaldır.
+
+### Bölüm 6 raporu
+
+* İlan oluşturma ve düzenleme sonuçları
+* Form doğrulama düzeltmeleri
+* Fotoğraf ve storage sonuçları
+* Mesaj ve arama butonları
+* Öne çıkarma sisteminin gerçek durumu
+
+---
+
+# BÖLÜM 7 — HİKÂYE SİSTEMİ
+
+## 7.1 Hikâye ekleme
+
+* Fotoğraflı hikâye ekle.
+* Destekleniyorsa video hikâyesi ekle.
+* Yükleme sırasında ilerleme göster.
+* Büyük dosyaları sınırla veya optimize et.
+* Başarısız upload durumunda bozuk hikâye oluşturma.
+
+## 7.2 Hikâyelerin görünmesi
+
+* Hikâye paylaşan kullanıcının profil fotoğrafının akışın üst bölümünde görünmesini sağla.
+* Hikâye halkasının okunmuş ve okunmamış durumunu doğru göster.
+* Takip edilen kullanıcıların hikâyelerini doğru sırada göster.
+* Kapalı hesapların hikâyelerini yalnızca onaylı takipçilere göster.
+* Engellenen kullanıcıların hikâyelerini gösterme.
+
+## 7.3 Hikâye görüntüleme
+
+* Profil fotoğrafına tıklandığında hikâyeyi aç.
+* İleri, geri ve kapatma hareketlerini çalıştır.
+* Birden fazla hikâye arasında doğru geçiş yap.
+* Görüntülenme bilgisini kaydet.
+* Hikâye sahibinin görüntüleyenler listesini görebilmesini sağla.
+* Kullanıcı kendi hikâyesini görüntülediğinde yanlış sayaç oluşmasını engelle.
+
+## 7.4 Hikâye süresi
+
+* Hikâyelerin belirlenen süre sonunda otomatik olarak aktif listeden kalkmasını sağla.
+* Süresi dolmuş hikâyeleri storage politikasına göre sil veya arşivle.
+* Süresi dolmuş hikâyelerin akışta boş halka bırakmadığını doğrula.
+
+### Bölüm 7 raporu
+
+* Hikâye yükleme sonuçları
+* Profil fotoğrafı ve halka düzeltmeleri
+* Gizlilik sonuçları
+* Görüntülenme kayıtları
+* Süresi dolan hikâye davranışı
+
+---
+
+# BÖLÜM 8 — BİLDİRİM SİSTEMİ
+
+Aşağıdaki bildirimleri ayrı ayrı test et:
+
+* Beğeni
+* Yorum
+* Takip
+* Takip isteği
+* Takip isteği kabulü
+* Mesaj
+* İlanla ilgili mesaj
+* Hikâye etkileşimi
+* Sistem bildirimi
+
+Her bildirim için:
+
+* Doğru kullanıcıya gönderildiğini doğrula.
+* İşlemi yapan kullanıcıya kendi eylemi için gereksiz bildirim gönderilmediğini kontrol et.
+* Bildirime tıklandığında doğru gönderi, yorum, profil, ilan veya sohbet ekranının açıldığını doğrula.
+* İlgili içerik silinmişse uygulamanın çökmediğini ve anlaşılır mesaj gösterdiğini doğrula.
+* Aynı olay için mükerrer bildirim oluşmasını engelle.
+* Okundu ve okunmadı durumunu çalıştır.
+* “Tümünü okundu işaretle” özelliği varsa çalıştır.
+* Bildirim sayacının doğru güncellendiğini doğrula.
+
+## Bildirim tercihleri
+
+Ayarlar sayfasında kullanıcı aşağıdaki bildirim türlerini ayrı ayrı kapatabilsin:
+
+* Beğeniler
+* Yorumlar
+* Yeni takipçiler
+* Mesajlar
+* İlan etkileşimleri
+* Sistem bildirimleri
+
+Bir bildirim türü kapatıldığında:
+
+* Veritabanında tercih kaydedilsin.
+* Sayfa yenilense bile tercih korunsun.
+* Kapatılan bildirim gerçekten oluşturulmasın veya kullanıcıya gönderilmesin.
+* Yalnızca arayüz anahtarını değiştirmekle yetinme.
+
+### Bölüm 8 raporu
+
+* Test edilen bildirim türleri
+* Yanlış kullanıcıya giden bildirimler
+* Mükerrer bildirim sorunları
+* Deep-link veya yönlendirme sonuçları
+* Bildirim tercihlerinin gerçek davranışı
+
+---
+
+# BÖLÜM 9 — GÖRSEL VE RESPONSIVE YERLEŞİM DENETİMİ
+
+Uygulamadaki tüm sayfaları aşağıdaki genişliklerde tek tek kontrol et:
+
+* Dar telefon: 360 px
+* Standart telefon: 390 px
+* Büyük telefon: 430 px
+* Tablet: 768 px
+* Web/masaüstü: 1024 px ve üzeri
+
+Aşağıdaki sayfaların hiçbirini atlama:
+
+* Giriş
+* Kayıt
+* Şifremi unuttum
+* Onboarding
+* Ana akış
+* Takip Ettiklerin akışı
+* Gönderi detay
+* Gönderi oluşturma
+* Yorumlar
+* Bildirimler
+* Hikâyeler
+* Mesaj listesi
+* Sohbet
+* Harita
+* Sokak hayvanı durum listesi
+* Durum oluşturma
+* İlanlar
+* İlan detayı
+* İlan oluşturma
+* İlan düzenleme
+* İlanlarım
+* Profil
+* Başka kullanıcı profili
+* Takipçi listesi
+* Takip edilenler listesi
+* Kaydettiklerim
+* Profil düzenleme
+* Ayarlar
+* Gizlilik
+* Hesap
+* Gizlilik Politikası
+* Kullanım Koşulları
+* Şikâyet ekranı
+* Engellenen kullanıcılar
+
+## 9.1 Taşma ve üst üste binme
+
+* Bottom navigation arkasında kalan içerikleri düzelt.
+* Sabit butonların form alanlarının üzerine binmesini engelle.
+* Klavye açıldığında input ve gönder butonlarının görünür kalmasını sağla.
+* Modal ve bottom sheet’lerin ekran dışına taşmasını engelle.
+* Çift render edilen öğeleri kaldır.
+* Header ile içerik arasında doğru boşluk bırak.
+* Yatay scroll oluşmaması gereken sayfalarda taşmayı engelle.
+
+## 9.2 Uzun içerikler
+
+Şunlarla test yap:
+
+* Çok uzun kullanıcı adı
+* Çok uzun görünen ad
+* Uzun biyografi
+* Uzun gönderi açıklaması
+* Uzun yorum
+* Uzun ilan başlığı
+* Uzun bildirim metni
+
+Uygun yerlerde:
+
+* Ellipsis
+* Satır kırma
+* “Devamını gör”
+* Maksimum satır
+* Scroll alanı
+
+kullan.
+
+Metni yalnızca CSS ile görünmez hâle getirip veriyi kaybetme.
+
+## 9.3 Açık ve koyu mod
+
+Her sayfayı açık ve koyu modda kontrol et:
+
+* Metin kontrastları
+* Kart arka planları
+* Input alanları
+* Placeholder renkleri
+* Border renkleri
+* Modal arka planları
+* Bottom navigation
+* Header
+* Harita kontrolleri
+* Loading skeleton
+* Empty state
+* Error state
+* Toast mesajları
+* Pasif butonlar
+* Seçili ve seçilmemiş ikonlar
+
+Sabit beyaz veya sabit siyah renk nedeniyle görünmeyen öğe bırakma.
+
+## 9.4 iOS ve Android güvenli alanları
+
+* `safe-area-inset-top`
+* `safe-area-inset-bottom`
+* Notch
+* Dynamic Island
+* Android durum çubuğu
+* iOS home göstergesi
+* Klavye alanı
+
+için gerekli düzenlemeleri yap.
+
+Bottom navigation ve sabit işlem butonları home göstergesinin arkasında kalmasın.
+
+## 9.5 Dokunma hedefleri
+
+* Tüm tıklanabilir ikon ve butonların dokunma alanı en az 44x44 px olsun.
+* Görsel ikon küçük kalabilir ancak tıklama alanı genişletilsin.
+* Birbirine çok yakın butonlar yanlışlıkla tetiklenmesin.
+* Butonların disabled ve loading durumları görsel olarak anlaşılır olsun.
+
+### Bölüm 9 raporu
+
+Her ekran genişliği için:
+
+* Bulunan taşma sorunları
+* Düzeltilen sayfalar
+* Açık/koyu mod sorunları
+* Safe area düzeltmeleri
+* Dokunma hedefi düzenlemeleri
+
+---
+
+# BÖLÜM 10 — PERFORMANS VE VERİ YÜKLEME
+
+## 10.1 Sayfalama ve sonsuz kaydırma
+
+Aşağıdaki listelerin tüm kayıtları tek seferde çekmediğini doğrula:
+
+* Ana akış
+* Takip Ettiklerin akışı
+* Tüm ilanlar
+* İlanlarım
+* Bildirimler
+* Mesaj listesi
+* Sohbet mesajları
+* Yorumlar
+* Takipçiler
+* Takip edilenler
+* Hikâyeler
+* Sokak hayvanı durumları
+* Arama sonuçları
+
+Kurallar:
+
+* Uygun sayfa boyutu kullan.
+* Cursor pagination veya güvenli offset pagination uygula.
+* Listenin sonuna gelindiğinde tekrar tekrar istek atılmasını engelle.
+* Loading göstergesini yalnızca gerçekten yükleme yapılırken göster.
+* Aynı kayıtları iki kez listeleme.
+* Pull-to-refresh veya yenileme işleminde veriyi doğru şekilde sıfırla.
+
+## 10.2 Görsel optimizasyonu
+
+* Fotoğraf yüklenmeden önce istemci tarafında makul ölçüye küçült.
+* Gerekirse backend veya storage tarafında thumbnail üret.
+* Liste kartlarında tam çözünürlüklü görsel kullanma.
+* Detay ekranında daha yüksek çözünürlük kullan.
+* Web ortamında lazy loading uygula.
+* Mobilde görünür alan dışındaki görselleri gereksiz yükleme.
+* Desteklenen ortamlarda WebP veya AVIF gibi optimize formatları kullan.
+* Fotoğraf EXIF yönlendirmelerini doğru işle.
+* Kullanıcının gereksiz konum metadata bilgisini fotoğrafla birlikte paylaşma.
+* Upload limitlerini belirle.
+* Bozuk veya yarım yüklenmiş dosyaları temizle.
+
+## 10.3 Layout shift
+
+* Gönderi, ilan, hikâye ve profil görsellerine sabit aspect ratio ver.
+* Görsel yüklenirken skeleton veya placeholder göster.
+* Görseller yüklendiğinde sayfanın zıplamasını engelle.
+* Kart yüksekliklerinin sürekli değişmesini azalt.
+
+## 10.4 Yeniden render ve veri cache
+
+* Gereksiz component render’larını tespit et.
+* Her state değişiminde tüm listenin yeniden render edilmesini engelle.
+* Uygun yerlerde memoization kullan.
+* Aynı verinin her sayfa geçişinde gereksiz tekrar çekilmesini engelle.
+* Cache süresi ve invalidation kurallarını doğru uygula.
+* Kullanıcı değiştiğinde eski kullanıcının cache’ini temizle.
+* Realtime subscription’ların çoğalmasını engelle.
+
+## 10.5 Sorgu performansı
+
+* Yavaş Supabase sorgularını tespit et.
+* Gereksiz `select('*')` sorgularını azalt.
+* Yalnızca gerekli kolonları çek.
+* N+1 sorguları kaldır.
+* Sık kullanılan filtre alanlarına gerekli index’leri ekle.
+* İlişkili verileri güvenli ve verimli şekilde çek.
+* Büyük tablolarda limitsiz sorgu kullanma.
+* Sayaçlar için tüm kayıtları istemciye çekip sayma.
+* Foreign key ve cascade davranışlarını kontrol et.
+
+## 10.6 Sayfa geçişleri
+
+* Sayfa geçişlerindeki donma ve takılmaları tespit et.
+* Ağır component’leri gerektiğinde lazy load et.
+* Harita veya medya ekranlarını ihtiyaç olduğunda yükle.
+* Ana thread’i bloke eden işlemleri azalt.
+* Büyük JSON dönüşümlerini render sırasında tekrar tekrar çalıştırma.
+
+### Bölüm 10 raporu
+
+Mümkün olduğunca ölçülebilir bilgi ver:
+
+* Önceki ve sonraki sorgu sayısı
+* Sayfa başına çekilen kayıt sayısı
+* Optimize edilen görseller
+* Eklenen index’ler
+* Kaldırılan gereksiz istekler
+* Düzeltilen yeniden render problemleri
+* Tespit edilen performans darboğazları
+
+---
+
+# BÖLÜM 11 — HATA DAYANIKLILIĞI VE FORM DOĞRULAMA
+
+## 11.1 İnternet yokken davranış
+
+Aşağıdaki durumları test et:
+
+* Uygulama internet yokken açılıyor.
+* Akış yüklenemiyor.
+* Mesaj gönderilemiyor.
+* Fotoğraf yüklenemiyor.
+* İlan oluşturulamıyor.
+* Harita verisi alınamıyor.
+* Profil güncellenemiyor.
+
+Her durumda:
+
+* Beyaz ekran gösterme.
+* Sonsuz loading bırakma.
+* Teknik hata kodu gösterme.
+* Türkçe, anlaşılır hata mesajı göster.
+* Uygun yerlerde “Tekrar Dene” butonu göster.
+* Tekrar denendiğinde işlem gerçekten yeniden çalışsın.
+* Kullanıcı tarafından yazılmış form verilerini hata sonrasında gereksiz yere silme.
+* Aynı işlem otomatik olarak birden fazla kez gönderilmesin.
+
+## 11.2 Form doğrulamaları
+
+Tüm formlarda aşağıdaki kontrolleri uygula:
+
+* Boş zorunlu alan
+* Yalnızca boşluk içeren alan
+* Geçersiz e-posta
+* Zayıf parola
+* Eşleşmeyen parola
+* Çok uzun kullanıcı adı
+* Geçersiz kullanıcı adı karakterleri
+* Geçersiz telefon numarası
+* Geçersiz yaş
+* Geçersiz koordinat
+* Çok büyük fotoğraf
+* Desteklenmeyen dosya türü
+* Çok fazla fotoğraf
+* Çok uzun açıklama
+* Geçersiz URL
+* Eksik izin
+* Başlangıç ve bitiş tarihi tutarsızlığı
+
+Hata mesajlarını ilgili input alanının yakınında göster.
+
+## 11.3 Loading ve buton davranışları
+
+* İşlem devam ederken butonu tekrar tıklanamaz hâle getir.
+* Loading sırasında buton metnini veya spinner durumunu göster.
+* İşlem başarısız olursa butonu tekrar kullanılabilir hâle getir.
+* Loading state hiçbir koşulda sonsuza kadar kalmasın.
+* Component unmount olduğunda state update hatası oluşmasını engelle.
+
+## 11.4 Konsol ve runtime hataları
+
+Uygulamadaki tüm sayfaları gezerken şunları kontrol et:
+
+* Console error
+* Console warning
+* Unhandled promise rejection
+* React key warning
+* Hydration warning
+* State update on unmounted component
+* Supabase permission error
+* Realtime subscription error
+* Image loading error
+* Navigation error
+* TypeScript error
+* Build error
+
+Gereksiz debug loglarını kaldır.
+
+Gerçek hata takibi gerekiyorsa kullanıcı verilerini sızdırmadan güvenli loglama yapısı oluştur.
+
+## 11.5 Global error boundary
+
+* Uygulama seviyesinde error boundary ekle.
+* Tek bir component hatasında tüm uygulamanın beyaz ekran vermesini engelle.
+* Kullanıcıya güvenli bir hata ekranı ve yeniden deneme seçeneği göster.
+* Hassas teknik detayları kullanıcıya gösterme.
+
+### Bölüm 11 raporu
+
+* Test edilen hata senaryoları
+* Düzeltilen sonsuz loading durumları
+* Eklenen validasyonlar
+* Temizlenen console hataları
+* Error boundary sonucu
+
+---
+
+# BÖLÜM 12 — MAĞAZA POLİTİKALARI VE KULLANICI GÜVENLİĞİ
+
+Uygulama kullanıcıların gönderi, yorum, hikâye, ilan, mesaj ve durum paylaşabildiği sosyal bir uygulamadır. Bu nedenle moderasyon ve kullanıcı güvenliği özelliklerini gerçek işlevleriyle geliştir.
+
+## 12.1 Hesap silme
+
+Ayarlar > Hesap bölümüne görünür bir **“Hesabımı Sil”** seçeneği ekle.
+
+Akış:
+
+1. Kullanıcı seçeneğe basar.
+2. İşlemin geri alınamayacağı açıkça anlatılır.
+3. Kullanıcıdan tekrar onay alınır.
+4. Gerekirse parola veya yeniden kimlik doğrulama istenir.
+5. Silme işlemi güvenli backend fonksiyonu üzerinden gerçekleştirilir.
+6. Kullanıcı oturumu kapatılır.
+7. Login ekranına yönlendirilir.
+
+Silme veya anonimleştirme kapsamı:
+
+* Profil bilgileri
+* Profil fotoğrafları
+* Gönderiler
+* Gönderi görselleri
+* Beğeniler
+* Yorumlar
+* Kaydedilenler
+* Takip kayıtları
+* Takip istekleri
+* Hikâyeler
+* Hikâye görüntülenmeleri
+* İlanlar
+* İlan görselleri
+* Sokak hayvanı durumları
+* Mesajlar
+* Sohbet üyelikleri
+* Bildirimler
+* Şikâyet kayıtları
+* Cihaz tokenları
+* Storage dosyaları
+
+Mesajlar veya moderasyon kayıtları hukuki/güvenlik gereği saklanacaksa:
+
+* Kullanıcı kimliği anonimleştirilsin.
+* Profil bağlantısı kaldırılıp “Silinmiş Kullanıcı” olarak gösterilsin.
+* Bu davranış Gizlilik Politikası’nda açıkça belirtilecek yapıya uygun olsun.
+
+Hesap silme işlemi yalnızca UI’dan profil kaydını silmekle sınırlı kalmasın. Auth hesabı ve ilişkili veriler güvenli şekilde yönetilsin.
+
+## 12.2 İçerik şikâyeti
+
+Aşağıdaki içeriklerin üç nokta menüsüne “Şikâyet Et” seçeneği ekle:
+
+* Gönderi
+* Yorum
+* Hikâye
+* Sahiplendirme ilanı
+* Sokak hayvanı durumu
+* Kullanıcı profili
+* Gerekirse mesaj
+
+Şikâyet nedenleri:
+
+* Spam
+* Taciz veya zorbalık
+* Nefret söylemi
+* Şiddet içeriği
+* Uygunsuz veya cinsel içerik
+* Sahte ilan veya dolandırıcılık
+* Hayvanlara zarar verme
+* Yanlış bilgi
+* Kişisel bilgi paylaşımı
+* Diğer
+
+Şikâyet akışı:
+
+1. Neden seçilir.
+2. İsteğe bağlı açıklama eklenir.
+3. Şikâyet veritabanına kaydedilir.
+4. Gönderen kullanıcı, hedef içerik, içerik türü, neden, açıklama, tarih ve durum saklanır.
+5. Aynı kullanıcının aynı içeriği art arda sınırsız kez şikâyet etmesi engellenir.
+6. Kullanıcıya başarı mesajı gösterilir.
+7. Şikâyet edilen kullanıcıya şikâyet eden kişinin kimliği gösterilmez.
+
+Şikâyet durumları:
+
+* Beklemede
+* İnceleniyor
+* İşlem yapıldı
+* Reddedildi
+
+Admin/moderasyon paneli varsa şikâyetleri görüntüleyecek şekilde bağla. Panel yoksa en azından veritabanı ve güvenli moderasyon altyapısını hazırla.
+
+## 12.3 Kullanıcı engelleme
+
+Profil üç nokta menüsüne “Engelle” seçeneği ekle.
+
+Engelleme sonrasında:
+
+* Engellenen kullanıcı bana mesaj gönderemesin.
+* Ben engellenen kullanıcıya mesaj gönderemeyeyim.
+* Engellenen kullanıcının gönderileri bana görünmesin.
+* Benim gönderilerim engellenen kullanıcıya görünmesin.
+* Hikâyeler karşılıklı görünmesin.
+* İlanlar ve durumlar görünmesin.
+* Arama sonuçlarında birbirimiz görünmeyelim.
+* Takip ilişkisi varsa kaldırılsın.
+* Bekleyen takip istekleri silinsin.
+* Yeni takip isteği gönderilemesin.
+* Profil doğrudan bağlantıyla açılsa bile içerik gösterilmesin.
+* Realtime mesaj veya bildirim kanalları engeli aşamasın.
+
+Ayarlar > Gizlilik bölümüne “Engellenen Kullanıcılar” sayfası ekle.
+
+Bu sayfada:
+
+* Engellenen kullanıcılar listelensin.
+* Engeli kaldır seçeneği bulunsun.
+* Engel kaldırıldığında önceki takip ilişkisi otomatik olarak geri gelmesin.
+
+Engelleme kontrolünü sadece frontend’de yapma. Backend sorguları ve RLS politikaları da engeli uygulamalı.
+
+## 12.4 Gizlilik Politikası
+
+Giriş ve kayıt ekranındaki “Gizlilik Politikası” bağlantısını gerçek bir sayfaya bağla.
+
+Sayfada en azından şu başlıklar bulunsun:
+
+* Toplanan veriler
+* Verilerin kullanım amaçları
+* Konum verileri
+* Fotoğraf ve medya erişimi
+* Bildirim izinleri
+* Mesajlar ve kullanıcı içerikleri
+* Verilerin saklanması
+* Verilerin üçüncü taraflarla paylaşılması
+* Supabase ve diğer hizmet sağlayıcılar
+* Hesap silme
+* Kullanıcı hakları
+* Çocukların gizliliği
+* İletişim bilgileri
+* Politika güncellemeleri
+
+Yer tutucu ifadeler kullanılacaksa geliştirici tarafından sonradan değiştirilecek alanları açıkça işaretle. Ancak sayfa boş veya kırık olmasın.
+
+## 12.5 Kullanım Koşulları
+
+Giriş ve kayıt ekranındaki “Kullanım Koşulları” bağlantısını çalışan bir sayfaya bağla.
+
+Şu başlıklar yer alsın:
+
+* Hizmetin kapsamı
+* Yaş şartı
+* Kullanıcı sorumlulukları
+* Yasaklanan içerikler
+* Sahte sahiplendirme ilanları
+* Dolandırıcılık
+* Taciz ve nefret söylemi
+* Hayvanlara zarar veren içerikler
+* İçerik moderasyonu
+* Şikâyet ve engelleme
+* Hesabın askıya alınması
+* Sorumluluk sınırları
+* Koşulların güncellenmesi
+* İletişim
+
+## 12.6 İzinler
+
+Kamera, galeri, konum ve bildirim izinlerini kontrol et.
+
+* İzinleri uygulama açılır açılmaz topluca isteme.
+* Özelliğin kullanılacağı anda bağlama uygun açıklamayla iste.
+* Kullanıcı reddederse uygulama çökmesin.
+* “Ayarlardan İzni Aç” seçeneği göster.
+* Gereksiz izin isteme.
+* iOS Info.plist ve Android manifest açıklamalarını kullanıcıya anlaşılır biçimde düzenle.
+* Arka plan konumu gerçekten gerekli değilse isteme.
+* Kullanılmayan izinleri kaldır.
+
+## 12.7 İçerik moderasyonu
+
+* Kullanıcının oluşturduğu metin ve medya içerikleri için temel güvenlik kontrolleri oluştur.
+* Açıkça yasaklanan metinleri ve spam davranışlarını sınırlayacak altyapı ekle.
+* Rate limit uygula.
+* Aynı kullanıcının kısa sürede çok fazla gönderi, yorum, mesaj veya şikâyet oluşturmasını engelle.
+* Moderasyon sonucu içeriğin kaldırılması veya kullanıcının sınırlandırılması için veri modeli hazırla.
+* Admin yetkilerini frontend’deki görünürlük kontrolüne bırakma.
+
+### Bölüm 12 raporu
+
+* Hesap silme testinin sonucu
+* Şikâyet sisteminin sonucu
+* Engelleme testinin sonucu
+* Gizlilik ve kullanım koşulları sayfaları
+* İzinlerde yapılan değişiklikler
+* Moderasyon ve rate limit sonuçları
+
+---
+
+# BÖLÜM 13 — GÜVENLİK DENETİMİ
+
+## 13.1 Yetkilendirme
+
+Aşağıdaki işlemlerin yalnızca doğru kullanıcı tarafından yapılabildiğini doğrula:
+
+* Gönderi silme
+* Gönderi düzenleme
+* Yorum silme
+* İlan düzenleme ve silme
+* Hikâye silme
+* Durum düzenleme ve silme
+* Mesajları okuma
+* Profil bilgilerini düzenleme
+* Bildirimleri okuma
+* Kaydedilen gönderileri görme
+* Engellenen kullanıcılar listesini görme
+
+Frontend’de butonu gizlemek yeterli değildir. Backend ve RLS yetkisini de kontrol et.
+
+## 13.2 Supabase RLS
+
+Tüm kullanıcı verisi içeren tablolarda RLS’nin aktif olduğunu doğrula.
+
+Politikaları şu mantıklarla kontrol et:
+
+* Kullanıcı yalnızca kendi özel verisini okuyabilsin.
+* Kullanıcı yalnızca kendi adına veri oluşturabilsin.
+* Kullanıcı başka bir kullanıcının kaydını değiştiremesin.
+* Kamuya açık içerikler gizlilik ve engelleme kurallarıyla birlikte gösterilsin.
+* Mesajlar yalnızca sohbet katılımcıları tarafından okunabilsin.
+* Admin işlemleri güvenli server-side yapı üzerinden yapılsın.
+
+## 13.3 Dosya güvenliği
+
+* Dosya uzantısına değil MIME type kontrolüne de bak.
+* Çalıştırılabilir veya zararlı dosya yüklemelerini engelle.
+* Dosya adlarını güvenli ve benzersiz oluştur.
+* Kullanıcıların başka kullanıcının özel dosyasını silemediğini doğrula.
+* Private olması gereken bucket’ları public bırakma.
+* Gerekirse signed URL kullan.
+* Storage yollarında kullanıcı kimliği kontrolü uygula.
+
+## 13.4 Veri sanitizasyonu
+
+* Kullanıcı metinlerinden HTML veya script çalıştırılmasını engelle.
+* URL parametrelerini doğrula.
+* SQL veya filtre enjeksiyonuna açık dinamik sorgular oluşturma.
+* Kullanıcı tarafından girilen değerleri güvenli şekilde render et.
+* Hassas token ve anahtarları loglama.
+
+## 13.5 Rate limiting
+
+Aşağıdaki işlemler için uygun limitler oluştur:
+
+* Giriş denemesi
+* Şifre sıfırlama
+* Mesaj gönderme
+* Yorum yapma
+* Gönderi oluşturma
+* Takip etme ve bırakma
+* Şikâyet gönderme
+* Dosya yükleme
+
+### Bölüm 13 raporu
+
+* Bulunan güvenlik açıkları
+* Düzeltilen RLS politikaları
+* Storage güvenliği
+* Yetkisiz erişim testleri
+* Eklenen rate limitler
+* Kalan güvenlik kararları
+
+---
+
+# BÖLÜM 14 — ERİŞİLEBİLİRLİK VE KULLANILABİLİRLİK
+
+* İkon butonlarına erişilebilir açıklama ekle.
+* Görseller için uygun alternatif metin veya erişilebilir etiket kullan.
+* Form input’larını label ile ilişkilendir.
+* Hata mesajlarının ekran okuyucu tarafından anlaşılmasını sağla.
+* Sadece renkle anlam verilen durumları ikon veya metinle destekle.
+* Metin büyütüldüğünde arayüzün bozulmadığını kontrol et.
+* Klavye ile gezinebilen web sayfalarında focus durumlarını görünür yap.
+* Modal açıldığında focus’u modal içinde tut.
+* Modal kapanınca focus’u önceki elemana geri getir.
+* Kontrastı düşük metinleri düzelt.
+* Animasyon azaltma tercihini mümkünse destekle.
+
+### Bölüm 14 raporu
+
+* Düzeltilen erişilebilirlik sorunları
+* Eklenen etiketler
+* Kontrast ve font ölçeği sonuçları
+* Klavye ve ekran okuyucu iyileştirmeleri
+
+---
+
+# BÖLÜM 15 — BUILD, ÜRETİM VE MAĞAZA ÖNCESİ TEKNİK KONTROL
+
+* Production build oluştur.
+* Build sırasında çıkan tüm error ve önemli warning’leri düzelt.
+* Development ortamına özel kodların production’a taşınmadığını doğrula.
+* API URL ve environment değişkenlerini production için kontrol et.
+* Gizli anahtarların bundle içine girmediğini doğrula.
+* Debug ekranlarını kaldır.
+* Test kullanıcı bilgilerini kaldır.
+* Sahte ödeme veya sahte bildirim kodlarını production’dan kaldır.
+* Uygulama sürüm numarasını kontrol et.
+* Android package name ve iOS bundle identifier değerlerini kontrol et.
+* Uygulama adı, ikon, splash screen ve tema renklerini kontrol et.
+* Deep link yapılandırmalarını kontrol et.
+* Gizlilik Politikası URL’si ve destek URL’si için kullanılacak alanları hazırla.
+* Android geri tuşu davranışını test et.
+* iOS swipe-back ve klavye davranışını test et.
+* Uygulamanın ilk açılışında çökmediğini doğrula.
+* Oturum açık ve kapalı senaryolarda cold start testi yap.
+* Uygulamayı temiz kurulumdan sonra test et.
+* Güncelleme senaryosunda mevcut kullanıcı oturumunun ve verilerinin bozulmadığını kontrol et.
+
+### Bölüm 15 raporu
+
+* Production build sonucu
+* Düzeltilen build sorunları
+* Environment ve anahtar güvenliği
+* Android ve iOS yapılandırma durumu
+* Mağaza yayını öncesinde eksik kalan dış bilgiler
+
+---
+
+# BÖLÜM 16 — OTOMATİK TESTLER
+
+Kritik akışlar için mümkün olan yerlerde test oluştur:
+
+## Unit test
+
+* Form doğrulamaları
+* Sayaç hesaplamaları
+* Tarih formatlama
+* Dosya boyutu kontrolü
+* Bildirim tercihleri
+* Yetki yardımcı fonksiyonları
+
+## Integration test
+
+* Authentication
+* Gönderi oluşturma
+* Takip
+* Beğeni
+* Yorum
+* Kaydetme
+* İlan oluşturma
+* Mesaj gönderme
+* Engelleme
+* Şikâyet
+
+## E2E test
+
+En azından şu temel senaryoları otomatikleştir:
+
+1. Kayıt ol ve giriş yap.
+2. Gönderi oluştur.
+3. İkinci kullanıcıyla gönderiyi beğen ve yorum yap.
+4. Kullanıcıyı takip et.
+5. DM gönder.
+6. İlan oluştur.
+7. Kullanıcıyı engelle.
+8. Engellenen kullanıcının mesaj gönderemediğini doğrula.
+9. İçeriği şikâyet et.
+10. Hesap silme ekranına erişilebildiğini doğrula.
+
+Test altyapısı projeye uygun değilse ağır ve sorunlu bir yapı eklemek yerine kritik servisler için güvenilir testler oluştur ve manuel testleri ayrıntılı raporla.
+
+### Bölüm 16 raporu
+
+* Eklenen test dosyaları
+* Geçen testler
+* Başarısız testler
+* Otomatikleştirilemeyen akışlar
+* Manuel olarak doğrulanan akışlar
+
+---
+
+# BÖLÜM 17 — SON KONTROL VE TEMİZLİK
+
+Tüm düzeltmeler tamamlandıktan sonra uygulamayı temiz kullanıcı hesaplarıyla yeniden baştan sona test et.
+
+Son kontrolde:
+
+* Tüm sayfalarda navigation çalışıyor mu?
+* Geri butonları doğru çalışıyor mu?
+* Boş ekran var mı?
+* İşlevsiz buton var mı?
+* Kırık görsel var mı?
+* Sonsuz loading var mı?
+* Yanlış kullanıcı verisi görünüyor mu?
+* Eski kullanıcının cache verisi yeni kullanıcıya gösteriliyor mu?
+* Silinen içerikler görünmeye devam ediyor mu?
+* Sayaçlar doğru mu?
+* Açık ve koyu mod doğru mu?
+* 360 px genişlikte taşma var mı?
+* Tablet ve web görünümünde gereksiz boşluk veya aşırı geniş kart var mı?
+* iOS safe area doğru mu?
+* Android geri tuşu doğru mu?
+* Console error var mı?
+* Production build başarılı mı?
+* Kullanıcı engelleme backend seviyesinde çalışıyor mu?
+* Kapalı profil backend seviyesinde korunuyor mu?
+* Hesap silme gerçek veri işlemi yapıyor mu?
+* Şikâyetler veritabanına kaydediliyor mu?
+* Bildirim tercihleri gerçek bildirim üretimini etkiliyor mu?
+
+Bir sorun tespit edilirse rapora yazıp bırakma. Önce düzelt, ardından yeniden test et.
+
+---
+
+# BÖLÜM 18 — ZORUNLU SONUÇ RAPORU
+
+Çalışma tamamlandığında aşağıdaki formatta ayrıntılı bir sonuç raporu ver.
+
+## A. Düzeltilen hatalar
+
+Her hata için:
+
+* Hatanın bulunduğu sayfa veya özellik
+* Hatanın açıklaması
+* Hatanın gerçek nedeni
+* Uygulanan çözüm
+* Değiştirilen dosyalar
+* Veritabanı değişikliği yapıldıysa açıklaması
+* Düzeltme sonrası test sonucu
+
+## B. Çalıştığı doğrulanan akışlar
+
+Her akışın yanına test durumunu yaz:
+
+* Kayıt olma: ÇALIŞIYOR / ÇALIŞMIYOR / TEST EDİLEMEDİ
+* Giriş yapma
+* Çıkış yapma
+* Şifre değiştirme
+* Şifremi unuttum
+* Gönderi oluşturma
+* Gönderi silme
+* Beğeni
+* Yorum
+* Kaydetme
+* Takip
+* Takibi bırakma
+* Kapalı profil
+* DM metin mesajı
+* DM fotoğraf mesajı
+* Bildirimler
+* Hikâyeler
+* Sokak hayvanı durumu
+* Harita
+* İlan oluşturma
+* İlan düzenleme
+* İlan silme
+* Şikâyet
+* Kullanıcı engelleme
+* Hesap silme
+* Gizlilik Politikası
+* Kullanım Koşulları
+* Açık mod
+* Koyu mod
+* 360 px görünüm
+* 390–430 px görünüm
+* 768 px ve üzeri görünüm
+* Production build
+
+Her “ÇALIŞIYOR” maddesinde:
+
+* Nasıl test edildiğini
+* Hangi kullanıcı hesapları veya rollerle test edildiğini
+* Beklenen ve gerçekleşen sonucu
+
+kısaca belirt.
+
+## C. Çözülemeyen veya karar gerektiren konular
+
+Her konu için:
+
+* Sorunun açıklaması
+* Neden otomatik çözülemediği
+* Gerekli kullanıcı veya işletme kararı
+* Önerilen çözüm
+* Risk seviyesi: Kritik / Yüksek / Orta / Düşük
+
+API anahtarı, ödeme hesabı, Apple Developer hesabı, Google Play Console hesabı, alan adı, destek e-postası veya hukuki metin gibi dışarıdan sağlanması gereken bilgiler varsa burada açıkça listele.
+
+## D. Veritabanı değişiklikleri
+
+* Oluşturulan tablolar
+* Eklenen kolonlar
+* Eklenen foreign key’ler
+* Eklenen index’ler
+* Eklenen veya değiştirilen RLS politikaları
+* Eklenen trigger veya server fonksiyonları
+* Storage bucket ve policy değişiklikleri
+* Uygulanması gereken migration dosyaları
+
+## E. Değiştirilen dosyalar
+
+Değiştirilen dosyaları ve her dosyada yapılan işlemi listele.
+
+## F. Kalan mağaza yayın gereksinimleri
+
+Teknik olmayan ve geliştirici hesabı gerektiren maddeleri listele:
+
+* Mağaza açıklamaları
+* Ekran görüntüleri
+* Uygulama ikonu
+* Feature graphic
+* Destek URL’si
+* Gizlilik Politikası URL’si
+* Veri güvenliği formu
+* App Privacy formu
+* İçerik derecelendirmesi
+* Test kullanıcı bilgileri
+* İnceleme notları
+* Hesap silme URL’si gerekiyorsa ilgili sayfa
+
+## G. Genel yayın kararı
+
+Raporda net olarak aşağıdakilerden birini seç:
+
+* **YAYINA HAZIR**
+* **KRİTİK EKSİKLER NEDENİYLE YAYINA HAZIR DEĞİL**
+* **DIŞ HESAP VEYA BİLGİLER TAMAMLANDIĞINDA YAYINA HAZIR**
+
+Kararın nedenlerini açıkça yaz.
+
+---
+
+# TAMAMLANMA KRİTERLERİ
+
+Aşağıdaki şartlardan biri sağlanmıyorsa çalışma tamamlanmış sayılmayacak:
+
+* Kritik kullanıcı akışları gerçekten test edilmiş olmalı.
+* İşlevsiz buton veya menü kalmamalı.
+* Başka kullanıcıya ait özel verilere yetkisiz erişim mümkün olmamalı.
+* Hesap silme gerçek şekilde çalışmalı.
+* Şikâyet ve engelleme sistemleri gerçek şekilde çalışmalı.
+* Kapalı profil yalnızca frontend’de değil backend seviyesinde korunmalı.
+* Mesajlar yalnızca sohbet katılımcıları tarafından görülebilmeli.
+* Tüm ana listelerde sayfalama bulunmalı.
+* Sonsuz loading ve beyaz ekran durumları kaldırılmalı.
+* 360 px genişlikte kritik taşma bulunmamalı.
+* Açık ve koyu modda okunamayan öğe kalmamalı.
+* iOS ve Android safe area sorunları giderilmeli.
+* Production build başarılı olmalı.
+* Kritik console error kalmamalı.
+* Test edilmemiş bir madde “çalışıyor” olarak raporlanmamalı.
+* Yapılan database değişiklikleri migration olarak kaydedilmeli.
+* Sonuç raporu eksiksiz hazırlanmalı.
+
+Tüm işlemleri tek seferde yüzeysel değişiklikler yaparak tamamlama. Her bölümü sırayla ele al, gerçek nedenleri düzelt ve bölüm sonunda test raporu oluştur.
