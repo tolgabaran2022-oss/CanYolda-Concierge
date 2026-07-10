@@ -8,6 +8,7 @@ import {
   ActivityIndicator,
   Platform,
   Pressable,
+  RefreshControl,
   ScrollView,
   StyleSheet,
   Text,
@@ -25,35 +26,42 @@ import {
   type ApiNutrition,
   type ApiReminder,
 } from "@/lib/petManagementApi";
+import {
+  buildPetMeta,
+  buildPetSubtitle,
+} from "@/utils/petFormatters";
 
-const P      = "#7B5EA7";
-const P2     = "#9E78CC";
-const DARK   = "#191330";
-const BODY   = "#8F8A9D";
-const BG     = "#F6F1FF";
-const WHITE  = "#FFFFFF";
-const BORDER = "#EEE8F5";
-const GREEN  = "#34C759";
-const ORANGE = "#FF9500";
-const RED    = "#FF3B30";
+/* ── Design tokens ──────────────────────────────────────────────────────────── */
+const C = {
+  purple:      "#7C45D9",
+  purpleDark:  "#5F319F",
+  purpleLight: "#F7F3FD",
+  purpleBorder:"#CDB8EF",
+  text:        "#1D1733",
+  textSec:     "#8C8699",
+  card:        "#FFFFFF",
+  border:      "#EDE7F3",
+  bg:          "#F5F2FB",
+  orange:      "#EFA547",
+  orangeBg:    "#FFF7ED",
+  green:       "#43B96C",
+  greenBg:     "#EDFFF4",
+  red:         "#E55D6F",
+};
 
-const SHADOW = Platform.select({
-  ios:     { shadowColor: "#4B267D", shadowOffset: { width: 0, height: 4 }, shadowOpacity: 0.09, shadowRadius: 14 },
-  android: { elevation: 3 },
+const SHADOW_SM = Platform.select({
+  ios:     { shadowColor: "#4B267D", shadowOffset: { width: 0, height: 2 }, shadowOpacity: 0.07, shadowRadius: 8 },
+  android: { elevation: 2 },
+  default: {},
+});
+const SHADOW_MD = Platform.select({
+  ios:     { shadowColor: "#4B267D", shadowOffset: { width: 0, height: 4 }, shadowOpacity: 0.10, shadowRadius: 14 },
+  android: { elevation: 4 },
   default: {},
 });
 
-function petEmoji(type: string): string {
-  const t = type.toLowerCase();
-  if (t.includes("kedi") || t.includes("cat"))     return "🐱";
-  if (t.includes("köpek") || t.includes("dog"))    return "🐶";
-  if (t.includes("kuş") || t.includes("bird"))     return "🦜";
-  if (t.includes("tavşan") || t.includes("rabbit"))return "🐰";
-  if (t.includes("balık") || t.includes("fish"))   return "🐟";
-  return "🐾";
-}
-
-function formatDate(dateStr: string): string {
+/* ── Helpers ─────────────────────────────────────────────────────────────────── */
+function formatReminderDate(dateStr: string): string {
   if (!dateStr) return "—";
   try {
     return new Date(dateStr).toLocaleDateString("tr-TR", {
@@ -66,22 +74,52 @@ function formatDateShort(dateStr: string): string {
   if (!dateStr) return "—";
   try {
     return new Date(dateStr).toLocaleDateString("tr-TR", {
-      day: "numeric", month: "short",
+      day: "numeric", month: "short", year: "numeric",
     });
   } catch { return dateStr; }
 }
 
-function daysUntil(dateStr: string): number {
-  if (!dateStr) return 999;
-  const target = new Date(dateStr); target.setHours(0, 0, 0, 0);
-  const today = new Date(); today.setHours(0, 0, 0, 0);
-  return Math.ceil((target.getTime() - today.getTime()) / 86400000);
+/* ══════════════════════════════════════════════════════════════════════════════
+   1. EMPTY STATE (no pets)
+══════════════════════════════════════════════════════════════════════════════ */
+function NoPetsState({ onAdd }: { onAdd: () => void }) {
+  return (
+    <View style={np.root}>
+      <LinearGradient colors={["#EDE5FF", "#F5F0FF"]} style={np.circle}>
+        <Ionicons name="paw" size={48} color={C.purple} />
+      </LinearGradient>
+      <Text style={np.title}>Evcil dostunu ekle</Text>
+      <Text style={np.sub}>
+        Aşılarını, randevularını, sağlık ve beslenme{"\n"}bilgilerini tek yerden yönet.
+      </Text>
+      <Pressable
+        accessibilityRole="button"
+        accessibilityLabel="Yeni evcil hayvan ekle"
+        style={({ pressed }) => [np.btn, { opacity: pressed ? 0.85 : 1 }]}
+        onPress={() => { Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium); onAdd(); }}
+      >
+        <LinearGradient colors={["#9B6EE8", C.purple]} start={{ x: 0, y: 0 }} end={{ x: 1, y: 0 }} style={np.btnGrad}>
+          <Ionicons name="add-circle-outline" size={18} color="#fff" />
+          <Text style={np.btnTxt}>Evcil Hayvan Ekle</Text>
+        </LinearGradient>
+      </Pressable>
+    </View>
+  );
 }
+const np = StyleSheet.create({
+  root:    { flex: 1, alignItems: "center", justifyContent: "center", paddingHorizontal: 40, gap: 16, paddingBottom: 80 },
+  circle:  { width: 120, height: 120, borderRadius: 60, alignItems: "center", justifyContent: "center", marginBottom: 8 },
+  title:   { fontSize: 22, fontFamily: "Inter_700Bold", color: C.text, textAlign: "center", letterSpacing: -0.4 },
+  sub:     { fontSize: 14, fontFamily: "Inter_400Regular", color: C.textSec, textAlign: "center", lineHeight: 22 },
+  btn:     { borderRadius: 50, overflow: "hidden", marginTop: 8 },
+  btnGrad: { flexDirection: "row", alignItems: "center", gap: 8, paddingVertical: 15, paddingHorizontal: 32 },
+  btnTxt:  { fontSize: 15, fontFamily: "Inter_700Bold", color: "#fff" },
+});
 
-/* ══════════════════════════════════════════════════════════
-   PROFILE CAROUSEL
-══════════════════════════════════════════════════════════ */
-function ProfileCarousel({
+/* ══════════════════════════════════════════════════════════════════════════════
+   2. PET PROFILE CARD
+══════════════════════════════════════════════════════════════════════════════ */
+function PetProfileCard({
   pets,
   selectedIndex,
   onSelectIndex,
@@ -95,107 +133,140 @@ function ProfileCarousel({
   onEdit: () => void;
 }) {
   const pet = pets[selectedIndex]!;
+  const subtitle = buildPetSubtitle(pet.type, pet.breed, pet.gender);
+  const meta     = buildPetMeta(pet.birthDate, pet.age, pet.weight);
 
   return (
-    <View style={car.wrap}>
-      {/* Main profile card */}
-      <Pressable style={[car.card, SHADOW]} onPress={onEdit}>
-        <View style={car.row}>
-          {/* Avatar with purple ring */}
-          <View style={car.avatarRing}>
+    <View style={pc.wrap}>
+      {/* Profile card */}
+      <Pressable
+        accessibilityRole="button"
+        accessibilityLabel="Evcil hayvan detayını aç"
+        style={({ pressed }) => [pc.card, SHADOW_MD, { opacity: pressed ? 0.95 : 1 }]}
+        onPress={() => { Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light); onEdit(); }}
+      >
+        <View style={pc.row}>
+          {/* Avatar */}
+          <View style={pc.avatarRing}>
             {pet.image ? (
-              <Image source={{ uri: pet.image }} style={car.avatar} contentFit="cover" />
+              <Image
+                source={{ uri: pet.image }}
+                style={pc.avatar}
+                contentFit="cover"
+                transition={200}
+              />
             ) : (
-              <LinearGradient colors={[P2, P]} style={car.avatarFallback}>
-                <Text style={car.avatarEmoji}>{petEmoji(pet.type)}</Text>
+              <LinearGradient colors={["#A07FE0", C.purple]} style={pc.avatarFallback}>
+                <Ionicons name="paw" size={30} color="rgba(255,255,255,0.9)" />
               </LinearGradient>
             )}
           </View>
 
           {/* Info */}
-          <View style={car.info}>
-            <View style={car.nameRow}>
-              <Text style={car.name} numberOfLines={1}>{pet.name}</Text>
+          <View style={pc.info}>
+            <View style={pc.nameRow}>
+              <Text style={pc.name} numberOfLines={1}>{pet.name}</Text>
               <Ionicons name="checkmark-circle" size={18} color="#5856D6" />
             </View>
-            <Text style={car.breed} numberOfLines={1}>
-              {pet.breed ? pet.breed : pet.type}
-            </Text>
-            {pet.age ? (
-              <View style={car.pill}>
-                <Text style={car.pillTxt}>{pet.age}</Text>
+
+            {subtitle ? (
+              <Text style={pc.subtitle} numberOfLines={1}>{subtitle}</Text>
+            ) : null}
+
+            {meta ? (
+              <View style={pc.pill}>
+                <Text style={pc.pillTxt}>{meta}</Text>
               </View>
             ) : null}
           </View>
 
-          {/* Chevron */}
-          <Ionicons name="chevron-down" size={20} color={BODY} />
+          {/* Dropdown arrow */}
+          <Pressable
+            accessibilityRole="button"
+            accessibilityLabel="Evcil hayvan değiştir"
+            hitSlop={12}
+            onPress={(e) => {
+              e.stopPropagation?.();
+              Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+            }}
+          >
+            <Ionicons name="chevron-down" size={20} color={C.textSec} />
+          </Pressable>
         </View>
       </Pressable>
 
-      {/* Dot indicators */}
-      <View style={car.dots}>
-        {pets.map((_, i) => (
-          <Pressable
-            key={i}
-            hitSlop={8}
-            onPress={() => { Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light); onSelectIndex(i); }}
-          >
-            <View style={[car.dot, i === selectedIndex && car.dotActive]} />
-          </Pressable>
-        ))}
-      </View>
+      {/* Dot indicators — only when >1 pet */}
+      {pets.length > 1 && (
+        <View style={pc.dots}>
+          {pets.map((_, i) => (
+            <Pressable
+              key={i}
+              hitSlop={10}
+              onPress={() => { Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light); onSelectIndex(i); }}
+            >
+              <View style={[pc.dot, i === selectedIndex && pc.dotActive]} />
+            </Pressable>
+          ))}
+        </View>
+      )}
 
       {/* Add pet button */}
       <Pressable
-        style={({ pressed }) => [car.addBtn, { opacity: pressed ? 0.75 : 1 }]}
+        accessibilityRole="button"
+        accessibilityLabel="Yeni evcil hayvan ekle"
+        style={({ pressed }) => [pc.addBtn, { opacity: pressed ? 0.82 : 1 }]}
         onPress={() => { Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light); onAdd(); }}
       >
-        <Ionicons name="add-circle-outline" size={18} color={P} />
-        <Text style={car.addTxt}>Evcil Hayvan Ekle</Text>
+        <Ionicons name="add-circle-outline" size={18} color={C.purple} />
+        <Text style={pc.addTxt}>Evcil Hayvan Ekle</Text>
       </Pressable>
     </View>
   );
 }
-const car = StyleSheet.create({
-  wrap:          { marginHorizontal: 20, marginTop: 14 },
+const pc = StyleSheet.create({
+  wrap:          { marginHorizontal: 20, marginTop: 16 },
   card:          {
-    backgroundColor: WHITE,
-    borderRadius: 20,
+    backgroundColor: C.card,
+    borderRadius: 24,
     borderWidth: 1,
-    borderColor: "rgba(123,94,167,0.10)",
-    ...Platform.select({
-      ios:     { shadowColor: "#4B267D", shadowOffset: { width: 0, height: 4 }, shadowOpacity: 0.08, shadowRadius: 16 },
-      android: { elevation: 3 },
-      default: {},
-    }),
+    borderColor: C.border,
+    minHeight: 110,
   },
   row:           { flexDirection: "row", alignItems: "center", padding: 16, gap: 14 },
   avatarRing:    {
-    width: 76, height: 76, borderRadius: 38,
-    borderWidth: 2.5, borderColor: P,
+    width: 78, height: 78, borderRadius: 39,
+    borderWidth: 2.5, borderColor: C.purple,
     alignItems: "center", justifyContent: "center",
-    padding: 2,
+    flexShrink: 0,
+    overflow: "hidden",
   },
-  avatar:        { width: 67, height: 67, borderRadius: 34 },
-  avatarFallback:{ width: 67, height: 67, borderRadius: 34, alignItems: "center", justifyContent: "center" },
-  avatarEmoji:   { fontSize: 32 },
+  avatar:        { width: 73, height: 73, borderRadius: 36 },
+  avatarFallback:{ width: 73, height: 73, borderRadius: 36, alignItems: "center", justifyContent: "center" },
   info:          { flex: 1, gap: 5 },
   nameRow:       { flexDirection: "row", alignItems: "center", gap: 6 },
-  name:          { fontSize: 20, fontFamily: "Inter_700Bold", color: DARK, letterSpacing: -0.4, flex: 1 },
-  breed:         { fontSize: 13, fontFamily: "Inter_400Regular", color: BODY },
-  pill:          { backgroundColor: `${P}12`, borderRadius: 50, paddingHorizontal: 12, paddingVertical: 4, alignSelf: "flex-start" },
-  pillTxt:       { fontSize: 12, fontFamily: "Inter_600SemiBold", color: P },
-  dots:          { flexDirection: "row", justifyContent: "center", gap: 6, marginTop: 12 },
+  name:          { fontSize: 20, fontFamily: "Inter_700Bold", color: C.text, letterSpacing: -0.4, flex: 1 },
+  subtitle:      { fontSize: 13, fontFamily: "Inter_400Regular", color: C.textSec, lineHeight: 18 },
+  pill:          { alignSelf: "flex-start", backgroundColor: `${C.purple}14`, borderRadius: 50, paddingHorizontal: 10, paddingVertical: 4 },
+  pillTxt:       { fontSize: 12, fontFamily: "Inter_600SemiBold", color: C.purple },
+  dots:          { flexDirection: "row", justifyContent: "center", alignItems: "center", gap: 7, marginTop: 14 },
   dot:           { width: 7, height: 7, borderRadius: 3.5, backgroundColor: "#D8D0E8" },
-  dotActive:     { width: 20, borderRadius: 4, backgroundColor: P },
-  addBtn:        { flexDirection: "row", alignItems: "center", justifyContent: "center", gap: 6, marginTop: 14, paddingVertical: 13, borderRadius: 14, borderWidth: 1.5, borderStyle: "dashed", borderColor: `${P}40`, backgroundColor: `${P}05` },
-  addTxt:        { fontSize: 14, fontFamily: "Inter_600SemiBold", color: P },
+  dotActive:     { width: 20, height: 7, borderRadius: 4, backgroundColor: C.purple },
+  addBtn:        {
+    flexDirection: "row", alignItems: "center", justifyContent: "center", gap: 8,
+    marginTop: 14,
+    height: 54,
+    borderRadius: 18,
+    borderWidth: 1.5,
+    borderColor: C.purpleBorder,
+    borderStyle: "dashed",
+    backgroundColor: "#F7F2FF",
+  },
+  addTxt:        { fontSize: 14, fontFamily: "Inter_600SemiBold", color: C.purple },
 });
 
-/* ══════════════════════════════════════════════════════════
-   QUICK STATUS CARDS
-══════════════════════════════════════════════════════════ */
+/* ══════════════════════════════════════════════════════════════════════════════
+   3. QUICK STATUS CARDS
+══════════════════════════════════════════════════════════════════════════════ */
 function QuickStatusCards({
   vaccinations,
   appointments,
@@ -221,54 +292,66 @@ function QuickStatusCards({
   let stockKg = "";
   if (nutrition && nutrition.dailyAmountGrams > 0) {
     daysLeft = Math.floor(nutrition.remainingAmountGrams / nutrition.dailyAmountGrams);
-    stockKg = `${(nutrition.remainingAmountGrams / 1000).toFixed(1)} kg`;
+    const kg = nutrition.remainingAmountGrams / 1000;
+    stockKg = `${kg.toLocaleString("tr-TR", { maximumFractionDigits: 1 })} kg`;
   }
 
   const cards = [
     {
-      label: "Sonraki Aşı",
-      title: nextVacc?.vaccineName ?? "Kayıt yok",
-      date: nextVacc ? formatDateShort(nextVacc.nextDueDate) : "—",
-      icon: "calendar-outline" as const,
-      color: ORANGE,
-      bg: "#FFF7ED",
-      route: `/evcilim/${petId}/vaccinations`,
+      label:     "Sonraki Aşı",
+      value:     nextVacc?.vaccineName ?? "Kayıt yok",
+      secondary: nextVacc ? formatDateShort(nextVacc.nextDueDate) : "Aşı ekle",
+      icon:      "calendar-outline" as const,
+      color:     C.orange,
+      bg:        C.orangeBg,
+      route:     `/evcilim/${petId}/vaccinations`,
+      isEmpty:   !nextVacc,
     },
     {
-      label: "Yaklaşan Randevu",
-      title: nextAppt?.title ?? "Randevu yok",
-      date: nextAppt ? formatDateShort(nextAppt.appointmentDate) : "—",
-      icon: "calendar-outline" as const,
-      color: P,
-      bg: "#F5F0FF",
-      route: `/evcilim/${petId}/appointments`,
+      label:     "Yaklaşan Randevu",
+      value:     nextAppt?.title ?? "Randevu yok",
+      secondary: nextAppt ? formatDateShort(nextAppt.appointmentDate) : "Randevu oluştur",
+      icon:      "calendar-outline" as const,
+      color:     C.purple,
+      bg:        C.purpleLight,
+      route:     `/evcilim/${petId}/appointments`,
+      isEmpty:   !nextAppt,
     },
     {
-      label: "Mama Durumu",
-      title: daysLeft !== null ? `${daysLeft} gün kaldı` : "Kayıt yok",
-      date: stockKg || "—",
-      icon: "nutrition-outline" as const,
-      color: GREEN,
-      bg: "#EDFFF4",
-      route: `/evcilim/${petId}/nutrition`,
+      label:     "Mama Durumu",
+      value:     daysLeft !== null ? `${daysLeft} gün kaldı` : "Kayıt yok",
+      secondary: stockKg || "Beslenme ekle",
+      icon:      "nutrition-outline" as const,
+      color:     C.green,
+      bg:        C.greenBg,
+      route:     `/evcilim/${petId}/nutrition`,
+      isEmpty:   daysLeft === null,
     },
   ];
 
   return (
     <View style={qs.section}>
-      <Text style={qs.sectionTitle}>Hızlı Durum</Text>
+      <Text style={qs.title}>Hızlı Durum</Text>
       <View style={qs.row}>
         {cards.map((c) => (
           <Pressable
             key={c.label}
-            style={({ pressed }) => [qs.card, { backgroundColor: c.bg }, pressed && { opacity: 0.85 }]}
+            accessibilityRole="button"
+            style={({ pressed }) => [qs.card, { backgroundColor: c.bg }, pressed && { opacity: 0.84 }]}
             onPress={() => { Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light); onNav(c.route); }}
           >
             <Text style={[qs.label, { color: c.color }]} numberOfLines={2}>{c.label}</Text>
-            <Text style={qs.title} numberOfLines={2}>{c.title}</Text>
+            <Text
+              style={[qs.value, c.isEmpty && qs.valueEmpty]}
+              numberOfLines={2}
+            >
+              {c.value}
+            </Text>
             <View style={qs.bottom}>
-              <Ionicons name={c.icon} size={12} color={c.color} />
-              <Text style={[qs.date, { color: c.color }]} numberOfLines={1}>{c.date}</Text>
+              <Ionicons name={c.icon} size={14} color={c.color} />
+              <Text style={[qs.secondary, { color: c.isEmpty ? c.color : C.textSec }]} numberOfLines={1}>
+                {c.secondary}
+              </Text>
             </View>
           </Pressable>
         ))}
@@ -277,24 +360,24 @@ function QuickStatusCards({
   );
 }
 const qs = StyleSheet.create({
-  section:      { marginHorizontal: 20, marginTop: 22 },
-  sectionTitle: { fontSize: 17, fontFamily: "Inter_700Bold", color: DARK, marginBottom: 14, letterSpacing: -0.3 },
-  row:          { flexDirection: "row", gap: 10 },
-  card:         { flex: 1, borderRadius: 16, padding: 13, gap: 6 },
-  label:        { fontSize: 10, fontFamily: "Inter_700Bold", letterSpacing: 0.2 },
-  title:        { fontSize: 13, fontFamily: "Inter_700Bold", color: DARK, lineHeight: 18 },
-  bottom:       { flexDirection: "row", alignItems: "center", gap: 4, marginTop: 4 },
-  date:         { fontSize: 10, fontFamily: "Inter_500Medium", flex: 1 },
+  section:   { marginHorizontal: 20, marginTop: 24 },
+  title:     { fontSize: 18, fontFamily: "Inter_700Bold", color: C.text, marginBottom: 12, letterSpacing: -0.3 },
+  row:       { flexDirection: "row", gap: 10 },
+  card:      { flex: 1, borderRadius: 18, padding: 13, minHeight: 112, justifyContent: "space-between" },
+  label:     { fontSize: 10, fontFamily: "Inter_700Bold", letterSpacing: 0.2, marginBottom: 4 },
+  value:     { fontSize: 13, fontFamily: "Inter_700Bold", color: C.text, lineHeight: 18, flex: 1 },
+  valueEmpty:{ color: C.textSec, fontFamily: "Inter_500Medium" },
+  bottom:    { flexDirection: "row", alignItems: "center", gap: 4, marginTop: 6 },
+  secondary: { fontSize: 11, fontFamily: "Inter_500Medium", color: C.textSec, flex: 1 },
 });
 
-/* ══════════════════════════════════════════════════════════
-   MANAGEMENT GRID
-══════════════════════════════════════════════════════════ */
+/* ══════════════════════════════════════════════════════════════════════════════
+   4. MANAGEMENT GRID (4 cols × 2 rows, all purple icons)
+══════════════════════════════════════════════════════════════════════════════ */
 type GridItem = {
-  key: string;
+  key:   string;
   label: string;
-  icon: keyof typeof Ionicons.glyphMap;
-  color: string;
+  icon:  keyof typeof Ionicons.glyphMap;
   route: string;
   badge?: number;
 };
@@ -314,35 +397,37 @@ function ManagementGrid({
   const upcomingAppt = appointments.filter((a) => a.status === "upcoming").length;
 
   const GRID: GridItem[] = [
-    { key: "id",           label: "Kimlik",    icon: "id-card-outline",          color: "#5856D6", route: `/evcilim/${petId}/identification` },
-    { key: "health",       label: "Sağlık",    icon: "heart-outline",            color: "#FF2D55", route: `/evcilim/${petId}/vaccinations` },
-    { key: "vaccinations", label: "Aşılar",    icon: "shield-checkmark-outline", color: ORANGE,    route: `/evcilim/${petId}/vaccinations`, badge: overdueVacc || undefined },
-    { key: "appointments", label: "Randevular", icon: "calendar-outline",         color: P,         route: `/evcilim/${petId}/appointments`, badge: upcomingAppt || undefined },
-    { key: "nutrition",    label: "Beslenme",   icon: "nutrition-outline",        color: GREEN,     route: `/evcilim/${petId}/nutrition` },
-    { key: "documents",    label: "Belgeler",   icon: "document-text-outline",    color: "#007AFF", route: `/evcilim/${petId}/notes` },
-    { key: "medications",  label: "İlaçlar",    icon: "medical-outline",          color: "#FF6B6B", route: `/evcilim/${petId}/notes` },
-    { key: "notes",        label: "Notlar",     icon: "pencil-outline",           color: "#AF52DE", route: `/evcilim/${petId}/notes` },
+    { key: "id",           label: "Kimlik",    icon: "id-card-outline",          route: `/evcilim/${petId}/identification` },
+    { key: "health",       label: "Sağlık",    icon: "heart-outline",            route: `/evcilim/${petId}/vaccinations` },
+    { key: "vaccinations", label: "Aşılar",    icon: "shield-checkmark-outline", route: `/evcilim/${petId}/vaccinations`, badge: overdueVacc || undefined },
+    { key: "appointments", label: "Randevular", icon: "calendar-outline",         route: `/evcilim/${petId}/appointments`, badge: upcomingAppt || undefined },
+    { key: "nutrition",    label: "Beslenme",   icon: "nutrition-outline",        route: `/evcilim/${petId}/nutrition` },
+    { key: "documents",    label: "Belgeler",   icon: "document-text-outline",   route: `/evcilim/${petId}/notes` },
+    { key: "medications",  label: "İlaçlar",    icon: "medical-outline",          route: `/evcilim/${petId}/notes` },
+    { key: "notes",        label: "Notlar",     icon: "pencil-outline",           route: `/evcilim/${petId}/notes` },
   ];
 
   return (
     <View style={mg.section}>
-      <Text style={mg.sectionTitle}>Yönetim</Text>
+      <Text style={mg.title}>Yönetim</Text>
       <View style={mg.grid}>
         {GRID.map((item) => (
           <Pressable
             key={item.key}
+            accessibilityRole="button"
+            accessibilityLabel={`${item.label} ekranını aç`}
             style={({ pressed }) => [mg.cell, pressed && { opacity: 0.75 }]}
             onPress={() => { Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light); onNav(item.route); }}
           >
-            <View style={[mg.iconBox, { backgroundColor: `${item.color}18` }]}>
-              <Ionicons name={item.icon} size={22} color={item.color} />
+            <View style={mg.iconBox}>
+              <Ionicons name={item.icon} size={22} color={C.purple} />
               {item.badge !== undefined && item.badge > 0 && (
                 <View style={mg.badge}>
                   <Text style={mg.badgeTxt}>{item.badge}</Text>
                 </View>
               )}
             </View>
-            <Text style={mg.cellLabel}>{item.label}</Text>
+            <Text style={mg.cellLabel} numberOfLines={2}>{item.label}</Text>
           </Pressable>
         ))}
       </View>
@@ -350,59 +435,106 @@ function ManagementGrid({
   );
 }
 const mg = StyleSheet.create({
-  section:      { marginHorizontal: 20, marginTop: 22 },
-  sectionTitle: { fontSize: 17, fontFamily: "Inter_700Bold", color: DARK, marginBottom: 14, letterSpacing: -0.3 },
-  grid:         { flexDirection: "row", flexWrap: "wrap", gap: 10 },
-  cell:         {
-    width: "22%", flex: 1, aspectRatio: 0.9,
-    alignItems: "center", justifyContent: "center",
-    backgroundColor: WHITE, borderRadius: 18, gap: 8,
-    borderWidth: 1, borderColor: "rgba(123,94,167,0.08)",
-    ...Platform.select({
-      ios:     { shadowColor: "#4B267D", shadowOffset: { width: 0, height: 3 }, shadowOpacity: 0.07, shadowRadius: 10 },
-      android: { elevation: 2 },
-      default: {},
-    }),
+  section:   { marginHorizontal: 20, marginTop: 24 },
+  title:     { fontSize: 18, fontFamily: "Inter_700Bold", color: C.text, marginBottom: 12, letterSpacing: -0.3 },
+  grid:      { flexDirection: "row", flexWrap: "wrap", justifyContent: "space-between", rowGap: 12 },
+  cell:      {
+    width: "23.5%",
+    minHeight: 88,
+    alignItems: "center",
+    justifyContent: "center",
+    backgroundColor: C.card,
+    borderRadius: 18,
+    borderWidth: 1,
+    borderColor: C.border,
+    paddingVertical: 12,
+    paddingHorizontal: 4,
+    gap: 8,
+    ...SHADOW_SM,
   },
-  iconBox:      { width: 50, height: 50, borderRadius: 15, alignItems: "center", justifyContent: "center", position: "relative" },
-  badge:        { position: "absolute", top: -3, right: -3, width: 16, height: 16, borderRadius: 8, backgroundColor: RED, alignItems: "center", justifyContent: "center", borderWidth: 2, borderColor: WHITE },
-  badgeTxt:     { fontSize: 9, fontFamily: "Inter_700Bold", color: WHITE },
-  cellLabel:    { fontSize: 11, fontFamily: "Inter_500Medium", color: DARK, textAlign: "center" },
+  iconBox:   {
+    width: 44, height: 44, borderRadius: 22,
+    backgroundColor: `${C.purple}14`,
+    alignItems: "center", justifyContent: "center",
+    position: "relative",
+  },
+  badge:     { position: "absolute", top: -3, right: -3, width: 16, height: 16, borderRadius: 8, backgroundColor: C.red, alignItems: "center", justifyContent: "center", borderWidth: 2, borderColor: C.card },
+  badgeTxt:  { fontSize: 9, fontFamily: "Inter_700Bold", color: "#fff" },
+  cellLabel: { fontSize: 11, fontFamily: "Inter_500Medium", color: C.text, textAlign: "center", lineHeight: 15, paddingHorizontal: 4 },
 });
 
-/* ══════════════════════════════════════════════════════════
-   UPCOMING REMINDERS
-══════════════════════════════════════════════════════════ */
-function UpcomingReminders({ reminders }: { reminders: ApiReminder[] }) {
+/* ══════════════════════════════════════════════════════════════════════════════
+   5. UPCOMING REMINDERS
+══════════════════════════════════════════════════════════════════════════════ */
+function UpcomingReminders({
+  reminders,
+  petId,
+  onNav,
+}: {
+  reminders: ApiReminder[];
+  petId: string;
+  onNav: (route: string) => void;
+}) {
+  const upcoming = reminders
+    .filter((r) => {
+      try { return new Date(r.date) >= new Date(new Date().setHours(0, 0, 0, 0)); }
+      catch { return true; }
+    })
+    .sort((a, b) => a.date.localeCompare(b.date))
+    .slice(0, 3);
+
   return (
     <View style={ur.section}>
       <View style={ur.header}>
-        <Text style={ur.sectionTitle}>Yaklaşan Hatırlatmalar</Text>
-        <Pressable hitSlop={8}>
+        <Text style={ur.title}>Yaklaşan Hatırlatmalar</Text>
+        <Pressable
+          hitSlop={12}
+          accessibilityRole="button"
+          accessibilityLabel="Tüm hatırlatmaları görüntüle"
+          onPress={() => { Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light); onNav(`/evcilim/${petId}/notes`); }}
+        >
           <Text style={ur.seeAll}>Tümünü Gör</Text>
         </Pressable>
       </View>
 
-      {reminders.length === 0 ? (
-        <View style={ur.empty}>
-          <Ionicons name="checkmark-circle-outline" size={28} color={GREEN} />
-          <Text style={ur.emptyTxt}>Yaklaşan hatırlatma yok</Text>
+      {upcoming.length === 0 ? (
+        <View style={ur.emptyCard}>
+          <View style={ur.emptyIconWrap}>
+            <Ionicons name="calendar-outline" size={26} color={C.green} />
+          </View>
+          <View style={ur.emptyText}>
+            <Text style={ur.emptyTitle}>Yaklaşan hatırlatman yok</Text>
+            <Text style={ur.emptySub}>Aşı, randevu veya bakım hatırlatıcısı ekleyebilirsin.</Text>
+          </View>
+          <Pressable
+            hitSlop={8}
+            style={ur.emptyBtn}
+            accessibilityRole="button"
+            onPress={() => onNav(`/evcilim/${petId}/vaccinations`)}
+          >
+            <Text style={ur.emptyBtnTxt}>Hatırlatıcı Ekle</Text>
+          </Pressable>
         </View>
       ) : (
         <View style={ur.list}>
-          {reminders.slice(0, 3).map((r) => (
-            <View key={r.id} style={ur.item}>
+          {upcoming.map((r) => (
+            <Pressable
+              key={r.id}
+              accessibilityRole="button"
+              style={({ pressed }) => [ur.item, pressed && { opacity: 0.85 }]}
+              onPress={() => { Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light); }}
+            >
               <View style={[ur.iconWrap, { backgroundColor: `${r.color}18` }]}>
                 <Ionicons name={r.icon as keyof typeof Ionicons.glyphMap} size={18} color={r.color} />
               </View>
               <View style={ur.mid}>
                 <Text style={ur.itemTitle} numberOfLines={1}>{r.title}</Text>
-                <Text style={ur.itemDate}>{formatDate(r.date)}</Text>
+                <Text style={ur.itemDate}>{formatReminderDate(r.date)}</Text>
               </View>
-              <View style={[ur.alarmWrap, { backgroundColor: `${r.color}15` }]}>
+              <View style={[ur.alarmWrap, { backgroundColor: `${r.color}18` }]}>
                 <Ionicons name="alarm-outline" size={18} color={r.color} />
               </View>
-            </View>
+            </Pressable>
           ))}
         </View>
       )}
@@ -410,84 +542,108 @@ function UpcomingReminders({ reminders }: { reminders: ApiReminder[] }) {
   );
 }
 const ur = StyleSheet.create({
-  section:      { marginHorizontal: 20, marginTop: 22, marginBottom: 8 },
+  section:      { marginHorizontal: 20, marginTop: 24, marginBottom: 8 },
   header:       { flexDirection: "row", alignItems: "center", justifyContent: "space-between", marginBottom: 14 },
-  sectionTitle: { fontSize: 17, fontFamily: "Inter_700Bold", color: DARK, letterSpacing: -0.3 },
-  seeAll:       { fontSize: 13, fontFamily: "Inter_600SemiBold", color: P },
-  empty:        { flexDirection: "row", alignItems: "center", gap: 10, backgroundColor: WHITE, borderRadius: 16, padding: 18, borderWidth: 1, borderColor: BORDER },
-  emptyTxt:     { fontSize: 14, fontFamily: "Inter_400Regular", color: BODY },
+  title:        { fontSize: 18, fontFamily: "Inter_700Bold", color: C.text, letterSpacing: -0.3 },
+  seeAll:       { fontSize: 13, fontFamily: "Inter_600SemiBold", color: C.purple },
+  emptyCard:    {
+    backgroundColor: C.card,
+    borderRadius: 20,
+    borderWidth: 1,
+    borderColor: C.border,
+    padding: 16,
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 12,
+    minHeight: 110,
+    ...SHADOW_SM,
+  },
+  emptyIconWrap:{ width: 44, height: 44, borderRadius: 22, backgroundColor: `${C.green}14`, alignItems: "center", justifyContent: "center", flexShrink: 0 },
+  emptyText:    { flex: 1 },
+  emptyTitle:   { fontSize: 14, fontFamily: "Inter_600SemiBold", color: C.text, marginBottom: 4 },
+  emptySub:     { fontSize: 12, fontFamily: "Inter_400Regular", color: C.textSec, lineHeight: 17 },
+  emptyBtn:     { paddingHorizontal: 12, paddingVertical: 8, backgroundColor: `${C.purple}12`, borderRadius: 10, flexShrink: 0 },
+  emptyBtnTxt:  { fontSize: 12, fontFamily: "Inter_600SemiBold", color: C.purple },
   list:         { gap: 10 },
   item:         {
     flexDirection: "row", alignItems: "center", gap: 12,
-    backgroundColor: WHITE, borderRadius: 16, padding: 14,
-    borderWidth: 1, borderColor: "rgba(123,94,167,0.08)",
-    ...Platform.select({
-      ios:     { shadowColor: "#4B267D", shadowOffset: { width: 0, height: 2 }, shadowOpacity: 0.06, shadowRadius: 8 },
-      android: { elevation: 1 },
-      default: {},
-    }),
+    backgroundColor: C.card, borderRadius: 18, padding: 14,
+    borderWidth: 1, borderColor: C.border,
+    ...SHADOW_SM,
   },
-  iconWrap:     { width: 38, height: 38, borderRadius: 12, alignItems: "center", justifyContent: "center" },
+  iconWrap:     { width: 40, height: 40, borderRadius: 12, alignItems: "center", justifyContent: "center", flexShrink: 0 },
   mid:          { flex: 1 },
-  itemTitle:    { fontSize: 14, fontFamily: "Inter_600SemiBold", color: DARK },
-  itemDate:     { fontSize: 12, fontFamily: "Inter_400Regular", color: BODY, marginTop: 2 },
-  alarmWrap:    { width: 36, height: 36, borderRadius: 10, alignItems: "center", justifyContent: "center" },
+  itemTitle:    { fontSize: 14, fontFamily: "Inter_600SemiBold", color: C.text },
+  itemDate:     { fontSize: 12, fontFamily: "Inter_400Regular", color: C.textSec, marginTop: 2 },
+  alarmWrap:    { width: 36, height: 36, borderRadius: 10, alignItems: "center", justifyContent: "center", flexShrink: 0 },
 });
 
-/* ══════════════════════════════════════════════════════════
-   EMPTY STATE
-══════════════════════════════════════════════════════════ */
-function EmptyPetsState({ onAdd }: { onAdd: () => void }) {
+/* ══════════════════════════════════════════════════════════════════════════════
+   6. LOADING SKELETON
+══════════════════════════════════════════════════════════════════════════════ */
+function Skeleton({ w, h, r = 12 }: { w: number | string; h: number; r?: number }) {
+  return <View style={{ width: w as number, height: h, borderRadius: r, backgroundColor: "#EDE7F3" }} />;
+}
+
+function LoadingSkeleton() {
   return (
-    <View style={em.root}>
-      <LinearGradient colors={[`${P2}20`, `${P}10`]} style={em.circle}>
-        <Text style={{ fontSize: 56 }}>🐾</Text>
-      </LinearGradient>
-      <Text style={em.title}>Evcil Hayvanın Yok</Text>
-      <Text style={em.sub}>İlk evcil hayvanını ekleyerek{"\n"}sağlık ve bakım takibine başla</Text>
-      <Pressable
-        style={({ pressed }) => [em.btn, { opacity: pressed ? 0.85 : 1 }]}
-        onPress={onAdd}
-      >
-        <LinearGradient colors={[P2, P]} style={em.btnGrad}>
-          <Ionicons name="add-circle-outline" size={18} color={WHITE} />
-          <Text style={em.btnTxt}>Evcil Hayvan Ekle</Text>
-        </LinearGradient>
-      </Pressable>
-    </View>
+    <ScrollView showsVerticalScrollIndicator={false} contentContainerStyle={{ paddingTop: 16, paddingBottom: 80 }} scrollEnabled={false}>
+      <View style={{ marginHorizontal: 20 }}>
+        <View style={[{ backgroundColor: "#fff", borderRadius: 24, borderWidth: 1, borderColor: "#EDE7F3", padding: 16, flexDirection: "row", gap: 14, alignItems: "center" }, SHADOW_MD]}>
+          <View style={{ width: 78, height: 78, borderRadius: 39, backgroundColor: "#EDE7F3" }} />
+          <View style={{ flex: 1, gap: 8 }}>
+            <Skeleton w={120} h={20} r={6} />
+            <Skeleton w={160} h={14} r={6} />
+            <Skeleton w={100} h={26} r={13} />
+          </View>
+        </View>
+      </View>
+      <View style={{ marginHorizontal: 20, marginTop: 24 }}>
+        <Skeleton w={120} h={20} r={6} />
+        <View style={{ flexDirection: "row", gap: 10, marginTop: 12 }}>
+          {[0, 1, 2].map((i) => (
+            <View key={i} style={{ flex: 1, height: 112, borderRadius: 18, backgroundColor: "#EDE7F3" }} />
+          ))}
+        </View>
+      </View>
+      <View style={{ marginHorizontal: 20, marginTop: 24 }}>
+        <Skeleton w={80} h={20} r={6} />
+        <View style={{ flexDirection: "row", flexWrap: "wrap", justifyContent: "space-between", gap: 12, marginTop: 12 }}>
+          {[0, 1, 2, 3, 4, 5, 6, 7].map((i) => (
+            <View key={i} style={{ width: "23.5%", height: 88, borderRadius: 18, backgroundColor: "#EDE7F3" }} />
+          ))}
+        </View>
+      </View>
+    </ScrollView>
   );
 }
-const em = StyleSheet.create({
-  root:    { flex: 1, alignItems: "center", justifyContent: "center", paddingHorizontal: 40, gap: 16, paddingBottom: 80 },
-  circle:  { width: 120, height: 120, borderRadius: 60, alignItems: "center", justifyContent: "center", marginBottom: 8 },
-  title:   { fontSize: 22, fontFamily: "Inter_700Bold", color: DARK, textAlign: "center", letterSpacing: -0.4 },
-  sub:     { fontSize: 14, fontFamily: "Inter_400Regular", color: BODY, textAlign: "center", lineHeight: 22 },
-  btn:     { borderRadius: 50, overflow: "hidden", marginTop: 8 },
-  btnGrad: { flexDirection: "row", alignItems: "center", gap: 8, paddingVertical: 14, paddingHorizontal: 28 },
-  btnTxt:  { fontSize: 15, fontFamily: "Inter_700Bold", color: WHITE },
-});
 
-/* ══════════════════════════════════════════════════════════
-   MAIN EVCILIM TAB
-══════════════════════════════════════════════════════════ */
+/* ══════════════════════════════════════════════════════════════════════════════
+   7. MAIN EXPORTED COMPONENT
+══════════════════════════════════════════════════════════════════════════════ */
 export function EvcilimTab({ botPad }: { botPad: number }) {
-  const { pets } = usePets();
+  const { pets, isLoading: petsLoading, error: petsError, refresh: refreshPets } = usePets();
   const { user } = useAuth();
-  const router = useRouter();
+  const router   = useRouter();
 
   const [selectedPetId, setSelectedPetId] = useState<string | null>(null);
   const [vaccinations, setVaccinations]   = useState<ApiVaccination[]>([]);
   const [appointments, setAppointments]   = useState<ApiAppointment[]>([]);
   const [nutrition, setNutrition]         = useState<ApiNutrition | null>(null);
-  const [loading, setLoading]             = useState(false);
+  const [dataLoading, setDataLoading]     = useState(false);
+  const [refreshing, setRefreshing]       = useState(false);
 
-  const effectivePetId   = selectedPetId ?? pets[0]?.id ?? null;
-  const selectedPet      = pets.find((p) => p.id === effectivePetId) ?? pets[0] ?? null;
-  const selectedIndex    = pets.findIndex((p) => p.id === effectivePetId);
-  const safeIndex        = selectedIndex >= 0 ? selectedIndex : 0;
+  const effectivePetId = selectedPetId ?? pets[0]?.id ?? null;
+  const selectedPet    = pets.find((p) => p.id === effectivePetId) ?? pets[0] ?? null;
+  const selectedIndex  = Math.max(0, pets.findIndex((p) => p.id === effectivePetId));
+
+  const nav = useCallback(
+    (route: string) => router.push(route as Parameters<typeof router.push>[0]),
+    [router]
+  );
 
   const loadData = useCallback(async (petId: string, userId: string) => {
-    setLoading(true);
+    setDataLoading(true);
     try {
       const [v, a, n] = await Promise.all([
         apiGetVaccinations(petId, userId),
@@ -498,7 +654,7 @@ export function EvcilimTab({ botPad }: { botPad: number }) {
       setAppointments(a);
       setNutrition(n);
     } finally {
-      setLoading(false);
+      setDataLoading(false);
     }
   }, []);
 
@@ -508,61 +664,85 @@ export function EvcilimTab({ botPad }: { botPad: number }) {
     }
   }, [selectedPet?.id, user?.id, loadData]);
 
-  const nav = (route: string) => router.push(route as Parameters<typeof router.push>[0]);
+  const handleRefresh = useCallback(async () => {
+    setRefreshing(true);
+    await refreshPets();
+    if (selectedPet && user) {
+      await loadData(selectedPet.id, user.id);
+    }
+    setRefreshing(false);
+  }, [refreshPets, selectedPet, user, loadData]);
 
-  if (pets.length === 0) {
+  if (petsLoading) {
+    return <LoadingSkeleton />;
+  }
+
+  if (petsError) {
     return (
-      <EmptyPetsState onAdd={() => nav("/evcilim/add")} />
+      <View style={{ flex: 1, alignItems: "center", justifyContent: "center", gap: 16, paddingHorizontal: 40 }}>
+        <Ionicons name="alert-circle-outline" size={48} color={C.red} />
+        <Text style={{ fontSize: 16, fontFamily: "Inter_600SemiBold", color: C.text, textAlign: "center" }}>
+          Evcil hayvan bilgileri yüklenemedi.
+        </Text>
+        <Pressable
+          style={[{ paddingHorizontal: 24, paddingVertical: 12, borderRadius: 14, backgroundColor: C.purple }]}
+          onPress={refreshPets}
+        >
+          <Text style={{ fontSize: 14, fontFamily: "Inter_700Bold", color: "#fff" }}>Tekrar Dene</Text>
+        </Pressable>
+      </View>
     );
   }
 
-  const reminders = buildReminders(vaccinations, appointments, nutrition);
+  if (pets.length === 0) {
+    return <NoPetsState onAdd={() => nav("/evcilim/add")} />;
+  }
+
+  const reminders = selectedPet ? buildReminders(vaccinations, appointments, nutrition) : [];
 
   return (
     <ScrollView
       showsVerticalScrollIndicator={false}
-      contentContainerStyle={{ paddingTop: 4, paddingBottom: botPad + 24 }}
+      contentContainerStyle={{ paddingTop: 4, paddingBottom: botPad + 28 }}
+      refreshControl={
+        <RefreshControl refreshing={refreshing} onRefresh={handleRefresh} tintColor={C.purple} />
+      }
     >
-      {selectedPet && (
+      {/* Pet profile card */}
+      <PetProfileCard
+        pets={pets}
+        selectedIndex={selectedIndex}
+        onSelectIndex={(i) => setSelectedPetId(pets[i]!.id)}
+        onAdd={() => nav("/evcilim/add")}
+        onEdit={() => selectedPet && nav(`/evcilim/${selectedPet.id}`)}
+      />
+
+      {dataLoading ? (
+        <View style={{ alignItems: "center", paddingTop: 48 }}>
+          <ActivityIndicator color={C.purple} size="large" />
+        </View>
+      ) : selectedPet ? (
         <>
-          {/* Profile Carousel */}
-          <ProfileCarousel
-            pets={pets}
-            selectedIndex={safeIndex}
-            onSelectIndex={(i) => setSelectedPetId(pets[i]!.id)}
-            onAdd={() => nav("/evcilim/add")}
-            onEdit={() => nav(`/evcilim/${selectedPet.id}`)}
+          <QuickStatusCards
+            vaccinations={vaccinations}
+            appointments={appointments}
+            nutrition={nutrition}
+            petId={selectedPet.id}
+            onNav={nav}
           />
-
-          {loading ? (
-            <View style={{ alignItems: "center", paddingTop: 40 }}>
-              <ActivityIndicator color={P} size="large" />
-            </View>
-          ) : (
-            <>
-              {/* Hızlı Durum */}
-              <QuickStatusCards
-                vaccinations={vaccinations}
-                appointments={appointments}
-                nutrition={nutrition}
-                petId={selectedPet.id}
-                onNav={nav}
-              />
-
-              {/* Yönetim */}
-              <ManagementGrid
-                petId={selectedPet.id}
-                vaccinations={vaccinations}
-                appointments={appointments}
-                onNav={nav}
-              />
-
-              {/* Yaklaşan Hatırlatmalar */}
-              <UpcomingReminders reminders={reminders} />
-            </>
-          )}
+          <ManagementGrid
+            petId={selectedPet.id}
+            vaccinations={vaccinations}
+            appointments={appointments}
+            onNav={nav}
+          />
+          <UpcomingReminders
+            reminders={reminders}
+            petId={selectedPet.id}
+            onNav={nav}
+          />
         </>
-      )}
+      ) : null}
     </ScrollView>
   );
 }

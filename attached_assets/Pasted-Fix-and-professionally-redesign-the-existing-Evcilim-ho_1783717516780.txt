@@ -1,0 +1,971 @@
+Fix and professionally redesign the existing “Evcilim” home screen in the CanYoldaşı application based on the uploaded screenshot and reference design.
+
+This task is not limited to minor styling changes. Rebuild the responsive layout, visual hierarchy, data presentation, empty states, spacing, touch targets, and mobile compatibility of the screen.
+
+IMPORTANT REQUIREMENTS:
+
+- Keep all user-facing text in Turkish.
+- Do not remove or break any existing “Evcilim” functionality.
+- Do not break the existing Supabase integration.
+- Preserve all existing pet, vaccination, appointment, nutrition, medication, document, reminder, and note data.
+- Do not modify or break the “Sahiplendirme” section.
+- Do not break the bottom navigation.
+- Do not use random, static, fake, or hard-coded pet data.
+- Display real data belonging to the currently authenticated user.
+- Do not show raw database values directly in the UI.
+- Make the design responsive on both iOS and Android.
+- Do not only change the visual appearance; also fix incomplete, incorrectly formatted, and raw data.
+- Do not leave TypeScript errors, runtime errors, warnings, or red console errors.
+- Inspect the existing code structure before making changes.
+- Reuse existing services, hooks, navigation routes, and components when appropriate.
+- Do not replace the entire working screen with an unrelated new implementation.
+
+==================================================
+1. GENERAL SCREEN STRUCTURE
+==================================================
+
+Build the “Evcilim” screen inside a vertically scrollable ScrollView or another appropriate scrollable structure.
+
+The screen order must be:
+
+1. “Evcilim / Sahiplendirme” top tabs
+2. Active pet profile card
+3. Pet carousel indicator, only when needed
+4. “Evcil Hayvan Ekle” button
+5. “Hızlı Durum” section title
+6. Three quick-status cards
+7. “Yönetim” section title
+8. Management grid with 4 columns and 2 rows
+9. “Yaklaşan Hatırlatmalar” title with “Tümünü Gör”
+10. Reminder list or professional empty state
+11. Enough bottom padding for the fixed bottom navigation
+
+Use a consistent horizontal screen padding:
+
+- Left: 20 px
+- Right: 20 px
+
+All section titles, cards, buttons, lists, and grids must align to the same horizontal edges.
+
+No text, icon, title, card, or section may overlap another element.
+
+The screen itself must never scroll horizontally.
+
+==================================================
+2. TOP TAB AREA
+==================================================
+
+Keep the following two top tabs:
+
+- Evcilim
+- Sahiplendirme
+
+Design requirements:
+
+- Selected tab: dark purple text
+- Selected tab underline: 3 px purple line
+- Unselected tab: muted gray-purple text
+- Use balanced spacing between tabs
+- Keep the notification icon on the upper-right side
+- Respect the device Safe Area
+- Do not overlap the status bar or Dynamic Island
+- The red unread dot must remain attached to the notification icon and must not float outside its container
+
+Recommended spacing:
+
+- 12–16 px after the Safe Area
+- 14–18 px below the tab row
+
+Preserve the existing tab navigation logic.
+
+==================================================
+3. ACTIVE PET PROFILE CARD
+==================================================
+
+The current profile card only displays incomplete values such as “Did” and “F”. Fix the card and its data formatting.
+
+The card must display:
+
+- Real pet profile image
+- Pet name
+- Species
+- Breed
+- Gender
+- Automatically calculated age
+- Weight
+- Health or verification status when available
+- Pet-switching dropdown arrow
+
+Example UI:
+
+Did
+Golden Retriever • Dişi
+2 yaş 4 ay • 18,5 kg
+
+Do not expose raw values such as:
+
+- F
+- M
+- female
+- male
+- dog
+- cat
+- undefined
+- null
+
+Create or reuse centralized formatting helpers for user-facing pet values.
+
+Required gender conversions:
+
+- female → Dişi
+- F → Dişi
+- male → Erkek
+- M → Erkek
+- unknown → Bilinmiyor
+
+Required species conversions:
+
+- dog → Köpek
+- cat → Kedi
+- bird → Kuş
+- rabbit → Tavşan
+- hamster → Hamster
+- fish → Balık
+- reptile → Sürüngen
+- other → Diğer
+
+Profile card design:
+
+- Width: screen width minus 40 px
+- Minimum height: 106–118 px
+- Border radius: 24 px
+- Background: white
+- Border: 1 px light purple-gray
+- Soft shadow
+- Internal padding: 16 px
+- Profile image size: 72–78 px
+- Image must be fully circular
+- Add a subtle purple outline around the image
+- Vertically center all card content
+
+Text hierarchy:
+
+Pet name:
+- 20 px
+- Font weight 700
+- Dark text
+
+Breed/species and gender:
+- 13–14 px
+- Secondary gray text
+
+Age and weight:
+- 12–13 px
+- Use a soft purple pill or secondary text
+
+Only display the blue verification icon if the pet record is actually verified.
+
+Tapping the profile card must open the pet detail screen.
+
+Tapping the dropdown arrow must open a Bottom Sheet containing the authenticated user’s registered pets.
+
+Selecting a different pet must update:
+
+- Profile card
+- Vaccination information
+- Appointment information
+- Nutrition information
+- Reminders
+- All management screens related to the active pet
+
+Do not reload the entire application when switching pets.
+
+==================================================
+4. PET PROFILE IMAGE FALLBACK
+==================================================
+
+Do not display system emojis such as:
+
+- 🐶
+- 🐱
+- 🐾
+
+When a pet image exists:
+
+- Display the real uploaded image
+- Use a properly optimized image size
+- Avoid loading the full original image inside a small avatar
+
+When no pet image exists:
+
+- Display the application’s own custom paw or animal silhouette placeholder
+- Use a local design asset or a consistent vector icon
+- Do not use device-dependent emojis
+
+If image loading fails:
+
+- Show the fallback asset
+- Do not show a broken image state
+
+==================================================
+5. MULTIPLE PET INDICATOR
+==================================================
+
+The current single purple line below the pet card is visually unclear.
+
+Fix this behavior:
+
+- If the user has only one pet, hide the indicator completely.
+- If the user has multiple pets, display proper carousel dots.
+- The active dot must be purple.
+- Inactive dots must be light gray or light purple.
+- The active dot may be slightly wider than the inactive dots.
+
+Example:
+
+● ○ ○
+
+Center the indicator under the profile card.
+
+Use at least 14 px spacing between the indicator and the “Evcil Hayvan Ekle” button.
+
+Do not show a meaningless standalone purple line.
+
+==================================================
+6. “EVCİL HAYVAN EKLE” BUTTON
+==================================================
+
+The current dashed button is too faint and does not look like an important action.
+
+Update its design:
+
+- Width: screen width minus 40 px
+- Height: 52–56 px
+- Border radius: 18 px
+- Background: #F7F2FF
+- Border: 1.5 px #CDB8EF
+- A visible dashed border may be used, but the contrast must remain accessible
+- Centered purple plus icon
+- Text: “Evcil Hayvan Ekle”
+- Text size: 14 px
+- Font weight: 600
+- Add a subtle press animation
+- Minimum touch target: 44 px
+
+Tapping the button must open the existing pet creation screen.
+
+When the user has no pets, replace the active pet card with a professional empty state:
+
+Title:
+“Evcil dostunu ekle”
+
+Description:
+“Aşılarını, randevularını, sağlık ve beslenme bilgilerini tek yerden yönet.”
+
+Primary button:
+“Evcil Hayvan Ekle”
+
+==================================================
+7. “HIZLI DURUM” SECTION
+==================================================
+
+Align the “Hızlı Durum” section title properly.
+
+Title style:
+
+- 18 px
+- Font weight 700
+- Dark text
+- Top spacing: 24 px
+- Bottom spacing: 12 px
+
+Display three equal-width cards:
+
+1. Sonraki Aşı
+2. Yaklaşan Randevu
+3. Mama Durumu
+
+Layout:
+
+- Three equal columns
+- 10 px gap between cards
+- Use flex layout
+- Do not use fixed widths that overflow
+- Cards must fit on small Android devices and iPhone SE widths
+- The total width must remain inside the screen bounds
+
+Card height:
+
+- 112–124 px
+
+Card border radius:
+
+- 18–20 px
+
+Internal padding:
+
+- 12–14 px
+
+Card colors:
+
+“Sonraki Aşı”:
+- Very light orange background
+- Orange icon and category label
+
+“Yaklaşan Randevu”:
+- Very light purple background
+- Purple icon and category label
+
+“Mama Durumu”:
+- Very light green background
+- Green icon and category label
+
+Text hierarchy:
+
+Category label:
+- 10–11 px
+- Font weight 600
+- Maximum 2 lines
+
+Main value:
+- 13–14 px
+- Font weight 700
+- Dark text
+- Maximum 2 lines
+
+Secondary value:
+- 11–12 px
+- Gray text
+
+Icon:
+- 16–18 px
+- Place consistently inside all three cards
+
+Empty states:
+
+Vaccination:
+- Main text: “Kayıt yok”
+- Secondary action text: “Aşı ekle”
+
+Appointment:
+- Main text: “Randevu yok”
+- Secondary action text: “Randevu oluştur”
+
+Nutrition:
+- Main text: “Kayıt yok”
+- Secondary action text: “Beslenme ekle”
+
+Card interactions:
+
+- Sonraki Aşı → open “Aşılar”
+- Yaklaşan Randevu → open “Randevular”
+- Mama Durumu → open “Beslenme”
+
+Do not allow text to overlap, overflow, or become clipped.
+
+Use real active-pet data from Supabase.
+
+==================================================
+8. “YÖNETİM” SECTION
+==================================================
+
+The biggest current layout problem is that all eight management options are squeezed into one horizontal row.
+
+Completely fix this section.
+
+Section title:
+
+“Yönetim”
+
+Style:
+
+- 18 px
+- Font weight 700
+- Top margin: 24 px
+- Bottom margin: 12 px
+
+Never display all management actions in a single row.
+
+Use a responsive 4-column by 2-row grid:
+
+First row:
+
+1. Kimlik
+2. Sağlık
+3. Aşılar
+4. Randevular
+
+Second row:
+
+5. Beslenme
+6. Belgeler
+7. İlaçlar
+8. Notlar
+
+Recommended React Native grid behavior:
+
+- `flexDirection: 'row'`
+- `flexWrap: 'wrap'`
+- `justifyContent: 'space-between'`
+- Each item approximately 23–24% width
+- 12 px vertical gap between rows
+- 8–10 px horizontal spacing
+
+Each management item must have:
+
+- Minimum height: 82–92 px
+- Border radius: 18 px
+- White or very light purple background
+- 1 px border using #EEE8F5
+- Very soft shadow
+- Vertically centered content
+- Icon above
+- Label below
+- Minimum touch target of 44x44 px
+
+Icon container:
+
+- 38–42 px circular light-purple background
+- Purple outline icon
+- Icon size: 20–22 px
+
+Use one consistent icon library.
+
+Use the same purple icon family for every management card.
+
+Do not use random decorative colors such as red, orange, blue, pink, and green for unrelated management actions.
+
+Only use semantic colors for health or status information.
+
+Management labels:
+
+- 11–12 px
+- Font weight 500–600
+- Center aligned
+- Maximum 2 lines
+
+Prevent labels such as “Randevular” and “Beslenme” from breaking into multiple narrow lines.
+
+Use:
+
+- Correct card width
+- `numberOfLines={2}`
+- `textAlign="center"`
+- Appropriate line height
+- `adjustsFontSizeToFit` only when necessary
+
+Do not manually split words.
+
+Each card must open the correct screen:
+
+- Kimlik → pet identity information
+- Sağlık → health records
+- Aşılar → vaccination list
+- Randevular → appointments
+- Beslenme → nutrition and food tracking
+- Belgeler → documents
+- İlaçlar → medications
+- Notlar → notes
+
+==================================================
+9. “YAKLAŞAN HATIRLATMALAR” HEADER
+==================================================
+
+The current “Tümünü Gör” text overlaps the management cards and section title.
+
+Fix it completely.
+
+Build the title row as:
+
+Left:
+“Yaklaşan Hatırlatmalar”
+
+Right:
+“Tümünü Gör”
+
+Use the same horizontal container:
+
+- `flexDirection: 'row'`
+- `justifyContent: 'space-between'`
+- `alignItems: 'center'`
+
+Title style:
+
+- 18 px
+- Font weight 700
+- Dark text
+
+“Tümünü Gör” style:
+
+- 13 px
+- Font weight 600
+- Purple
+- Minimum 44 px touch height
+
+Place this title row at least 24 px below the management grid.
+
+“Tümünü Gör” must never overlap:
+
+- Notlar card
+- Management labels
+- Reminder cards
+- Screen edge
+
+Tapping “Tümünü Gör” must open the full reminders screen.
+
+==================================================
+10. REMINDER LIST
+==================================================
+
+When upcoming reminders exist, show the nearest three reminders.
+
+Supported reminder categories:
+
+- Aşı
+- Veteriner randevusu
+- İlaç
+- İç parazit
+- Dış parazit
+- Mama satın alma
+- Tıraş
+- Banyo
+- Özel hatırlatma
+
+Each reminder row must include:
+
+- Category icon on the left
+- Reminder title
+- Date
+- Time when available
+- Status icon or chevron on the right
+
+Design:
+
+- White background
+- Border radius: 18–20 px
+- 1 px light gray-purple border
+- Internal padding: 14–16 px
+- Use subtle separators or individual small cards
+- Keep consistent spacing
+
+Do not show expired or past reminders in the “Yaklaşan Hatırlatmalar” section.
+
+Sort upcoming reminders chronologically.
+
+Tapping a reminder must open its corresponding detail screen.
+
+==================================================
+11. REMINDER EMPTY STATE
+==================================================
+
+The current empty-state card is too large and visually incomplete.
+
+Use a professional empty state.
+
+Content:
+
+Title:
+“Yaklaşan hatırlatman yok”
+
+Description:
+“Aşı, randevu veya bakım hatırlatıcısı ekleyebilirsin.”
+
+Action:
+“Hatırlatıcı Ekle”
+
+Design:
+
+- Card height: approximately 110–132 px
+- White background
+- Border radius: 20 px
+- 1 px light-purple border
+- Very soft shadow
+- Internal padding: 16 px
+- Add a small green check, calendar, or reminder icon
+- Maintain balanced spacing
+- Do not leave large empty areas
+
+The “Hatırlatıcı Ekle” action must open the reminder creation flow.
+
+Do not display only one line saying “Yaklaşan hatırlatma yok”.
+
+==================================================
+12. TYPOGRAPHY SYSTEM
+==================================================
+
+Apply a consistent typography hierarchy.
+
+Main screen titles:
+
+- 20–22 px
+- Font weight 700
+
+Section titles:
+
+- 17–18 px
+- Font weight 700
+
+Card primary text:
+
+- 13–15 px
+- Font weight 600–700
+
+Secondary text:
+
+- 12–13 px
+- Font weight 400–500
+
+Small supporting text:
+
+- Minimum 11 px
+
+Do not use important UI text smaller than 10 px.
+
+Use the application’s existing font if it supports Turkish characters properly.
+
+Ensure correct rendering for:
+
+- ı
+- İ
+- ş
+- Ş
+- ç
+- Ç
+- ğ
+- Ğ
+- ö
+- Ö
+- ü
+- Ü
+
+Use balanced line heights.
+
+==================================================
+13. COLOR SYSTEM
+==================================================
+
+Use the following design system consistently:
+
+- Primary purple: #7C45D9
+- Dark purple: #5F319F
+- Primary dark text: #1D1733
+- Secondary text: #8C8699
+- Light purple background: #F7F3FD
+- Card background: #FFFFFF
+- Border: #EDE7F3
+- Success: #43B96C
+- Warning orange: #EFA547
+- Error: #E55D6F
+
+Do not randomly mix many colors inside the management grid.
+
+Use colors semantically:
+
+- Green for success or up-to-date
+- Orange for approaching or warning
+- Red for overdue or error
+- Purple for primary actions and navigation
+
+Maintain sufficient text contrast.
+
+==================================================
+14. BOTTOM NAVIGATION
+==================================================
+
+Preserve the existing bottom navigation:
+
+- Harita
+- Akış
+- Hayvanlar
+- Evcilim
+- Hesap
+
+“Evcilim” must remain selected on this screen.
+
+Requirements:
+
+- Keep the navigation fixed at the bottom
+- Respect the device Safe Area
+- Do not let page content render behind it
+- Add enough bottom padding to the ScrollView or list content
+
+Recommended bottom padding:
+
+Bottom tab height + Safe Area inset + 24 px
+
+The last reminder card or empty-state card must remain fully visible above the bottom navigation.
+
+Do not create a second duplicate bottom navigation.
+
+==================================================
+15. RESPONSIVE BEHAVIOR
+==================================================
+
+Do not design the screen for only one iPhone model.
+
+Test and support:
+
+- Small Android phone
+- iPhone SE width
+- Standard iPhone
+- iPhone Pro Max
+- Android emulator
+
+Rules:
+
+- Prefer flex-based layouts
+- Use `useWindowDimensions` where needed
+- Avoid rigid fixed widths
+- The 4-column management grid must fit without overflow
+- The three quick-status cards must remain equal width
+- Text must not leave the screen
+- Do not add horizontal scroll to the main screen
+- Use horizontal scrolling only for components that genuinely require it
+- Respect both iOS and Android Safe Area behavior
+
+==================================================
+16. DATA FORMATTING
+==================================================
+
+Display user-friendly Turkish values.
+
+Gender:
+
+- female or F → Dişi
+- male or M → Erkek
+- unknown → Bilinmiyor
+
+Species:
+
+- dog → Köpek
+- cat → Kedi
+- bird → Kuş
+- rabbit → Tavşan
+- hamster → Hamster
+- fish → Balık
+- reptile → Sürüngen
+- other → Diğer
+
+Age calculation:
+
+- Calculate age from `birth_date` using the current date
+- If younger than one year, show months
+- If older than one year, show years and remaining months
+
+Examples:
+
+- 7 aylık
+- 2 yaş
+- 2 yaş 4 ay
+
+Weight:
+
+- Hide the weight field when no value exists
+- Format numbers using Turkish decimal formatting
+- Example: `18,5 kg`
+
+Do not render meaningless separators.
+
+Incorrect:
+
+`Golden Retriever • • 18,5 kg`
+
+Correct:
+
+Only display separators between values that actually exist.
+
+Do not render:
+
+- undefined
+- null
+- NaN
+- empty raw field values
+- raw enum values
+
+==================================================
+17. LOADING, ERROR, AND EMPTY STATES
+==================================================
+
+Initial loading state:
+
+- Show a skeleton for the pet card
+- Show skeletons for quick-status cards
+- Keep the management grid structure stable
+- Do not replace the entire screen with an empty white loading page
+
+Error state:
+
+Text:
+“Evcil hayvan bilgileri yüklenemedi.”
+
+Button:
+“Tekrar Dene”
+
+No pet state:
+
+Show the dedicated pet-empty state described above.
+
+Do not show incomplete values while Supabase data is loading.
+
+During pull-to-refresh:
+
+- Preserve the existing content
+- Show a refresh indicator
+- Do not cause the entire layout to disappear
+
+==================================================
+18. TOUCH TARGETS AND ACCESSIBILITY
+==================================================
+
+- Every interactive element must have at least a 44x44 px touch area
+- Increase the touchable area around small icons
+- Add `accessibilityRole="button"` where appropriate
+- Add meaningful Turkish accessibility labels
+- Do not rely only on color to communicate status
+- Fix low-contrast secondary text
+- Disabled buttons must look disabled
+- Add clear pressed states to cards and buttons
+
+Examples of accessibility labels:
+
+- “Evcil hayvan detayını aç”
+- “Evcil hayvan değiştir”
+- “Yeni evcil hayvan ekle”
+- “Aşılar ekranını aç”
+- “Tüm hatırlatmaları görüntüle”
+
+==================================================
+19. PERFORMANCE
+==================================================
+
+- Do not refetch the same Supabase data on every render
+- Use the project’s existing React Query or cache system
+- Cache active-pet-related data correctly
+- Update quick-status cards when the active pet changes
+- Avoid unnecessary full-screen rerenders
+- Use memoization only where it improves performance
+- Use optimized pet profile images
+- Do not load original full-resolution images inside small avatars
+- Preserve visible content during refresh
+- Support pull-to-refresh
+- Keep navigation responsive
+
+==================================================
+20. CODE QUALITY
+==================================================
+
+- Use TypeScript types correctly
+- Do not use unnecessary `any`
+- Reuse existing types and interfaces where possible
+- Keep formatting helpers in a reusable utility file
+- Do not duplicate gender, species, age, or weight formatting logic across components
+- Separate data-fetching logic from presentation logic where appropriate
+- Do not leave unused imports or dead code
+- Do not suppress errors without fixing them
+- Do not disable TypeScript checking
+- Do not hide console errors
+
+==================================================
+21. ACCEPTANCE CRITERIA
+==================================================
+
+After implementation, verify every item below:
+
+1. Management options are displayed as a 4-column by 2-row grid.
+2. No management label breaks into random narrow lines.
+3. Management cards stay inside the screen boundaries.
+4. “Tümünü Gör” appears on the right side of the “Yaklaşan Hatırlatmalar” title.
+5. “Tümünü Gör” does not overlap the “Notlar” card.
+6. Sections have consistent vertical spacing.
+7. The profile card does not display raw values such as “F”.
+8. Gender is displayed in Turkish.
+9. Species is displayed in Turkish.
+10. Age is calculated automatically.
+11. Weight is formatted correctly.
+12. A real image or custom placeholder is displayed instead of an emoji.
+13. A meaningless purple line is not displayed for a single pet.
+14. Proper carousel dots appear for multiple pets.
+15. The “Evcil Hayvan Ekle” button is visible and functional.
+16. Quick-status cards have equal dimensions.
+17. Quick-status text is readable and not clipped.
+18. Quick-status cards open the correct screens.
+19. Every management card opens the correct screen.
+20. The reminder empty state looks complete and professional.
+21. The “Hatırlatıcı Ekle” action works.
+22. Bottom navigation does not cover content.
+23. Vertical scrolling works correctly.
+24. No overflow occurs on small Android screens.
+25. No Safe Area problem occurs on iPhone.
+26. There are no TypeScript errors.
+27. There are no red console errors.
+28. Existing Supabase data remains intact.
+29. The “Sahiplendirme” section still works.
+30. Existing “Evcilim” features remain functional.
+31. The screen does not scroll horizontally.
+32. No text or icon overlaps another component.
+33. No `undefined`, `null`, `NaN`, or raw enum values appear in the UI.
+34. The screen works after closing and reopening the application.
+35. Active pet switching updates the related information correctly.
+
+==================================================
+22. REQUIRED TESTING
+==================================================
+
+Test the screen using real interactions and real project data.
+
+Test the following:
+
+- A user with no pets
+- A user with one pet
+- A user with multiple pets
+- A pet with a profile image
+- A pet without a profile image
+- A pet with missing breed or weight
+- A pet with no vaccinations
+- A pet with an upcoming vaccination
+- A pet with no appointments
+- A pet with an upcoming appointment
+- A pet with no nutrition record
+- A pet with a nutrition record
+- A user with no reminders
+- A user with multiple reminders
+
+Test these device categories:
+
+- Small Android viewport
+- Standard Android viewport
+- iPhone SE-sized viewport
+- Standard iPhone viewport
+- iPhone Pro Max viewport
+
+Confirm:
+
+- No overlap
+- No horizontal overflow
+- No clipped labels
+- No navigation collision
+- No Safe Area collision
+- No broken routes
+- No broken Supabase requests
+
+==================================================
+23. IMPLEMENTATION REPORT
+==================================================
+
+After completing the work, provide a concise report in Turkish containing:
+
+- İncelenen dosyalar
+- Değiştirilen dosyalar
+- Düzeltilen layout hataları
+- Düzeltilen veri formatlama hataları
+- Eklenen veya güncellenen bileşenler
+- Test edilen ekran boyutları
+- Yapılan iOS testleri
+- Yapılan Android testleri
+- Bulunan hatalar
+- Düzeltilen hatalar
+- Kalan hata veya eksik özellikler
+
+Do not consider the task completed after only changing style values.
+
+Open the screen at real mobile dimensions and verify that overlapping, clipping, horizontal overflow, broken labels, and bottom-navigation collisions are actually fixed.

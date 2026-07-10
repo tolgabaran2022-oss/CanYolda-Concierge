@@ -13,6 +13,9 @@ export interface Pet {
   type: string;
   breed?: string;
   age?: string;
+  gender?: string;
+  birthDate?: string;
+  weight?: string;
   image?: string;
   vaccinationInfo: string;
   feedingNotes: string;
@@ -53,8 +56,11 @@ function mapFromApi(raw: Record<string, unknown>): Pet {
     id:              String(raw.id ?? ""),
     name:            String(raw.name ?? ""),
     type:            String(raw.type ?? ""),
-    breed:           raw.breed ? String(raw.breed) : undefined,
-    age:             raw.age ? String(raw.age) : undefined,
+    breed:           raw.breed    ? String(raw.breed)     : undefined,
+    age:             raw.age      ? String(raw.age)       : undefined,
+    gender:          raw.gender   ? String(raw.gender)    : undefined,
+    birthDate:       raw.birthDate ? String(raw.birthDate) : undefined,
+    weight:          raw.weight   ? String(raw.weight)    : undefined,
     image:           raw.avatarUrl ? String(raw.avatarUrl) : undefined,
     vaccinationInfo: String(raw.vaccinationInfo ?? ""),
     feedingNotes:    String(raw.feedingNotes ?? ""),
@@ -105,16 +111,18 @@ export function PetsProvider({ children }: { children: React.ReactNode }) {
         body: JSON.stringify({
           name:            pet.name,
           type:            pet.type,
-          breed:           pet.breed ?? "",
-          age:             pet.age ?? "",
-          avatarUrl:       pet.image ?? "",
+          breed:           pet.breed       ?? "",
+          age:             pet.age         ?? "",
+          gender:          pet.gender      ?? "",
+          birthDate:       pet.birthDate   ?? "",
+          weight:          pet.weight      ?? "",
+          avatarUrl:       pet.image       ?? "",
           vaccinationInfo: pet.vaccinationInfo,
           feedingNotes:    pet.feedingNotes,
         }),
       });
       const data = await res.json() as Record<string, unknown>;
       if (!res.ok) throw new Error(String(data.error ?? "Evcil hayvan eklenemedi"));
-
       const newPet = mapFromApi(data);
       setPets((prev) => [newPet, ...prev]);
     },
@@ -123,15 +131,18 @@ export function PetsProvider({ children }: { children: React.ReactNode }) {
 
   const updatePet = useCallback(
     async (id: string, updates: Partial<Pet>) => {
-      const userId = updates.userId ?? pets.find((p) => p.id === id)?.userId ?? "";
+      const uid = updates.userId ?? pets.find((p) => p.id === id)?.userId ?? "";
       const res = await apiFetch(`/pets/${id}`, {
         method: "PATCH",
-        headers: { "x-user-id": userId },
+        headers: { "x-user-id": uid },
         body: JSON.stringify({
           name:            updates.name,
           type:            updates.type,
           breed:           updates.breed,
           age:             updates.age,
+          gender:          updates.gender,
+          birthDate:       updates.birthDate,
+          weight:          updates.weight,
           avatarUrl:       updates.image,
           vaccinationInfo: updates.vaccinationInfo,
           feedingNotes:    updates.feedingNotes,
@@ -139,7 +150,6 @@ export function PetsProvider({ children }: { children: React.ReactNode }) {
       });
       const data = await res.json() as Record<string, unknown>;
       if (!res.ok) throw new Error(String(data.error ?? "Evcil hayvan güncellenemedi"));
-
       setPets((prev) =>
         prev.map((p) => (p.id === id ? mapFromApi(data) : p))
       );
@@ -148,10 +158,10 @@ export function PetsProvider({ children }: { children: React.ReactNode }) {
   );
 
   const deletePet = useCallback(async (id: string) => {
-    const userId = pets.find((p) => p.id === id)?.userId ?? "";
+    const uid = pets.find((p) => p.id === id)?.userId ?? "";
     const res = await apiFetch(`/pets/${id}`, {
       method: "DELETE",
-      headers: { "x-user-id": userId },
+      headers: { "x-user-id": uid },
     });
     const data = await res.json() as Record<string, unknown>;
     if (!res.ok) throw new Error(String(data.error ?? "Evcil hayvan silinemedi"));

@@ -1,0 +1,550 @@
+<!DOCTYPE html>
+<html lang="tr">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Evcilim — Prototip</title>
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@tabler/icons-webfont@3.24.0/dist/tabler-icons.min.css">
+<style>
+  :root {
+    --purple-50:#EEEDFE; --purple-100:#CECBF6; --purple-200:#AFA9EC;
+    --purple-400:#7F77DD; --purple-600:#534AB7; --purple-800:#3C3489; --purple-900:#26215C;
+    --amber-50:#FAEEDA; --amber-600:#BA7517; --amber-800:#633806;
+    --green-50:#EAF3DE; --green-600:#3B6D11; --green-800:#27500A; --green-900:#173404;
+    --red-50:#FCEBEB; --red-400:#E24B4A; --red-600:#A32D2D; --red-800:#791F1F;
+    --blue-50:#E6F1FB; --blue-600:#185FA5;
+    --page:#F7F5FF; --card:#FFFFFF; --line:#E5E1F8;
+    --ink:#26215C; --ink-2:#5F5E5A; --ink-3:#888780;
+  }
+  * { margin:0; padding:0; box-sizing:border-box; }
+  body { font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,sans-serif; background:#1a1a1a; padding:20px 0; }
+  .phone { max-width:400px; margin:0 auto; background:var(--page); border-radius:28px; overflow:hidden; min-height:840px; display:flex; flex-direction:column; }
+  .screen { display:none; flex:1; flex-direction:column; }
+  .screen.active { display:flex; }
+  .content { flex:1; overflow-y:auto; padding-bottom:12px; }
+
+  .topbar { display:flex; align-items:center; justify-content:space-between; padding:18px 18px 0; }
+  .topbar .title { font-size:17px; font-weight:600; color:var(--ink); }
+  .icon-btn { background:none; border:none; font-size:22px; color:var(--ink); cursor:pointer; }
+  .pill-btn { background:var(--purple-50); color:var(--purple-800); border:none; border-radius:999px; padding:7px 15px; font-size:13px; font-weight:500; cursor:pointer; }
+  .pill-btn i { vertical-align:-2px; }
+
+  .tabs2 { display:flex; gap:20px; }
+  .tabs2 span { font-size:16px; padding-bottom:6px; color:var(--ink-3); cursor:pointer; }
+  .tabs2 span.on { color:var(--purple-800); font-weight:600; border-bottom:2px solid var(--purple-600); }
+  .bell { position:relative; font-size:20px; color:var(--purple-800); }
+  .bell::after { content:""; position:absolute; top:0; right:-3px; width:7px; height:7px; background:var(--purple-400); border-radius:50%; }
+
+  .card { background:var(--card); border:0.5px solid var(--line); border-radius:18px; }
+  .section-title { font-size:15px; font-weight:600; color:var(--ink); }
+  .row-flex { display:flex; align-items:center; }
+
+  .pet-card { margin:14px 16px 0; padding:14px 16px; display:flex; align-items:center; gap:12px; }
+  .avatar { width:56px; height:56px; border-radius:50%; background:var(--purple-100); display:flex; align-items:center; justify-content:center; font-size:28px; color:var(--purple-800); flex-shrink:0; }
+  .pet-name { font-size:17px; font-weight:600; color:var(--ink); }
+  .pet-sub { font-size:13px; color:var(--ink-2); margin-top:1px; }
+  .chip { display:inline-block; font-size:12px; background:var(--purple-50); color:var(--purple-800); padding:3px 10px; border-radius:999px; margin-top:6px; }
+
+  .dots { display:flex; justify-content:center; gap:6px; margin-top:10px; }
+  .dots span { width:8px; height:8px; border-radius:50%; background:var(--purple-100); }
+  .dots span.on { background:var(--purple-600); }
+
+  .status-grid { display:grid; grid-template-columns:1fr 1fr; gap:10px; padding:0 16px; margin-top:10px; }
+  .status-card { border-radius:14px; padding:12px; }
+  .status-card .lbl { font-size:12px; }
+  .status-card .ttl { font-size:13px; font-weight:600; margin-top:2px; }
+  .status-card .dt { font-size:12px; margin-top:2px; }
+  .status-card i { font-size:18px; margin-top:6px; display:inline-block; }
+  .st-amber { background:var(--amber-50); } .st-amber .lbl,.st-amber .dt { color:var(--amber-600);} .st-amber .ttl{color:var(--amber-800);} .st-amber i{color:var(--amber-600);}
+  .st-purple { background:var(--purple-50);} .st-purple .lbl,.st-purple .dt{color:var(--purple-600);} .st-purple .ttl{color:var(--purple-800);} .st-purple i{color:var(--purple-600);}
+  .st-green { background:var(--green-50); grid-column:span 2; display:flex; align-items:center; justify-content:space-between;} .st-green .lbl{color:var(--green-600);} .st-green .ttl{color:var(--green-800);} .st-green i{color:var(--green-600); font-size:20px; margin:0;}
+
+  .mgmt-grid { display:grid; grid-template-columns:repeat(4,1fr); gap:8px; padding:0 16px; margin-top:10px; }
+  .mgmt-item { background:var(--card); border:0.5px solid var(--line); border-radius:14px; padding:12px 4px; text-align:center; cursor:pointer; }
+  .mgmt-item i { font-size:20px; color:var(--purple-600); }
+  .mgmt-item div { font-size:11px; color:#444; margin-top:4px; }
+
+  .list-card { margin:10px 16px 0; overflow:hidden; }
+  .list-row { display:flex; align-items:center; gap:12px; padding:12px 14px; cursor:pointer; }
+  .list-row + .list-row { border-top:0.5px solid var(--line); }
+  .sq-icon { width:36px; height:36px; border-radius:10px; display:flex; align-items:center; justify-content:center; font-size:17px; flex-shrink:0; }
+  .list-row .t1 { font-size:13px; font-weight:600; color:var(--ink); }
+  .list-row .t2 { font-size:12px; color:var(--ink-3); margin-top:1px; }
+
+  .info-banner { margin:14px 16px 0; background:var(--purple-50); border-radius:16px; padding:14px 16px; display:flex; align-items:center; gap:12px; }
+  .info-banner .bt { font-size:14px; font-weight:600; color:var(--ink); }
+  .info-banner .bd { font-size:12px; color:var(--purple-600); margin-top:3px; line-height:1.5; }
+  .round-badge { width:42px; height:42px; border-radius:50%; background:var(--purple-600); display:flex; align-items:center; justify-content:center; flex-shrink:0; }
+  .round-badge i { font-size:20px; color:var(--purple-50); }
+
+  .chips { display:flex; gap:8px; padding:14px 16px 0; flex-wrap:wrap; }
+  .fchip { border:0.5px solid var(--line); background:var(--card); color:var(--ink-2); border-radius:999px; padding:7px 16px; font-size:13px; cursor:pointer; }
+  .fchip.on { background:var(--purple-600); color:var(--purple-50); border-color:var(--purple-600); }
+
+  .badge { font-size:11px; padding:3px 10px; border-radius:999px; }
+  .b-green { background:var(--green-50); color:var(--green-800); }
+  .b-amber { background:var(--amber-50); color:var(--amber-800); }
+  .b-red { background:var(--red-50); color:var(--red-800); }
+  .b-purple { background:var(--purple-50); color:var(--purple-800); }
+
+  .vac-card { background:var(--card); border:0.5px solid var(--line); border-radius:16px; padding:14px; margin:0 16px 10px; cursor:pointer; }
+  .vac-dates { display:flex; margin-top:10px; padding-left:48px; gap:24px; align-items:center; }
+  .vac-dates .dl { font-size:11px; color:var(--ink-3); }
+  .vac-dates .dv { font-size:13px; font-weight:600; color:var(--ink); margin-top:2px; }
+
+  .detail-row { display:flex; align-items:center; justify-content:space-between; padding:13px 16px; border-bottom:0.5px solid var(--line); font-size:14px; }
+  .detail-row:last-child { border-bottom:none; }
+  .detail-row .k { color:var(--ink-2); display:flex; align-items:center; gap:8px; }
+  .detail-row .k i { font-size:16px; color:var(--purple-600); }
+  .detail-row .v { color:var(--ink); font-weight:500; text-align:right; display:flex; align-items:center; gap:6px; }
+  .detail-row .v i { font-size:14px; color:var(--ink-3); }
+
+  .ptabs { display:flex; gap:18px; padding:14px 20px 0; border-bottom:0.5px solid var(--line); }
+  .ptabs span { font-size:14px; padding-bottom:8px; color:var(--ink-3); cursor:pointer; }
+  .ptabs span.on { color:var(--purple-800); font-weight:600; border-bottom:2px solid var(--purple-600); }
+
+  .form-label { font-size:13px; font-weight:600; color:var(--ink); margin:14px 16px 6px; }
+  .form-label small { font-weight:400; color:var(--ink-3); }
+  .form-input { display:block; width:calc(100% - 32px); margin:0 16px; background:var(--card); border:0.5px solid var(--line); border-radius:12px; padding:11px 14px; font-size:14px; color:var(--ink); }
+  .primary-btn { display:block; width:calc(100% - 32px); margin:18px 16px; background:var(--purple-600); color:var(--purple-50); border:none; border-radius:14px; padding:14px; font-size:15px; font-weight:600; cursor:pointer; }
+  .danger-btn { display:block; width:calc(100% - 32px); margin:18px 16px; background:var(--red-400); color:#fff; border:none; border-radius:14px; padding:14px; font-size:15px; font-weight:600; cursor:pointer; }
+
+  .dropzone { margin:16px 16px 0; background:var(--card); border:1.5px dashed var(--purple-200); border-radius:18px; padding:26px 16px; text-align:center; cursor:pointer; }
+  .dropzone .dz-icon { width:52px; height:52px; border-radius:50%; background:var(--purple-50); display:flex; align-items:center; justify-content:center; margin:0 auto; }
+  .dropzone .dz-icon i { font-size:24px; color:var(--purple-600); }
+
+  .toggle { width:44px; height:26px; border-radius:999px; background:var(--purple-600); position:relative; cursor:pointer; flex-shrink:0; }
+  .toggle::after { content:""; position:absolute; top:3px; right:3px; width:20px; height:20px; border-radius:50%; background:#fff; }
+  .toggle.off { background:#D3D1C7; } .toggle.off::after { right:auto; left:3px; }
+
+  .navbar { display:flex; justify-content:space-around; padding:10px 8px 16px; background:var(--card); border-top:0.5px solid var(--line); }
+  .nav-item { text-align:center; color:var(--ink-3); cursor:pointer; background:none; border:none; }
+  .nav-item i { font-size:20px; }
+  .nav-item div { font-size:11px; margin-top:1px; }
+  .nav-item.on { color:var(--purple-600); }
+  .nav-item.on div { font-weight:600; }
+
+  .metric-grid { display:grid; grid-template-columns:1fr 1fr; gap:10px; padding:0 16px; margin-top:12px; }
+  .metric { background:var(--card); border:0.5px solid var(--line); border-radius:14px; padding:12px; }
+  .metric .ml { font-size:12px; color:var(--ink-3); }
+  .metric .mv { font-size:20px; font-weight:600; color:var(--ink); margin-top:2px; }
+  .metric .mn { font-size:11px; margin-top:2px; }
+
+  .empty { text-align:center; padding:24px; font-size:13px; color:var(--ink-3); }
+  .footnote { margin:6px 16px 14px; display:flex; align-items:center; gap:8px; background:var(--card); border:0.5px solid var(--line); border-radius:12px; padding:10px 14px; font-size:12px; color:var(--ink-2); }
+  .footnote i { font-size:16px; color:var(--purple-600); flex-shrink:0; }
+</style>
+</head>
+<body>
+<div class="phone">
+
+<!-- ═══════════ EKRAN 1: ANA PANEL ═══════════ -->
+<section class="screen active" id="scr-home">
+  <div class="topbar">
+    <div class="tabs2"><span class="on">Evcilim</span><span>Sahiplendirme</span></div>
+    <span class="bell"><i class="ti ti-bell"></i></span>
+  </div>
+  <div class="content">
+    <div class="card pet-card">
+      <div class="avatar"><i class="ti ti-dog"></i></div>
+      <div style="flex:1">
+        <div class="row-flex" style="gap:6px"><span class="pet-name">Luna</span><i class="ti ti-rosette-discount-check" style="color:var(--purple-600);font-size:16px"></i></div>
+        <div class="pet-sub">Golden Retriever • Dişi</div>
+        <span class="chip">2 yaş 4 ay • 18,5 kg</span>
+      </div>
+      <i class="ti ti-chevron-down" style="color:var(--purple-600);font-size:18px"></i>
+    </div>
+    <div class="dots"><span class="on"></span><span></span><span></span></div>
+    <div style="text-align:center;margin-top:10px">
+      <button class="pill-btn"><i class="ti ti-plus"></i> Evcil Hayvan Ekle</button>
+    </div>
+
+    <div class="section-title" style="padding:18px 16px 0">Hızlı Durum</div>
+    <div class="status-grid">
+      <div class="status-card st-amber" onclick="go('vaccines')">
+        <div class="lbl">Sonraki Aşı</div><div class="ttl">Kuduz Aşısı</div>
+        <div class="dt">12 Ağustos 2024</div><i class="ti ti-calendar"></i>
+      </div>
+      <div class="status-card st-purple" onclick="go('appointment')">
+        <div class="lbl">Yaklaşan Randevu</div><div class="ttl">Veteriner Kontrolü</div>
+        <div class="dt">18 Temmuz 2024</div><i class="ti ti-calendar"></i>
+      </div>
+      <div class="status-card st-green">
+        <div><div class="lbl">Mama Durumu</div><div class="ttl">6 gün kaldı • 3 kg</div></div>
+        <i class="ti ti-bowl"></i>
+      </div>
+    </div>
+
+    <div class="section-title" style="padding:18px 16px 0">Yönetim</div>
+    <div class="mgmt-grid">
+      <div class="mgmt-item" onclick="go('profile')"><i class="ti ti-id"></i><div>Kimlik</div></div>
+      <div class="mgmt-item" onclick="go('health')"><i class="ti ti-heartbeat"></i><div>Sağlık</div></div>
+      <div class="mgmt-item" onclick="go('vaccines')"><i class="ti ti-vaccine"></i><div>Aşılar</div></div>
+      <div class="mgmt-item" onclick="go('appointment')"><i class="ti ti-calendar"></i><div>Randevular</div></div>
+      <div class="mgmt-item"><i class="ti ti-bowl"></i><div>Beslenme</div></div>
+      <div class="mgmt-item" onclick="go('docs')"><i class="ti ti-file"></i><div>Belgeler</div></div>
+      <div class="mgmt-item"><i class="ti ti-pill"></i><div>İlaçlar</div></div>
+      <div class="mgmt-item"><i class="ti ti-notes"></i><div>Notlar</div></div>
+    </div>
+
+    <div class="row-flex" style="justify-content:space-between;padding:18px 16px 0">
+      <span class="section-title">Yaklaşan Hatırlatmalar</span>
+      <span style="font-size:13px;color:var(--purple-600)">Tümünü Gör</span>
+    </div>
+    <div class="card list-card">
+      <div class="list-row">
+        <div class="sq-icon" style="background:var(--amber-50);color:var(--amber-600)"><i class="ti ti-vaccine"></i></div>
+        <div style="flex:1"><div class="t1">Dış Parazit Uygulaması</div><div class="t2">12 Temmuz 2024</div></div>
+        <i class="ti ti-alarm" style="color:var(--amber-600);font-size:18px"></i>
+      </div>
+      <div class="list-row" onclick="go('appointment')">
+        <div class="sq-icon" style="background:var(--purple-50);color:var(--purple-600)"><i class="ti ti-stethoscope"></i></div>
+        <div style="flex:1"><div class="t1">Veteriner Kontrolü</div><div class="t2">18 Temmuz 2024</div></div>
+        <i class="ti ti-alarm" style="color:var(--purple-600);font-size:18px"></i>
+      </div>
+      <div class="list-row">
+        <div class="sq-icon" style="background:var(--green-50);color:var(--green-600)"><i class="ti ti-shopping-cart"></i></div>
+        <div style="flex:1"><div class="t1">Mama Satın Al</div><div class="t2">22 Temmuz 2024</div></div>
+        <i class="ti ti-alarm" style="color:var(--green-600);font-size:18px"></i>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ═══════════ EKRAN 2: PROFİL DETAYI ═══════════ -->
+<section class="screen" id="scr-profile">
+  <div class="topbar">
+    <button class="icon-btn" onclick="go('home')"><i class="ti ti-chevron-left"></i></button>
+    <span class="title">Luna</span>
+    <button class="icon-btn" style="color:var(--purple-600)"><i class="ti ti-pencil"></i></button>
+  </div>
+  <div class="content">
+    <div style="background:var(--purple-50);margin:14px 16px 0;border-radius:20px;padding:22px;text-align:center">
+      <div class="avatar" style="width:96px;height:96px;font-size:46px;margin:0 auto;position:relative;background:var(--purple-100)">
+        <i class="ti ti-dog"></i>
+        <span style="position:absolute;bottom:0;right:0;width:30px;height:30px;border-radius:50%;background:var(--purple-600);display:flex;align-items:center;justify-content:center"><i class="ti ti-camera" style="font-size:15px;color:#fff"></i></span>
+      </div>
+      <div class="pet-name" style="font-size:22px;margin-top:10px">Luna</div>
+      <div class="pet-sub">Golden Retriever • Dişi</div>
+      <span class="chip">2 yaş 4 ay • 18,5 kg</span>
+    </div>
+
+    <div class="ptabs">
+      <span class="on">Genel Bilgiler</span><span>Kimlik</span><span onclick="go('health')">Sağlık</span><span>Notlar</span>
+    </div>
+
+    <div class="card list-card" style="margin-top:14px">
+      <div class="detail-row"><span class="k"><i class="ti ti-calendar"></i>Doğum Tarihi</span><span class="v">10 Mart 2022 <i class="ti ti-chevron-right"></i></span></div>
+      <div class="detail-row"><span class="k"><i class="ti ti-user-heart"></i>Sahiplenme Tarihi</span><span class="v">15 Mayıs 2022 <i class="ti ti-chevron-right"></i></span></div>
+      <div class="detail-row"><span class="k"><i class="ti ti-tag"></i>Renk</span><span class="v">Açık Altın <i class="ti ti-chevron-right"></i></span></div>
+      <div class="detail-row"><span class="k"><i class="ti ti-gender-female"></i>Cinsiyet</span><span class="v">Dişi <i class="ti ti-chevron-right"></i></span></div>
+      <div class="detail-row"><span class="k"><i class="ti ti-scissors"></i>Kısırlaştırıldı mı?</span><span class="v">Evet <i class="ti ti-chevron-right"></i></span></div>
+      <div class="detail-row"><span class="k"><i class="ti ti-scale"></i>Kilo</span><span class="v">18,5 kg <i class="ti ti-chevron-right"></i></span></div>
+      <div class="detail-row"><span class="k"><i class="ti ti-ruler-2"></i>Boy</span><span class="v">60 cm (omuz) <i class="ti ti-chevron-right"></i></span></div>
+      <div class="detail-row"><span class="k"><i class="ti ti-mood-smile"></i>Mizaç</span><span class="v">Sakin, dost canlısı <i class="ti ti-chevron-right"></i></span></div>
+      <div class="detail-row"><span class="k"><i class="ti ti-alert-triangle"></i>Alerji</span><span class="v">Tavuk eti, Soya <i class="ti ti-chevron-right"></i></span></div>
+      <div class="detail-row"><span class="k"><i class="ti ti-note"></i>Özel Not</span><span class="v" style="max-width:170px;font-size:13px">Topa bayılır. Yabancılara önce havlar. <i class="ti ti-chevron-right"></i></span></div>
+    </div>
+  </div>
+</section>
+
+<!-- ═══════════ EKRAN 3: AŞILAR ═══════════ -->
+<section class="screen" id="scr-vaccines">
+  <div class="topbar">
+    <button class="icon-btn" onclick="go('home')"><i class="ti ti-chevron-left"></i></button>
+    <span class="title">Aşılar</span>
+    <button class="pill-btn"><i class="ti ti-plus"></i> Ekle</button>
+  </div>
+  <div class="content">
+    <div class="info-banner">
+      <div style="flex:1"><div class="bt">Aşı Takibi</div><div class="bd">Aşı takvimini düzenli olarak takip ederek dostunuzun sağlığını koruyabilirsiniz.</div></div>
+      <div class="round-badge"><i class="ti ti-shield-check"></i></div>
+    </div>
+    <div class="chips" id="vac-chips"></div>
+    <div id="vac-list" style="margin-top:14px"></div>
+    <div class="footnote"><i class="ti ti-clock"></i>Aşı zamanları yaklaştığında size bildirim göndereceğiz.</div>
+  </div>
+</section>
+
+<!-- ═══════════ EKRAN 4: RANDEVU DETAYI ═══════════ -->
+<section class="screen" id="scr-appointment">
+  <div class="topbar">
+    <button class="icon-btn" onclick="go('home')"><i class="ti ti-chevron-left"></i></button>
+    <span class="title">Randevu Detayı</span>
+    <span><i class="ti ti-pencil" style="color:var(--purple-600);font-size:18px;margin-right:12px"></i><i class="ti ti-dots-vertical" style="color:var(--ink);font-size:18px"></i></span>
+  </div>
+  <div class="content">
+    <div class="card" style="margin:14px 16px 0;padding:16px">
+      <div class="row-flex" style="gap:12px">
+        <div class="sq-icon" style="width:44px;height:44px;background:var(--purple-50);color:var(--purple-600);font-size:20px"><i class="ti ti-calendar"></i></div>
+        <span style="font-size:16px;font-weight:600;color:var(--ink);flex:1">Veteriner Kontrolü</span>
+        <span class="badge b-purple">Yaklaşan</span>
+      </div>
+      <div style="margin-top:14px;display:flex;flex-direction:column;gap:12px;font-size:14px;color:var(--ink)">
+        <div class="row-flex" style="gap:10px"><i class="ti ti-calendar" style="color:var(--purple-600);font-size:17px"></i>18 Temmuz 2024, Perşembe</div>
+        <div class="row-flex" style="gap:10px"><i class="ti ti-clock" style="color:var(--purple-600);font-size:17px"></i>15:00</div>
+        <div class="row-flex" style="gap:10px"><i class="ti ti-map-pin" style="color:var(--purple-600);font-size:17px"></i><span>Pati Veteriner Kliniği<br><small style="color:var(--ink-3)">Alsancak, İzmir</small></span></div>
+        <div class="row-flex" style="gap:10px"><i class="ti ti-user" style="color:var(--purple-600);font-size:17px"></i><span>Veteriner Hekim<br><small style="color:var(--ink-3)">Dr. Ayşe Yılmaz</small></span></div>
+        <div class="row-flex" style="gap:10px;justify-content:space-between">
+          <span class="row-flex" style="gap:10px"><i class="ti ti-alarm" style="color:var(--purple-600);font-size:17px"></i><span>Hatırlatma<br><small style="color:var(--ink-3)">17 Temmuz 2024, 20:00</small></span></span>
+          <span class="toggle" onclick="this.classList.toggle('off')"></span>
+        </div>
+      </div>
+    </div>
+
+    <div class="card" style="margin:12px 16px 0;padding:14px 16px">
+      <div class="row-flex" style="gap:8px;margin-bottom:6px"><i class="ti ti-notes" style="color:var(--purple-600);font-size:17px"></i><span style="font-size:14px;font-weight:600;color:var(--ink)">Notlar</span></div>
+      <div style="font-size:13px;color:var(--ink-2);line-height:1.6">Genel sağlık kontrolü yapılacak. Tüy dökümü için destek ürünü konuşulacak. Tırnak kontrolü de yapılacak.</div>
+    </div>
+
+    <div class="card detail-row" style="margin:12px 16px 0;border-radius:16px">
+      <span class="k"><i class="ti ti-refresh"></i>Tekrarlama</span>
+      <span class="v">Her 6 Ayda Bir <i class="ti ti-chevron-right"></i></span>
+    </div>
+
+    <button class="danger-btn">Randevuyu İptal Et</button>
+  </div>
+</section>
+
+<!-- ═══════════ EKRAN 5: BELGELER ═══════════ -->
+<section class="screen" id="scr-docs">
+  <div class="topbar">
+    <button class="icon-btn" onclick="go('home')"><i class="ti ti-chevron-left"></i></button>
+    <span class="title">Belgeler</span>
+    <button class="pill-btn" onclick="go('docupload')"><i class="ti ti-plus"></i> Ekle</button>
+  </div>
+  <div class="content">
+    <div class="info-banner">
+      <div style="flex:1"><div class="bt">Belge Arşivi</div><div class="bd">Luna'nın tüm resmi belgelerini ve sağlık kayıtlarını tek yerde saklayın.</div></div>
+      <div class="round-badge"><i class="ti ti-folder"></i></div>
+    </div>
+    <div class="chips" id="doc-chips"></div>
+    <div id="doc-list" style="margin-top:14px"></div>
+    <div class="footnote"><i class="ti ti-lock"></i>Belgeleriniz güvenle saklanır, yalnızca siz görebilirsiniz.</div>
+  </div>
+</section>
+
+<!-- ═══════════ EKRAN 6: BELGE EKLE ═══════════ -->
+<section class="screen" id="scr-docupload">
+  <div class="topbar">
+    <button class="icon-btn" onclick="go('docs')"><i class="ti ti-x"></i></button>
+    <span class="title">Belge Ekle</span>
+    <span style="width:22px"></span>
+  </div>
+  <div class="content">
+    <div class="dropzone" onclick="pickFile()">
+      <div class="dz-icon"><i class="ti ti-cloud-upload"></i></div>
+      <div style="font-size:14px;font-weight:600;color:var(--ink);margin-top:10px">Dosya seçin veya fotoğraf çekin</div>
+      <div style="font-size:12px;color:var(--ink-3);margin-top:4px">PDF, JPG, PNG • En fazla 10 MB</div>
+    </div>
+    <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;margin:12px 16px 0">
+      <button class="fchip" style="border-radius:14px;padding:11px;color:var(--purple-800)" onclick="pickFile()"><i class="ti ti-camera"></i> Fotoğraf Çek</button>
+      <button class="fchip" style="border-radius:14px;padding:11px;color:var(--purple-800)" onclick="pickFile()"><i class="ti ti-photo"></i> Galeriden Seç</button>
+    </div>
+    <div id="file-preview" style="margin:12px 16px 0;display:none"></div>
+
+    <div class="form-label">Belge Adı</div>
+    <input class="form-input" type="text" placeholder="Aşı Karnesi">
+
+    <div class="form-label">Kategori</div>
+    <div class="chips" style="padding-top:0" id="upload-cats"></div>
+
+    <div class="form-label">Belge Tarihi</div>
+    <div class="form-input row-flex" style="gap:10px;cursor:pointer">
+      <i class="ti ti-calendar" style="color:var(--purple-600);font-size:17px"></i>
+      <span style="flex:1">10 Temmuz 2026</span>
+      <i class="ti ti-chevron-down" style="color:var(--ink-3);font-size:15px"></i>
+    </div>
+
+    <div class="form-label">Not <small>(isteğe bağlı)</small></div>
+    <input class="form-input" type="text" placeholder="Bu belgeyle ilgili kısa bir not...">
+
+    <button class="primary-btn" id="save-doc" onclick="saveDoc()">Belgeyi Kaydet</button>
+  </div>
+</section>
+
+<!-- ═══════════ EKRAN 7: SAĞLIK ═══════════ -->
+<section class="screen" id="scr-health">
+  <div class="topbar">
+    <button class="icon-btn" onclick="go('home')"><i class="ti ti-chevron-left"></i></button>
+    <span class="title">Sağlık</span>
+    <button class="pill-btn"><i class="ti ti-plus"></i> Ekle</button>
+  </div>
+  <div class="content">
+    <div class="info-banner" style="background:var(--green-50)">
+      <div class="round-badge" style="background:var(--green-600)"><i class="ti ti-heartbeat" style="color:var(--green-50)"></i></div>
+      <div style="flex:1"><div class="bt" style="color:var(--green-900)">Genel Durum: İyi</div><div class="bd" style="color:var(--green-600)">Son kontrol: 20 Haziran 2024 • Sıradaki: 18 Temmuz 2024</div></div>
+    </div>
+
+    <div class="metric-grid">
+      <div class="metric">
+        <div class="ml">Güncel Kilo</div><div class="mv">18,5 kg</div>
+        <div class="mn" style="color:var(--green-600)"><i class="ti ti-trending-up"></i> Sağlıklı aralıkta</div>
+      </div>
+      <div class="metric">
+        <div class="ml">Aktif İlaç</div><div class="mv">1</div>
+        <div class="mn" style="color:var(--amber-600)"><i class="ti ti-pill"></i> Eklem desteği</div>
+      </div>
+    </div>
+
+    <div class="card" style="margin:12px 16px 0;padding:14px">
+      <div class="row-flex" style="justify-content:space-between">
+        <span style="font-size:14px;font-weight:600;color:var(--ink)">Kilo Takibi</span>
+        <span style="font-size:12px;color:var(--ink-3)">Son 6 ay</span>
+      </div>
+      <svg width="100%" viewBox="0 0 320 110" style="margin-top:8px">
+        <line x1="10" y1="90" x2="310" y2="90" stroke="#E5E1F8" stroke-width="1"/>
+        <polyline points="20,62 78,56 136,50 194,42 252,34 300,28" fill="none" stroke="#534AB7" stroke-width="2" stroke-linecap="round"/>
+        <circle cx="20" cy="62" r="3.5" fill="#534AB7"/><circle cx="78" cy="56" r="3.5" fill="#534AB7"/>
+        <circle cx="136" cy="50" r="3.5" fill="#534AB7"/><circle cx="194" cy="42" r="3.5" fill="#534AB7"/>
+        <circle cx="252" cy="34" r="3.5" fill="#534AB7"/><circle cx="300" cy="28" r="4.5" fill="#534AB7"/>
+        <text x="20" y="104" font-size="10" fill="#888780" text-anchor="middle">Şub</text>
+        <text x="78" y="104" font-size="10" fill="#888780" text-anchor="middle">Mar</text>
+        <text x="136" y="104" font-size="10" fill="#888780" text-anchor="middle">Nis</text>
+        <text x="194" y="104" font-size="10" fill="#888780" text-anchor="middle">May</text>
+        <text x="252" y="104" font-size="10" fill="#888780" text-anchor="middle">Haz</text>
+        <text x="300" y="104" font-size="10" fill="#888780" text-anchor="middle">Tem</text>
+        <text x="300" y="16" font-size="11" fill="#3C3489" text-anchor="middle" font-weight="600">18,5</text>
+      </svg>
+    </div>
+
+    <div class="section-title" style="padding:16px 16px 0">Aktif İlaçlar</div>
+    <div class="card list-card">
+      <div class="list-row">
+        <div class="sq-icon" style="background:var(--amber-50);color:var(--amber-600)"><i class="ti ti-pill"></i></div>
+        <div style="flex:1"><div class="t1">Eklem Destek Tableti</div><div class="t2">Günde 1 • Sabah mamayla</div></div>
+        <span class="badge b-green">Devam</span>
+      </div>
+    </div>
+
+    <div class="section-title" style="padding:16px 16px 0">Alerjiler</div>
+    <div class="chips" style="padding-top:8px">
+      <span class="badge b-red" style="padding:6px 12px"><i class="ti ti-alert-triangle" style="font-size:12px"></i> Tavuk eti</span>
+      <span class="badge b-red" style="padding:6px 12px"><i class="ti ti-alert-triangle" style="font-size:12px"></i> Soya</span>
+    </div>
+
+    <div class="section-title" style="padding:16px 16px 0">Veteriner Geçmişi</div>
+    <div class="card list-card" style="margin-bottom:16px">
+      <div class="list-row">
+        <div class="sq-icon" style="background:var(--purple-50);color:var(--purple-600)"><i class="ti ti-stethoscope"></i></div>
+        <div style="flex:1"><div class="t1">Genel Kontrol</div><div class="t2">20 Haziran 2024 • Dr. Ayşe Yılmaz</div></div>
+        <i class="ti ti-chevron-right" style="color:var(--ink-3);font-size:16px"></i>
+      </div>
+      <div class="list-row">
+        <div class="sq-icon" style="background:var(--purple-50);color:var(--purple-600)"><i class="ti ti-vaccine"></i></div>
+        <div style="flex:1"><div class="t1">Karma Aşı Uygulaması</div><div class="t2">12 Mayıs 2024 • Pati Veteriner Kliniği</div></div>
+        <i class="ti ti-chevron-right" style="color:var(--ink-3);font-size:16px"></i>
+      </div>
+      <div class="list-row">
+        <div class="sq-icon" style="background:var(--purple-50);color:var(--purple-600)"><i class="ti ti-scissors"></i></div>
+        <div style="flex:1"><div class="t1">Kısırlaştırma Operasyonu</div><div class="t2">3 Ekim 2023 • Pati Veteriner Kliniği</div></div>
+        <i class="ti ti-chevron-right" style="color:var(--ink-3);font-size:16px"></i>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ═══════════ ALT MENÜ ═══════════ -->
+<div class="navbar">
+  <button class="nav-item"><i class="ti ti-map"></i><div>Harita</div></button>
+  <button class="nav-item"><i class="ti ti-home"></i><div>Akış</div></button>
+  <button class="nav-item"><i class="ti ti-paw"></i><div>Hayvanlar</div></button>
+  <button class="nav-item on" onclick="go('home')"><i class="ti ti-heart"></i><div>Evcilim</div></button>
+  <button class="nav-item"><i class="ti ti-user"></i><div>Hesap</div></button>
+</div>
+
+</div>
+
+<script>
+// ── Ekran geçişleri ──
+function go(name){
+  document.querySelectorAll('.screen').forEach(s => s.classList.remove('active'));
+  document.getElementById('scr-' + name).classList.add('active');
+  document.querySelector('.phone .content') && (document.querySelector('#scr-'+name+' .content').scrollTop = 0);
+}
+
+// ── Aşılar: veri + filtre ──
+const vaccines = [
+  {name:'Karma Aşı (DHPPi)', done:'12 Mayıs 2024', next:'12 Mayıs 2025', status:'Güncel'},
+  {name:'Kuduz Aşısı', done:'12 Ağustos 2023', next:'12 Ağustos 2024', status:'Yaklaşıyor'},
+  {name:'İç Parazit', done:'20 Haziran 2024', next:'20 Eylül 2024', status:'Güncel'},
+  {name:'Dış Parazit', done:'20 Haziran 2024', next:'20 Temmuz 2024', status:'Güncel'}
+];
+const vacBadge = {'Güncel':'b-green','Yaklaşıyor':'b-amber','Gecikmiş':'b-red'};
+let vacFilter = 'Tümü';
+function renderVaccines(){
+  const chips = ['Tümü','Güncel','Yaklaşan','Gecikmiş'];
+  document.getElementById('vac-chips').innerHTML = chips.map(c =>
+    `<button class="fchip ${c===vacFilter?'on':''}" onclick="vacFilter='${c}';renderVaccines()">${c}</button>`).join('');
+  const map = {'Yaklaşan':'Yaklaşıyor'};
+  const target = map[vacFilter] || vacFilter;
+  const rows = vaccines.filter(v => vacFilter==='Tümü' || v.status===target);
+  document.getElementById('vac-list').innerHTML = rows.length ? rows.map(v => `
+    <div class="vac-card">
+      <div class="row-flex" style="gap:10px">
+        <div class="sq-icon" style="background:var(--blue-50);color:var(--blue-600);border-radius:50%"><i class="ti ti-vaccine"></i></div>
+        <span style="flex:1;font-size:14px;font-weight:600;color:var(--ink)">${v.name}</span>
+        <span class="badge ${vacBadge[v.status]}">${v.status}</span>
+      </div>
+      <div class="vac-dates">
+        <div><div class="dl">Yapılma Tarihi</div><div class="dv">${v.done}</div></div>
+        <div><div class="dl">Sonraki Tarih</div><div class="dv">${v.next}</div></div>
+        <i class="ti ti-chevron-right" style="color:var(--ink-3);font-size:16px;margin-left:auto"></i>
+      </div>
+    </div>`).join('') : `<div class="empty">Bu filtrede aşı kaydı yok</div>`;
+}
+
+// ── Belgeler: veri + filtre ──
+const docs = [
+  {name:'Aşı Karnesi', cat:'Sağlık', date:'20 Haziran 2024', type:'PDF', size:'1,2 MB', icon:'ti-file-text', bg:'var(--red-50)', fg:'var(--red-600)'},
+  {name:'Mikroçip Sertifikası', cat:'Kimlik', date:'15 Mayıs 2022', type:'PDF', size:'340 KB', icon:'ti-id', bg:'var(--blue-50)', fg:'var(--blue-600)'},
+  {name:'Kısırlaştırma Raporu', cat:'Sağlık', date:'3 Ekim 2023', type:'PDF', size:'890 KB', icon:'ti-file-text', bg:'var(--red-50)', fg:'var(--red-600)'},
+  {name:'Sahiplenme Sözleşmesi', cat:'Kimlik', date:'15 Mayıs 2022', type:'JPG', size:'2,1 MB', icon:'ti-photo', bg:'var(--blue-50)', fg:'var(--blue-600)'},
+  {name:'Pet Sigorta Poliçesi', cat:'Sigorta', date:'1 Ocak 2024', type:'PDF', size:'640 KB', icon:'ti-shield-check', bg:'var(--green-50)', fg:'var(--green-600)'}
+];
+let docFilter = 'Tümü';
+function renderDocs(){
+  const chips = ['Tümü','Sağlık','Kimlik','Sigorta'];
+  document.getElementById('doc-chips').innerHTML = chips.map(c =>
+    `<button class="fchip ${c===docFilter?'on':''}" onclick="docFilter='${c}';renderDocs()">${c}</button>`).join('');
+  const rows = docs.filter(d => docFilter==='Tümü' || d.cat===docFilter);
+  document.getElementById('doc-list').innerHTML = rows.length ? rows.map(d => `
+    <div class="card list-row" style="margin:0 16px 10px;border-radius:16px">
+      <div class="sq-icon" style="background:${d.bg};color:${d.fg}"><i class="ti ${d.icon}"></i></div>
+      <div style="flex:1;min-width:0"><div class="t1">${d.name}</div><div class="t2">${d.date} • ${d.type} • ${d.size}</div></div>
+      <span class="badge b-purple">${d.cat}</span>
+      <i class="ti ti-chevron-right" style="color:var(--ink-3);font-size:16px"></i>
+    </div>`).join('') : `<div class="empty">Bu kategoride belge yok</div>`;
+}
+
+// ── Belge yükleme ──
+const uploadCats = [['Sağlık','ti-heartbeat'],['Kimlik','ti-id'],['Sigorta','ti-shield-check'],['Diğer','ti-folder']];
+let selCat = 'Sağlık', filePicked = false;
+function renderUploadCats(){
+  document.getElementById('upload-cats').innerHTML = uploadCats.map(([c,ic]) =>
+    `<button class="fchip ${c===selCat?'on':''}" onclick="selCat='${c}';renderUploadCats()"><i class="ti ${ic}" style="font-size:13px"></i> ${c}</button>`).join('');
+}
+function pickFile(){
+  filePicked = true;
+  const p = document.getElementById('file-preview');
+  p.style.display = 'block';
+  p.innerHTML = `<div class="card list-row" style="border-radius:14px">
+    <div class="sq-icon" style="background:var(--red-50);color:var(--red-600)"><i class="ti ti-file-text"></i></div>
+    <div style="flex:1"><div class="t1">asi-karnesi.pdf</div><div class="t2">1,2 MB • Yüklendi</div></div>
+    <i class="ti ti-check" style="color:var(--green-600);font-size:18px"></i></div>`;
+}
+function saveDoc(){
+  const btn = document.getElementById('save-doc');
+  if(!filePicked){
+    btn.textContent = 'Önce bir dosya seçin'; btn.style.background = 'var(--red-400)';
+    setTimeout(()=>{ btn.textContent='Belgeyi Kaydet'; btn.style.background='var(--purple-600)'; },1600);
+    return;
+  }
+  btn.textContent = 'Belge kaydedildi ✓'; btn.style.background = 'var(--green-600)';
+  setTimeout(()=>{ btn.textContent='Belgeyi Kaydet'; btn.style.background='var(--purple-600)'; go('docs'); },1200);
+}
+
+renderVaccines(); renderDocs(); renderUploadCats();
+</script>
+</body>
+</html>
