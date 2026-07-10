@@ -1,0 +1,145 @@
+Mevcut “İlanlarım” kart tasarımını referans görseldeki düzene göre yeniden tasarla.
+
+ÖNEMLİ:
+- Sadece ilan kartını güncelle.
+- Mevcut veritabanı, ilan verileri, buton fonksiyonları ve backend bağlantıları bozulmasın.
+- Mobil ve web görünümünde responsive çalışsın.
+- Kartın dışına ayrı bir “İlanı Öne Çıkar” alanı ekleme.
+- “İlanı Öne Çıkar” bölümü doğrudan kartın içinde yer alsın.
+
+KART YAPISI
+
+1. Ana kart
+- Beyaz arka plan
+- 20px border-radius
+- Çok hafif mor/gri border
+- Yumuşak ve düşük yoğunluklu gölge
+- İçerikler kart sınırları içerisinde hizalı olsun
+- Taşma, üst üste binme veya kesilme olmasın
+
+2. Üst durum alanı
+Kartın en üstünde:
+- Sol üstte yeşil “Aktif” etiketi
+- İçerisinde yeşil onay ikonu
+- Sağ üstte gri “0–3 ay” etiketi
+- Etiketler ilan görselinin üzerinde veya görsel alanının üst boşluğunda konumlandırılabilir
+- İki etiket aynı yatay hizada olsun
+
+3. İlan görseli
+- Kartın üst bölümünde geniş ilan görseli
+- 16:9 veya mevcut karta uygun yatay oran
+- Görselde object-fit: cover kullan
+- Görsel köşeleri 14px yuvarlak olsun
+- Görsel boşsa mevcut placeholder yapısını koru
+
+4. İlan bilgileri
+Görselin altında:
+- İlan başlığı koyu mor ve kalın
+- Alt satırda sol tarafta konum ikonu ve şehir/ilçe bilgisi
+- Aynı satırın sağında ilan yayınlanma zamanı
+- Örnek: “32 dk önce”
+- Başlık çok uzunsa tek veya iki satırdan sonra ellipsis kullan
+
+5. İstatistik alanı
+Bir sonraki satırda:
+- Görüntülenme sayısı
+- Beğeni sayısı
+- Mesaj/yorum sayısı
+- Her biri küçük, yumuşak renkli pill badge şeklinde olsun
+- Görüntülenme mor
+- Beğeni açık kırmızı
+- Mesaj açık mavi
+- Sağ tarafta “Performans” dropdown butonu olsun
+- Mobilde alan daralırsa düzgün şekilde wrap olabilir ancak hizalama bozulmasın
+
+6. Kart içi “İlanı Öne Çıkar” alanı
+İstatistiklerin hemen altında, kartın içinde ayrı bir yatay tanıtım kutusu oluştur.
+
+Bu alan:
+- Açık mor veya çok açık lavanta arka plan
+- 14px border-radius
+- İnce mor border
+- İç padding: 14–16px
+- Kartın iç genişliğini kullansın
+
+Sol tarafta:
+- Yuvarlak ikon alanı
+- İçinde roket ikonu
+- Yanında kalın başlık:
+  “İlanını öne çıkar”
+- Altında açıklama:
+  “Daha fazla kişiye ulaş, daha hızlı sat!”
+
+Sağ tarafta:
+- Mor gradient arka planlı buton
+- Buton yazısı: “Öne Çıkar”
+- Solunda yıldız/parıltı ikonu
+- Buton yüksekliği yaklaşık 44–48px
+- Border-radius 14px
+- Tıklanınca mevcut ilan öne çıkarma ekranı, modalı veya satın alma akışı açılsın
+- Buton sahte veya pasif bırakılmasın
+
+Mobil görünüm:
+- Metin alanı ve buton yan yana sığmıyorsa alt alta geçsin
+- Buton tam genişlik olabilir
+- Roket ikonu, metin ve buton birbirine yapışmasın
+
+7. Alt işlem butonları
+Öne çıkarma kutusunun altında ince bir ayırıcı çizgi kullan.
+
+Alt bölümde:
+- “Düzenle” butonu
+- “Önizle” butonu
+- Sağ tarafta üç nokta menüsü
+- Düzenle ve Önizle butonları eşit genişlikte olsun
+- Butonlar outline tasarımda olsun
+- Düzenle butonu mor tonlu
+- Önizle butonu nötr gri/mor tonlu
+- Üç nokta menüsünü ince dikey ayırıcı ile ayır
+
+RESPONSIVE KURALLARI
+
+Web:
+- Kart maksimum genişlikte aşırı büyümesin
+- max-width kullan
+- İçerik ortalanmış ve dengeli olsun
+- Öne çıkarma alanı yatay düzende kalsın
+
+Tablet:
+- İç boşlukları biraz azalt
+- İstatistikler ve performans butonu düzgün hizalansın
+
+Mobil:
+- Kart ekran genişliğine göre küçülsün
+- Sağdan ve soldan 12–16px boşluk bırak
+- Öne çıkarma alanı gerekirse dikey olsun
+- Butonlar taşmasın
+- Yazılar kesilmesin
+- Üç nokta menüsü kart dışında kalmasın
+
+TASARIM STİLİ
+- Modern
+- Premium
+- Temiz
+- Sahibinden ilan yönetimi ile Instagram kart düzeninin birleşimi
+- Ana vurgu rengi mor
+- Çok ağır gölge, koyu border veya kalabalık görünüm kullanma
+- Referans görseldeki hiyerarşiyi koru
+
+TEKNİK KURALLAR
+- Mevcut component yapısını incele ve tekrar kullanılabilir componentler oluştur.
+- Önerilen componentler:
+  ListingCard
+  ListingStatusBadges
+  ListingStats
+  PromoteListingBanner
+  ListingActions
+- Mevcut ikon kütüphanesini kullan.
+- Yeni ikon paketi yükleme.
+- Inline style kullanma.
+- Projedeki mevcut styling sistemini kullan: Tailwind CSS / StyleSheet / CSS Module hangisi aktifse ona göre ilerle.
+- Web ve mobil için platform uyumlu kod yaz.
+- Mevcut onEdit, onPreview, onPromote, onPerformance ve menu fonksiyonlarını koru.
+- TypeScript hatası bırakma.
+- Console error veya warning bırakma.
+- İşlem tamamlandıktan sonra web görünümünü ve mobil görünümü kontrol et.
