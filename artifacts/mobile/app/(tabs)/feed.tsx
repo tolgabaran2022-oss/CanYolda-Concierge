@@ -29,6 +29,7 @@ import { CommentSheet } from "@/components/CommentSheet";
 import { StoryBar } from "@/components/StoryBar";
 import { StoryViewer } from "@/components/StoryViewer";
 import { CreateStoryModal } from "@/components/CreateStoryModal";
+import { ShareSelectionSheet } from "@/components/ShareSelectionSheet";
 import { useAuth } from "@/contexts/AuthContext";
 import { useTheme } from "@/hooks/useTheme";
 import {
@@ -363,6 +364,7 @@ export default function FeedScreen() {
   const [stories,            setStories]            = useState<ApiStoryGroup[]>([]);
   const [storyViewerOpen,    setStoryViewerOpen]    = useState(false);
   const [selectedGroup,      setSelectedGroup]      = useState<ApiStoryGroup | null>(null);
+  const [shareSheetOpen,     setShareSheetOpen]     = useState(false);
   const [createVisible,      setCreateVisible]      = useState(false);
   const [createStoryOpen,    setCreateStoryOpen]    = useState(false);
   const [editTarget,         setEditTarget]         = useState<PostData | null>(null);
@@ -728,7 +730,7 @@ export default function FeedScreen() {
         <FeedHeader
           onNotify={() => router.push("/notifications")}
           onSearch={() => router.push("/search")}
-          onNewPost={() => setCreateVisible(true)}
+          onNewPost={() => setShareSheetOpen(true)}
           onAvatarPress={() => router.push("/(tabs)/profile")}
           avatarUrl={user?.avatar ?? undefined}
           unreadCount={unreadCount}
@@ -739,7 +741,7 @@ export default function FeedScreen() {
           currentUserAvatar={user?.avatar ?? undefined}
           currentUserName={user?.name ?? undefined}
           onPressGroup={handleStoryGroupPress}
-          onAddStory={() => setCreateStoryOpen(true)}
+          onAddStory={() => setShareSheetOpen(true)}
         />
         <View style={[F.tabBar, { backgroundColor: T.tabBar, borderBottomColor: T.tabBarBorder }]}>
           <Pressable
@@ -848,6 +850,13 @@ export default function FeedScreen() {
         visible={createStoryOpen}
         onClose={() => setCreateStoryOpen(false)}
         onSubmit={handleCreateStory}
+      />
+
+      <ShareSelectionSheet
+        visible={shareSheetOpen}
+        onClose={() => setShareSheetOpen(false)}
+        onSelectStory={() => setCreateStoryOpen(true)}
+        onSelectPost={() => setCreateVisible(true)}
       />
     </View>
   );

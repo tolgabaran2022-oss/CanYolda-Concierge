@@ -1,0 +1,250 @@
+Akış ekranında sol üstte bulunan “Hikayen” artı butonunu Instagram mantığında çalışan ortak paylaşım butonuna dönüştür.
+
+Kullanıcı sol üstteki yuvarlak “+” ikonuna bastığında doğrudan hikâye yükleme ekranı açılmasın. Bunun yerine ekranın altından açılan bir seçim menüsü gösterilsin.
+
+SEÇİM MENÜSÜ:
+
+Başlık:
+“Yeni Paylaşım”
+
+Altında iki büyük seçenek bulunsun:
+
+1. Hikâye
+   - İkon: yuvarlak hikâye veya kamera ikonu
+   - Açıklama: “24 saat boyunca görünen bir hikâye paylaş”
+   - Kullanıcı buna bastığında hikâye oluşturma ekranı açılsın.
+
+2. Gönderi
+   - İkon: fotoğraf veya gönderi ikonu
+   - Açıklama: “Profilinde ve akışta kalıcı bir gönderi paylaş”
+   - Kullanıcı buna bastığında gönderi oluşturma ekranı açılsın.
+
+Alt kısımda:
+- “Vazgeç” butonu bulunsun.
+- Menü dışına dokunulduğunda menü kapansın.
+- Android geri tuşuna basıldığında menü kapansın.
+
+TASARIM:
+
+- Menü ekranın altından açılan modern bir Bottom Sheet veya Action Sheet şeklinde olsun.
+- Arka plan hafif karartılsın.
+- Üst köşeler 28–32 px yuvarlak olsun.
+- Üst orta bölümde küçük gri sürükleme çubuğu bulunsun.
+- Seçenekler beyaz veya açık lila kartlar şeklinde tasarlansın.
+- Seçenek ikonlarında uygulamanın mevcut mor rengi kullanılsın.
+- Mevcut CanYoldaşı tasarım dili korunsun.
+- Menü açılırken ve kapanırken akıcı animasyon kullanılsın.
+- Menü, alt navigasyonun arkasında kalmasın.
+- Safe Area değerlerine uygun çalışsın.
+
+HİKÂYE PAYLAŞMA AKIŞI:
+
+Kullanıcı “Hikâye” seçeneğine bastığında:
+
+1. Kamera veya galeriden medya seçme ekranı açılsın.
+2. Kullanıcı şu kaynaklardan seçim yapabilsin:
+   - Fotoğraf çek
+   - Galeriden seç
+   - Vazgeç
+3. Kamera ve galeri izinleri yalnızca kullanıcı ilgili seçeneğe bastığında istensin.
+4. Seçilen medya tam ekran hikâye önizlemesinde gösterilsin.
+5. Kullanıcı paylaşmadan önce:
+   - Metin ekleyebilsin
+   - Metnin konumunu değiştirebilsin
+   - Gerekirse medyayı yeniden seçebilsin
+6. “Hikâyende Paylaş” butonu bulunsun.
+7. Yükleme sırasında progress veya loading gösterilsin.
+8. Hikâye başarıyla yüklendiğinde seçim ekranı kapansın ve Akış sayfasına dönülsün.
+9. Kullanıcının profil resmi hikâye bölümünde mor halka ile gösterilsin.
+10. Kullanıcı kendi hikâye yuvarlağına bastığında paylaştığı hikâyeyi tam ekran görebilsin.
+11. Kullanıcı birden fazla hikâye paylaşabilsin.
+12. Hikâyeler paylaşım zamanına göre sıralansın.
+13. Hikâyeler 24 saat sonra otomatik olarak aktif listeden çıkarılsın.
+14. Kullanıcının izlediği hikâyenin halkası soluk veya gri görünsün.
+15. Hikâye ekranında:
+    - Üstte ilerleme çizgisi
+    - Kullanıcı profil resmi
+    - Kullanıcı adı
+    - Paylaşım zamanı
+    - Kapatma butonu
+    bulunsun.
+16. Ekranın sağına dokununca sonraki hikâyeye, soluna dokununca önceki hikâyeye geçsin.
+17. Basılı tutulduğunda hikâye duraklasın.
+18. Kendi hikâyesinde silme seçeneği bulunsun.
+
+Hikâye süresi yalnızca arayüzde gizlenerek yönetilmesin. Veritabanı sorgularında:
+
+created_at > now() - interval '24 hours'
+
+mantığıyla sadece aktif hikâyeler çekilsin.
+
+GÖNDERİ PAYLAŞMA AKIŞI:
+
+Kullanıcı “Gönderi” seçeneğine bastığında:
+
+1. Kamera veya galeriden fotoğraf seçebilsin.
+2. Mümkünse birden fazla fotoğraf seçimi desteklensin.
+3. Seçilen fotoğraflar paylaşım önizlemesinde gösterilsin.
+4. Kullanıcı açıklama yazabilsin.
+5. İsteğe bağlı konum ekleyebilsin.
+6. “Paylaş” butonu bulunsun.
+7. Fotoğraf seçilmeden gönderi paylaşılmasına izin verme.
+8. Açıklama alanında boşluklardan oluşan geçersiz metni temizle.
+9. Paylaşım sırasında butonu pasifleştir ve loading göster.
+10. Kullanıcının aynı gönderiyi iki kez paylaşmasını engelle.
+11. Yükleme tamamlandığında gönderi:
+    - Keşfet akışında
+    - Takip Ettiklerin akışında, kullanıcıyı takip eden kişiler için
+    - Kullanıcının profil gönderileri bölümünde
+    görünmeli.
+12. Yeni gönderi akışın en üstünde gösterilsin.
+13. Gönderide şu bilgiler bulunsun:
+    - Profil fotoğrafı
+    - Kullanıcı adı
+    - Konum
+    - Paylaşım zamanı
+    - Fotoğraf veya fotoğraflar
+    - Beğeni
+    - Yorum
+    - Paylaşma
+    - Kaydetme
+    - Açıklama
+14. Birden fazla fotoğraf varsa yatay kaydırılabilir carousel kullan.
+15. Fotoğraf göstergesi olarak sağ üstte “1/3” gibi sayaç veya altta noktalar göster.
+16. Kullanıcı kendi gönderisini silebilsin ve düzenleyebilsin.
+
+SOL ÜST PROFİL/HİKÂYE ALANI:
+
+Mevcut yuvarlak alanın davranışını şu şekilde düzenle:
+
+- Kullanıcının aktif hikâyesi yoksa:
+  - Profil fotoğrafı veya açık renkli placeholder göster.
+  - Sağ alt köşesinde küçük mor “+” rozeti göster.
+  - Altında “Hikayen” yazsın.
+  - Alana basıldığında “Hikâye / Gönderi” seçim menüsü açılsın.
+
+- Kullanıcının aktif hikâyesi varsa:
+  - Profil fotoğrafının çevresinde mor hikâye halkası göster.
+  - Profil fotoğrafına basıldığında önce kendi hikâyesi açılsın.
+  - Sağ alt köşedeki küçük “+” butonuna basıldığında yeni paylaşım menüsü açılsın.
+  - Kendi hikâyesi açıldığında ayrıca “Hikâye Ekle” seçeneği gösterilebilir.
+
+Bu sayede kullanıcı aktif hikâyesini görüntülemek isterken yanlışlıkla paylaşım menüsüne yönlendirilmesin.
+
+VERİTABANI VE SUPABASE:
+
+Mevcut Supabase altyapısını kullan. Var olan tablo ve servisleri önce kontrol et. Aynı iş için tekrar eden tablo oluşturma.
+
+Gerekirse hikâyeler için şu yapıya uygun tablo kullan:
+
+stories:
+- id
+- user_id
+- media_url
+- media_type
+- text_content
+- text_position
+- created_at
+- expires_at
+- is_deleted
+
+Hikâye görüntülenmeleri için:
+
+story_views:
+- id
+- story_id
+- viewer_id
+- viewed_at
+
+Gönderiler için mevcut posts tablosunu kullan. Eksikse şu alanları destekle:
+
+posts:
+- id
+- user_id
+- caption
+- location_name
+- created_at
+- updated_at
+
+Gönderi medyaları için:
+
+post_media:
+- id
+- post_id
+- media_url
+- media_type
+- sort_order
+- created_at
+
+MEDYA YÜKLEME:
+
+- Hikâye medyalarını Supabase Storage içinde uygun bir klasöre yükle.
+- Gönderi medyalarını ayrı klasör veya bucket yapısında yönet.
+- Dosya adlarında kullanıcı tarafından gelen orijinal dosya adını doğrudan kullanma.
+- Benzersiz dosya adı üret.
+- Yalnızca desteklenen fotoğraf ve video türlerine izin ver.
+- Maksimum dosya boyutu kontrolü yap.
+- Yükleme başarısız olursa yarım kalan veritabanı kaydını temizle.
+- Gönderi silindiğinde ilgili medya dosyalarını da güvenli şekilde kaldır.
+- Başka bir kullanıcının hikâyesini veya gönderisini silmesine izin verme.
+- Supabase RLS politikalarını kullanıcı sahipliğine göre düzenle.
+
+İZİNLER:
+
+Expo React Native kullanılıyorsa uygun şekilde:
+
+- expo-image-picker
+- expo-camera
+- expo-media-library
+
+paketlerini mevcut Expo sürümüne uyumlu şekilde kullan.
+
+Kamera veya galeri izni reddedilirse şu mesajı göster:
+
+“Fotoğraf paylaşabilmek için kamera veya galeri izni vermeniz gerekiyor.”
+
+İzin kalıcı olarak kapalıysa:
+- “Ayarlara Git”
+- “Vazgeç”
+
+butonlarını göster.
+
+HATA YÖNETİMİ:
+
+- İnternet yoksa kullanıcıya anlaşılır mesaj göster.
+- Yükleme başarısız olduğunda uygulama çökmesin.
+- Kullanıcının yazdığı açıklama yükleme hatasında kaybolmasın.
+- Tekrar dene seçeneği göster.
+- Medya yüklenirken sayfadan çıkılmaya çalışılırsa uyarı göster.
+- Gönderi veya hikâye başarıyla paylaşılmadan sahte başarı mesajı gösterme.
+- Veritabanı kaydı ve Storage yüklemesi gerçekten tamamlandıktan sonra başarı göster.
+
+PERFORMANS:
+
+- Hikâye ve gönderi yüklemeden önce görselleri makul ölçüde sıkıştır.
+- Büyük fotoğrafları doğrudan tam çözünürlükle akışa yükleme.
+- Thumbnail kullanılması gereken alanlarda optimize edilmiş küçük görsel kullan.
+- Hikâye ve gönderi listelerinde gereksiz yeniden renderları önle.
+- Akış sayfasını tamamen yeniden yüklemeden yeni gönderiyi listeye ekle.
+- React Query veya mevcut cache yapısını doğru şekilde güncelle.
+
+KABUL KRİTERLERİ:
+
+1. Sol üstteki artı alanına basılınca iki seçenek çıkıyor.
+2. Seçenekler “Hikâye” ve “Gönderi” olarak görünüyor.
+3. Hikâye seçildiğinde hikâye oluşturma ekranı açılıyor.
+4. Hikâye paylaşıldığında kullanıcının hikâye halkasında görünüyor.
+5. Hikâye tam ekran görüntülenebiliyor.
+6. Hikâye 24 saat sonra aktif listeden çıkıyor.
+7. Gönderi seçildiğinde gönderi oluşturma ekranı açılıyor.
+8. Gönderi paylaşıldığında Akış ve Profil sayfasında görünüyor.
+9. Takip eden kullanıcıların “Takip Ettiklerin” akışında gönderi görünüyor.
+10. Kamera ve galeri izinleri doğru çalışıyor.
+11. Yükleme sırasında loading gösteriliyor.
+12. Çift paylaşım oluşmuyor.
+13. Medya yükleme hatalarında uygulama çökmüyor.
+14. Alt navigasyon ve mevcut Akış tasarımı bozulmuyor.
+15. iOS ve Android üzerinde gerçek cihaz veya emulator ile test ediliyor.
+16. TypeScript, Expo, Supabase ve konsol hataları tamamen gideriliyor.
+
+Yalnızca seçim menüsünün görselini oluşturma. Hikâye ve gönderi paylaşma akışlarını veritabanı, Storage, izinler ve akış güncellemesiyle birlikte uçtan uca çalışır hale getir.
