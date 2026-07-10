@@ -13,12 +13,12 @@ Türkiye'deki sokak hayvanlarını raporlamak, takip etmek ve sahiplendirme ilan
 
 - pnpm workspaces, Node.js 24, TypeScript 5.9
 - Mobile: Expo SDK 54, expo-router, React Native 0.81
-- Persistence: AsyncStorage (no backend for first build)
+- Backend: Express + PostgreSQL (Drizzle ORM) — API server on port 8080
 - Maps: react-native-maps@1.18.0 (pinned — only version compatible with Expo Go)
 - Location: expo-location
 - Images: expo-image-picker, expo-image
 - UI: @expo/vector-icons, expo-linear-gradient, expo-blur, expo-haptics
-- Auth: Custom local auth with AsyncStorage
+- Auth: JWT-based auth (login/register via `/api/auth/*`, token stored in AsyncStorage)
 
 ## Where things live
 
@@ -32,11 +32,12 @@ Türkiye'deki sokak hayvanlarını raporlamak, takip etmek ve sahiplendirme ilan
 
 ## Architecture decisions
 
-- **AsyncStorage only** — no backend for the first build; all data persisted locally per device
+- **Full backend** — PostgreSQL via Drizzle ORM; all features persist server-side and sync across devices
 - **react-native-maps web stub** — react-native-maps@1.18.0 crashes on web due to codegenNativeCommands; a metro resolver override maps the module to a CJS stub on the `web` platform
 - **NativeTabs + liquid glass** — uses `isLiquidGlassAvailable()` for iOS 26+ liquid glass tab bars with classic BlurView fallback
-- **Auth via AsyncStorage** — simple email/password stored locally; no third-party auth for first build
+- **JWT auth** — email/password stored in PostgreSQL, JWT token in AsyncStorage; profile synced to social_profiles on login
 - **Context providers stacked** — Auth > Animals > Pets > Adoption > QueryClient > GestureHandler
+- **Schema migrations** — drizzle-kit push requires a TTY; use executeSql via code_execution tool for non-interactive schema changes
 
 ## Product
 

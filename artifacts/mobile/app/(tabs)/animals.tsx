@@ -4,6 +4,7 @@ import { LinearGradient } from "expo-linear-gradient";
 import { useRouter } from "expo-router";
 import React, { useCallback, useMemo, useRef, useState } from "react";
 import {
+  ActivityIndicator,
   Animated,
   FlatList,
   Platform,
@@ -108,7 +109,7 @@ export default function AnimalsScreen() {
   const insets        = useSafeAreaInsets();
   const { width: SW } = useWindowDimensions();
   const router        = useRouter();
-  const { animals }   = useAnimals();
+  const { animals, isLoading } = useAnimals();
   const [filter, setFilter] = useState<FilterKey>("all");
 
   const filtered   = useMemo(() => filterAnimals(animals, filter), [animals, filter]);
@@ -226,6 +227,14 @@ export default function AnimalsScreen() {
       </View>
     </>
   );
+
+  if (isLoading) {
+    return (
+      <View style={{ flex: 1, backgroundColor: T.bg, alignItems: "center", justifyContent: "center" }}>
+        <ActivityIndicator size="large" color={PURPLE} />
+      </View>
+    );
+  }
 
   return (
     <View style={{ flex: 1, backgroundColor: T.bg }}>

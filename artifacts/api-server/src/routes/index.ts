@@ -10,6 +10,8 @@ import usersRouter from "./users.js";
 import petsRouter from "./pets.js";
 import messagesRouter from "./messages.js";
 import listingsRouter from "./listings.js";
+import animalsRouter from "./animals.js";
+import adoptionRouter from "./adoption.js";
 
 const router: IRouter = Router();
 
@@ -24,5 +26,7 @@ router.use(usersRouter);
 router.use(petsRouter);
 router.use(messagesRouter);
 router.use(listingsRouter);
+router.use(animalsRouter);
+router.use(adoptionRouter);
 
 export default router;

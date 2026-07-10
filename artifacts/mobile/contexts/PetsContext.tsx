@@ -6,7 +6,6 @@ import React, {
   useEffect,
   useState,
 } from "react";
-import { generateId } from "@/utils/formatters";
 
 export interface Pet {
   id: string;
@@ -23,6 +22,9 @@ export interface Pet {
 
 interface PetsContextType {
   pets: Pet[];
+  isLoading: boolean;
+  error: string | null;
+  refresh: () => Promise<void>;
   addPet: (pet: Omit<Pet, "id" | "createdAt">) => Promise<void>;
   updatePet: (id: string, updates: Partial<Pet>) => Promise<void>;
   deletePet: (id: string) => Promise<void>;
@@ -30,47 +32,131 @@ interface PetsContextType {
 }
 
 const PetsContext = createContext<PetsContextType | null>(null);
-const PETS_KEY = "@canyoldasi:pets";
+const TOKEN_KEY = "@canyoldasi:jwt";
+
+const API_BASE = process.env.EXPO_PUBLIC_DOMAIN
+  ? `https://${process.env.EXPO_PUBLIC_DOMAIN}/api`
+  : "http://localhost:8080/api";
+
+async function apiFetch(path: string, opts: RequestInit = {}): Promise<Response> {
+  const token = await AsyncStorage.getItem(TOKEN_KEY);
+  const headers: Record<string, string> = {
+    "Content-Type": "application/json",
+    ...(opts.headers as Record<string, string> ?? {}),
+  };
+  if (token) headers["Authorization"] = `Bearer ${token}`;
+  return fetch(`${API_BASE}${path}`, { ...opts, headers });
+}
+
+function mapFromApi(raw: Record<string, unknown>): Pet {
+  return {
+    id:              String(raw.id ?? ""),
+    name:            String(raw.name ?? ""),
+    type:            String(raw.type ?? ""),
+    breed:           raw.breed ? String(raw.breed) : undefined,
+    age:             raw.age ? String(raw.age) : undefined,
+    image:           raw.avatarUrl ? String(raw.avatarUrl) : undefined,
+    vaccinationInfo: String(raw.vaccinationInfo ?? ""),
+    feedingNotes:    String(raw.feedingNotes ?? ""),
+    userId:          String(raw.ownerId ?? ""),
+    createdAt:       raw.createdAt ? String(raw.createdAt) : new Date().toISOString(),
+  };
+}
 
 export function PetsProvider({ children }: { children: React.ReactNode }) {
-  const [pets, setPets] = useState<Pet[]>([]);
+  const [pets, setPets]           = useState<Pet[]>([]);
+  const [isLoading, setIsLoading] = useState(true);
+  const [error, setError]         = useState<string | null>(null);
+  const [userId, setUserId]       = useState<string | null>(null);
 
   useEffect(() => {
-    AsyncStorage.getItem(PETS_KEY).then((data) => {
-      if (data) setPets(JSON.parse(data));
+    AsyncStorage.getItem("@canyoldasi:auth").then((data) => {
+      if (data) {
+        const parsed = JSON.parse(data) as { id: string };
+        setUserId(parsed.id ?? null);
+      }
     });
   }, []);
 
-  const save = useCallback(async (updated: Pet[]) => {
-    setPets(updated);
-    await AsyncStorage.setItem(PETS_KEY, JSON.stringify(updated));
-  }, []);
+  const fetchPets = useCallback(async () => {
+    if (!userId) { setIsLoading(false); return; }
+    try {
+      setError(null);
+      const res = await apiFetch("/pets", {
+        headers: { "x-user-id": userId },
+      });
+      if (!res.ok) throw new Error("Sunucu hatası");
+      const data = await res.json() as Array<Record<string, unknown>>;
+      setPets(data.map(mapFromApi));
+    } catch {
+      setError("Evcil hayvanlar yüklenemedi");
+    } finally {
+      setIsLoading(false);
+    }
+  }, [userId]);
+
+  useEffect(() => { fetchPets(); }, [fetchPets]);
 
   const addPet = useCallback(
     async (pet: Omit<Pet, "id" | "createdAt">) => {
-      const newPet: Pet = {
-        ...pet,
-        id: generateId(),
-        createdAt: new Date().toISOString(),
-      };
-      await save([newPet, ...pets]);
+      const res = await apiFetch("/pets", {
+        method: "POST",
+        headers: { "x-user-id": pet.userId },
+        body: JSON.stringify({
+          name:            pet.name,
+          type:            pet.type,
+          breed:           pet.breed ?? "",
+          age:             pet.age ?? "",
+          avatarUrl:       pet.image ?? "",
+          vaccinationInfo: pet.vaccinationInfo,
+          feedingNotes:    pet.feedingNotes,
+        }),
+      });
+      const data = await res.json() as Record<string, unknown>;
+      if (!res.ok) throw new Error(String(data.error ?? "Evcil hayvan eklenemedi"));
+
+      const newPet = mapFromApi(data);
+      setPets((prev) => [newPet, ...prev]);
     },
-    [pets, save]
+    []
   );
 
   const updatePet = useCallback(
     async (id: string, updates: Partial<Pet>) => {
-      await save(pets.map((p) => (p.id === id ? { ...p, ...updates } : p)));
+      const userId = updates.userId ?? pets.find((p) => p.id === id)?.userId ?? "";
+      const res = await apiFetch(`/pets/${id}`, {
+        method: "PATCH",
+        headers: { "x-user-id": userId },
+        body: JSON.stringify({
+          name:            updates.name,
+          type:            updates.type,
+          breed:           updates.breed,
+          age:             updates.age,
+          avatarUrl:       updates.image,
+          vaccinationInfo: updates.vaccinationInfo,
+          feedingNotes:    updates.feedingNotes,
+        }),
+      });
+      const data = await res.json() as Record<string, unknown>;
+      if (!res.ok) throw new Error(String(data.error ?? "Evcil hayvan güncellenemedi"));
+
+      setPets((prev) =>
+        prev.map((p) => (p.id === id ? mapFromApi(data) : p))
+      );
     },
-    [pets, save]
+    [pets]
   );
 
-  const deletePet = useCallback(
-    async (id: string) => {
-      await save(pets.filter((p) => p.id !== id));
-    },
-    [pets, save]
-  );
+  const deletePet = useCallback(async (id: string) => {
+    const userId = pets.find((p) => p.id === id)?.userId ?? "";
+    const res = await apiFetch(`/pets/${id}`, {
+      method: "DELETE",
+      headers: { "x-user-id": userId },
+    });
+    const data = await res.json() as Record<string, unknown>;
+    if (!res.ok) throw new Error(String(data.error ?? "Evcil hayvan silinemedi"));
+    setPets((prev) => prev.filter((p) => p.id !== id));
+  }, [pets]);
 
   const getPet = useCallback(
     (id: string) => pets.find((p) => p.id === id),
@@ -78,7 +164,7 @@ export function PetsProvider({ children }: { children: React.ReactNode }) {
   );
 
   return (
-    <PetsContext.Provider value={{ pets, addPet, updatePet, deletePet, getPet }}>
+    <PetsContext.Provider value={{ pets, isLoading, error, refresh: fetchPets, addPet, updatePet, deletePet, getPet }}>
       {children}
     </PetsContext.Provider>
   );

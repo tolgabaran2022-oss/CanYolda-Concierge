@@ -3,3 +3,4 @@
 - [Stripe connector field names](stripe-connector-fields.md) — Replit Stripe connector settings uses `secret` and `publishable`, NOT `secret_key`/`webhook_secret`
 - [stripe-replit-sync esbuild external](stripe-replit-sync-external.md) — must be in esbuild external list or `__dirname` resolves wrong and migration SQL files are not found
 - [Stripe boost packages direct query](stripe-boost-packages-query.md) — syncBackfill unreliable in dev; query packages directly via Stripe API in storage layer
+- [Animals & Adoption backend migration](animals-adoption-backend.md) — stray_animals/animal_interactions/animal_comments/adoption_listings tables added; /api/animals and /api/adoption routes; drizzle-kit push needs TTY so use executeSql directly

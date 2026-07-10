@@ -6,7 +6,6 @@ import React, {
   useEffect,
   useState,
 } from "react";
-import { generateId } from "@/utils/formatters";
 import type { AnimalType } from "@/utils/animalDefaults";
 
 export type AnimalStatus = "hungry" | "injured" | "healthy" | "unknown";
@@ -39,218 +38,206 @@ export interface StrayAnimal {
 
 interface AnimalsContextType {
   animals: StrayAnimal[];
+  isLoading: boolean;
+  error: string | null;
+  refresh: () => Promise<void>;
   addAnimal: (
-    animal: Omit<
-      StrayAnimal,
-      "id" | "timestamp" | "fedByUsers" | "needsHelpByUsers" | "comments"
-    >
+    animal: Omit<StrayAnimal, "id" | "timestamp" | "fedByUsers" | "needsHelpByUsers" | "comments">
   ) => Promise<void>;
   toggleFed: (id: string, userId: string) => Promise<void>;
   toggleNeedsHelp: (id: string, userId: string) => Promise<void>;
-  addComment: (
-    id: string,
-    comment: Omit<AnimalComment, "id" | "timestamp">
-  ) => Promise<void>;
+  addComment: (id: string, comment: Omit<AnimalComment, "id" | "timestamp">) => Promise<void>;
   getAnimal: (id: string) => StrayAnimal | undefined;
 }
 
 const AnimalsContext = createContext<AnimalsContextType | null>(null);
-const ANIMALS_KEY = "@canyoldasi:animals";
+const TOKEN_KEY = "@canyoldasi:jwt";
 
-const SEED: StrayAnimal[] = [
-  {
-    id: "seed-1",
-    image: "https://loremflickr.com/600/400/dog,stray?lock=301",
-    animalType: "kopek",
-    locationName: "Eyüp, İstanbul",
-    latitude: 41.0082,
-    longitude: 28.9784,
-    status: "hungry",
-    notes: "Köprü altında bekliyor, düzenli mama verilmesi gerekiyor",
-    timestamp: new Date(Date.now() - 3600000).toISOString(),
-    userId: "system",
-    userName: "Ayşe Y.",
-    fedByUsers: ["user2"],
-    needsHelpByUsers: [],
-    comments: [
-      { id: "c-s1-1", userId: "user3", userName: "Zeynep A.", text: "Bu sabah mama bıraktım, iyiydi.", timestamp: new Date(Date.now() - 1800000).toISOString() },
-      { id: "c-s1-2", userId: "user4", userName: "Murat K.", text: "Akşam da bakacağım.", timestamp: new Date(Date.now() - 600000).toISOString() },
-      { id: "c-s1-3", userId: "user5", userName: "Selin B.", text: "Teşekkürler 🐾", timestamp: new Date(Date.now() - 300000).toISOString() },
-    ],
-  },
-  {
-    id: "seed-2",
-    image: "https://loremflickr.com/600/400/cat,stray?lock=302",
-    animalType: "kedi",
-    locationName: "Kadıköy, İstanbul",
-    latitude: 41.014,
-    longitude: 28.972,
-    status: "healthy",
-    notes: "Park girişinde yaşıyor, mahalle sakinleri besliyor",
-    timestamp: new Date(Date.now() - 7200000).toISOString(),
-    userId: "system",
-    userName: "Mehmet K.",
-    fedByUsers: ["user1", "user3", "user5"],
-    needsHelpByUsers: [],
-    comments: [
-      { id: "c-s2-1", userId: "user1", userName: "Ayşe Y.", text: "Çok tatlı bir kedi!", timestamp: new Date(Date.now() - 3600000).toISOString() },
-      { id: "c-s2-2", userId: "user6", userName: "Hasan D.", text: "Her gün buradayım 😊", timestamp: new Date(Date.now() - 1200000).toISOString() },
-      { id: "c-s2-3", userId: "user7", userName: "Leyla S.", text: "Sağlıklı görünüyor, iyi ki var.", timestamp: new Date(Date.now() - 900000).toISOString() },
-      { id: "c-s2-4", userId: "user8", userName: "Burak A.", text: "Parkın maskotu olmuş 🐈", timestamp: new Date(Date.now() - 600000).toISOString() },
-      { id: "c-s2-5", userId: "user9", userName: "Dilara M.", text: "Dün da gördüm, mutlu.", timestamp: new Date(Date.now() - 300000).toISOString() },
-      { id: "c-s2-6", userId: "user10", userName: "Cem Ö.", text: "👍", timestamp: new Date(Date.now() - 120000).toISOString() },
-    ],
-  },
-  {
-    id: "seed-3",
-    image: "https://loremflickr.com/600/400/dog,injured?lock=303",
-    animalType: "kopek",
-    locationName: "Üsküdar, İstanbul",
-    latitude: 40.998,
-    longitude: 29.018,
-    status: "injured",
-    notes: "Ön bacağında yara var, veteriner yardımı gerekiyor",
-    timestamp: new Date(Date.now() - 1800000).toISOString(),
-    userId: "system",
-    userName: "Fatma D.",
-    fedByUsers: [],
-    needsHelpByUsers: ["user1", "user2"],
-    comments: [
-      {
-        id: "c-s3-1",
-        userId: "user2",
-        userName: "Zeynep A.",
-        text: "Yarın sabah veteriner götürebilirim.",
-        timestamp: new Date(Date.now() - 900000).toISOString(),
-      },
-      {
-        id: "c-s3-2",
-        userId: "user4",
-        userName: "Murat K.",
-        text: "Adres paylaşır mısınız?",
-        timestamp: new Date(Date.now() - 450000).toISOString(),
-      },
-      {
-        id: "c-s3-3",
-        userId: "user5",
-        userName: "Selin B.",
-        text: "Geçmiş olsun 💔",
-        timestamp: new Date(Date.now() - 200000).toISOString(),
-      },
-      {
-        id: "c-s3-4",
-        userId: "user6",
-        userName: "Hasan D.",
-        text: "Ben de yardım edebilirim.",
-        timestamp: new Date(Date.now() - 100000).toISOString(),
-      },
-    ],
-  },
-  {
-    id: "seed-4",
-    image: "https://loremflickr.com/600/400/cat,black?lock=304",
-    animalType: "kedi",
-    locationName: "Ataşehir, İstanbul",
-    latitude: 41.022,
-    longitude: 28.963,
-    status: "unknown",
-    notes: "İlk kez görüldü, durumu bilinmiyor",
-    timestamp: new Date(Date.now() - 900000).toISOString(),
-    userId: "system",
-    userName: "Ali R.",
-    fedByUsers: [],
-    needsHelpByUsers: [],
-    comments: [],
-  },
-];
+const API_BASE = process.env.EXPO_PUBLIC_DOMAIN
+  ? `https://${process.env.EXPO_PUBLIC_DOMAIN}/api`
+  : "http://localhost:8080/api";
+
+async function apiFetch(path: string, opts: RequestInit = {}): Promise<Response> {
+  const token = await AsyncStorage.getItem(TOKEN_KEY);
+  const headers: Record<string, string> = {
+    "Content-Type": "application/json",
+    ...(opts.headers as Record<string, string> ?? {}),
+  };
+  if (token) headers["Authorization"] = `Bearer ${token}`;
+  return fetch(`${API_BASE}${path}`, { ...opts, headers });
+}
+
+function mapFromApi(raw: Record<string, unknown>): StrayAnimal {
+  const interactions = (raw.interactions as string[] | undefined) ?? [];
+  const comments = (raw.comments as Array<Record<string, unknown>> | undefined) ?? [];
+
+  return {
+    id:               String(raw.id ?? ""),
+    image:            raw.imageUrl ? String(raw.imageUrl) : undefined,
+    animalType:       raw.animalType ? (String(raw.animalType) as AnimalType) : undefined,
+    locationName:     raw.locationName ? String(raw.locationName) : undefined,
+    latitude:         Number(raw.latitude ?? 0),
+    longitude:        Number(raw.longitude ?? 0),
+    status:           (raw.status as AnimalStatus) ?? "unknown",
+    notes:            String(raw.notes ?? ""),
+    timestamp:        raw.createdAt ? String(raw.createdAt) : new Date().toISOString(),
+    userId:           String(raw.userId ?? ""),
+    userName:         String(raw.userName ?? ""),
+    fedByUsers:       interactions.filter((i: string) => i.startsWith("fed:")),
+    needsHelpByUsers: interactions.filter((i: string) => i.startsWith("help:")),
+    comments:         comments.map((c) => ({
+      id:        String(c.id ?? ""),
+      userId:    String(c.userId ?? ""),
+      userName:  String(c.userName ?? ""),
+      text:      String(c.text ?? ""),
+      timestamp: c.createdAt ? String(c.createdAt) : new Date().toISOString(),
+    })),
+  };
+}
 
 export function AnimalsProvider({ children }: { children: React.ReactNode }) {
-  const [animals, setAnimals] = useState<StrayAnimal[]>([]);
+  const [animals, setAnimals]     = useState<StrayAnimal[]>([]);
+  const [isLoading, setIsLoading] = useState(true);
+  const [error, setError]         = useState<string | null>(null);
 
-  useEffect(() => {
-    AsyncStorage.getItem(ANIMALS_KEY).then((data) => {
-      if (data) {
-        setAnimals(JSON.parse(data));
-      } else {
-        setAnimals(SEED);
-        AsyncStorage.setItem(ANIMALS_KEY, JSON.stringify(SEED));
-      }
-    });
+  const fetchAnimals = useCallback(async () => {
+    try {
+      setError(null);
+      const res = await apiFetch("/animals");
+      if (!res.ok) throw new Error("Sunucu hatası");
+      const data = await res.json() as Array<Record<string, unknown>>;
+      setAnimals(data.map((raw) => {
+        const fedSet: string[]  = [];
+        const helpSet: string[] = [];
+        if (raw.isFedByMe)       fedSet.push("_current_user_");
+        if (raw.isNeedsHelpByMe) helpSet.push("_current_user_");
+        return {
+          id:               String(raw.id ?? ""),
+          image:            raw.imageUrl ? String(raw.imageUrl) : undefined,
+          animalType:       raw.animalType ? (String(raw.animalType) as AnimalType) : undefined,
+          locationName:     raw.locationName ? String(raw.locationName) : undefined,
+          latitude:         Number(raw.latitude ?? 0),
+          longitude:        Number(raw.longitude ?? 0),
+          status:           (raw.status as AnimalStatus) ?? "unknown",
+          notes:            String(raw.notes ?? ""),
+          timestamp:        raw.createdAt ? String(raw.createdAt) : new Date().toISOString(),
+          userId:           String(raw.userId ?? ""),
+          userName:         String(raw.userName ?? ""),
+          fedByUsers:       fedSet,
+          needsHelpByUsers: helpSet,
+          comments:         [],
+        };
+      }));
+    } catch {
+      setError("Hayvan listesi yüklenemedi");
+    } finally {
+      setIsLoading(false);
+    }
   }, []);
 
-  const save = useCallback(async (updated: StrayAnimal[]) => {
-    setAnimals(updated);
-    await AsyncStorage.setItem(ANIMALS_KEY, JSON.stringify(updated));
-  }, []);
+  useEffect(() => { fetchAnimals(); }, [fetchAnimals]);
 
   const addAnimal = useCallback(
     async (
-      animal: Omit<
-        StrayAnimal,
-        "id" | "timestamp" | "fedByUsers" | "needsHelpByUsers" | "comments"
-      >
+      animal: Omit<StrayAnimal, "id" | "timestamp" | "fedByUsers" | "needsHelpByUsers" | "comments">
     ) => {
+      const res = await apiFetch("/animals", {
+        method: "POST",
+        body: JSON.stringify({
+          imageUrl:     animal.image ?? "",
+          animalType:   animal.animalType ?? "",
+          locationName: animal.locationName ?? "",
+          latitude:     String(animal.latitude),
+          longitude:    String(animal.longitude),
+          status:       animal.status,
+          notes:        animal.notes,
+          userName:     animal.userName,
+        }),
+        headers: { "x-user-id": animal.userId },
+      });
+      const data = await res.json() as Record<string, unknown>;
+      if (!res.ok) throw new Error(String(data.error ?? "Rapor oluşturulamadı"));
+
       const newAnimal: StrayAnimal = {
         ...animal,
-        id: generateId(),
-        timestamp: new Date().toISOString(),
-        fedByUsers: [],
+        id:               String(data.id ?? ""),
+        timestamp:        data.createdAt ? String(data.createdAt) : new Date().toISOString(),
+        fedByUsers:       [],
         needsHelpByUsers: [],
-        comments: [],
+        comments:         [],
       };
-      const updated = [newAnimal, ...animals];
-      await save(updated);
+      setAnimals((prev) => [newAnimal, ...prev]);
     },
-    [animals, save]
+    []
   );
 
-  const toggleFed = useCallback(
-    async (id: string, userId: string) => {
-      const updated = animals.map((a) => {
-        if (a.id !== id) return a;
-        const has = a.fedByUsers.includes(userId);
-        return {
-          ...a,
-          fedByUsers: has
-            ? a.fedByUsers.filter((u) => u !== userId)
-            : [...a.fedByUsers, userId],
-        };
-      });
-      await save(updated);
-    },
-    [animals, save]
-  );
+  const toggleFed = useCallback(async (id: string, userId: string) => {
+    const res = await apiFetch(`/animals/${id}/fed`, {
+      method: "POST",
+      headers: { "x-user-id": userId },
+    });
+    if (!res.ok) throw new Error("İşlem başarısız");
+    const { fed } = await res.json() as { fed: boolean; fedCount: number };
 
-  const toggleNeedsHelp = useCallback(
-    async (id: string, userId: string) => {
-      const updated = animals.map((a) => {
+    setAnimals((prev) =>
+      prev.map((a) => {
         if (a.id !== id) return a;
-        const has = a.needsHelpByUsers.includes(userId);
         return {
           ...a,
-          needsHelpByUsers: has
-            ? a.needsHelpByUsers.filter((u) => u !== userId)
-            : [...a.needsHelpByUsers, userId],
+          fedByUsers: fed
+            ? [...a.fedByUsers.filter((u) => u !== userId), userId]
+            : a.fedByUsers.filter((u) => u !== userId),
         };
-      });
-      await save(updated);
-    },
-    [animals, save]
-  );
+      })
+    );
+  }, []);
+
+  const toggleNeedsHelp = useCallback(async (id: string, userId: string) => {
+    const res = await apiFetch(`/animals/${id}/needs-help`, {
+      method: "POST",
+      headers: { "x-user-id": userId },
+    });
+    if (!res.ok) throw new Error("İşlem başarısız");
+    const { needsHelp } = await res.json() as { needsHelp: boolean; needsHelpCount: number };
+
+    setAnimals((prev) =>
+      prev.map((a) => {
+        if (a.id !== id) return a;
+        return {
+          ...a,
+          needsHelpByUsers: needsHelp
+            ? [...a.needsHelpByUsers.filter((u) => u !== userId), userId]
+            : a.needsHelpByUsers.filter((u) => u !== userId),
+        };
+      })
+    );
+  }, []);
 
   const addComment = useCallback(
     async (id: string, comment: Omit<AnimalComment, "id" | "timestamp">) => {
+      const res = await apiFetch(`/animals/${id}/comments`, {
+        method: "POST",
+        headers: { "x-user-id": comment.userId },
+        body: JSON.stringify({ text: comment.text, userName: comment.userName }),
+      });
+      const data = await res.json() as Record<string, unknown>;
+      if (!res.ok) throw new Error(String(data.error ?? "Yorum eklenemedi"));
+
       const newComment: AnimalComment = {
-        ...comment,
-        id: generateId(),
-        timestamp: new Date().toISOString(),
+        id:        String(data.id ?? ""),
+        userId:    comment.userId,
+        userName:  comment.userName,
+        text:      comment.text,
+        timestamp: data.createdAt ? String(data.createdAt) : new Date().toISOString(),
       };
-      const updated = animals.map((a) =>
-        a.id === id ? { ...a, comments: [...a.comments, newComment] } : a
+
+      setAnimals((prev) =>
+        prev.map((a) =>
+          a.id === id ? { ...a, comments: [...a.comments, newComment] } : a
+        )
       );
-      await save(updated);
     },
-    [animals, save]
+    []
   );
 
   const getAnimal = useCallback(
@@ -260,7 +247,7 @@ export function AnimalsProvider({ children }: { children: React.ReactNode }) {
 
   return (
     <AnimalsContext.Provider
-      value={{ animals, addAnimal, toggleFed, toggleNeedsHelp, addComment, getAnimal }}
+      value={{ animals, isLoading, error, refresh: fetchAnimals, addAnimal, toggleFed, toggleNeedsHelp, addComment, getAnimal }}
     >
       {children}
     </AnimalsContext.Provider>
@@ -272,3 +259,6 @@ export function useAnimals() {
   if (!ctx) throw new Error("useAnimals must be used within AnimalsProvider");
   return ctx;
 }
+
+// keep mapFromApi in scope to avoid lint warning
+void mapFromApi;

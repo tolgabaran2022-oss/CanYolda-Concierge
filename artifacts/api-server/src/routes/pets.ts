@@ -43,14 +43,15 @@ router.get("/pets/:petId", async (req, res) => {
 router.post("/pets", async (req, res) => {
   const userId = uid(req);
   if (!userId) { res.status(401).json({ error: "Unauthorized" }); return; }
-  const { name, type, breed, gender, birthDate, weight, color, avatarUrl, bio, location } = req.body as Record<string, string>;
+  const { name, type, breed, age, gender, birthDate, weight, color, avatarUrl, bio, location, vaccinationInfo, feedingNotes } = req.body as Record<string, string>;
   if (!name?.trim()) { res.status(400).json({ error: "name required" }); return; }
   try {
     const [pet] = await db.insert(petProfiles).values({
       ownerId: userId, name, type: type ?? "cat",
-      breed: breed ?? "", gender: gender ?? "", birthDate: birthDate ?? "",
+      breed: breed ?? "", age: age ?? "", gender: gender ?? "", birthDate: birthDate ?? "",
       weight: weight ?? "", color: color ?? "", avatarUrl: avatarUrl ?? "",
       bio: bio ?? "", location: location ?? "",
+      vaccinationInfo: vaccinationInfo ?? "", feedingNotes: feedingNotes ?? "",
     }).returning();
     res.status(201).json(pet);
   } catch { res.status(500).json({ error: "Failed to create pet" }); }
@@ -63,18 +64,21 @@ router.patch("/pets/:petId", async (req, res) => {
     const [existing] = await db.select().from(petProfiles).where(eq(petProfiles.id, req.params.petId));
     if (!existing) { res.status(404).json({ error: "Not found" }); return; }
     if (existing.ownerId !== userId) { res.status(403).json({ error: "Forbidden" }); return; }
-    const { name, type, breed, gender, birthDate, weight, color, avatarUrl, bio, location } = req.body as Record<string, string>;
+    const { name, type, breed, age, gender, birthDate, weight, color, avatarUrl, bio, location, vaccinationInfo, feedingNotes } = req.body as Record<string, string>;
     const updates: Partial<typeof petProfiles.$inferInsert> = { updatedAt: new Date() };
-    if (name      !== undefined) updates.name      = name;
-    if (type      !== undefined) updates.type      = type;
-    if (breed     !== undefined) updates.breed     = breed;
-    if (gender    !== undefined) updates.gender    = gender;
-    if (birthDate !== undefined) updates.birthDate = birthDate;
-    if (weight    !== undefined) updates.weight    = weight;
-    if (color     !== undefined) updates.color     = color;
-    if (avatarUrl !== undefined) updates.avatarUrl = avatarUrl;
-    if (bio       !== undefined) updates.bio       = bio;
-    if (location  !== undefined) updates.location  = location;
+    if (name            !== undefined) updates.name            = name;
+    if (type            !== undefined) updates.type            = type;
+    if (breed           !== undefined) updates.breed           = breed;
+    if (age             !== undefined) updates.age             = age;
+    if (gender          !== undefined) updates.gender          = gender;
+    if (birthDate       !== undefined) updates.birthDate       = birthDate;
+    if (weight          !== undefined) updates.weight          = weight;
+    if (color           !== undefined) updates.color           = color;
+    if (avatarUrl       !== undefined) updates.avatarUrl       = avatarUrl;
+    if (bio             !== undefined) updates.bio             = bio;
+    if (location        !== undefined) updates.location        = location;
+    if (vaccinationInfo !== undefined) updates.vaccinationInfo = vaccinationInfo;
+    if (feedingNotes    !== undefined) updates.feedingNotes    = feedingNotes;
     const [updated] = await db.update(petProfiles).set(updates).where(eq(petProfiles.id, req.params.petId)).returning();
     res.json(updated);
   } catch { res.status(500).json({ error: "Failed to update pet" }); }

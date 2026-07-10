@@ -6,7 +6,6 @@ import React, {
   useEffect,
   useState,
 } from "react";
-import { generateId } from "@/utils/formatters";
 
 export interface AdoptionListing {
   id: string;
@@ -35,6 +34,9 @@ export interface AdoptionListing {
 
 interface AdoptionContextType {
   listings: AdoptionListing[];
+  isLoading: boolean;
+  error: string | null;
+  refresh: () => Promise<void>;
   addListing: (listing: Omit<AdoptionListing, "id" | "createdAt">) => Promise<string>;
   updateListing: (id: string, updates: Partial<Omit<AdoptionListing, "id" | "createdAt">>) => Promise<void>;
   deleteListing: (id: string) => Promise<void>;
@@ -42,125 +44,142 @@ interface AdoptionContextType {
 }
 
 const AdoptionContext = createContext<AdoptionContextType | null>(null);
-const ADOPTION_KEY = "@canyoldasi:adoption:v4";
+const TOKEN_KEY = "@canyoldasi:jwt";
 
-const SEED: AdoptionListing[] = [
-  {
-    id: "seed-adopt-1",
-    petName: "Pamuk",
-    petType: "Kedi",
-    petAge: "British Shorthair • 2 yaş",
-    photo: "https://images.unsplash.com/photo-1592194996308-7b43878e84a6?w=400&q=80",
-    location: "Kadıköy, İstanbul",
-    description: "Sakin, oyuncu ve sevgi dolu bir patili dost. Aşıları tamam.",
-    userId: "seed-user-zeynep",
-    userName: "Zeynep K.",
-    contactInfo: "zeynep@example.com",
-    createdAt: new Date(Date.now() - 3_600_000).toISOString(),
-  },
-  {
-    id: "seed-adopt-2",
-    petName: "Badem",
-    petType: "Köpek",
-    petAge: "Golden Retriever • 1.5 yaş",
-    photo: "https://images.unsplash.com/photo-1633722715463-d30f4f325e24?w=400&q=80",
-    location: "Üsküdar, İstanbul",
-    description: "Enerjik, arkadaş canlısı ve çocuklarla çok iyi anlaşır.",
-    userId: "seed-user-ahmet",
-    userName: "Ahmet M.",
-    contactInfo: "0532 XXX XX XX",
-    createdAt: new Date(Date.now() - 86_400_000).toISOString(),
-  },
-  {
-    id: "seed-adopt-3",
-    petName: "Misket",
-    petType: "Kedi",
-    petAge: "Tekir • 3 ay",
-    photo: "https://images.unsplash.com/photo-1548247416-ec66f4900b2e?w=400&q=80",
-    location: "Beşiktaş, İstanbul",
-    description: "Oyuncu, meraklı ve çok tatlı bir yavru kedi.",
-    userId: "seed-user-selin",
-    userName: "Selin A.",
-    contactInfo: "selin@example.com",
-    createdAt: new Date(Date.now() - 172_800_000).toISOString(),
-  },
-  {
-    id: "seed-adopt-4",
-    petName: "Limon",
-    petType: "Tavşan",
-    petAge: "Hollanda Lop • 6 ay",
-    photo: "https://images.unsplash.com/photo-1585110396000-c9ffd4e4b308?w=400&q=80",
-    location: "Bakırköy, İstanbul",
-    description: "Sevecen, tuvalet eğitimi var ve sağlıklıdır.",
-    userId: "seed-user-merve",
-    userName: "Merve T.",
-    contactInfo: "merve@example.com",
-    createdAt: new Date(Date.now() - 259_200_000).toISOString(),
-  },
-  {
-    id: "seed-adopt-5",
-    petName: "Atlas",
-    petType: "Köpek",
-    petAge: "Husky • 2 yaş",
-    photo: "https://images.unsplash.com/photo-1547407139-3c921a66005c?w=400&q=80",
-    location: "Şişli, İstanbul",
-    description: "Aktif, zeki ve geniş alana ihtiyaç duyan bir Husky.",
-    userId: "seed-user-can",
-    userName: "Can B.",
-    contactInfo: "can@example.com",
-    createdAt: new Date(Date.now() - 345_600_000).toISOString(),
-  },
-];
+const API_BASE = process.env.EXPO_PUBLIC_DOMAIN
+  ? `https://${process.env.EXPO_PUBLIC_DOMAIN}/api`
+  : "http://localhost:8080/api";
+
+async function apiFetch(path: string, opts: RequestInit = {}): Promise<Response> {
+  const token = await AsyncStorage.getItem(TOKEN_KEY);
+  const headers: Record<string, string> = {
+    "Content-Type": "application/json",
+    ...(opts.headers as Record<string, string> ?? {}),
+  };
+  if (token) headers["Authorization"] = `Bearer ${token}`;
+  return fetch(`${API_BASE}${path}`, { ...opts, headers });
+}
+
+function mapFromApi(raw: Record<string, unknown>): AdoptionListing {
+  return {
+    id:                String(raw.id ?? ""),
+    petName:           String(raw.petName ?? ""),
+    petType:           String(raw.petType ?? ""),
+    petAge:            raw.petAge ? String(raw.petAge) : undefined,
+    breed:             raw.breed ? String(raw.breed) : undefined,
+    gender:            raw.gender ? String(raw.gender) : undefined,
+    vaccinated:        Boolean(raw.vaccinated),
+    photo:             raw.photoUrl ? String(raw.photoUrl) : undefined,
+    location:          String(raw.location ?? ""),
+    description:       String(raw.description ?? ""),
+    userId:            String(raw.userId ?? ""),
+    userName:          String(raw.userName ?? ""),
+    contactInfo:       String(raw.contactInfo ?? ""),
+    allowPhoneContact: Boolean(raw.allowPhoneContact),
+    allowMessages:     raw.allowMessages !== false,
+    status:            (raw.status as AdoptionListing["status"]) ?? "Aktif",
+    viewsCount:        Number(raw.viewsCount ?? 0),
+    favoriteCount:     Number(raw.favoriteCount ?? 0),
+    createdAt:         raw.createdAt ? String(raw.createdAt) : new Date().toISOString(),
+    updatedAt:         raw.updatedAt ? String(raw.updatedAt) : undefined,
+  };
+}
 
 export function AdoptionProvider({ children }: { children: React.ReactNode }) {
-  const [listings, setListings] = useState<AdoptionListing[]>([]);
+  const [listings, setListings]   = useState<AdoptionListing[]>([]);
+  const [isLoading, setIsLoading] = useState(true);
+  const [error, setError]         = useState<string | null>(null);
 
-  useEffect(() => {
-    AsyncStorage.getItem(ADOPTION_KEY).then((data) => {
-      if (data) {
-        setListings(JSON.parse(data));
-      } else {
-        setListings(SEED);
-        AsyncStorage.setItem(ADOPTION_KEY, JSON.stringify(SEED));
-      }
-    });
+  const fetchListings = useCallback(async () => {
+    try {
+      setError(null);
+      const res = await apiFetch("/adoption");
+      if (!res.ok) throw new Error("Sunucu hatası");
+      const data = await res.json() as Array<Record<string, unknown>>;
+      setListings(data.map(mapFromApi));
+    } catch {
+      setError("İlanlar yüklenemedi");
+    } finally {
+      setIsLoading(false);
+    }
   }, []);
 
-  const save = useCallback(async (updated: AdoptionListing[]) => {
-    setListings(updated);
-    await AsyncStorage.setItem(ADOPTION_KEY, JSON.stringify(updated));
-  }, []);
+  useEffect(() => { fetchListings(); }, [fetchListings]);
 
   const addListing = useCallback(
     async (listing: Omit<AdoptionListing, "id" | "createdAt">): Promise<string> => {
-      const newListing: AdoptionListing = {
-        ...listing,
-        id: generateId(),
-        createdAt: new Date().toISOString(),
-      };
-      await save([newListing, ...listings]);
+      const res = await apiFetch("/adoption", {
+        method: "POST",
+        headers: { "x-user-id": listing.userId },
+        body: JSON.stringify({
+          petName:           listing.petName,
+          petType:           listing.petType,
+          petAge:            listing.petAge ?? "",
+          breed:             listing.breed ?? "",
+          gender:            listing.gender ?? "",
+          vaccinated:        listing.vaccinated ?? false,
+          photoUrl:          listing.photo ?? "",
+          location:          listing.location,
+          description:       listing.description,
+          userName:          listing.userName,
+          contactInfo:       listing.contactInfo,
+          allowPhoneContact: listing.allowPhoneContact ?? false,
+          allowMessages:     listing.allowMessages ?? true,
+          status:            listing.status ?? "Aktif",
+        }),
+      });
+      const data = await res.json() as Record<string, unknown>;
+      if (!res.ok) throw new Error(String(data.error ?? "İlan oluşturulamadı"));
+
+      const newListing = mapFromApi(data);
+      setListings((prev) => [newListing, ...prev]);
       return newListing.id;
     },
-    [listings, save]
+    []
   );
 
   const updateListing = useCallback(
     async (id: string, updates: Partial<Omit<AdoptionListing, "id" | "createdAt">>) => {
-      await save(
-        listings.map((l) =>
-          l.id === id ? { ...l, ...updates, updatedAt: new Date().toISOString() } : l
-        )
+      const userId = updates.userId ?? listings.find((l) => l.id === id)?.userId ?? "";
+      const res = await apiFetch(`/adoption/${id}`, {
+        method: "PATCH",
+        headers: { "x-user-id": userId },
+        body: JSON.stringify({
+          petName:           updates.petName,
+          petType:           updates.petType,
+          petAge:            updates.petAge,
+          breed:             updates.breed,
+          gender:            updates.gender,
+          vaccinated:        updates.vaccinated,
+          photoUrl:          updates.photo,
+          location:          updates.location,
+          description:       updates.description,
+          contactInfo:       updates.contactInfo,
+          allowPhoneContact: updates.allowPhoneContact,
+          allowMessages:     updates.allowMessages,
+          status:            updates.status,
+        }),
+      });
+      const data = await res.json() as Record<string, unknown>;
+      if (!res.ok) throw new Error(String(data.error ?? "İlan güncellenemedi"));
+
+      setListings((prev) =>
+        prev.map((l) => (l.id === id ? mapFromApi(data) : l))
       );
     },
-    [listings, save]
+    [listings]
   );
 
-  const deleteListing = useCallback(
-    async (id: string) => {
-      await save(listings.filter((l) => l.id !== id));
-    },
-    [listings, save]
-  );
+  const deleteListing = useCallback(async (id: string) => {
+    const userId = listings.find((l) => l.id === id)?.userId ?? "";
+    const res = await apiFetch(`/adoption/${id}`, {
+      method: "DELETE",
+      headers: { "x-user-id": userId },
+    });
+    const data = await res.json() as Record<string, unknown>;
+    if (!res.ok) throw new Error(String(data.error ?? "İlan silinemedi"));
+    setListings((prev) => prev.filter((l) => l.id !== id));
+  }, [listings]);
 
   const getListing = useCallback(
     (id: string) => listings.find((l) => l.id === id),
@@ -168,7 +187,7 @@ export function AdoptionProvider({ children }: { children: React.ReactNode }) {
   );
 
   return (
-    <AdoptionContext.Provider value={{ listings, addListing, updateListing, deleteListing, getListing }}>
+    <AdoptionContext.Provider value={{ listings, isLoading, error, refresh: fetchListings, addListing, updateListing, deleteListing, getListing }}>
       {children}
     </AdoptionContext.Provider>
   );
