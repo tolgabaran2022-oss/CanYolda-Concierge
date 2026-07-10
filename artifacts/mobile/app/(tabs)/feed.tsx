@@ -83,6 +83,7 @@ function apiPostToPostData(p: ApiPost): PostData {
 
 /* ── Skeleton card ─────────────────────────────────────────── */
 function SkeletonCard() {
+  const T       = useTheme();
   const shimmer = useRef(new Animated.Value(0)).current;
   useEffect(() => {
     Animated.loop(
@@ -96,7 +97,7 @@ function SkeletonCard() {
   const isWebSk = Platform.OS === "web";
   const CARD_W = isWebSk ? Math.min(SW - 24, 420) : SW - 24;
   return (
-    <View style={[SK.card, { width: CARD_W }]}>
+    <View style={[SK.card, { width: CARD_W, backgroundColor: T.card }]}>
       <View style={SK.header}>
         <Animated.View style={[SK.avatar, { opacity }]} />
         <View style={SK.headerText}>
@@ -152,6 +153,7 @@ function CreatePostModal({
   onClose: () => void;
   onSubmit: (data: { imageUri: string; caption: string; location: string }) => Promise<void>;
 }) {
+  const T = useTheme();
   const [image,    setImage]    = useState<string | null>(null);
   const [caption,  setCaption]  = useState("");
   const [loc,      setLoc]      = useState("");
@@ -197,14 +199,14 @@ function CreatePostModal({
   return (
     <Modal visible={visible} animationType="slide" presentationStyle="pageSheet">
       <KeyboardAvoidingView style={{ flex: 1 }} behavior={Platform.OS === "ios" ? "padding" : undefined}>
-        <View style={[M.root, { paddingTop: insets.top + 8 }]}>
-          <View style={M.header}>
+        <View style={[M.root, { paddingTop: insets.top + 8, backgroundColor: T.bg }]}>
+          <View style={[M.header, { borderBottomColor: T.border }]}>
             <Pressable onPress={handleClose} hitSlop={12} disabled={loading}>
-              <Text style={M.cancel}>İptal</Text>
+              <Text style={[M.cancel, { color: T.textMuted }]}>İptal</Text>
             </Pressable>
-            <Text style={M.title}>Yeni Gönderi</Text>
+            <Text style={[M.title, { color: T.text }]}>Yeni Gönderi</Text>
             <Pressable onPress={() => { void handleSubmit(); }} hitSlop={12} disabled={loading || !image}>
-              <Text style={[M.share, (!image || loading) && { opacity: 0.35 }]}>{loading ? "Paylaşılıyor..." : "Paylaş"}</Text>
+              <Text style={[M.share, { color: T.purple }, (!image || loading) && { opacity: 0.35 }]}>{loading ? "Paylaşılıyor..." : "Paylaş"}</Text>
             </Pressable>
           </View>
 
@@ -214,23 +216,38 @@ function CreatePostModal({
                 <Image source={{ uri: image }} style={M.imagePreview} contentFit="cover" />
               ) : (
                 <LinearGradient colors={["rgba(164,140,220,0.10)", "rgba(124,92,255,0.06)"]} style={M.imagePlaceholder}>
-                  <View style={M.cameraCircle}><Ionicons name="camera-outline" size={30} color={C.purple} /></View>
-                  <Text style={M.imageHint}>Fotoğraf seç</Text>
+                  <View style={M.cameraCircle}><Ionicons name="camera-outline" size={30} color={T.purple} /></View>
+                  <Text style={[M.imageHint, { color: T.purple }]}>Fotoğraf seç</Text>
                 </LinearGradient>
               )}
             </Pressable>
 
             <View style={M.field}>
-              <Text style={M.label}>Açıklama</Text>
-              <TextInput style={M.textArea} value={caption} onChangeText={setCaption} placeholder="Bir şeyler yaz..." placeholderTextColor="#ABABBB" multiline textAlignVertical="top" maxLength={300} />
-              <Text style={M.charCount}>{caption.length}/300</Text>
+              <Text style={[M.label, { color: T.text }]}>Açıklama</Text>
+              <TextInput
+                style={[M.textArea, { color: T.text, backgroundColor: T.input, borderColor: T.inputBorder }]}
+                value={caption}
+                onChangeText={setCaption}
+                placeholder="Bir şeyler yaz..."
+                placeholderTextColor={T.placeholder}
+                multiline
+                textAlignVertical="top"
+                maxLength={300}
+              />
+              <Text style={[M.charCount, { color: T.textMuted }]}>{caption.length}/300</Text>
             </View>
 
             <View style={M.field}>
-              <Text style={M.label}>Konum</Text>
-              <View style={M.locationRow}>
-                <Ionicons name="location-outline" size={18} color={C.purple} />
-                <TextInput style={M.locationInput} value={loc} onChangeText={setLoc} placeholder="Konum ekle..." placeholderTextColor="#ABABBB" />
+              <Text style={[M.label, { color: T.text }]}>Konum</Text>
+              <View style={[M.locationRow, { backgroundColor: T.input, borderColor: T.inputBorder }]}>
+                <Ionicons name="location-outline" size={18} color={T.purple} />
+                <TextInput
+                  style={[M.locationInput, { color: T.text }]}
+                  value={loc}
+                  onChangeText={setLoc}
+                  placeholder="Konum ekle..."
+                  placeholderTextColor={T.placeholder}
+                />
               </View>
             </View>
           </ScrollView>
@@ -724,18 +741,24 @@ export default function FeedScreen() {
           onPressGroup={handleStoryGroupPress}
           onAddStory={() => setCreateStoryOpen(true)}
         />
-        <View style={[F.tabBar, { backgroundColor: T.bg, borderBottomColor: T.border }]}>
-          <Pressable style={[F.tabBtn, feedTab === "discover" && F.tabBtnActive]} onPress={() => handleTabChange("discover")}>
+        <View style={[F.tabBar, { backgroundColor: T.tabBar, borderBottomColor: T.tabBarBorder }]}>
+          <Pressable
+            style={[F.tabBtn, feedTab === "discover" && { borderBottomColor: T.purple }]}
+            onPress={() => handleTabChange("discover")}
+          >
             <Text style={[F.tabTxt, feedTab === "discover" && F.tabTxtActive, { color: feedTab === "discover" ? T.purple : T.textMuted }]}>Keşfet</Text>
           </Pressable>
-          <Pressable style={[F.tabBtn, feedTab === "following" && F.tabBtnActive]} onPress={() => handleTabChange("following")}>
+          <Pressable
+            style={[F.tabBtn, feedTab === "following" && { borderBottomColor: T.purple }]}
+            onPress={() => handleTabChange("following")}
+          >
             <Text style={[F.tabTxt, feedTab === "following" && F.tabTxtActive, { color: feedTab === "following" ? T.purple : T.textMuted }]}>Takip Ettiklerin</Text>
           </Pressable>
         </View>
       </>
     ),
     // eslint-disable-next-line react-hooks/exhaustive-deps
-    [stories, userId, router, feedTab, user?.avatar, unreadCount]
+    [stories, userId, router, feedTab, user?.avatar, unreadCount, T.isDark]
   );
 
   return (

@@ -25,6 +25,7 @@ import { Ionicons } from "@expo/vector-icons";
 import { LinearGradient } from "expo-linear-gradient";
 import { BlurView } from "expo-blur";
 import { useAuth } from "@/contexts/AuthContext";
+import { useTheme } from "@/hooks/useTheme";
 import {
   apiGetPet,
   apiGetPetPosts,
@@ -66,6 +67,7 @@ function formatDate(iso: string) {
 function AddPostModal({
   visible, petId, userId, onClose, onAdded,
 }: { visible: boolean; petId: string; userId: string; onClose: () => void; onAdded: (post: ApiPetPost) => void }) {
+  const T = useTheme();
   const [imageUri, setImageUri] = useState("");
   const [caption, setCaption] = useState("");
   const [location, setLocation] = useState("");
@@ -92,30 +94,32 @@ function AddPostModal({
 
   return (
     <Modal visible={visible} animationType="slide" presentationStyle="pageSheet" onRequestClose={onClose}>
-      <KeyboardAvoidingView behavior={Platform.OS === "ios" ? "padding" : undefined} style={{ flex: 1, backgroundColor: "#0a0a0f" }}>
-        <View style={M.header}>
-          <TouchableOpacity onPress={onClose}><Text style={M.cancel}>İptal</Text></TouchableOpacity>
-          <Text style={M.title}>Yeni Gönderi</Text>
+      <KeyboardAvoidingView behavior={Platform.OS === "ios" ? "padding" : undefined} style={{ flex: 1, backgroundColor: T.bg }}>
+        <View style={[M.header, { borderBottomColor: T.border }]}>
+          <TouchableOpacity onPress={onClose}><Text style={[M.cancel, { color: T.textMuted }]}>İptal</Text></TouchableOpacity>
+          <Text style={[M.title, { color: T.text }]}>Yeni Gönderi</Text>
           <TouchableOpacity onPress={handleSubmit} disabled={loading}>
             {loading ? <ActivityIndicator color={PURPLE} /> : <Text style={M.save}>Paylaş</Text>}
           </TouchableOpacity>
         </View>
         <ScrollView contentContainerStyle={{ padding: 20 }}>
-          <TouchableOpacity onPress={pickImage} style={M.imagePicker}>
+          <TouchableOpacity onPress={pickImage} style={[M.imagePicker, { backgroundColor: T.card }]}>
             {imageUri
               ? <Image source={{ uri: imageUri }} style={M.previewImg} />
               : <View style={M.imagePlaceholder}>
-                  <Ionicons name="image-outline" size={40} color="#666" />
-                  <Text style={{ color: "#666", marginTop: 8 }}>Fotoğraf Seç</Text>
+                  <Ionicons name="image-outline" size={40} color={T.textMuted} />
+                  <Text style={{ color: T.textMuted, marginTop: 8 }}>Fotoğraf Seç</Text>
                 </View>
             }
           </TouchableOpacity>
           <TextInput
-            style={M.input} placeholder="Açıklama..." placeholderTextColor="#666"
+            style={[M.input, { backgroundColor: T.input, color: T.text, borderColor: T.border }]}
+            placeholder="Açıklama..." placeholderTextColor={T.placeholder}
             value={caption} onChangeText={setCaption} multiline maxLength={500}
           />
           <TextInput
-            style={M.input} placeholder="Konum (isteğe bağlı)" placeholderTextColor="#666"
+            style={[M.input, { backgroundColor: T.input, color: T.text, borderColor: T.border }]}
+            placeholder="Konum (isteğe bağlı)" placeholderTextColor={T.placeholder}
             value={location} onChangeText={setLocation}
           />
         </ScrollView>
@@ -128,6 +132,7 @@ function AddPostModal({
 function AddHealthModal({
   visible, petId, userId, onClose, onAdded,
 }: { visible: boolean; petId: string; userId: string; onClose: () => void; onAdded: (h: ApiPetHealth) => void }) {
+  const T = useTheme();
   const [vaccineName, setVaccineName] = useState("");
   const [date, setDate] = useState("");
   const [nextDate, setNextDate] = useState("");
@@ -150,19 +155,19 @@ function AddHealthModal({
 
   return (
     <Modal visible={visible} animationType="slide" presentationStyle="pageSheet" onRequestClose={onClose}>
-      <KeyboardAvoidingView behavior={Platform.OS === "ios" ? "padding" : undefined} style={{ flex: 1, backgroundColor: "#0a0a0f" }}>
-        <View style={M.header}>
-          <TouchableOpacity onPress={onClose}><Text style={M.cancel}>İptal</Text></TouchableOpacity>
-          <Text style={M.title}>Sağlık Kaydı</Text>
+      <KeyboardAvoidingView behavior={Platform.OS === "ios" ? "padding" : undefined} style={{ flex: 1, backgroundColor: T.bg }}>
+        <View style={[M.header, { borderBottomColor: T.border }]}>
+          <TouchableOpacity onPress={onClose}><Text style={[M.cancel, { color: T.textMuted }]}>İptal</Text></TouchableOpacity>
+          <Text style={[M.title, { color: T.text }]}>Sağlık Kaydı</Text>
           <TouchableOpacity onPress={handleSubmit} disabled={loading}>
             {loading ? <ActivityIndicator color={PURPLE} /> : <Text style={M.save}>Kaydet</Text>}
           </TouchableOpacity>
         </View>
         <ScrollView contentContainerStyle={{ padding: 20, gap: 12 }}>
-          <TextInput style={M.input} placeholder="Aşı / İlaç adı *" placeholderTextColor="#666" value={vaccineName} onChangeText={setVaccineName} />
-          <TextInput style={M.input} placeholder="Tarih (gg.aa.yyyy) *" placeholderTextColor="#666" value={date} onChangeText={setDate} />
-          <TextInput style={M.input} placeholder="Sonraki tarih (gg.aa.yyyy)" placeholderTextColor="#666" value={nextDate} onChangeText={setNextDate} />
-          <TextInput style={M.input} placeholder="Not" placeholderTextColor="#666" value={note} onChangeText={setNote} multiline />
+          <TextInput style={[M.input, { backgroundColor: T.input, color: T.text, borderColor: T.border }]} placeholder="Aşı / İlaç adı *" placeholderTextColor={T.placeholder} value={vaccineName} onChangeText={setVaccineName} />
+          <TextInput style={[M.input, { backgroundColor: T.input, color: T.text, borderColor: T.border }]} placeholder="Tarih (gg.aa.yyyy) *" placeholderTextColor={T.placeholder} value={date} onChangeText={setDate} />
+          <TextInput style={[M.input, { backgroundColor: T.input, color: T.text, borderColor: T.border }]} placeholder="Sonraki tarih (gg.aa.yyyy)" placeholderTextColor={T.placeholder} value={nextDate} onChangeText={setNextDate} />
+          <TextInput style={[M.input, { backgroundColor: T.input, color: T.text, borderColor: T.border }]} placeholder="Not" placeholderTextColor={T.placeholder} value={note} onChangeText={setNote} multiline />
         </ScrollView>
       </KeyboardAvoidingView>
     </Modal>
@@ -173,6 +178,7 @@ function AddHealthModal({
 function EditPetModal({
   visible, pet, userId, onClose, onSaved,
 }: { visible: boolean; pet: ApiPetProfile; userId: string; onClose: () => void; onSaved: (p: ApiPetProfile) => void }) {
+  const T = useTheme();
   const [name, setName] = useState(pet.name);
   const [breed, setBreed] = useState(pet.breed);
   const [gender, setGender] = useState(pet.gender);
@@ -204,10 +210,10 @@ function EditPetModal({
 
   return (
     <Modal visible={visible} animationType="slide" presentationStyle="pageSheet" onRequestClose={onClose}>
-      <KeyboardAvoidingView behavior={Platform.OS === "ios" ? "padding" : undefined} style={{ flex: 1, backgroundColor: "#0a0a0f" }}>
-        <View style={M.header}>
-          <TouchableOpacity onPress={onClose}><Text style={M.cancel}>İptal</Text></TouchableOpacity>
-          <Text style={M.title}>Profili Düzenle</Text>
+      <KeyboardAvoidingView behavior={Platform.OS === "ios" ? "padding" : undefined} style={{ flex: 1, backgroundColor: T.bg }}>
+        <View style={[M.header, { borderBottomColor: T.border }]}>
+          <TouchableOpacity onPress={onClose}><Text style={[M.cancel, { color: T.textMuted }]}>İptal</Text></TouchableOpacity>
+          <Text style={[M.title, { color: T.text }]}>Profili Düzenle</Text>
           <TouchableOpacity onPress={handleSave} disabled={loading}>
             {loading ? <ActivityIndicator color={PURPLE} /> : <Text style={M.save}>Kaydet</Text>}
           </TouchableOpacity>
@@ -223,8 +229,8 @@ function EditPetModal({
             { label: "Biyografi", val: bio, set: setBio },
             { label: "Konum", val: location, set: setLocation },
           ].map(({ label, val, set }) => (
-            <TextInput key={label} style={M.input} placeholder={label} placeholderTextColor="#666"
-              value={val} onChangeText={set} />
+            <TextInput key={label} style={[M.input, { backgroundColor: T.input, color: T.text, borderColor: T.border }]}
+              placeholder={label} placeholderTextColor={T.placeholder} value={val} onChangeText={set} />
           ))}
         </ScrollView>
       </KeyboardAvoidingView>
@@ -236,6 +242,7 @@ function EditPetModal({
 type TabKey = "posts" | "health";
 
 export default function PetProfileScreen() {
+  const T = useTheme();
   const { petId } = useLocalSearchParams<{ petId: string }>();
   const { user } = useAuth();
   const router = useRouter();
@@ -324,7 +331,7 @@ export default function PetProfileScreen() {
 
   if (loading) {
     return (
-      <View style={{ flex: 1, backgroundColor: "#0a0a0f", justifyContent: "center", alignItems: "center" }}>
+      <View style={{ flex: 1, backgroundColor: T.bg, justifyContent: "center", alignItems: "center" }}>
         <ActivityIndicator color={PURPLE} size="large" />
       </View>
     );
@@ -332,8 +339,8 @@ export default function PetProfileScreen() {
 
   if (!pet) {
     return (
-      <View style={{ flex: 1, backgroundColor: "#0a0a0f", justifyContent: "center", alignItems: "center" }}>
-        <Text style={{ color: "#fff" }}>Profil bulunamadı.</Text>
+      <View style={{ flex: 1, backgroundColor: T.bg, justifyContent: "center", alignItems: "center" }}>
+        <Text style={{ color: T.text }}>Profil bulunamadı.</Text>
       </View>
     );
   }
@@ -343,19 +350,19 @@ export default function PetProfileScreen() {
   const avatarUri = pet.avatarUrl || CAT_PLACEHOLDER;
 
   return (
-    <View style={S.root}>
+    <View style={[S.root, { backgroundColor: T.bg }]}>
       {/* Floating nav bar */}
       <Animated.View style={[S.floatNav, { paddingTop: insets.top, opacity: 1 }]}>
         <Animated.View style={[StyleSheet.absoluteFill, { opacity: headerBg }]}>
-          <BlurView intensity={60} style={StyleSheet.absoluteFill} tint="dark" />
+          <BlurView intensity={60} style={StyleSheet.absoluteFill} tint={T.isDark ? "dark" : "light"} />
         </Animated.View>
         <TouchableOpacity onPress={() => router.back()} style={S.backBtn}>
-          <Ionicons name="chevron-back" size={24} color="#fff" />
+          <Ionicons name="chevron-back" size={24} color={T.text} />
         </TouchableOpacity>
-        <Text style={S.floatTitle}>{pet.name}</Text>
+        <Text style={[S.floatTitle, { color: T.text }]}>{pet.name}</Text>
         {isOwner && (
           <TouchableOpacity onPress={() => setShowEditPet(true)} style={S.backBtn}>
-            <Ionicons name="ellipsis-horizontal" size={22} color="#fff" />
+            <Ionicons name="ellipsis-horizontal" size={22} color={T.text} />
           </TouchableOpacity>
         )}
       </Animated.View>
@@ -367,7 +374,7 @@ export default function PetProfileScreen() {
         contentContainerStyle={{ paddingBottom: insets.bottom + 100 }}
       >
         {/* Cover + Avatar */}
-        <LinearGradient colors={["#2D1B69", "#0a0a0f"]} style={S.cover}>
+        <LinearGradient colors={["#2D1B69", T.isDark ? "#0a0a0f" : "#F8F5FF"]} style={S.cover}>
           <View style={{ paddingTop: insets.top + 56, alignItems: "center" }}>
             <View style={S.avatarWrap}>
               <LinearGradient colors={[PURPLE_LIGHT, PURPLE]} style={S.avatarRing}>
@@ -378,14 +385,14 @@ export default function PetProfileScreen() {
         </LinearGradient>
 
         {/* Info */}
-        <View style={S.infoBlock}>
-          <Text style={S.petName}>{emoji} {pet.name}</Text>
-          <Text style={S.petSub}>{typeLabel}{pet.breed ? ` · ${pet.breed}` : ""}</Text>
-          {pet.bio ? <Text style={S.bio}>{pet.bio}</Text> : null}
+        <View style={[S.infoBlock, { backgroundColor: T.bg }]}>
+          <Text style={[S.petName, { color: T.text }]}>{emoji} {pet.name}</Text>
+          <Text style={[S.petSub, { color: T.textMuted }]}>{typeLabel}{pet.breed ? ` · ${pet.breed}` : ""}</Text>
+          {pet.bio ? <Text style={[S.bio, { color: T.textMuted }]}>{pet.bio}</Text> : null}
           {pet.location ? (
             <View style={{ flexDirection: "row", alignItems: "center", gap: 4, marginTop: 4 }}>
-              <Ionicons name="location-outline" size={13} color="#888" />
-              <Text style={S.infoMeta}>{pet.location}</Text>
+              <Ionicons name="location-outline" size={13} color={T.textMuted} />
+              <Text style={[S.infoMeta, { color: T.textMuted }]}>{pet.location}</Text>
             </View>
           ) : null}
 
@@ -396,18 +403,18 @@ export default function PetProfileScreen() {
               { label: "Takipçi", val: pet.followersCount },
             ].map(({ label, val }) => (
               <View key={label} style={S.statCell}>
-                <Text style={S.statNum}>{val}</Text>
-                <Text style={S.statLabel}>{label}</Text>
+                <Text style={[S.statNum, { color: T.text }]}>{val}</Text>
+                <Text style={[S.statLabel, { color: T.textMuted }]}>{label}</Text>
               </View>
             ))}
           </View>
 
           {/* Meta pills */}
           <View style={S.pills}>
-            {pet.gender ? <View style={S.pill}><Text style={S.pillTxt}>{pet.gender}</Text></View> : null}
-            {pet.weight ? <View style={S.pill}><Text style={S.pillTxt}>⚖️ {pet.weight} kg</Text></View> : null}
-            {pet.color ? <View style={S.pill}><Text style={S.pillTxt}>{pet.color}</Text></View> : null}
-            {pet.birthDate ? <View style={S.pill}><Text style={S.pillTxt}>🎂 {pet.birthDate}</Text></View> : null}
+            {pet.gender ? <View style={[S.pill, { backgroundColor: T.card }]}><Text style={[S.pillTxt, { color: T.textMuted }]}>{pet.gender}</Text></View> : null}
+            {pet.weight ? <View style={[S.pill, { backgroundColor: T.card }]}><Text style={[S.pillTxt, { color: T.textMuted }]}>⚖️ {pet.weight} kg</Text></View> : null}
+            {pet.color ? <View style={[S.pill, { backgroundColor: T.card }]}><Text style={[S.pillTxt, { color: T.textMuted }]}>{pet.color}</Text></View> : null}
+            {pet.birthDate ? <View style={[S.pill, { backgroundColor: T.card }]}><Text style={[S.pillTxt, { color: T.textMuted }]}>🎂 {pet.birthDate}</Text></View> : null}
           </View>
 
           {/* Action buttons */}
@@ -417,32 +424,32 @@ export default function PetProfileScreen() {
                 <Ionicons name="add-circle-outline" size={16} color="#fff" />
                 <Text style={S.actionTxt}>Gönderi Ekle</Text>
               </TouchableOpacity>
-              <TouchableOpacity style={[S.actionBtn, S.actionBtnOutline, { flex: 1 }]} onPress={() => setShowAddHealth(true)}>
-                <Ionicons name="heart-outline" size={16} color="#fff" />
-                <Text style={S.actionTxt}>Sağlık Ekle</Text>
+              <TouchableOpacity style={[S.actionBtn, S.actionBtnOutline, { flex: 1, borderColor: T.border }]} onPress={() => setShowAddHealth(true)}>
+                <Ionicons name="heart-outline" size={16} color={T.text} />
+                <Text style={[S.actionTxt, { color: T.text }]}>Sağlık Ekle</Text>
               </TouchableOpacity>
             </View>
           ) : (
             <View style={S.actionRow}>
               <TouchableOpacity
-                style={[S.actionBtn, { flex: 1 }, isFollowing && S.actionBtnOutline]}
+                style={[S.actionBtn, { flex: 1 }, isFollowing && { ...S.actionBtnOutline, borderColor: T.border }]}
                 onPress={handleFollow}
               >
-                <Text style={S.actionTxt}>{isFollowing ? "Takip Ediliyor" : "Takip Et"}</Text>
+                <Text style={[S.actionTxt, isFollowing && { color: T.text }]}>{isFollowing ? "Takip Ediliyor" : "Takip Et"}</Text>
               </TouchableOpacity>
             </View>
           )}
         </View>
 
         {/* Tabs */}
-        <View style={S.tabs}>
+        <View style={[S.tabs, { borderTopColor: T.border }]}>
           {([
             { key: "posts" as TabKey, icon: "grid-outline", label: "Gönderiler" },
             { key: "health" as TabKey, icon: "medical-outline", label: "Sağlık" },
           ] as const).map(({ key, icon, label }) => (
             <TouchableOpacity key={key} style={[S.tab, activeTab === key && S.tabActive]} onPress={() => setActiveTab(key)}>
-              <Ionicons name={icon} size={18} color={activeTab === key ? PURPLE : "#666"} />
-              <Text style={[S.tabTxt, activeTab === key && { color: PURPLE }]}>{label}</Text>
+              <Ionicons name={icon} size={18} color={activeTab === key ? PURPLE : T.textMuted} />
+              <Text style={[S.tabTxt, { color: T.textMuted }, activeTab === key && { color: PURPLE }]}>{label}</Text>
             </TouchableOpacity>
           ))}
         </View>
@@ -452,8 +459,8 @@ export default function PetProfileScreen() {
           posts.length === 0
             ? (
               <View style={S.empty}>
-                <Ionicons name="image-outline" size={44} color="#444" />
-                <Text style={S.emptyTxt}>Henüz gönderi yok</Text>
+                <Ionicons name="image-outline" size={44} color={T.textFaint} />
+                <Text style={[S.emptyTxt, { color: T.textMuted }]}>Henüz gönderi yok</Text>
                 {isOwner && (
                   <TouchableOpacity style={[S.actionBtn, { marginTop: 16, paddingHorizontal: 24 }]} onPress={() => setShowAddPost(true)}>
                     <Text style={S.actionTxt}>İlk Gönderiyi Ekle</Text>
@@ -484,8 +491,8 @@ export default function PetProfileScreen() {
             {health.length === 0
               ? (
                 <View style={S.empty}>
-                  <Ionicons name="medical-outline" size={44} color="#444" />
-                  <Text style={S.emptyTxt}>Sağlık kaydı bulunamadı</Text>
+                  <Ionicons name="medical-outline" size={44} color={T.textFaint} />
+                  <Text style={[S.emptyTxt, { color: T.textMuted }]}>Sağlık kaydı bulunamadı</Text>
                   {isOwner && (
                     <TouchableOpacity style={[S.actionBtn, { marginTop: 16, paddingHorizontal: 24 }]} onPress={() => setShowAddHealth(true)}>
                       <Text style={S.actionTxt}>Kayıt Ekle</Text>
@@ -494,18 +501,18 @@ export default function PetProfileScreen() {
                 </View>
               )
               : health.map((h) => (
-                <View key={h.id} style={S.healthCard}>
-                  <View style={S.healthCardIcon}>
+                <View key={h.id} style={[S.healthCard, { backgroundColor: T.card }]}>
+                  <View style={[S.healthCardIcon, { backgroundColor: T.purpleFaint }]}>
                     <Ionicons name="shield-checkmark-outline" size={22} color={PURPLE} />
                   </View>
                   <View style={{ flex: 1 }}>
-                    <Text style={S.healthName}>{h.vaccineName}</Text>
-                    <Text style={S.healthDate}>📅 {h.date}{h.nextDate ? `  →  ${h.nextDate}` : ""}</Text>
-                    {h.note ? <Text style={S.healthNote}>{h.note}</Text> : null}
+                    <Text style={[S.healthName, { color: T.text }]}>{h.vaccineName}</Text>
+                    <Text style={[S.healthDate, { color: T.textMuted }]}>📅 {h.date}{h.nextDate ? `  →  ${h.nextDate}` : ""}</Text>
+                    {h.note ? <Text style={[S.healthNote, { color: T.textMuted }]}>{h.note}</Text> : null}
                   </View>
                   {isOwner && (
                     <TouchableOpacity onPress={() => handleDeleteHealth(h.id)} style={{ padding: 4 }}>
-                      <Ionicons name="trash-outline" size={18} color="#555" />
+                      <Ionicons name="trash-outline" size={18} color={T.textMuted} />
                     </TouchableOpacity>
                   )}
                 </View>

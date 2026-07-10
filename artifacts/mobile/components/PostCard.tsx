@@ -190,7 +190,7 @@ export function PostCard({
   return (
     <View style={[S.card, { backgroundColor: T.card }]}>
       {/* ── Card header ─────────────────────────── */}
-      <View style={S.header}>
+      <View style={[S.header, { backgroundColor: T.card }]}>
         {/* Avatar + name + meta — entire left area is one tap target (Instagram-style) */}
         <Pressable
           style={S.headerLeft}
@@ -200,7 +200,7 @@ export function PostCard({
           }}
           hitSlop={4}
         >
-          <View style={S.avatarWrap}>
+          <View style={[S.avatarWrap, { borderColor: T.purple }]}>
             <Image source={{ uri: post.user.avatar }} style={S.avatar} contentFit="cover" />
           </View>
           <View style={{ flex: 1 }}>
@@ -211,7 +211,7 @@ export function PostCard({
           </View>
         </Pressable>
         <Pressable hitSlop={12} onPress={handleMorePress}>
-          <Feather name="more-horizontal" size={20} color={C.purple} />
+          <Feather name="more-horizontal" size={20} color={T.text} />
         </Pressable>
       </View>
 
@@ -289,12 +289,12 @@ export function PostCard({
 
         {displayCommentCount > 1 && !showAll && (
           <Pressable onPress={() => onPressPost ? onPressPost(post.id) : setShowAll(true)}>
-            <Text style={S.viewAll}>Tüm yorumları gör ({displayCommentCount})</Text>
+            <Text style={[S.viewAll, { color: T.textMuted }]}>Tüm yorumları gör ({displayCommentCount})</Text>
           </Pressable>
         )}
         {!onPressPost && visibleComments.map((c) => (
-          <Text key={c.id} style={S.commentRow} numberOfLines={1}>
-            <Text style={S.commentUser}>{c.user} </Text>
+          <Text key={c.id} style={[S.commentRow, { color: T.text }]} numberOfLines={1}>
+            <Text style={[S.commentUser, { color: T.text }]}>{c.user} </Text>
             {c.text}
           </Text>
         ))}
@@ -302,8 +302,8 @@ export function PostCard({
 
       {/* ── Comment input (only when no post-detail nav) ── */}
       {!onPressPost && showInput && (
-        <View style={S.commentInputWrap}>
-          <View style={S.inputRow}>
+        <View style={[S.commentInputWrap, { borderTopColor: T.divider }]}>
+          <View style={[S.inputRow, { backgroundColor: T.input, borderColor: T.inputBorder, borderWidth: 1 }]}>
             <TextInput
               style={[S.input, { color: T.text, backgroundColor: T.input }]}
               value={commentText}

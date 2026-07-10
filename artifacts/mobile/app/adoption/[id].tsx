@@ -22,6 +22,7 @@ import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { useAdoption } from "@/contexts/AdoptionContext";
 import { useAuth } from "@/contexts/AuthContext";
 import { useBoost } from "@/contexts/BoostContext";
+import { useTheme } from "@/hooks/useTheme";
 import { formatTimeAgo } from "@/utils/formatters";
 import { apiGetContactPrefs, apiRevealPhone, type ContactPrefs } from "@/lib/contactApi";
 import { apiGetOrCreateConversation } from "@/lib/messagesApi";
@@ -90,6 +91,7 @@ function SectionHead({ title }: { title: string }) {
 
 // ── Main ──────────────────────────────────────────────────────────────────────
 export default function AdoptionDetailScreen() {
+  const T = useTheme();
   const { id, preview } = useLocalSearchParams<{ id: string; preview?: string }>();
   const isPreviewMode = preview === "true";
   const insets = useSafeAreaInsets();
@@ -323,9 +325,9 @@ export default function AdoptionDetailScreen() {
                     <Ionicons name="paw" size={11} color={P} />
                     <Text style={S.typePillTxt}>{listing.petType}</Text>
                   </View>
-                  <View style={S.statusPill}>
+                  <View style={[S.statusPill, { backgroundColor: T.isDark ? "rgba(52,199,89,0.15)" : "#E8F8EE" }]}>
                     <View style={S.statusDot} />
-                    <Text style={S.statusTxt}>Sahip Arıyor</Text>
+                    <Text style={[S.statusTxt, { color: T.isDark ? "#6ED98B" : "#1A7F37" }]}>Sahip Arıyor</Text>
                   </View>
                 </View>
               </View>
@@ -466,7 +468,7 @@ export default function AdoptionDetailScreen() {
                 </Pressable>
 
                 <Pressable
-                  style={({ pressed }) => [S.deleteBtn, { opacity: pressed ? 0.75 : 1 }]}
+                  style={({ pressed }) => [S.deleteBtn, { opacity: pressed ? 0.75 : 1, backgroundColor: T.card, borderColor: T.isDark ? "#7A3838" : "#FFD5D5" }]}
                   onPress={handleDelete}
                 >
                   <Ionicons name="trash-outline" size={16} color="#E53E3E" />

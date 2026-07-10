@@ -23,6 +23,7 @@ import {
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { useAdoption } from "@/contexts/AdoptionContext";
 import { useAuth } from "@/contexts/AuthContext";
+import { useTheme } from "@/hooks/useTheme";
 import { TURKEY_PROVINCES, type Province } from "@/constants/turkeyLocations";
 import { apiSaveListingContact } from "@/lib/contactApi";
 
@@ -128,12 +129,13 @@ function PickerModal({ visible, title, items, selected, onSelect, onClose }: {
   visible: boolean; title: string; items: { label: string; value: string }[];
   selected: string; onSelect: (v: string) => void; onClose: () => void;
 }) {
+  const T      = useTheme();
   const insets = useSafeAreaInsets();
   const [q, setQ] = useState("");
   const filtered = q ? items.filter((i) => i.label.toLowerCase().includes(q.toLowerCase())) : items;
   return (
     <Modal visible={visible} animationType="slide" presentationStyle="pageSheet" onRequestClose={onClose}>
-      <View style={[PM.root, { paddingTop: insets.top + 8 }]}>
+      <View style={[PM.root, { paddingTop: insets.top + 8, backgroundColor: T.bg }]}>
         <View style={PM.header}>
           <View style={{ width: 36 }} />
           <Text style={PM.title}>{title}</Text>
@@ -179,6 +181,7 @@ function PhotoActionSheet({ visible, isFirst, isLast, isCover, onAction }: {
   visible: boolean; isFirst: boolean; isLast: boolean; isCover: boolean;
   onAction: (a: PhotoAction) => void;
 }) {
+  const T      = useTheme();
   const insets = useSafeAreaInsets();
   type Btn = { label: string; icon: string; action: PhotoAction; color?: string };
   const btns: Btn[] = [
@@ -190,8 +193,8 @@ function PhotoActionSheet({ visible, isFirst, isLast, isCover, onAction }: {
   return (
     <Modal visible={visible} transparent animationType="slide" onRequestClose={() => onAction("close")}>
       <Pressable style={AS.overlay} onPress={() => onAction("close")} />
-      <View style={[AS.sheet, { paddingBottom: insets.bottom + 8 }]}>
-        <View style={AS.handle} />
+      <View style={[AS.sheet, { paddingBottom: insets.bottom + 8, backgroundColor: T.card }]}>
+        <View style={[AS.handle, { backgroundColor: T.divider }]} />
         {btns.map((b) => (
           <Pressable key={b.action} style={({ pressed }) => [AS.row, { opacity: pressed ? 0.7 : 1 }]} onPress={() => { Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light); onAction(b.action); }}>
             <View style={[AS.iconWrap, b.color === C.error && AS.iconWrapRed]}>
@@ -224,12 +227,13 @@ const AS = StyleSheet.create({
 function AddPhotoSheet({ visible, onCamera, onGallery, onClose }: {
   visible: boolean; onCamera: () => void; onGallery: () => void; onClose: () => void;
 }) {
+  const T      = useTheme();
   const insets = useSafeAreaInsets();
   return (
     <Modal visible={visible} transparent animationType="slide" onRequestClose={onClose}>
       <Pressable style={AS.overlay} onPress={onClose} />
-      <View style={[AS.sheet, { paddingBottom: insets.bottom + 8 }]}>
-        <View style={AS.handle} />
+      <View style={[AS.sheet, { paddingBottom: insets.bottom + 8, backgroundColor: T.card }]}>
+        <View style={[AS.handle, { backgroundColor: T.divider }]} />
         <Text style={{ fontSize: 16, fontFamily: "Inter_700Bold", color: C.label, paddingVertical: 10, textAlign: "center" }}>Fotoğraf Ekle</Text>
         <Pressable style={({ pressed }) => [AS.row, { opacity: pressed ? 0.7 : 1 }]} onPress={onCamera}>
           <View style={AS.iconWrap}><Ionicons name="camera-outline" size={20} color={C.purpleDark} /></View>
@@ -249,6 +253,7 @@ function AddPhotoSheet({ visible, onCamera, onGallery, onClose }: {
 
 /* ── Main screen ─────────────────────────────────────────── */
 export default function EditAdoptionScreen() {
+  const T               = useTheme();
   const { id }          = useLocalSearchParams<{ id: string }>();
   const insets          = useSafeAreaInsets();
   const router          = useRouter();
@@ -445,7 +450,7 @@ export default function EditAdoptionScreen() {
   return (
     <>
       <Stack.Screen options={{ headerShown: false }} />
-      <View style={[S.root, { backgroundColor: C.bg }]}>
+      <View style={[S.root, { backgroundColor: T.bg }]}>
 
         {/* Header */}
         <View style={[S.header, { paddingTop: topPad + 10 }]}>

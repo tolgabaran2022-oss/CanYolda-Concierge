@@ -128,16 +128,16 @@ export default function ProfileScreen() {
           {/* Action buttons */}
           <View style={S.actionBtnRow}>
             <Pressable
-              style={({ pressed }) => [S.editBtn, { opacity: pressed ? 0.8 : 1 }]}
+              style={({ pressed }) => [S.editBtn, { opacity: pressed ? 0.8 : 1, backgroundColor: T.purpleFaint, borderColor: T.borderStrong }]}
               onPress={() => router.push("/profile-edit")}
             >
-              <Text style={S.editBtnText}>Profili Düzenle</Text>
+              <Text style={[S.editBtnText, { color: T.purpleDark }]}>Profili Düzenle</Text>
             </Pressable>
             <Pressable
-              style={({ pressed }) => [S.msgBtn, { opacity: pressed ? 0.8 : 1 }]}
+              style={({ pressed }) => [S.msgBtn, { opacity: pressed ? 0.8 : 1, backgroundColor: T.purpleFaint, borderColor: T.borderStrong }]}
               onPress={() => { Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light); router.push("/messages"); }}
             >
-              <Ionicons name="chatbubble-outline" size={19} color={PURPLE} />
+              <Ionicons name="chatbubble-outline" size={19} color={T.purple} />
             </Pressable>
             <Pressable
               style={({ pressed }) => [S.newPostBtn, { opacity: pressed ? 0.8 : 1 }]}
@@ -146,10 +146,10 @@ export default function ProfileScreen() {
               <Ionicons name="add" size={22} color="#FFF" />
             </Pressable>
             <Pressable
-              style={({ pressed }) => [S.shareBtn, { opacity: pressed ? 0.8 : 1 }]}
+              style={({ pressed }) => [S.shareBtn, { opacity: pressed ? 0.8 : 1, backgroundColor: T.purpleFaint, borderColor: T.borderStrong }]}
               onPress={() => Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light)}
             >
-              <Ionicons name="share-outline" size={18} color={PURPLE_DARK} />
+              <Ionicons name="share-outline" size={18} color={T.purple} />
             </Pressable>
           </View>
         </View>

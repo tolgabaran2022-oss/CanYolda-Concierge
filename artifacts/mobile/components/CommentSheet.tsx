@@ -16,6 +16,7 @@ import {
 } from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { useAuth } from "@/contexts/AuthContext";
+import { useTheme } from "@/hooks/useTheme";
 import {
   apiFetchComments,
   apiAddComment,
@@ -45,6 +46,7 @@ interface Props {
 }
 
 export function CommentSheet({ visible, postId, postOwnerId, onClose, onCountChange }: Props) {
+  const T      = useTheme();
   const insets = useSafeAreaInsets();
   const { user } = useAuth();
 
@@ -130,13 +132,13 @@ export function CommentSheet({ visible, postId, postOwnerId, onClose, onCountCha
         behavior={Platform.OS === "ios" ? "padding" : "height"}
         keyboardVerticalOffset={0}
       >
-        <View style={[S.sheet, { paddingBottom: Math.max(insets.bottom, 12) }]}>
+        <View style={[S.sheet, { paddingBottom: Math.max(insets.bottom, 12), backgroundColor: T.card }]}>
           {/* Handle + header */}
-          <View style={S.dragHandle} />
+          <View style={[S.dragHandle, { backgroundColor: T.divider }]} />
           <View style={S.header}>
-            <Text style={S.headerTitle}>Yorumlar</Text>
+            <Text style={[S.headerTitle, { color: T.text }]}>Yorumlar</Text>
             <Pressable onPress={onClose} hitSlop={12}>
-              <Ionicons name="close" size={22} color={PURPLE_DARK} />
+              <Ionicons name="close" size={22} color={T.text} />
             </Pressable>
           </View>
 
@@ -151,7 +153,7 @@ export function CommentSheet({ visible, postId, postOwnerId, onClose, onCountCha
               contentContainerStyle={comments.length === 0 ? S.emptyContainer : S.listContent}
               keyboardShouldPersistTaps="handled"
               ListEmptyComponent={
-                <Text style={S.emptyText}>Henüz yorum yok. İlk yorumu sen yaz!</Text>
+                <Text style={[S.emptyText, { color: T.textMuted }]}>Henüz yorum yok. İlk yorumu sen yaz!</Text>
               }
               renderItem={({ item: c }) => {
                 const isOwn = c.username === (user?.username ?? user?.name);
@@ -163,18 +165,18 @@ export function CommentSheet({ visible, postId, postOwnerId, onClose, onCountCha
                     onLongPress={() => canDelete && handleDelete(c)}
                   >
                     <View style={S.commentAvatar}>
-                      <Ionicons name="person-circle" size={34} color={PURPLE} />
+                      <Ionicons name="person-circle" size={34} color={T.purple} />
                     </View>
                     <View style={{ flex: 1 }}>
-                      <Text style={S.commentText}>
-                        <Text style={S.commentUser}>{c.username} </Text>
+                      <Text style={[S.commentText, { color: T.text }]}>
+                        <Text style={[S.commentUser, { color: T.text }]}>{c.username} </Text>
                         {c.text}
                       </Text>
-                      <Text style={S.commentTime}>{formatAgo(c.createdAt)}</Text>
+                      <Text style={[S.commentTime, { color: T.textMuted }]}>{formatAgo(c.createdAt)}</Text>
                     </View>
                     {canDelete && (
                       <Pressable hitSlop={10} onPress={() => handleDelete(c)}>
-                        <Ionicons name="trash-outline" size={14} color="#CCBBDD" />
+                        <Ionicons name="trash-outline" size={14} color={T.textFaint} />
                       </Pressable>
                     )}
                   </Pressable>
@@ -184,17 +186,17 @@ export function CommentSheet({ visible, postId, postOwnerId, onClose, onCountCha
           )}
 
           {/* Input */}
-          <View style={S.inputBar}>
+          <View style={[S.inputBar, { borderTopColor: T.divider }]}>
             <View style={S.avatarSmall}>
-              <Ionicons name="person-circle" size={32} color={PURPLE} />
+              <Ionicons name="person-circle" size={32} color={T.purple} />
             </View>
             <TextInput
               ref={inputRef}
-              style={S.input}
+              style={[S.input, { color: T.text, backgroundColor: T.input }]}
               value={commentText}
               onChangeText={setCommentText}
               placeholder="Yorum ekle..."
-              placeholderTextColor="#ABABCC"
+              placeholderTextColor={T.placeholder}
               returnKeyType="send"
               onSubmitEditing={handleSubmit}
               multiline
