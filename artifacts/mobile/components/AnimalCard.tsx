@@ -13,6 +13,7 @@ import {
 } from "react-native";
 import { StatusBadge, STATUS_COLORS } from "@/components/StatusBadge";
 import type { StrayAnimal } from "@/contexts/AnimalsContext";
+import { useTheme } from "@/hooks/useTheme";
 import { getDefaultAnimalImageUri } from "@/utils/animalDefaults";
 import { formatTimeAgo } from "@/utils/formatters";
 
@@ -34,7 +35,8 @@ interface Props {
 }
 
 export function AnimalCard({ animal, onLike, index = 0 }: Props) {
-  const router   = useRouter();
+  const T      = useTheme();
+  const router = useRouter();
   const [liked, setLiked] = useState(false);
 
   const fadeAnim  = useRef(new Animated.Value(0)).current;
@@ -96,6 +98,8 @@ export function AnimalCard({ animal, onLike, index = 0 }: Props) {
         {
           opacity: fadeAnim,
           transform: [{ translateY: slideAnim }, { scale: pressScale }],
+          backgroundColor: T.card,
+          borderColor: T.border,
         },
       ]}
     >
@@ -122,7 +126,7 @@ export function AnimalCard({ animal, onLike, index = 0 }: Props) {
         {/* Main content */}
         <View style={S.content}>
           <StatusBadge status={animal.status} size="sm" />
-          <Text style={S.notes} numberOfLines={2}>
+          <Text style={[S.notes, { color: T.text }]} numberOfLines={2}>
             {animal.notes || "Not eklenmemiş"}
           </Text>
           <Text style={S.meta}>
@@ -132,8 +136,8 @@ export function AnimalCard({ animal, onLike, index = 0 }: Props) {
           </Text>
           {animal.locationName ? (
             <View style={S.locRow}>
-              <Ionicons name="location-outline" size={11} color={C.muted} />
-              <Text style={S.locText} numberOfLines={1}>{animal.locationName}</Text>
+              <Ionicons name="location-outline" size={11} color={T.textMuted} />
+              <Text style={[S.locText, { color: T.textMuted }]} numberOfLines={1}>{animal.locationName}</Text>
             </View>
           ) : null}
         </View>
@@ -147,7 +151,7 @@ export function AnimalCard({ animal, onLike, index = 0 }: Props) {
       </Pressable>
 
       {/* Interaction row */}
-      <View style={S.divider} />
+      <View style={[S.divider, { backgroundColor: T.divider }]} />
       <View style={S.interactRow}>
 
         {/* Like */}
@@ -163,12 +167,12 @@ export function AnimalCard({ animal, onLike, index = 0 }: Props) {
               color={liked ? "#EF4444" : C.muted}
             />
           </Animated.View>
-          <Text style={[S.interactText, liked && { color: "#EF4444" }]}>
+          <Text style={[S.interactText, { color: T.textMuted }, liked && { color: "#EF4444" }]}>
             {animal.fedByUsers.length + (liked ? 1 : 0)}
           </Text>
         </Pressable>
 
-        <View style={S.interactSep} />
+        <View style={[S.interactSep, { backgroundColor: T.border }]} />
 
         {/* Comment */}
         <Pressable
@@ -179,11 +183,11 @@ export function AnimalCard({ animal, onLike, index = 0 }: Props) {
           style={({ pressed }) => [S.interactBtn, pressed && { opacity: 0.7 }]}
           hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}
         >
-          <Ionicons name="chatbubble-outline" size={16} color={C.muted} />
-          <Text style={S.interactText}>{animal.comments.length}</Text>
+          <Ionicons name="chatbubble-outline" size={16} color={T.textMuted} />
+          <Text style={[S.interactText, { color: T.textMuted }]}>{animal.comments.length}</Text>
         </Pressable>
 
-        <View style={S.interactSep} />
+        <View style={[S.interactSep, { backgroundColor: T.border }]} />
 
         {/* Location */}
         <Pressable
@@ -202,8 +206,8 @@ export function AnimalCard({ animal, onLike, index = 0 }: Props) {
           style={({ pressed }) => [S.interactBtn, pressed && { opacity: 0.7 }]}
           hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}
         >
-          <Ionicons name="location-outline" size={16} color={C.muted} />
-          <Text style={S.interactText}>Konumu Aç</Text>
+          <Ionicons name="location-outline" size={16} color={T.textMuted} />
+          <Text style={[S.interactText, { color: T.textMuted }]}>Konumu Aç</Text>
         </Pressable>
 
         <View style={{ flex: 1 }} />
@@ -260,7 +264,7 @@ const S = StyleSheet.create({
     height: 13,
     borderRadius: 7,
     borderWidth: 2.5,
-    borderColor: "#FFFFFF",
+    borderColor: "transparent",
   },
 
   /* Content */

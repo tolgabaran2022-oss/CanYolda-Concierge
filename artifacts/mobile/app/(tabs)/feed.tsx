@@ -276,15 +276,16 @@ function FeedHeader({
   onAvatarPress: () => void;
   unreadCount:   number;
 }) {
+  const T = useTheme();
   return (
-    <View style={H.root}>
+    <View style={[H.root, { backgroundColor: T.bg }]}>
       <View style={H.left}>
-        <Ionicons name="heart" size={15} color={C.purple} />
-        <Text style={H.logo}>canyoldaşı</Text>
+        <Ionicons name="heart" size={15} color={T.purple} />
+        <Text style={[H.logo, { color: T.text }]}>canyoldaşı</Text>
       </View>
       <View style={H.right}>
         <Pressable onPress={() => { Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light); onSearch(); }} hitSlop={10}>
-          <Ionicons name="search-outline" size={23} color={C.purple} />
+          <Ionicons name="search-outline" size={23} color={T.purple} />
         </Pressable>
         <Pressable onPress={() => { Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light); onNewPost(); }} hitSlop={10} style={H.newPostBtn}>
           <LinearGradient colors={["#9478D8", "#5B3FD6"]} start={{ x: 0, y: 0 }} end={{ x: 1, y: 1 }} style={H.newPostGradient}>
@@ -292,12 +293,12 @@ function FeedHeader({
           </LinearGradient>
         </Pressable>
         <Pressable onPress={onNotify} style={H.bellWrap} hitSlop={10}>
-          <Ionicons name="notifications-outline" size={24} color={C.purple} />
-          {unreadCount > 0 && <View style={H.badge} />}
+          <Ionicons name="notifications-outline" size={24} color={T.purple} />
+          {unreadCount > 0 && <View style={[H.badge, { borderColor: T.bg }]} />}
         </Pressable>
         <Pressable onPress={onAvatarPress} hitSlop={6}>
           <LinearGradient colors={["#C278F0", "#7B5EA7"]} start={{ x: 0, y: 1 }} end={{ x: 1, y: 0 }} style={H.avatarRing}>
-            <View style={H.avatarInner}>
+            <View style={[H.avatarInner, { borderColor: T.bg }]}>
               <Image source={{ uri: avatarUrl ?? "https://loremflickr.com/100/100/cat?lock=500" }} style={H.avatar} contentFit="cover" />
             </View>
           </LinearGradient>
@@ -723,12 +724,12 @@ export default function FeedScreen() {
           onPressGroup={handleStoryGroupPress}
           onAddStory={() => setCreateStoryOpen(true)}
         />
-        <View style={F.tabBar}>
+        <View style={[F.tabBar, { backgroundColor: T.bg, borderBottomColor: T.border }]}>
           <Pressable style={[F.tabBtn, feedTab === "discover" && F.tabBtnActive]} onPress={() => handleTabChange("discover")}>
-            <Text style={[F.tabTxt, feedTab === "discover" && F.tabTxtActive]}>Keşfet</Text>
+            <Text style={[F.tabTxt, feedTab === "discover" && F.tabTxtActive, { color: feedTab === "discover" ? T.purple : T.textMuted }]}>Keşfet</Text>
           </Pressable>
           <Pressable style={[F.tabBtn, feedTab === "following" && F.tabBtnActive]} onPress={() => handleTabChange("following")}>
-            <Text style={[F.tabTxt, feedTab === "following" && F.tabTxtActive]}>Takip Ettiklerin</Text>
+            <Text style={[F.tabTxt, feedTab === "following" && F.tabTxtActive, { color: feedTab === "following" ? T.purple : T.textMuted }]}>Takip Ettiklerin</Text>
           </Pressable>
         </View>
       </>

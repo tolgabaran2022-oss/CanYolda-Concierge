@@ -1,0 +1,48 @@
+Koyu mod uygulaması yarım kalmış, aşağıdaki hataları düzelt. Kural:
+hiçbir bileşende sabit (hardcoded) beyaz/açık renk kalmayacak, her şey
+merkezi tema değişkenlerini kullanacak. Açık moda dokunma, açık mod
+şu an doğru.
+
+1. AKIŞ SAYFASI: Üst header (logo, arama, +, zil, avatar satırı),
+   hikaye (Hikayen Ekle) satırı ve "Keşfet / Takip Ettiklerin" sekme
+   çubuğu koyu modda hâlâ açık renkte. Bu üç bölümü tema
+   değişkenlerine bağla; koyu modda koyu zemin, açık metin olacak.
+
+2. HAYVANLAR SAYFASI: Filtre çipleri ("Acil", "Yardım Bekleyen" vb.)
+   ve durum kartları koyu modda beyaz kalıyor. Çipler ve kartlar koyu
+   modda koyu gri zemine geçsin, kart içindeki başlık/isim/konum
+   metinleri açık renge dönsün. Durum etiketlerinin ("Aç", "Sağlıklı")
+   renkli arka planları kalsın ama koyu zeminde okunur tonda olsun.
+   Ayrıca liste sonundaki kart bottom navigation arkasında kalıyor;
+   bu sayfanın liste konteynerine bottom bar yüksekliği kadar
+   padding-bottom ekle.
+
+3. EVCİL ANA SAYFASI: Bu sayfa koyu moddan tamamen etkilenmemiş,
+   komple açık temada. Header, sekme satırı (İlan Oluştur/İlanlarım/
+   Tüm İlanlar), büyük tanıtım kartı, "İlan verirken dikkat et" kartı
+   ve alttaki üç istatistik kartı dahil tüm sayfayı tema
+   değişkenlerine geçir. Sayfa sonuna bottom bar padding'i ekle,
+   içerik barın arkasında kalmasın.
+
+4. İLANLARIM SAYFASI: Header ve sekme satırı açık temada kalmış,
+   ilan kartı beyaz. Bunları koyu temaya bağla. Kartın altındaki
+   Düzenle/Önizle/Sil butonları bottom navigation arkasında
+   kalıyor; sayfa altına padding ekle.
+
+5. TÜM İLANLAR SAYFASI: Header, arama çubuğu, kategori çipleri ve
+   ilan kartları koyu modda beyaz kalıyor, hepsini temaya bağla.
+   "Tüm İlanlar" başlığı koyu zeminde koyu renk olduğu için
+   okunmuyor; başlık rengini tema değişkeninden alsın.
+
+6. GÖRSEL YÜKLENME HATASI (tema dışı ama kritik): İlanlarım ve Tüm
+   İlanlar sayfalarındaki ilan kartlarında fotoğraflar hiç
+   yüklenmiyor, kartlarda kocaman boş alan görünüyor. Görsel
+   yükleme sorununu bul ve düzelt (yükleme yolu/URL hatası mı,
+   upload mı bozuk kontrol et). Görsel gerçekten yoksa boş beyaz
+   alan yerine pati ikonlu bir placeholder göster ve kart
+   yüksekliğini sabitle.
+
+BİTİRMEDEN KONTROL: Koyu modda şu beş sayfayı tek tek aç: Akış,
+Hayvanlar, Evcil, İlanlarım, Tüm İlanlar. Beyaz kalan tek bir header,
+çip, kart veya arama çubuğu varsa bitirmeden düzelt. Her sayfayı en
+alta kadar kaydır; bottom bar arkasında ezilen içerik kalmamalı.

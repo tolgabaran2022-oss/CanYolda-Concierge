@@ -62,6 +62,7 @@ function FilterChip({
   count: number;
   onPress: () => void;
 }) {
+  const T = useTheme();
   const scale = useRef(new Animated.Value(1)).current;
 
   const handlePress = () => {
@@ -89,9 +90,9 @@ function FilterChip({
             </View>
           </LinearGradient>
         ) : (
-          <View style={F.chipInactive}>
+          <View style={[F.chipInactive, { backgroundColor: T.card, borderColor: T.border }]}>
             <Text style={F.chipEmoji}>{f.emoji}</Text>
-            <Text style={F.chipLabelInactive}>{f.label}</Text>
+            <Text style={[F.chipLabelInactive, { color: T.text }]}>{f.label}</Text>
             <View style={[F.chipBadgeInactive, { backgroundColor: `${f.accent}18` }]}>
               <Text style={[F.chipBadgeTextInactive, { color: f.accent }]}>{count}</Text>
             </View>

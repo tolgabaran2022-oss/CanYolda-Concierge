@@ -80,15 +80,16 @@ const TIPS = [
 
 // ── Header ────────────────────────────────────────────────────────────────────
 function PetHeader({ topPad }: { topPad: number }) {
+  const T = useTheme();
   return (
-    <View style={[hdr.wrap, { paddingTop: topPad + 8 }]}>
+    <View style={[hdr.wrap, { paddingTop: topPad + 8, backgroundColor: T.bg }]}>
       <View style={hdr.logoRow}>
         <LinearGradient colors={[P2, P, DARK]} style={hdr.logoIcon}>
           <Ionicons name="heart" size={14} color={WHITE} />
         </LinearGradient>
         <View>
-          <Text style={hdr.logoTxt}>canyoldaşı</Text>
-          <Text style={hdr.logoSub}>Sahiplendirme İlanları</Text>
+          <Text style={[hdr.logoTxt, { color: T.text }]}>canyoldaşı</Text>
+          <Text style={[hdr.logoSub, { color: T.textMuted }]}>Sahiplendirme İlanları</Text>
         </View>
       </View>
     </View>
@@ -110,8 +111,9 @@ const TAB_DEFS: { key: Tab; label: string; icon: keyof typeof Ionicons.glyphMap 
 ];
 
 function TabSwitcher({ active, onChange }: { active: Tab; onChange: (t: Tab) => void }) {
+  const T = useTheme();
   return (
-    <View style={tsw.wrap}>
+    <View style={[tsw.wrap, { backgroundColor: T.card, borderColor: T.border }]}>
       {TAB_DEFS.map((t) => {
         const isActive = active === t.key;
         return (
@@ -127,8 +129,8 @@ function TabSwitcher({ active, onChange }: { active: Tab; onChange: (t: Tab) => 
               </LinearGradient>
             ) : (
               <View style={tsw.inactiveRow}>
-                <Ionicons name={t.icon} size={13} color={P} />
-                <Text style={tsw.lblInactive} numberOfLines={1}>{t.label}</Text>
+                <Ionicons name={t.icon} size={13} color={T.purple} />
+                <Text style={[tsw.lblInactive, { color: T.textMuted }]} numberOfLines={1}>{t.label}</Text>
               </View>
             )}
           </Pressable>
@@ -148,21 +150,22 @@ const tsw = StyleSheet.create({
 
 // ── Search bar ────────────────────────────────────────────────────────────────
 function SearchBar({ query, onQuery, onFilter }: { query: string; onQuery: (q: string) => void; onFilter: () => void }) {
+  const T = useTheme();
   return (
     <View style={sb.wrap}>
-      <View style={sb.inputWrap}>
-        <Ionicons name="search-outline" size={16} color={`${BODY}90`} />
+      <View style={[sb.inputWrap, { backgroundColor: T.card, borderColor: T.border }]}>
+        <Ionicons name="search-outline" size={16} color={T.textMuted} />
         <TextInput
-          style={sb.input}
+          style={[sb.input, { color: T.text }]}
           placeholder="Kedi, köpek, kuş ara..."
-          placeholderTextColor={`${BODY}70`}
+          placeholderTextColor={T.placeholder}
           value={query}
           onChangeText={onQuery}
           returnKeyType="search"
         />
         {query.length > 0 && (
           <Pressable onPress={() => onQuery("")} hitSlop={8}>
-            <Ionicons name="close-circle" size={16} color={`${BODY}80`} />
+            <Ionicons name="close-circle" size={16} color={T.textMuted} />
           </Pressable>
         )}
       </View>
@@ -191,6 +194,7 @@ const CHIP_H = 40;
 const CHIP_GAP = 8;
 
 function FilterRow({ active, onChange }: { active: Filter; onChange: (f: Filter) => void }) {
+  const T = useTheme();
   const filterRef = useRef<FlatList>(null);
 
   const handlePress = (key: Filter, idx: number) => {
@@ -230,9 +234,9 @@ function FilterRow({ active, onChange }: { active: Filter; onChange: (f: Filter)
                 <Text style={fc.lblActive}>{f.label}</Text>
               </LinearGradient>
             ) : (
-              <View style={[fc.chip, fc.chipInactive]}>
+              <View style={[fc.chip, fc.chipInactive, { backgroundColor: T.card, borderColor: T.border }]}>
                 <Text style={fc.emoji}>{f.emoji}</Text>
-                <Text style={fc.lbl}>{f.label}</Text>
+                <Text style={[fc.lbl, { color: T.purple }]}>{f.label}</Text>
               </View>
             )}
           </Pressable>
@@ -286,24 +290,27 @@ const fc = StyleSheet.create({
 const IMG_H = 148; // ~40% of card
 
 function ListingCard({ listing, isFeatured, featuredUntil }: { listing: AdoptionListing; isFeatured?: boolean; featuredUntil?: string | null }) {
+  const T = useTheme();
   const router = useRouter();
   const [liked, setLiked] = useState(false);
+  const [imgError, setImgError] = useState(false);
 
   return (
     <Pressable
       style={({ pressed }) => [lc.shadow, { opacity: pressed ? 0.94 : 1 }]}
       onPress={() => router.push(`/adoption/${listing.id}`)}
     >
-      <View style={[lc.card, isFeatured && lc.featuredBorder]}>
+      <View style={[lc.card, { backgroundColor: T.card, borderColor: isFeatured ? P : T.border }, isFeatured && lc.featuredBorder]}>
 
         {/* ── Photo ── */}
         <View style={lc.imgWrap}>
-          {listing.photo ? (
+          {listing.photo && !imgError ? (
             <Image
               source={{ uri: listing.photo }}
               style={lc.img}
               contentFit="cover"
               contentPosition={{ top: 0.3 }}
+              onError={() => setImgError(true)}
             />
           ) : (
             <LinearGradient colors={[`${P2}40`, `${P}28`]} style={lc.imgFallback}>
@@ -344,7 +351,7 @@ function ListingCard({ listing, isFeatured, featuredUntil }: { listing: Adoption
         {/* ── Content ── */}
         <View style={lc.body}>
           <View style={lc.nameRow}>
-            <Text style={lc.name} numberOfLines={1}>{listing.petName}</Text>
+            <Text style={[lc.name, { color: T.text }]} numberOfLines={1}>{listing.petName}</Text>
             {listing.petAge ? (
               <View style={lc.agePill}>
                 <Text style={lc.ageTxt}>{listing.petAge}</Text>
@@ -353,13 +360,13 @@ function ListingCard({ listing, isFeatured, featuredUntil }: { listing: Adoption
           </View>
 
           {listing.description ? (
-            <Text style={lc.desc} numberOfLines={1}>{listing.description}</Text>
+            <Text style={[lc.desc, { color: T.textMuted }]} numberOfLines={1}>{listing.description}</Text>
           ) : null}
 
           <View style={lc.footer}>
             <View style={lc.locRow}>
-              <Ionicons name="location-sharp" size={11} color={P} />
-              <Text style={lc.loc} numberOfLines={1}>{listing.location}</Text>
+              <Ionicons name="location-sharp" size={11} color={T.purple} />
+              <Text style={[lc.loc, { color: T.textMuted }]} numberOfLines={1}>{listing.location}</Text>
             </View>
             <Pressable
               style={lc.chatBtn}
@@ -411,10 +418,11 @@ const lc = StyleSheet.create({
 
 // ── Listings header ───────────────────────────────────────────────────────────
 function ListingsHeader({ count, filter }: { count: number; filter: Filter }) {
+  const T = useTheme();
   const label = filter === "all" ? "Tüm İlanlar" : FILTERS.find((f) => f.key === filter)?.label ?? "";
   return (
     <View style={lh.wrap}>
-      <Text style={lh.title}>{label}</Text>
+      <Text style={[lh.title, { color: T.text }]}>{label}</Text>
       <View style={lh.pill}>
         <Text style={lh.count}>{count} ilan</Text>
       </View>
@@ -430,6 +438,7 @@ const lh = StyleSheet.create({
 
 // ── Create section ────────────────────────────────────────────────────────────
 function CreateSection({ onPress, botPad }: { onPress: () => void; botPad: number }) {
+  const T = useTheme();
   return (
     <ScrollView
       showsVerticalScrollIndicator={false}
@@ -437,13 +446,13 @@ function CreateSection({ onPress, botPad }: { onPress: () => void; botPad: numbe
     >
       {/* Hero card */}
       <View style={cr.heroCardShadow}>
-        <View style={cr.heroCard}>
+        <View style={[cr.heroCard, { backgroundColor: T.card, borderColor: T.border }]}>
           <View style={cr.heroLeft}>
             <LinearGradient colors={[`${P}22`, `${P2}14`]} style={cr.heroIconCircle}>
               <Ionicons name="heart" size={22} color={P} />
             </LinearGradient>
-            <Text style={cr.heroTitle}>Evcil hayvanını{"\n"}sahiplendirme ilanına ekle</Text>
-            <Text style={cr.heroSub}>Fotoğraf, açıklama ve konum{"\n"}ekleyerek ilan oluştur</Text>
+            <Text style={[cr.heroTitle, { color: T.text }]}>Evcil hayvanını{"\n"}sahiplendirme ilanına ekle</Text>
+            <Text style={[cr.heroSub, { color: T.textMuted }]}>Fotoğraf, açıklama ve konum{"\n"}ekleyerek ilan oluştur</Text>
             <Pressable
               style={({ pressed }) => [cr.ctaBtn, { opacity: pressed ? 0.88 : 1 }]}
               onPress={() => { Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium); onPress(); }}
@@ -461,15 +470,15 @@ function CreateSection({ onPress, botPad }: { onPress: () => void; botPad: numbe
       </View>
 
       {/* Tips */}
-      <View style={cr.card}>
+      <View style={[cr.card, { backgroundColor: T.card, borderColor: T.border }]}>
         <View style={{ flexDirection: "row", alignItems: "center", gap: 8, marginBottom: 12 }}>
           <Ionicons name="information-circle-outline" size={16} color={P} />
-          <Text style={cr.tipsTitle}>İlan verirken dikkat et</Text>
+          <Text style={[cr.tipsTitle, { color: T.text }]}>İlan verirken dikkat et</Text>
         </View>
         {TIPS.map((tip, i) => (
           <View key={i} style={{ flexDirection: "row", alignItems: "flex-start", gap: 10, marginBottom: i < TIPS.length - 1 ? 10 : 0 }}>
             <View style={cr.dot} />
-            <Text style={cr.tipTxt}>{tip}</Text>
+            <Text style={[cr.tipTxt, { color: T.textMuted }]}>{tip}</Text>
           </View>
         ))}
       </View>
@@ -481,12 +490,12 @@ function CreateSection({ onPress, botPad }: { onPress: () => void; botPad: numbe
           { icon: "heart"  as const, val: "800+",  lbl: "Sahiplendirilen" },
           { icon: "people" as const, val: "12K+",  lbl: "Hayvan Dostu" },
         ] as const).map((stat) => (
-          <View key={stat.lbl} style={cr.statCard}>
+          <View key={stat.lbl} style={[cr.statCard, { backgroundColor: T.card, borderColor: T.border }]}>
             <LinearGradient colors={[`${P}18`, `${P2}10`]} style={cr.statIconWrap}>
               <Ionicons name={stat.icon} size={18} color={P} />
             </LinearGradient>
-            <Text style={cr.statVal}>{stat.val}</Text>
-            <Text style={cr.statLbl}>{stat.lbl}</Text>
+            <Text style={[cr.statVal, { color: T.text }]}>{stat.val}</Text>
+            <Text style={[cr.statLbl, { color: T.textMuted }]}>{stat.lbl}</Text>
           </View>
         ))}
       </View>
@@ -648,12 +657,14 @@ function MyListingCard({
   isFeatured?: boolean;
   featuredUntil?: string | null;
 }) {
+  const T = useTheme();
   const { listing, status, views, favs, msgs } = card;
   const cfg = STATUS_CFG[status];
   const [selectedPkg, setSelectedPkg] = useState<BoostPackage | null>(null);
   const [boosting, setBoosting] = useState(false);
   const [perfOpen, setPerfOpen] = useState(false);
   const [boostExpanded, setBoostExpanded] = useState(false);
+  const [imgError, setImgError] = useState(false);
 
   const isAdopted = status === "Sahiplendirildi";
   const canBoost  = status === "Aktif" && !isFeatured;
@@ -681,7 +692,7 @@ function MyListingCard({
 
   return (
     <View style={ml.cardOuter}>
-      <View style={[ml.card, isFeatured && ml.cardFeatured]}>
+      <View style={[ml.card, { backgroundColor: T.card }, isFeatured && ml.cardFeatured]}>
 
         {/* ── Status row — above image ── */}
         <View style={ml.statusRow}>
@@ -703,16 +714,20 @@ function MyListingCard({
 
         {/* ── Hero photo — 16:9 ── */}
         <View style={ml.heroWrap}>
-          <Image
-            source={listing.photo
-              ? { uri: listing.photo }
-              : { uri: `https://loremflickr.com/600/338/cat,dog?lock=${listing.id?.charCodeAt(0) ?? 42}` }
-            }
-            style={ml.heroImg}
-            contentFit="cover"
-            contentPosition={{ top: 0.3 }}
-          />
-          {!listing.photo && (
+          {listing.photo && !imgError ? (
+            <Image
+              source={{ uri: listing.photo }}
+              style={ml.heroImg}
+              contentFit="cover"
+              contentPosition={{ top: 0.3 }}
+              onError={() => setImgError(true)}
+            />
+          ) : (
+            <LinearGradient colors={[`${P2}40`, `${P}28`]} style={[ml.heroFallback, { flex: 1 }]}>
+              <Ionicons name="paw" size={34} color={`${P}60`} />
+            </LinearGradient>
+          )}
+          {(!listing.photo || imgError) && (
             <View style={ml.heroNoPhotoOverlay}>
               <Ionicons name="paw" size={22} color="rgba(255,255,255,0.85)" />
               <Text style={ml.heroNoPhotoTxt}>Fotoğraf eklenmedi</Text>
@@ -738,13 +753,13 @@ function MyListingCard({
           )}
 
           {/* Title */}
-          <Text style={ml.petName} numberOfLines={2}>{listing.petName}</Text>
+          <Text style={[ml.petName, { color: T.text }]} numberOfLines={2}>{listing.petName}</Text>
 
           {/* Location + date */}
           <View style={ml.locRow}>
-            <Ionicons name="location-sharp" size={12} color={P} />
-            <Text style={ml.locTxt} numberOfLines={1}>{listing.location}</Text>
-            <Text style={ml.timeTxt}>{formatTimeAgo(listing.createdAt)}</Text>
+            <Ionicons name="location-sharp" size={12} color={T.purple} />
+            <Text style={[ml.locTxt, { color: T.textMuted }]} numberOfLines={1}>{listing.location}</Text>
+            <Text style={[ml.timeTxt, { color: T.textFaint }]}>{formatTimeAgo(listing.createdAt)}</Text>
           </View>
 
           {/* Stats bar */}
@@ -978,6 +993,7 @@ function MyListingsSection({
   botPad: number;
   onAdd: () => void;
 }) {
+  const T = useTheme();
   const { createCheckout, packages, fetchBoostStatus } = useBoost();
   const { updateListing } = useAdoption();
   const router = useRouter();
@@ -1257,8 +1273,8 @@ function MyListingsSection({
       {/* ── Section header ── */}
       <View style={ml.secHeader}>
         <View>
-          <Text style={ml.secTitle}>İlanlarım</Text>
-          <Text style={ml.secSub}>Verdiğin ilanları yönet, performansını takip et</Text>
+          <Text style={[ml.secTitle, { color: T.text }]}>İlanlarım</Text>
+          <Text style={[ml.secSub, { color: T.textMuted }]}>Verdiğin ilanları yönet, performansını takip et</Text>
         </View>
         <Pressable
           style={({ pressed }) => [{ opacity: pressed ? 0.85 : 1 }]}
@@ -1287,10 +1303,10 @@ function MyListingsSection({
           ) : (
             <Pressable
               key={f.key}
-              style={ml.filterChip}
+              style={[ml.filterChip, { backgroundColor: T.card, borderColor: T.border }]}
               onPress={() => { Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light); setMyFilter(f.key); }}
             >
-              <Text style={ml.filterLbl}>{f.label}</Text>
+              <Text style={[ml.filterLbl, { color: T.textMuted }]}>{f.label}</Text>
             </Pressable>
           );
         })}
@@ -1302,8 +1318,8 @@ function MyListingsSection({
           <View style={ml.emptyIllo}>
             <Ionicons name="list-outline" size={40} color={`${P}70`} />
           </View>
-          <Text style={ml.emptyTitle}>Henüz İlan Yok</Text>
-          <Text style={ml.emptySub}>
+          <Text style={[ml.emptyTitle, { color: T.text }]}>Henüz İlan Yok</Text>
+          <Text style={[ml.emptySub, { color: T.textMuted }]}>
             İlk sahiplendirme ilanını oluşturarak{"\n"}patili dostuna yeni bir yuva bul.
           </Text>
           <Pressable

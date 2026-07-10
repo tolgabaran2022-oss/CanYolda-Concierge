@@ -5,6 +5,7 @@ import { LinearGradient } from "expo-linear-gradient";
 import React, { useState } from "react";
 import { Platform, Pressable, ScrollView, StyleSheet, Text, View } from "react-native";
 import type { ApiStoryGroup } from "@/lib/storiesApi";
+import { useTheme } from "@/hooks/useTheme";
 
 const PURPLE  = "#7B5EA7";
 const PURPLE2 = "#5B3FD6";
@@ -64,6 +65,7 @@ export function StoryBar({
   onPressGroup,
   onAddStory,
 }: Props) {
+  const T = useTheme();
   const currentUserGroup = stories.find((g) => g.userId === currentUserId);
   const otherGroups      = stories.filter((g) => g.userId !== currentUserId);
 
@@ -77,7 +79,7 @@ export function StoryBar({
     <ScrollView
       horizontal
       showsHorizontalScrollIndicator={false}
-      style={S.scroll}
+      style={[S.scroll, { backgroundColor: T.bg }]}
       contentContainerStyle={S.content}
     >
       {/* ── Add / own story ── */}
@@ -113,7 +115,7 @@ export function StoryBar({
             </View>
           </View>
         )}
-        <Text style={S.name} numberOfLines={1}>
+        <Text style={[S.name, { color: T.textMuted }]} numberOfLines={1}>
           Hikayen{"\n"}Ekle
         </Text>
       </Pressable>
@@ -144,7 +146,7 @@ export function StoryBar({
               <SafeAvatar uri={group.avatarUrl} name={group.username} size={AV} />
             </View>
           )}
-          <Text style={S.name} numberOfLines={1}>
+          <Text style={[S.name, { color: T.textMuted }]} numberOfLines={1}>
             {(group.username ?? "").length > 11
               ? (group.username ?? "").slice(0, 10) + "…"
               : (group.username ?? "")}
