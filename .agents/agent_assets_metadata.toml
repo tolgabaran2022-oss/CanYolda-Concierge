@@ -41,3 +41,9 @@ id = "pHrfa2xlx2vF75HuuVLzw"
 uri = "file://screenshots/figma/canyoldasi-figma-tasarimlar.zip"
 type = "unspecified"
 title = "CanYoldaşı — Figma Tasarımları (14 ekran, JPEG)"
+
+[[outputs]]
+id = "4jB4J3IkI4FYVnjYuXIpz"
+uri = "file://screenshots/app-preview.jpg"
+type = "image"
+title = "CanYoldaşı — Karşılama Ekranı"
