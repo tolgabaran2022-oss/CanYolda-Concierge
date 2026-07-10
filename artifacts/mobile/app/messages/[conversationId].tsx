@@ -2,7 +2,6 @@ import { Ionicons } from "@expo/vector-icons";
 import * as Haptics from "expo-haptics";
 import { Image } from "expo-image";
 import * as ImagePicker from "expo-image-picker";
-import { LinearGradient } from "expo-linear-gradient";
 import { useLocalSearchParams, useRouter } from "expo-router";
 import React, {
   useCallback,
@@ -24,6 +23,7 @@ import {
 } from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { useAuth } from "@/contexts/AuthContext";
+import { useTheme } from "@/hooks/useTheme";
 import {
   apiGetConversations,
   apiGetMessages,
@@ -32,15 +32,6 @@ import {
   type ApiConversation,
   type ApiMessage,
 } from "@/lib/messagesApi";
-
-const P      = "#7B5EA7";
-const PDARK  = "#3D2070";
-const PLIGHT = "#EDE8F8";
-const BG     = "#F9F8FF";
-const WHITE  = "#FFFFFF";
-const MUTED  = "#9187B0";
-const TEXT   = "#1C1033";
-const CAT    = "https://loremflickr.com/100/100/cat?lock=500";
 
 const POLL_INTERVAL = 3000;
 
@@ -53,7 +44,6 @@ function dateSep(isoStr: string): string {
   const today = new Date();
   const yesterday = new Date(today);
   yesterday.setDate(today.getDate() - 1);
-
   if (d.toDateString() === today.toDateString())     return "Bugün";
   if (d.toDateString() === yesterday.toDateString()) return "Dün";
   return d.toLocaleDateString("tr-TR", { day: "numeric", month: "long" });
@@ -78,6 +68,7 @@ function buildItems(msgs: ApiMessage[]): RenderedItem[] {
 }
 
 export default function ChatScreen() {
+  const T        = useTheme();
   const insets   = useSafeAreaInsets();
   const router   = useRouter();
   const { user } = useAuth();
@@ -95,7 +86,6 @@ export default function ChatScreen() {
 
   const topPad = Platform.OS === "web" ? 67 : insets.top;
 
-  /* ── Load conversation metadata ── */
   const loadConv = useCallback(async () => {
     if (!user || !conversationId) return;
     try {
@@ -105,7 +95,6 @@ export default function ChatScreen() {
     } catch { /* ignore */ }
   }, [user, conversationId]);
 
-  /* ── Load initial messages ── */
   const loadMsgs = useCallback(async () => {
     if (!user || !conversationId) return;
     try {
@@ -117,7 +106,6 @@ export default function ChatScreen() {
     finally { setLoading(false); }
   }, [user, conversationId]);
 
-  /* ── Polling for new messages ── */
   const pollNew = useCallback(async () => {
     if (!user || !conversationId || !latestAt.current) return;
     try {
@@ -146,31 +134,26 @@ export default function ChatScreen() {
     }
   }, [loading]);
 
-  /* Start / stop polling */
   useLayoutEffect(() => {
     pollRef.current = setInterval(pollNew, POLL_INTERVAL);
     return () => { if (pollRef.current) clearInterval(pollRef.current); };
   }, [pollNew]);
 
-  /* ── Send message ── */
   const handleSend = async () => {
-    if (!user || !conversationId || (!text.trim() && !false)) return;
     if (sending || !text.trim()) return;
-
     const draft = text.trim();
     setText("");
     setSending(true);
     Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
     try {
-      const msg = await apiSendMessage(conversationId, user.id, draft);
+      const msg = await apiSendMessage(conversationId!, user!.id, draft);
       setMsgs((p) => [...p, msg]);
       latestAt.current = msg.createdAt;
       setTimeout(() => flatRef.current?.scrollToEnd({ animated: true }), 80);
-    } catch { /* restore on error */ setText(draft); }
+    } catch { setText(draft); }
     finally { setSending(false); }
   };
 
-  /* ── Pick image ── */
   const handleImage = async () => {
     const perm = await ImagePicker.requestMediaLibraryPermissionsAsync();
     if (!perm.granted) return;
@@ -195,9 +178,11 @@ export default function ChatScreen() {
 
   if (loading) {
     return (
-      <View style={[S.root, { paddingTop: topPad }]}>
-        <ChatHeader conv={null} onBack={() => router.back()} />
-        <View style={S.center}><ActivityIndicator size="large" color={P} /></View>
+      <View style={[S.root, { backgroundColor: T.bg, paddingTop: topPad }]}>
+        <ChatHeader T={T} conv={null} onBack={() => router.back()} />
+        <View style={S.center}>
+          <ActivityIndicator size="large" color={T.purple} />
+        </View>
       </View>
     );
   }
@@ -205,24 +190,26 @@ export default function ChatScreen() {
   const items = buildItems(msgs);
 
   return (
-    <View style={[S.root, { paddingTop: topPad }]}>
-      <ChatHeader conv={conv} onBack={() => router.back()} />
+    <View style={[S.root, { backgroundColor: T.bg, paddingTop: topPad }]}>
+      <ChatHeader T={T} conv={conv} onBack={() => router.back()} />
 
-      {/* Listing card if conversation was started from a listing */}
+      {/* Listing card */}
       {conv?.listingId && (
-        <View style={S.listingCard}>
+        <View style={[S.listingCard, { backgroundColor: T.card, borderColor: T.border }]}>
           {conv.listingImage ? (
             <Image source={{ uri: conv.listingImage }} style={S.listingImg} contentFit="cover" />
           ) : (
-            <View style={[S.listingImg, S.listingImgPlaceholder]}>
-              <Ionicons name="paw" size={20} color={MUTED} />
+            <View style={[S.listingImg, S.listingImgPlaceholder, { backgroundColor: T.input }]}>
+              <Ionicons name="paw" size={20} color={T.textMuted} />
             </View>
           )}
           <View style={{ flex: 1 }}>
-            <Text style={S.listingLabel}>İlan</Text>
-            <Text style={S.listingTitle} numberOfLines={1}>{conv.listingTitle ?? "İlan"}</Text>
+            <Text style={[S.listingLabel, { color: T.textMuted }]}>İlan</Text>
+            <Text style={[S.listingTitle, { color: T.text }]} numberOfLines={1}>
+              {conv.listingTitle ?? "İlan"}
+            </Text>
           </View>
-          <Ionicons name="chevron-forward" size={18} color={MUTED} />
+          <Ionicons name="chevron-forward" size={18} color={T.textMuted} />
         </View>
       )}
 
@@ -240,12 +227,14 @@ export default function ChatScreen() {
           showsVerticalScrollIndicator={false}
           ListEmptyComponent={
             <View style={S.center}>
-              <Text style={S.noMsgs}>Henüz mesaj yok. Merhaba de! 👋</Text>
+              <Text style={[S.noMsgs, { color: T.textMuted }]}>
+                Henüz mesaj yok. Merhaba de! 👋
+              </Text>
             </View>
           }
           renderItem={({ item }) => {
             if (item.kind === "date") {
-              return <DateSeparator label={item.label} />;
+              return <DateSeparator T={T} label={item.label} />;
             }
             const isMine = item.msg.senderId === user?.id;
             return <MessageBubble msg={item.msg} isMine={isMine} />;
@@ -253,31 +242,38 @@ export default function ChatScreen() {
         />
 
         {/* Input bar */}
-        <View style={[S.inputBar, { paddingBottom: insets.bottom + 6 }]}>
+        <View style={[
+          S.inputBar,
+          { paddingBottom: insets.bottom + 6, backgroundColor: T.card, borderTopColor: T.border },
+        ]}>
           <Pressable style={S.imgBtn} onPress={handleImage} hitSlop={8}>
-            <Ionicons name="image-outline" size={26} color={P} />
+            <Ionicons name="image-outline" size={26} color={T.purple} />
           </Pressable>
 
           <TextInput
-            style={S.input}
+            style={[S.input, { backgroundColor: T.input, color: T.text, borderColor: T.inputBorder }]}
             value={text}
             onChangeText={setText}
             placeholder="Mesaj yaz…"
-            placeholderTextColor={MUTED}
+            placeholderTextColor={T.placeholder}
             multiline
             maxLength={1000}
             returnKeyType="default"
           />
 
           <Pressable
-            style={[S.sendBtn, (!text.trim() || sending) && S.sendBtnDisabled]}
+            style={[
+              S.sendBtn,
+              { backgroundColor: T.purple },
+              (!text.trim() || sending) && S.sendBtnDisabled,
+            ]}
             onPress={handleSend}
             disabled={!text.trim() || sending}
           >
             {sending ? (
-              <ActivityIndicator size="small" color={WHITE} />
+              <ActivityIndicator size="small" color="#FFF" />
             ) : (
-              <Ionicons name="send" size={18} color={WHITE} />
+              <Ionicons name="send" size={18} color="#FFF" />
             )}
           </Pressable>
         </View>
@@ -288,24 +284,33 @@ export default function ChatScreen() {
 
 /* ── Sub-components ── */
 
-function ChatHeader({ conv, onBack }: { conv: ApiConversation | null; onBack: () => void }) {
+type ThemeProp = { T: ReturnType<typeof useTheme> };
+
+function ChatHeader({ T, conv, onBack }: ThemeProp & { conv: ApiConversation | null; onBack: () => void }) {
   const router = useRouter();
+  const initial = conv?.otherUsername?.charAt(0).toUpperCase() ?? "?";
   return (
-    <View style={S.header}>
+    <View style={[S.header, { backgroundColor: T.card, borderBottomColor: T.border }]}>
       <Pressable onPress={onBack} hitSlop={14} style={S.backBtn}>
-        <Ionicons name="chevron-back" size={26} color={PDARK} />
+        <Ionicons name="chevron-back" size={26} color={T.purple} />
       </Pressable>
 
       <Pressable
         style={S.headerUser}
         onPress={() => conv && router.push(`/user-profile/${encodeURIComponent(conv.otherUserId)}`)}
       >
-        <Image
-          source={{ uri: conv?.otherAvatarUrl || CAT }}
-          style={S.headerAvatar}
-          contentFit="cover"
-        />
-        <Text style={S.headerUsername} numberOfLines={1}>
+        {conv?.otherAvatarUrl ? (
+          <Image
+            source={{ uri: conv.otherAvatarUrl }}
+            style={[S.headerAvatar, { backgroundColor: T.input }]}
+            contentFit="cover"
+          />
+        ) : (
+          <View style={[S.headerAvatar, S.headerAvatarInitials, { backgroundColor: T.purple + "22" }]}>
+            <Text style={{ fontSize: 15, fontFamily: "Inter_700Bold", color: T.purple }}>{initial}</Text>
+          </View>
+        )}
+        <Text style={[S.headerUsername, { color: T.text }]} numberOfLines={1}>
           {conv ? `@${conv.otherUsername}` : "Sohbet"}
         </Text>
       </Pressable>
@@ -315,57 +320,64 @@ function ChatHeader({ conv, onBack }: { conv: ApiConversation | null; onBack: ()
   );
 }
 
-function DateSeparator({ label }: { label: string }) {
+function DateSeparator({ T, label }: ThemeProp & { label: string }) {
   return (
     <View style={S.dateSep}>
-      <View style={S.dateLine} />
-      <Text style={S.dateLabel}>{label}</Text>
-      <View style={S.dateLine} />
+      <View style={[S.dateLine, { backgroundColor: T.border }]} />
+      <Text style={[S.dateLabel, { color: T.textMuted }]}>{label}</Text>
+      <View style={[S.dateLine, { backgroundColor: T.border }]} />
     </View>
   );
 }
 
 function MessageBubble({ msg, isMine }: { msg: ApiMessage; isMine: boolean }) {
-  const hasImg   = !!msg.imageUrl && msg.message !== "📷 Fotoğraf";
+  const T = useTheme();
+  const [imgFailed, setImgFailed] = useState(false);
   const hasPhoto = !!msg.imageUrl;
+  const showText = !!msg.message && msg.message !== "📷 Fotoğraf";
+
+  const bubbleBg    = isMine ? T.purple : T.card;
+  const textColor   = isMine ? "#FFF"   : T.text;
+  const timeColor   = isMine ? "rgba(255,255,255,0.72)" : T.textMuted;
+  const shadowStyle = isMine ? {} : Platform.select({
+    ios:     { shadowColor: "#000", shadowOffset: { width: 0, height: 1 }, shadowOpacity: 0.07, shadowRadius: 4 },
+    android: { elevation: 1 },
+    default: {},
+  });
 
   return (
     <View style={[S.bubbleRow, isMine ? S.bubbleRowRight : S.bubbleRowLeft]}>
-      <View style={[S.bubbleOuter, isMine ? S.bubbleOuterRight : S.bubbleOuterLeft]}>
-        {isMine ? (
-          <LinearGradient
-            colors={["#9B6FD6", P]}
-            start={{ x: 0, y: 0 }}
-            end={{ x: 1, y: 1 }}
-            style={[S.bubble, S.bubbleMine]}
-          >
-            {hasPhoto && (
+      <View style={S.bubbleOuter}>
+        <View
+          style={[
+            S.bubble,
+            { backgroundColor: bubbleBg },
+            isMine ? S.bubbleMine : S.bubbleOther,
+            shadowStyle,
+          ]}
+        >
+          {hasPhoto && (
+            imgFailed ? (
+              <View style={[S.imgErrorBox, { backgroundColor: T.bgSecondary }]}>
+                <Ionicons name="image-outline" size={28} color={T.textFaint} />
+                <Text style={[S.imgErrorTxt, { color: T.textMuted }]}>Görsel yüklenemedi</Text>
+              </View>
+            ) : (
               <Image
-                source={{ uri: msg.imageUrl }}
+                source={{ uri: msg.imageUrl! }}
                 style={S.bubbleImg}
                 contentFit="cover"
+                onError={() => setImgFailed(true)}
               />
-            )}
-            {msg.message && msg.message !== "📷 Fotoğraf" && (
-              <Text style={S.bubbleTxtMine}>{msg.message}</Text>
-            )}
-            <Text style={S.bubbleTimeMine}>{timeStr(msg.createdAt)}{msg.isRead ? " ✓✓" : " ✓"}</Text>
-          </LinearGradient>
-        ) : (
-          <View style={[S.bubble, S.bubbleOther]}>
-            {hasPhoto && (
-              <Image
-                source={{ uri: msg.imageUrl }}
-                style={S.bubbleImg}
-                contentFit="cover"
-              />
-            )}
-            {msg.message && msg.message !== "📷 Fotoğraf" && (
-              <Text style={S.bubbleTxtOther}>{msg.message}</Text>
-            )}
-            <Text style={S.bubbleTimeOther}>{timeStr(msg.createdAt)}</Text>
-          </View>
-        )}
+            )
+          )}
+          {showText && (
+            <Text style={[S.bubbleTxt, { color: textColor }]}>{msg.message}</Text>
+          )}
+          <Text style={[S.bubbleTime, { color: timeColor }]}>
+            {timeStr(msg.createdAt)}{isMine ? (msg.isRead ? " ✓✓" : " ✓") : ""}
+          </Text>
+        </View>
       </View>
     </View>
   );
@@ -374,93 +386,85 @@ function MessageBubble({ msg, isMine }: { msg: ApiMessage; isMine: boolean }) {
 /* ── Styles ── */
 
 const S = StyleSheet.create({
-  root:   { flex: 1, backgroundColor: BG },
+  root:   { flex: 1 },
   center: { flex: 1, alignItems: "center", justifyContent: "center", paddingVertical: 40 },
-  noMsgs: { fontSize: 14, color: MUTED, fontFamily: "Inter_400Regular", textAlign: "center" },
+  noMsgs: { fontSize: 14, fontFamily: "Inter_400Regular", textAlign: "center" },
 
-  /* Header */
   header: {
     flexDirection: "row", alignItems: "center", justifyContent: "space-between",
     paddingHorizontal: 6, paddingVertical: 10,
-    backgroundColor: WHITE,
-    borderBottomWidth: StyleSheet.hairlineWidth, borderBottomColor: "rgba(123,94,167,0.12)",
+    borderBottomWidth: StyleSheet.hairlineWidth,
   },
-  backBtn:       { width: 40, height: 40, alignItems: "center", justifyContent: "center" },
-  headerUser:    { flexDirection: "row", alignItems: "center", gap: 10, flex: 1, justifyContent: "center" },
-  headerAvatar:  { width: 36, height: 36, borderRadius: 18, backgroundColor: PLIGHT },
-  headerUsername:{ fontSize: 15, fontFamily: "Inter_700Bold", color: PDARK, maxWidth: 200 },
+  backBtn:              { width: 40, height: 40, alignItems: "center", justifyContent: "center" },
+  headerUser:           { flexDirection: "row", alignItems: "center", gap: 10, flex: 1, justifyContent: "center" },
+  headerAvatar:         { width: 36, height: 36, borderRadius: 18 },
+  headerAvatarInitials: { alignItems: "center", justifyContent: "center" },
+  headerUsername:       { fontSize: 15, fontFamily: "Inter_700Bold", maxWidth: 200 },
 
-  /* Listing card */
   listingCard: {
     flexDirection: "row", alignItems: "center", gap: 12,
     margin: 12, padding: 12, borderRadius: 14,
-    backgroundColor: WHITE,
-    borderWidth: 1, borderColor: "rgba(123,94,167,0.14)",
+    borderWidth: 1,
     ...Platform.select({
       ios:     { shadowColor: "#000", shadowOffset: { width: 0, height: 2 }, shadowOpacity: 0.06, shadowRadius: 8 },
       android: { elevation: 2 },
       default: {},
     }),
   },
-  listingImg:         { width: 48, height: 48, borderRadius: 10, backgroundColor: PLIGHT },
+  listingImg:            { width: 48, height: 48, borderRadius: 10 },
   listingImgPlaceholder: { alignItems: "center", justifyContent: "center" },
-  listingLabel:       { fontSize: 10, fontFamily: "Inter_400Regular", color: MUTED, textTransform: "uppercase", letterSpacing: 0.8 },
-  listingTitle:       { fontSize: 13, fontFamily: "Inter_700Bold", color: PDARK },
+  listingLabel:          { fontSize: 10, fontFamily: "Inter_400Regular", textTransform: "uppercase", letterSpacing: 0.8 },
+  listingTitle:          { fontSize: 13, fontFamily: "Inter_700Bold" },
 
-  /* Date separator */
   dateSep:  { flexDirection: "row", alignItems: "center", marginVertical: 12, gap: 10 },
-  dateLine: { flex: 1, height: StyleSheet.hairlineWidth, backgroundColor: "rgba(123,94,167,0.15)" },
-  dateLabel:{ fontSize: 11, fontFamily: "Inter_400Regular", color: MUTED },
+  dateLine: { flex: 1, height: StyleSheet.hairlineWidth },
+  dateLabel:{ fontSize: 11, fontFamily: "Inter_400Regular" },
 
-  /* Bubble row */
   bubbleRow:      { marginVertical: 2 },
   bubbleRowLeft:  { alignItems: "flex-start" },
   bubbleRowRight: { alignItems: "flex-end" },
-
-  bubbleOuter:      { maxWidth: "78%" },
-  bubbleOuterLeft:  {},
-  bubbleOuterRight: {},
+  bubbleOuter:    { maxWidth: "78%" },
 
   bubble:      { borderRadius: 18, overflow: "hidden", paddingHorizontal: 14, paddingTop: 10, paddingBottom: 7 },
   bubbleMine:  { borderBottomRightRadius: 4 },
-  bubbleOther: { backgroundColor: WHITE, borderBottomLeftRadius: 4,
-    ...Platform.select({
-      ios:     { shadowColor: "#000", shadowOffset: { width: 0, height: 1 }, shadowOpacity: 0.07, shadowRadius: 4 },
-      android: { elevation: 1 },
-      default: {},
-    }),
+  bubbleOther: { borderBottomLeftRadius: 4 },
+
+  bubbleImg: {
+    width: 220,
+    aspectRatio: 4 / 3,
+    borderRadius: 10,
+    marginBottom: 6,
   },
+  imgErrorBox: {
+    width: 200,
+    height: 120,
+    borderRadius: 10,
+    alignItems: "center",
+    justifyContent: "center",
+    gap: 6,
+    marginBottom: 6,
+  },
+  imgErrorTxt: { fontSize: 12, fontFamily: "Inter_400Regular" },
 
-  bubbleImg:       { width: "100%", aspectRatio: 1, borderRadius: 10, marginBottom: 6, minWidth: 180 },
-  bubbleTxtMine:   { fontSize: 14, fontFamily: "Inter_400Regular", color: WHITE, lineHeight: 20 },
-  bubbleTxtOther:  { fontSize: 14, fontFamily: "Inter_400Regular", color: TEXT, lineHeight: 20 },
-  bubbleTimeMine:  { fontSize: 10, fontFamily: "Inter_400Regular", color: "rgba(255,255,255,0.72)", textAlign: "right", marginTop: 4 },
-  bubbleTimeOther: { fontSize: 10, fontFamily: "Inter_400Regular", color: MUTED, textAlign: "right", marginTop: 4 },
+  bubbleTxt:  { fontSize: 14, fontFamily: "Inter_400Regular", lineHeight: 20 },
+  bubbleTime: { fontSize: 10, fontFamily: "Inter_400Regular", textAlign: "right", marginTop: 4 },
 
-  /* Input */
   inputBar: {
     flexDirection: "row", alignItems: "flex-end", gap: 10,
     paddingTop: 10, paddingHorizontal: 12,
-    backgroundColor: WHITE,
     borderTopWidth: StyleSheet.hairlineWidth,
-    borderTopColor: "rgba(123,94,167,0.12)",
   },
   imgBtn: { width: 40, height: 40, alignItems: "center", justifyContent: "center" },
   input: {
     flex: 1, minHeight: 40, maxHeight: 120,
-    backgroundColor: PLIGHT, borderRadius: 22,
+    borderRadius: 22,
     paddingHorizontal: 16, paddingVertical: 10,
-    fontSize: 14, fontFamily: "Inter_400Regular", color: TEXT,
-    borderWidth: 1, borderColor: "rgba(123,94,167,0.18)",
+    fontSize: 14, fontFamily: "Inter_400Regular",
+    borderWidth: 1,
   },
   sendBtn: {
     width: 40, height: 40, borderRadius: 20,
-    backgroundColor: P, alignItems: "center", justifyContent: "center",
-    ...Platform.select({
-      ios:     { shadowColor: P, shadowOffset: { width: 0, height: 3 }, shadowOpacity: 0.35, shadowRadius: 8 },
-      android: { elevation: 4 },
-      default: {},
-    }),
+    alignItems: "center", justifyContent: "center",
   },
-  sendBtnDisabled: { backgroundColor: "#C5BAE8", ...Platform.select({ ios: { shadowOpacity: 0 }, android: { elevation: 0 }, default: {} }) },
+  sendBtnDisabled: { opacity: 0.4 },
 });

@@ -1,0 +1,48 @@
+Koyu mod düzeltmeleri, kalan dört sayfa + birkaç bug. Kural aynı:
+sabit renk kullanma, merkezi tema değişkenlerine bağla, açık moda
+dokunma.
+
+1. TAKİP EDİLENLER SAYFASI: Komple açık temada kalmış. Header, arama
+   kutusu, kullanıcı satırları ve "Takiptesin" butonları dahil koyu
+   temaya bağla. Ek olarak: (a) Her satırda o kullanıcının KENDİ
+   profil fotoğrafı gösterilsin; şu an hepsinde aynı fotoğraf var.
+   Fotoğrafı olmayana baş harfli placeholder koy. Bu avatar bileşenini
+   merkezi yap ve Mesajlar dahil her yerde aynısını kullan.
+   (b) "Takiptesin" butonuna basılınca takip bırakılsın ve buton
+   "Takip Et"e dönsün; basmadan önce de üzerine basılı tutunca/hover
+   olunca "Takibi Bırak" yazsın.
+
+2. SEED/TEST VERİLERİ: Takip edilenler listesinde "@seed-..." önekli
+   mükerrer test kullanıcıları görünüyor (örn. hem @patili.bir.dunya
+   hem @seed-patili.bir.dunya var). Veritabanındaki seed kullanıcı
+   kopyalarını temizle veya bunları gerçek kullanıcılarla birleştir;
+   listede her kullanıcı bir kez görünsün.
+
+3. TAKİPÇİLER SAYFASI: Komple açık temada. Header, arama kutusu ve
+   boş durum (ikon + "Henüz takipçi yok" metinleri) koyu temaya
+   bağlansın.
+
+4. DM SOHBET SAYFASI: (a) Sayfa açık temada; header, mesaj alanı
+   zemini, tarih ayracı, mesaj yazma çubuğu ve butonlar koyu temaya
+   bağlansın. Karşı tarafın balonları koyu gri, benim balonlarım mor
+   olsun; balonlardaki degradeyi kaldır, düz renk kullan.
+   (b) BUG: Sohbette içi boş dev mor bir balon görünüyor; bu bir
+   fotoğraf mesajı ise görsel yüklenmiyor. Mesaj balonlarındaki
+   görsel yükleme sorununu düzelt, görsel balonlarına maksimum
+   boyut ver (örn. genişliğin %70'i, sabit en-boy oranı) ve
+   yüklenemeyen görsel için kırık-görsel placeholder'ı göster.
+   Balon asla içeriksiz dev bir blok olarak render edilmesin.
+
+5. YENİ İLAN SAYFASI: (a) "Yeni İlan Oluştur" başlığı koyu zeminde
+   koyu renkte kaldığı için okunmuyor; başlık ve alt açıklama tema
+   değişkeninden renk alsın. (b) Form kartı beyaz kalmış; kart,
+   fotoğraf yükleme alanı, input'lar, placeholder'lar ve TÜR/YAŞ
+   seçim çipleri koyu temaya bağlansın. (c) Alttaki sabit "İlanı
+   Yayınla" çubuğu form içeriğinin üstüne biniyor; form konteynerine
+   bu çubuğun yüksekliği kadar padding-bottom ekle, en alttaki alan
+   dahil her şey kaydırılarak görülebilsin. (d) Header'ın sağındaki
+   boş butonu kaldır veya bir işlev ver.
+
+BİTİRMEDEN KONTROL: Koyu modda şu dört sayfayı aç: Takip Edilenler,
+Takipçiler, bir DM sohbeti, Yeni İlan. Beyaz kalan blok, okunmayan
+başlık, içi boş dev balon ve üst üste binen içerik kalmamalı.

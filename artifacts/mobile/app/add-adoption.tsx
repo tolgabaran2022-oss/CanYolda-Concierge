@@ -25,25 +25,16 @@ import { useTheme } from "@/hooks/useTheme";
 import { TURKEY_PROVINCES, type Province } from "@/constants/turkeyLocations";
 import { apiSaveListingContact } from "@/lib/contactApi";
 
-/* ── Tokens ─────────────────────────────────────────────── */
+/* ── Static tokens (structural only — no bg/text colors) ── */
 const C = {
   purple:      "#7B5EA7",
   purpleDark:  "#4A2D8F",
   purpleLight: "#9478D8",
-  bg:          "#F8F5FF",
-  card:        "#FFFFFF",
-  inputBg:     "#FAFAFA",
-  border:      "#E5E7EB",
-  borderFocus: "#7B5EA7",
-  label:       "#1A0A3C",
-  placeholder: "#9CA3AF",
-  sub:         "#7C6F9A",
-  muted:       "#6B7280",
   error:       "#E53E3E",
   errorBg:     "#FFF5F5",
 };
 
-/* ── Static data ─────────────────────────────────────────── */
+/* ── Static data ── */
 const PET_TYPES = [
   { label: "Kedi",   emoji: "🐱" },
   { label: "Köpek",  emoji: "🐶" },
@@ -61,9 +52,7 @@ const AGE_OPTIONS = [
   { label: "3 Yaş+",   value: "3 yaş+" },
 ];
 
-/* ── Phone format helpers ────────────────────────────────── */
 function formatPhoneDisplay(digits: string): string {
-  /* digits = max 10 chars, no prefix */
   const d = digits.replace(/\D/g, "").slice(0, 10);
   if (d.length === 0) return "";
   if (d.length <= 3)  return d;
@@ -87,8 +76,7 @@ function validateEmail(email: string): string | null {
   return null;
 }
 
-/* ── Subcomponents ───────────────────────────────────────── */
-
+/* ── FieldWrap ── */
 type FieldProps = {
   label: string;
   required?: boolean;
@@ -96,9 +84,10 @@ type FieldProps = {
   children: React.ReactNode;
 };
 function FieldWrap({ label, required, error, children }: FieldProps) {
+  const T = useTheme();
   return (
     <View style={S.fieldWrap}>
-      <Text style={S.fieldLabel}>
+      <Text style={[S.fieldLabel, { color: T.textMuted }]}>
         {label}
         {required && <Text style={{ color: C.purple }}> *</Text>}
       </Text>
@@ -113,6 +102,7 @@ function FieldWrap({ label, required, error, children }: FieldProps) {
   );
 }
 
+/* ── PickerModal ── */
 type PickerModalProps = {
   visible: boolean;
   title: string;
@@ -123,6 +113,7 @@ type PickerModalProps = {
   searchable?: boolean;
 };
 function PickerModal({ visible, title, items, selected, onSelect, onClose, searchable }: PickerModalProps) {
+  const T      = useTheme();
   const insets = useSafeAreaInsets();
   const [query, setQuery] = useState("");
   const filtered = searchable && query
@@ -131,22 +122,22 @@ function PickerModal({ visible, title, items, selected, onSelect, onClose, searc
 
   return (
     <Modal visible={visible} animationType="slide" presentationStyle="pageSheet" onRequestClose={onClose}>
-      <View style={[PM.root, { paddingTop: insets.top + 8 }]}>
-        <View style={PM.header}>
+      <View style={[PM.root, { paddingTop: insets.top + 8, backgroundColor: T.bg }]}>
+        <View style={[PM.header, { borderBottomColor: T.border }]}>
           <View style={{ width: 36 }} />
-          <Text style={PM.title}>{title}</Text>
+          <Text style={[PM.title, { color: T.text }]}>{title}</Text>
           <Pressable onPress={onClose} hitSlop={12}>
-            <Ionicons name="close" size={24} color={C.purpleDark} />
+            <Ionicons name="close" size={24} color={T.purple} />
           </Pressable>
         </View>
 
         {searchable && (
-          <View style={PM.searchWrap}>
-            <Ionicons name="search-outline" size={18} color={C.sub} style={{ marginRight: 8 }} />
+          <View style={[PM.searchWrap, { backgroundColor: T.input, borderColor: T.border }]}>
+            <Ionicons name="search-outline" size={18} color={T.textMuted} style={{ marginRight: 8 }} />
             <TextInput
-              style={PM.searchInput}
+              style={[PM.searchInput, { color: T.text }]}
               placeholder="Ara..."
-              placeholderTextColor={C.placeholder}
+              placeholderTextColor={T.placeholder}
               value={query}
               onChangeText={setQuery}
               autoCorrect={false}
@@ -162,10 +153,19 @@ function PickerModal({ visible, title, items, selected, onSelect, onClose, searc
             const active = item.value === selected;
             return (
               <Pressable
-                style={[PM.row, active && PM.rowActive]}
-                onPress={() => { Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light); onSelect(item.value); onClose(); }}
+                style={[
+                  PM.row,
+                  { borderBottomColor: T.border },
+                  active && { backgroundColor: T.purple + "11" },
+                ]}
+                onPress={() => {
+                  Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+                  onSelect(item.value);
+                  onClose();
+                }}
               >
-                <Text style={[PM.rowTxt, active && PM.rowTxtActive]}>{item.label}</Text>
+                <Text style={[PM.rowTxt, { color: active ? C.purple : T.text },
+                  active && { fontFamily: "Inter_700Bold" }]}>{item.label}</Text>
                 {active && <Ionicons name="checkmark" size={18} color={C.purple} />}
               </Pressable>
             );
@@ -176,7 +176,7 @@ function PickerModal({ visible, title, items, selected, onSelect, onClose, searc
   );
 }
 
-/* ── Main screen ─────────────────────────────────────────── */
+/* ── Main screen ── */
 export default function AddAdoptionScreen() {
   const T              = useTheme();
   const insets         = useSafeAreaInsets();
@@ -184,24 +184,20 @@ export default function AddAdoptionScreen() {
   const { addListing } = useAdoption();
   const { user }       = useAuth();
 
-  /* Form state */
-  const [petName,            setPetName]            = useState("");
-  const [petType,            setPetType]            = useState("Kedi");
-  const [petAge,             setPetAge]             = useState("");
-  const [photo,              setPhoto]              = useState<string | undefined>();
-  const [province,           setProvince]           = useState("");
-  const [district,           setDistrict]           = useState("");
-  const [description,        setDescription]        = useState("");
-  const [phone,              setPhone]              = useState("");   /* raw 10-digit string */
-  const [email,              setEmail]              = useState("");
-  const [allowPhoneContact,  setAllowPhoneContact]  = useState(true);
-  const [allowMessages,      setAllowMessages]      = useState(true);
-  const [isSaving,           setIsSaving]           = useState(false);
+  const [petName,           setPetName]           = useState("");
+  const [petType,           setPetType]           = useState("Kedi");
+  const [petAge,            setPetAge]            = useState("");
+  const [photo,             setPhoto]             = useState<string | undefined>();
+  const [province,          setProvince]          = useState("");
+  const [district,          setDistrict]          = useState("");
+  const [description,       setDescription]       = useState("");
+  const [phone,             setPhone]             = useState("");
+  const [email,             setEmail]             = useState("");
+  const [allowPhoneContact, setAllowPhoneContact] = useState(true);
+  const [allowMessages,     setAllowMessages]     = useState(true);
+  const [isSaving,          setIsSaving]          = useState(false);
+  const [errors,            setErrors]            = useState<Record<string, string>>({});
 
-  /* Errors */
-  const [errors, setErrors] = useState<Record<string, string>>({});
-
-  /* Picker modals */
   const [showProvince, setShowProvince] = useState(false);
   const [showDistrict, setShowDistrict] = useState(false);
 
@@ -209,11 +205,9 @@ export default function AddAdoptionScreen() {
   const topPad    = Platform.OS === "web" ? 16 : insets.top;
   const btmPad    = Platform.OS === "web" ? 34 : insets.bottom;
 
-  /* ── Province data ── */
   const selectedProvince: Province | undefined = TURKEY_PROVINCES.find((p) => p.value === province);
   const districts = selectedProvince?.districts ?? [];
 
-  /* ── Photo picker ── */
   const pickPhoto = async () => {
     Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
     const result = await ImagePicker.launchImageLibraryAsync({
@@ -228,17 +222,14 @@ export default function AddAdoptionScreen() {
     }
   };
 
-  /* ── Phone input handler ── */
   const handlePhoneChange = (text: string) => {
     const digits = text.replace(/\D/g, "").slice(0, 10);
     setPhone(digits);
     if (errors.phone) setErrors((e) => ({ ...e, phone: "" }));
   };
 
-  /* ── Validation ── */
   const validate = (): boolean => {
     const errs: Record<string, string> = {};
-
     if (!photo)               errs.photo       = "Fotoğraf eklenmesi zorunludur";
     if (!petName.trim())      errs.petName     = "Hayvan adı zorunludur";
     if (!petAge)              errs.petAge      = "Yaş seçimi zorunludur";
@@ -246,10 +237,8 @@ export default function AddAdoptionScreen() {
     if (!district)            errs.district    = "İlçe seçimi zorunludur";
     if (description.trim().length < 30)
                               errs.description = "Açıklama en az 30 karakter olmalıdır";
-
     const phoneErr = validatePhone(phone);
     if (phoneErr)             errs.phone       = phoneErr;
-
     const emailErr = validateEmail(email);
     if (emailErr)             errs.email       = emailErr;
 
@@ -262,31 +251,24 @@ export default function AddAdoptionScreen() {
     return true;
   };
 
-  /* ── Submit ── */
   const handleSave = async () => {
     if (!validate() || !user) return;
     setIsSaving(true);
     try {
       const newId = await addListing({
-        petName:           petName.trim(),
+        petName:          petName.trim(),
         petType,
         petAge,
         photo,
-        location:          `${district}, ${province}`,
-        description:       description.trim(),
-        userId:            user.id,
-        userName:          user.name,
-        contactInfo:       `📞 +90 ${formatPhoneDisplay(phone)} | ✉️ ${email.trim()}`,
+        location:         `${district}, ${province}`,
+        description:      description.trim(),
+        userId:           user.id,
+        userName:         user.name,
+        contactInfo:      `📞 +90 ${formatPhoneDisplay(phone)} | ✉️ ${email.trim()}`,
         allowPhoneContact,
         allowMessages,
       });
-      /* Persist phone + contact prefs to secure backend */
-      apiSaveListingContact(
-        user.id, newId,
-        `+90${phone}`,
-        allowPhoneContact,
-        allowMessages
-      ).catch(() => {});
+      apiSaveListingContact(user.id, newId, `+90${phone}`, allowPhoneContact, allowMessages).catch(() => {});
       Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
       router.back();
     } catch {
@@ -298,16 +280,23 @@ export default function AddAdoptionScreen() {
 
   const errorCount = Object.values(errors).filter(Boolean).length;
 
+  /* Reusable themed input style */
+  const inputStyle = [
+    S.input,
+    { backgroundColor: T.input, borderColor: T.inputBorder, color: T.text },
+  ] as const;
+
   return (
     <>
       <View style={[S.root, { backgroundColor: T.bg }]}>
 
         {/* Header */}
-        <View style={[S.header, { paddingTop: topPad + 10 }]}>
+        <View style={[S.header, { paddingTop: topPad + 10, backgroundColor: T.bg }]}>
           <Pressable style={S.backBtn} onPress={() => router.back()} hitSlop={8}>
-            <Ionicons name="chevron-back" size={22} color={C.label} />
+            <Ionicons name="chevron-back" size={22} color={T.purple} />
           </Pressable>
-          <Text style={S.headerTitle}>Sahiplendirme İlanı</Text>
+          <Text style={[S.headerTitle, { color: T.text }]}>Sahiplendirme İlanı</Text>
+          {/* Spacer to centre title */}
           <View style={S.backBtn} />
         </View>
 
@@ -318,17 +307,19 @@ export default function AddAdoptionScreen() {
           <ScrollView
             ref={scrollRef}
             style={S.scroll}
-            contentContainerStyle={[S.scrollContent, { paddingBottom: btmPad + 100 }]}
+            contentContainerStyle={[S.scrollContent, { paddingBottom: btmPad + 120 }]}
             keyboardShouldPersistTaps="handled"
             showsVerticalScrollIndicator={false}
           >
             {/* Intro */}
             <View style={S.intro}>
-              <Text style={S.introTitle}>Yeni İlan Oluştur</Text>
-              <Text style={S.introSub}>Yeni bir dost için sahiplendirme ilanı oluştur</Text>
+              <Text style={[S.introTitle, { color: T.text }]}>Yeni İlan Oluştur</Text>
+              <Text style={[S.introSub, { color: T.textMuted }]}>
+                Yeni bir dost için sahiplendirme ilanı oluştur
+              </Text>
             </View>
 
-            {/* Global error banner */}
+            {/* Error banner */}
             {errorCount > 0 && (
               <View style={S.errorBanner}>
                 <Ionicons name="alert-circle" size={18} color={C.error} />
@@ -338,10 +329,10 @@ export default function AddAdoptionScreen() {
               </View>
             )}
 
-            {/* ── Form card ── */}
-            <View style={S.card}>
+            {/* Form card */}
+            <View style={[S.card, { backgroundColor: T.card }]}>
 
-              {/* ── Photo ── */}
+              {/* Photo */}
               <FieldWrap label="Fotoğraf" required error={errors.photo}>
                 <Pressable
                   onPress={pickPhoto}
@@ -356,52 +347,72 @@ export default function AddAdoptionScreen() {
                       </View>
                     </View>
                   ) : (
-                    <View style={[S.photoBox, errors.photo ? S.photoBoxError : {}]}>
-                      <View style={S.cameraRing}>
+                    <View style={[
+                      S.photoBox,
+                      { backgroundColor: T.input, borderColor: T.border },
+                      errors.photo ? S.photoBoxError : {},
+                    ]}>
+                      <View style={[S.cameraRing, { backgroundColor: T.purple + "18" }]}>
                         <Ionicons name="camera-outline" size={28} color={C.purple} />
                       </View>
-                      <Text style={S.photoLabel}>Fotoğraf Ekle</Text>
-                      <Text style={S.photoSub}>JPG, PNG · Maks 10 MB</Text>
+                      <Text style={[S.photoLabel, { color: C.purple }]}>Fotoğraf Ekle</Text>
+                      <Text style={[S.photoSub, { color: T.textMuted }]}>JPG, PNG · Maks 10 MB</Text>
                     </View>
                   )}
                 </Pressable>
               </FieldWrap>
 
-              <View style={S.divider} />
+              <View style={[S.divider, { backgroundColor: T.border }]} />
 
-              {/* ── Hayvan adı ── */}
+              {/* Hayvan adı */}
               <FieldWrap label="Hayvanın Adı" required error={errors.petName}>
                 <TextInput
-                  style={[S.input, errors.petName ? S.inputError : {}]}
+                  style={[inputStyle, errors.petName ? S.inputError : {}]}
                   placeholder="Örn: Pamuk"
-                  placeholderTextColor={C.placeholder}
+                  placeholderTextColor={T.placeholder}
                   value={petName}
                   onChangeText={(t) => { setPetName(t); setErrors((e) => ({ ...e, petName: "" })); }}
                   returnKeyType="next"
                 />
               </FieldWrap>
 
-              {/* ── Tür ── */}
+              {/* Tür */}
               <View style={S.fieldWrap}>
-                <Text style={S.fieldLabel}>Tür <Text style={{ color: C.purple }}>*</Text></Text>
+                <Text style={[S.fieldLabel, { color: T.textMuted }]}>
+                  Tür <Text style={{ color: C.purple }}>*</Text>
+                </Text>
                 <View style={S.chipRow}>
                   {PET_TYPES.map(({ label, emoji }) => {
                     const active = petType === label;
                     return (
                       <Pressable
                         key={label}
-                        onPress={() => { Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light); setPetType(label); }}
-                        style={({ pressed }) => [S.chip, active && S.chipActive, { transform: [{ scale: pressed ? 0.95 : 1 }] }]}
+                        onPress={() => {
+                          Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+                          setPetType(label);
+                        }}
+                        style={({ pressed }) => [
+                          S.chip,
+                          { borderColor: active ? "transparent" : T.border },
+                          !active && { backgroundColor: T.input },
+                          active && S.chipActive,
+                          { transform: [{ scale: pressed ? 0.95 : 1 }] },
+                        ]}
                       >
                         {active ? (
-                          <LinearGradient colors={[C.purpleLight, C.purpleDark]} start={{ x: 0, y: 0 }} end={{ x: 1, y: 1 }} style={S.chipInner}>
+                          <LinearGradient
+                            colors={[C.purpleLight, C.purpleDark]}
+                            start={{ x: 0, y: 0 }}
+                            end={{ x: 1, y: 1 }}
+                            style={S.chipInner}
+                          >
                             <Text style={S.chipEmoji}>{emoji}</Text>
                             <Text style={S.chipTxtActive}>{label}</Text>
                           </LinearGradient>
                         ) : (
                           <View style={S.chipInner}>
                             <Text style={S.chipEmoji}>{emoji}</Text>
-                            <Text style={S.chipTxt}>{label}</Text>
+                            <Text style={[S.chipTxt, { color: T.textMuted }]}>{label}</Text>
                           </View>
                         )}
                       </Pressable>
@@ -410,7 +421,7 @@ export default function AddAdoptionScreen() {
                 </View>
               </View>
 
-              {/* ── Yaş seçimi ── */}
+              {/* Yaş */}
               <FieldWrap label="Yaş" required error={errors.petAge}>
                 <View style={S.ageGrid}>
                   {AGE_OPTIONS.map((opt) => {
@@ -418,113 +429,161 @@ export default function AddAdoptionScreen() {
                     return (
                       <Pressable
                         key={opt.value}
-                        onPress={() => { Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light); setPetAge(opt.value); setErrors((e) => ({ ...e, petAge: "" })); }}
+                        onPress={() => {
+                          Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+                          setPetAge(opt.value);
+                          setErrors((e) => ({ ...e, petAge: "" }));
+                        }}
                         style={({ pressed }) => [
                           S.ageCard,
-                          active && S.ageCardActive,
+                          {
+                            backgroundColor: active ? T.purple + "14" : T.input,
+                            borderColor: active ? C.purple : T.inputBorder,
+                          },
                           errors.petAge && !active && S.ageCardError,
                           { opacity: pressed ? 0.8 : 1 },
                         ]}
                       >
-                        <Text style={[S.ageCardTxt, active && S.ageCardTxtActive]}>{opt.label}</Text>
+                        <Text style={[
+                          S.ageCardTxt,
+                          { color: active ? C.purple : T.textMuted },
+                          active && { fontFamily: "Inter_700Bold" },
+                        ]}>
+                          {opt.label}
+                        </Text>
                       </Pressable>
                     );
                   })}
                 </View>
               </FieldWrap>
 
-              {/* ── Konum ── */}
+              {/* Konum */}
               <FieldWrap label="Konum" required error={errors.province || errors.district}>
                 <View style={{ gap: 10 }}>
-                  {/* İl */}
                   <Pressable
-                    style={[S.selectRow, errors.province ? S.inputError : {}]}
-                    onPress={() => { Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light); setShowProvince(true); }}
+                    style={[
+                      S.selectRow,
+                      { backgroundColor: T.input, borderColor: T.inputBorder },
+                      errors.province ? S.inputError : {},
+                    ]}
+                    onPress={() => {
+                      Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+                      setShowProvince(true);
+                    }}
                   >
-                    <Ionicons name="location-outline" size={18} color={province ? C.purple : C.placeholder} style={{ marginRight: 8 }} />
-                    <Text style={[S.selectTxt, !province && S.selectPlaceholder]}>
+                    <Ionicons
+                      name="location-outline" size={18}
+                      color={province ? C.purple : T.placeholder}
+                      style={{ marginRight: 8 }}
+                    />
+                    <Text style={[S.selectTxt, { color: province ? T.text : T.placeholder }]}>
                       {province || "İl seçin"}
                     </Text>
-                    <Ionicons name="chevron-down" size={18} color={C.sub} />
+                    <Ionicons name="chevron-down" size={18} color={T.textMuted} />
                   </Pressable>
 
-                  {/* İlçe */}
                   <Pressable
-                    style={[S.selectRow, !province && S.selectDisabled, errors.district ? S.inputError : {}]}
+                    style={[
+                      S.selectRow,
+                      { backgroundColor: T.input, borderColor: T.inputBorder },
+                      !province && S.selectDisabled,
+                      errors.district ? S.inputError : {},
+                    ]}
                     onPress={() => {
                       if (!province) return;
                       Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
                       setShowDistrict(true);
                     }}
                   >
-                    <Ionicons name="navigate-outline" size={18} color={district ? C.purple : C.placeholder} style={{ marginRight: 8 }} />
-                    <Text style={[S.selectTxt, !district && S.selectPlaceholder]}>
+                    <Ionicons
+                      name="navigate-outline" size={18}
+                      color={district ? C.purple : T.placeholder}
+                      style={{ marginRight: 8 }}
+                    />
+                    <Text style={[S.selectTxt, { color: district ? T.text : T.placeholder }]}>
                       {district || (province ? "İlçe seçin" : "Önce il seçin")}
                     </Text>
-                    <Ionicons name="chevron-down" size={18} color={C.sub} />
+                    <Ionicons name="chevron-down" size={18} color={T.textMuted} />
                   </Pressable>
                 </View>
               </FieldWrap>
 
-              {/* ── Açıklama ── */}
+              {/* Açıklama */}
               <FieldWrap label="Açıklama" required error={errors.description}>
                 <View>
                   <TextInput
-                    style={[S.textArea, errors.description ? S.inputError : {}]}
+                    style={[
+                      S.textArea,
+                      { backgroundColor: T.input, borderColor: T.inputBorder, color: T.text },
+                      errors.description ? S.inputError : {},
+                    ]}
                     placeholder="Hayvanın karakteri, sağlık durumu, aşı durumu, sahiplenme koşulları... (en az 30 karakter)"
-                    placeholderTextColor={C.placeholder}
+                    placeholderTextColor={T.placeholder}
                     value={description}
-                    onChangeText={(t) => { setDescription(t); if (t.trim().length >= 30) setErrors((e) => ({ ...e, description: "" })); }}
+                    onChangeText={(t) => {
+                      setDescription(t);
+                      if (t.trim().length >= 30) setErrors((e) => ({ ...e, description: "" }));
+                    }}
                     multiline
                     textAlignVertical="top"
                   />
-                  <Text style={[S.charCount, description.length < 30 && S.charCountWarn]}>
+                  <Text style={[S.charCount, { color: T.textMuted }, description.length < 30 && S.charCountWarn]}>
                     {description.trim().length} / min 30 karakter
                   </Text>
                 </View>
               </FieldWrap>
 
-              <View style={S.divider} />
+              <View style={[S.divider, { backgroundColor: T.border }]} />
 
-              {/* ── İletişim başlığı ── */}
+              {/* İletişim başlığı */}
               <View style={S.sectionHeader}>
                 <Ionicons name="call-outline" size={18} color={C.purple} />
-                <Text style={S.sectionTitle}>İletişim Bilgileri</Text>
+                <Text style={[S.sectionTitle, { color: T.text }]}>İletişim Bilgileri</Text>
               </View>
 
-              {/* ── Telefon ── */}
+              {/* Telefon */}
               <FieldWrap label="Telefon Numarası" required error={errors.phone}>
-                <View style={[S.phoneWrap, errors.phone ? S.inputError : {}]}>
-                  <View style={S.phonePrefix}>
+                <View style={[
+                  S.phoneWrap,
+                  { backgroundColor: T.input, borderColor: T.inputBorder },
+                  errors.phone ? S.inputError : {},
+                ]}>
+                  <View style={[S.phonePrefix, { borderRightColor: T.border }]}>
                     <Text style={S.phonePrefixFlag}>🇹🇷</Text>
-                    <Text style={S.phonePrefixTxt}>+90</Text>
-                    <View style={S.phoneDivider} />
+                    <Text style={[S.phonePrefixTxt, { color: T.text }]}>+90</Text>
+                    <View style={[S.phoneDivider, { backgroundColor: T.border }]} />
                   </View>
                   <TextInput
-                    style={S.phoneInput}
+                    style={[S.phoneInput, { color: T.text }]}
                     placeholder="5XX XXX XX XX"
-                    placeholderTextColor={C.placeholder}
+                    placeholderTextColor={T.placeholder}
                     value={formatPhoneDisplay(phone)}
                     onChangeText={handlePhoneChange}
                     keyboardType="number-pad"
-                    maxLength={13}    /* formatted: 3+1+3+1+2+1+2 */
+                    maxLength={13}
                     returnKeyType="next"
                   />
                   {phone.length === 10 && !validatePhone(phone) && (
                     <Ionicons name="checkmark-circle" size={20} color="#38A169" style={{ marginRight: 12 }} />
                   )}
                 </View>
-                <Text style={S.phoneHint}>Sadece cep telefonu numarası (10 hane)</Text>
+                <Text style={[S.phoneHint, { color: T.textMuted }]}>
+                  Sadece cep telefonu numarası (10 hane)
+                </Text>
               </FieldWrap>
 
-              {/* ── Email ── */}
+              {/* Email */}
               <FieldWrap label="E-Posta Adresi" required error={errors.email}>
-                <View style={[S.emailWrap, errors.email ? S.inputError : {}]}>
-                  <Ionicons name="mail-outline" size={18} color={C.sub} style={{ marginLeft: 14, marginRight: 8 }} />
+                <View style={[
+                  S.emailWrap,
+                  { backgroundColor: T.input, borderColor: T.inputBorder },
+                  errors.email ? S.inputError : {},
+                ]}>
+                  <Ionicons name="mail-outline" size={18} color={T.textMuted} style={{ marginLeft: 14, marginRight: 8 }} />
                   <TextInput
-                    style={S.emailInput}
+                    style={[S.emailInput, { color: T.text }]}
                     placeholder="ornek@email.com"
-                    placeholderTextColor={C.placeholder}
+                    placeholderTextColor={T.placeholder}
                     value={email}
                     onChangeText={(t) => { setEmail(t); setErrors((e) => ({ ...e, email: "" })); }}
                     keyboardType="email-address"
@@ -538,30 +597,32 @@ export default function AddAdoptionScreen() {
                 </View>
               </FieldWrap>
 
-              <View style={S.divider} />
+              <View style={[S.divider, { backgroundColor: T.border }]} />
 
-              {/* ── İletişim Tercihleri ── */}
+              {/* İletişim Tercihleri */}
               <View>
                 <View style={S.sectionHeader}>
                   <Ionicons name="shield-checkmark-outline" size={18} color={C.purpleDark} />
-                  <Text style={S.sectionTitle}>İletişim Tercihleri</Text>
+                  <Text style={[S.sectionTitle, { color: T.text }]}>İletişim Tercihleri</Text>
                 </View>
-                <Text style={{ fontSize: 12, fontFamily: "Inter_400Regular", color: C.sub, marginTop: 4, marginBottom: 14, lineHeight: 17 }}>
+                <Text style={{
+                  fontSize: 12, fontFamily: "Inter_400Regular", color: T.textMuted,
+                  marginTop: 4, marginBottom: 14, lineHeight: 17,
+                }}>
                   Diğer kullanıcıların seninle hangi yollarla iletişim kurabileceğini seç.
                 </Text>
 
-                {/* Allow phone */}
                 <Pressable
                   style={S.toggleRow}
                   onPress={() => { setAllowPhoneContact((v) => !v); Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light); }}
                 >
                   <View style={S.toggleLeft}>
                     <View style={[S.toggleIcon, allowPhoneContact && S.toggleIconActive]}>
-                      <Ionicons name="call-outline" size={18} color={allowPhoneContact ? "#FFF" : C.sub} />
+                      <Ionicons name="call-outline" size={18} color={allowPhoneContact ? "#FFF" : T.textMuted} />
                     </View>
                     <View>
-                      <Text style={S.toggleLabel}>Telefon ile iletişime izin ver</Text>
-                      <Text style={S.toggleSub}>Numaranız talep üzerine gösterilir</Text>
+                      <Text style={[S.toggleLabel, { color: T.text }]}>Telefon ile iletişime izin ver</Text>
+                      <Text style={[S.toggleSub, { color: T.textMuted }]}>Numaranız talep üzerine gösterilir</Text>
                     </View>
                   </View>
                   <View style={[S.toggle, allowPhoneContact && S.toggleOn]}>
@@ -569,18 +630,17 @@ export default function AddAdoptionScreen() {
                   </View>
                 </Pressable>
 
-                {/* Allow messages */}
                 <Pressable
                   style={[S.toggleRow, { marginTop: 10 }]}
                   onPress={() => { setAllowMessages((v) => !v); Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light); }}
                 >
                   <View style={S.toggleLeft}>
                     <View style={[S.toggleIcon, allowMessages && S.toggleIconActive]}>
-                      <Ionicons name="chatbubble-outline" size={18} color={allowMessages ? "#FFF" : C.sub} />
+                      <Ionicons name="chatbubble-outline" size={18} color={allowMessages ? "#FFF" : T.textMuted} />
                     </View>
                     <View>
-                      <Text style={S.toggleLabel}>Mesaj almaya izin ver</Text>
-                      <Text style={S.toggleSub}>Uygulama içi DM</Text>
+                      <Text style={[S.toggleLabel, { color: T.text }]}>Mesaj almaya izin ver</Text>
+                      <Text style={[S.toggleSub, { color: T.textMuted }]}>Uygulama içi DM</Text>
                     </View>
                   </View>
                   <View style={[S.toggle, allowMessages && S.toggleOn]}>
@@ -595,8 +655,8 @@ export default function AddAdoptionScreen() {
           </ScrollView>
         </KeyboardAvoidingView>
 
-        {/* ── Fixed CTA ── */}
-        <View style={[S.ctaWrap, { paddingBottom: btmPad + 12 }]}>
+        {/* Fixed CTA */}
+        <View style={[S.ctaWrap, { paddingBottom: btmPad + 12, backgroundColor: T.bg, borderTopColor: T.border }]}>
           <Pressable
             onPress={() => { Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium); handleSave(); }}
             disabled={isSaving}
@@ -621,7 +681,6 @@ export default function AddAdoptionScreen() {
         </View>
       </View>
 
-      {/* ── İl Picker ── */}
       <PickerModal
         visible={showProvince}
         title="İl Seçin"
@@ -636,7 +695,6 @@ export default function AddAdoptionScreen() {
         onClose={() => setShowProvince(false)}
       />
 
-      {/* ── İlçe Picker ── */}
       <PickerModal
         visible={showDistrict}
         title={province ? `${province} — İlçe Seçin` : "İlçe Seçin"}
@@ -650,33 +708,29 @@ export default function AddAdoptionScreen() {
   );
 }
 
-/* ── Styles ─────────────────────────────────────────────── */
+/* ── Styles ── */
 const S = StyleSheet.create({
   root:   { flex: 1 },
   scroll: { flex: 1 },
   scrollContent: { paddingHorizontal: 20, paddingTop: 4, gap: 16 },
 
-  /* Header */
   header: {
     flexDirection: "row", alignItems: "center", justifyContent: "space-between",
-    paddingHorizontal: 16, paddingBottom: 10, backgroundColor: C.bg,
+    paddingHorizontal: 16, paddingBottom: 10,
   },
   backBtn: {
     width: 40, height: 40, borderRadius: 12,
     alignItems: "center", justifyContent: "center",
-    backgroundColor: "rgba(123,94,167,0.08)",
   },
   headerTitle: {
-    fontSize: 17, fontFamily: "Inter_700Bold", color: C.label,
+    fontSize: 17, fontFamily: "Inter_700Bold",
     letterSpacing: -0.3, flex: 1, textAlign: "center",
   },
 
-  /* Intro */
   intro: { paddingTop: 4, paddingBottom: 4, gap: 4 },
-  introTitle: { fontSize: 24, fontFamily: "Inter_700Bold", color: C.label, letterSpacing: -0.4 },
-  introSub:   { fontSize: 14, fontFamily: "Inter_400Regular", color: C.sub, lineHeight: 20 },
+  introTitle: { fontSize: 24, fontFamily: "Inter_700Bold", letterSpacing: -0.4 },
+  introSub:   { fontSize: 14, fontFamily: "Inter_400Regular", lineHeight: 20 },
 
-  /* Error banner */
   errorBanner: {
     flexDirection: "row", alignItems: "center", gap: 8,
     backgroundColor: C.errorBg,
@@ -685,9 +739,8 @@ const S = StyleSheet.create({
   },
   errorBannerTxt: { fontSize: 13, fontFamily: "Inter_500Medium", color: C.error, flex: 1 },
 
-  /* Card */
   card: {
-    backgroundColor: C.card, borderRadius: 24, padding: 20, gap: 22,
+    borderRadius: 24, padding: 20, gap: 22,
     ...Platform.select({
       ios:     { shadowColor: "#7B5EA7", shadowOffset: { width: 0, height: 6 }, shadowOpacity: 0.08, shadowRadius: 20 },
       android: { elevation: 4 },
@@ -695,56 +748,54 @@ const S = StyleSheet.create({
     }),
   },
 
-  divider: { height: 1, backgroundColor: "#F0EDF8", marginHorizontal: -4 },
+  divider: { height: 1, marginHorizontal: -4 },
 
-  /* Section header */
   sectionHeader: { flexDirection: "row", alignItems: "center", gap: 8 },
-  sectionTitle:  { fontSize: 15, fontFamily: "Inter_700Bold", color: C.purpleDark },
+  sectionTitle:  { fontSize: 15, fontFamily: "Inter_700Bold" },
 
-  /* Field wrapper */
-  fieldWrap: { gap: 8 },
+  fieldWrap:  { gap: 8 },
   fieldLabel: {
-    fontSize: 11, fontFamily: "Inter_700Bold", color: C.label,
+    fontSize: 11, fontFamily: "Inter_700Bold",
     letterSpacing: 0.8, textTransform: "uppercase",
   },
 
-  /* Error */
   errorRow: { flexDirection: "row", alignItems: "center", gap: 5 },
   errorTxt: { fontSize: 12, fontFamily: "Inter_400Regular", color: C.error },
 
-  /* Text input */
   input: {
-    height: 54, borderRadius: 14, borderWidth: 1.5, borderColor: C.border,
-    backgroundColor: C.inputBg, paddingHorizontal: 16,
-    fontSize: 15, fontFamily: "Inter_400Regular", color: C.label,
+    height: 54, borderRadius: 14, borderWidth: 1.5,
+    paddingHorizontal: 16,
+    fontSize: 15, fontFamily: "Inter_400Regular",
   },
   inputError: { borderColor: C.error, backgroundColor: C.errorBg },
 
-  /* Textarea */
   textArea: {
-    borderRadius: 14, borderWidth: 1.5, borderColor: C.border,
-    backgroundColor: C.inputBg, padding: 16,
-    fontSize: 15, fontFamily: "Inter_400Regular", color: C.label,
+    borderRadius: 14, borderWidth: 1.5,
+    padding: 16,
+    fontSize: 15, fontFamily: "Inter_400Regular",
     minHeight: 120, lineHeight: 22, textAlignVertical: "top",
   },
-  charCount:     { fontSize: 11, fontFamily: "Inter_400Regular", color: C.sub, textAlign: "right", marginTop: 4 },
+  charCount:     { fontSize: 11, fontFamily: "Inter_400Regular", textAlign: "right", marginTop: 4 },
   charCountWarn: { color: C.error },
 
-  /* Toggle rows */
   toggleRow:    { flexDirection: "row", alignItems: "center", justifyContent: "space-between" },
   toggleLeft:   { flexDirection: "row", alignItems: "center", gap: 12, flex: 1 },
   toggleIcon:   { width: 40, height: 40, borderRadius: 12, backgroundColor: "rgba(123,94,167,0.1)", alignItems: "center", justifyContent: "center" },
   toggleIconActive: { backgroundColor: C.purple },
-  toggleLabel:  { fontSize: 14, fontFamily: "Inter_600SemiBold", color: C.label },
-  toggleSub:    { fontSize: 11, fontFamily: "Inter_400Regular", color: C.sub, marginTop: 1 },
+  toggleLabel:  { fontSize: 14, fontFamily: "Inter_600SemiBold" },
+  toggleSub:    { fontSize: 11, fontFamily: "Inter_400Regular", marginTop: 1 },
   toggle:       { width: 48, height: 28, borderRadius: 14, backgroundColor: "#D1D5DB", padding: 2, justifyContent: "center" },
   toggleOn:     { backgroundColor: C.purple },
-  toggleThumb:  { width: 24, height: 24, borderRadius: 12, backgroundColor: "#FFF", alignSelf: "flex-start",
-    ...Platform.select({ ios: { shadowColor: "#000", shadowOffset: { width: 0, height: 1 }, shadowOpacity: 0.15, shadowRadius: 3 }, android: { elevation: 2 }, default: {} }),
+  toggleThumb:  {
+    width: 24, height: 24, borderRadius: 12, backgroundColor: "#FFF", alignSelf: "flex-start",
+    ...Platform.select({
+      ios: { shadowColor: "#000", shadowOffset: { width: 0, height: 1 }, shadowOpacity: 0.15, shadowRadius: 3 },
+      android: { elevation: 2 },
+      default: {},
+    }),
   },
-  toggleThumbOn:{ alignSelf: "flex-end" },
+  toggleThumbOn: { alignSelf: "flex-end" },
 
-  /* Photo */
   photoWrap:      { width: "100%", height: 180, borderRadius: 14, overflow: "hidden" },
   photoWrapError: { borderWidth: 2, borderColor: C.error },
   photo:          { width: "100%", height: "100%" },
@@ -757,21 +808,18 @@ const S = StyleSheet.create({
   photoBox: {
     width: "100%", height: 140, borderRadius: 14,
     alignItems: "center", justifyContent: "center", gap: 6,
-    borderWidth: 2, borderColor: "rgba(123,94,167,0.22)", borderStyle: "dashed",
-    backgroundColor: "rgba(123,94,167,0.04)",
+    borderWidth: 2, borderStyle: "dashed",
   },
   photoBoxError: { borderColor: C.error, backgroundColor: C.errorBg },
   cameraRing: {
     width: 52, height: 52, borderRadius: 26,
-    backgroundColor: "rgba(123,94,167,0.10)",
     alignItems: "center", justifyContent: "center", marginBottom: 2,
   },
-  photoLabel: { fontSize: 14, fontFamily: "Inter_600SemiBold", color: C.purple },
-  photoSub:   { fontSize: 12, fontFamily: "Inter_400Regular", color: C.muted },
+  photoLabel: { fontSize: 14, fontFamily: "Inter_600SemiBold" },
+  photoSub:   { fontSize: 12, fontFamily: "Inter_400Regular" },
 
-  /* Type chips */
-  chipRow:  { flexDirection: "row", flexWrap: "wrap", gap: 8 },
-  chip:     { borderRadius: 99, borderWidth: 1.5, borderColor: C.border, overflow: "hidden", backgroundColor: "#FAFAFA" },
+  chipRow:   { flexDirection: "row", flexWrap: "wrap", gap: 8 },
+  chip:      { borderRadius: 99, borderWidth: 1.5, overflow: "hidden" },
   chipActive: {
     borderColor: "transparent",
     ...Platform.select({
@@ -780,64 +828,46 @@ const S = StyleSheet.create({
       default: {},
     }),
   },
-  chipInner:    { flexDirection: "row", alignItems: "center", paddingHorizontal: 14, paddingVertical: 9, gap: 5, minHeight: 40 },
-  chipEmoji:    { fontSize: 14, lineHeight: 18 },
-  chipTxt:      { fontSize: 13, fontFamily: "Inter_500Medium", color: C.muted },
-  chipTxtActive:{ fontSize: 13, fontFamily: "Inter_600SemiBold", color: "#FFF" },
+  chipInner:     { flexDirection: "row", alignItems: "center", paddingHorizontal: 14, paddingVertical: 9, gap: 5, minHeight: 40 },
+  chipEmoji:     { fontSize: 14, lineHeight: 18 },
+  chipTxt:       { fontSize: 13, fontFamily: "Inter_500Medium" },
+  chipTxtActive: { fontSize: 13, fontFamily: "Inter_600SemiBold", color: "#FFF" },
 
-  /* Age cards */
-  ageGrid:          { flexDirection: "row", flexWrap: "wrap", gap: 8 },
-  ageCard:          {
+  ageGrid:       { flexDirection: "row", flexWrap: "wrap", gap: 8 },
+  ageCard:       {
     paddingVertical: 11, paddingHorizontal: 16, borderRadius: 12,
-    borderWidth: 1.5, borderColor: C.border, backgroundColor: C.inputBg,
-    minWidth: "30%",
+    borderWidth: 1.5, minWidth: "30%",
   },
-  ageCardActive:    {
-    borderColor: C.purple, backgroundColor: "rgba(123,94,167,0.08)",
-    ...Platform.select({
-      ios:     { shadowColor: C.purple, shadowOffset: { width: 0, height: 2 }, shadowOpacity: 0.15, shadowRadius: 6 },
-      android: { elevation: 2 },
-      default: {},
-    }),
-  },
-  ageCardError:     { borderColor: "rgba(229,62,62,0.35)" },
-  ageCardTxt:       { fontSize: 13, fontFamily: "Inter_500Medium", color: C.muted, textAlign: "center" },
-  ageCardTxtActive: { fontFamily: "Inter_700Bold", color: C.purple },
+  ageCardError:  { borderColor: "rgba(229,62,62,0.35)" },
+  ageCardTxt:    { fontSize: 13, fontFamily: "Inter_500Medium", textAlign: "center" },
 
-  /* Location select */
   selectRow: {
-    height: 54, borderRadius: 14, borderWidth: 1.5, borderColor: C.border,
-    backgroundColor: C.inputBg, flexDirection: "row", alignItems: "center", paddingHorizontal: 14,
+    height: 54, borderRadius: 14, borderWidth: 1.5,
+    flexDirection: "row", alignItems: "center", paddingHorizontal: 14,
   },
   selectDisabled: { opacity: 0.5 },
-  selectTxt:      { flex: 1, fontSize: 15, fontFamily: "Inter_400Regular", color: C.label },
-  selectPlaceholder: { color: C.placeholder },
+  selectTxt:      { flex: 1, fontSize: 15, fontFamily: "Inter_400Regular" },
 
-  /* Phone */
   phoneWrap: {
     flexDirection: "row", alignItems: "center",
-    height: 54, borderRadius: 14, borderWidth: 1.5, borderColor: C.border,
-    backgroundColor: C.inputBg, overflow: "hidden",
+    height: 54, borderRadius: 14, borderWidth: 1.5, overflow: "hidden",
   },
   phonePrefix:    { flexDirection: "row", alignItems: "center", paddingHorizontal: 12, gap: 6 },
   phonePrefixFlag:{ fontSize: 18 },
-  phonePrefixTxt: { fontSize: 14, fontFamily: "Inter_700Bold", color: C.label },
-  phoneDivider:   { width: 1, height: 24, backgroundColor: C.border, marginLeft: 8 },
-  phoneInput:     { flex: 1, paddingHorizontal: 12, fontSize: 15, fontFamily: "Inter_400Regular", color: C.label, height: "100%" },
-  phoneHint:      { fontSize: 11, fontFamily: "Inter_400Regular", color: C.sub },
+  phonePrefixTxt: { fontSize: 14, fontFamily: "Inter_700Bold" },
+  phoneDivider:   { width: 1, height: 24, marginLeft: 8 },
+  phoneInput:     { flex: 1, paddingHorizontal: 12, fontSize: 15, fontFamily: "Inter_400Regular", height: "100%" },
+  phoneHint:      { fontSize: 11, fontFamily: "Inter_400Regular" },
 
-  /* Email */
   emailWrap: {
     flexDirection: "row", alignItems: "center",
-    height: 54, borderRadius: 14, borderWidth: 1.5, borderColor: C.border,
-    backgroundColor: C.inputBg, overflow: "hidden",
+    height: 54, borderRadius: 14, borderWidth: 1.5, overflow: "hidden",
   },
-  emailInput: { flex: 1, paddingRight: 12, fontSize: 15, fontFamily: "Inter_400Regular", color: C.label, height: "100%" },
+  emailInput: { flex: 1, paddingRight: 12, fontSize: 15, fontFamily: "Inter_400Regular", height: "100%" },
 
-  /* CTA */
   ctaWrap: {
-    paddingHorizontal: 20, paddingTop: 12, backgroundColor: C.bg,
-    borderTopWidth: 1, borderTopColor: "rgba(123,94,167,0.08)",
+    paddingHorizontal: 20, paddingTop: 12,
+    borderTopWidth: 1,
     ...Platform.select({
       ios:     { shadowColor: "#000", shadowOffset: { width: 0, height: -4 }, shadowOpacity: 0.04, shadowRadius: 8 },
       android: { elevation: 8 },
@@ -856,30 +886,26 @@ const S = StyleSheet.create({
   ctaTxt: { fontSize: 16, fontFamily: "Inter_700Bold", color: "#FFF", letterSpacing: 0.2 },
 });
 
-/* ── Picker Modal styles ─────────────────────────────────── */
 const PM = StyleSheet.create({
-  root:   { flex: 1, backgroundColor: "#FFF" },
+  root:   { flex: 1 },
   header: {
     flexDirection: "row", alignItems: "center", justifyContent: "space-between",
     paddingHorizontal: 16, paddingBottom: 14,
-    borderBottomWidth: StyleSheet.hairlineWidth, borderBottomColor: "rgba(123,94,167,0.12)",
+    borderBottomWidth: StyleSheet.hairlineWidth,
   },
-  title: { fontSize: 16, fontFamily: "Inter_700Bold", color: C.purpleDark },
+  title: { fontSize: 16, fontFamily: "Inter_700Bold" },
 
   searchWrap: {
     flexDirection: "row", alignItems: "center",
     margin: 12, paddingHorizontal: 14, height: 44,
-    borderRadius: 12, backgroundColor: "#F5F2FF",
-    borderWidth: 1, borderColor: "rgba(123,94,167,0.12)",
+    borderRadius: 12, borderWidth: 1,
   },
-  searchInput: { flex: 1, fontSize: 15, fontFamily: "Inter_400Regular", color: C.label },
+  searchInput: { flex: 1, fontSize: 15, fontFamily: "Inter_400Regular" },
 
   row: {
     flexDirection: "row", alignItems: "center", justifyContent: "space-between",
     paddingHorizontal: 20, paddingVertical: 15,
-    borderBottomWidth: StyleSheet.hairlineWidth, borderBottomColor: "#F0EDF8",
+    borderBottomWidth: StyleSheet.hairlineWidth,
   },
-  rowActive: { backgroundColor: "rgba(123,94,167,0.05)" },
-  rowTxt:       { fontSize: 15, fontFamily: "Inter_400Regular", color: C.label },
-  rowTxtActive: { fontFamily: "Inter_700Bold", color: C.purple },
+  rowTxt: { fontSize: 15, fontFamily: "Inter_400Regular" },
 });
