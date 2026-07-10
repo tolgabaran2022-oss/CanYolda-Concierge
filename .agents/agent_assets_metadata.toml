@@ -35,3 +35,9 @@ id = "AJSrf0SjnfrFRB-FTJzYa"
 uri = "file://screenshots/canyoldasi-ekranlar.zip"
 type = "unspecified"
 title = "CanYoldaşı — Tüm Ekranlar (JPEG)"
+
+[[outputs]]
+id = "pHrfa2xlx2vF75HuuVLzw"
+uri = "file://screenshots/figma/canyoldasi-figma-tasarimlar.zip"
+type = "unspecified"
+title = "CanYoldaşı — Figma Tasarımları (14 ekran, JPEG)"

@@ -66,12 +66,33 @@ async function apiFetch(path: string, opts: RequestInit = {}): Promise<Response>
   });
 }
 
+const DEMO_USER: User = {
+  id:       "demo-preview-user",
+  name:     "Ayşe Kaya",
+  email:    "ayse@canyoldasi.app",
+  username: "aysekaya",
+  bio:      "İstanbul'da sokak hayvanlarını seven biri 🐾",
+  location: "İstanbul, Türkiye",
+  avatar:   null,
+  provider: "local",
+};
+
+function isPreviewMode(): boolean {
+  if (typeof window === "undefined") return false;
+  try {
+    return new URLSearchParams(window.location.search).get("preview") === "true";
+  } catch {
+    return false;
+  }
+}
+
 export function AuthProvider({ children }: { children: React.ReactNode }) {
-  const [user, setUser]           = useState<User | null>(null);
-  const [isLoading, setIsLoading] = useState(true);
+  const [user, setUser]           = useState<User | null>(isPreviewMode() ? DEMO_USER : null);
+  const [isLoading, setIsLoading] = useState(!isPreviewMode());
 
   /* ── Restore session on boot ──────────────────────────── */
   useEffect(() => {
+    if (isPreviewMode()) return;
     AsyncStorage.getItem(AUTH_KEY)
       .then((data) => { if (data) setUser(JSON.parse(data)); })
       .finally(() => setIsLoading(false));
