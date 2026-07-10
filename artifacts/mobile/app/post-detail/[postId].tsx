@@ -9,7 +9,6 @@ import {
   ActivityIndicator,
   Alert,
   Animated,
-  Dimensions,
   FlatList,
   KeyboardAvoidingView,
   Platform,
@@ -17,6 +16,7 @@ import {
   StyleSheet,
   Text,
   TextInput,
+  useWindowDimensions,
   View,
 } from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
@@ -32,7 +32,6 @@ import {
   type ApiComment,
 } from "@/lib/feedApi";
 
-const { width: SW } = Dimensions.get("window");
 const PURPLE      = "#7B5EA7";
 const PURPLE_DARK = "#3D2070";
 const BG          = "#F9F8FF";
@@ -54,16 +53,19 @@ export default function PostDetailScreen() {
   const { user } = useAuth();
   const { postId } = useLocalSearchParams<{ postId: string }>();
 
+  const { width: SW } = useWindowDimensions();
+
   const [post,      setPost]      = useState<ApiPost | null>(null);
   const [comments,  setComments]  = useState<ApiComment[]>([]);
   const [loading,   setLoading]   = useState(true);
+  const [imgErr,    setImgErr]    = useState(false);
   const [commentText, setCommentText] = useState("");
   const [submitting,  setSubmitting]  = useState(false);
 
   const heartScale = useRef(new Animated.Value(1)).current;
   const inputRef   = useRef<TextInput>(null);
 
-  const topPad    = Platform.OS === "web" ? 67 : insets.top;
+  const topPad    = Platform.OS === "web" ? (SW < 1024 ? 54 : 16) : insets.top;
   const isOwn     = !!post && (post.userId === user?.id);
 
   const load = useCallback(async () => {
@@ -208,12 +210,19 @@ export default function PostDetailScreen() {
               <Text style={S.timeAgo}>{formatAgo(post.createdAt)}</Text>
             </View>
 
-            {/* Post image */}
-            <View style={S.imageWrap}>
-              <Pressable onPress={handleLike}>
-                <Image source={{ uri: post.imageUrl }} style={S.image} contentFit="cover" />
-              </Pressable>
-            </View>
+            {/* Post image — only render when URL exists and not broken */}
+            {post.imageUrl && !imgErr ? (
+              <View style={S.imageWrap}>
+                <Pressable onPress={handleLike}>
+                  <Image
+                    source={{ uri: post.imageUrl }}
+                    style={S.image}
+                    contentFit="cover"
+                    onError={() => setImgErr(true)}
+                  />
+                </Pressable>
+              </View>
+            ) : null}
 
             {/* Actions */}
             <View style={S.actionsRow}>
@@ -348,7 +357,7 @@ const S = StyleSheet.create({
   postLocation: { fontSize: 11, fontFamily: "Inter_400Regular", color: "#9080BB", marginTop: 1 },
   timeAgo:      { fontSize: 11, fontFamily: "Inter_400Regular", color: "#AAAACC" },
 
-  imageWrap: { width: SW, aspectRatio: 1 },
+  imageWrap: { width: "100%", ...Platform.select({ web: { aspectRatio: 4 / 5 }, default: { aspectRatio: 1 } }) },
   image:     { width: "100%", height: "100%" },
 
   actionsRow: {
