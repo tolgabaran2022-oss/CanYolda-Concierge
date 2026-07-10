@@ -15,6 +15,7 @@ import {
 } from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { apiSearchUsers, type SocialUser } from "@/lib/socialApi";
+import { useTheme } from "@/hooks/useTheme";
 
 const PURPLE      = "#7B5EA7";
 const PURPLE_DARK = "#3D2070";
@@ -30,6 +31,7 @@ const SUGGESTED: SocialUser[] = [
 ];
 
 export default function SearchScreen() {
+  const T      = useTheme();
   const insets = useSafeAreaInsets();
   const router = useRouter();
 
@@ -69,13 +71,13 @@ export default function SearchScreen() {
   const displayList = query.trim() ? results : SUGGESTED;
 
   return (
-    <View style={[S.root, { paddingTop: topPad }]}>
+    <View style={[S.root, { paddingTop: topPad, backgroundColor: T.bg }]}>
       {/* Header */}
-      <View style={S.header}>
+      <View style={[S.header, { backgroundColor: T.card, borderBottomColor: T.border }]}>
         <Pressable onPress={() => router.back()} hitSlop={12}>
-          <Ionicons name="chevron-back" size={24} color={PURPLE_DARK} />
+          <Ionicons name="chevron-back" size={24} color={T.text} />
         </Pressable>
-        <Text style={S.headerTitle}>Ara</Text>
+        <Text style={[S.headerTitle, { color: T.text }]}>Ara</Text>
         <View style={{ width: 32 }} />
       </View>
 

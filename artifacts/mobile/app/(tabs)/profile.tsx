@@ -17,6 +17,7 @@ import {
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { useAnimals } from "@/contexts/AnimalsContext";
 import { useAuth } from "@/contexts/AuthContext";
+import { useTheme } from "@/hooks/useTheme";
 import { ProfileStoryAvatar } from "@/components/ProfileStoryAvatar";
 import { apiFetchUserPosts, apiFetchBookmarkedPosts } from "@/lib/feedApi";
 import type { ApiPost } from "@/lib/feedApi";
@@ -38,6 +39,7 @@ const TAB_BOTTOM_GAP = Platform.OS === "web" ? 12 : 10;
 type GridTab = "posts" | "saved";
 
 export default function ProfileScreen() {
+  const T      = useTheme();
   const insets = useSafeAreaInsets();
   const { user } = useAuth();
   const { animals } = useAnimals();
@@ -85,7 +87,7 @@ export default function ProfileScreen() {
   const totalPostCount = userPosts.length + myAnimals.length;
 
   return (
-    <View style={S.root}>
+    <View style={[S.root, { backgroundColor: T.bg }]}>
       <ScrollView
         style={S.scroll}
         contentContainerStyle={[S.container, { paddingTop: topPad, paddingBottom: tabClearance + 24 }]}
@@ -113,15 +115,15 @@ export default function ProfileScreen() {
           </View>
 
           {/* Name + bio */}
-          <Text style={S.userName}>{user.name}</Text>
+          <Text style={[S.userName, { color: T.text }]}>{user.name}</Text>
           {user.username ? (
-            <Text style={[S.userHandle]}>@{user.username}</Text>
+            <Text style={[S.userHandle, { color: T.purple }]}>@{user.username}</Text>
           ) : null}
-          <Text style={S.userBio}>
+          <Text style={[S.userBio, { color: T.textMuted }]}>
             {user.bio || "🐾 Sokak dostlarının yanındayım"}
             {user.location ? ` · ${user.location}` : " · İstanbul"}
           </Text>
-          <Text style={S.userEmail}>{user.email}</Text>
+          <Text style={[S.userEmail, { color: T.textFaint }]}>{user.email}</Text>
 
           {/* Action buttons */}
           <View style={S.actionBtnRow}>
@@ -153,7 +155,7 @@ export default function ProfileScreen() {
         </View>
 
         {/* ── Grid Tabs ──────────────────────────────────── */}
-        <View style={S.gridTabBar}>
+        <View style={[S.gridTabBar, { backgroundColor: T.card, borderColor: T.border }]}>
           {([
             { key: "posts",  inactive: "grid-outline",     active: "grid"     },
             { key: "saved",  inactive: "bookmark-outline",  active: "bookmark" },
@@ -166,7 +168,7 @@ export default function ProfileScreen() {
               <Ionicons
                 name={gridTab === key ? active : inactive}
                 size={22}
-                color={gridTab === key ? PURPLE : "#AAAACC"}
+                color={gridTab === key ? T.purple : T.textFaint}
               />
             </Pressable>
           ))}

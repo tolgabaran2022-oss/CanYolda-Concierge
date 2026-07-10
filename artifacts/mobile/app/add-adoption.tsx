@@ -21,6 +21,7 @@ import {
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { useAdoption } from "@/contexts/AdoptionContext";
 import { useAuth } from "@/contexts/AuthContext";
+import { useTheme } from "@/hooks/useTheme";
 import { TURKEY_PROVINCES, type Province } from "@/constants/turkeyLocations";
 import { apiSaveListingContact } from "@/lib/contactApi";
 
@@ -177,6 +178,7 @@ function PickerModal({ visible, title, items, selected, onSelect, onClose, searc
 
 /* ── Main screen ─────────────────────────────────────────── */
 export default function AddAdoptionScreen() {
+  const T              = useTheme();
   const insets         = useSafeAreaInsets();
   const router         = useRouter();
   const { addListing } = useAdoption();
@@ -298,7 +300,7 @@ export default function AddAdoptionScreen() {
 
   return (
     <>
-      <View style={[S.root, { backgroundColor: C.bg }]}>
+      <View style={[S.root, { backgroundColor: T.bg }]}>
 
         {/* Header */}
         <View style={[S.header, { paddingTop: topPad + 10 }]}>

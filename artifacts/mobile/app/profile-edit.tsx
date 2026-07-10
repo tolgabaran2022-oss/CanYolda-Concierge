@@ -23,6 +23,7 @@ import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { useAuth } from "@/contexts/AuthContext";
 import type { UserSettings } from "@/contexts/AuthContext";
 import { DEFAULT_SETTINGS } from "@/contexts/AuthContext";
+import { useTheme } from "@/hooks/useTheme";
 
 const PURPLE = "#7B5EA7";
 const PURPLE_DARK = "#3D2070";
@@ -30,6 +31,7 @@ const BG = "#F9F8FF";
 const CAT_AVATAR = "https://loremflickr.com/300/300/cat?lock=500";
 
 export default function ProfileEditScreen() {
+  const T      = useTheme();
   const insets = useSafeAreaInsets();
   const router = useRouter();
   const { user, updateProfile, getSettings, updateSettings } = useAuth();
@@ -140,13 +142,13 @@ export default function ProfileEditScreen() {
       style={{ flex: 1 }}
       behavior={Platform.OS === "ios" ? "padding" : "height"}
     >
-      <View style={[S.root, { paddingTop: insets.top }]}>
+      <View style={[S.root, { paddingTop: insets.top, backgroundColor: T.bg }]}>
         {/* ── Top bar ──────────────────────────────── */}
-        <View style={S.topBar}>
+        <View style={[S.topBar, { backgroundColor: T.card, borderBottomColor: T.border }]}>
           <Pressable onPress={() => router.back()} hitSlop={12} style={S.topBarBtn}>
-            <Ionicons name="chevron-back" size={24} color={PURPLE_DARK} />
+            <Ionicons name="chevron-back" size={24} color={T.text} />
           </Pressable>
-          <Text style={S.topBarTitle}>Profili Düzenle</Text>
+          <Text style={[S.topBarTitle, { color: T.text }]}>Profili Düzenle</Text>
           <Pressable
             onPress={handleSave}
             hitSlop={12}
@@ -193,7 +195,7 @@ export default function ProfileEditScreen() {
 
           {/* ── Kişisel Bilgiler ──────────────────── */}
           <SectionHeader title="Kişisel Bilgiler" />
-          <View style={S.card}>
+          <View style={[S.card, { backgroundColor: T.card, borderColor: T.border }]}>
             <Field
               icon="person-outline"
               label="Ad Soyad"
@@ -254,7 +256,7 @@ export default function ProfileEditScreen() {
 
           {/* ── Gizlilik ─────────────────────────── */}
           <SectionHeader title="Gizlilik" />
-          <View style={S.card}>
+          <View style={[S.card, { backgroundColor: T.card, borderColor: T.border }]}>
             {settingsLoading ? (
               <ActivityIndicator color={PURPLE} style={{ margin: 20 }} />
             ) : (
@@ -280,7 +282,7 @@ export default function ProfileEditScreen() {
 
           {/* ── Bildirimler ───────────────────────── */}
           <SectionHeader title="Bildirimler" />
-          <View style={S.card}>
+          <View style={[S.card, { backgroundColor: T.card, borderColor: T.border }]}>
             {settingsLoading ? (
               <ActivityIndicator color={PURPLE} style={{ margin: 20 }} />
             ) : (

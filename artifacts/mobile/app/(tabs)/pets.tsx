@@ -24,6 +24,7 @@ import type { AdoptionListing } from "@/contexts/AdoptionContext";
 import { useAdoption } from "@/contexts/AdoptionContext";
 import { useAuth } from "@/contexts/AuthContext";
 import { useBoost, type BoostPackage } from "@/contexts/BoostContext";
+import { useTheme } from "@/hooks/useTheme";
 import { formatTimeAgo } from "@/utils/formatters";
 
 // ── Palette ───────────────────────────────────────────────────────────────────
@@ -1625,6 +1626,7 @@ const ed = StyleSheet.create({
 
 // ── Main ──────────────────────────────────────────────────────────────────────
 export default function PetsScreen() {
+  const T             = useTheme();
   const insets        = useSafeAreaInsets();
   const { width: SW } = useWindowDimensions();
   const router        = useRouter();
@@ -1667,9 +1669,9 @@ export default function PetsScreen() {
   }, [sorted, filter, query]);
 
   return (
-    <View style={s.root}>
+    <View style={[s.root, { backgroundColor: T.bg }]}>
       {/* Sticky header */}
-      <View style={s.stickyTop}>
+      <View style={[s.stickyTop, { backgroundColor: T.bg }]}>
         <PetHeader topPad={topPad} />
         <TabSwitcher active={activeTab} onChange={setActiveTab} />
       </View>

@@ -15,6 +15,7 @@ import {
 } from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { useAuth } from "@/contexts/AuthContext";
+import { useTheme } from "@/hooks/useTheme";
 import {
   apiFetchNotifications,
   apiMarkAllNotificationsRead,
@@ -45,6 +46,7 @@ function formatAgo(iso: string): string {
 }
 
 export default function NotificationsScreen() {
+  const T      = useTheme();
   const insets = useSafeAreaInsets();
   const router = useRouter();
   const { user } = useAuth();
@@ -90,13 +92,13 @@ export default function NotificationsScreen() {
   const topPad = Platform.OS === "web" ? 67 : insets.top;
 
   return (
-    <View style={[S.root, { paddingTop: topPad }]}>
+    <View style={[S.root, { paddingTop: topPad, backgroundColor: T.bg }]}>
       {/* Header */}
-      <View style={S.header}>
+      <View style={[S.header, { backgroundColor: T.card, borderBottomColor: T.border }]}>
         <Pressable onPress={() => router.back()} hitSlop={12}>
-          <Ionicons name="chevron-back" size={24} color={PURPLE_DARK} />
+          <Ionicons name="chevron-back" size={24} color={T.text} />
         </Pressable>
-        <Text style={S.headerTitle}>Bildirimler</Text>
+        <Text style={[S.headerTitle, { color: T.text }]}>Bildirimler</Text>
         {unreadCount > 0 ? (
           <Pressable onPress={handleMarkAll} hitSlop={8}>
             <Text style={S.markAll}>Tümünü okundu işaretle</Text>

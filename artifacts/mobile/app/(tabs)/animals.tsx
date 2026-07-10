@@ -18,6 +18,7 @@ import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { AnimalCard } from "@/components/AnimalCard";
 import { EmptyState } from "@/components/EmptyState";
 import { useAnimals } from "@/contexts/AnimalsContext";
+import { useTheme } from "@/hooks/useTheme";
 
 const PURPLE      = "#7B5EA7";
 const PURPLE_DARK = "#4A2D8F";
@@ -102,6 +103,7 @@ function FilterChip({
 }
 
 export default function AnimalsScreen() {
+  const T             = useTheme();
   const insets        = useSafeAreaInsets();
   const { width: SW } = useWindowDimensions();
   const router        = useRouter();
@@ -135,7 +137,7 @@ export default function AnimalsScreen() {
   const renderHeader = () => (
     <>
       {/* ── Hero header ───────────────────────── */}
-      <View style={[H.hero, { paddingTop: topPad + 16 }]}>
+      <View style={[H.hero, { paddingTop: topPad + 16, backgroundColor: T.bg }]}>
 
         {/* Top row */}
         <View style={H.topRow}>
@@ -143,7 +145,7 @@ export default function AnimalsScreen() {
             <View style={H.logoPill}>
               <Ionicons name="paw" size={14} color={PURPLE} />
             </View>
-            <Text style={H.logoText}>canyoldaşı</Text>
+            <Text style={[H.logoText, { color: T.text }]}>canyoldaşı</Text>
           </View>
 
           <Animated.View style={{ transform: [{ scale: addBtnScale }] }}>
@@ -163,48 +165,48 @@ export default function AnimalsScreen() {
 
         {/* Title block */}
         <View style={H.titleBlock}>
-          <Text style={H.title}>Sokak Hayvanları</Text>
-          <Text style={H.subtitle}>Yakınındaki canlı durumları keşfet</Text>
+          <Text style={[H.title, { color: T.text }]}>Sokak Hayvanları</Text>
+          <Text style={[H.subtitle, { color: T.textMuted }]}>Yakınındaki canlı durumları keşfet</Text>
         </View>
 
         {/* Status summary row — Acil + Bekleyen + Sağlıklı + Toplam */}
-        <View style={H.summaryRow}>
+        <View style={[H.summaryRow, { backgroundColor: T.card, borderColor: T.border }]}>
           <View style={H.summaryCard}>
             <View style={[H.summaryDot, { backgroundColor: "#DC2626" }]} />
             <View>
-              <Text style={H.summaryNum}>{injured}</Text>
-              <Text style={H.summaryLabel}>Acil</Text>
+              <Text style={[H.summaryNum, { color: T.text }]}>{injured}</Text>
+              <Text style={[H.summaryLabel, { color: T.textMuted }]}>Acil</Text>
             </View>
           </View>
-          <View style={H.summaryDivider} />
+          <View style={[H.summaryDivider, { backgroundColor: T.divider }]} />
           <View style={H.summaryCard}>
             <View style={[H.summaryDot, { backgroundColor: "#D97706" }]} />
             <View>
-              <Text style={H.summaryNum}>{hungry}</Text>
-              <Text style={H.summaryLabel}>Bekleyen</Text>
+              <Text style={[H.summaryNum, { color: T.text }]}>{hungry}</Text>
+              <Text style={[H.summaryLabel, { color: T.textMuted }]}>Bekleyen</Text>
             </View>
           </View>
-          <View style={H.summaryDivider} />
+          <View style={[H.summaryDivider, { backgroundColor: T.divider }]} />
           <View style={H.summaryCard}>
             <View style={[H.summaryDot, { backgroundColor: "#16A34A" }]} />
             <View>
-              <Text style={H.summaryNum}>{healthy}</Text>
-              <Text style={H.summaryLabel}>Sağlıklı</Text>
+              <Text style={[H.summaryNum, { color: T.text }]}>{healthy}</Text>
+              <Text style={[H.summaryLabel, { color: T.textMuted }]}>Sağlıklı</Text>
             </View>
           </View>
-          <View style={H.summaryDivider} />
+          <View style={[H.summaryDivider, { backgroundColor: T.divider }]} />
           <View style={H.summaryCard}>
-            <View style={[H.summaryDot, { backgroundColor: PURPLE }]} />
+            <View style={[H.summaryDot, { backgroundColor: T.purple }]} />
             <View>
-              <Text style={H.summaryNum}>{animals.length}</Text>
-              <Text style={H.summaryLabel}>Toplam</Text>
+              <Text style={[H.summaryNum, { color: T.text }]}>{animals.length}</Text>
+              <Text style={[H.summaryLabel, { color: T.textMuted }]}>Toplam</Text>
             </View>
           </View>
         </View>
       </View>
 
       {/* ── Filter chips ──────────────────────── */}
-      <View style={F.container}>
+      <View style={[F.container, { backgroundColor: T.bg }]}>
         <ScrollView
           horizontal
           showsHorizontalScrollIndicator={false}
@@ -225,7 +227,7 @@ export default function AnimalsScreen() {
   );
 
   return (
-    <View style={{ flex: 1, backgroundColor: BG }}>
+    <View style={{ flex: 1, backgroundColor: T.bg }}>
       <FlatList
         data={filtered}
         keyExtractor={(item) => item.id}

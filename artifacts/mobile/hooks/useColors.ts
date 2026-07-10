@@ -1,24 +1,31 @@
-import { useColorScheme } from "react-native";
-
-import colors from "@/constants/colors";
+import { darkColors, lightColors } from "@/constants/colors";
+import { useThemeContext } from "@/contexts/ThemeContext";
 
 /**
- * Returns the design tokens for the current color scheme.
- *
- * The returned object contains all color tokens for the active palette
- * plus scheme-independent values like `radius`.
- *
- * Falls back to the light palette when no dark key is defined in
- * constants/colors.ts (the scaffold ships light-only by default).
- * When a sibling web artifact's dark tokens are synced into a `dark`
- * key, this hook will automatically switch palettes based on the
- * device's appearance setting.
+ * Returns design tokens for the current color scheme.
+ * Includes both the new ThemeColors shape and legacy aliases
+ * for backward compatibility (background, foreground, primary, …).
  */
 export function useColors() {
-  const scheme = useColorScheme();
-  const palette =
-    scheme === "dark" && "dark" in colors
-      ? (colors as Record<string, typeof colors.light>).dark
-      : colors.light;
-  return { ...palette, radius: colors.radius };
+  const { resolvedScheme } = useThemeContext();
+  const p = resolvedScheme === "dark" ? darkColors : lightColors;
+  return {
+    ...p,
+    radius: 16,
+    /* Legacy aliases used by older screens */
+    background:             p.bg,
+    foreground:             p.text,
+    primary:                p.purple,
+    primaryForeground:      "#FFFFFF",
+    secondary:              "#6FA870",
+    secondaryForeground:    "#FFFFFF",
+    muted:                  p.purpleFaint,
+    mutedForeground:        p.textMuted,
+    accent:                 p.purpleLight,
+    accentForeground:       "#FFFFFF",
+    destructive:            "#D94040",
+    destructiveForeground:  "#FFFFFF",
+    cardForeground:         p.text,
+    tint:                   p.purple,
+  };
 }

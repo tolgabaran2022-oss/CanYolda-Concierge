@@ -19,10 +19,19 @@ import {
 } from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { useAuth } from "@/contexts/AuthContext";
+import { useTheme } from "@/hooks/useTheme";
+import { useThemeContext, type ThemePreference } from "@/contexts/ThemeContext";
 
-const PURPLE      = "#7B5EA7";
-const PURPLE_DARK = "#3D2070";
-const BG          = "#F9F8FF";
+const THEME_OPTIONS: {
+  key: ThemePreference;
+  label: string;
+  icon: "sunny-outline" | "moon-outline" | "phone-portrait-outline";
+  desc: string;
+}[] = [
+  { key: "light",  label: "Açık",   icon: "sunny-outline",          desc: "Her zaman açık tema" },
+  { key: "dark",   label: "Koyu",   icon: "moon-outline",           desc: "Her zaman koyu tema" },
+  { key: "system", label: "Sistem", icon: "phone-portrait-outline",  desc: "Cihaz ayarını takip et" },
+];
 
 const TAB_FLOAT_H    = 64;
 const TAB_BOTTOM_GAP = Platform.OS === "web" ? 12 : 10;
@@ -32,11 +41,12 @@ export default function AccountScreen() {
   const { width: SW } = useWindowDimensions();
   const { user, logout, changePassword } = useAuth();
   const router        = useRouter();
+  const T             = useTheme();
+  const { preference, setTheme } = useThemeContext();
 
   const topPad       = Platform.OS === "web" ? (SW < 1024 ? 54 : 16) : insets.top;
   const tabClearance = Platform.OS === "web" ? (SW < 1024 ? 100 : 24) : (insets.bottom + TAB_BOTTOM_GAP + TAB_FLOAT_H);
 
-  /* ── Password modal state ── */
   const [pwModalVisible, setPwModalVisible] = useState(false);
   const [currentPw,   setCurrentPw]   = useState("");
   const [newPw,       setNewPw]       = useState("");
@@ -98,19 +108,19 @@ export default function AccountScreen() {
   if (!user) return null;
 
   return (
-    <View style={S.root}>
+    <View style={[S.root, { backgroundColor: T.bg }]}>
       {/* ── Header ──────────────────────────────────────── */}
       <LinearGradient
-        colors={["#F3EEFF", "#EDE5FF"]}
+        colors={T.headerGrad}
         style={[S.header, { paddingTop: topPad + 8 }]}
       >
         <View style={S.headerInner}>
-          <View style={S.avatarCircle}>
+          <View style={[S.avatarCircle, { backgroundColor: T.purple }]}>
             <Ionicons name="person" size={28} color="#FFF" />
           </View>
           <View style={{ flex: 1 }}>
-            <Text style={S.headerName}>{user.name}</Text>
-            <Text style={S.headerEmail}>{user.email}</Text>
+            <Text style={[S.headerName, { color: T.purpleDark }]}>{user.name}</Text>
+            <Text style={[S.headerEmail, { color: T.textMuted }]}>{user.email}</Text>
           </View>
         </View>
       </LinearGradient>
@@ -119,40 +129,87 @@ export default function AccountScreen() {
         contentContainerStyle={[S.container, { paddingBottom: tabClearance + 24 }]}
         showsVerticalScrollIndicator={false}
       >
+
+        {/* ── GÖRÜNÜM ─────────────────────────────────────── */}
+        <View style={S.section}>
+          <Text style={[S.sectionTitle, { color: T.textFaint }]}>Görünüm</Text>
+          <View style={[S.card, { backgroundColor: T.card, borderColor: T.border }]}>
+            {THEME_OPTIONS.map((opt, idx) => {
+              const active = preference === opt.key;
+              return (
+                <React.Fragment key={opt.key}>
+                  {idx > 0 && (
+                    <View style={[S.divider, { backgroundColor: T.divider, marginLeft: 16 }]} />
+                  )}
+                  <Pressable
+                    style={({ pressed }) => [S.row, { opacity: pressed ? 0.75 : 1 }]}
+                    onPress={() => {
+                      setTheme(opt.key);
+                      Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+                    }}
+                  >
+                    <View style={[
+                      S.iconBadge,
+                      { backgroundColor: active ? T.purpleFaint : T.purpleFaint },
+                    ]}>
+                      <Ionicons
+                        name={opt.icon}
+                        size={18}
+                        color={active ? T.purple : T.textMuted}
+                      />
+                    </View>
+                    <View style={{ flex: 1 }}>
+                      <Text style={[S.rowLabel, { color: T.text }]}>{opt.label}</Text>
+                      <Text style={[S.rowDesc, { color: T.textMuted }]}>{opt.desc}</Text>
+                    </View>
+                    <View style={[
+                      S.radioOuter,
+                      { borderColor: active ? T.purple : T.border },
+                      active && { backgroundColor: T.purple },
+                    ]}>
+                      {active && <Ionicons name="checkmark" size={11} color="#FFF" />}
+                    </View>
+                  </Pressable>
+                </React.Fragment>
+              );
+            })}
+          </View>
+        </View>
+
         {/* ── Hesap Ayarları ─────────────────────────────── */}
         <View style={S.section}>
-          <Text style={S.sectionTitle}>Hesap Ayarları</Text>
-          <View style={S.card}>
+          <Text style={[S.sectionTitle, { color: T.textFaint }]}>Hesap Ayarları</Text>
+          <View style={[S.card, { backgroundColor: T.card, borderColor: T.border }]}>
             <Pressable
               style={({ pressed }) => [S.row, { opacity: pressed ? 0.75 : 1 }]}
               onPress={openPwModal}
             >
-              <View style={S.iconBadge}>
-                <Ionicons name="lock-closed-outline" size={18} color={PURPLE} />
+              <View style={[S.iconBadge, { backgroundColor: T.purpleFaint }]}>
+                <Ionicons name="lock-closed-outline" size={18} color={T.purple} />
               </View>
-              <Text style={S.rowLabel}>Şifre Değiştir</Text>
-              <Ionicons name="chevron-forward" size={16} color="#8874A8" />
+              <Text style={[S.rowLabel, { flex: 1, color: T.text }]}>Şifre Değiştir</Text>
+              <Ionicons name="chevron-forward" size={16} color={T.textFaint} />
             </Pressable>
 
-            <View style={S.divider} />
+            <View style={[S.divider, { backgroundColor: T.divider }]} />
 
             <Pressable
               style={({ pressed }) => [S.row, { opacity: pressed ? 0.75 : 1 }]}
               onPress={() => router.push("/(auth)/forgot-password" as any)}
             >
-              <View style={S.iconBadge}>
-                <Ionicons name="key-outline" size={18} color={PURPLE} />
+              <View style={[S.iconBadge, { backgroundColor: T.purpleFaint }]}>
+                <Ionicons name="key-outline" size={18} color={T.purple} />
               </View>
-              <Text style={S.rowLabel}>Şifremi Unuttum</Text>
-              <Ionicons name="chevron-forward" size={16} color="#8874A8" />
+              <Text style={[S.rowLabel, { flex: 1, color: T.text }]}>Şifremi Unuttum</Text>
+              <Ionicons name="chevron-forward" size={16} color={T.textFaint} />
             </Pressable>
           </View>
         </View>
 
         {/* ── Oturum ─────────────────────────────────────── */}
         <View style={S.section}>
-          <Text style={S.sectionTitle}>Oturum</Text>
-          <View style={S.card}>
+          <Text style={[S.sectionTitle, { color: T.textFaint }]}>Oturum</Text>
+          <View style={[S.card, { backgroundColor: T.card, borderColor: T.border }]}>
             <Pressable
               style={({ pressed }) => [S.row, { opacity: pressed ? 0.75 : 1 }]}
               onPress={handleLogout}
@@ -160,11 +217,12 @@ export default function AccountScreen() {
               <View style={[S.iconBadge, S.iconBadgeDanger]}>
                 <Ionicons name="log-out-outline" size={18} color="#D94040" />
               </View>
-              <Text style={[S.rowLabel, { color: "#D94040" }]}>Çıkış Yap</Text>
+              <Text style={[S.rowLabel, { flex: 1, color: "#D94040" }]}>Çıkış Yap</Text>
               <Ionicons name="chevron-forward" size={16} color="#D94040" />
             </Pressable>
           </View>
         </View>
+
       </ScrollView>
 
       {/* ── Şifre Değiştir Modal ──────────────────────── */}
@@ -176,13 +234,18 @@ export default function AccountScreen() {
       >
         <KeyboardAvoidingView
           behavior={Platform.OS === "ios" ? "padding" : "height"}
-          style={S.modalOverlay}
+          style={[S.modalOverlay, { backgroundColor: T.overlay }]}
         >
           <Pressable style={StyleSheet.absoluteFill} onPress={() => setPwModalVisible(false)} />
-          <View style={[S.modalSheet, { paddingBottom: Math.max(insets.bottom, 24) }]}>
-            <View style={S.modalHandle} />
-            <Text style={S.modalTitle}>Şifre Değiştir</Text>
-            <Text style={S.modalSubtitle}>Güvenliğin için güçlü bir şifre seç</Text>
+          <View style={[
+            S.modalSheet,
+            { backgroundColor: T.card, paddingBottom: Math.max(insets.bottom, 24) },
+          ]}>
+            <View style={[S.modalHandle, { backgroundColor: T.border }]} />
+            <Text style={[S.modalTitle, { color: T.text }]}>Şifre Değiştir</Text>
+            <Text style={[S.modalSubtitle, { color: T.textMuted }]}>
+              Güvenliğin için güçlü bir şifre seç
+            </Text>
 
             {[
               { label: "Mevcut Şifre",       icon: "lock-closed-outline" as const, val: currentPw, set: setCurrentPw, show: showCurrent, toggleShow: () => setShowCurrent((v) => !v) },
@@ -190,20 +253,20 @@ export default function AccountScreen() {
               { label: "Yeni Şifre (Tekrar)", icon: "key-outline"         as const, val: confirmPw, set: setConfirmPw, show: showConfirm, toggleShow: () => setShowConfirm((v) => !v)  },
             ].map(({ label, icon, val, set, show, toggleShow }) => (
               <View key={label} style={S.modalInputGroup}>
-                <Text style={S.modalLabel}>{label}</Text>
-                <View style={S.modalInputWrap}>
-                  <Ionicons name={icon} size={18} color={PURPLE} />
+                <Text style={[S.modalLabel, { color: T.textMuted }]}>{label}</Text>
+                <View style={[S.modalInputWrap, { backgroundColor: T.input, borderColor: T.inputBorder }]}>
+                  <Ionicons name={icon} size={18} color={T.purple} />
                   <TextInput
-                    style={S.modalInput}
+                    style={[S.modalInput, { color: T.text }]}
                     value={val}
                     onChangeText={set}
                     placeholder={label}
-                    placeholderTextColor="#B0A8C8"
+                    placeholderTextColor={T.placeholder}
                     secureTextEntry={!show}
                     autoCapitalize="none"
                   />
                   <Pressable onPress={toggleShow}>
-                    <Ionicons name={show ? "eye-off-outline" : "eye-outline"} size={18} color={PURPLE} />
+                    <Ionicons name={show ? "eye-off-outline" : "eye-outline"} size={18} color={T.purple} />
                   </Pressable>
                 </View>
               </View>
@@ -211,13 +274,19 @@ export default function AccountScreen() {
 
             <View style={S.modalBtnRow}>
               <Pressable
-                style={({ pressed }) => [S.modalCancelBtn, { opacity: pressed ? 0.7 : 1 }]}
+                style={({ pressed }) => [
+                  S.modalCancelBtn,
+                  { backgroundColor: T.purpleFaint, opacity: pressed ? 0.7 : 1 },
+                ]}
                 onPress={() => setPwModalVisible(false)}
               >
-                <Text style={S.modalCancelText}>İptal</Text>
+                <Text style={[S.modalCancelText, { color: T.purpleDark }]}>İptal</Text>
               </Pressable>
               <Pressable
-                style={({ pressed }) => [S.modalSaveBtn, { opacity: pressed ? 0.85 : 1 }]}
+                style={({ pressed }) => [
+                  S.modalSaveBtn,
+                  { backgroundColor: T.purple, opacity: pressed ? 0.85 : 1 },
+                ]}
                 onPress={handleChangePassword}
                 disabled={pwLoading}
               >
@@ -235,54 +304,45 @@ export default function AccountScreen() {
 }
 
 const S = StyleSheet.create({
-  root: { flex: 1, backgroundColor: BG },
+  root: { flex: 1 },
 
-  /* Header */
   header:      { paddingHorizontal: 20, paddingBottom: 20 },
   headerInner: { flexDirection: "row", alignItems: "center", gap: 14 },
   avatarCircle: {
     width: 52, height: 52, borderRadius: 26,
-    backgroundColor: PURPLE,
     alignItems: "center", justifyContent: "center",
     ...Platform.select({
-      ios:     { shadowColor: PURPLE, shadowOffset: { width: 0, height: 4 }, shadowOpacity: 0.3, shadowRadius: 8 },
+      ios:     { shadowColor: "#7B5EA7", shadowOffset: { width: 0, height: 4 }, shadowOpacity: 0.3, shadowRadius: 8 },
       android: { elevation: 4 },
     }),
   },
   headerName: {
     fontSize: 17,
     fontFamily: "Inter_700Bold",
-    color: PURPLE_DARK,
   },
   headerEmail: {
     fontSize: 13,
     fontFamily: "Inter_400Regular",
-    color: "#888",
     marginTop: 2,
   },
 
-  /* Content */
   container: { paddingHorizontal: 16, paddingTop: 20, gap: 0 },
   section:   { marginBottom: 20 },
   sectionTitle: {
     fontSize: 11,
     fontFamily: "Inter_600SemiBold",
-    color: "#999",
     textTransform: "uppercase",
     letterSpacing: 0.8,
     marginBottom: 8,
     paddingHorizontal: 4,
   },
 
-  /* Card */
   card: {
-    backgroundColor: "#FFF",
     borderRadius: 16,
     borderWidth: 1,
-    borderColor: "rgba(123,94,167,0.10)",
     overflow: "hidden",
     ...Platform.select({
-      ios:     { shadowColor: PURPLE, shadowOffset: { width: 0, height: 2 }, shadowOpacity: 0.07, shadowRadius: 8 },
+      ios:     { shadowColor: "#7B5EA7", shadowOffset: { width: 0, height: 2 }, shadowOpacity: 0.07, shadowRadius: 8 },
       android: { elevation: 2 },
     }),
   },
@@ -295,30 +355,33 @@ const S = StyleSheet.create({
   },
   divider: {
     height: StyleSheet.hairlineWidth,
-    backgroundColor: "rgba(123,94,167,0.10)",
-    marginLeft: 60,
   },
   rowLabel: {
-    flex: 1,
     fontSize: 15,
     fontFamily: "Inter_500Medium",
-    color: "#1A0A3C",
+  },
+  rowDesc: {
+    fontSize: 12,
+    fontFamily: "Inter_400Regular",
+    marginTop: 1,
   },
   iconBadge: {
     width: 34, height: 34, borderRadius: 10,
-    backgroundColor: "rgba(123,94,167,0.10)",
     alignItems: "center", justifyContent: "center",
   },
-  iconBadgeDanger: { backgroundColor: "rgba(217,64,64,0.08)" },
+  iconBadgeDanger: { backgroundColor: "rgba(217,64,64,0.10)" },
 
-  /* Modal */
+  radioOuter: {
+    width: 22, height: 22, borderRadius: 11,
+    borderWidth: 1.5,
+    alignItems: "center", justifyContent: "center",
+  },
+
   modalOverlay: {
     flex: 1,
     justifyContent: "flex-end",
-    backgroundColor: "rgba(0,0,0,0.45)",
   },
   modalSheet: {
-    backgroundColor: "#FFF",
     borderTopLeftRadius: 28,
     borderTopRightRadius: 28,
     paddingHorizontal: 24,
@@ -327,20 +390,17 @@ const S = StyleSheet.create({
   },
   modalHandle: {
     width: 40, height: 4, borderRadius: 2,
-    backgroundColor: "#E0D8F0",
     alignSelf: "center",
     marginBottom: 6,
   },
   modalTitle: {
     fontSize: 20,
     fontFamily: "Inter_700Bold",
-    color: "#1A0A3C",
     textAlign: "center",
   },
   modalSubtitle: {
     fontSize: 13,
     fontFamily: "Inter_400Regular",
-    color: "#888",
     textAlign: "center",
     marginTop: -6,
   },
@@ -348,15 +408,12 @@ const S = StyleSheet.create({
   modalLabel: {
     fontSize: 12,
     fontFamily: "Inter_500Medium",
-    color: "#888",
   },
   modalInputWrap: {
     flexDirection: "row",
     alignItems: "center",
     borderRadius: 12,
     borderWidth: 1.5,
-    borderColor: "rgba(123,94,167,0.22)",
-    backgroundColor: "#FAFAFE",
     paddingHorizontal: 14,
     paddingVertical: 11,
     gap: 10,
@@ -365,7 +422,6 @@ const S = StyleSheet.create({
     flex: 1,
     fontSize: 15,
     fontFamily: "Inter_400Regular",
-    color: "#1A0A3C",
   },
   modalBtnRow: {
     flexDirection: "row",
@@ -376,19 +432,16 @@ const S = StyleSheet.create({
     flex: 1,
     paddingVertical: 14,
     borderRadius: 14,
-    backgroundColor: "#EDE5F8",
     alignItems: "center",
   },
   modalCancelText: {
     fontSize: 15,
     fontFamily: "Inter_600SemiBold",
-    color: PURPLE_DARK,
   },
   modalSaveBtn: {
     flex: 2,
     paddingVertical: 14,
     borderRadius: 14,
-    backgroundColor: PURPLE,
     alignItems: "center",
   },
   modalSaveText: {

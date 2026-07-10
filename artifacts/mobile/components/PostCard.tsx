@@ -2,6 +2,7 @@ import { Ionicons, Feather } from "@expo/vector-icons";
 import * as Haptics from "expo-haptics";
 import { Image } from "expo-image";
 import React, { useRef, useState } from "react";
+import { useTheme } from "@/hooks/useTheme";
 import {
   ActionSheetIOS,
   Alert,
@@ -78,6 +79,7 @@ export function PostCard({
   onReport,
   onBlock,
 }: Props) {
+  const T = useTheme();
   const [commentText, setCommentText] = useState("");
   const [showInput,   setShowInput]   = useState(false);
   const [showAll,     setShowAll]     = useState(false);
@@ -186,7 +188,7 @@ export function PostCard({
   const shareCount          = post.sharesCount ?? 0;
 
   return (
-    <View style={S.card}>
+    <View style={[S.card, { backgroundColor: T.card }]}>
       {/* ── Card header ─────────────────────────── */}
       <View style={S.header}>
         {/* Avatar + name + meta — entire left area is one tap target (Instagram-style) */}
@@ -202,8 +204,8 @@ export function PostCard({
             <Image source={{ uri: post.user.avatar }} style={S.avatar} contentFit="cover" />
           </View>
           <View style={{ flex: 1 }}>
-            <Text style={S.username}>{post.user.name}</Text>
-            <Text style={S.meta}>
+            <Text style={[S.username, { color: T.text }]}>{post.user.name}</Text>
+            <Text style={[S.meta, { color: T.textMuted }]}>
               {post.timestamp}{post.location ? ` · ${post.location}` : ""}
             </Text>
           </View>
@@ -239,7 +241,7 @@ export function PostCard({
               <Ionicons
                 name={post.liked ? "heart" : "heart-outline"}
                 size={24}
-                color={post.liked ? "#FF3B6B" : C.text}
+                color={post.liked ? "#FF3B6B" : T.text}
               />
             </Animated.View>
           </Pressable>
@@ -251,17 +253,17 @@ export function PostCard({
             }}
             style={S.actionBtn} hitSlop={8}
           >
-            <Ionicons name="chatbubble-outline" size={22} color={C.text} />
+            <Ionicons name="chatbubble-outline" size={22} color={T.text} />
           </Pressable>
           <Pressable onPress={handleShare} style={S.actionBtn} hitSlop={8}>
-            <Feather name="send" size={21} color={C.text} />
+            <Feather name="send" size={21} color={T.text} />
           </Pressable>
         </View>
         <Pressable onPress={handleBookmark} hitSlop={8}>
           <Ionicons
             name={post.bookmarked ? "bookmark" : "bookmark-outline"}
             size={22}
-            color={post.bookmarked ? C.purple : C.text}
+            color={post.bookmarked ? T.purple : T.text}
           />
         </Pressable>
       </View>
@@ -269,18 +271,18 @@ export function PostCard({
       {/* ── Stats + caption ─────────────────────── */}
       <Pressable style={S.foot} onPress={() => onPressPost?.(post.id)}>
         <View style={S.statsRow}>
-          <Text style={S.stat}>{likeCount} beğeni</Text>
+          <Text style={[S.stat, { color: T.text }]}>{likeCount} beğeni</Text>
           {displayCommentCount > 0 && (
-            <Text style={S.stat}>{displayCommentCount} yorum</Text>
+            <Text style={[S.stat, { color: T.text }]}>{displayCommentCount} yorum</Text>
           )}
           {shareCount > 0 && (
-            <Text style={S.stat}>{shareCount} paylaşım</Text>
+            <Text style={[S.stat, { color: T.text }]}>{shareCount} paylaşım</Text>
           )}
         </View>
 
         {post.caption ? (
-          <Text style={S.caption} numberOfLines={2}>
-            <Text style={S.captionUser}>{post.user.name} </Text>
+          <Text style={[S.caption, { color: T.textMuted }]} numberOfLines={2}>
+            <Text style={[S.captionUser, { color: T.text }]}>{post.user.name} </Text>
             {post.caption}
           </Text>
         ) : null}
@@ -303,11 +305,11 @@ export function PostCard({
         <View style={S.commentInputWrap}>
           <View style={S.inputRow}>
             <TextInput
-              style={S.input}
+              style={[S.input, { color: T.text, backgroundColor: T.input }]}
               value={commentText}
               onChangeText={setCommentText}
               placeholder="Yorum ekle..."
-              placeholderTextColor="#ABABBB"
+              placeholderTextColor={T.placeholder}
               returnKeyType="send"
               onSubmitEditing={submitComment}
               autoFocus
@@ -316,7 +318,7 @@ export function PostCard({
               onPress={submitComment}
               style={({ pressed }) => [S.sendBtn, { opacity: pressed ? 0.7 : 1 }]}
             >
-              <Ionicons name="send" size={17} color={C.purple} />
+              <Ionicons name="send" size={17} color={T.purple} />
             </Pressable>
           </View>
         </View>

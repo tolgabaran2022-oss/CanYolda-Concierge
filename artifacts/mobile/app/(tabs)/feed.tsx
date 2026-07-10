@@ -30,6 +30,7 @@ import { StoryBar } from "@/components/StoryBar";
 import { StoryViewer } from "@/components/StoryViewer";
 import { CreateStoryModal } from "@/components/CreateStoryModal";
 import { useAuth } from "@/contexts/AuthContext";
+import { useTheme } from "@/hooks/useTheme";
 import {
   apiFetchPosts,
   apiFetchFollowingPosts,
@@ -330,6 +331,7 @@ const H = StyleSheet.create({
 
 /* ── Main screen ──────────────────────────────────────────── */
 export default function FeedScreen() {
+  const T            = useTheme();
   const insets       = useSafeAreaInsets();
   const { width: SW } = useWindowDimensions();
   const router       = useRouter();
@@ -736,7 +738,7 @@ export default function FeedScreen() {
   );
 
   return (
-    <View style={[F.root, { paddingTop: Platform.OS === "web" ? (SW < 1024 ? 54 : 16) : insets.top }]}>
+    <View style={[F.root, { paddingTop: Platform.OS === "web" ? (SW < 1024 ? 54 : 16) : insets.top, backgroundColor: T.bg }]}>
       <FlatList
         data={isLoading ? [] : activePosts}
         keyExtractor={(p) => p.id}

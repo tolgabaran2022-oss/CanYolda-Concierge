@@ -20,6 +20,7 @@ import {
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { useAuth } from "@/contexts/AuthContext";
 import { apiCreatePost } from "@/lib/feedApi";
+import { useTheme } from "@/hooks/useTheme";
 
 const PURPLE      = "#7B5EA7";
 const PURPLE_DARK = "#3D2070";
@@ -28,6 +29,7 @@ const MAX_CAPTION = 500;
 const CAT_DEFAULT = "https://loremflickr.com/300/300/cat?lock=500";
 
 export default function CreatePostScreen() {
+  const T      = useTheme();
   const insets = useSafeAreaInsets();
   const router = useRouter();
   const { user } = useAuth();
@@ -98,13 +100,13 @@ export default function CreatePostScreen() {
       style={{ flex: 1 }}
       behavior={Platform.OS === "ios" ? "padding" : "height"}
     >
-      <View style={[S.root, { paddingTop: insets.top }]}>
+      <View style={[S.root, { paddingTop: insets.top, backgroundColor: T.bg }]}>
         {/* ── Top bar ──────────────────────────────── */}
-        <View style={S.topBar}>
+        <View style={[S.topBar, { backgroundColor: T.card, borderBottomColor: T.border }]}>
           <Pressable onPress={() => router.back()} hitSlop={12} style={S.topBarBtn}>
-            <Ionicons name="close" size={24} color={PURPLE_DARK} />
+            <Ionicons name="close" size={24} color={T.text} />
           </Pressable>
-          <Text style={S.topBarTitle}>Yeni Gönderi</Text>
+          <Text style={[S.topBarTitle, { color: T.text }]}>Yeni Gönderi</Text>
           <Pressable
             onPress={handlePublish}
             hitSlop={12}
@@ -165,7 +167,7 @@ export default function CreatePostScreen() {
 
           {/* ── Caption ──────────────────────────── */}
           <View style={S.section}>
-            <View style={S.card}>
+            <View style={[S.card, { backgroundColor: T.card, borderColor: T.border }]}>
               {/* User row */}
               <View style={S.userRow}>
                 <Image
@@ -173,34 +175,34 @@ export default function CreatePostScreen() {
                   style={S.userAvatar}
                   contentFit="cover"
                 />
-                <Text style={S.userName}>{user.name}</Text>
+                <Text style={[S.userName, { color: T.text }]}>{user.name}</Text>
               </View>
 
               <TextInput
-                style={S.captionInput}
+                style={[S.captionInput, { color: T.text }]}
                 value={caption}
                 onChangeText={(v) => setCaption(v.slice(0, MAX_CAPTION))}
                 placeholder="Bugün sokaktaki dostlarımızla güzel bir gün geçirdik 🐾"
-                placeholderTextColor="#ABABCC"
+                placeholderTextColor={T.placeholder}
                 multiline
                 maxLength={MAX_CAPTION}
                 textAlignVertical="top"
               />
-              <Text style={S.charCount}>{caption.length}/{MAX_CAPTION}</Text>
+              <Text style={[S.charCount, { color: T.textFaint }]}>{caption.length}/{MAX_CAPTION}</Text>
             </View>
           </View>
 
           {/* ── Location ─────────────────────────── */}
           <View style={S.section}>
-            <View style={S.card}>
+            <View style={[S.card, { backgroundColor: T.card, borderColor: T.border }]}>
               <View style={S.locationRow}>
-                <Ionicons name="location-outline" size={20} color={PURPLE} />
+                <Ionicons name="location-outline" size={20} color={T.purple} />
                 <TextInput
-                  style={S.locationInput}
+                  style={[S.locationInput, { color: T.text }]}
                   value={location}
                   onChangeText={setLocation}
                   placeholder="Konum ekle (örn. Kadıköy, İstanbul)"
-                  placeholderTextColor="#ABABCC"
+                  placeholderTextColor={T.placeholder}
                   returnKeyType="done"
                 />
               </View>

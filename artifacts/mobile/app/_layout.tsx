@@ -18,6 +18,7 @@ import { AnimalsProvider } from "@/contexts/AnimalsContext";
 import { AuthProvider, useAuth } from "@/contexts/AuthContext";
 import { BoostProvider } from "@/contexts/BoostContext";
 import { PetsProvider } from "@/contexts/PetsContext";
+import { ThemeProvider } from "@/contexts/ThemeContext";
 
 SplashScreen.preventAutoHideAsync();
 const queryClient = new QueryClient();
@@ -174,23 +175,25 @@ export default function RootLayout() {
 
   return (
     <SafeAreaProvider>
-      <ErrorBoundary>
-        <AuthProvider>
-          <AnimalsProvider>
-            <PetsProvider>
-              <AdoptionProvider>
-                <BoostProvider>
-                  <QueryClientProvider client={queryClient}>
-                    <GestureHandlerRootView style={{ flex: 1 }}>
-                      <RootLayoutNav />
-                    </GestureHandlerRootView>
-                  </QueryClientProvider>
-                </BoostProvider>
-              </AdoptionProvider>
-            </PetsProvider>
-          </AnimalsProvider>
-        </AuthProvider>
-      </ErrorBoundary>
+      <ThemeProvider>
+        <ErrorBoundary>
+          <AuthProvider>
+            <AnimalsProvider>
+              <PetsProvider>
+                <AdoptionProvider>
+                  <BoostProvider>
+                    <QueryClientProvider client={queryClient}>
+                      <GestureHandlerRootView style={{ flex: 1 }}>
+                        <RootLayoutNav />
+                      </GestureHandlerRootView>
+                    </QueryClientProvider>
+                  </BoostProvider>
+                </AdoptionProvider>
+              </PetsProvider>
+            </AnimalsProvider>
+          </AuthProvider>
+        </ErrorBoundary>
+      </ThemeProvider>
     </SafeAreaProvider>
   );
 }

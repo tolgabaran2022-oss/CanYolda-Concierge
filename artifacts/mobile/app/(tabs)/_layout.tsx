@@ -10,6 +10,7 @@ import {
   View,
 } from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
+import { useTheme } from "@/hooks/useTheme";
 
 let SymbolView: any = null;
 if (Platform.OS === "ios") {
@@ -17,7 +18,6 @@ if (Platform.OS === "ios") {
 }
 
 const PURPLE     = "#7B5EA7";
-const INACTIVE   = "#B0A3C4";
 const TAB_H      = 68;
 const BP_DESKTOP = 1024;
 
@@ -35,19 +35,21 @@ const TABS: TabItem[] = [
 function DesktopSidebar() {
   const pathname = usePathname();
   const router   = useRouter();
+  const T        = useTheme();
+  const inactive = T.textFaint;
 
   return (
-    <View style={DS.root}>
+    <View style={[DS.root, { backgroundColor: T.card, borderRightColor: T.border }]}>
       <View style={DS.logoRow}>
-        <Ionicons name="heart" size={15} color={PURPLE} />
-        <Text style={DS.logoText}>canyoldaşı</Text>
+        <Ionicons name="heart" size={15} color={T.purple} />
+        <Text style={[DS.logoText, { color: T.purpleDark }]}>canyoldaşı</Text>
       </View>
 
       {TABS.map((tab) => {
         const active = tab.path === "/"
           ? pathname === "/" || pathname === ""
           : pathname.startsWith(tab.path);
-        const color = active ? PURPLE : INACTIVE;
+        const color = active ? T.purple : inactive;
 
         return (
           <Pressable
@@ -76,6 +78,7 @@ function CustomTabBar() {
   const isIOS     = Platform.OS === "ios";
   const pathname  = usePathname();
   const router    = useRouter();
+  const T         = useTheme();
 
   if (isWeb && width >= BP_DESKTOP) return null;
 
@@ -85,24 +88,24 @@ function CustomTabBar() {
 
   return (
     <View style={barOuterStyle as any}>
-      <View style={styles.barInner}>
+      <View style={[styles.barInner, { backgroundColor: T.tabBar, borderColor: T.tabBarBorder }]}>
         {TABS.map((tab) => {
           const active = tab.path === "/"
             ? pathname === "/" || pathname === ""
             : pathname.startsWith(tab.path);
-          const color = active ? PURPLE : INACTIVE;
+          const color = active ? T.purple : T.textFaint;
 
           return (
             <Pressable
               key={tab.name}
               style={styles.tabBtn}
-              android_ripple={{ color: `${PURPLE}20`, borderless: true, radius: 32 }}
+              android_ripple={{ color: `${T.purple}20`, borderless: true, radius: 32 }}
               accessibilityLabel={tab.title}
               accessibilityRole="tab"
               accessibilityState={{ selected: active }}
               onPress={() => router.navigate(tab.path as any)}
             >
-              {active && <View style={styles.activeDot} />}
+              {active && <View style={[styles.activeDot, { backgroundColor: T.purple }]} />}
               <View style={[styles.iconWrap, active && styles.iconWrapActive]}>
                 {isIOS && SymbolView ? (
                   <SymbolView name={tab.sfSymbol as any} tintColor={color} size={20} />
@@ -126,6 +129,7 @@ export default function TabLayout() {
   const { width } = useWindowDimensions();
   const isWeb     = Platform.OS === "web";
   const isDesktop = isWeb && width >= BP_DESKTOP;
+  const T         = useTheme();
 
   const screens = (
     <Tabs screenOptions={{ headerShown: false, tabBarStyle: { display: "none" } }}>
@@ -139,10 +143,10 @@ export default function TabLayout() {
   if (isWeb) {
     return (
       <>
-        <View style={WL.root}>
+        <View style={[WL.root, { backgroundColor: T.bg }]}>
           {isDesktop && <DesktopSidebar />}
           <View style={WL.mainArea}>
-            <View style={[WL.contentWrap, isDesktop && WL.contentWrapDesktop]}>
+            <View style={[WL.contentWrap, isDesktop && WL.contentWrapDesktop, isDesktop && { borderColor: T.border }]}>
               {screens}
             </View>
           </View>

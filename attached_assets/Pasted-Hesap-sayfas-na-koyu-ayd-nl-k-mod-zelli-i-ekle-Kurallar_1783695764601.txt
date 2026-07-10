@@ -1,0 +1,51 @@
+Hesap sayfasına koyu/aydınlık mod özelliği ekle. Kurallar:
+
+1. YERLEŞİM: Hesap sayfasında "HESAP AYARLARI" bölümünün üstüne
+   "GÖRÜNÜM" başlıklı yeni bir bölüm ekle. İçinde üç seçenek olsun:
+   Açık, Koyu, Sistem (cihaz ayarını takip eder). Mevcut kartlarla
+   aynı tasarım dilinde (beyaz kart, ikonlu satır) olsun; seçenekler
+   segmented control veya radyo satırları olarak gösterilsin, seçili
+   olan mor renkle vurgulansın.
+
+2. MERKEZİ TEMA SİSTEMİ: Renkleri sayfa sayfa değiştirme. Tüm
+   uygulamada kullanılan renkleri (arka plan, kart arka planı,
+   birincil metin, ikincil metin, ayraç çizgileri, mor vurgu rengi)
+   merkezi CSS değişkenleri / tema objesi haline getir ve tüm sayfalar
+   bu değişkenleri kullansın: Akış, Harita, Hayvanlar, Evcil, Hesap,
+   profil, profil düzenleme, gönderi oluşturma, ayarlar ve bottom
+   navigation dahil. Hiçbir sayfada sabit (hardcoded) beyaz/siyah
+   renk kalmasın.
+
+3. KOYU PALET: Koyu modda zifiri siyah yerine koyu gri tonlar kullan
+   (örn. arka plan #121212-#1A1A2E arası, kartlar bir ton açığı).
+   Mor marka rengi korunsun ama koyu zeminde okunurluk için bir ton
+   açık versiyonu kullanılsın. Metinler koyu modda beyaz/açık gri
+   olsun, kontrast her yerde okunabilir kalsın.
+
+4. HARİTA SEKMESİ: Harita bileşeni genelde ayrı kütüphane olduğu için
+   açık temada kalır; bunu atlamana izin yok. Koyu mod seçiliyken
+   haritaya koyu stil (dark map style) uygula, harita üzerindeki
+   panel, buton ve popup'lar da koyu temaya uysun.
+
+5. FORM VE BİLEŞENLER: Gönderi oluşturma ve profil düzenleme
+   ekranlarındaki tüm input alanları, placeholder metinleri, textarea,
+   toggle/switch'ler ve kaydet butonları da koyu temada doğru
+   görünsün. Boş durum ekranları ("Henüz gönderi yok", "Henüz paylaşım
+   yok" gibi) ve ikonları da temaya uysun.
+
+6. KALICILIK: Seçilen tema giriş yapan kullanıcının tercihi olarak
+   kaydedilsin. Uygulama yeniden açıldığında seçim korunmalı ve tema,
+   sayfa yüklenirken beyaz ekran parlaması (flash) olmadan
+   uygulanmalı. "Sistem" seçiliyse cihazın prefers-color-scheme
+   ayarını dinle ve cihaz teması değişince anında güncelle.
+
+7. ANINDA GEÇİŞ: Seçenek değiştirilince sayfa yenilenmeden tüm
+   arayüz anında yeni temaya geçsin.
+
+BİTİRMEDEN ÖNCE ZORUNLU KONTROL: Koyu modu aç ve şu ekranların
+HEPSİNİ tek tek gez: Akış (Keşfet + Takip Ettiklerin), Harita,
+Hayvanlar, Evcil, Hesap, profil sayfası, profil düzenleme, gönderi
+oluşturma. Şunlardan herhangi biri varsa düzeltmeden bitirme:
+beyaz kalan kart veya sayfa, koyu zeminde okunmayan gri metin,
+kaybolan ikon, açık temada kalan bottom navigation, beyaz kalan
+input/placeholder, açık temada kalan harita.

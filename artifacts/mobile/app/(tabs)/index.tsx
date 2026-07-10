@@ -110,6 +110,7 @@ export default function MapScreen() {
         style={StyleSheet.absoluteFill}
         provider={PROVIDER_DEFAULT}
         region={region}
+        userInterfaceStyle={colors.isDark ? "dark" : "light"}
         showsUserLocation={!!(locPermission?.granted && Platform.OS !== "web")}
         showsMyLocationButton={false}
         onPress={() => setSelectedId(null)}
@@ -251,7 +252,7 @@ export default function MapScreen() {
                   <Text
                     style={[
                       styles.pillText,
-                      { color: active ? "white" : "#2D2D3A" },
+                      { color: active ? "white" : colors.text },
                     ]}
                   >
                     {f.label}
