@@ -8,6 +8,7 @@ import {
   Alert,
   FlatList,
   KeyboardAvoidingView,
+  Linking,
   Modal,
   Platform,
   useWindowDimensions,
@@ -22,7 +23,7 @@ import { useSafeAreaInsets } from "react-native-safe-area-context";
 import type { AdoptionListing } from "@/contexts/AdoptionContext";
 import { useAdoption } from "@/contexts/AdoptionContext";
 import { useAuth } from "@/contexts/AuthContext";
-import { useBoost } from "@/contexts/BoostContext";
+import { useBoost, type BoostPackage } from "@/contexts/BoostContext";
 import { formatTimeAgo } from "@/utils/formatters";
 
 // ── Palette ───────────────────────────────────────────────────────────────────
@@ -572,11 +573,22 @@ const STATUS_CFG: Record<ListStatus, { color: string; bg: string; icon: keyof ty
   "Süresi Doldu":    { color: "#DC2626", bg: "#FEE2E2",    icon: "close-circle-outline" },
 };
 
-const BOOST_PKGS = [
-  { id: "standart", label: "Standart", price: "49",  daysLabel: "24 saat", popular: false, multiplier: "2×"  },
-  { id: "premium",  label: "Premium",  price: "99",  daysLabel: "7 gün",   popular: true,  multiplier: "5×"  },
-  { id: "vip",      label: "VIP",      price: "199", daysLabel: "30 gün",  popular: false, multiplier: "10×" },
-] as const;
+function pkgHoursLabel(hours: number): string {
+  if (hours <= 24)  return `${hours} Saat`;
+  const days = Math.round(hours / 24);
+  return `${days} Gün`;
+}
+function pkgMultiplierLabel(hours: number): string {
+  if (hours <= 24)  return "≈2× görünürlük";
+  if (hours <= 168) return "≈5× görünürlük";
+  return "≈10× görünürlük";
+}
+function pkgIsPopular(hours: number): boolean {
+  return hours === 168; // 7 gün
+}
+function pkgFormatPrice(unitAmount: number): string {
+  return (unitAmount / 100).toFixed(0);
+}
 
 function remainingTime(expiresAt: string): string {
   const diff = new Date(expiresAt).getTime() - Date.now();
@@ -619,23 +631,25 @@ function MyListingCard({
   onAdopted,
   onPreview,
   onDelete,
+  packages,
   onBoost,
   isFeatured,
   featuredUntil,
 }: {
   card: MyCard;
+  packages: BoostPackage[];
   onEdit: () => void;
   onTogglePassive: () => void;
   onAdopted: () => void;
   onPreview: () => void;
   onDelete: () => void;
-  onBoost: (packageId: string) => Promise<void>;
+  onBoost: (pkg: BoostPackage) => Promise<void>;
   isFeatured?: boolean;
   featuredUntil?: string | null;
 }) {
   const { listing, status, views, favs, msgs } = card;
   const cfg = STATUS_CFG[status];
-  const [selectedPkg, setSelectedPkg] = useState<string | null>(null);
+  const [selectedPkg, setSelectedPkg] = useState<BoostPackage | null>(null);
   const [boosting, setBoosting] = useState(false);
   const [perfOpen, setPerfOpen] = useState(false);
   const [boostExpanded, setBoostExpanded] = useState(false);
@@ -643,8 +657,6 @@ function MyListingCard({
   const isAdopted = status === "Sahiplendirildi";
   const canBoost  = status === "Aktif" && !isFeatured;
   const canPassive = status === "Aktif" || status === "Pasif";
-
-  const selectedPkgData = BOOST_PKGS.find((p) => p.id === selectedPkg);
 
   const openMenu = () => {
     Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
@@ -822,40 +834,48 @@ function MyListingCard({
           {/* Expanded package selection */}
           {canBoost && boostExpanded && (
             <View style={ml.pkgSection}>
-              <View style={ml.pkgRow}>
-                {BOOST_PKGS.map((pkg) => {
-                  const isSel = selectedPkg === pkg.id;
-                  return (
-                    <Pressable
-                      key={pkg.id}
-                      onPress={() => {
-                        if (boosting) return;
-                        Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
-                        setSelectedPkg(isSel ? null : pkg.id);
-                      }}
-                      style={{ flex: 1 }}
-                    >
-                      <View style={[ml.pkgCard, isSel ? ml.pkgCardSel : ml.pkgIdle, pkg.popular && !isSel && ml.pkgPop]}>
-                        {pkg.popular && (
-                          <View style={[ml.popBadge, isSel && { backgroundColor: "rgba(255,255,255,0.25)" }]}>
-                            <Text style={ml.popBadgeTxt}>En Popüler</Text>
-                          </View>
-                        )}
-                        <Text style={[ml.pkgName, isSel && ml.pkgNameSel]}>{pkg.label}</Text>
-                        <Text style={[ml.pkgPrice, isSel && ml.pkgPriceSel]}>₺{pkg.price}</Text>
-                        <Text style={[ml.pkgDays, isSel && ml.pkgDaysSel]}>{pkg.daysLabel}</Text>
-                        <Text style={[ml.pkgMult, isSel && ml.pkgMultSel]}>≈{pkg.multiplier} görünürlük</Text>
-                        {isSel && <Ionicons name="checkmark-circle" size={16} color={WHITE} style={{ marginTop: 4 }} />}
-                      </View>
-                    </Pressable>
-                  );
-                })}
-              </View>
+              {packages.length === 0 ? (
+                <View style={ml.pkgEmpty}>
+                  <Ionicons name="time-outline" size={22} color={`${P}60`} />
+                  <Text style={ml.pkgEmptyTxt}>Paketler yükleniyor…</Text>
+                </View>
+              ) : (
+                <View style={ml.pkgRow}>
+                  {packages.map((pkg, idx) => {
+                    const isSel = selectedPkg?.priceId === pkg.priceId;
+                    const isPopular = pkgIsPopular(pkg.packageHours) || (packages.length === 3 && idx === 1);
+                    return (
+                      <Pressable
+                        key={pkg.priceId}
+                        onPress={() => {
+                          if (boosting) return;
+                          Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+                          setSelectedPkg(isSel ? null : pkg);
+                        }}
+                        style={{ flex: 1 }}
+                      >
+                        <View style={[ml.pkgCard, isSel ? ml.pkgCardSel : ml.pkgIdle, isPopular && !isSel && ml.pkgPop]}>
+                          {isPopular && (
+                            <View style={[ml.popBadge, isSel && { backgroundColor: "rgba(255,255,255,0.25)" }]}>
+                              <Text style={ml.popBadgeTxt}>En Popüler</Text>
+                            </View>
+                          )}
+                          <Text style={[ml.pkgName, isSel && ml.pkgNameSel]}>{pkg.label}</Text>
+                          <Text style={[ml.pkgPrice, isSel && ml.pkgPriceSel]}>₺{pkgFormatPrice(pkg.unitAmount)}</Text>
+                          <Text style={[ml.pkgDays, isSel && ml.pkgDaysSel]}>{pkgHoursLabel(pkg.packageHours)}</Text>
+                          <Text style={[ml.pkgMult, isSel && ml.pkgMultSel]}>{pkgMultiplierLabel(pkg.packageHours)}</Text>
+                          {isSel && <Ionicons name="checkmark-circle" size={16} color={WHITE} style={{ marginTop: 4 }} />}
+                        </View>
+                      </Pressable>
+                    );
+                  })}
+                </View>
+              )}
 
-              {selectedPkgData && (
+              {selectedPkg && (
                 <View style={ml.boostSummary}>
-                  <Text style={ml.boostSummaryPkg}>{selectedPkgData.label} Paket · {selectedPkgData.daysLabel}</Text>
-                  <Text style={ml.boostSummaryPrice}>Toplam: ₺{selectedPkgData.price}</Text>
+                  <Text style={ml.boostSummaryPkg}>{selectedPkg.label} · {pkgHoursLabel(selectedPkg.packageHours)}</Text>
+                  <Text style={ml.boostSummaryPrice}>Toplam: ₺{pkgFormatPrice(selectedPkg.unitAmount)}</Text>
                 </View>
               )}
 
@@ -867,7 +887,7 @@ function MyListingCard({
                     await onBoost(selectedPkg);
                     setBoostExpanded(false);
                   } catch {
-                    Alert.alert("Hata", "İlan öne çıkarılamadı. Lütfen tekrar dene.");
+                    Alert.alert("Hata", "Ödeme sayfası açılamadı. Lütfen tekrar dene.");
                   } finally {
                     setBoosting(false);
                     setSelectedPkg(null);
@@ -886,10 +906,10 @@ function MyListingCard({
                   color={selectedPkg && !boosting ? WHITE : `${BODY}90`}
                 />
                 <Text style={[ml.boostCtaTxt, (!selectedPkg || boosting) && { color: `${BODY}90` }]}>
-                  {boosting ? "Aktif Ediliyor..." : selectedPkgData ? `₺${selectedPkgData.price} ile Öne Çıkar` : "Bir Paket Seç"}
+                  {boosting ? "Ödeme Hazırlanıyor…" : selectedPkg ? `₺${pkgFormatPrice(selectedPkg.unitAmount)} · Ödemeye Geç` : "Bir Paket Seç"}
                 </Text>
               </Pressable>
-              <Text style={ml.boostNote}>Ödeme onayından sonra ilanınız otomatik olarak öne çıkarılır.</Text>
+              <Text style={ml.boostNote}>Stripe güvenli ödeme sayfasına yönlendirileceksiniz.</Text>
             </View>
           )}
 
@@ -953,7 +973,7 @@ function MyListingsSection({
   botPad: number;
   onAdd: () => void;
 }) {
-  const { activateBoost } = useBoost();
+  const { createCheckout, packages, fetchBoostStatus } = useBoost();
   const { updateListing } = useAdoption();
 
   // ── Boost success modal ──
@@ -1047,12 +1067,20 @@ function MyListingsSection({
     );
   }, [deleteListing]);
 
-  const handleBoost = useCallback(async (listingId: string, petName: string, packageId: string) => {
-    const pkg = BOOST_PKGS.find((p) => p.id === packageId);
-    const result = await activateBoost({ listingId, userEmail, packageId });
-    setSuccessModal({ petName, pkgLabel: pkg?.label ?? packageId, expiresAt: result.expiresAt });
+  const handleBoost = useCallback(async (listingId: string, petName: string, pkg: BoostPackage) => {
+    const url = await createCheckout({
+      listingId,
+      userEmail,
+      priceId: pkg.priceId,
+      packageHours: pkg.packageHours,
+      petName,
+    });
+    await Linking.openURL(url);
+    // Webhook activates the boost; poll after a delay to reflect the new status
+    setTimeout(() => { fetchBoostStatus([listingId]); }, 5000);
+    setTimeout(() => { fetchBoostStatus([listingId]); }, 15000);
     Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
-  }, [activateBoost, userEmail]);
+  }, [createCheckout, userEmail, fetchBoostStatus]);
 
   const myListings = useMemo(
     () => listings.filter((l) => l.userId === userId),
@@ -1101,7 +1129,7 @@ function MyListingsSection({
                 <LinearGradient colors={[P2, DARK]} style={sm.infoIcon}>
                   <Ionicons name="cube-outline" size={13} color={WHITE} />
                 </LinearGradient>
-                <Text style={sm.infoTxt}>{successModal.pkgLabel} Paketi · {BOOST_PKGS.find((p) => p.label === successModal.pkgLabel)?.daysLabel ?? ""}</Text>
+                <Text style={sm.infoTxt}>{successModal.pkgLabel} Paketi</Text>
               </View>
               <View style={sm.infoRow}>
                 <LinearGradient colors={[P2, DARK]} style={sm.infoIcon}>
@@ -1299,12 +1327,13 @@ function MyListingsSection({
           card={c}
           isFeatured={boostStatuses[c.listing.id]?.isFeatured ?? false}
           featuredUntil={boostStatuses[c.listing.id]?.expiresAt ?? null}
+          packages={packages}
           onEdit={() => openEdit(c.listing)}
           onTogglePassive={() => togglePassive(c.listing.id)}
           onAdopted={() => handleAdopted(c.listing.id, c.listing.petName)}
           onPreview={() => Alert.alert("Önizleme", `"${c.listing.petName}" ilanı kullanıcılara bu şekilde görünüyor.\n\n📍 ${c.listing.location}\n\n${c.listing.description}`)}
           onDelete={() => handleDelete(c.listing)}
-          onBoost={(packageId) => handleBoost(c.listing.id, c.listing.petName, packageId)}
+          onBoost={(pkg) => handleBoost(c.listing.id, c.listing.petName, pkg)}
         />
       ))}
     </ScrollView>
@@ -1438,6 +1467,8 @@ const ml = StyleSheet.create({
 
   // Expanded package section (inside card)
   pkgSection: { gap: 10 },
+  pkgEmpty:    { alignItems: "center", gap: 6, paddingVertical: 20 },
+  pkgEmptyTxt: { fontSize: 13, color: `${P}80`, fontStyle: "italic" },
 
   // Package cards
   pkgRow:     { flexDirection: "row", gap: 8 },

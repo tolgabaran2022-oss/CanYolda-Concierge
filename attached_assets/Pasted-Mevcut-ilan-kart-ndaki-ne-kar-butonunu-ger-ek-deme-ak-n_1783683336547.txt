@@ -1,0 +1,365 @@
+Mevcut ilan kartındaki “Öne Çıkar” butonunu gerçek ödeme akışına bağla. Kullanıcı butona bastığında ilan öne çıkarma paketi seçebilmeli, ödeme yapabilmeli ve ödeme başarılı olduğunda ilan otomatik olarak öne çıkarılmalıdır.
+
+ÖNEMLİ:
+- Sahte ödeme ekranı oluşturma.
+- Gerçek ödeme altyapısı kullan.
+- Türkiye’de kullanılabilir ödeme sağlayıcısı tercih et.
+- Mevcut Supabase auth, ilan sistemi ve veritabanı bağlantılarını bozma.
+- Gizli ödeme anahtarlarını frontend içine yazma.
+- Tüm ödeme oluşturma ve doğrulama işlemleri backend üzerinden çalışsın.
+- Ödeme başarılı olmadan ilanı öne çıkarma.
+- Sadece ilan sahibi kendi ilanını öne çıkarabilsin.
+
+1. ÖNE ÇIKAR BUTONU
+
+İlan kartındaki mevcut “Öne Çıkar” butonuna tıklandığında ödeme seçim modalı veya bottom sheet açılsın.
+
+Buton davranışı:
+- Kullanıcı giriş yapmamışsa login ekranına yönlendir.
+- İlan kullanıcıya ait değilse işlem yapılmasın.
+- İlan zaten aktif bir öne çıkarma paketine sahipse kalan süre gösterilsin.
+- Aynı butona art arda basıldığında birden fazla ödeme isteği oluşturulmasın.
+- İşlem sırasında loading göstergesi ve “Ödeme hazırlanıyor...” metni göster.
+
+2. PAKET SEÇİM EKRANI
+
+Modern ve premium bir ödeme modalı oluştur.
+
+Başlık:
+“İlanını Öne Çıkar”
+
+Alt açıklama:
+“İlanını daha fazla kişiye göster ve daha hızlı sonuç al.”
+
+Paketler:
+
+- 3 Gün Öne Çıkar
+  Fiyat: admin panelinden veya veritabanından gelsin
+
+- 7 Gün Öne Çıkar
+  Fiyat: admin panelinden veya veritabanından gelsin
+  “En Popüler” etiketi ekle
+
+- 14 Gün Öne Çıkar
+  Fiyat: admin panelinden veya veritabanından gelsin
+
+Her pakette göster:
+- Paket adı
+- Kaç gün süreceği
+- Tahmini görünürlük avantajı
+- Güncel fiyat
+- Seçim radio/check alanı
+
+Alt bölüm:
+- Seçilen paket
+- Ara toplam
+- Vergi varsa vergi
+- Toplam tutar
+- “Güvenli Ödemeye Geç” butonu
+
+Fiyatları frontend içinde sabit ve değiştirilemez şekilde güvenilir kabul etme. Gerçek fiyat backend tarafından veritabanından okunmalı ve ödeme tutarı backend tarafında hesaplanmalıdır.
+
+3. ÖDEME SAĞLAYICISI
+
+Projede mevcut bir ödeme altyapısı varsa onu kullan.
+
+Yoksa ödeme sağlayıcısını modüler olarak kur:
+- Türkiye için iyzico veya PayTR uyumlu servis katmanı
+- Alternatif olarak mevcut proje Stripe kullanıyorsa Stripe Checkout
+
+Tek bir provider adapter yapısı oluştur:
+
+PaymentProvider
+- createPayment
+- verifyPayment
+- handleWebhook
+- refundPayment
+
+Örnek dosya yapısı:
+
+lib/payments/provider.ts
+lib/payments/iyzico.ts
+lib/payments/paytr.ts
+lib/payments/stripe.ts
+lib/payments/payment-service.ts
+
+Projede hangi sağlayıcı aktifse environment variable veya admin ayarı üzerinden seçilsin.
+
+4. GÜVENLİK
+
+Kesinlikle:
+- Secret key frontend’e gönderilmesin.
+- Kullanıcıdan gelen fiyat bilgisine güvenilmesin.
+- Paket ve fiyat backend tarafından tekrar doğrulansın.
+- İlan sahipliği backend tarafından doğrulansın.
+- Ödeme sonucu sadece success URL üzerinden kabul edilmesin.
+- Webhook veya ödeme sağlayıcısı API doğrulaması yapılmadan ilan öne çıkarılmasın.
+- Webhook imzası doğrulansın.
+- Aynı ödeme iki kez işlenmesin.
+- Idempotency kontrolü ekle.
+- RLS politikaları oluştur.
+- Kullanıcı başka bir kullanıcının ödeme veya öne çıkarma kaydını göremesin.
+- Kart bilgileri kendi veritabanımızda tutulmasın.
+
+5. VERİTABANI TABLOLARI
+
+Supabase üzerinde gerekli migration dosyalarını oluştur.
+
+promotion_packages:
+- id
+- name
+- duration_days
+- price
+- currency
+- is_active
+- sort_order
+- created_at
+- updated_at
+
+listing_promotions:
+- id
+- listing_id
+- user_id
+- package_id
+- payment_id
+- starts_at
+- expires_at
+- status
+- created_at
+- updated_at
+
+payments:
+- id
+- user_id
+- listing_id
+- package_id
+- provider
+- provider_payment_id
+- merchant_reference
+- amount
+- currency
+- status
+- failure_reason
+- paid_at
+- created_at
+- updated_at
+
+payment_events:
+- id
+- payment_id
+- provider_event_id
+- event_type
+- payload
+- processed_at
+- created_at
+
+Durumlar:
+payments.status:
+- pending
+- processing
+- paid
+- failed
+- cancelled
+- refunded
+
+listing_promotions.status:
+- pending
+- active
+- expired
+- cancelled
+- refunded
+
+6. ÖDEME AKIŞI
+
+Doğru akış:
+
+1. Kullanıcı “Öne Çıkar” butonuna basar.
+2. Paket seçer.
+3. Frontend yalnızca listingId ve packageId gönderir.
+4. Backend kullanıcı oturumunu doğrular.
+5. Backend ilanın kullanıcıya ait olduğunu doğrular.
+6. Backend paket fiyatını veritabanından okur.
+7. Backend pending payment kaydı oluşturur.
+8. Ödeme sağlayıcısında ödeme başlatır.
+9. Kullanıcı güvenli ödeme sayfasına gider.
+10. Ödeme sağlayıcısı webhook gönderir.
+11. Backend webhook imzasını doğrular.
+12. Ödemenin gerçekten başarılı olduğunu sağlayıcı üzerinden doğrular.
+13. payments kaydını paid yapar.
+14. listing_promotions kaydını active yapar.
+15. starts_at alanını ödeme onay zamanı olarak ayarlar.
+16. expires_at alanını paket gün sayısına göre hesaplar.
+17. İlanın promoted veya featured durumu güncellenir.
+18. Kullanıcı başarı ekranına yönlendirilir.
+
+7. İLAN SIRALAMA MANTIĞI
+
+Öne çıkarılmış ilanlar:
+- Normal ilanlardan önce gösterilsin.
+- Sadece status = active olan promosyonlar dikkate alınsın.
+- expires_at geçmişse öne çıkarılmış sayılmasın.
+- Süresi dolan ilan otomatik olarak normal sıralamaya dönsün.
+- Aynı kategorideki aktif ilanlar arasında adil bir sıralama kullan.
+- Sürekli aynı ilanı en üstte sabitleme.
+- created_at, promotion priority ve rotation mantığı kullanılabilir.
+
+İlan sorgularına şu mantığı ekle:
+- active promotion var mı
+- promotion expires_at gelecekte mi
+- promoted ilanlar önce
+- ardından normal ilanlar
+
+8. KART GÖRÜNÜMÜ
+
+Ödeme başarılı olduktan sonra karttaki “İlanını öne çıkar” alanı değişsin.
+
+Aktif promosyon varsa:
+- Roket ikonu
+- “İlanın öne çıkarıldı” başlığı
+- “Kalan süre: 6 gün 14 saat” metni
+- Yeşil veya mor “Aktif” etiketi
+- “Detayları Gör” butonu
+
+Aktif promosyon yoksa mevcut tasarım korunsun:
+- “İlanını öne çıkar”
+- “Daha fazla kişiye ulaş, daha hızlı sat!”
+- “Öne Çıkar” butonu
+
+Ödeme bekleniyorsa:
+- “Ödeme bekleniyor”
+- “Ödemeye devam et” butonu
+- “İptal et” seçeneği
+
+Ödeme başarısızsa:
+- Kullanıcıya anlaşılır hata mesajı göster
+- “Tekrar Dene” butonu göster
+
+9. BAŞARI VE HATA SAYFALARI
+
+Başarılı ödeme ekranı:
+- Onay ikonu
+- “Ödemen başarıyla tamamlandı”
+- Paket adı
+- Tutar
+- Başlangıç tarihi
+- Bitiş tarihi
+- “İlanı Gör” butonu
+- “İlanlarım” butonu
+
+Başarısız ödeme ekranı:
+- “Ödeme tamamlanamadı”
+- Sağlayıcıdan gelen güvenli hata mesajı
+- “Tekrar Dene” butonu
+- “İlanlarıma Dön” butonu
+
+Kullanıcı success sayfasına URL yazarak geldiğinde promosyon aktif yapılmasın. Sayfa backend’den gerçek ödeme durumunu kontrol etsin.
+
+10. API ENDPOINTLERİ
+
+Projeye uygun endpoint yapısı oluştur:
+
+POST /api/payments/create
+- listingId
+- packageId
+
+POST /api/payments/webhook/[provider]
+
+GET /api/payments/[paymentId]/status
+
+GET /api/promotion-packages
+
+GET /api/listings/[listingId]/promotion
+
+POST /api/payments/[paymentId]/cancel
+
+Tüm endpointlerde:
+- Authentication
+- Authorization
+- Input validation
+- Rate limiting
+- Error handling
+- Server-side logging
+
+kullan.
+
+11. ADMIN PANELİ
+
+Admin paneline “Öne Çıkarma Paketleri” bölümü ekle.
+
+Admin:
+- Paket ekleyebilsin
+- Paket düzenleyebilsin
+- Fiyat değiştirebilsin
+- Süre değiştirebilsin
+- Paketi aktif/pasif yapabilsin
+- Ödemeleri görüntüleyebilsin
+- Başarılı/başarısız ödeme durumlarını filtreleyebilsin
+- Aktif promosyonları görüntüleyebilsin
+
+Admin dışında hiç kimse paket fiyatlarını değiştiremesin.
+
+12. CRON VE SÜRE DOLUMU
+
+Supabase cron veya mevcut backend scheduler ile süresi biten promosyonları kontrol et.
+
+- expires_at < now() olan active promosyonları expired yap.
+- İlanın featured/promoted durumunu kaldır.
+- İşlem tekrar çalıştırıldığında hata vermesin.
+- Kullanıcının saat diliminden bağımsız olarak UTC kullan.
+
+13. KULLANICIYA FATURA VE BİLGİ
+
+Ödeme sağlayıcısı destekliyorsa:
+- Ad soyad
+- E-posta
+- Telefon
+- Fatura adresi
+
+alanlarını güvenli şekilde al.
+
+Kullanıcı ödeme öncesinde:
+- Paket tutarını
+- Promosyon süresini
+- İade koşullarını
+- Kullanım koşullarını
+- Gizlilik politikasını
+
+görebilsin ve onay kutusu aktif olsun.
+
+14. TEKNİK KALİTE
+
+- TypeScript strict uyumlu olsun.
+- Zod veya mevcut validation sistemini kullan.
+- Mevcut UI tasarım sistemini koru.
+- Mobil ve web responsive çalışsın.
+- React Native kullanılıyorsa ödeme ekranı WebView veya sağlayıcının desteklediği güvenli yöntemle açılsın.
+- Web kullanılıyorsa güvenli checkout redirect veya embedded checkout kullan.
+- Kart bilgisi uygulama backend’inden geçmesin.
+- Console error bırakma.
+- TypeScript hatası bırakma.
+- Eksik environment variable varsa kullanıcıya açık hata göster.
+- Test modu ve canlı mod birbirinden ayrılmış olsun.
+
+15. TEST SENARYOLARI
+
+Şunları test et:
+- Başarılı ödeme
+- Başarısız ödeme
+- Kullanıcının ödeme ekranını kapatması
+- Webhook’un iki kez gelmesi
+- Başka kullanıcının ilanını öne çıkarma denemesi
+- Manipüle edilmiş fiyat isteği
+- Süresi dolan promosyon
+- Aynı ilan için iki kez hızlı tıklama
+- Mobil responsive ödeme ekranı
+- Web responsive ödeme ekranı
+- Kullanıcının success URL’yi manuel açması
+- Provider timeout
+- Webhook gecikmesi
+
+İşlem sonunda:
+- Oluşturulan ve güncellenen dosyaları listele.
+- Gerekli Supabase SQL migration kodlarını oluştur.
+- Gerekli environment variable isimlerini listele.
+- Test modunda ödeme akışını nasıl deneyeceğimi açıkla.
+- Ancak hiçbir secret key değerini kaynak koda yazma.
