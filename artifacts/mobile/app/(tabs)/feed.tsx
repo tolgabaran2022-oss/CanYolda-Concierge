@@ -620,6 +620,8 @@ export default function FeedScreen() {
         <StoryBar
           stories={stories}
           currentUserId={userId}
+          currentUserAvatar={user?.avatar ?? undefined}
+          currentUserName={user?.name ?? undefined}
           onPressGroup={handleStoryGroupPress}
           onAddStory={() => setCreateStoryOpen(true)}
         />

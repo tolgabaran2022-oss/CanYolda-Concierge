@@ -1,0 +1,217 @@
+Akış sayfasındaki hikâye alanında bulunan profil görselleri yüklenmiyor. Şu anda hikâye paylaşmış bazı kullanıcıların yuvarlak hikâye kutusunda yalnızca boş beyaz alan görünüyor. Bu sorunu kalıcı olarak düzelt.
+
+AMAÇ:
+Instagram mantığında çalışan gerçek bir hikâye listesi oluştur. Hikâye paylaşan kullanıcının profil fotoğrafı, üst taraftaki yuvarlak hikâye alanında mutlaka görünmeli.
+
+YAPILACAKLAR:
+
+1. Hikâye verisini doğru kullanıcı profiliyle ilişkilendir
+- Story kaydı getirilirken hikâyeyi paylaşan kullanıcının profil bilgilerini de çek.
+- stories tablosundaki user_id alanını profiles tablosundaki id alanıyla eşleştir.
+- Her hikâye için aşağıdaki veriler dönmeli:
+  - story.id
+  - story.user_id
+  - story.media_url
+  - story.created_at
+  - profile.username
+  - profile.full_name
+  - profile.avatar_url
+
+Supabase sorgusu örnek mantığı:
+
+const { data, error } = await supabase
+  .from('stories')
+  .select(`
+    id,
+    user_id,
+    media_url,
+    created_at,
+    expires_at,
+    profiles:user_id (
+      id,
+      username,
+      full_name,
+      avatar_url
+    )
+  `)
+  .gt('expires_at', new Date().toISOString())
+  .order('created_at', { ascending: false });
+
+2. Profil görselinde doğru alanı kullan
+- Story kartındaki görsel kaynağı story.media_url olmamalı.
+- Yuvarlak profil görselinde:
+  story.profiles.avatar_url
+  kullanılmalı.
+- Hikâye içeriği açıldığında ise story.media_url kullanılmalı.
+
+3. Avatar URL kontrolü ekle
+- avatar_url boş, null veya geçersizse uygulama bozulmasın.
+- Varsayılan kullanıcı avatarı göster.
+- Kullanıcı adının ilk harfini gösteren fallback sistemi ekle.
+
+Örnek mantık:
+
+const avatarUrl =
+  story?.profiles?.avatar_url &&
+  story.profiles.avatar_url.trim() !== ''
+    ? story.profiles.avatar_url
+    : null;
+
+4. React Native Image bileşenini güvenli şekilde oluştur
+
+{avatarUrl ? (
+  <Image
+    source={{ uri: avatarUrl }}
+    style={styles.storyAvatar}
+    resizeMode="cover"
+    onError={() => handleAvatarError(story.user_id)}
+  />
+) : (
+  <View style={styles.avatarFallback}>
+    <Text style={styles.avatarFallbackText}>
+      {(story?.profiles?.username || 'K').charAt(0).toUpperCase()}
+    </Text>
+  </View>
+)}
+
+5. Görsel yükleme hatalarını yönet
+- onError durumunda kırık veya boş görsel bırakma.
+- Hata alan kullanıcıyı avatar fallback görünümüne geçir.
+- URL’nin başında http veya https olduğundan emin ol.
+- Supabase Storage kullanılıyorsa public URL üret.
+
+Örnek:
+
+const getPublicAvatarUrl = (path) => {
+  if (!path) return null;
+
+  if (path.startsWith('http://') || path.startsWith('https://')) {
+    return path;
+  }
+
+  const { data } = supabase.storage
+    .from('avatars')
+    .getPublicUrl(path);
+
+  return data?.publicUrl || null;
+};
+
+6. Hikâyeleri kullanıcı bazında grupla
+- Aynı kullanıcının birden fazla hikâyesi varsa üst alanda aynı kullanıcıyı birden fazla kez gösterme.
+- Kullanıcı başına tek hikâye avatarı göster.
+- Kullanıcı avatarına tıklandığında o kullanıcının tüm aktif hikâyeleri sırayla açılsın.
+
+Örnek gruplama:
+
+const groupedStories = Object.values(
+  stories.reduce((acc, story) => {
+    if (!acc[story.user_id]) {
+      acc[story.user_id] = {
+        user_id: story.user_id,
+        profile: story.profiles,
+        stories: [],
+      };
+    }
+
+    acc[story.user_id].stories.push(story);
+    return acc;
+  }, {})
+);
+
+7. Hikâye çemberi tasarımı
+- Hikâyesi izlenmemiş kullanıcıda mor-pembe gradient çerçeve göster.
+- İzlenmiş hikâyede açık gri çerçeve göster.
+- Profil fotoğrafı çemberin tam ortasında olmalı.
+- Görsel yuvarlak olmalı ve taşmamalı.
+- Beyaz boş halka görünmemeli.
+
+Önerilen ölçüler:
+
+storyRing:
+- width: 58
+- height: 58
+- borderRadius: 29
+- padding: 2.5
+
+storyAvatarContainer:
+- width: 52
+- height: 52
+- borderRadius: 26
+- backgroundColor: '#FFFFFF'
+- padding: 2
+
+storyAvatar:
+- width: '100%'
+- height: '100%'
+- borderRadius: 24
+- overflow: 'hidden'
+
+8. Kullanıcı adı gösterimi
+- Profil görselinin altında username göster.
+- En fazla 10–12 karakter göster.
+- Uzunsa üç nokta ile kısalt.
+- “Hikayeni E...” gibi hatalı metin yerine:
+  - Kendi hikâye alanında: “Hikayen”
+  - Diğer kullanıcılarda: username
+
+9. Kendi hikâye alanını ayır
+- İlk sırada mevcut kullanıcının hikâye ekleme alanı bulunsun.
+- Profil fotoğrafı varsa onun resmi görünsün.
+- Profil fotoğrafının sağ altında küçük “+” rozeti olsun.
+- Kullanıcının aktif hikâyesi varsa mor hikâye çerçevesi göster.
+- Hikâyesi yoksa tıklanınca hikâye yükleme ekranı açılsın.
+
+10. Veri yenileme
+- Yeni hikâye paylaşıldıktan sonra liste anında güncellensin.
+- Sayfa tekrar açılmadan profil fotoğrafı görünmeli.
+- useFocusEffect veya realtime subscription kullan.
+- Pull-to-refresh ile hikâyeler yeniden yüklenebilsin.
+
+11. Supabase RLS kontrolü
+- stories ve profiles tablolarında kullanıcıların aktif hikâyeleri ve public profil alanları okunabilmeli.
+- profiles.avatar_url alanının SELECT yetkisini kontrol et.
+- Storage avatars bucket public değilse signed URL üret.
+- RLS yüzünden avatar verileri null geliyorsa policy’yi düzelt.
+
+12. Loading görünümü
+- Hikâyeler yüklenirken boş beyaz daire gösterme.
+- Skeleton avatar veya ActivityIndicator göster.
+- Veri tamamlandıktan sonra gerçek avatarı render et.
+
+13. TypeScript tiplerini düzelt
+
+type StoryProfile = {
+  id: string;
+  username: string | null;
+  full_name: string | null;
+  avatar_url: string | null;
+};
+
+type StoryItem = {
+  id: string;
+  user_id: string;
+  media_url: string;
+  created_at: string;
+  expires_at: string;
+  profiles: StoryProfile | null;
+};
+
+14. Debug kontrolü
+Geçici olarak console log ekle:
+
+console.log('Story data:', story);
+console.log('Story profile:', story.profiles);
+console.log('Avatar URL:', story.profiles?.avatar_url);
+
+Kontrol tamamlandıktan sonra gereksiz logları kaldır.
+
+KABUL KRİTERLERİ:
+- Hikâye paylaşan kişilerin profil fotoğrafları akış sayfasının üst kısmında görünür.
+- Boş beyaz profil çemberi kalmaz.
+- Profil resmi olmayan kullanıcıda düzgün fallback avatar görünür.
+- Kullanıcının avatarına tıklayınca kendi hikâyeleri açılır.
+- Aynı kullanıcı üst bölümde yalnızca bir kez görünür.
+- Android, iOS ve web görünümünde düzgün çalışır.
+- Mevcut akış, gönderi ve alt menü tasarımı bozulmaz.
+- Sahte veri kullanma; mevcut Supabase kullanıcı ve hikâye verilerini kullan.
+- Sadece görseli gizleyerek geçici çözüm uygulama. Veri ilişkisini, URL üretimini ve hata yönetimini gerçek şekilde düzelt.
