@@ -627,7 +627,7 @@ export default function FeedScreen() {
   );
 
   return (
-    <View style={[F.root, { paddingTop: Platform.OS === "web" ? 0 : insets.top }]}>
+    <View style={[F.root, { paddingTop: Platform.OS === "web" ? 12 : insets.top }]}>
       <FlatList
         data={isLoading ? [] : activePosts}
         keyExtractor={(p) => p.id}
