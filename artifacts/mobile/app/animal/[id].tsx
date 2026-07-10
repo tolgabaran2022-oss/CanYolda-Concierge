@@ -584,7 +584,7 @@ const D = StyleSheet.create({
 
   imageBadgeWrap: {
     position: "absolute",
-    bottom: 12,
+    bottom: 32,
     left: 14,
     flexDirection: "row",
     alignItems: "center",
