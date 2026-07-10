@@ -933,6 +933,14 @@ function MyListingCard({
               <Text style={[ml.btnTxt, { color: BODY }]}>Önizle</Text>
             </Pressable>
 
+            <Pressable
+              style={({ pressed }) => [ml.btn, ml.btnDel, { opacity: pressed ? 0.75 : 1 }]}
+              onPress={() => { Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium); onDelete(); }}
+            >
+              <Ionicons name="trash-outline" size={15} color="#DC2626" />
+              <Text style={[ml.btnTxt, { color: "#DC2626" }]}>Sil</Text>
+            </Pressable>
+
             <View style={ml.btnMenuSep} />
             <Pressable
               style={({ pressed }) => [ml.btn, ml.btnMenu, { opacity: pressed ? 0.8 : 1 }]}
@@ -1529,8 +1537,9 @@ const ml = StyleSheet.create({
   // Action buttons — 44px height
   actions:    { flexDirection: "row", alignItems: "center", gap: 8 },
   btn:        { flex: 1, flexDirection: "row", alignItems: "center", justifyContent: "center", gap: 6, height: 44, borderRadius: 12, borderWidth: 1 },
-  btnEdit:    { backgroundColor: `${P}08`,   borderColor: `${P}28`   },
-  btnPreview: { backgroundColor: `${BODY}06`, borderColor: `${BODY}22` },
+  btnEdit:    { backgroundColor: `${P}08`,       borderColor: `${P}28`       },
+  btnPreview: { backgroundColor: `${BODY}06`,    borderColor: `${BODY}22`    },
+  btnDel:     { backgroundColor: "#FEE2E218",    borderColor: "#DC262630"    },
   btnMenu:    { flex: 0, width: 40, borderWidth: 0, backgroundColor: "transparent" },
   btnMenuSep: { width: 1, height: 28, backgroundColor: `${BODY}20` },
   btnTxt:     { fontSize: 13, fontFamily: "Inter_600SemiBold" },
