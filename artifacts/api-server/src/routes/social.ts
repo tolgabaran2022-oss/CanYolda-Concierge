@@ -93,11 +93,18 @@ router.get("/social/follow/check", async (req, res) => {
   }
 });
 
+/* Helper: detect whether a string looks like a UUID or a plain seed username */
+const UUID_RE = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
+function stripSeedPrefix(id: string): string {
+  return id.startsWith("seed-") ? id.slice("seed-".length) : id;
+}
+
 /* ── GET /api/social/follow/counts ────────────────────── */
 router.get("/social/follow/counts", async (req, res) => {
   try {
-    const userId = req.query["userId"] as string;
-    if (!userId) { res.status(400).json({ error: "userId required" }); return; }
+    const raw    = req.query["userId"] as string;
+    if (!raw) { res.status(400).json({ error: "userId required" }); return; }
+    const userId = stripSeedPrefix(raw);
 
     const [followersRes, followingRes] = await Promise.all([
       db.select({ count: sql<number>`count(*)::int` }).from(follows).where(eq(follows.followingId, userId)),
@@ -186,8 +193,8 @@ router.get("/social/users/:userId", async (req, res) => {
 /* ── GET /api/social/follow/followers/:userId ─ list ─── */
 router.get("/social/follow/followers/:userId", async (req, res) => {
   try {
-    const { userId } = req.params;
-    const callerId   = req.query["callerId"] as string | undefined;
+    const userId   = stripSeedPrefix(req.params.userId);
+    const callerId = req.query["callerId"] as string | undefined;
 
     const rows = await db
       .select({ followerId: follows.followerId })
@@ -197,11 +204,15 @@ router.get("/social/follow/followers/:userId", async (req, res) => {
     if (rows.length === 0) { res.json([]); return; }
 
     const ids = rows.map((r) => r.followerId);
-    const profiles = await db
-      .select({ id: socialProfiles.id, name: socialProfiles.name, username: socialProfiles.username, avatarUrl: socialProfiles.avatarUrl })
-      .from(socialProfiles)
-      .where(inArray(socialProfiles.id, ids));
 
+    /* Real users: look up in social_profiles */
+    const uuidIds = ids.filter((id) => UUID_RE.test(id));
+    const profiles = uuidIds.length > 0
+      ? await db
+          .select({ id: socialProfiles.id, name: socialProfiles.name, username: socialProfiles.username, avatarUrl: socialProfiles.avatarUrl })
+          .from(socialProfiles)
+          .where(inArray(socialProfiles.id, uuidIds))
+      : [];
     const profileMap = new Map(profiles.map((p) => [p.id, p]));
 
     /* Check which of these users the caller follows */
@@ -214,24 +225,36 @@ router.get("/social/follow/followers/:userId", async (req, res) => {
       callerFollowingIds = new Set(cfRows.map((r) => r.followingId));
     }
 
-    /* Fallback: derive from feedPosts for users not in social_profiles */
-    const missingIds = ids.filter((id) => !profileMap.has(id));
-    if (missingIds.length > 0) {
+    /* Fallback for real users missing from social_profiles: query feedPosts by userId */
+    const missingUuids = uuidIds.filter((id) => !profileMap.has(id));
+    if (missingUuids.length > 0) {
       const postRows = await db
         .selectDistinctOn([feedPosts.userId], { userId: feedPosts.userId, username: feedPosts.username, avatarUrl: feedPosts.avatarUrl })
         .from(feedPosts)
-        .where(inArray(feedPosts.userId, missingIds));
+        .where(inArray(feedPosts.userId, missingUuids));
       postRows.forEach((r) => {
         if (r.userId) profileMap.set(r.userId, { id: r.userId, name: r.username, username: r.username, avatarUrl: r.avatarUrl });
+      });
+    }
+
+    /* Seed users (plain username, not UUID): query feedPosts by username */
+    const seedIds = ids.filter((id) => !UUID_RE.test(id));
+    if (seedIds.length > 0) {
+      const seedRows = await db
+        .selectDistinctOn([feedPosts.username], { username: feedPosts.username, avatarUrl: feedPosts.avatarUrl })
+        .from(feedPosts)
+        .where(inArray(feedPosts.username, seedIds));
+      seedRows.forEach((r) => {
+        profileMap.set(r.username, { id: r.username, name: r.username, username: r.username, avatarUrl: r.avatarUrl });
       });
     }
 
     const result = ids.map((id) => {
       const p = profileMap.get(id);
       return {
-        userId:     id,
-        username:   p?.username ?? p?.name ?? id,
-        avatarUrl:  p?.avatarUrl ?? "",
+        userId:      id,
+        username:    p?.username ?? p?.name ?? id,
+        avatarUrl:   p?.avatarUrl ?? "",
         isFollowing: callerFollowingIds.has(id),
       };
     }).filter((r) => r.username);
@@ -246,8 +269,8 @@ router.get("/social/follow/followers/:userId", async (req, res) => {
 /* ── GET /api/social/follow/following/:userId ─ list ─── */
 router.get("/social/follow/following/:userId", async (req, res) => {
   try {
-    const { userId } = req.params;
-    const callerId   = req.query["callerId"] as string | undefined;
+    const userId   = stripSeedPrefix(req.params.userId);
+    const callerId = req.query["callerId"] as string | undefined;
 
     const rows = await db
       .select({ followingId: follows.followingId })
@@ -257,11 +280,15 @@ router.get("/social/follow/following/:userId", async (req, res) => {
     if (rows.length === 0) { res.json([]); return; }
 
     const ids = rows.map((r) => r.followingId);
-    const profiles = await db
-      .select({ id: socialProfiles.id, name: socialProfiles.name, username: socialProfiles.username, avatarUrl: socialProfiles.avatarUrl })
-      .from(socialProfiles)
-      .where(inArray(socialProfiles.id, ids));
 
+    /* Real users: look up in social_profiles */
+    const uuidIds = ids.filter((id) => UUID_RE.test(id));
+    const profiles = uuidIds.length > 0
+      ? await db
+          .select({ id: socialProfiles.id, name: socialProfiles.name, username: socialProfiles.username, avatarUrl: socialProfiles.avatarUrl })
+          .from(socialProfiles)
+          .where(inArray(socialProfiles.id, uuidIds))
+      : [];
     const profileMap = new Map(profiles.map((p) => [p.id, p]));
 
     let callerFollowingIds = new Set<string>();
@@ -273,23 +300,36 @@ router.get("/social/follow/following/:userId", async (req, res) => {
       callerFollowingIds = new Set(cfRows.map((r) => r.followingId));
     }
 
-    const missingIds = ids.filter((id) => !profileMap.has(id));
-    if (missingIds.length > 0) {
+    /* Fallback for real users missing from social_profiles */
+    const missingUuids = uuidIds.filter((id) => !profileMap.has(id));
+    if (missingUuids.length > 0) {
       const postRows = await db
         .selectDistinctOn([feedPosts.userId], { userId: feedPosts.userId, username: feedPosts.username, avatarUrl: feedPosts.avatarUrl })
         .from(feedPosts)
-        .where(inArray(feedPosts.userId, missingIds));
+        .where(inArray(feedPosts.userId, missingUuids));
       postRows.forEach((r) => {
         if (r.userId) profileMap.set(r.userId, { id: r.userId, name: r.username, username: r.username, avatarUrl: r.avatarUrl });
+      });
+    }
+
+    /* Seed users (plain username, not UUID): query feedPosts by username */
+    const seedIds = ids.filter((id) => !UUID_RE.test(id));
+    if (seedIds.length > 0) {
+      const seedRows = await db
+        .selectDistinctOn([feedPosts.username], { username: feedPosts.username, avatarUrl: feedPosts.avatarUrl })
+        .from(feedPosts)
+        .where(inArray(feedPosts.username, seedIds));
+      seedRows.forEach((r) => {
+        profileMap.set(r.username, { id: r.username, name: r.username, username: r.username, avatarUrl: r.avatarUrl });
       });
     }
 
     const result = ids.map((id) => {
       const p = profileMap.get(id);
       return {
-        userId:     id,
-        username:   p?.username ?? p?.name ?? id,
-        avatarUrl:  p?.avatarUrl ?? "",
+        userId:      id,
+        username:    p?.username ?? p?.name ?? id,
+        avatarUrl:   p?.avatarUrl ?? "",
         isFollowing: callerFollowingIds.has(id),
       };
     }).filter((r) => r.username);

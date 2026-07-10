@@ -1,0 +1,85 @@
+Takip sistemini uçtan uca Instagram mantığıyla, tek doğruluk
+kaynağından çalışacak şekilde düzelt.
+
+TEMEL KURAL: Takiple ilgili HER veri (sayaçlar, listeler, buton
+durumu, akış) tek bir follows tablosundan türesin. Hiçbir yerde ayrı
+tutulan/sabit yazılmış takipçi sayısı olmasın. Şu anki hata bunun
+kanıtı: bir profilde "Takiptesin" yazarken Takipçi sayısı 0
+görünüyor.
+
+1. FOLLOWS TABLOSU: follower_id (takip eden) ve following_id (takip
+   edilen) kolonlarından oluşsun; aynı çift için tekrar kayıt
+   engellensin (unique kısıt). Takip Et → kayıt ekle, Takibi Bırak →
+   kaydı sil.
+
+2. SAYAÇLAR: Profildeki "Takipçi" sayısı = follows tablosunda o
+   kullanıcıyı takip edenlerin sayısı. "Takip" sayısı = o kullanıcının
+   takip ettiklerinin sayısı. Her profil açılışında bu değerler
+   veritabanından hesaplansın.
+
+3. LİSTELER: Profildeki "Takipçi" sayısına basınca o kullanıcıyı
+   takip edenlerin listesi, "Takip" sayısına basınca takip
+   ettiklerinin listesi açılsın. Listelerdeki her satırda kullanıcının
+   kendi avatarı, kullanıcı adı ve duruma göre buton olsun:
+   ben o kişiyi takip ediyorsam "Takiptesin", etmiyorsam "Takip Et".
+   Bu listeler kendi profilimde de başkasının profilinde de çalışsın.
+
+4. ANINDA GÜNCELLEME (optimistic update): Takip Et'e basınca beklemeden
+   buton "Takiptesin"e dönsün ve karşı tarafın Takipçi sayısı +1
+   olsun; istek başarısız olursa geri alınsın. Takibi bırakınca tersi.
+   Kendi profilimdeki "Takip" sayısı da aynı anda güncellensin.
+   Sayfalar arasında gezince değerler tutarlı kalsın (önbellekte
+   bayat sayı gösterme; profil her açıldığında güncel değeri çek).
+
+5. EŞ ZAMANLI YANSIMA: Biri BENİ takip ettiğinde, ben profilimi
+   açtığımda veya yenilediğimde takipçi sayım ve takipçi listem
+   güncel gelsin. Ayrıca "X seni takip etmeye başladı" bildirimi
+   notifications tablosuna düşsün ve zil ikonunda görünsün.
+
+6. TUTARLILIK ONARIMI: Mevcut verideki tutarsızlıkları düzelt:
+   "Takiptesin" görünen ama follows tablosunda kaydı olmayan (veya
+   tersi) durumları tara. Buton durumu her zaman follows tablosundan
+   okunarak belirlensin, ayrı bir yerde saklanmasın.
+
+7. AKIŞ BAĞLANTISI: "Takip Ettiklerin" akışı da aynı follows
+   tablosundan beslendiğini doğrula; takip edince kişinin gönderileri
+   akışa girsin, bırakınca çıksın.
+
+
+Takip Edilenler / Takipçiler listelerindeki "Takiptesin" butonu
+çalışmıyor: basınca hiçbir şey olmuyor. Şu sırayla teşhis et:
+
+8. TEŞHİS: Butona onClick handler bağlı mı kontrol et. Tarayıcı
+   konsolunu aç, butona bas: hata veriyor mu, istek (network) hiç
+   gidiyor mu, gidiyorsa sunucu ne cevap dönüyor? Bulguyu raporla.
+   (Muhtemel nedenler: handler hiç bağlanmamış, endpoint yanlış,
+   ya da istek atılıyor ama arayüz cevabı işlemiyor.)
+
+9. DAVRANIŞ: Buton iki durumlu çalışsın:
+   - "Takiptesin" iken basınca: follows kaydı silinsin, buton anında
+     "Takip Et"e dönsün (dolu mor stil), profildeki Takip sayısı -1.
+   - "Takip Et" iken basınca: follows kaydı eklensin, buton
+     "Takiptesin"e dönsün (çerçeveli stil), sayı +1.
+   - İstek başarısız olursa buton eski haline geri dönsün ve kısa
+     bir hata mesajı gösterilsin.
+   - Kendi "Takip Edilenler" listemde takibi bırakınca satır listeden
+     hemen silinmesin; buton "Takip Et"e dönsün ki yanlışlıkla
+     bıraktıysam geri takip edebileyim. Liste yeniden açıldığında
+     güncel halini göstersin. (Instagram davranışı budur.)
+   - Bu buton bileşeni TEK olsun ve her yerde (listeler, profil
+     sayfası) aynı bileşen kullanılsın; böylece bir yerde takip
+     bırakınca diğer ekranlar da tutarlı kalır.
+
+10. AVATAR HATASI: Bu listelerde tüm kullanıcılar baş harf
+   placeholder'ı gösteriyor; oysa bu kullanıcıların profil
+   fotoğrafları var (profillerine girince görünüyor). Liste
+   sorgusu kullanıcıların avatar alanını çekmiyor veya avatar
+   bileşenine yanlış alan geçiliyor. Düzelt: fotoğrafı olan
+   kullanıcının fotoğrafı görünsün, placeholder yalnızca gerçekten
+   fotoğrafı olmayanda kalsın.
+
+DOĞRULAMA: Takip Edilenler listesinde bir kullanıcının takibini
+bırak → buton "Takip Et"e dönmeli, o kullanıcının profilinde
+Takipçi sayısı azalmalı, gönderileri Takip Ettiklerin akışından
+çıkmalı. Tekrar takip et → hepsi geri gelmeli. Ayrıca listedeki
+avatarların gerçek fotoğraflar olduğunu gözle kontrol et.

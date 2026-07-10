@@ -5,7 +5,6 @@ import { useLocalSearchParams, useRouter } from "expo-router";
 import React, { useCallback, useEffect, useMemo, useState } from "react";
 import {
   ActivityIndicator,
-  Alert,
   FlatList,
   Platform,
   Pressable,
@@ -82,33 +81,23 @@ export default function FollowListScreen() {
     if (!user) return;
     Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
 
-    if (target.isFollowing) {
-      Alert.alert(
-        "Takipten Çık",
-        `@${target.username} kullanıcısını takipten çıkarmak istiyor musun?`,
-        [
-          { text: "İptal", style: "cancel" },
-          {
-            text: "Takipten Çık",
-            style: "destructive",
-            onPress: async () => {
-              try {
-                const { following: newF } = await apiToggleFollow(user.id, target.userId);
-                setUsers((p) =>
-                  p.map((u) => u.userId === target.userId ? { ...u, isFollowing: newF } : u)
-                );
-              } catch { /* ignore */ }
-            },
-          },
-        ]
+    /* Optimistic update */
+    const optimisticF = !target.isFollowing;
+    setUsers((p) =>
+      p.map((u) => u.userId === target.userId ? { ...u, isFollowing: optimisticF } : u)
+    );
+
+    try {
+      const { following: newF } = await apiToggleFollow(user.id, target.userId);
+      /* Reconcile with server response */
+      setUsers((p) =>
+        p.map((u) => u.userId === target.userId ? { ...u, isFollowing: newF } : u)
       );
-    } else {
-      try {
-        const { following: newF } = await apiToggleFollow(user.id, target.userId);
-        setUsers((p) =>
-          p.map((u) => u.userId === target.userId ? { ...u, isFollowing: newF } : u)
-        );
-      } catch { /* ignore */ }
+    } catch {
+      /* Revert on failure */
+      setUsers((p) =>
+        p.map((u) => u.userId === target.userId ? { ...u, isFollowing: target.isFollowing } : u)
+      );
     }
   };
 

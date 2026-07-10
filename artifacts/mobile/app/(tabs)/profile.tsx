@@ -1,8 +1,8 @@
 import { Ionicons } from "@expo/vector-icons";
 import * as Haptics from "expo-haptics";
 import { Image } from "expo-image";
-import { useRouter } from "expo-router";
-import React, { useEffect, useState } from "react";
+import { useFocusEffect, useRouter } from "expo-router";
+import React, { useCallback, useEffect, useState } from "react";
 
 import {
   ActivityIndicator,
@@ -66,10 +66,17 @@ export default function ProfileScreen() {
       .then(setSavedPosts)
       .catch(() => setSavedPosts([]))
       .finally(() => setSavedLoading(false));
-    apiGetFollowCounts(user.id)
-      .then(setFollowCounts)
-      .catch(() => {});
   }, [user?.id]);
+
+  /* Refresh follow counts every time this tab comes into focus */
+  useFocusEffect(
+    useCallback(() => {
+      if (!user?.id) return;
+      apiGetFollowCounts(user.id)
+        .then(setFollowCounts)
+        .catch(() => {});
+    }, [user?.id])
+  );
 
   if (!user) return null;
 
