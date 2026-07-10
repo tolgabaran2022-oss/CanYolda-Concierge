@@ -19,6 +19,8 @@ export type ApiPost = {
   createdAt: string;
 };
 
+export type ApiPostsPage = { posts: ApiPost[]; hasMore: boolean };
+
 export type ApiComment = {
   id: string;
   postId: string;
@@ -33,18 +35,27 @@ function hdrs(userId?: string): Record<string, string> {
   return h;
 }
 
-export async function apiFetchPosts(userId?: string): Promise<ApiPost[]> {
-  const res = await fetch(`${API_BASE}/feed/posts`, { headers: hdrs(userId) });
+export async function apiFetchPosts(userId?: string, offset = 0, limit = 10): Promise<ApiPostsPage> {
+  const res = await fetch(
+    `${API_BASE}/feed/posts?offset=${offset}&limit=${limit}`,
+    { headers: hdrs(userId) }
+  );
   if (!res.ok) throw new Error("fetch posts failed");
   const data = await res.json();
-  return Array.isArray(data) ? (data as ApiPost[]) : [];
+  /* Backward compat: if server returns array, wrap it */
+  if (Array.isArray(data)) return { posts: data as ApiPost[], hasMore: false };
+  return data as ApiPostsPage;
 }
 
-export async function apiFetchFollowingPosts(userId: string): Promise<ApiPost[]> {
-  const res = await fetch(`${API_BASE}/feed/posts?mode=following`, { headers: hdrs(userId) });
+export async function apiFetchFollowingPosts(userId: string, offset = 0, limit = 10): Promise<ApiPostsPage> {
+  const res = await fetch(
+    `${API_BASE}/feed/posts?mode=following&offset=${offset}&limit=${limit}`,
+    { headers: hdrs(userId) }
+  );
   if (!res.ok) throw new Error("fetch following posts failed");
   const data = await res.json();
-  return Array.isArray(data) ? (data as ApiPost[]) : [];
+  if (Array.isArray(data)) return { posts: data as ApiPost[], hasMore: false };
+  return data as ApiPostsPage;
 }
 
 export async function apiFetchUserPosts(userId: string): Promise<ApiPost[]> {

@@ -121,6 +121,26 @@ const SK = StyleSheet.create({
   line:       { height: 12, borderRadius: 6, backgroundColor: "#E5E0F5" },
 });
 
+/* ── Loading footer for infinite scroll ───────────────────── */
+function LoadingFooter() {
+  return (
+    <View style={{ alignItems: "center", paddingVertical: 20 }}>
+      <View style={{ flexDirection: "row", gap: 6 }}>
+        {[0, 1, 2].map((i) => (
+          <Animated.View
+            key={i}
+            style={{
+              width: 8, height: 8, borderRadius: 4,
+              backgroundColor: C.purple,
+              opacity: 0.3 + i * 0.25,
+            }}
+          />
+        ))}
+      </View>
+    </View>
+  );
+}
+
 /* ── Create post modal ─────────────────────────────────────── */
 function CreatePostModal({
   visible,
@@ -332,44 +352,77 @@ export default function FeedScreen() {
   /* Loading states */
   const [loadingDiscover,  setLoadingDiscover]  = useState(true);
   const [loadingFollowing, setLoadingFollowing] = useState(false);
+  const [loadingMore,      setLoadingMore]      = useState(false);
   const [refreshing,       setRefreshing]       = useState(false);
   const [errorDiscover,    setErrorDiscover]    = useState(false);
   const [errorFollowing,   setErrorFollowing]   = useState(false);
 
+  /* Pagination */
+  const [discoverOffset,   setDiscoverOffset]   = useState(0);
+  const [discoverHasMore,  setDiscoverHasMore]  = useState(true);
+  const [followingOffset,  setFollowingOffset]  = useState(0);
+  const [followingHasMore, setFollowingHasMore] = useState(true);
+
   /* ── Fetch discover posts ─────────────────────────────── */
-  const fetchDiscover = useCallback(async (isRefresh = false) => {
-    if (isRefresh) setRefreshing(true);
+  const fetchDiscover = useCallback(async (isRefresh = false, pageOffset = 0) => {
+    const isLoadMore = !isRefresh && pageOffset > 0;
+    if (isRefresh) { setRefreshing(true); setDiscoverOffset(0); setDiscoverHasMore(true); }
+    else if (isLoadMore) setLoadingMore(true);
     else setLoadingDiscover(true);
     setErrorDiscover(false);
     try {
-      const apiPosts = await apiFetchPosts(userId);
-      setPosts(apiPosts.map(apiPostToPostData));
+      const { posts: apiPosts, hasMore } = await apiFetchPosts(userId, pageOffset);
+      const mapped = apiPosts.map(apiPostToPostData);
+      if (isRefresh || pageOffset === 0) {
+        setPosts(mapped);
+      } else {
+        setPosts((prev) => {
+          const ids = new Set(prev.map((p) => p.id));
+          return [...prev, ...mapped.filter((p) => !ids.has(p.id))];
+        });
+      }
+      setDiscoverHasMore(hasMore);
+      setDiscoverOffset(pageOffset + apiPosts.length);
     } catch {
       setErrorDiscover(true);
     } finally {
       setLoadingDiscover(false);
       setRefreshing(false);
+      setLoadingMore(false);
     }
   }, [userId]);
 
   /* ── Fetch following posts ─────────────────────────────── */
-  const fetchFollowing = useCallback(async (isRefresh = false) => {
+  const fetchFollowing = useCallback(async (isRefresh = false, pageOffset = 0) => {
     if (!user?.id) return;
-    if (isRefresh) setRefreshing(true);
+    const isLoadMore = !isRefresh && pageOffset > 0;
+    if (isRefresh) { setRefreshing(true); setFollowingOffset(0); setFollowingHasMore(true); }
+    else if (isLoadMore) setLoadingMore(true);
     else setLoadingFollowing(true);
     setErrorFollowing(false);
     try {
-      const [apiPosts, count] = await Promise.all([
-        apiFetchFollowingPosts(user.id),
-        apiFetchFollowingCount(user.id),
+      const [{ posts: apiPosts, hasMore }, count] = await Promise.all([
+        apiFetchFollowingPosts(user.id, pageOffset),
+        pageOffset === 0 ? apiFetchFollowingCount(user.id) : Promise.resolve(null),
       ]);
-      setFollowingPosts(apiPosts.map(apiPostToPostData));
-      setFollowingCount(count);
+      const mapped = apiPosts.map(apiPostToPostData);
+      if (isRefresh || pageOffset === 0) {
+        setFollowingPosts(mapped);
+      } else {
+        setFollowingPosts((prev) => {
+          const ids = new Set(prev.map((p) => p.id));
+          return [...prev, ...mapped.filter((p) => !ids.has(p.id))];
+        });
+      }
+      setFollowingHasMore(hasMore);
+      setFollowingOffset(pageOffset + apiPosts.length);
+      if (count !== null) setFollowingCount(count);
     } catch {
       setErrorFollowing(true);
     } finally {
       setLoadingFollowing(false);
       setRefreshing(false);
+      setLoadingMore(false);
     }
   }, [user?.id]);
 
@@ -401,14 +454,30 @@ export default function FeedScreen() {
     apiFetchStories(userId).then(setStories).catch(() => {});
   }, [feedTab, fetchDiscover, fetchFollowing, userId]);
 
-  /* ── Tab switch: always refresh following on switch ─────── */
+  /* ── Tab switch: always full-refresh following on switch ── */
   const handleTabChange = (tab: "discover" | "following") => {
     Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
     setFeedTab(tab);
     if (tab === "following" && !loadingFollowing) {
-      void fetchFollowing();
+      void fetchFollowing(true); /* reset to page 0 */
     }
   };
+
+  /* ── Load more (infinite scroll) ───────────────────────── */
+  const handleLoadMore = useCallback(() => {
+    if (feedTab === "discover") {
+      if (!discoverHasMore || loadingMore || loadingDiscover) return;
+      void fetchDiscover(false, discoverOffset);
+    } else {
+      if (!followingHasMore || loadingMore || loadingFollowing) return;
+      void fetchFollowing(false, followingOffset);
+    }
+  }, [
+    feedTab,
+    discoverHasMore, discoverOffset, loadingDiscover,
+    followingHasMore, followingOffset, loadingFollowing,
+    loadingMore, fetchDiscover, fetchFollowing,
+  ]);
 
   /* ── Like (optimistic + API) ─────────────────────────── */
   const handleLike = useCallback((id: string) => {
@@ -689,6 +758,9 @@ export default function FeedScreen() {
         )}
         ListHeaderComponent={renderHeader}
         ListEmptyComponent={renderEmpty}
+        ListFooterComponent={loadingMore ? <LoadingFooter /> : null}
+        onEndReached={handleLoadMore}
+        onEndReachedThreshold={0.3}
         contentContainerStyle={[F.listContent, { paddingBottom: BOTTOM_NAV_H + 16 }]}
         showsVerticalScrollIndicator={false}
         style={F.list}

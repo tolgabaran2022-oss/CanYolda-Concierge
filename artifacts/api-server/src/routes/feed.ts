@@ -435,11 +435,21 @@ router.get("/feed/posts", async (req, res) => {
   try {
     await seedIfEmpty();
     const userId       = req.headers["x-user-id"] as string | undefined;
-    const filterUserId = req.query["userId"] as string | undefined;
-    const mode         = req.query["mode"]   as string | undefined;
+    const filterUserId = req.query["userId"]  as string | undefined;
+    const mode         = req.query["mode"]    as string | undefined;
 
-    let posts: (typeof feedPosts.$inferSelect)[];
+    /* Pagination — only applies to discover/following (not filterUserId) */
+    const rawOffset = parseInt(req.query["offset"] as string ?? "0", 10);
+    const rawLimit  = parseInt(req.query["limit"]  as string ?? "10", 10);
+    const offset = isNaN(rawOffset) ? 0 : Math.max(0, rawOffset);
+    const limit  = isNaN(rawLimit)  ? 10 : Math.min(Math.max(1, rawLimit), 50);
+
+    type PostRow = typeof feedPosts.$inferSelect;
+    let posts: PostRow[];
+    let paginate = false; /* true → return { posts, hasMore }, false → return array */
+
     if (mode === "following" && userId) {
+      paginate = true;
       /* Fetch posts only from followed users + own posts */
       const followingRows = await db
         .select({ followingId: follows.followingId })
@@ -458,8 +468,8 @@ router.get("/feed/posts", async (req, res) => {
         posts = [];
       }
     } else if (filterUserId) {
+      /* Profile page — returns all, no pagination */
       if (filterUserId.startsWith("seed-")) {
-        /* Seed users have userId="" in DB — query by username + empty userId */
         const seedUsername = filterUserId.slice("seed-".length);
         posts = await db
           .select()
@@ -474,10 +484,10 @@ router.get("/feed/posts", async (req, res) => {
           .orderBy(desc(feedPosts.createdAt));
       }
     } else {
-      /* Discover: filter out posts from users with private profiles unless viewer is a follower */
+      paginate = true;
+      /* Discover: filter out private profiles unless viewer follows them */
       const allPosts = await db.select().from(feedPosts).orderBy(desc(feedPosts.createdAt));
       if (!userId) {
-        /* Unauthenticated: only show posts from public profiles */
         const privateProfiles = await db
           .select({ id: socialProfiles.id })
           .from(socialProfiles)
@@ -485,12 +495,11 @@ router.get("/feed/posts", async (req, res) => {
         const privateIds = new Set(privateProfiles.map((p) => p.id));
         posts = allPosts.filter((p) => !p.userId || !privateIds.has(p.userId));
       } else {
-        /* Authenticated: show all posts from public profiles + posts from private profiles the viewer follows */
         const [privateProfiles, myFollowing] = await Promise.all([
           db.select({ id: socialProfiles.id }).from(socialProfiles).where(eq(socialProfiles.isProfilePublic, false)),
           db.select({ followingId: follows.followingId }).from(follows).where(eq(follows.followerId, userId)),
         ]);
-        const privateIds  = new Set(privateProfiles.map((p) => p.id));
+        const privateIds   = new Set(privateProfiles.map((p) => p.id));
         const followingSet = new Set(myFollowing.map((f) => f.followingId));
         posts = allPosts.filter((p) => {
           if (!p.userId) return true;
@@ -501,7 +510,7 @@ router.get("/feed/posts", async (req, res) => {
       }
     }
 
-    let likedIds     = new Set<string>();
+    let likedIds      = new Set<string>();
     let bookmarkedIds = new Set<string>();
 
     if (userId) {
@@ -513,16 +522,20 @@ router.get("/feed/posts", async (req, res) => {
       bookmarkedIds = new Set(bookmarks.map((b) => b.postId));
     }
 
-    res.json(
-      posts.map((p) => ({
-        ...p,
-        /* Seed posts stored with userId="" — give them a stable "seed-{username}" ID
-           so the client can navigate to their profile without falling back to the display name */
-        userId:    p.userId || `seed-${p.username}`,
-        liked:     likedIds.has(p.id),
-        bookmarked: bookmarkedIds.has(p.id),
-      }))
-    );
+    const shape = (p: PostRow) => ({
+      ...p,
+      userId:     p.userId || `seed-${p.username}`,
+      liked:      likedIds.has(p.id),
+      bookmarked: bookmarkedIds.has(p.id),
+    });
+
+    if (paginate) {
+      const page    = posts.slice(offset, offset + limit);
+      const hasMore = offset + limit < posts.length;
+      res.json({ posts: page.map(shape), hasMore });
+    } else {
+      res.json(posts.map(shape));
+    }
   } catch (err) {
     req.log.error({ err }, "GET /feed/posts failed");
     res.status(500).json({ error: "Internal server error" });
