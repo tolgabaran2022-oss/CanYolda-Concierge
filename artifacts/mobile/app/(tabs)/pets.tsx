@@ -80,68 +80,51 @@ const TIPS = [
   "Sahiplenecek kişiyle yüz yüze görüşmeyi tercih et",
 ];
 
-// ── Header ────────────────────────────────────────────────────────────────────
-function PetHeader({ topPad, mainTab }: { topPad: number; mainTab?: MainTab }) {
+// ── Combined header: tab underlines + notification bell ───────────────────────
+function PetHeader({ topPad, mainTab, onChange }: { topPad: number; mainTab: MainTab; onChange: (t: MainTab) => void }) {
   const T = useTheme();
+  const TABS: { key: MainTab; label: string }[] = [
+    { key: "evcilim",  label: "Evcilim"      },
+    { key: "adoption", label: "Sahiplendirme" },
+  ];
   return (
-    <View style={[hdr.wrap, { paddingTop: topPad + 8, backgroundColor: T.bg }]}>
-      <View style={hdr.logoRow}>
-        <LinearGradient colors={[P2, P, DARK]} style={hdr.logoIcon}>
-          <Ionicons name="heart" size={14} color={WHITE} />
-        </LinearGradient>
-        <View>
-          <Text style={[hdr.logoTxt, { color: T.text }]}>canyoldaşı</Text>
-          <Text style={[hdr.logoSub, { color: T.textMuted }]}>{mainTab === "evcilim" ? "Evcil Hayvan Yönetimi" : "Sahiplendirme İlanları"}</Text>
-        </View>
+    <View style={[hdr.wrap, { paddingTop: topPad + 6, backgroundColor: T.bg }]}>
+      <View style={hdr.tabRow}>
+        {TABS.map((t) => {
+          const isActive = mainTab === t.key;
+          return (
+            <Pressable key={t.key} style={hdr.tabItem} onPress={() => onChange(t.key)}>
+              <Text style={[hdr.tabTxt, isActive ? { color: DARK, fontFamily: "Inter_700Bold" } : { color: BODY, fontFamily: "Inter_500Medium" }]}>
+                {t.label}
+              </Text>
+              {isActive && <View style={hdr.underline} />}
+            </Pressable>
+          );
+        })}
       </View>
+      <Pressable style={hdr.bellBtn} onPress={() => {}}>
+        <Ionicons name="notifications-outline" size={22} color={BODY} />
+        <View style={hdr.bellDot} />
+      </Pressable>
     </View>
   );
 }
 const hdr = StyleSheet.create({
-  wrap:    { flexDirection: "row", alignItems: "center", justifyContent: "space-between", paddingHorizontal: 20, paddingBottom: 14, backgroundColor: BG },
-  logoRow: { flexDirection: "row", alignItems: "center", gap: 10 },
-  logoIcon:{ width: 34, height: 34, borderRadius: 10, alignItems: "center", justifyContent: "center" },
-  logoTxt: { fontSize: 16, fontFamily: "Inter_700Bold", color: DARK, letterSpacing: -0.3 },
-  logoSub: { fontSize: 10, fontFamily: "Inter_400Regular", color: BODY, marginTop: 1 },
+  wrap:      { flexDirection: "row", alignItems: "flex-end", justifyContent: "space-between", paddingHorizontal: 20, paddingBottom: 0, backgroundColor: WHITE },
+  tabRow:    { flexDirection: "row", alignItems: "flex-end", gap: 24 },
+  tabItem:   { alignItems: "center", paddingBottom: 12 },
+  tabTxt:    { fontSize: 17, letterSpacing: -0.3 },
+  underline: { position: "absolute", bottom: 0, left: 0, right: 0, height: 3, backgroundColor: P, borderRadius: 2 },
+  bellBtn:   { paddingBottom: 12, position: "relative" },
+  bellDot:   { position: "absolute", top: 2, right: 0, width: 8, height: 8, borderRadius: 4, backgroundColor: "#FF3B30", borderWidth: 1.5, borderColor: WHITE },
 });
 
-// ── Outer tab switcher (Evcilim / Sahiplendirme) ──────────────────────────────
+// ── Outer tab switcher (kept as thin divider below header) ────────────────────
 function OuterTabSwitcher({ active, onChange }: { active: MainTab; onChange: (t: MainTab) => void }) {
-  const T = useTheme();
-  const OUTER: { key: MainTab; label: string; icon: keyof typeof Ionicons.glyphMap }[] = [
-    { key: "evcilim",  label: "Evcilim",      icon: "heart"            },
-    { key: "adoption", label: "Sahiplendirme", icon: "hand-left-outline" },
-  ];
-  return (
-    <View style={[ots.wrap, { backgroundColor: T.card, borderColor: T.border }]}>
-      {OUTER.map((t) => {
-        const isActive = active === t.key;
-        return (
-          <Pressable key={t.key} style={ots.item} onPress={() => onChange(t.key)}>
-            {isActive ? (
-              <LinearGradient colors={[P2, P]} start={{ x: 0, y: 0 }} end={{ x: 1, y: 0 }} style={ots.grad}>
-                <Ionicons name={t.icon} size={14} color={WHITE} />
-                <Text style={ots.lblActive}>{t.label}</Text>
-              </LinearGradient>
-            ) : (
-              <View style={ots.inactiveRow}>
-                <Ionicons name={t.icon} size={14} color={P} />
-                <Text style={[ots.lblInactive, { color: T.textMuted }]}>{t.label}</Text>
-              </View>
-            )}
-          </Pressable>
-        );
-      })}
-    </View>
-  );
+  return <View style={ots.divider} />;
 }
 const ots = StyleSheet.create({
-  wrap:        { flexDirection: "row", marginHorizontal: 20, marginBottom: 10, backgroundColor: WHITE, borderRadius: 16, padding: 4, borderWidth: 1, borderColor: BORDER, ...IOS_SHADOW },
-  item:        { flex: 1, borderRadius: 12, overflow: "hidden" },
-  grad:        { flexDirection: "row", alignItems: "center", justifyContent: "center", gap: 6, paddingVertical: 11 },
-  inactiveRow: { flexDirection: "row", alignItems: "center", justifyContent: "center", gap: 6, paddingVertical: 11 },
-  lblActive:   { fontSize: 13, fontFamily: "Inter_700Bold",    color: WHITE },
-  lblInactive: { fontSize: 13, fontFamily: "Inter_500Medium",  color: P },
+  divider: { height: 1, backgroundColor: BORDER, marginBottom: 0 },
 });
 
 // ── Tab switcher (3-segment) ──────────────────────────────────────────────────
@@ -1730,14 +1713,15 @@ export default function PetsScreen() {
     <View style={[s.root, { backgroundColor: T.bg }]}>
       {/* Sticky header */}
       <View style={[s.stickyTop, { backgroundColor: T.bg }]}>
-        <PetHeader topPad={topPad} mainTab={mainTab} />
-        <OuterTabSwitcher
-          active={mainTab}
+        <PetHeader
+          topPad={topPad}
+          mainTab={mainTab}
           onChange={(t) => {
             Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
             setMainTab(t);
           }}
         />
+        <OuterTabSwitcher active={mainTab} onChange={() => {}} />
         {mainTab === "adoption" && (
           <TabSwitcher active={activeTab} onChange={setActiveTab} />
         )}
@@ -1814,8 +1798,8 @@ export default function PetsScreen() {
 }
 
 const s = StyleSheet.create({
-  root:         { flex: 1, backgroundColor: BG },
-  stickyTop:    { backgroundColor: BG },
+  root:         { flex: 1, backgroundColor: "#F7F7F7" },
+  stickyTop:    { backgroundColor: WHITE },
   listingShell: { flex: 1 },
   empty:      { alignItems: "center", paddingTop: 52, paddingHorizontal: 40, gap: 8 },
   emptyIllo:  { width: 74, height: 74, borderRadius: 37, backgroundColor: `${P}12`, alignItems: "center", justifyContent: "center", marginBottom: 6 },

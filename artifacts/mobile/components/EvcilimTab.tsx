@@ -101,8 +101,8 @@ function ProfileCarousel({
       {/* Main profile card */}
       <Pressable style={[car.card, SHADOW]} onPress={onEdit}>
         <View style={car.row}>
-          {/* Avatar */}
-          <View style={car.avatarWrap}>
+          {/* Avatar with purple ring */}
+          <View style={car.avatarRing}>
             {pet.image ? (
               <Image source={{ uri: pet.image }} style={car.avatar} contentFit="cover" />
             ) : (
@@ -119,7 +119,7 @@ function ProfileCarousel({
               <Ionicons name="checkmark-circle" size={18} color="#5856D6" />
             </View>
             <Text style={car.breed} numberOfLines={1}>
-              {pet.type}{pet.breed ? ` • ${pet.breed}` : ""}
+              {pet.breed ? pet.breed : pet.type}
             </Text>
             {pet.age ? (
               <View style={car.pill}>
@@ -134,19 +134,17 @@ function ProfileCarousel({
       </Pressable>
 
       {/* Dot indicators */}
-      {pets.length > 1 && (
-        <View style={car.dots}>
-          {pets.map((_, i) => (
-            <Pressable
-              key={i}
-              hitSlop={8}
-              onPress={() => { Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light); onSelectIndex(i); }}
-            >
-              <View style={[car.dot, i === selectedIndex && car.dotActive]} />
-            </Pressable>
-          ))}
-        </View>
-      )}
+      <View style={car.dots}>
+        {pets.map((_, i) => (
+          <Pressable
+            key={i}
+            hitSlop={8}
+            onPress={() => { Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light); onSelectIndex(i); }}
+          >
+            <View style={[car.dot, i === selectedIndex && car.dotActive]} />
+          </Pressable>
+        ))}
+      </View>
 
       {/* Add pet button */}
       <Pressable
@@ -160,23 +158,38 @@ function ProfileCarousel({
   );
 }
 const car = StyleSheet.create({
-  wrap:          { marginHorizontal: 20, marginTop: 6 },
-  card:          { backgroundColor: WHITE, borderRadius: 20, borderWidth: 1, borderColor: BORDER, overflow: "hidden" },
-  row:           { flexDirection: "row", alignItems: "center", padding: 18, gap: 14 },
-  avatarWrap:    {},
-  avatar:        { width: 72, height: 72, borderRadius: 36, borderWidth: 2.5, borderColor: WHITE },
-  avatarFallback:{ width: 72, height: 72, borderRadius: 36, alignItems: "center", justifyContent: "center" },
-  avatarEmoji:   { fontSize: 34 },
-  info:          { flex: 1, gap: 4 },
+  wrap:          { marginHorizontal: 20, marginTop: 14 },
+  card:          {
+    backgroundColor: WHITE,
+    borderRadius: 20,
+    borderWidth: 1,
+    borderColor: "rgba(123,94,167,0.10)",
+    ...Platform.select({
+      ios:     { shadowColor: "#4B267D", shadowOffset: { width: 0, height: 4 }, shadowOpacity: 0.08, shadowRadius: 16 },
+      android: { elevation: 3 },
+      default: {},
+    }),
+  },
+  row:           { flexDirection: "row", alignItems: "center", padding: 16, gap: 14 },
+  avatarRing:    {
+    width: 76, height: 76, borderRadius: 38,
+    borderWidth: 2.5, borderColor: P,
+    alignItems: "center", justifyContent: "center",
+    padding: 2,
+  },
+  avatar:        { width: 67, height: 67, borderRadius: 34 },
+  avatarFallback:{ width: 67, height: 67, borderRadius: 34, alignItems: "center", justifyContent: "center" },
+  avatarEmoji:   { fontSize: 32 },
+  info:          { flex: 1, gap: 5 },
   nameRow:       { flexDirection: "row", alignItems: "center", gap: 6 },
   name:          { fontSize: 20, fontFamily: "Inter_700Bold", color: DARK, letterSpacing: -0.4, flex: 1 },
   breed:         { fontSize: 13, fontFamily: "Inter_400Regular", color: BODY },
-  pill:          { backgroundColor: `${P}12`, borderRadius: 50, paddingHorizontal: 10, paddingVertical: 4, alignSelf: "flex-start" },
+  pill:          { backgroundColor: `${P}12`, borderRadius: 50, paddingHorizontal: 12, paddingVertical: 4, alignSelf: "flex-start" },
   pillTxt:       { fontSize: 12, fontFamily: "Inter_600SemiBold", color: P },
-  dots:          { flexDirection: "row", justifyContent: "center", gap: 6, marginTop: 10 },
-  dot:           { width: 6, height: 6, borderRadius: 3, backgroundColor: BORDER },
-  dotActive:     { width: 18, backgroundColor: P },
-  addBtn:        { flexDirection: "row", alignItems: "center", justifyContent: "center", gap: 6, marginTop: 12, paddingVertical: 12, borderRadius: 14, borderWidth: 1.5, borderColor: `${P}30`, backgroundColor: `${P}06` },
+  dots:          { flexDirection: "row", justifyContent: "center", gap: 6, marginTop: 12 },
+  dot:           { width: 7, height: 7, borderRadius: 3.5, backgroundColor: "#D8D0E8" },
+  dotActive:     { width: 20, borderRadius: 4, backgroundColor: P },
+  addBtn:        { flexDirection: "row", alignItems: "center", justifyContent: "center", gap: 6, marginTop: 14, paddingVertical: 13, borderRadius: 14, borderWidth: 1.5, borderStyle: "dashed", borderColor: `${P}40`, backgroundColor: `${P}05` },
   addTxt:        { fontSize: 14, fontFamily: "Inter_600SemiBold", color: P },
 });
 
@@ -264,13 +277,13 @@ function QuickStatusCards({
   );
 }
 const qs = StyleSheet.create({
-  section:      { marginHorizontal: 20, marginTop: 20 },
-  sectionTitle: { fontSize: 16, fontFamily: "Inter_700Bold", color: DARK, marginBottom: 12, letterSpacing: -0.3 },
+  section:      { marginHorizontal: 20, marginTop: 22 },
+  sectionTitle: { fontSize: 17, fontFamily: "Inter_700Bold", color: DARK, marginBottom: 14, letterSpacing: -0.3 },
   row:          { flexDirection: "row", gap: 10 },
-  card:         { flex: 1, borderRadius: 16, padding: 12, gap: 6, borderWidth: 1, borderColor: `${BORDER}80`, ...SHADOW },
-  label:        { fontSize: 10, fontFamily: "Inter_600SemiBold", letterSpacing: 0.2 },
+  card:         { flex: 1, borderRadius: 16, padding: 13, gap: 6 },
+  label:        { fontSize: 10, fontFamily: "Inter_700Bold", letterSpacing: 0.2 },
   title:        { fontSize: 13, fontFamily: "Inter_700Bold", color: DARK, lineHeight: 18 },
-  bottom:       { flexDirection: "row", alignItems: "center", gap: 4, marginTop: 2 },
+  bottom:       { flexDirection: "row", alignItems: "center", gap: 4, marginTop: 4 },
   date:         { fontSize: 10, fontFamily: "Inter_500Medium", flex: 1 },
 });
 
@@ -337,11 +350,21 @@ function ManagementGrid({
   );
 }
 const mg = StyleSheet.create({
-  section:      { marginHorizontal: 20, marginTop: 20 },
-  sectionTitle: { fontSize: 16, fontFamily: "Inter_700Bold", color: DARK, marginBottom: 12, letterSpacing: -0.3 },
+  section:      { marginHorizontal: 20, marginTop: 22 },
+  sectionTitle: { fontSize: 17, fontFamily: "Inter_700Bold", color: DARK, marginBottom: 14, letterSpacing: -0.3 },
   grid:         { flexDirection: "row", flexWrap: "wrap", gap: 10 },
-  cell:         { width: "22%", flex: 1, aspectRatio: 0.85, alignItems: "center", justifyContent: "center", backgroundColor: WHITE, borderRadius: 16, gap: 8, borderWidth: 1, borderColor: BORDER, ...SHADOW },
-  iconBox:      { width: 48, height: 48, borderRadius: 14, alignItems: "center", justifyContent: "center", position: "relative" },
+  cell:         {
+    width: "22%", flex: 1, aspectRatio: 0.9,
+    alignItems: "center", justifyContent: "center",
+    backgroundColor: WHITE, borderRadius: 18, gap: 8,
+    borderWidth: 1, borderColor: "rgba(123,94,167,0.08)",
+    ...Platform.select({
+      ios:     { shadowColor: "#4B267D", shadowOffset: { width: 0, height: 3 }, shadowOpacity: 0.07, shadowRadius: 10 },
+      android: { elevation: 2 },
+      default: {},
+    }),
+  },
+  iconBox:      { width: 50, height: 50, borderRadius: 15, alignItems: "center", justifyContent: "center", position: "relative" },
   badge:        { position: "absolute", top: -3, right: -3, width: 16, height: 16, borderRadius: 8, backgroundColor: RED, alignItems: "center", justifyContent: "center", borderWidth: 2, borderColor: WHITE },
   badgeTxt:     { fontSize: 9, fontFamily: "Inter_700Bold", color: WHITE },
   cellLabel:    { fontSize: 11, fontFamily: "Inter_500Medium", color: DARK, textAlign: "center" },
@@ -387,14 +410,23 @@ function UpcomingReminders({ reminders }: { reminders: ApiReminder[] }) {
   );
 }
 const ur = StyleSheet.create({
-  section:      { marginHorizontal: 20, marginTop: 20 },
-  header:       { flexDirection: "row", alignItems: "center", justifyContent: "space-between", marginBottom: 12 },
-  sectionTitle: { fontSize: 16, fontFamily: "Inter_700Bold", color: DARK, letterSpacing: -0.3 },
+  section:      { marginHorizontal: 20, marginTop: 22, marginBottom: 8 },
+  header:       { flexDirection: "row", alignItems: "center", justifyContent: "space-between", marginBottom: 14 },
+  sectionTitle: { fontSize: 17, fontFamily: "Inter_700Bold", color: DARK, letterSpacing: -0.3 },
   seeAll:       { fontSize: 13, fontFamily: "Inter_600SemiBold", color: P },
   empty:        { flexDirection: "row", alignItems: "center", gap: 10, backgroundColor: WHITE, borderRadius: 16, padding: 18, borderWidth: 1, borderColor: BORDER },
   emptyTxt:     { fontSize: 14, fontFamily: "Inter_400Regular", color: BODY },
   list:         { gap: 10 },
-  item:         { flexDirection: "row", alignItems: "center", gap: 12, backgroundColor: WHITE, borderRadius: 14, padding: 14, borderWidth: 1, borderColor: BORDER, ...SHADOW },
+  item:         {
+    flexDirection: "row", alignItems: "center", gap: 12,
+    backgroundColor: WHITE, borderRadius: 16, padding: 14,
+    borderWidth: 1, borderColor: "rgba(123,94,167,0.08)",
+    ...Platform.select({
+      ios:     { shadowColor: "#4B267D", shadowOffset: { width: 0, height: 2 }, shadowOpacity: 0.06, shadowRadius: 8 },
+      android: { elevation: 1 },
+      default: {},
+    }),
+  },
   iconWrap:     { width: 38, height: 38, borderRadius: 12, alignItems: "center", justifyContent: "center" },
   mid:          { flex: 1 },
   itemTitle:    { fontSize: 14, fontFamily: "Inter_600SemiBold", color: DARK },
