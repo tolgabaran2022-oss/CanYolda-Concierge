@@ -163,6 +163,17 @@ export async function apiFetchBookmarkedPosts(userId: string): Promise<ApiPost[]
   return Array.isArray(data) ? (data as ApiPost[]) : [];
 }
 
+export async function apiFetchFollowingCount(userId: string): Promise<number> {
+  try {
+    const res = await fetch(`${API_BASE}/social/follow/counts?userId=${encodeURIComponent(userId)}`);
+    if (!res.ok) return 0;
+    const data = await res.json() as { following: number };
+    return data.following ?? 0;
+  } catch {
+    return 0;
+  }
+}
+
 export async function apiFetchUnreadCount(userId: string): Promise<number> {
   try {
     const res = await fetch(`${API_BASE}/notifications`, { headers: hdrs(userId) });

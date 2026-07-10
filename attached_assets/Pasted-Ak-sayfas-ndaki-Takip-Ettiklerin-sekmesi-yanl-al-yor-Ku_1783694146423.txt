@@ -1,0 +1,384 @@
+Akış sayfasındaki “Takip Ettiklerin” sekmesi yanlış çalışıyor. Kullanıcı başka profilleri takip ettiği halde bu sekmede “Henüz kimseyi takip etmiyorsun” boş durumu gösteriliyor.
+
+Bu alanı Instagram mantığında gerçek takip sistemiyle çalışır hale getir.
+
+AMAÇ:
+Giriş yapan kullanıcının takip ettiği kişilerin paylaşımları “Takip Ettiklerin” sekmesinde görünmeli. Kullanıcı gerçekten kimseyi takip etmiyorsa ancak o zaman boş durum gösterilmeli.
+
+YAPILACAKLAR:
+
+1. Mevcut kullanıcıyı doğru al
+
+const {
+  data: { user },
+} = await supabase.auth.getUser();
+
+if (!user) return;
+
+Giriş yapan kullanıcının auth.users.id değeri kullanılmalı.
+
+2. Takip tablosunu kontrol et
+
+Takip sistemi için kullanılan tabloyu tespit et. Tablo adı aşağıdakilerden biri olabilir:
+
+- follows
+- followers
+- user_follows
+- profile_follows
+
+Tablo alanları şu mantıkta olmalı:
+
+- id
+- follower_id
+- following_id
+- created_at
+
+Anlamları:
+
+- follower_id: takip eden kullanıcı
+- following_id: takip edilen kullanıcı
+
+Giriş yapan kişinin takip ettiklerini çekerken yanlışlıkla following_id üzerinden sorgu yapma.
+
+Doğru sorgu mantığı:
+
+const { data: followRows, error: followError } = await supabase
+  .from('follows')
+  .select('following_id')
+  .eq('follower_id', user.id);
+
+if (followError) {
+  console.error('Takip listesi alınamadı:', followError);
+}
+
+3. Takip edilen kullanıcı kimliklerini çıkar
+
+const followingIds =
+  followRows?.map((item) => item.following_id).filter(Boolean) || [];
+
+console.log('Giriş yapan kullanıcı:', user.id);
+console.log('Takip edilen kullanıcılar:', followingIds);
+
+Takip kaydı varsa boş ekran gösterme.
+
+4. Takip edilen kişilerin gönderilerini getir
+
+Takip edilen kişilerin gönderilerini posts tablosundan çek.
+
+const { data: posts, error: postsError } = await supabase
+  .from('posts')
+  .select(`
+    id,
+    user_id,
+    content,
+    caption,
+    image_url,
+    media_url,
+    created_at,
+    profiles:user_id (
+      id,
+      username,
+      full_name,
+      avatar_url
+    )
+  `)
+  .in('user_id', followingIds)
+  .order('created_at', { ascending: false });
+
+Projede kullanılan gerçek sütun adlarını kontrol et. image_url yerine media_url veya post_images kullanılıyorsa mevcut yapıya göre uyarla.
+
+Sahte gönderi oluşturma. Gerçek Supabase verilerini kullan.
+
+5. Boş durum kontrolünü doğru yap
+
+Şu anda muhtemelen posts.length === 0 olduğunda doğrudan “Henüz kimseyi takip etmiyorsun” mesajı gösteriliyor. Bu yanlış.
+
+İki farklı boş durum oluştur:
+
+A) Kullanıcı hiç kimseyi takip etmiyorsa:
+
+followingIds.length === 0
+
+Mesaj:
+
+Başlık:
+“Henüz kimseyi takip etmiyorsun”
+
+Açıklama:
+“Keşfet’ten yeni dostlar bulabilirsin.”
+
+Buton:
+“Keşfet’e Bak”
+
+B) Kullanıcı birilerini takip ediyor fakat takip edilen kişiler henüz gönderi paylaşmadıysa:
+
+followingIds.length > 0 && posts.length === 0
+
+Mesaj:
+
+Başlık:
+“Henüz yeni gönderi yok”
+
+Açıklama:
+“Takip ettiğin kişiler paylaşım yaptığında burada göreceksin.”
+
+Bu durumda “kimseyi takip etmiyorsun” mesajını gösterme.
+
+Örnek render mantığı:
+
+if (isLoading) {
+  return <FeedSkeleton />;
+}
+
+if (followingIds.length === 0) {
+  return <NotFollowingAnyone />;
+}
+
+if (followingIds.length > 0 && followingPosts.length === 0) {
+  return <NoFollowingPosts />;
+}
+
+return <PostList posts={followingPosts} />;
+
+6. Takip işlemi yapıldığında veriyi anında güncelle
+
+Kullanıcı başka bir profilde “Takip Et” butonuna bastığında follows tablosuna gerçek kayıt eklenmeli.
+
+const { error } = await supabase
+  .from('follows')
+  .insert({
+    follower_id: currentUser.id,
+    following_id: targetUserId,
+  });
+
+Aynı kişiyi tekrar takip etmeyi önlemek için unique constraint veya kontrol ekle:
+
+unique(follower_id, following_id)
+
+Kullanıcı takipten çıkarsa kayıt silinmeli:
+
+const { error } = await supabase
+  .from('follows')
+  .delete()
+  .eq('follower_id', currentUser.id)
+  .eq('following_id', targetUserId);
+
+7. Sekme açıldığında veriyi yeniden yükle
+
+“Takip Ettiklerin” sekmesine her geçildiğinde takip listesi ve gönderiler yeniden çekilmeli.
+
+React Native / Expo kullanılıyorsa:
+
+- useFocusEffect
+- useEffect
+- RefreshControl
+
+kullan.
+
+Örnek:
+
+useEffect(() => {
+  if (activeTab === 'following') {
+    loadFollowingFeed();
+  }
+}, [activeTab]);
+
+Sekme daha önce boş açılmış olsa bile takip işleminden sonra tekrar açıldığında doğru veriler görünmeli.
+
+8. Supabase Realtime desteği ekle
+
+Takip edilen kişi yeni gönderi paylaştığında akış otomatik güncellensin.
+
+supabase
+  .channel('following-feed')
+  .on(
+    'postgres_changes',
+    {
+      event: 'INSERT',
+      schema: 'public',
+      table: 'posts',
+    },
+    () => {
+      loadFollowingFeed();
+    }
+  )
+  .subscribe();
+
+Component unmount olduğunda channel kaldırılmalı.
+
+9. RLS policy kontrolü
+
+follows tablosunda giriş yapan kullanıcı kendi takip kayıtlarını okuyabilmeli.
+
+Örnek SELECT policy:
+
+create policy "Users can read follow relationships"
+on public.follows
+for select
+to authenticated
+using (
+  follower_id = auth.uid()
+  or following_id = auth.uid()
+);
+
+Takip oluşturma policy:
+
+create policy "Users can follow profiles"
+on public.follows
+for insert
+to authenticated
+with check (
+  follower_id = auth.uid()
+);
+
+Takipten çıkma policy:
+
+create policy "Users can unfollow profiles"
+on public.follows
+for delete
+to authenticated
+using (
+  follower_id = auth.uid()
+);
+
+posts tablosunda authenticated kullanıcılar yayınlanmış gönderileri okuyabilmeli.
+
+profiles tablosunda username, avatar_url ve full_name alanları okunabilmeli.
+
+RLS sebebiyle boş data geliyorsa policy’leri düzelt.
+
+10. Profil kimliği ile auth kullanıcı kimliğini karıştırma
+
+Projede profiles.id ile auth.users.id aynıysa user.id doğrudan kullanılabilir.
+
+Eğer profiles tablosunda ayrı bir profile id kullanılıyorsa önce mevcut profil kaydını çek:
+
+const { data: currentProfile } = await supabase
+  .from('profiles')
+  .select('id, user_id')
+  .eq('user_id', user.id)
+  .single();
+
+Takip tablosunun auth user id mi yoksa profile id mi kullandığını belirle ve bütün takip işlemlerinde aynı kimlik tipini kullan.
+
+En önemli kontrol:
+Takip eklerken kullanılan ID ile takip listesini sorgularken kullanılan ID aynı sistemden gelmeli.
+
+11. Gönderi kartlarını mevcut Keşfet tasarımıyla aynı kullan
+
+“Takip Ettiklerin” sekmesindeki gönderiler için farklı veya eksik bir kart tasarımı oluşturma.
+
+Mevcut Keşfet sekmesinde kullanılan aynı PostCard bileşenini kullan:
+
+<PostCard
+  post={item}
+  onLike={handleLike}
+  onComment={handleComment}
+  onProfilePress={handleProfilePress}
+  onSave={handleSave}
+/>
+
+Gönderilerde şunlar çalışmalı:
+
+- Profil fotoğrafı
+- Kullanıcı adı
+- Konum
+- Gönderi görseli
+- Beğeni
+- Yorum
+- Kaydetme
+- Profil açma
+- Üç nokta menüsü
+
+12. “Keşfet’e Bak” butonunu çalışır hale getir
+
+Kullanıcı gerçekten kimseyi takip etmiyorsa görünen “Keşfet’e Bak” butonuna basınca aktif sekme “Keşfet” olmalı.
+
+Örnek:
+
+const handleExplorePress = () => {
+  setActiveTab('explore');
+};
+
+Buton boş işlem yapmamalı.
+
+13. Yüklenme durumu ekle
+
+Takip listesi ve gönderiler alınırken yanlış boş durum göstermemeli.
+
+State yapısı:
+
+const [followingIds, setFollowingIds] = useState<string[]>([]);
+const [followingPosts, setFollowingPosts] = useState<Post[]>([]);
+const [isFollowingLoading, setIsFollowingLoading] = useState(true);
+const [followingError, setFollowingError] = useState<string | null>(null);
+
+Veri yüklenmeden önce “Henüz kimseyi takip etmiyorsun” mesajı gösterme.
+
+14. Hata yönetimi ekle
+
+Supabase sorgusu başarısız olursa kullanıcıya yanlış boş durum göstermek yerine hata durumu göster:
+
+“Akış yüklenemedi. Tekrar dene.”
+
+“Tekrar Dene” butonuna basınca loadFollowingFeed yeniden çalışmalı.
+
+15. Debug kontrolü yap
+
+Geçici olarak aşağıdaki logları ekle:
+
+console.log('AUTH USER ID:', user?.id);
+console.log('FOLLOW ROWS:', followRows);
+console.log('FOLLOWING IDS:', followingIds);
+console.log('FOLLOWING POSTS:', posts);
+console.log('FOLLOW ERROR:', followError);
+console.log('POSTS ERROR:', postsError);
+
+Sorun çözüldükten sonra gereksiz logları kaldır.
+
+16. Olası mevcut hataları özellikle kontrol et
+
+Aşağıdaki hatalardan biri varsa düzelt:
+
+- follower_id ve following_id ters kullanılıyor.
+- Auth user ID yerine yanlış profile ID kullanılıyor.
+- Takip kaydı sadece local state’e ekleniyor, Supabase’e kaydedilmiyor.
+- Sekme açıldığında sorgu yeniden çalışmıyor.
+- RLS follows kayıtlarını gizliyor.
+- posts sorgusunda yanlış user_id alanı kullanılıyor.
+- Takip edilen kullanıcılar var ama posts boş olduğu için yanlış boş durum gösteriliyor.
+- activeTab değeri yanlış karşılaştırılıyor.
+- FlatList’e yanlış data veriliyor.
+- Takip sonrası cache temizlenmiyor.
+- Query key invalidate edilmiyor.
+- Filtre mevcut kullanıcının gönderilerini getiriyor ancak takip edilenleri getirmiyor.
+
+17. React Query kullanılıyorsa cache’i düzelt
+
+Takip etme veya takipten çıkma işleminden sonra:
+
+queryClient.invalidateQueries({
+  queryKey: ['following-feed', currentUser.id],
+});
+
+queryClient.invalidateQueries({
+  queryKey: ['following-list', currentUser.id],
+});
+
+Sekmeye dönünce stale veri yerine güncel veri alınmalı.
+
+KABUL KRİTERLERİ:
+
+- Kullanıcının takip ettiği kişiler varsa “Henüz kimseyi takip etmiyorsun” mesajı görünmez.
+- Takip edilen kişilerin gönderileri “Takip Ettiklerin” sekmesinde görünür.
+- Takip edilen kişi paylaşım yapmamışsa doğru “Henüz yeni gönderi yok” mesajı görünür.
+- Takip etme işlemi Supabase’e kalıcı olarak kaydedilir.
+- Uygulama kapatılıp tekrar açıldığında takip ilişkileri kaybolmaz.
+- Takipten çıkılan kişinin gönderileri bu sekmeden kaldırılır.
+- Yeni takip edilen kişinin gönderileri sayfa yenilenmeden görünür.
+- Pull-to-refresh çalışır.
+- “Keşfet’e Bak” butonu Keşfet sekmesine geçirir.
+- Android, iOS ve web görünümünde düzgün çalışır.
+- Mevcut tasarım, alt menü ve Keşfet sekmesi bozulmaz.
+- Sahte kullanıcı veya sahte gönderi eklenmez.
+- Sorun geçici local state çözümüyle değil, gerçek Supabase ilişkisiyle düzeltilir.

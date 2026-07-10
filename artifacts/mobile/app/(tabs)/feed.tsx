@@ -40,6 +40,7 @@ import {
   apiEditPost,
   apiCreatePost,
   apiFetchUnreadCount,
+  apiFetchFollowingCount,
   type ApiPost,
 } from "@/lib/feedApi";
 import {
@@ -318,6 +319,7 @@ export default function FeedScreen() {
   const [feedTab,            setFeedTab]            = useState<"discover" | "following">("discover");
   const [posts,              setPosts]              = useState<PostData[]>([]);
   const [followingPosts,     setFollowingPosts]     = useState<PostData[]>([]);
+  const [followingCount,     setFollowingCount]     = useState<number | null>(null);
   const [stories,            setStories]            = useState<ApiStoryGroup[]>([]);
   const [storyViewerOpen,    setStoryViewerOpen]    = useState(false);
   const [selectedGroup,      setSelectedGroup]      = useState<ApiStoryGroup | null>(null);
@@ -357,8 +359,12 @@ export default function FeedScreen() {
     else setLoadingFollowing(true);
     setErrorFollowing(false);
     try {
-      const apiPosts = await apiFetchFollowingPosts(user.id);
+      const [apiPosts, count] = await Promise.all([
+        apiFetchFollowingPosts(user.id),
+        apiFetchFollowingCount(user.id),
+      ]);
       setFollowingPosts(apiPosts.map(apiPostToPostData));
+      setFollowingCount(count);
     } catch {
       setErrorFollowing(true);
     } finally {
@@ -395,11 +401,11 @@ export default function FeedScreen() {
     apiFetchStories(userId).then(setStories).catch(() => {});
   }, [feedTab, fetchDiscover, fetchFollowing, userId]);
 
-  /* ── Tab switch: lazy-load following ───────────────────── */
+  /* ── Tab switch: always refresh following on switch ─────── */
   const handleTabChange = (tab: "discover" | "following") => {
     Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
     setFeedTab(tab);
-    if (tab === "following" && followingPosts.length === 0 && !loadingFollowing) {
+    if (tab === "following" && !loadingFollowing) {
       void fetchFollowing();
     }
   };
@@ -586,14 +592,35 @@ export default function FeedScreen() {
       );
     }
     if (feedTab === "following") {
+      /* Still loading follow count — avoid premature empty state */
+      if (followingCount === null) {
+        return (
+          <View style={F.centeredState}>
+            {[0, 1, 2].map((i) => <SkeletonCard key={i} />)}
+          </View>
+        );
+      }
+      /* User follows nobody */
+      if (followingCount === 0) {
+        return (
+          <View style={F.centeredState}>
+            <Ionicons name="people-outline" size={52} color="#C4B8E8" />
+            <Text style={F.emptyTitle}>Henüz kimseyi takip etmiyorsun</Text>
+            <Text style={F.emptySubtitle}>Keşfet'ten yeni dostlar bulabilirsin.</Text>
+            <Pressable style={F.retryBtn} onPress={() => handleTabChange("discover")}>
+              <Text style={F.retryText}>Keşfet'e Bak</Text>
+            </Pressable>
+          </View>
+        );
+      }
+      /* Follows people but no posts yet */
       return (
         <View style={F.centeredState}>
-          <Ionicons name="people-outline" size={52} color="#C4B8E8" />
-          <Text style={F.emptyTitle}>Henüz kimseyi takip etmiyorsun</Text>
-          <Text style={F.emptySubtitle}>Keşfet'ten yeni dostlar bulabilirsin.</Text>
-          <Pressable style={F.retryBtn} onPress={() => setFeedTab("discover")}>
-            <Text style={F.retryText}>Keşfet'e Bak</Text>
-          </Pressable>
+          <Ionicons name="newspaper-outline" size={52} color="#C4B8E8" />
+          <Text style={F.emptyTitle}>Henüz yeni gönderi yok</Text>
+          <Text style={F.emptySubtitle}>
+            Takip ettiğin kişiler paylaşım yaptığında burada göreceksin.
+          </Text>
         </View>
       );
     }
