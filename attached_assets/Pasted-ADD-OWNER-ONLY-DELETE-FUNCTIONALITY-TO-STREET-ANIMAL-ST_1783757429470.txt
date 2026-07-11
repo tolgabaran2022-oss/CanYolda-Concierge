@@ -1,0 +1,378 @@
+ADD OWNER-ONLY DELETE FUNCTIONALITY TO STREET ANIMAL STATUS CARDS.
+
+CURRENT SCREEN:
+"Sokak Hayvanları" screen contains street animal status/report cards.
+
+Examples:
+- "Not eklenmemiş"
+- "Yaralı hayvan"
+- Acil
+- Bekleyen
+- Sağlıklı
+
+REQUIRED FEATURE:
+
+The user who originally created a street animal status/report card must be able to delete their own report.
+
+IMPORTANT:
+Only the creator/owner of the report can see and use the delete action.
+
+Other users must NOT:
+- see the delete button
+- delete the report
+- trigger the delete API manually
+
+This must be enforced both in the UI and Supabase database security.
+
+--------------------------------------------------
+
+1. IDENTIFY REPORT OWNER
+
+Inspect the street animal report/status database table.
+
+Possible table names:
+- animal_reports
+- street_animal_reports
+- reports
+- animal_statuses
+- street_animals
+
+Find the real table used by the current screen.
+
+Each report must contain the authenticated creator's real user ID.
+
+Use a field such as:
+
+created_by
+user_id
+owner_id
+reporter_id
+
+Choose the existing correct field and use it consistently.
+
+When creating a new report:
+
+const {
+  data: { user },
+} = await supabase.auth.getUser();
+
+if (!user) {
+  throw new Error('Authenticated user not found');
+}
+
+The new report must save:
+
+created_by: user.id
+
+Do not save:
+- username
+- email
+- display name
+- mock user ID
+- hardcoded user ID
+
+as the ownership identifier.
+
+--------------------------------------------------
+
+2. DETECT IF CURRENT USER OWNS THE CARD
+
+For every street animal report card calculate:
+
+const isOwner = report.created_by === currentUser.id;
+
+Use the real ownership field from the database.
+
+Do not use the visible username such as:
+
+"tolga"
+
+to determine ownership.
+
+Ownership must always be based on the Supabase authenticated UUID.
+
+--------------------------------------------------
+
+3. ADD OWNER ACTION MENU
+
+For cards created by the current authenticated user, add a small three-dot icon:
+
+•••
+
+Place it in the top-right area of the card.
+
+Do not disrupt the existing premium card design.
+
+The icon must:
+- be subtle
+- match the existing purple UI system
+- use the existing spacing system
+- have minimum 44x44 touch target
+
+Only show this icon when:
+
+isOwner === true
+
+Other users must not see it.
+
+--------------------------------------------------
+
+4. OWNER ACTION BOTTOM SHEET
+
+When the report owner taps the three-dot icon, open a native-style bottom sheet.
+
+Title:
+
+"Bildirim İşlemleri"
+
+Options:
+
+"Bildirim Detayları"
+"Bildirim Sil"
+
+Use a red trash icon for:
+
+"Bildirim Sil"
+
+Add:
+
+"Vazgeç"
+
+at the bottom.
+
+The bottom sheet must follow the current iOS-style design language.
+
+--------------------------------------------------
+
+5. DELETE CONFIRMATION
+
+When "Bildirim Sil" is selected, DO NOT delete immediately.
+
+Display a confirmation dialog.
+
+Title:
+
+"Bildirimi sil?"
+
+Description:
+
+"Bu sokak hayvanı bildirimi kalıcı olarak silinecek. Bu işlem geri alınamaz."
+
+Buttons:
+
+"Vazgeç"
+"Sil"
+
+The "Sil" button must use destructive red styling.
+
+--------------------------------------------------
+
+6. SECURE DELETE QUERY
+
+After confirmation, verify the authenticated user again.
+
+Example logic:
+
+const {
+  data: { user },
+} = await supabase.auth.getUser();
+
+if (!user) {
+  throw new Error('Oturum bulunamadı');
+}
+
+Then delete only when:
+- report ID matches
+- report owner ID matches current authenticated user ID
+
+Example:
+
+const { error } = await supabase
+  .from('street_animal_reports')
+  .delete()
+  .eq('id', report.id)
+  .eq('created_by', user.id);
+
+Use the actual project table and ownership field.
+
+IMPORTANT:
+Never execute:
+
+.delete().eq('id', report.id)
+
+alone.
+
+The delete request must also verify ownership.
+
+--------------------------------------------------
+
+7. SUPABASE RLS DELETE POLICY
+
+Inspect Row Level Security on the real street animal reports table.
+
+Create or fix a DELETE policy so users can only delete their own reports.
+
+Expected policy logic:
+
+auth.uid() = created_by
+
+Example SQL:
+
+CREATE POLICY "Users can delete their own street animal reports"
+ON public.street_animal_reports
+FOR DELETE
+TO authenticated
+USING (auth.uid() = created_by);
+
+Adapt:
+- table name
+- schema
+- ownership column
+
+to the current real database structure.
+
+Do not allow all authenticated users to delete all reports.
+
+Do not disable RLS.
+
+--------------------------------------------------
+
+8. UPDATE UI IMMEDIATELY AFTER DELETE
+
+After a successful delete:
+
+- close confirmation dialog
+- close action sheet
+- immediately remove the card from the list
+- update "Hepsi" count
+- update "Acil" count
+- update "Bekleyen" count
+- update "Sağlıklı" count
+- update "Toplam" count
+
+The deleted card must disappear without restarting or refreshing the application.
+
+Use the project's existing state/query solution.
+
+If React Query is used:
+
+queryClient.invalidateQueries({
+  queryKey: ['street-animal-reports']
+});
+
+Also invalidate related statistics queries.
+
+Do not leave stale counts visible.
+
+--------------------------------------------------
+
+9. SUCCESS AND ERROR FEEDBACK
+
+After successful deletion show:
+
+"Bildirim silindi"
+
+If deletion fails show:
+
+"Bildirim silinemedi. Lütfen tekrar deneyin."
+
+Do not remove the card optimistically unless rollback behavior is correctly implemented.
+
+--------------------------------------------------
+
+10. CHECK OLD REPORTS
+
+Inspect existing reports such as cards displaying:
+
+"Not eklenmemiş"
+
+Some old database records may not contain:
+- created_by
+- user_id
+- owner UUID
+
+Do not randomly assign ownership.
+
+Determine whether ownership can be safely identified from existing report data.
+
+If the creator can be reliably matched, migrate the correct user UUID.
+
+If ownership cannot be verified, do not give delete permission to random users.
+
+Report any legacy records with missing ownership data.
+
+--------------------------------------------------
+
+11. ADMIN LOGIC
+
+If the project already has a real admin/moderator role system:
+
+Admins may keep their existing moderation delete permission.
+
+Do not create a fake admin check.
+
+Do not use:
+
+email === 'admin@...'
+
+or hardcoded user IDs.
+
+Use the project's existing role/permission system only.
+
+--------------------------------------------------
+
+ACCEPTANCE TEST
+
+TEST 1:
+User A creates a street animal report.
+
+EXPECTED:
+User A sees the ••• menu on the card.
+
+TEST 2:
+User B views User A's report.
+
+EXPECTED:
+User B does not see the ••• delete menu.
+
+TEST 3:
+User A taps ••• → Bildirim Sil.
+
+EXPECTED:
+Confirmation dialog opens.
+
+TEST 4:
+User A taps Vazgeç.
+
+EXPECTED:
+Nothing is deleted.
+
+TEST 5:
+User A confirms Sil.
+
+EXPECTED:
+- report is deleted from Supabase
+- card immediately disappears
+- category counts update
+- total count updates
+- "Bildirim silindi" message appears
+
+TEST 6:
+User B attempts to manually delete User A's report using the client/API.
+
+EXPECTED:
+Supabase RLS rejects the DELETE request.
+
+IMPORTANT:
+Do not only hide or show a trash icon.
+Implement real ownership-based deletion.
+The creator must be able to delete their own report.
+Other users must never be able to delete it.
+
+After completing the task report:
+- real report table name
+- real ownership column
+- RLS DELETE policy created or changed
+- files modified
+- how legacy reports with missing owner IDs were handled
+- acceptance test results

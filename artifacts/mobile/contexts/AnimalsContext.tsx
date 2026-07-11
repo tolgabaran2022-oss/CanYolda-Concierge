@@ -47,6 +47,7 @@ interface AnimalsContextType {
   toggleFed: (id: string, userId: string) => Promise<void>;
   toggleNeedsHelp: (id: string, userId: string) => Promise<void>;
   addComment: (id: string, comment: Omit<AnimalComment, "id" | "timestamp">) => Promise<void>;
+  deleteAnimal: (id: string, userId: string) => Promise<void>;
   getAnimal: (id: string) => StrayAnimal | undefined;
 }
 
@@ -240,6 +241,16 @@ export function AnimalsProvider({ children }: { children: React.ReactNode }) {
     []
   );
 
+  const deleteAnimal = useCallback(async (id: string, userId: string) => {
+    const res = await apiFetch(`/animals/${id}`, {
+      method: "DELETE",
+      headers: { "x-user-id": userId },
+    });
+    const data = await res.json() as Record<string, unknown>;
+    if (!res.ok) throw new Error(String(data.error ?? "Bildirim silinemedi"));
+    setAnimals((prev) => prev.filter((a) => a.id !== id));
+  }, []);
+
   const getAnimal = useCallback(
     (id: string) => animals.find((a) => a.id === id),
     [animals]
@@ -247,7 +258,7 @@ export function AnimalsProvider({ children }: { children: React.ReactNode }) {
 
   return (
     <AnimalsContext.Provider
-      value={{ animals, isLoading, error, refresh: fetchAnimals, addAnimal, toggleFed, toggleNeedsHelp, addComment, getAnimal }}
+      value={{ animals, isLoading, error, refresh: fetchAnimals, addAnimal, toggleFed, toggleNeedsHelp, addComment, deleteAnimal, getAnimal }}
     >
       {children}
     </AnimalsContext.Provider>
