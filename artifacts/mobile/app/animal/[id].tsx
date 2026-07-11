@@ -8,6 +8,7 @@ import {
   Alert,
   Animated,
   KeyboardAvoidingView,
+  Linking,
   Modal,
   Platform,
   Pressable,
@@ -234,16 +235,83 @@ export default function AnimalDetailScreen() {
     Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
   }, [commentText, user, animal, addComment]);
 
-  const handleMapOpen = useCallback(() => {
+  const handleMapOpen = useCallback(async () => {
     if (!animal) return;
     Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
-    Alert.alert(
-      "Konumu Aç",
-      animal.locationName
-        ? `${animal.locationName} konumunu haritada açmak istiyor musunuz?`
-        : `${animal.latitude.toFixed(4)}, ${animal.longitude.toFixed(4)}`,
-      [{ text: "İptal", style: "cancel" }, { text: "Aç", style: "default" }]
-    );
+
+    const lat  = animal.latitude;
+    const lng  = animal.longitude;
+    const label = encodeURIComponent(animal.locationName ?? "Sokak Hayvanı");
+
+    /* No location data at all */
+    if (!lat && !lng && !animal.locationName) {
+      Alert.alert("Konum Bilgisi Yok", "Bu bildirim için konum bilgisi bulunmuyor.");
+      return;
+    }
+
+    /* Web — open Google Maps in browser */
+    if (Platform.OS === "web") {
+      const url = lat && lng
+        ? `https://www.google.com/maps/search/?api=1&query=${lat},${lng}`
+        : `https://www.google.com/maps/search/?api=1&query=${label}`;
+      await Linking.openURL(url);
+      return;
+    }
+
+    const openMap = async (url: string, fallbackUrl?: string) => {
+      const supported = await Linking.canOpenURL(url).catch(() => false);
+      if (supported) {
+        await Linking.openURL(url);
+      } else if (fallbackUrl) {
+        await Linking.openURL(fallbackUrl).catch(() => {
+          Alert.alert("Hata", "Harita uygulaması açılamadı.");
+        });
+      } else {
+        Alert.alert("Hata", "Harita uygulaması açılamadı.");
+      }
+    };
+
+    if (lat && lng) {
+      if (Platform.OS === "ios") {
+        /* Check if Google Maps is available, offer choice if so */
+        const gmapsScheme = `comgooglemaps://?center=${lat},${lng}&q=${lat},${lng}`;
+        const gmapsAvailable = await Linking.canOpenURL(gmapsScheme).catch(() => false);
+        if (gmapsAvailable) {
+          Alert.alert(
+            "Haritada Aç",
+            undefined,
+            [
+              { text: "Apple Haritalar", onPress: () => {
+                const appleUrl = `https://maps.apple.com/?ll=${lat},${lng}&q=${label}`;
+                Linking.openURL(appleUrl).catch(() => Alert.alert("Hata", "Apple Haritalar açılamadı."));
+              }},
+              { text: "Google Maps", onPress: () => {
+                Linking.openURL(gmapsScheme).catch(() => Alert.alert("Hata", "Google Maps açılamadı."));
+              }},
+              { text: "Vazgeç", style: "cancel" },
+            ]
+          );
+        } else {
+          const appleUrl = `https://maps.apple.com/?ll=${lat},${lng}&q=${label}`;
+          await openMap(appleUrl);
+        }
+      } else {
+        /* Android — geo URI, fallback to Google Maps web */
+        const geoUrl     = `geo:${lat},${lng}?q=${lat},${lng}(${label})`;
+        const fallbackUrl = `https://www.google.com/maps/search/?api=1&query=${lat},${lng}`;
+        await openMap(geoUrl, fallbackUrl);
+      }
+    } else {
+      /* Coordinates missing — search by address text */
+      const searchQuery = encodeURIComponent(animal.locationName ?? "");
+      if (Platform.OS === "ios") {
+        await openMap(`https://maps.apple.com/?q=${searchQuery}`);
+      } else {
+        const geoUrl     = `geo:0,0?q=${searchQuery}`;
+        const fallbackUrl = `https://www.google.com/maps/search/?api=1&query=${searchQuery}`;
+        await openMap(geoUrl, fallbackUrl);
+      }
+    }
   }, [animal]);
 
   const handleShare = useCallback(async () => {

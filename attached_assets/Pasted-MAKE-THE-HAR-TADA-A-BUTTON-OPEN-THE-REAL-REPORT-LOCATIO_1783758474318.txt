@@ -1,0 +1,327 @@
+MAKE THE "HARİTADA AÇ" BUTTON OPEN THE REAL REPORT LOCATION IN THE DEVICE MAP APPLICATION.
+
+CURRENT SCREEN:
+Street animal report detail screen.
+
+CURRENT UI:
+There is a "Konum" section with a button:
+
+"Haritada Aç"
+
+CURRENT PROBLEM:
+The button does not correctly open the report's real location in an external map application.
+
+IMPLEMENT REAL EXTERNAL MAP NAVIGATION.
+
+==================================================
+1. USE THE REAL REPORT LOCATION
+==================================================
+
+Inspect the real street animal report database fields.
+
+Possible location fields may include:
+
+latitude
+longitude
+lat
+lng
+location_lat
+location_lng
+address
+location_name
+city
+district
+
+Use the ACTUAL report location data.
+
+Do not hardcode:
+
+Kadıköy, İstanbul
+
+Do not use mock coordinates.
+
+The selected report ID must provide its own real location.
+
+Prefer latitude and longitude when available.
+
+Example:
+
+const latitude = report.latitude;
+const longitude = report.longitude;
+
+==================================================
+2. MAKE THE ENTIRE "HARİTADA AÇ" ACTION WORK
+==================================================
+
+The following must be tappable:
+
+- "Haritada Aç" text
+- map icon
+- right chevron
+- the whole bottom action row inside the location card
+
+Use one Pressable / TouchableOpacity wrapping the complete action area.
+
+Do not make only the text clickable.
+
+==================================================
+3. IOS BEHAVIOR
+==================================================
+
+On iOS:
+
+Open the report location in Apple Maps.
+
+Use the real latitude and longitude.
+
+Example target behavior:
+
+Apple Maps opens directly at the animal report location.
+
+Use Linking with a valid Apple Maps URL scheme.
+
+The map location should use:
+
+latitude
+longitude
+
+and optionally the report location label.
+
+Example logic concept:
+
+const appleMapsUrl =
+  `https://maps.apple.com/?ll=${latitude},${longitude}&q=${encodeURIComponent(locationLabel)}`;
+
+Open it using:
+
+Linking.openURL(...)
+
+==================================================
+4. ANDROID BEHAVIOR
+==================================================
+
+On Android:
+
+Open the real location using Google Maps / the device's available map application.
+
+Use geo coordinates.
+
+Example logic concept:
+
+const geoUrl =
+  `geo:${latitude},${longitude}?q=${latitude},${longitude}(${encodeURIComponent(locationLabel)})`;
+
+Use Linking.openURL(...)
+
+If the geo scheme cannot open:
+
+fallback to a Google Maps web URL using the same coordinates.
+
+Example fallback concept:
+
+https://www.google.com/maps/search/?api=1&query=LATITUDE,LONGITUDE
+
+Do not hardcode coordinates.
+
+==================================================
+5. CROSS-PLATFORM HANDLER
+==================================================
+
+Create one reusable handler.
+
+Example structure:
+
+const handleOpenMap = async () => {
+  if (!latitude || !longitude) {
+    show location unavailable message;
+    return;
+  }
+
+  try {
+    if (Platform.OS === 'ios') {
+      // Open Apple Maps
+    } else {
+      // Open Android map app / Google Maps
+    }
+  } catch (error) {
+    // Open browser map fallback
+  }
+};
+
+Use:
+
+Platform
+Linking
+
+from React Native.
+
+Use the project's existing toast or alert system for errors.
+
+==================================================
+6. WEB BEHAVIOR
+==================================================
+
+When running the application on web:
+
+Open Google Maps in a new browser tab using the real report coordinates.
+
+Use:
+
+https://www.google.com/maps/search/?api=1&query=LATITUDE,LONGITUDE
+
+Do not attempt to use mobile geo:// schemes on web.
+
+==================================================
+7. LOCATION FALLBACK
+==================================================
+
+Some legacy reports may not have latitude or longitude.
+
+If coordinates are unavailable but a valid address/location text exists:
+
+Use the address as a map search query.
+
+Example:
+
+Kadıköy, İstanbul
+
+Open the maps application using the encoded location string.
+
+Do not crash.
+
+If neither coordinates nor location text exists:
+
+Show:
+
+"Bu bildirim için konum bilgisi bulunmuyor."
+
+Do not open an empty map.
+
+==================================================
+8. REMOVE FAKE MAP BEHAVIOR
+==================================================
+
+Search the current "Haritada Aç" implementation.
+
+Remove any logic that:
+
+- navigates to a fake internal map screen
+- opens a static Kadıköy location
+- uses mock coordinates
+- only displays an Alert
+- has an empty onPress
+- uses console.log only
+
+The button must open the real external map location.
+
+==================================================
+9. KEEP THE EXISTING DESIGN
+==================================================
+
+Do not redesign the location card.
+
+Keep the existing premium CanYoldaşı UI:
+
+Konum
+
+[Map location visual/card]
+
+Kadıköy, İstanbul
+
+Haritada Aç >
+
+Only fix the functionality.
+
+Add subtle native press feedback to the action row.
+
+Do not change the overall detail screen layout.
+
+==================================================
+10. OPTIONAL MAP APP SELECTION ON IOS
+==================================================
+
+If Google Maps is installed on iOS, it is acceptable to present an action sheet:
+
+"Haritada Aç"
+
+Options:
+
+"Apple Haritalar"
+"Google Maps"
+"Vazgeç"
+
+Only show Google Maps as an option if the URL scheme is actually supported.
+
+If Google Maps is not installed:
+
+open Apple Maps directly.
+
+Do not show broken app options.
+
+==================================================
+11. ACCEPTANCE TEST
+==================================================
+
+TEST 1:
+Open a report with valid latitude and longitude on iOS.
+
+Tap:
+
+"Haritada Aç"
+
+EXPECTED:
+Apple Maps opens at the exact report location.
+
+TEST 2:
+Open a report with valid coordinates on Android.
+
+EXPECTED:
+Google Maps or an available map application opens at the exact report location.
+
+TEST 3:
+Test on web.
+
+EXPECTED:
+Google Maps opens using the report location.
+
+TEST 4:
+Open two reports with different coordinates.
+
+EXPECTED:
+Each report opens its own unique location.
+
+No hardcoded location is used.
+
+TEST 5:
+Open a legacy report with address text but no coordinates.
+
+EXPECTED:
+The location address is searched in the map application.
+
+TEST 6:
+Open a report with no location data.
+
+EXPECTED:
+Display:
+
+"Bu bildirim için konum bilgisi bulunmuyor."
+
+The application must not crash.
+
+IMPORTANT:
+The "Haritada Aç" button must open the REAL LOCATION OF THE CURRENT STREET ANIMAL REPORT.
+
+Use real latitude/longitude database values.
+
+Do not hardcode Kadıköy.
+Do not use mock coordinates.
+Do not create a fake internal map page.
+
+After implementation report:
+
+- which database coordinate fields are used
+- how iOS map opening works
+- how Android map opening works
+- web fallback behavior
+- files modified
+- acceptance test results
