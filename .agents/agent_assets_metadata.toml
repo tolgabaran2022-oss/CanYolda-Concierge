@@ -59,3 +59,9 @@ id = "t-mX5kPfqfDfkSJCvOUoU"
 uri = "file://screenshots/vector/harita-light.svg"
 type = "image"
 title = "Harita — Aydınlık Tema (SVG Vektör)"
+
+[[outputs]]
+id = "1-OWIjVKXfLEZLTqJjqvR"
+uri = "file://screenshots/karsılama.jpg"
+type = "image"
+title = "Karşılama Ekranı — 390×844"
