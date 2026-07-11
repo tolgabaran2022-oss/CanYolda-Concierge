@@ -173,36 +173,40 @@ export default function AnimalsScreen() {
 
         {/* Status summary row — Acil + Bekleyen + Sağlıklı + Toplam */}
         <View style={[H.summaryRow, { backgroundColor: T.card, borderColor: T.border }]}>
-          <View style={H.summaryCard}>
-            <View style={[H.summaryDot, { backgroundColor: "#DC2626" }]} />
-            <View>
+          {/* Acil */}
+          <View style={H.summaryItem}>
+            <View style={H.summaryTopRow}>
+              <View style={[H.summaryDot, { backgroundColor: "#DC2626" }]} />
               <Text style={[H.summaryNum, { color: T.text }]}>{injured}</Text>
-              <Text style={[H.summaryLabel, { color: T.textMuted }]}>Acil</Text>
             </View>
+            <Text style={[H.summaryLabel, { color: T.textMuted }]}>Acil</Text>
           </View>
           <View style={[H.summaryDivider, { backgroundColor: T.divider }]} />
-          <View style={H.summaryCard}>
-            <View style={[H.summaryDot, { backgroundColor: "#D97706" }]} />
-            <View>
+          {/* Bekleyen */}
+          <View style={H.summaryItem}>
+            <View style={H.summaryTopRow}>
+              <View style={[H.summaryDot, { backgroundColor: "#D97706" }]} />
               <Text style={[H.summaryNum, { color: T.text }]}>{hungry}</Text>
-              <Text style={[H.summaryLabel, { color: T.textMuted }]}>Bekleyen</Text>
             </View>
+            <Text style={[H.summaryLabel, { color: T.textMuted }]}>Bekleyen</Text>
           </View>
           <View style={[H.summaryDivider, { backgroundColor: T.divider }]} />
-          <View style={H.summaryCard}>
-            <View style={[H.summaryDot, { backgroundColor: "#16A34A" }]} />
-            <View>
+          {/* Sağlıklı */}
+          <View style={H.summaryItem}>
+            <View style={H.summaryTopRow}>
+              <View style={[H.summaryDot, { backgroundColor: "#16A34A" }]} />
               <Text style={[H.summaryNum, { color: T.text }]}>{healthy}</Text>
-              <Text style={[H.summaryLabel, { color: T.textMuted }]}>Sağlıklı</Text>
             </View>
+            <Text style={[H.summaryLabel, { color: T.textMuted }]}>Sağlıklı</Text>
           </View>
           <View style={[H.summaryDivider, { backgroundColor: T.divider }]} />
-          <View style={H.summaryCard}>
-            <View style={[H.summaryDot, { backgroundColor: T.purple }]} />
-            <View>
+          {/* Toplam */}
+          <View style={H.summaryItem}>
+            <View style={H.summaryTopRow}>
+              <View style={[H.summaryDot, { backgroundColor: T.purple }]} />
               <Text style={[H.summaryNum, { color: T.text }]}>{animals.length}</Text>
-              <Text style={[H.summaryLabel, { color: T.textMuted }]}>Toplam</Text>
             </View>
+            <Text style={[H.summaryLabel, { color: T.textMuted }]}>Toplam</Text>
           </View>
         </View>
       </View>
@@ -330,8 +334,8 @@ const H = StyleSheet.create({
     flexDirection: "row",
     backgroundColor: "#FFFFFF",
     borderRadius: 20,
-    paddingVertical: 14,
-    paddingHorizontal: 10,
+    paddingVertical: 13,
+    paddingHorizontal: 12,
     borderWidth: 1,
     borderColor: "rgba(123,94,167,0.08)",
     shadowColor: "#2D1B4E",
@@ -340,34 +344,43 @@ const H = StyleSheet.create({
     shadowRadius: 12,
     elevation: 2,
     alignItems: "center",
-    justifyContent: "space-evenly",
   },
-  summaryCard: {
+  /* Each of the 4 equal columns */
+  summaryItem: {
+    flex: 1,
     alignItems: "center",
-    gap: 4,
+    justifyContent: "center",
+    gap: 3,
+  },
+  /* Dot + number on the same horizontal line */
+  summaryTopRow: {
     flexDirection: "row",
+    alignItems: "center",
+    gap: 5,
   },
   summaryDot: {
-    width: 8,
-    height: 8,
-    borderRadius: 4,
-    marginRight: 8,
+    width: 7,
+    height: 7,
+    borderRadius: 3.5,
   },
   summaryNum: {
-    fontSize: 18,
+    fontSize: 17,
     fontFamily: "Inter_700Bold",
     color: "#1A0A3C",
-    lineHeight: 22,
+    lineHeight: 21,
   },
   summaryLabel: {
     fontSize: 11,
-    fontFamily: "Inter_400Regular",
+    fontFamily: "Inter_500Medium",
     color: "#8B8FA8",
+    letterSpacing: 0.1,
   },
   summaryDivider: {
     width: 1,
-    height: 32,
+    height: 26,
     backgroundColor: "#EEE9F8",
+    opacity: 0.6,
+    alignSelf: "center",
   },
 
   countBanner: {

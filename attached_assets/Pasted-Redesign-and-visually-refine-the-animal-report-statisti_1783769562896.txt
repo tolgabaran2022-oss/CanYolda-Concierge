@@ -1,0 +1,223 @@
+Redesign and visually refine the animal report statistics summary card shown at the top of the screen.
+
+CURRENT UI:
+The card contains 4 statistics:
+
+- Acil
+- Bekleyen
+- Sağlıklı
+- Toplam
+
+Each item currently displays:
+- a colored dot
+- a number
+- a small label
+
+CURRENT DESIGN PROBLEMS:
+- Colored dots are not perfectly aligned with the numbers.
+- Vertical divider lines are too visually dominant.
+- Column spacing is inconsistent.
+- The last "Toplam" item feels too close to the right edge.
+- Numbers and labels feel disconnected because of excessive vertical spacing.
+- Labels are too small and low contrast.
+- The overall component looks like a basic/raw statistics component instead of a premium mobile UI.
+- Visual hierarchy and alignment are inconsistent.
+
+REDESIGN THE COMPONENT.
+
+TARGET LAYOUT:
+
+● 1          ● 2          ● 1          ● 4
+Acil         Bekleyen      Sağlıklı     Toplam
+
+Each statistic must be treated as one centered visual group.
+
+DESIGN REQUIREMENTS:
+
+1. EQUAL COLUMNS
+
+Divide the card into exactly 4 equal-width columns.
+
+Each statistic item must use:
+
+flex: 1
+
+All columns must have equal width.
+
+Do not manually position items with margins.
+
+2. PERFECT CENTER ALIGNMENT
+
+Each column must use:
+
+alignItems: 'center'
+justifyContent: 'center'
+
+The colored dot and number must be displayed in one horizontal row.
+
+Example:
+
+● 1
+
+Below this row:
+
+Acil
+
+The number and dot must feel like one visual group.
+
+3. DOT DESIGN
+
+Use small circular status indicators.
+
+Recommended size:
+6–7px
+
+Colors:
+
+Acil:
+red
+
+Bekleyen:
+orange / amber
+
+Sağlıklı:
+green
+
+Toplam:
+purple
+
+All dots must use exactly the same size.
+
+Add approximately 6px spacing between the dot and number.
+
+4. NUMBER TYPOGRAPHY
+
+Statistics numbers must be the strongest visual element.
+
+Recommended:
+
+fontSize: 17
+fontWeight: '700'
+
+Use the application's primary dark text color.
+
+All numbers must use identical typography.
+
+Do not make the "Toplam" number larger or heavier than the other statistics.
+
+5. LABEL TYPOGRAPHY
+
+Recommended:
+
+fontSize: 11
+fontWeight: '500'
+
+Increase label contrast slightly compared to the current implementation.
+
+Use a muted gray-purple color consistent with the application design system.
+
+The label should be approximately 3–4px below the number row.
+
+6. REMOVE EXCESSIVE VERTICAL SPACING
+
+The number and label currently feel disconnected.
+
+Reduce the gap.
+
+Each group should visually read as:
+
+[dot + number]
+[label]
+
+These two rows must feel like one component.
+
+7. DIVIDER LINES
+
+Keep subtle separators between columns only if necessary.
+
+Make the divider lines much softer.
+
+Recommended:
+
+width: 1px
+opacity: 0.3
+
+Use a very light lavender or neutral border color.
+
+Divider height should not cover the entire card height.
+
+Recommended:
+24–30px
+
+Vertically center each divider.
+
+Do not place a divider after the final "Toplam" column.
+
+8. CARD PADDING
+
+Use balanced card spacing.
+
+Recommended:
+
+horizontal padding: 12–16px
+vertical padding: 12–14px
+
+The first and final columns must have equal distance from the card edges.
+
+The "Toplam" column must not feel compressed against the right edge.
+
+9. CARD STYLE
+
+Keep the existing white/light card design.
+
+Preserve:
+- current border radius
+- application background style
+- subtle shadow
+- overall card dimensions as much as possible
+
+Do not create a completely different visual design.
+
+Only make the component cleaner, better aligned, and more premium.
+
+10. RESPONSIVE DESIGN
+
+The 4 statistics must always remain on one row.
+
+Support:
+- small iPhones
+- large iPhones
+- Android phones
+- web/mobile preview
+
+Do not use hardcoded absolute x positions.
+
+Use Flexbox.
+
+11. EXPECTED VISUAL RESULT
+
+The final card should visually resemble:
+
+● 1          ● 2          ● 1          ● 4
+Acil         Bekleyen      Sağlıklı     Toplam
+
+All statistics:
+- perfectly centered
+- evenly distributed
+- identical visual hierarchy
+- consistent typography
+- consistent dot alignment
+
+The final result must look like a polished premium iOS statistics component.
+
+IMPORTANT:
+Do not change the statistics logic, values, database queries, filtering logic, or report counts.
+
+Do not redesign other sections of the screen.
+
+Only visually improve this 4-item statistics summary card.
+
+At the end, report:
+- which component was updated
+- which alignment problems were fixed
+- what spacing and typography values were changed
