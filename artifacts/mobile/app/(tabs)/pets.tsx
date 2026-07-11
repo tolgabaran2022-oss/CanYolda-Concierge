@@ -64,14 +64,14 @@ const TYPE_NORMALIZE: Record<string, Filter> = {
   Tavşan: "rabbit", tavşan: "rabbit", rabbit: "rabbit",
 };
 
-const FILTERS: { key: Filter; label: string; emoji: string }[] = [
-  { key: "all",    label: "Tümü",   emoji: "✨" },
-  { key: "cat",    label: "Kedi",   emoji: "🐱" },
-  { key: "dog",    label: "Köpek",  emoji: "🐶" },
-  { key: "bird",   label: "Kuş",    emoji: "🐦" },
-  { key: "rabbit", label: "Tavşan", emoji: "🐰" },
-  { key: "new",    label: "Yeni",   emoji: "🆕" },
-  { key: "other",  label: "Diğer",  emoji: "🐾" },
+const FILTERS: { key: Filter; label: string; icon: keyof typeof Ionicons.glyphMap }[] = [
+  { key: "all",    label: "Tümü",   icon: "apps-outline"             },
+  { key: "cat",    label: "Kedi",   icon: "paw-outline"              },
+  { key: "dog",    label: "Köpek",  icon: "paw"                      },
+  { key: "bird",   label: "Kuş",    icon: "leaf-outline"             },
+  { key: "rabbit", label: "Tavşan", icon: "heart-outline"            },
+  { key: "new",    label: "Yeni",   icon: "sparkles-outline"         },
+  { key: "other",  label: "Diğer",  icon: "ellipsis-horizontal-circle-outline" },
 ];
 
 const TIPS = [
@@ -254,12 +254,12 @@ function FilterRow({ active, onChange }: { active: Filter; onChange: (f: Filter)
                 end={{ x: 1, y: 0 }}
                 style={[fc.chip, fc.chipActiveShadow]}
               >
-                <Text style={fc.emoji}>{f.emoji}</Text>
+                <Ionicons name={f.icon} size={13} color="#FFF" />
                 <Text style={fc.lblActive}>{f.label}</Text>
               </LinearGradient>
             ) : (
               <View style={[fc.chip, fc.chipInactive, { backgroundColor: T.card, borderColor: T.border }]}>
-                <Text style={fc.emoji}>{f.emoji}</Text>
+                <Ionicons name={f.icon} size={13} color={P} />
                 <Text style={[fc.lbl, { color: T.purple }]}>{f.label}</Text>
               </View>
             )}
