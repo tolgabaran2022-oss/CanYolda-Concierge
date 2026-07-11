@@ -1,0 +1,275 @@
+Fix the "Konum Açıldı" counter logic on the animal report detail screen.
+
+CURRENT BUG:
+When the user taps "Haritada Aç" and the location successfully opens in Google Maps or Apple Maps, the "Konum Açıldı" interaction counter remains 0.
+
+EXPECTED BEHAVIOR:
+When the user explicitly taps "Haritada Aç", the location open interaction must be recorded and the "Konum Açıldı" counter must update correctly.
+
+IMPORTANT:
+Do not change the current UI design, spacing, colors, cards, typography, icons, or bottom buttons.
+Only fix the location open analytics/counter logic.
+
+IMPLEMENTATION REQUIREMENTS:
+
+1. TRACE THE CURRENT FLOW
+
+Inspect the complete "Haritada Aç" button flow.
+
+Find:
+- the button component
+- onPress handler
+- map opening function
+- Linking.openURL / openURL logic
+- Supabase interaction tables
+- report statistics query
+- realtime subscriptions
+- local counter state
+
+Identify why opening the location does not update the counter.
+
+2. RECORD LOCATION OPEN INTERACTION
+
+When the user taps "Haritada Aç", create a database interaction record.
+
+Recommended table structure:
+
+report_location_opens
+
+Columns:
+- id uuid primary key default gen_random_uuid()
+- report_id uuid not null
+- user_id uuid nullable
+- created_at timestamptz default now()
+
+The record must belong to the currently opened animal report.
+
+Example:
+
+await supabase
+  .from('report_location_opens')
+  .insert({
+    report_id: report.id,
+    user_id: currentUser?.id ?? null
+  });
+
+3. COUNT REAL DATABASE RECORDS
+
+The "Konum Açıldı" counter must represent the real database count.
+
+Example logic:
+
+SELECT COUNT(*)
+FROM report_location_opens
+WHERE report_id = current_report_id;
+
+Display this real count in the interaction card.
+
+Do not use a hardcoded value.
+
+Do not always initialize the visible counter to 0.
+
+Do not rely only on local component state.
+
+4. IMPORTANT EVENT ORDER
+
+The interaction must be triggered from the explicit "Haritada Aç" button press.
+
+Recommended flow:
+
+const handleOpenMap = async () => {
+  if (isOpeningMap) return;
+
+  setIsOpeningMap(true);
+
+  try {
+    await recordLocationOpen(report.id);
+
+    await openMapLocation();
+
+    await refetchLocationOpenCount();
+  } catch (error) {
+    console.error('Location open error:', error);
+  } finally {
+    setIsOpeningMap(false);
+  }
+};
+
+Do not execute the location-open insert inside useEffect.
+
+It must only happen when the user manually presses "Haritada Aç".
+
+5. COUNTER UPDATE
+
+After successfully creating the location open interaction:
+
+Option A:
+Refetch the real count from Supabase.
+
+OR
+
+Option B:
+Use the existing realtime subscription.
+
+Do not use both manual local +1 and realtime +1.
+
+Avoid:
+
+setLocationOpenCount(prev => prev + 1)
+
+if realtime/refetch already provides the updated database count.
+
+The database must remain the source of truth.
+
+6. PREVENT ACCIDENTAL DOUBLE REQUESTS
+
+Add an in-flight guard:
+
+if (isOpeningMap) return;
+
+Disable the "Haritada Aç" button while the action is being processed.
+
+This prevents a single press from generating multiple location-open records.
+
+7. DEFINE THE COUNTING LOGIC CORRECTLY
+
+Location opens are analytics events.
+
+Unlike "Yardımcı Oldu", multiple real opens may be counted.
+
+Example:
+
+User opens location once:
+0 → 1
+
+Same user returns later and opens location again:
+1 → 2
+
+Another user opens location:
+2 → 3
+
+However, one single button tap must create exactly ONE location-open record.
+
+Do not add UNIQUE(report_id, user_id) for location opens because repeat location opens are valid analytics events.
+
+Prevent duplicate events only for the same in-flight button action.
+
+8. VERIFY MAP OPENING
+
+Continue to open the correct map application:
+
+iOS:
+- Apple Maps or supported maps app
+
+Android:
+- Google Maps or supported maps app
+
+Web:
+- Google Maps web URL
+
+Use the current report latitude and longitude.
+
+Example:
+
+https://www.google.com/maps/search/?api=1&query=${latitude},${longitude}
+
+The location counter must be associated with the report being viewed.
+
+9. LOAD THE COUNT ON SCREEN OPEN
+
+When the report detail screen opens, fetch the existing location open count.
+
+Example:
+
+const fetchLocationOpenCount = async () => {
+  const { count, error } = await supabase
+    .from('report_location_opens')
+    .select('*', { count: 'exact', head: true })
+    .eq('report_id', report.id);
+
+  if (error) throw error;
+
+  setLocationOpenCount(count ?? 0);
+};
+
+The counter must survive:
+- page refresh
+- app restart
+- logout/login
+- another user's interaction
+
+10. CHECK FOR EXISTING INTERACTION SYSTEM
+
+Before creating a new table, inspect the project for an existing generic interaction/event table.
+
+Examples:
+- report_interactions
+- report_events
+- animal_report_interactions
+- analytics_events
+
+If an existing interaction table already supports interaction types, reuse it.
+
+Example:
+
+{
+  report_id: report.id,
+  user_id: currentUser?.id,
+  interaction_type: 'location_open'
+}
+
+Then count:
+
+WHERE report_id = current_report_id
+AND interaction_type = 'location_open'
+
+Do not create duplicate database architecture unnecessarily.
+
+11. TEST SCENARIO
+
+Initial location open count = 0
+
+Tap "Haritada Aç" once
+Expected:
+- map opens
+- one database interaction is created
+- counter becomes 1
+
+Return to app
+Expected counter = 1
+
+Reload the report page
+Expected counter = 1
+
+Tap "Haritada Aç" again
+Expected counter = 2
+
+Rapidly tap the button during one request
+Expected only one event for that active button action
+
+Another user opens the location
+Expected counter increases by 1
+
+Open a different animal report location
+Expected only that report's counter increases
+
+12. DO NOT MODIFY UI
+
+Keep exactly the current:
+- "Konum" card
+- "Haritada Aç" button
+- interaction cards
+- "Konum Açıldı" label
+- icon
+- bottom action bar
+- purple gradient design
+
+Only repair the database event recording and counter synchronization.
+
+AT THE END REPORT:
+- Why the location open count stayed at 0
+- Which component/function was fixed
+- Which Supabase table is used
+- How the location open event is recorded
+- How the count is loaded
+- How duplicate single-tap events are prevented

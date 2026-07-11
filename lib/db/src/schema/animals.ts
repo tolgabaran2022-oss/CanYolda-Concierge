@@ -12,9 +12,10 @@ export const strayAnimals = pgTable("stray_animals", {
   notes:          text("notes").notNull().default(""),
   userId:         text("user_id").notNull(),
   userName:       text("user_name").notNull().default(""),
-  fedCount:       integer("fed_count").notNull().default(0),
-  needsHelpCount: integer("needs_help_count").notNull().default(0),
-  commentsCount:  integer("comments_count").notNull().default(0),
+  fedCount:            integer("fed_count").notNull().default(0),
+  needsHelpCount:      integer("needs_help_count").notNull().default(0),
+  commentsCount:       integer("comments_count").notNull().default(0),
+  locationOpenCount:   integer("location_open_count").notNull().default(0),
   createdAt:      timestamp("created_at", { withTimezone: true }).defaultNow(),
   updatedAt:      timestamp("updated_at", { withTimezone: true }).defaultNow(),
 });

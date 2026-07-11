@@ -1,3 +1,4 @@
+import AsyncStorage from "@react-native-async-storage/async-storage";
 import { Ionicons } from "@expo/vector-icons";
 import * as Haptics from "expo-haptics";
 import { Image } from "expo-image";
@@ -27,6 +28,21 @@ import { apiGetUser, type SocialUser } from "@/lib/socialApi";
 import { formatTimeAgo } from "@/utils/formatters";
 import { getDefaultAnimalImageUri } from "@/utils/animalDefaults";
 import type { AnimalStatus } from "@/contexts/AnimalsContext";
+
+/* ── API helper (mirrors AnimalsContext) ───────────────────────────────────── */
+const API_BASE = process.env.EXPO_PUBLIC_DOMAIN
+  ? `https://${process.env.EXPO_PUBLIC_DOMAIN}/api`
+  : "http://localhost:8080/api";
+
+async function apiFetch(path: string, opts: RequestInit = {}): Promise<Response> {
+  const token = await AsyncStorage.getItem("@canyoldasi:jwt");
+  const headers: Record<string, string> = {
+    "Content-Type": "application/json",
+    ...(opts.headers as Record<string, string> ?? {}),
+  };
+  if (token) headers["Authorization"] = `Bearer ${token}`;
+  return fetch(`${API_BASE}${path}`, { ...opts, headers });
+}
 
 /* ── Design tokens ─────────────────────────────────────────────────────────── */
 const C = {
@@ -198,11 +214,13 @@ export default function AnimalDetailScreen() {
   const animal   = getAnimal(id ?? "");
   const isOwner  = !!user?.id && !!animal && animal.userId === user.id;
 
-  const [commentText,   setCommentText]  = useState("");
-  const [sheetVisible,  setSheetVisible] = useState(false);
-  const [deleting,      setDeleting]     = useState(false);
-  const [reporter,      setReporter]     = useState<SocialUser | null>(null);
-  const [isSubmitting,  setIsSubmitting] = useState(false);
+  const [commentText,        setCommentText]        = useState("");
+  const [sheetVisible,       setSheetVisible]       = useState(false);
+  const [deleting,           setDeleting]           = useState(false);
+  const [reporter,           setReporter]           = useState<SocialUser | null>(null);
+  const [isSubmitting,       setIsSubmitting]       = useState(false);
+  const [locationOpenCount,  setLocationOpenCount]  = useState(0);
+  const [isOpeningMap,       setIsOpeningMap]       = useState(false);
 
   const helpScale = useRef(new Animated.Value(1)).current;
 
@@ -213,6 +231,18 @@ export default function AnimalDetailScreen() {
       .then((u) => { if (u) setReporter(u); })
       .catch(() => {});
   }, [animal?.userId]);
+
+  /* Load initial location open count from API */
+  useEffect(() => {
+    if (!animal?.id) return;
+    apiFetch(`/animals/${animal.id}`)
+      .then((r) => r.json())
+      .then((data: Record<string, unknown>) => {
+        const count = Number(data.locationOpenCount ?? 0);
+        setLocationOpenCount(count);
+      })
+      .catch(() => {});
+  }, [animal?.id]);
 
   /* ── Handlers ─── */
   const handleHelp = useCallback(async () => {
@@ -241,27 +271,29 @@ export default function AnimalDetailScreen() {
   }, [commentText, user, animal, addComment]);
 
   const handleMapOpen = useCallback(async () => {
-    if (!animal) return;
+    if (!animal || isOpeningMap) return;
+    setIsOpeningMap(true);
     Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
 
-    const lat  = animal.latitude;
-    const lng  = animal.longitude;
+    const lat   = animal.latitude;
+    const lng   = animal.longitude;
     const label = encodeURIComponent(animal.locationName ?? "Sokak Hayvanı");
 
     /* No location data at all */
     if (!lat && !lng && !animal.locationName) {
       Alert.alert("Konum Bilgisi Yok", "Bu bildirim için konum bilgisi bulunmuyor.");
+      setIsOpeningMap(false);
       return;
     }
 
-    /* Web — open Google Maps in browser */
-    if (Platform.OS === "web") {
-      const url = lat && lng
-        ? `https://www.google.com/maps/search/?api=1&query=${lat},${lng}`
-        : `https://www.google.com/maps/search/?api=1&query=${label}`;
-      await Linking.openURL(url);
-      return;
-    }
+    /* Record the location open event before opening the map */
+    try {
+      const res = await apiFetch(`/animals/${animal.id}/location-open`, { method: "POST" });
+      if (res.ok) {
+        const data = await res.json() as { locationOpenCount: number };
+        setLocationOpenCount(data.locationOpenCount);
+      }
+    } catch { /* non-critical — map still opens */ }
 
     const openMap = async (url: string, fallbackUrl?: string) => {
       const supported = await Linking.canOpenURL(url).catch(() => false);
@@ -275,6 +307,16 @@ export default function AnimalDetailScreen() {
         Alert.alert("Hata", "Harita uygulaması açılamadı.");
       }
     };
+
+    /* Web — open Google Maps in browser */
+    if (Platform.OS === "web") {
+      const url = lat && lng
+        ? `https://www.google.com/maps/search/?api=1&query=${lat},${lng}`
+        : `https://www.google.com/maps/search/?api=1&query=${label}`;
+      await Linking.openURL(url);
+      setIsOpeningMap(false);
+      return;
+    }
 
     if (lat && lng) {
       if (Platform.OS === "ios") {
@@ -302,7 +344,7 @@ export default function AnimalDetailScreen() {
         }
       } else {
         /* Android — geo URI, fallback to Google Maps web */
-        const geoUrl     = `geo:${lat},${lng}?q=${lat},${lng}(${label})`;
+        const geoUrl      = `geo:${lat},${lng}?q=${lat},${lng}(${label})`;
         const fallbackUrl = `https://www.google.com/maps/search/?api=1&query=${lat},${lng}`;
         await openMap(geoUrl, fallbackUrl);
       }
@@ -312,12 +354,14 @@ export default function AnimalDetailScreen() {
       if (Platform.OS === "ios") {
         await openMap(`https://maps.apple.com/?q=${searchQuery}`);
       } else {
-        const geoUrl     = `geo:0,0?q=${searchQuery}`;
+        const geoUrl      = `geo:0,0?q=${searchQuery}`;
         const fallbackUrl = `https://www.google.com/maps/search/?api=1&query=${searchQuery}`;
         await openMap(geoUrl, fallbackUrl);
       }
     }
-  }, [animal]);
+
+    setIsOpeningMap(false);
+  }, [animal, isOpeningMap]);
 
   const handleShare = useCallback(async () => {
     if (!animal) return;
@@ -608,7 +652,7 @@ export default function AnimalDetailScreen() {
                 <StatCard
                   icon="location-outline"
                   iconColor={C.purple}
-                  value={0}
+                  value={locationOpenCount}
                   label="Konum Açıldı"
                   onPress={handleMapOpen}
                 />

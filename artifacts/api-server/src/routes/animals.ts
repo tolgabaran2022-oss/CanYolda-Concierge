@@ -340,6 +340,28 @@ router.post("/animals/:id/comments", async (req, res) => {
   }
 });
 
+/* ── POST /api/animals/:id/location-open ─────────────────── */
+router.post("/animals/:id/location-open", async (req, res) => {
+  try {
+    const [animal] = await db
+      .select({ locationOpenCount: strayAnimals.locationOpenCount })
+      .from(strayAnimals)
+      .where(eq(strayAnimals.id, req.params.id));
+    if (!animal) { res.status(404).json({ error: "Hayvan bulunamadı" }); return; }
+
+    const [updated] = await db
+      .update(strayAnimals)
+      .set({ locationOpenCount: sql`location_open_count + 1`, updatedAt: new Date() })
+      .where(eq(strayAnimals.id, req.params.id))
+      .returning({ locationOpenCount: strayAnimals.locationOpenCount });
+
+    res.json({ locationOpenCount: updated?.locationOpenCount ?? 0 });
+  } catch (err) {
+    req.log.error({ err }, "POST /animals/:id/location-open failed");
+    res.status(500).json({ error: "Konum açılışı kaydedilemedi" });
+  }
+});
+
 /* ── DELETE /api/animals/:id/comments/:commentId ─────────── */
 router.delete("/animals/:id/comments/:commentId", async (req, res) => {
   const userId = uid(req);
