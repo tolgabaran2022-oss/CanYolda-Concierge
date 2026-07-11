@@ -15,7 +15,6 @@ import {
   View,
 } from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
-import { useAnimals } from "@/contexts/AnimalsContext";
 import { useAuth } from "@/contexts/AuthContext";
 import { useTheme } from "@/hooks/useTheme";
 import { ProfileStoryAvatar } from "@/components/ProfileStoryAvatar";
@@ -42,10 +41,7 @@ export default function ProfileScreen() {
   const T      = useTheme();
   const insets = useSafeAreaInsets();
   const { user } = useAuth();
-  const { animals } = useAnimals();
   const router = useRouter();
-
-  const myAnimals = animals.filter((a) => a.userId === user?.id);
 
   const topPad       = Platform.OS === "web" ? 67 : insets.top;
   const tabClearance = insets.bottom + TAB_BOTTOM_GAP + TAB_FLOAT_H;
@@ -56,22 +52,18 @@ export default function ProfileScreen() {
   const [savedLoading,  setSavedLoading]  = useState(true);
   const [followCounts,  setFollowCounts]  = useState<FollowCounts>({ followers: 0, following: 0 });
 
-  useEffect(() => {
-    if (!user?.id) return;
-    apiFetchUserPosts(user.id)
-      .then(setUserPosts)
-      .catch(() => setUserPosts([]));
-    setSavedLoading(true);
-    apiFetchBookmarkedPosts(user.id)
-      .then(setSavedPosts)
-      .catch(() => setSavedPosts([]))
-      .finally(() => setSavedLoading(false));
-  }, [user?.id]);
-
-  /* Refresh follow counts every time this tab comes into focus */
+  /* Refresh posts + follow counts every time this tab comes into focus */
   useFocusEffect(
     useCallback(() => {
       if (!user?.id) return;
+      apiFetchUserPosts(user.id)
+        .then(setUserPosts)
+        .catch(() => setUserPosts([]));
+      setSavedLoading(true);
+      apiFetchBookmarkedPosts(user.id)
+        .then(setSavedPosts)
+        .catch(() => setSavedPosts([]))
+        .finally(() => setSavedLoading(false));
       apiGetFollowCounts(user.id)
         .then(setFollowCounts)
         .catch(() => {});
@@ -91,7 +83,7 @@ export default function ProfileScreen() {
 
   const currentGrid = gridTab === "posts" ? postGridImages : savedImages;
 
-  const totalPostCount = userPosts.length + myAnimals.length;
+  const totalPostCount = userPosts.length;
 
   return (
     <View style={[S.root, { backgroundColor: T.bg }]}>

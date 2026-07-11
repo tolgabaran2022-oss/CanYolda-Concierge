@@ -1,0 +1,216 @@
+FIX THE PROFILE POST COUNT AND PROFILE GRID DATA MISMATCH.
+
+CURRENT BUG:
+The user profile header displays "3 Gönderi" (3 posts), but the profile post grid is empty and shows "Henüz paylaşım yok".
+
+This is a functional data synchronization bug. Do not apply a visual workaround or hardcode any values.
+
+REQUIRED FIX:
+
+1. Inspect the profile post count logic and the profile grid/list query.
+
+2. The post counter and profile post grid MUST use the exact same source of truth and the exact same user identifier.
+
+Use the authenticated user's real ID:
+
+auth.user.id
+
+Check the posts table schema and identify the correct ownership column, for example:
+- user_id
+- author_id
+- owner_id
+- profile_id
+
+Use ONE correct ownership field consistently everywhere.
+
+Example logic:
+
+const userId = profileUserId ?? session?.user?.id;
+
+const { data: posts, error } = await supabase
+  .from('posts')
+  .select('*')
+  .eq('user_id', userId)
+  .order('created_at', { ascending: false });
+
+const postCount = posts?.length ?? 0;
+
+IMPORTANT:
+Do not fetch the post counter from a cached profile.posts_count field while loading the grid from the posts table.
+
+The visible post count must be derived from the same real post dataset shown in the profile grid.
+
+3. CHECK DATABASE DATA
+
+Inspect the 3 existing posts currently counted for this user.
+
+Verify:
+- their user_id / author_id
+- current authenticated user ID
+- post status
+- deleted status
+- visibility
+- image/media data
+
+Confirm that the posts actually belong to this profile.
+
+4. CHECK RLS POLICIES
+
+Inspect Supabase Row Level Security policies for the posts table.
+
+The logged-in user must be able to SELECT their own posts.
+
+Other users must be able to SELECT public profile posts.
+
+Fix SELECT policies if the posts exist in the database but the client query returns an empty array.
+
+5. REMOVE INCORRECT FILTERS
+
+Inspect the profile grid query for filters such as:
+
+.eq('status', 'published')
+.eq('is_deleted', false)
+.eq('visibility', 'public')
+.not('image_url', 'is', null)
+
+Do not silently exclude valid posts.
+
+If a filter is required, make sure the post creation flow saves compatible values.
+
+For example, if profile grid requires:
+
+status = 'published'
+
+then every successfully published post must be saved with:
+
+status: 'published'
+
+6. FIX POST CREATION DATA
+
+When creating a new post, always save the authenticated user's real ID.
+
+Example:
+
+const user = (await supabase.auth.getUser()).data.user;
+
+if (!user) {
+  throw new Error('Authenticated user not found');
+}
+
+await supabase.from('posts').insert({
+  user_id: user.id,
+  caption,
+  image_url,
+  created_at: new Date().toISOString()
+});
+
+Never save:
+- username as user_id
+- profile username
+- temporary user ID
+- mock ID
+- hardcoded ID
+
+7. PROFILE GRID
+
+If posts.length > 0:
+- render the post grid
+- display every real profile post
+- show post images
+- clicking a post must open the real post detail screen
+
+Only display:
+
+"Henüz paylaşım yok"
+
+when:
+
+posts.length === 0
+
+Do not use a separate boolean, cached state, or stale post counter to decide the empty state.
+
+8. REAL-TIME UI UPDATE
+
+After:
+- creating a post
+- deleting a post
+
+refresh or invalidate profile post data.
+
+The profile counter and grid must update immediately without requiring app restart.
+
+Use the project's existing state management/query system correctly.
+
+If React Query is used, invalidate the relevant profile post query.
+
+Example:
+
+queryClient.invalidateQueries({
+  queryKey: ['profile-posts', userId]
+});
+
+9. REMOVE MOCK DATA
+
+Search the entire profile implementation for:
+- hardcoded postCount
+- mockPosts
+- fakePosts
+- static "3"
+- fallback post counts
+
+Remove all fake profile post data.
+
+ACCEPTANCE TEST:
+
+Test with a real authenticated user.
+
+Scenario A:
+User has 3 posts.
+
+EXPECTED:
+Header:
+3 Gönderi
+
+Profile grid:
+Exactly 3 posts
+
+Scenario B:
+Create a new post.
+
+EXPECTED:
+Header immediately changes:
+3 → 4
+
+The new post immediately appears in the profile grid.
+
+Scenario C:
+Delete one post.
+
+EXPECTED:
+Header immediately changes:
+4 → 3
+
+The deleted post disappears from the profile grid.
+
+Scenario D:
+Delete all posts.
+
+EXPECTED:
+Header:
+0 Gönderi
+
+Only then display:
+"Henüz paylaşım yok"
+
+IMPORTANT:
+Do not only change the displayed number.
+Do not hardcode 0 or 3.
+Find and fix the real database/query/user-ID synchronization problem.
+
+After the fix, report:
+- the root cause
+- which user ID field was incorrect
+- the profile posts query that was fixed
+- whether an RLS policy caused the issue
+- which files were modified
+- the final acceptance test results
