@@ -27,11 +27,11 @@ const BG          = "#F8F9FC";
 
 type FilterKey = "all" | "injured" | "hungry" | "healthy";
 
-const FILTERS: { key: FilterKey; label: string; emoji: string; accent: string }[] = [
-  { key: "all",     label: "Hepsi",          emoji: "🐾", accent: PURPLE      },
-  { key: "injured", label: "Acil",            emoji: "🚨", accent: "#DC2626"  },
-  { key: "hungry",  label: "Yardım Bekleyen", emoji: "🟡", accent: "#D97706"  },
-  { key: "healthy", label: "Sağlıklı",        emoji: "🟢", accent: "#16A34A"  },
+const FILTERS: { key: FilterKey; label: string; icon: keyof typeof Ionicons.glyphMap; accent: string }[] = [
+  { key: "all",     label: "Hepsi",          icon: "paw-outline",              accent: PURPLE     },
+  { key: "injured", label: "Acil",            icon: "medkit-outline",           accent: "#DC2626"  },
+  { key: "hungry",  label: "Yardım Bekleyen", icon: "warning-outline",          accent: "#D97706"  },
+  { key: "healthy", label: "Sağlıklı",        icon: "checkmark-circle-outline", accent: "#16A34A"  },
 ];
 
 function filterAnimals(
@@ -84,7 +84,7 @@ function FilterChip({
             end={{ x: 1, y: 1 }}
             style={F.chipActive}
           >
-            <Text style={F.chipEmoji}>{f.emoji}</Text>
+            <Ionicons name={f.icon} size={14} color="#FFF" />
             <Text style={F.chipLabelActive}>{f.label}</Text>
             <View style={F.chipBadge}>
               <Text style={F.chipBadgeText}>{count}</Text>
@@ -92,7 +92,7 @@ function FilterChip({
           </LinearGradient>
         ) : (
           <View style={[F.chipInactive, { backgroundColor: T.card, borderColor: T.border }]}>
-            <Text style={F.chipEmoji}>{f.emoji}</Text>
+            <Ionicons name={f.icon} size={14} color={f.accent} />
             <Text style={[F.chipLabelInactive, { color: T.text }]}>{f.label}</Text>
             <View style={[F.chipBadgeInactive, { backgroundColor: `${f.accent}18` }]}>
               <Text style={[F.chipBadgeTextInactive, { color: f.accent }]}>{count}</Text>
