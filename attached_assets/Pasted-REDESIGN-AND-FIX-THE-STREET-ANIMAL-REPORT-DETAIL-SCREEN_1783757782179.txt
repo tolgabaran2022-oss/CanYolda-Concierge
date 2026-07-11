@@ -1,0 +1,826 @@
+REDESIGN AND FIX THE STREET ANIMAL REPORT DETAIL SCREEN.
+
+Use the attached screenshot as the CURRENT UI reference.
+
+This task is specifically for the street animal report detail screen shown after opening a report/card from the "Sokak Hayvanları" section.
+
+IMPORTANT:
+Do not rebuild the entire application.
+Do not change the global CanYoldaşı design identity.
+Do not break existing Supabase queries, report IDs, navigation, comments, location, help, ownership, or deletion functionality.
+
+Preserve all existing working functionality.
+
+The goal is to redesign this screen into a premium, polished, App Store-quality mobile interface.
+
+==================================================
+1. FIX ALL BROKEN ICONS
+==================================================
+
+The current screen contains broken square/question-mark icons.
+
+Examples:
+- next to "Güvende"
+- next to "Sokak Hayvanı"
+- possibly other metadata areas
+
+These broken characters must never be displayed.
+
+Inspect all icon usage on this screen.
+
+Do not use unsupported Unicode characters or incorrectly loaded icon fonts.
+
+Use the icon library already installed in the project.
+
+Prefer the project's existing icon system, such as:
+- lucide-react-native
+- Ionicons
+- MaterialCommunityIcons
+- Expo Vector Icons
+
+Use appropriate icons:
+
+ShieldCheck → Güvende
+MapPin → Konum
+Clock → Bildirim Tarihi
+Activity / HeartPulse → Durum
+PawPrint → Tür
+MessageCircle → Yorum Yap
+Heart → Yardım Et
+Share2 → Paylaş
+ArrowLeft → Geri
+
+All icons must render correctly on:
+- iOS simulator
+- Android
+- web
+
+No "?"
+No empty square symbols.
+No emoji fallback icons.
+
+==================================================
+2. SIMPLIFY THE STATUS SYSTEM
+==================================================
+
+The current UI repeats multiple similar statuses:
+
+- "Sağlıklı" on the image
+- "Güvende" inside the content sheet
+- "Sağlıklı" again inside the information cards
+
+This creates visual and semantic duplication.
+
+Use ONE primary animal status.
+
+Example:
+
+Primary status:
+"Sağlıklı"
+
+Primary status values may include:
+- Acil
+- Yaralı
+- Bekliyor
+- Sağlıklı
+
+Display the primary status ONCE as the main status badge.
+
+Place the status badge over the lower-left area of the image.
+
+Example:
+
+[green dot] Sağlıklı
+
+Remove the large duplicate "Güvende" pill from the white content area.
+
+If the report has a separate safety state such as "Güvende", display it only as subtle secondary metadata.
+
+Example:
+
+ShieldCheck Güvende
+
+Do not visually compete with the primary status.
+
+==================================================
+3. IMPROVE THE HERO IMAGE
+==================================================
+
+The animal image is currently too dark and visually appears grayscale.
+
+Display the real uploaded image in its original colors.
+
+Do not apply:
+- grayscale
+- excessive black overlay
+- dark opacity covering the entire photo
+
+Use:
+
+resizeMode="cover"
+
+The hero image should feel emotional, clear, and high quality.
+
+Recommended hero image height:
+
+280–320px depending on device size.
+
+Add only a subtle top gradient:
+
+transparent
+→ rgba(0,0,0,0.35)
+
+The gradient should only improve the visibility of:
+
+- back button
+- share button
+- system/status elements
+
+Do not make the whole animal photo dark.
+
+==================================================
+4. HERO NAVIGATION BUTTONS
+==================================================
+
+Place:
+
+Back button → top left
+Share button → top right
+
+Use premium circular glass-style icon buttons.
+
+Style:
+
+width: 42
+height: 42
+borderRadius: 21
+
+Background:
+
+rgba(20, 12, 40, 0.35)
+
+Optional:
+use BlurView if already supported in the project.
+
+Icons must be white.
+
+Maintain safe-area spacing.
+
+Do not overlap the iPhone Dynamic Island or Android status bar.
+
+==================================================
+5. REDESIGN THE WHITE CONTENT SHEET
+==================================================
+
+The current white area looks too much like a temporary bottom sheet.
+
+Redesign it as an integrated report detail content container.
+
+The content panel should slightly overlap the hero image.
+
+Use:
+
+borderTopLeftRadius: 28
+borderTopRightRadius: 28
+
+Do not use excessive 40–50px corner radiuses.
+
+Overlap the image by approximately 20–24px.
+
+Background:
+#FFFFFF
+
+The result must feel like one continuous detail screen.
+
+==================================================
+6. FIX TITLE AND DESCRIPTION DUPLICATION
+==================================================
+
+The current title and "Hayvanın Durumu" description contain the exact same text.
+
+Example current problem:
+
+Title:
+"Park girişinde yaşıyor, mahalle sakinleri besliyor"
+
+Description:
+"Park girişinde yaşıyor, mahalle sakinleri besliyor"
+
+Do not display identical text twice.
+
+Use the real report fields correctly.
+
+Suggested hierarchy:
+
+Title:
+A short, meaningful report title.
+
+Example:
+"Park girişindeki sokak kedisi"
+
+Description:
+The detailed report note.
+
+Example:
+"Park girişinde yaşıyor. Mahalle sakinleri düzenli olarak mama ve su bırakıyor."
+
+IMPORTANT:
+
+Do not hardcode these example texts.
+
+Use real database values.
+
+Inspect the report schema.
+
+Possible fields:
+- title
+- note
+- description
+- details
+
+If the title and description values are identical:
+
+Display the value only once.
+
+Do not repeat identical content in two sections.
+
+If no title exists:
+generate a UI fallback using the report type/status only.
+
+Example:
+
+"Yaralı sokak hayvanı bildirimi"
+
+Do not generate fake story data.
+
+==================================================
+7. TITLE TYPOGRAPHY
+==================================================
+
+The main title should be visually dominant.
+
+Recommended styling:
+
+fontSize: 21–23
+fontWeight: 700 or 750
+lineHeight: 29–31
+color: existing dark navy/purple brand text color
+
+Maximum:
+3 visible lines
+
+Do not use oversized text.
+
+Maintain clean left alignment.
+
+==================================================
+8. REDESIGN THE REPORTER PROFILE AREA
+==================================================
+
+The current reporter section uses a generic purple user icon.
+
+Use the report creator's real profile information.
+
+Fetch and display:
+
+- profile avatar
+- display name / username
+- report creation time
+
+Example:
+
+[Avatar] Mehmet K.
+         14 sa önce
+
+Use the existing profiles/users table.
+
+Possible fields:
+- avatar_url
+- full_name
+- display_name
+- username
+
+Do not display a generic icon if a valid avatar exists.
+
+Fallback only when no avatar exists:
+
+a clean initials avatar.
+
+Example:
+
+MK
+
+Do not use a broken profile image.
+
+Avatar size:
+40–44px
+
+Make the reporter row tappable.
+
+When tapped:
+open the real creator's profile.
+
+Use the same profile navigation logic as the feed.
+
+==================================================
+9. MOVE LOCATION OUT OF THE PROFILE ROW
+==================================================
+
+The current:
+
+"Kadıköy, İstanbul"
+
+chip is compressed into the far-right side of the creator row.
+
+Remove this crowded layout.
+
+Place the location directly below the reporter area as subtle metadata.
+
+Example:
+
+MapPin  Kadıköy, İstanbul
+
+Use:
+
+fontSize: 13–14
+muted text color
+purple MapPin icon
+
+The location row must be tappable.
+
+On tap:
+open the existing map/location behavior.
+
+Do not create duplicate location logic.
+
+==================================================
+10. REDESIGN "HAYVANIN DURUMU"
+==================================================
+
+Keep the section only when there is a real note/description to display.
+
+Section title:
+
+"Hayvanın Durumu"
+
+Recommended style:
+
+fontSize: 16
+fontWeight: 700
+
+Description:
+
+fontSize: 15
+lineHeight: 22
+muted dark gray
+
+Do not add a heavy divider immediately below every section.
+
+Use whitespace for section separation.
+
+If no note exists:
+
+Display a subtle text:
+
+"Bu bildirim için ek açıklama bulunmuyor."
+
+Do not display:
+
+"Not eklenmemiş"
+
+as a large primary content title.
+
+==================================================
+11. REDESIGN "DURUM BİLGİLERİ"
+==================================================
+
+The current metadata cards are too large.
+
+Reduce card height by approximately 20–25%.
+
+Use a compact 2-column grid.
+
+Four cards:
+
+1. Bildirim Tarihi
+2. Konum
+3. Durum
+4. Tür
+
+Recommended structure:
+
+[small icon container]
+Label
+Value
+
+Recommended card dimensions:
+
+minHeight: 88–100px
+
+Padding:
+14–16px
+
+Border radius:
+18px
+
+Gap:
+10–12px
+
+Use the existing soft lavender CanYoldaşı design language.
+
+Card background:
+
+very subtle lavender gradient
+or
+#F8F5FF
+
+Do not use overly saturated purple.
+
+Use a subtle border:
+
+rgba(116, 79, 190, 0.08)
+
+==================================================
+12. IMPROVE METADATA TYPOGRAPHY
+==================================================
+
+Current labels are too light and difficult to read.
+
+Label style:
+
+fontSize: 12
+fontWeight: 500
+color: #8E879B
+
+Value style:
+
+fontSize: 14
+fontWeight: 650
+color: primary dark text
+
+For status value:
+
+Sağlıklı → green
+Acil → red
+Yaralı → red/coral
+Bekliyor → amber
+
+Use accessible contrast.
+
+Do not make important text extremely pale.
+
+==================================================
+13. USE REAL ANIMAL TYPE ICON
+==================================================
+
+For the "Tür" card:
+
+Do not show broken symbols.
+
+Use PawPrint.
+
+Display the real report animal type.
+
+Examples:
+
+Sokak Hayvanı
+Kedi
+Köpek
+Kuş
+Diğer
+
+Do not hardcode "Sokak Hayvanı" for every report.
+
+Use the real database value.
+
+==================================================
+14. REDUCE DIVIDER USAGE
+==================================================
+
+The current screen uses too many horizontal divider lines.
+
+Remove unnecessary separators.
+
+Use spacing to distinguish content sections.
+
+Recommended vertical section gap:
+
+24–28px
+
+Only use a divider when there is a strong structural reason.
+
+The screen should feel lighter and more premium.
+
+==================================================
+15. REDESIGN THE STICKY BOTTOM ACTION AREA
+==================================================
+
+Keep the two existing actions:
+
+"Yorum Yap"
+"Yardım Et"
+
+Both functions must remain fully working.
+
+Create a clean sticky bottom action bar.
+
+Respect the device safe area.
+
+Background:
+white
+
+Optional subtle top border:
+
+rgba(30, 20, 50, 0.06)
+
+or a very soft shadow.
+
+Use a balanced 2-column layout.
+
+Button gap:
+12px
+
+LEFT BUTTON:
+
+Yorum Yap
+
+Style:
+outlined
+
+Icon:
+MessageCircle
+
+Border:
+existing CanYoldaşı purple
+
+Text:
+purple
+
+RIGHT BUTTON:
+
+Yardım Et
+
+Style:
+primary filled button
+
+Use the existing premium purple brand color/gradient.
+
+Icon:
+Heart
+
+Text:
+white
+
+Both buttons should:
+
+- have equal height
+- align correctly
+- have balanced horizontal sizing
+- use minimum 52px height
+- use 16–18px border radius
+
+"Yardım Et" can be slightly wider than "Yorum Yap", but not excessively larger.
+
+==================================================
+16. SCROLL AND SAFE AREA BEHAVIOR
+==================================================
+
+The content must scroll correctly.
+
+The sticky action area must not cover:
+
+- Durum Bilgileri cards
+- text content
+- last card row
+
+Add sufficient scroll content bottom padding.
+
+Use SafeAreaView / useSafeAreaInsets correctly.
+
+Test:
+
+iPhone with Dynamic Island
+standard iPhone
+Android device
+web/mobile viewport
+
+No content should be hidden behind the bottom action area.
+
+==================================================
+17. PRESERVE OWNER DELETE FUNCTIONALITY
+==================================================
+
+The existing owner-only report deletion logic must remain working.
+
+Do not remove or weaken ownership checks.
+
+If the current authenticated user created this report:
+
+show a subtle owner action menu in the top navigation area or report content header.
+
+Use a three-dot MoreHorizontal icon.
+
+Only show it to the report owner.
+
+The existing actions may include:
+
+"Bildirim İşlemleri"
+"Bildirim Sil"
+
+Delete must remain protected using:
+
+report owner UUID === authenticated user UUID
+
+Supabase RLS must remain enforced.
+
+Do not show delete actions to other users.
+
+Do not determine ownership using username.
+
+==================================================
+18. DO NOT USE MOCK DATA
+==================================================
+
+Every displayed value must come from the real opened report.
+
+This includes:
+
+- hero image
+- status
+- title
+- description
+- creator
+- avatar
+- creation date
+- location
+- animal type
+
+Remove any screen-specific hardcoded data such as:
+
+"Mehmet K."
+"Kadıköy, İstanbul"
+"14 sa önce"
+"Sağlıklı"
+"Sokak Hayvanı"
+
+unless these values genuinely come from the report database.
+
+The detail page must render using the selected report ID.
+
+==================================================
+19. DATA LOADING STATES
+==================================================
+
+Add a polished loading state.
+
+While report data loads:
+
+use skeleton placeholders matching the final layout.
+
+Do not display random old report data while loading.
+
+Do not flash:
+
+"Not eklenmemiş"
+
+before the real report loads.
+
+For missing report:
+
+Display:
+
+"Bildirim bulunamadı"
+
+with a back navigation action.
+
+==================================================
+20. FINAL VISUAL DIRECTION
+==================================================
+
+The final design must feel:
+
+- Apple-level
+- premium
+- modern
+- clean
+- emotionally warm
+- pet-focused
+- consistent with CanYoldaşı
+- native mobile first
+
+Use the existing CanYoldaşı purple brand identity.
+
+Do not redesign it into:
+- a generic admin dashboard
+- a website
+- Material Design-heavy Android UI
+- a completely different color system
+
+Maintain visual consistency with the rest of the application.
+
+==================================================
+ACCEPTANCE TEST
+==================================================
+
+TEST 1:
+Open a real street animal report.
+
+EXPECTED:
+The correct report image appears in original colors.
+
+TEST 2:
+Verify all icons.
+
+EXPECTED:
+No square/question-mark broken icons are visible.
+
+TEST 3:
+Open a healthy report.
+
+EXPECTED:
+The primary status "Sağlıklı" is displayed clearly once.
+The screen does not unnecessarily repeat "Sağlıklı / Güvende / Sağlıklı".
+
+TEST 4:
+Open a report where title and description are identical.
+
+EXPECTED:
+The same text is not displayed twice.
+
+TEST 5:
+Open a report with a creator profile image.
+
+EXPECTED:
+The real profile avatar and creator information are displayed.
+
+TEST 6:
+Tap the creator.
+
+EXPECTED:
+The creator's real profile opens.
+
+TEST 7:
+Tap location.
+
+EXPECTED:
+The existing location/map behavior works.
+
+TEST 8:
+Tap "Yorum Yap".
+
+EXPECTED:
+The existing comment functionality works.
+
+TEST 9:
+Tap "Yardım Et".
+
+EXPECTED:
+The existing help flow works.
+
+TEST 10:
+Open the authenticated user's own report.
+
+EXPECTED:
+Owner-only report actions remain accessible.
+
+TEST 11:
+Open another user's report.
+
+EXPECTED:
+No delete action is displayed.
+
+TEST 12:
+Test scrolling on an iPhone-sized screen.
+
+EXPECTED:
+No content is hidden behind the sticky action buttons.
+
+==================================================
+IMPORTANT FINAL INSTRUCTION
+==================================================
+
+Do not make only superficial CSS changes.
+
+Inspect:
+- the detail screen component
+- report data query
+- profile relation/query
+- image rendering
+- icon components
+- status mapping
+- responsive styles
+- SafeArea implementation
+
+Fix both the visual problems and incorrect UI data mapping.
+
+Do not break any currently working feature.
+
+After completing the redesign, report:
+
+1. root causes of the broken icons
+2. why the image appeared dark/grayscale
+3. how duplicate status labels were removed
+4. how duplicate title/description rendering was fixed
+5. how reporter profile data is loaded
+6. files modified
+7. acceptance test results
