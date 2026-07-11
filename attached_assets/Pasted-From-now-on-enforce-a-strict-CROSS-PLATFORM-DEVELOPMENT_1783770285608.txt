@@ -1,0 +1,562 @@
+From now on, enforce a strict CROSS-PLATFORM DEVELOPMENT RULE for this entire Expo / React Native application.
+
+CRITICAL PROJECT RULE:
+
+EVERY new feature, bug fix, UI update, database integration, interaction logic, navigation change, component update, and design revision must be implemented and verified on:
+
+- iOS Simulator
+- Android Emulator
+- Web Preview
+
+A change must NEVER be considered complete if it only works or appears on one platform.
+
+The same latest application version must always be visible and functional on iOS, Android, and Web.
+
+==================================================
+GLOBAL CROSS-PLATFORM RULE
+==================================================
+
+For every task I give you from now on:
+
+1. Implement the requested update.
+2. Verify the implementation on iOS.
+3. Verify the same implementation on Android.
+4. Verify the same implementation on Web.
+5. Fix all platform-specific issues before reporting completion.
+
+Do not say "completed" after testing only iOS.
+
+The completion rule is:
+
+iOS = Android = Web
+
+in terms of:
+- features
+- business logic
+- database data
+- interactions
+- navigation
+- current UI version
+
+==================================================
+IOS IS NOT A SEPARATE APPLICATION
+==================================================
+
+Do not create features only inside:
+
+*.ios.ts
+*.ios.tsx
+*.ios.js
+*.ios.jsx
+
+unless there is a real native technical requirement.
+
+Do not place universal features behind:
+
+Platform.OS === 'ios'
+
+Do not use logic such as:
+
+if (Platform.OS === 'ios') {
+  return <NewFeature />
+}
+
+while Android or Web continue rendering the old implementation.
+
+The application is a universal Expo / React Native application.
+
+Universal features must live in shared files.
+
+Preferred structure:
+
+SharedScreen.tsx
+SharedComponent.tsx
+shared hooks
+shared services
+shared Supabase logic
+
+Only native APIs may use small platform adapters.
+
+==================================================
+SHARED COMPONENT RULE
+==================================================
+
+For universal UI, always prefer one shared component.
+
+BAD:
+
+PetScreen.ios.tsx
+PetScreen.android.tsx
+PetScreen.web.tsx
+
+with different versions of the same screen.
+
+GOOD:
+
+PetScreen.tsx
+
+and only small adapters such as:
+
+imagePicker.native.ts
+imagePicker.web.ts
+
+when platform APIs genuinely differ.
+
+Do not maintain old screen copies for Android or Web.
+
+==================================================
+PLATFORM-SPECIFIC FILE AUDIT
+==================================================
+
+Before completing every future task, inspect whether the affected feature has:
+
+*.ios.tsx
+*.android.tsx
+*.web.tsx
+*.native.tsx
+
+files.
+
+If platform-specific versions exist:
+
+- determine whether they are necessary
+- compare their implementations
+- synchronize the new feature across all required platforms
+
+Never update only the iOS file without checking Android and Web versions.
+
+==================================================
+ROUTE SYNCHRONIZATION
+==================================================
+
+For every navigation or screen change, inspect Expo Router.
+
+Verify:
+
+app/
+src/app/
+
+and:
+
+_layout.tsx
+_layout.ios.tsx
+_layout.android.tsx
+_layout.web.tsx
+
+All platforms must enter the current route tree.
+
+Do not allow:
+
+iOS → new screen
+
+Android → old screen
+
+Web → old or separate route
+
+All platforms must navigate to the current canonical implementation.
+
+==================================================
+DESIGN SYNCHRONIZATION
+==================================================
+
+Whenever a UI design is updated:
+
+The same approved design must appear on:
+
+- iOS
+- Android
+- Web
+
+Preserve the same:
+
+- card structure
+- section order
+- text
+- buttons
+- icons
+- gradients
+- border radius
+- typography hierarchy
+- visual logic
+
+Responsive adjustments are allowed.
+
+For example:
+
+Mobile:
+single-column mobile layout
+
+Web:
+responsive centered layout
+
+However, Web must NOT display an outdated screen just because its dimensions are different.
+
+Responsive design is allowed.
+
+Different application versions are not allowed.
+
+==================================================
+FEATURE SYNCHRONIZATION
+==================================================
+
+Every feature must use the same shared business logic.
+
+Examples:
+
+- pet creation
+- pet profile image
+- pet image upload
+- pet photo removal
+- Hızlı Durum
+- Aşılar
+- Randevular
+- Kimlik
+- Beslenme
+- Belgeler
+- İlaçlar
+- Notlar
+- animal reports
+- map opening
+- location open counters
+- helper counters
+- comments
+- stories
+- feed
+- follow system
+- saved posts
+- DM system
+- adoption listings
+- listing management
+- profile system
+
+Do not implement separate business logic for iOS, Android, and Web.
+
+Preferred architecture:
+
+Screen
+↓
+Shared Hook
+↓
+Shared Service
+↓
+Supabase
+
+Example:
+
+PetScreen
+↓
+usePets()
+↓
+petService
+↓
+Supabase
+
+All platforms must use this same flow.
+
+==================================================
+SUPABASE DATA RULE
+==================================================
+
+iOS, Android, and Web must always use the same Supabase project and the same real database records.
+
+Never create:
+
+- iOS-only fake state
+- Android-only local test data
+- Web-only mock data
+
+Do not use random placeholder data when real Supabase data exists.
+
+The same account must display the same:
+
+- pets
+- reports
+- posts
+- stories
+- interactions
+- counters
+- listings
+- profile data
+
+on all platforms.
+
+Database must remain the single source of truth.
+
+==================================================
+NEW UPDATE WORKFLOW
+==================================================
+
+For EVERY future request, follow this workflow:
+
+STEP 1:
+Locate the canonical current component.
+
+STEP 2:
+Check whether duplicate or platform-specific components exist.
+
+STEP 3:
+Implement the feature in shared code whenever possible.
+
+STEP 4:
+Check iOS rendering and functionality.
+
+STEP 5:
+Check Android rendering and functionality.
+
+STEP 6:
+Check Web rendering and functionality.
+
+STEP 7:
+Inspect console/runtime errors on all platforms.
+
+STEP 8:
+Fix platform incompatibilities.
+
+STEP 9:
+Verify Supabase data synchronization.
+
+STEP 10:
+Only then report the task as completed.
+
+==================================================
+WEB COMPATIBILITY RULE
+==================================================
+
+For every new feature, verify Web compatibility.
+
+Check for unsupported usage of:
+
+- native-only APIs
+- native action sheets
+- camera modules
+- map modules
+- file system modules
+- direct native URI assumptions
+- unsupported Blob logic
+- window/document access without guards
+
+If a native API requires a Web adapter:
+
+create a small Web adapter.
+
+Example:
+
+shared feature logic
+
+Native:
+expo-image-picker
+
+Web:
+browser-compatible image picker
+
+The feature must still exist on Web.
+
+Do not hide the feature.
+
+Do not render the old UI.
+
+==================================================
+ANDROID COMPATIBILITY RULE
+==================================================
+
+For every update, verify Android for:
+
+- module resolution
+- permissions
+- image URI handling
+- camera permissions
+- gallery permissions
+- map URL handling
+- keyboard behavior
+- status bar issues
+- bottom navigation overlap
+- SafeArea differences
+- filename casing
+- touch events
+- runtime crashes
+
+Do not assume iOS success means Android success.
+
+==================================================
+IOS COMPATIBILITY RULE
+==================================================
+
+Continue preserving the current iOS application.
+
+Check:
+
+- SafeArea
+- status bar
+- image picker
+- camera
+- Apple Maps behavior
+- keyboard
+- modal presentation
+- bottom action bars
+
+Do not break currently approved iOS features while synchronizing Android and Web.
+
+==================================================
+NO PLATFORM-ONLY COMPLETION
+==================================================
+
+Never report:
+
+"Feature added successfully"
+
+if it was tested only on one platform.
+
+Instead, every final report must explicitly include:
+
+iOS:
+PASS / FAIL
+
+Android:
+PASS / FAIL
+
+Web:
+PASS / FAIL
+
+Example:
+
+Cross-platform verification:
+
+iOS: PASS
+Android: PASS
+Web: PASS
+
+If one platform fails:
+
+Do not mark the task complete.
+
+Continue debugging and fix the failed platform.
+
+==================================================
+PREVENT OLD VERSION RENDERING
+==================================================
+
+After every major feature update:
+
+Search for duplicate old components.
+
+Check route imports.
+
+Check platform-specific files.
+
+Check Metro cache issues.
+
+Check separate Web entry points.
+
+Android and Web must never continue rendering an old component after iOS has been updated.
+
+The newest canonical screen must be used by all platforms.
+
+==================================================
+CACHE AND DEVELOPMENT SERVER CHECK
+==================================================
+
+When a feature appears on one platform but not another:
+
+Do not immediately rewrite the UI.
+
+First inspect:
+
+- Metro cache
+- multiple Expo processes
+- stale bundles
+- platform-specific files
+- duplicate screen files
+- old route imports
+- separate Web entry points
+
+If required, restart the canonical Expo development server with cache clearing.
+
+Use the project's existing package manager.
+
+Do not mix npm, yarn, pnpm, or bun.
+
+==================================================
+REPLIT PREVIEW RULE
+==================================================
+
+Ensure:
+
+iOS Simulator
+Android Emulator
+Web Preview
+
+are connected to the same current Expo application and development source.
+
+Do not allow separate old preview applications.
+
+Do not allow Web Preview to run an outdated legacy frontend if Expo Web is the current application source.
+
+==================================================
+CURRENT PROJECT STANDARD
+==================================================
+
+Treat this as a permanent development standard for the project:
+
+ONE CODEBASE
+ONE CURRENT VERSION
+ONE SUPABASE DATA SOURCE
+THREE SUPPORTED PLATFORMS
+
+iOS
+Android
+Web
+
+Every future update must reach all three platforms.
+
+==================================================
+FINAL REPORT FORMAT FOR EVERY FUTURE TASK
+==================================================
+
+At the end of every future development task, report:
+
+FEATURE:
+[feature name]
+
+SHARED FILES UPDATED:
+[list]
+
+PLATFORM-SPECIFIC FILES UPDATED:
+[list or none]
+
+IOS:
+PASS / FAIL
+
+ANDROID:
+PASS / FAIL
+
+WEB:
+PASS / FAIL
+
+SUPABASE DATA SYNC:
+PASS / FAIL
+
+ROUTE SYNC:
+PASS / FAIL
+
+KNOWN PLATFORM DIFFERENCES:
+[list only technically required differences]
+
+TASK STATUS:
+COMPLETE only if iOS, Android, and Web all pass.
+
+IMPORTANT:
+
+Do not redesign or roll back the current application.
+
+The latest approved application version must be kept.
+
+From now on, every modification I request must automatically be considered a cross-platform task.
+
+Do not wait for me to separately say:
+"also do Android"
+or
+"also do Web".
+
+Always implement and verify the update for:
+
+iOS + Android + Web.

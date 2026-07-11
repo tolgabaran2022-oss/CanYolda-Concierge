@@ -49,7 +49,10 @@ Türkiye'deki sokak hayvanlarını raporlamak, takip etmek ve sahiplendirme ilan
 
 ## User preferences
 
-_Populate as you build._
+- **Cross-platform rule (mandatory):** Every change — UI, feature, bug fix, interaction, navigation — must work identically on iOS, Android, and Web before marking complete. Report format: `iOS: PASS | Android: PASS | Web: PASS`.
+- Prefer shared `.tsx` files; never put universal features behind `Platform.OS === 'ios'` guards or platform-specific files unless a genuine native API difference requires it.
+- Business logic flows through shared context/hooks/services → API → PostgreSQL. No platform-specific state or mock data.
+- After each update, check for stale platform-specific file copies (`.ios.tsx`, `.android.tsx`, `.web.tsx`) and synchronise them if they exist.
 
 ## Gotchas
 
