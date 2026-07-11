@@ -1,0 +1,120 @@
+DISABLE PROFILE NAVIGATION FROM THE STREET ANIMAL REPORT DETAIL SCREEN.
+
+CURRENT BEHAVIOR:
+On the street animal report detail screen, tapping the reporter name/avatar row such as:
+
+"Mehmet K."
+
+opens the user's profile.
+
+REMOVE THIS BEHAVIOR ONLY FROM THIS SCREEN.
+
+REQUIRED CHANGES:
+
+1. The reporter information area must remain visible.
+
+Continue displaying:
+- avatar or initials
+- reporter display name
+- report creation time
+
+Example:
+
+MK
+Mehmet K.
+14 sa önce
+
+2. The reporter row must NOT be clickable.
+
+Remove:
+- onPress
+- navigation.push
+- navigation.navigate
+- router.push
+- Link
+- Pressable
+- TouchableOpacity
+
+from the reporter/profile information row.
+
+3. Tapping:
+- avatar
+- "Mehmet K."
+- report creation time
+
+must do nothing.
+
+4. Remove the right-side chevron arrow ">" from the reporter row.
+
+The chevron currently suggests that the row opens another page.
+
+Do not display this icon.
+
+5. Keep the reporter section as a static informational component.
+
+Use a normal View instead of:
+
+Pressable
+TouchableOpacity
+Link
+
+Example structure:
+
+<View style={styles.reporterRow}>
+  <Avatar />
+  <View>
+    <Text>{reporterName}</Text>
+    <Text>{createdAt}</Text>
+  </View>
+</View>
+
+6. IMPORTANT:
+
+Do not remove the creator information.
+
+Do not remove profile data fetching if it is required to display:
+- avatar
+- username/display name
+
+Only remove the navigation/click interaction.
+
+7. Do not change profile navigation anywhere else in the app.
+
+Instagram-style profile navigation must continue working in:
+- Akış posts
+- comments
+- followers
+- following
+- DM
+- other profile-related screens
+
+This change applies ONLY to the street animal report detail screen.
+
+ACCEPTANCE TEST:
+
+Open a street animal report.
+
+Tap the reporter avatar.
+
+EXPECTED:
+Nothing happens.
+
+Tap "Mehmet K.".
+
+EXPECTED:
+Nothing happens.
+
+Tap "14 sa önce".
+
+EXPECTED:
+Nothing happens.
+
+EXPECTED UI:
+- reporter information remains visible
+- right chevron is removed
+- reporter row no longer looks clickable
+
+After completing the fix, report:
+- which component was changed
+- which navigation handler was removed
+- files modified

@@ -422,16 +422,8 @@ export default function AnimalDetailScreen() {
                 : `${statusCfg.label} sokak hayvanı bildirimi`}
             </Text>
 
-            {/* Reporter row */}
-            <Pressable
-              style={D.reporterRow}
-              onPress={() => {
-                Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
-                if (animal.userId) router.push(`/user-profile/${encodeURIComponent(animal.userId)}` as Parameters<typeof router.push>[0]);
-              }}
-              accessibilityRole="button"
-              accessibilityLabel="Bildiren kullanıcının profili"
-            >
+            {/* Reporter row — static, not tappable */}
+            <View style={D.reporterRow}>
               {/* Avatar */}
               {reporterAvatar ? (
                 <Image source={{ uri: reporterAvatar }} style={D.avatar} contentFit="cover" transition={180} />
@@ -445,9 +437,7 @@ export default function AnimalDetailScreen() {
                 <Text style={D.reporterName}>{reporterName || animal.userName}</Text>
                 <Text style={D.reporterTime}>{formatTimeAgo(animal.timestamp)}</Text>
               </View>
-
-              <Ionicons name="chevron-forward" size={16} color={C.muted} />
-            </Pressable>
+            </View>
 
             {/* Location row (separate, tappable) */}
             {animal.locationName ? (
