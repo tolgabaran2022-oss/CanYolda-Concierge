@@ -1,0 +1,334 @@
+FIX ALL BROKEN EMOJI / ICON GLYPHS IN THE "YAKINDAKİ HAYVANLAR" SECTION.
+
+CURRENT BUG:
+Some filter chips display broken square/question-mark symbols instead of icons.
+
+Visible examples:
+- "Aç"
+- "Yaralı"
+- other animal status/category chips
+
+The UI currently renders unsupported Unicode characters or missing font glyphs.
+
+IMPORTANT:
+Do not replace the broken symbols with different emojis.
+Do not use raw Unicode emoji characters for status icons.
+
+Use the project's installed React Native vector icon library.
+
+==================================================
+1. REMOVE BROKEN UNICODE CHARACTERS
+==================================================
+
+Inspect the complete "Yakındaki Hayvanlar" component and all status/category mappings.
+
+Search for characters or strings such as:
+
+"🐾"
+"🍖"
+"🩹"
+"❤️"
+"⚠️"
+"📍"
+"🐕"
+"🐈"
+"□"
+"?"
+"\u..."
+emoji strings
+
+Also inspect data mappings such as:
+
+icon: "..."
+emoji: "..."
+statusEmoji: "..."
+
+Remove unsupported emoji-based UI rendering from filter chips.
+
+Do not render:
+
+<Text>{status.emoji}</Text>
+
+for status icons.
+
+==================================================
+2. USE REAL VECTOR ICON COMPONENTS
+==================================================
+
+Use the icon library already installed in the project.
+
+Prefer:
+
+lucide-react-native
+
+If the project already uses Expo Vector Icons consistently, use that existing system instead.
+
+Suggested icon mapping:
+
+Hepsi:
+PawPrint
+
+Aç:
+Utensils / Bone
+
+Yaralı:
+Bandage / HeartPulse
+
+Acil:
+TriangleAlert
+
+Sağlıklı:
+HeartPulse / CircleCheck
+
+Bekleyen:
+Clock3
+
+Konum:
+MapPin
+
+Do not use unsupported text glyphs.
+
+Example mapping:
+
+const STATUS_ICON_MAP = {
+  all: PawPrint,
+  hungry: Utensils,
+  injured: HeartPulse,
+  urgent: TriangleAlert,
+  healthy: CircleCheck,
+  waiting: Clock3,
+};
+
+Render icons as React components:
+
+const StatusIcon = STATUS_ICON_MAP[item.key];
+
+<StatusIcon
+  size={15}
+  strokeWidth={2}
+  color={iconColor}
+/>
+
+Do not render icon names as text.
+
+==================================================
+3. FIX STATUS KEY MAPPING
+==================================================
+
+Inspect the actual database status values.
+
+Possible values may include:
+
+all
+hungry
+injured
+urgent
+healthy
+waiting
+
+or Turkish values:
+
+hepsi
+ac
+aç
+yarali
+yaralı
+acil
+saglikli
+sağlıklı
+bekleyen
+
+Normalize status values before looking up icons.
+
+Example:
+
+const normalizeStatusKey = (value: string) =>
+  value
+    .trim()
+    .toLocaleLowerCase('tr-TR')
+    .replace(/ı/g, 'i')
+    .replace(/ğ/g, 'g')
+    .replace(/ü/g, 'u')
+    .replace(/ş/g, 's')
+    .replace(/ö/g, 'o')
+    .replace(/ç/g, 'c');
+
+Create one centralized status configuration.
+
+Example:
+
+const STATUS_CONFIG = {
+  hepsi: {
+    label: 'Hepsi',
+    icon: PawPrint,
+  },
+  ac: {
+    label: 'Aç',
+    icon: Utensils,
+  },
+  yarali: {
+    label: 'Yaralı',
+    icon: HeartPulse,
+  },
+  acil: {
+    label: 'Acil',
+    icon: TriangleAlert,
+  },
+  saglikli: {
+    label: 'Sağlıklı',
+    icon: CircleCheck,
+  },
+};
+
+Do not maintain separate broken emoji maps for iOS, Android, and web.
+
+==================================================
+4. CHECK ICON IMPORTS
+==================================================
+
+Verify that every icon is correctly imported.
+
+Example:
+
+import {
+  PawPrint,
+  Utensils,
+  HeartPulse,
+  TriangleAlert,
+  CircleCheck,
+  Clock3,
+} from 'lucide-react-native';
+
+Do not dynamically render an undefined icon.
+
+Add a safe fallback:
+
+const IconComponent =
+  STATUS_CONFIG[statusKey]?.icon ?? PawPrint;
+
+An invalid status must never display a broken square character.
+
+==================================================
+5. PRESERVE FILTER CHIP DESIGN
+==================================================
+
+Do not redesign the "Yakındaki Hayvanlar" section.
+
+Keep:
+- existing rounded filter chips
+- purple selected state
+- category counts
+- horizontal scroll
+- existing spacing
+- CanYoldaşı design language
+
+Only replace the broken symbols with correctly rendered vector icons.
+
+Icon layout:
+
+[ICON] Label [COUNT]
+
+Example:
+
+[PawPrint] Hepsi  4
+[Utensils] Aç  0
+[HeartPulse] Yaralı  2
+
+Use:
+
+icon size: 14–16
+gap: 6–8px
+
+Align all icons vertically with the label.
+
+==================================================
+6. TEST IOS, ANDROID AND WEB
+==================================================
+
+Verify the icons on:
+
+- iOS simulator
+- Android emulator/device
+- Expo web / web viewport
+
+EXPECTED:
+
+No:
+□
+?
+tofu glyph
+missing character
+broken emoji
+
+All status icons must render consistently.
+
+==================================================
+7. SEARCH THE ENTIRE RELATED FEATURE
+==================================================
+
+The same broken glyph problem has appeared on other street animal screens.
+
+Search related components for raw emoji/icon strings.
+
+Check:
+
+- Nearby Animals cards
+- filter chips
+- street animal list
+- street animal detail
+- status badges
+- animal type labels
+- location actions
+
+Replace broken text-based UI icons with the existing vector icon system.
+
+Do not change normal user-entered text or captions.
+
+==================================================
+ACCEPTANCE TEST
+==================================================
+
+TEST 1:
+Open "Yakındaki Hayvanlar".
+
+EXPECTED:
+"Hepsi" displays a PawPrint icon.
+
+TEST 2:
+View "Aç".
+
+EXPECTED:
+A valid food-related vector icon appears.
+No broken square/question-mark symbol.
+
+TEST 3:
+View "Yaralı".
+
+EXPECTED:
+A valid health/injury vector icon appears.
+
+TEST 4:
+Horizontal scroll through all filters.
+
+EXPECTED:
+Every filter has a valid icon.
+
+TEST 5:
+Test on iOS, Android and web.
+
+EXPECTED:
+The icon system renders consistently on all platforms.
+
+IMPORTANT:
+This is a missing glyph / unsupported Unicode rendering bug.
+
+Do not solve it by changing fonts randomly.
+Do not insert new emojis.
+Replace raw emoji/status characters with real vector icon components.
+
+After fixing, report:
+- which broken Unicode/emoji values were found
+- which icon library is now used
+- the centralized status icon mapping
+- files modified
+- iOS/Android/web test results

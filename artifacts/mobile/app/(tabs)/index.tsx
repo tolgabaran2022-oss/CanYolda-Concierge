@@ -44,19 +44,14 @@ const PURPLE = "#7C3AED";
 const STATUS_FILTERS: {
   key: string;
   label: string;
-  emoji: string | null;
-  accent: string | null;
+  icon: keyof typeof Ionicons.glyphMap;
+  accent: string;
 }[] = [
-  { key: "all", label: "Hepsi", emoji: null, accent: null },
-  { key: "aç", label: "Aç", emoji: "🍽️", accent: "#F97316" },
-  { key: "yaralı", label: "Yaralı", emoji: "🩹", accent: "#EF4444" },
-  { key: "sağlıklı", label: "Sağlıklı", emoji: "✅", accent: "#16A34A" },
-  {
-    key: "bilinmiyor",
-    label: "Bilinmiyor",
-    emoji: "❓",
-    accent: "#71717A",
-  },
+  { key: "all",        label: "Hepsi",      icon: "paw-outline",              accent: PURPLE     },
+  { key: "aç",         label: "Aç",          icon: "restaurant-outline",       accent: "#F97316"  },
+  { key: "yaralı",     label: "Yaralı",      icon: "medkit-outline",           accent: "#EF4444"  },
+  { key: "sağlıklı",   label: "Sağlıklı",    icon: "checkmark-circle-outline", accent: "#16A34A"  },
+  { key: "bilinmiyor", label: "Bilinmiyor",  icon: "help-circle-outline",      accent: "#71717A"  },
 ];
 
 const TAB_FLOAT_H = 64;
@@ -285,9 +280,11 @@ export default function MapScreen() {
                   Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
                 }}
               >
-                {f.emoji && (
-                  <Text style={styles.pillEmoji}>{f.emoji}</Text>
-                )}
+                <Ionicons
+                  name={f.icon}
+                  size={13}
+                  color={active ? "white" : accentColor}
+                />
                 <Text
                   style={[
                     styles.pillText,
