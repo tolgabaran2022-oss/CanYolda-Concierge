@@ -1,0 +1,136 @@
+Fix the duplicate increment bug in the "Yardımcı Ol / Yardım Edildi" interaction.
+
+CURRENT BUG:
+When the user taps the "Yardımcı Ol" button only once, the "Yardımcı Oldu" counter increases by 2 instead of 1.
+
+Example:
+Initial count: 0
+User taps once
+Incorrect result: 2
+Expected result: 1
+
+Investigate the entire helper/support interaction flow and fix the root cause.
+
+IMPORTANT REQUIREMENTS:
+
+1. A single user action must create only ONE helper/support interaction.
+
+2. Check for duplicate increment logic:
+- frontend local state increment
+- optimistic UI update
+- Supabase insert/update
+- database RPC/function
+- database trigger
+- realtime subscription
+- useEffect
+- duplicate onPress handlers
+- duplicate API requests
+
+Do not increment the counter in multiple places.
+
+3. Use the database as the single source of truth.
+
+The helper count must be calculated from real helper/support records.
+
+Example logic:
+
+helper_count = COUNT(helper_records WHERE report_id = current_report_id)
+
+Do not manually store or increment a fake local counter if the database already provides the real count.
+
+4. Prevent duplicate support records.
+
+Add or verify a unique database constraint:
+
+UNIQUE(report_id, user_id)
+
+A user must not be able to create multiple active "Yardımcı Oldu" records for the same animal report.
+
+5. Button behavior:
+
+First tap:
+- Create one helper record
+- Button changes to "Yardım Edildi!"
+- Counter increases exactly by 1
+
+Second tap / undo behavior:
+If the feature supports toggling:
+- Delete the user's helper record
+- Button changes back to "Yardımcı Ol"
+- Counter decreases exactly by 1
+
+If undo is not supported:
+- Ignore additional taps
+- Never create another duplicate helper record
+
+6. Disable the button while the request is processing.
+
+Example:
+
+if (isSubmitting) return;
+
+Set:
+isSubmitting = true
+
+Before request.
+
+Reset:
+isSubmitting = false
+
+After request finishes.
+
+This must prevent rapid double taps and duplicate requests.
+
+7. Do not use code such as:
+
+setHelperCount(prev => prev + 1)
+
+if a realtime subscription or database refetch already updates the count.
+
+The UI must display the real count returned from the database.
+
+8. Check React development behavior / StrictMode.
+
+Make sure helper creation is NEVER executed automatically inside useEffect.
+
+The insert/delete action must only run from an explicit user button press.
+
+9. After creating or deleting a helper record:
+- refetch the helper count from Supabase
+OR
+- allow the realtime subscription to update the state
+
+Do not do both a manual +1 and a realtime +1.
+
+10. Test the following scenario:
+
+Count = 0
+Tap "Yardımcı Ol" once
+Expected count = 1
+
+Tap button rapidly multiple times
+Expected maximum count for this user = 1
+
+Reload page
+Expected count = 1
+
+Log out and log back in
+Expected count = 1
+
+Another user taps "Yardımcı Ol"
+Expected count = 2
+
+First user removes support if toggle is enabled
+Expected count = 1
+
+Also inspect existing database rows and remove duplicate helper records created by the previous bug.
+
+Do not change the current UI design, colors, layout, typography, card sizes, or button design.
+
+Only fix the helper interaction logic, duplicate request issue, database uniqueness, and counter synchronization.
+
+At the end, report:
+- What caused the counter to increase twice
+- Which file/function was fixed
+- Whether duplicate database rows existed
+- How duplicate support records are now prevented

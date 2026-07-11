@@ -198,11 +198,11 @@ export default function AnimalDetailScreen() {
   const animal   = getAnimal(id ?? "");
   const isOwner  = !!user?.id && !!animal && animal.userId === user.id;
 
-  const [commentText,  setCommentText]  = useState("");
-  const [helped,       setHelped]       = useState(false);
-  const [sheetVisible, setSheetVisible] = useState(false);
-  const [deleting,     setDeleting]     = useState(false);
-  const [reporter,     setReporter]     = useState<SocialUser | null>(null);
+  const [commentText,   setCommentText]  = useState("");
+  const [sheetVisible,  setSheetVisible] = useState(false);
+  const [deleting,      setDeleting]     = useState(false);
+  const [reporter,      setReporter]     = useState<SocialUser | null>(null);
+  const [isSubmitting,  setIsSubmitting] = useState(false);
 
   const helpScale = useRef(new Animated.Value(1)).current;
 
@@ -216,14 +216,19 @@ export default function AnimalDetailScreen() {
 
   /* ── Handlers ─── */
   const handleHelp = useCallback(async () => {
+    if (isSubmitting) return;
+    setIsSubmitting(true);
     Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
-    setHelped((v) => !v);
     Animated.sequence([
       Animated.timing(helpScale, { toValue: 0.88, duration: 80, useNativeDriver: true }),
       Animated.timing(helpScale, { toValue: 1,    duration: 160, useNativeDriver: true }),
     ]).start();
-    if (user && animal) await toggleNeedsHelp(animal.id, user.id);
-  }, [user, animal, toggleNeedsHelp, helpScale]);
+    try {
+      if (user && animal) await toggleNeedsHelp(animal.id, user.id);
+    } finally {
+      setIsSubmitting(false);
+    }
+  }, [isSubmitting, user, animal, toggleNeedsHelp, helpScale]);
 
   const handleComment = useCallback(async () => {
     const t = commentText.trim();
@@ -367,7 +372,11 @@ export default function AnimalDetailScreen() {
   const topPad      = Platform.OS === "web" ? 16 : insets.top;
   const statusCfg   = STATUS_CFG[animal.status];
   const statusDotColor = STATUS_COLORS[animal.status];
-  const helpCount   = animal.needsHelpByUsers.length + (helped ? 1 : 0);
+  /* `helped` is derived purely from context — no local state offset */
+  const helped      = !!user && animal.needsHelpByUsers.some(
+    (u) => u === user.id || u === "_current_user_"
+  );
+  const helpCount   = animal.needsHelpByUsers.length;
   const thumbUri    = animal.image ?? animal.animalImage ?? getDefaultAnimalImageUri(animal.animalType);
   const animalLabel = formatAnimalType(animal.animalType);
 
