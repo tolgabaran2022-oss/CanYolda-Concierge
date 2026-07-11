@@ -45,11 +45,12 @@ const C = {
 };
 
 const MAX_PHOTOS = 10;
-const WIN_W     = Dimensions.get("window").width;
-const GRID_GAP  = 6;
-const GRID_PAD  = 20;
-const PHOTO_W   = (WIN_W - GRID_PAD * 2 - GRID_GAP * 2) / 3;
-const PHOTO_H   = PHOTO_W * 1.15;
+const _RAW_WIN_W = Dimensions.get("window").width;
+const WIN_W      = Math.min(_RAW_WIN_W, 430);
+const GRID_GAP   = 6;
+const GRID_PAD   = 20;
+const PHOTO_W    = (WIN_W - GRID_PAD * 2 - GRID_GAP * 2) / 3;
+const PHOTO_H    = PHOTO_W * 1.15;
 
 /* ── Static data ─────────────────────────────────────────── */
 const PET_TYPES = [

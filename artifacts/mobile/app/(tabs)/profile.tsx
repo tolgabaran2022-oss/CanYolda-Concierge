@@ -23,9 +23,10 @@ import type { ApiPost } from "@/lib/feedApi";
 import { apiGetFollowCounts } from "@/lib/socialApi";
 import type { FollowCounts } from "@/lib/socialApi";
 
-const { width: SW } = Dimensions.get("window");
-const GRID_GAP  = 2;
-const GRID_ITEM = (SW - GRID_GAP * 2) / 3;
+const _RAW_PROF_W = Dimensions.get("window").width;
+const SW          = Math.min(_RAW_PROF_W, 430);
+const GRID_GAP    = 2;
+const GRID_ITEM   = (SW - GRID_GAP * 2) / 3;
 
 const PURPLE      = "#7B5EA7";
 const PURPLE_DARK = "#3D2070";

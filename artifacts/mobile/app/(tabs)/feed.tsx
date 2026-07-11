@@ -51,8 +51,8 @@ import {
   type ApiStoryGroup,
 } from "@/lib/storiesApi";
 
-const { width: SW } = Dimensions.get("window");
-void SW;
+const _RAW_FEED_W = Dimensions.get("window").width;
+const SW          = Math.min(_RAW_FEED_W, 430);
 
 const C = {
   purple:     "#7B5EA7",

@@ -42,9 +42,10 @@ import {
   type ApiPetHealth,
 } from "@/lib/petsApi";
 
-const { width: SW } = Dimensions.get("window");
-const GRID_COLS = 3;
-const CELL = (SW - 2) / GRID_COLS;
+const _RAW_PET_W = Dimensions.get("window").width;
+const SW         = Math.min(_RAW_PET_W, 430);
+const GRID_COLS  = 3;
+const CELL       = (SW - 2) / GRID_COLS;
 const PURPLE = "#7C3AED";
 const PURPLE_LIGHT = "#A480D8";
 const CAT_PLACEHOLDER = "https://loremflickr.com/300/300/cat?lock=501";

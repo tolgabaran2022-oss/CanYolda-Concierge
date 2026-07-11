@@ -1,0 +1,765 @@
+Perform a complete WEB RESPONSIVE STABILITY AND LAYOUT FIX for the current Expo / React Native application.
+
+CRITICAL CURRENT PROBLEM:
+
+The application design is visually stable and approved on iOS.
+
+However, on Web Preview the same screens still show:
+
+- layout shifts
+- inconsistent spacing
+- uneven card widths
+- element overflow
+- text alignment differences
+- broken column distribution
+- inconsistent horizontal margins
+- cards changing size unexpectedly
+- elements moving depending on viewport width
+- visual differences compared with iOS
+
+The current iOS design is the approved visual source of truth.
+
+DO NOT redesign the application.
+
+DO NOT create a new Web design.
+
+The goal is:
+
+WEB MUST VISUALLY MATCH IOS
+
+while remaining technically responsive and stable.
+
+==================================================
+1. FIX THE ROOT RESPONSIVE ARCHITECTURE
+==================================================
+
+Audit the full Web layout structure.
+
+Inspect:
+
+- root containers
+- screen wrappers
+- ScrollView
+- SafeAreaView
+- View widths
+- maxWidth
+- minWidth
+- flex
+- flexGrow
+- flexShrink
+- flexBasis
+- gap
+- padding
+- margin
+- absolute positioning
+- Dimensions.get('window')
+- useWindowDimensions
+- percentage widths
+
+Identify every component using unstable width calculations.
+
+Search for logic such as:
+
+width: Dimensions.get('window').width - 32
+
+width: screenWidth / 3
+
+width: window.innerWidth
+
+position: 'absolute'
+
+left: fixedNumber
+
+right: fixedNumber
+
+transform: translateX(...)
+
+These calculations may work on iOS but become unstable on Web.
+
+Replace unstable layout calculations with responsive Flexbox layout where possible.
+
+==================================================
+2. CREATE A CANONICAL MOBILE APP CONTAINER FOR WEB
+==================================================
+
+The Web version must use a stable centered application content container.
+
+The main mobile application content should use a controlled maximum width.
+
+Recommended concept:
+
+Web:
+width: 100%
+maxWidth: 430px
+marginHorizontal: auto
+
+Native:
+width: 100%
+
+Example architecture:
+
+<AppScreenContainer>
+  <ScreenContent />
+</AppScreenContainer>
+
+For Web:
+
+{
+  width: '100%',
+  maxWidth: 430,
+  alignSelf: 'center'
+}
+
+Do not calculate layout using the full desktop browser width when the application is displayed as a mobile interface.
+
+IMPORTANT:
+
+All inner responsive width calculations must use the APP CONTAINER WIDTH.
+
+They must not use the full browser viewport width.
+
+Possible current bug:
+
+Browser width = 1400px
+
+Dimensions.get('window').width = 1400
+
+but visible mobile app container = 390px
+
+Then card calculations are based on 1400px and overflow the 390px content area.
+
+Fix this architecture.
+
+==================================================
+3. USE useWindowDimensions CAREFULLY
+==================================================
+
+Audit every usage of:
+
+Dimensions.get('window')
+
+For responsive components, prefer:
+
+useWindowDimensions()
+
+However, do NOT blindly use browser viewport width for card calculations.
+
+For components inside a centered mobile container, measure the actual content container when needed.
+
+Use:
+
+onLayout
+
+Example:
+
+const [containerWidth, setContainerWidth] = useState(0);
+
+<View
+  onLayout={(event) => {
+    setContainerWidth(event.nativeEvent.layout.width);
+  }}
+>
+
+Use containerWidth for child calculations only when Flexbox cannot solve the layout.
+
+Prefer Flexbox first.
+
+==================================================
+4. FIX FLEX CHILD OVERFLOW
+==================================================
+
+Audit all horizontal rows.
+
+Every flex child that contains text must safely shrink.
+
+Use where necessary:
+
+minWidth: 0
+flexShrink: 1
+
+This is especially important on React Native Web.
+
+Example:
+
+<View style={{
+  flex: 1,
+  minWidth: 0,
+}}>
+
+Text:
+
+<Text
+  numberOfLines={1}
+  ellipsizeMode="tail"
+>
+
+Do not allow text to increase card width.
+
+Fix invisible overflow caused by flex items retaining intrinsic width.
+
+==================================================
+5. FIX THE PET INFORMATION CARD
+==================================================
+
+Current pet information card contains:
+
+TÜR
+Köpek
+
+IRK
+Golden
+
+YAŞ
+5
+
+The Web layout currently leaves visually inconsistent space and column distribution.
+
+Redesign ONLY THE LAYOUT LOGIC, not the visual design.
+
+Use one horizontal row.
+
+Each information group must use controlled flex distribution.
+
+Example:
+
+Tür:
+flex: 0.8
+
+Irk:
+flex: 1.5
+
+Yaş:
+flex: 0.7
+
+Or use equal flexible groups if visually more consistent with iOS.
+
+Each group must contain:
+
+[label]
+[value]
+
+Use:
+
+minWidth: 0
+
+Value text:
+
+numberOfLines={1}
+
+Do not use absolute horizontal positions.
+
+Do not manually position:
+
+Tür at x=20
+Irk at x=85
+Yaş at x=170
+
+The card must remain stable at:
+
+320px
+375px
+390px
+414px
+430px
+
+content widths.
+
+==================================================
+6. FIX MANAGEMENT CARD GRID
+==================================================
+
+Current section:
+
+Yönetim
+
+First row:
+Aşılar
+Randevular
+Kimlik
+
+Second row:
+Beslenme
+Notlar
+
+The Web layout currently has inconsistent widths and visual distribution.
+
+Do not use hardcoded card widths based on screenWidth.
+
+Create a deterministic grid layout.
+
+FIRST ROW:
+
+3 equal-width cards
+
+Use:
+
+row container
+display flex
+flexDirection: row
+gap: 10 or current design-system spacing
+
+Each card:
+
+flex: 1
+minWidth: 0
+
+SECOND ROW:
+
+2 equal-width cards
+
+Each card:
+
+flex: 1
+minWidth: 0
+
+The combined second-row width must exactly align with the outer edges of the first row.
+
+Expected:
+
+| Card | Card | Card |
+|    Card    |    Card    |
+
+Outer left edge:
+identical
+
+Outer right edge:
+identical
+
+Do not calculate:
+
+(screenWidth - X) / 3
+
+using browser viewport width.
+
+Prefer Flexbox.
+
+==================================================
+7. FIX CARD HEIGHT STABILITY
+==================================================
+
+Cards must not change height because of browser font rendering.
+
+Use controlled minimum heights consistent with the iOS design.
+
+Example concept:
+
+small management card:
+minHeight: 104
+
+large second-row card:
+minHeight: 160
+
+Use the real values from the approved iOS component.
+
+Do not create unnecessary Web-only sizes.
+
+Text wrapping must not unexpectedly increase card height.
+
+Labels such as:
+
+Randevular
+Beslenme
+
+must remain visually centered.
+
+==================================================
+8. FIX HORIZONTAL SCREEN PADDING
+==================================================
+
+Use one consistent screen horizontal padding value.
+
+Audit the pet detail screen.
+
+The following must share the same left and right alignment:
+
+- back button area
+- pet image visual area
+- pet information card
+- Yönetim title
+- first management row
+- second management row
+
+Recommended structural concept:
+
+screen paddingHorizontal: 18
+
+Do not give every child a separate random marginHorizontal.
+
+The information card and management grid must have identical outer alignment.
+
+==================================================
+9. FIX WEB FONT METRIC DIFFERENCES
+==================================================
+
+React Native Web may render font metrics differently than iOS.
+
+Audit typography.
+
+Do not use fixed vertical positioning to compensate for iOS font rendering.
+
+Avoid:
+
+top: -2
+marginTop: -3
+transform: [{ translateY: -1 }]
+
+unless absolutely necessary.
+
+Use:
+
+lineHeight
+
+with explicit values for critical labels.
+
+Example:
+
+fontSize: 12
+lineHeight: 16
+
+fontSize: 16
+lineHeight: 21
+
+Ensure text remains vertically centered on Web.
+
+Do not modify the approved typography hierarchy.
+
+==================================================
+10. FIX ICON CENTERING
+==================================================
+
+Audit circular icon containers.
+
+Current examples:
+
+- vaccine icon
+- calendar icon
+- identity icon
+- nutrition icon
+- notes icon
+
+The icon must be perfectly centered inside its circular background on:
+
+iOS
+Android
+Web
+
+Circle:
+
+alignItems: 'center'
+justifyContent: 'center'
+
+Do not use icon-specific margins to visually center icons.
+
+Remove inconsistent:
+
+marginTop
+marginLeft
+top
+left
+
+from icons where they are being used as manual alignment fixes.
+
+==================================================
+11. REMOVE UNNECESSARY ABSOLUTE POSITIONING
+==================================================
+
+Search the pet detail screen and related components for:
+
+position: 'absolute'
+
+Absolute positioning must only remain for intentional overlay UI such as:
+
+- small image edit badge
+- floating decorative overlay
+
+Do not use absolute positioning for:
+
+- cards
+- section titles
+- management grid
+- pet information groups
+- regular screen layout
+
+Normal content must participate in Flexbox flow.
+
+==================================================
+12. WEB BOX SIZING AND OVERFLOW
+==================================================
+
+Inspect the rendered Web DOM.
+
+Check whether padding and border cause elements to exceed the parent width.
+
+For React Native Web generated elements, verify no custom CSS overrides create:
+
+content-box
+
+problems.
+
+Where custom Web CSS exists, use:
+
+box-sizing: border-box
+
+Audit:
+
+width: 100%
+
+combined with:
+
+padding
+border
+
+No component may become wider than its parent container.
+
+Also inspect for:
+
+overflow-x
+
+The application must never produce unintended horizontal scrolling.
+
+==================================================
+13. REMOVE HORIZONTAL OVERFLOW
+==================================================
+
+Open Web Preview.
+
+Inspect the page width.
+
+The document must not have horizontal scrolling.
+
+Check:
+
+document.documentElement.scrollWidth
+window.innerWidth
+
+If scrollWidth is larger than the available application/page width, find the exact overflowing element.
+
+Do not simply add:
+
+overflow-x: hidden
+
+to hide the bug.
+
+Find and fix the component causing the overflow.
+
+After fixing the root cause, overflow-x protection may remain only as defensive styling if already part of the application.
+
+==================================================
+14. RESPONSIVE BREAKPOINT TEST
+==================================================
+
+Test the exact screen at these Web viewport widths:
+
+320px
+360px
+375px
+390px
+414px
+430px
+768px
+1024px
+1440px
+
+For widths larger than the mobile application max width:
+
+The app content must remain centered.
+
+The inner application content must keep the approved mobile layout.
+
+Do not stretch management cards across the entire desktop screen.
+
+At desktop width:
+
+browser
+        [ centered app container ]
+
+The mobile interface should remain visually controlled.
+
+==================================================
+15. PRESERVE IOS
+==================================================
+
+CRITICAL:
+
+Do not modify the approved iOS design to fix Web.
+
+Do not make iOS match the broken Web layout.
+
+The correct direction is:
+
+IOS APPROVED DESIGN
+        ↓
+SHARED RESPONSIVE ARCHITECTURE
+        ↓
+ANDROID + WEB MATCH IOS
+
+Preserve:
+
+- colors
+- pet image size
+- card radius
+- typography hierarchy
+- icon design
+- purple background
+- header design
+- section order
+
+==================================================
+16. DO NOT CREATE A SEPARATE OLD WEB SCREEN
+==================================================
+
+Do not solve Web problems by copying the screen into:
+
+PetDetail.web.tsx
+
+unless there is a technically unavoidable Web API difference.
+
+This is a visual layout issue.
+
+The same shared Pet Detail component should preferably render on:
+
+iOS
+Android
+Web
+
+Use responsive layout primitives.
+
+Do not maintain three visually diverging screen versions.
+
+==================================================
+17. AUDIT SHARED COMPONENTS
+==================================================
+
+Inspect components used by the visible screen.
+
+Possible components:
+
+PetDetailScreen
+PetProfileHeader
+PetAvatar
+PetInfoCard
+ManagementGrid
+ManagementCard
+
+Identify whether Web uses a different component version.
+
+Ensure Web imports the same canonical latest components as iOS.
+
+==================================================
+18. VISUAL COMPARISON TEST
+==================================================
+
+Open the same pet using the same account on:
+
+iOS Simulator
+Android Emulator
+Web Preview
+
+Compare:
+
+PET AVATAR:
+same size and placement
+
+PET INFO CARD:
+same outer width
+same radius
+same padding
+same label hierarchy
+
+YÖNETİM:
+same section alignment
+
+FIRST ROW:
+3 perfectly equal cards
+
+SECOND ROW:
+2 perfectly equal cards
+
+OUTER EDGES:
+all card rows aligned
+
+SPACING:
+same visual rhythm
+
+No:
+- overflow
+- clipping
+- random resizing
+- text shifting
+- card width mismatch
+
+==================================================
+19. APPLY THE FIX PROJECT-WIDE
+==================================================
+
+After fixing this screen, audit the same responsive anti-patterns across the entire application.
+
+Search for:
+
+Dimensions.get('window').width
+screenWidth calculations
+fixed card width
+absolute x positioning
+negative margins
+Platform.OS === 'web' old fallback UI
+duplicate .web.tsx screens
+
+Do not redesign every screen.
+
+Only fix shared responsive architecture and obvious layout instability.
+
+The goal is that future updates automatically remain stable on Web.
+
+==================================================
+FINAL REPORT
+==================================================
+
+At the end report:
+
+ROOT CAUSE:
+Explain exactly why Web was unstable.
+
+OVERFLOWING COMPONENTS:
+List the components that exceeded or incorrectly calculated width.
+
+WIDTH CALCULATIONS REMOVED:
+List old screenWidth/window width calculations replaced.
+
+SHARED COMPONENTS FIXED:
+List components.
+
+WEB VIEWPORT TEST:
+
+320px: PASS / FAIL
+360px: PASS / FAIL
+375px: PASS / FAIL
+390px: PASS / FAIL
+414px: PASS / FAIL
+430px: PASS / FAIL
+768px: PASS / FAIL
+1024px: PASS / FAIL
+1440px: PASS / FAIL
+
+PLATFORM VERIFICATION:
+
+iOS: PASS / FAIL
+Android: PASS / FAIL
+Web: PASS / FAIL
+
+HORIZONTAL OVERFLOW:
+NONE / EXISTS
+
+TASK STATUS:
+COMPLETE only when Web is visually stable and matches the approved iOS layout.
+
+IMPORTANT:
+
+Do not only hide overflow.
+
+Do not only clear Metro cache.
+
+Do not create random Web-only margin patches.
+
+Find and repair the responsive layout architecture.
+
+The current iOS design is the visual source of truth.

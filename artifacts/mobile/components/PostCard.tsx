@@ -17,7 +17,8 @@ import {
   View,
 } from "react-native";
 
-const { width: SW } = Dimensions.get("window");
+const _RAW_W = Dimensions.get("window").width;
+const SW     = Math.min(_RAW_W, 430);
 const isWeb  = Platform.OS === "web";
 const CARD_W = isWeb ? Math.min(SW - 24, 420) : SW - 24;
 const IMG_H  = Math.round(CARD_W * (isWeb ? 0.85 : 1.05));
