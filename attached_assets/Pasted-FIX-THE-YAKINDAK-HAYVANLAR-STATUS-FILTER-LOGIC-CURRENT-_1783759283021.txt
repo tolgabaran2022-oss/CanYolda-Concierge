@@ -1,0 +1,605 @@
+FIX THE "YAKINDAKİ HAYVANLAR" STATUS FILTER LOGIC.
+
+CURRENT SCREEN:
+The "Yakındaki Hayvanlar" bottom sheet contains horizontal status filter chips.
+
+Visible filters include:
+
+- Hepsi
+- Aç
+- Yaralı
+- Sağlıklı
+- Bilinmiyor
+
+CURRENT PROBLEM:
+The filter chips exist visually, but the animal list is not being filtered correctly by the selected animal status.
+
+The filters must work using the REAL status value of each street animal report.
+
+DO NOT implement fake visual filtering.
+DO NOT hardcode report IDs.
+DO NOT manually create different lists.
+
+Use the real loaded street animal report dataset.
+
+==================================================
+1. REQUIRED FILTER LOGIC
+==================================================
+
+The filtering behavior must be:
+
+HEPSİ:
+Show every nearby animal report.
+
+AÇ:
+Show ONLY reports whose real status is "Aç".
+
+YARALI:
+Show ONLY reports whose real status is "Yaralı".
+
+SAĞLIKLI:
+Show ONLY reports whose real status is "Sağlıklı".
+
+BİLİNMİYOR:
+Show ONLY reports whose real status is "Bilinmiyor".
+
+Examples:
+
+Selected filter = "Aç"
+
+EXPECTED LIST:
+
+Aç
+Köprü altında bekliyor, düzenli mama ve...
+
+Do NOT show:
+
+Sağlıklı
+Park girişinde yaşıyor...
+
+Do NOT show:
+
+Yaralı
+Ön bacağında yara var...
+
+Do NOT show:
+
+Bilinmiyor
+İlk kez görüldü...
+
+==================================================
+2. IDENTIFY THE REAL STATUS DATABASE FIELD
+==================================================
+
+Inspect the actual street animal reports table.
+
+Find the real status column.
+
+Possible fields:
+
+status
+animal_status
+condition
+health_status
+report_status
+
+Use the actual existing database field.
+
+Do not create a second fake UI status field.
+
+The displayed status badge and filtering logic must use the SAME database value.
+
+Example:
+
+report.status
+
+must control both:
+
+- status badge
+- filter result
+
+==================================================
+3. CENTRALIZE STATUS VALUES
+==================================================
+
+Create one centralized status configuration.
+
+Example:
+
+const ANIMAL_STATUS = {
+  ALL: 'all',
+  HUNGRY: 'hungry',
+  INJURED: 'injured',
+  HEALTHY: 'healthy',
+  UNKNOWN: 'unknown',
+};
+
+Create one UI mapping:
+
+const STATUS_CONFIG = {
+  all: {
+    label: 'Hepsi',
+  },
+  hungry: {
+    label: 'Aç',
+  },
+  injured: {
+    label: 'Yaralı',
+  },
+  healthy: {
+    label: 'Sağlıklı',
+  },
+  unknown: {
+    label: 'Bilinmiyor',
+  },
+};
+
+Do not use different status mappings in:
+- filter chips
+- cards
+- report detail
+- statistics
+
+Use one shared status source of truth.
+
+==================================================
+4. NORMALIZE LEGACY STATUS VALUES
+==================================================
+
+Inspect existing database records.
+
+The database may contain mixed values such as:
+
+"Aç"
+"aç"
+"ac"
+"AC"
+"hungry"
+
+"Yaralı"
+"yarali"
+"injured"
+
+"Sağlıklı"
+"saglikli"
+"healthy"
+
+"Bilinmiyor"
+"unknown"
+"belirsiz"
+
+Normalize these values before filtering.
+
+Example logic:
+
+const normalizeAnimalStatus = (value?: string) => {
+  const normalized = value
+    ?.trim()
+    .toLocaleLowerCase('tr-TR')
+    .replace(/ı/g, 'i')
+    .replace(/ğ/g, 'g')
+    .replace(/ü/g, 'u')
+    .replace(/ş/g, 's')
+    .replace(/ö/g, 'o')
+    .replace(/ç/g, 'c');
+
+  switch (normalized) {
+    case 'ac':
+    case 'hungry':
+      return 'hungry';
+
+    case 'yarali':
+    case 'injured':
+      return 'injured';
+
+    case 'saglikli':
+    case 'healthy':
+      return 'healthy';
+
+    case 'bilinmiyor':
+    case 'belirsiz':
+    case 'unknown':
+      return 'unknown';
+
+    default:
+      return 'unknown';
+  }
+};
+
+IMPORTANT:
+Do not compare raw labels directly without normalization.
+
+Bad:
+
+report.status === 'Aç'
+
+when old records may contain:
+
+'ac'
+'hungry'
+'aç'
+
+Use normalized canonical status values.
+
+==================================================
+5. FILTER THE REAL DATASET
+==================================================
+
+Create a selected status state.
+
+Example:
+
+const [selectedStatus, setSelectedStatus] = useState('all');
+
+Filter the real reports:
+
+const filteredReports = useMemo(() => {
+  if (selectedStatus === 'all') {
+    return reports;
+  }
+
+  return reports.filter((report) => {
+    return normalizeAnimalStatus(report.status) === selectedStatus;
+  });
+}, [reports, selectedStatus]);
+
+Use the actual database field instead of report.status if the project uses another column.
+
+Render:
+
+filteredReports
+
+NOT:
+
+reports
+
+The visible list must always use the filtered dataset.
+
+==================================================
+6. FILTER CHIP ONPRESS
+==================================================
+
+Each filter chip must update selectedStatus.
+
+Hepsi:
+
+onPress={() => setSelectedStatus('all')}
+
+Aç:
+
+onPress={() => setSelectedStatus('hungry')}
+
+Yaralı:
+
+onPress={() => setSelectedStatus('injured')}
+
+Sağlıklı:
+
+onPress={() => setSelectedStatus('healthy')}
+
+Bilinmiyor:
+
+onPress={() => setSelectedStatus('unknown')}
+
+The selected chip must visually show the existing active state.
+
+Do not change the current premium UI design.
+
+==================================================
+7. FIX FILTER COUNTS
+==================================================
+
+The number shown in each filter chip must represent the real count of that status.
+
+Example current dataset:
+
+Sağlıklı: 1
+Bilinmiyor: 1
+Aç: 1
+Yaralı: 1
+
+EXPECTED:
+
+Hepsi 4
+Aç 1
+Yaralı 1
+Sağlıklı 1
+Bilinmiyor 1
+
+Calculate counts from the real reports dataset.
+
+Example:
+
+const statusCounts = useMemo(() => {
+  return reports.reduce(
+    (counts, report) => {
+      const status = normalizeAnimalStatus(report.status);
+
+      counts.all += 1;
+      counts[status] += 1;
+
+      return counts;
+    },
+    {
+      all: 0,
+      hungry: 0,
+      injured: 0,
+      healthy: 0,
+      unknown: 0,
+    }
+  );
+}, [reports]);
+
+Do not use hardcoded count values.
+
+Do not use old cached statistics if they do not match the loaded report list.
+
+==================================================
+8. EMPTY FILTER STATE
+==================================================
+
+If a selected filter has no matching animal reports:
+
+Do not show reports from another category.
+
+Example:
+
+Selected:
+Aç 0
+
+EXPECTED:
+
+Display a clean empty state:
+
+"Bu durumda yakında hayvan bulunamadı."
+
+Optional secondary text:
+
+"Diğer durum kategorilerini kontrol edebilirsin."
+
+Do not fallback to the full animal list.
+
+==================================================
+9. STATUS BADGES MUST MATCH FILTER LOGIC
+==================================================
+
+The card's visible badge must use the same normalized status.
+
+Examples:
+
+hungry:
+"Aç"
+
+injured:
+"Yaralı"
+
+healthy:
+"Sağlıklı"
+
+unknown:
+"Bilinmiyor"
+
+When the "Aç" filter is selected:
+
+Every visible card badge must say:
+
+"Aç"
+
+When the "Sağlıklı" filter is selected:
+
+Every visible card badge must say:
+
+"Sağlıklı"
+
+Never display mixed statuses inside a selected status filter.
+
+==================================================
+10. DO NOT FILTER BY TITLE OR DESCRIPTION
+==================================================
+
+Do not determine status by searching text such as:
+
+title.includes('aç')
+description.includes('yaralı')
+
+This is incorrect.
+
+The filter must use the real structured status database field.
+
+For example:
+
+report.status
+report.animal_status
+report.condition
+
+Use the actual schema.
+
+==================================================
+11. NEW REPORT CREATION MUST USE CANONICAL STATUS
+==================================================
+
+Inspect the "Durum Bildir" creation flow.
+
+When a user selects:
+
+Aç
+
+save the canonical database value:
+
+hungry
+
+When selecting:
+
+Yaralı
+
+save:
+
+injured
+
+When selecting:
+
+Sağlıklı
+
+save:
+
+healthy
+
+When selecting:
+
+Bilinmiyor
+
+save:
+
+unknown
+
+Do not save random translated variations.
+
+Use the same canonical status system across the app.
+
+==================================================
+12. REAL-TIME REFRESH
+==================================================
+
+After:
+
+- creating a street animal report
+- deleting a report
+- updating a report status
+
+refresh the nearby animals dataset.
+
+The filter counts and filtered list must immediately update.
+
+Example:
+
+Aç 1
+
+Create another hungry animal report.
+
+EXPECTED:
+
+Aç 2
+
+If the "Aç" filter is currently selected:
+
+the new report must immediately appear in the list.
+
+==================================================
+13. PRESERVE CURRENT DESIGN
+==================================================
+
+Do not redesign the attached "Yakındaki Hayvanlar" bottom sheet.
+
+Keep:
+
+- horizontal filter chips
+- current purple active chip
+- existing icons
+- animal cards
+- status badges
+- chevron navigation
+- bottom navigation
+- map background
+
+Only fix:
+
+- filter behavior
+- status mapping
+- counts
+- empty states
+- database status consistency
+
+==================================================
+ACCEPTANCE TEST
+==================================================
+
+DATASET:
+
+Report 1:
+status = healthy
+
+Report 2:
+status = unknown
+
+Report 3:
+status = hungry
+
+Report 4:
+status = injured
+
+TEST 1:
+Tap "Hepsi".
+
+EXPECTED:
+4 reports displayed.
+
+TEST 2:
+Tap "Aç".
+
+EXPECTED:
+Only Report 3 displayed.
+
+The card badge says:
+"Aç"
+
+TEST 3:
+Tap "Yaralı".
+
+EXPECTED:
+Only Report 4 displayed.
+
+The card badge says:
+"Yaralı"
+
+TEST 4:
+Tap "Sağlıklı".
+
+EXPECTED:
+Only Report 1 displayed.
+
+The card badge says:
+"Sağlıklı"
+
+TEST 5:
+Tap "Bilinmiyor".
+
+EXPECTED:
+Only Report 2 displayed.
+
+TEST 6:
+Verify counts.
+
+EXPECTED:
+
+Hepsi 4
+Aç 1
+Yaralı 1
+Sağlıklı 1
+Bilinmiyor 1
+
+TEST 7:
+Add a new "Aç" report.
+
+EXPECTED:
+
+Hepsi 5
+Aç 2
+
+When "Aç" is selected:
+exactly 2 hungry reports are visible.
+
+IMPORTANT FINAL INSTRUCTION:
+
+Do not only make the chip selection visually active.
+
+The selected filter MUST actually filter the real nearby street animal report list by its real structured status field.
+
+After completing the fix report:
+
+1. real database status field used
+2. status normalization logic
+3. canonical status values
+4. filtering implementation
+5. count calculation logic
+6. files modified
+7. acceptance test results

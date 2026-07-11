@@ -42,16 +42,16 @@ const DEFAULT_REGION = {
 const PURPLE = "#7C3AED";
 
 const STATUS_FILTERS: {
-  key: string;
+  key: "all" | AnimalStatus;
   label: string;
   icon: keyof typeof Ionicons.glyphMap;
   accent: string;
 }[] = [
-  { key: "all",        label: "Hepsi",      icon: "paw-outline",              accent: PURPLE     },
-  { key: "aç",         label: "Aç",          icon: "restaurant-outline",       accent: "#F97316"  },
-  { key: "yaralı",     label: "Yaralı",      icon: "medkit-outline",           accent: "#EF4444"  },
-  { key: "sağlıklı",   label: "Sağlıklı",    icon: "checkmark-circle-outline", accent: "#16A34A"  },
-  { key: "bilinmiyor", label: "Bilinmiyor",  icon: "help-circle-outline",      accent: "#71717A"  },
+  { key: "all",     label: "Hepsi",      icon: "paw-outline",              accent: PURPLE    },
+  { key: "hungry",  label: "Aç",          icon: "restaurant-outline",       accent: "#F97316" },
+  { key: "injured", label: "Yaralı",      icon: "medkit-outline",           accent: "#EF4444" },
+  { key: "healthy", label: "Sağlıklı",    icon: "checkmark-circle-outline", accent: "#16A34A" },
+  { key: "unknown", label: "Bilinmiyor",  icon: "help-circle-outline",      accent: "#71717A" },
 ];
 
 const TAB_FLOAT_H = 64;
