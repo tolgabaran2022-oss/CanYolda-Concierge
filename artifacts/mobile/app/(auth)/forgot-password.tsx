@@ -20,6 +20,7 @@ import {
 import React, { useMemo, useState } from "react";
 import {
   ActivityIndicator,
+  Alert,
   KeyboardAvoidingView,
   Platform,
   Pressable,
@@ -31,6 +32,10 @@ import {
   View,
 } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
+
+const API_BASE = process.env.EXPO_PUBLIC_DOMAIN
+  ? `https://${process.env.EXPO_PUBLIC_DOMAIN}/api`
+  : "http://localhost:8080/api";
 
 const C = {
   cream:     "#FBF2EA",
@@ -66,12 +71,22 @@ export default function ForgotPasswordScreen() {
     Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
     setLoading(true);
     try {
-      // TODO: API çağrısı — sıfırlama kodu gönder
-      // await sendResetCode(email.trim());
+      const res = await fetch(`${API_BASE}/auth/forgot-password`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ email: email.trim().toLowerCase() }),
+      });
+      const data = await res.json() as { ok?: boolean; error?: string };
+      if (!res.ok) {
+        Alert.alert("Hata", data.error ?? "Kod gönderilemedi. Lütfen tekrar deneyin.");
+        return;
+      }
       router.push({
         pathname: "/(auth)/reset-password",
-        params: { email: email.trim() },
+        params: { email: email.trim().toLowerCase() },
       });
+    } catch {
+      Alert.alert("Hata", "İnternet bağlantınızı kontrol edin ve tekrar deneyin.");
     } finally {
       setLoading(false);
     }
