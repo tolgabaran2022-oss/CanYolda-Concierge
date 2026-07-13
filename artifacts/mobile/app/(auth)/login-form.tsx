@@ -1,3 +1,4 @@
+import { Icon } from "@/components/Icon";
 import * as Haptics from "expo-haptics";
 import { LinearGradient } from "expo-linear-gradient";
 import { useRouter } from "expo-router";
@@ -120,7 +121,7 @@ export default function LoginFormScreen() {
             style={({ pressed }) => [styles.backBtn, { opacity: pressed ? 0.7 : 1 }]}
             onPress={() => router.back()}
           >
-            <Text style={styles.backArrow}>{"<"}</Text>
+            <Icon name="back" size={21} color={PURPLE} strokeWidth={2.3} />
           </Pressable>
 
           {/* Header */}
@@ -216,7 +217,6 @@ const styles = StyleSheet.create({
     backgroundColor: "rgba(123,94,167,0.12)",
     alignItems: "center", justifyContent: "center",
   },
-  backArrow: { fontSize: 20, fontWeight: "600", color: PURPLE },
   header: { alignItems: "center", gap: 8 },
 
   iconWrap: {

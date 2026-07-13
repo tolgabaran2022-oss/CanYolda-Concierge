@@ -1,3 +1,4 @@
+import { Icon } from "@/components/Icon";
 import * as Haptics from "expo-haptics";
 import { useRouter } from "expo-router";
 import React, { useState } from "react";
@@ -87,7 +88,7 @@ export default function RegisterScreen() {
             style={({ pressed }) => [styles.backBtn, { opacity: pressed ? 0.7 : 1 }]}
             onPress={() => router.back()}
           >
-            <Text style={styles.backArrow}>{"<"}</Text>
+            <Icon name="back" size={21} color={PURPLE} strokeWidth={2.3} />
           </Pressable>
 
           {/* Header */}
@@ -211,7 +212,6 @@ const styles = StyleSheet.create({
     alignItems: "center",
     justifyContent: "center",
   },
-  backArrow: { fontSize: 20, fontWeight: "600", color: PURPLE },
   header: { alignItems: "center", gap: 8 },
   iconCircle: {
     width: 72,

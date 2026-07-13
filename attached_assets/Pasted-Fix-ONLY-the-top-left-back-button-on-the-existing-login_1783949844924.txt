@@ -1,0 +1,150 @@
+Fix ONLY the top-left back button on the existing login screen.
+
+Do not redesign the login screen.
+Do not change the logo, form, colors, spacing, background, or navigation logic.
+
+CURRENT PROBLEM:
+The top-left back icon looks like a text character "<" instead of a proper premium navigation icon.
+The button feels visually unbalanced and the icon is not optically centered.
+
+REQUIREMENTS:
+
+1. REMOVE TEXT-BASED BACK ICON
+Do not use:
+
+<Text>&lt;</Text>
+<Text>‹</Text>
+<Text>←</Text>
+Unicode
+Emoji
+Text glyphs
+
+Use the existing centralized SVG AppIcon system.
+
+Use:
+
+<AppIcon name="back" />
+
+The logical "back" icon must map to a real SVG ChevronLeft icon.
+
+Example semantic mapping:
+
+back → ChevronLeft
+
+The final renderer must use SVG.
+Do not render the icon through Text or an icon-font Unicode glyph.
+
+2. REDESIGN THE BACK BUTTON
+
+Create a premium circular back button.
+
+Recommended dimensions:
+
+width: 42
+height: 42
+borderRadius: 21
+
+Use:
+
+alignItems: 'center'
+justifyContent: 'center'
+
+Background:
+Very soft CanYoldaşı purple tint.
+
+Example visual feeling:
+
+rgba(126, 87, 194, 0.10)
+
+Use the existing theme token if available.
+
+Icon:
+
+ChevronLeft SVG
+size: 20–22
+strokeWidth: 2.2–2.5
+CanYoldaşı purple color
+
+The icon must be visually centered.
+
+Do not use a large capsule/pill shape.
+
+The button should look circular.
+
+3. POSITIONING
+
+Keep the button in the current top-left header area.
+
+Respect SafeAreaView / safe area inset.
+
+Recommended screen horizontal spacing:
+
+20–24 px
+
+Do not position the button with random absolute values if the screen already has a header layout.
+
+The button must not be too close to the left edge.
+
+The button must not overlap the system status bar.
+
+4. TOUCH TARGET
+
+Keep a minimum usable touch target of approximately 44x44.
+
+The visible SVG icon can remain 20–22 px.
+
+Do not create a tiny clickable icon.
+
+5. PRESERVE NAVIGATION
+
+Keep the existing back action exactly functional.
+
+Use the existing navigation logic.
+
+Examples may include:
+
+router.back()
+
+or:
+
+navigation.goBack()
+
+Inspect the current implementation and preserve the correct existing action.
+
+Do not create a new route.
+
+Do not change the login flow.
+
+6. CROSS-PLATFORM
+
+Verify on:
+
+- iOS
+- Android
+- Web
+
+The back icon must render as the same clean SVG ChevronLeft icon on all platforms.
+
+No broken glyph.
+No text character.
+No square icon.
+No Unicode fallback.
+
+FINAL VISUAL EXPECTATION:
+
+A small premium circular soft-purple button with a perfectly centered purple ChevronLeft SVG icon.
+
+The result should feel consistent with the CanYoldaşı logo and login screen design.
+
+Before finishing, verify:
+
+- SVG icon is used
+- Text is not used for the back icon
+- Icon is vertically centered
+- Icon is horizontally centered
+- Button is circular
+- Touch target is usable
+- Existing back navigation still works
+- Android rendering is correct
+- iOS rendering is correct
+- Web rendering is correct
