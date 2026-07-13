@@ -1,0 +1,347 @@
+The login screen is still NOT stable.
+
+Do not fix this by only shrinking the image or manually changing margins.
+
+Perform a complete responsive layout refactor of the authentication welcome screen.
+
+CURRENT PROBLEM:
+The screen technically fits on this iPhone simulator, but the layout is still based on fragile fixed spacing and fixed sizes.
+
+The bottom legal text is too close to the bottom safe area and the vertical distribution is unstable.
+
+I need a production-ready responsive screen that adapts to AVAILABLE VIEWPORT HEIGHT.
+
+IMPORTANT:
+Do not redesign the visual identity.
+Keep the current CanYoldaşı logo, background artwork, dog/cat illustration, colors, buttons and premium visual style.
+
+Only rebuild the layout architecture.
+
+--------------------------------------------------
+1. REMOVE FRAGILE LAYOUT LOGIC
+--------------------------------------------------
+
+Audit the entire welcome/login screen component.
+
+Remove or replace:
+
+- hardcoded screen heights
+- height: 812
+- height: 844
+- fixed large hero heights
+- excessive marginTop
+- excessive marginBottom
+- absolute positioning for auth controls
+- negative margins used for visual correction
+- translateY hacks
+- bottom values used to manually position buttons
+- device-name-specific layout conditions
+
+Do not solve the issue with pixel-by-pixel patches.
+
+--------------------------------------------------
+2. USE REAL AVAILABLE SCREEN HEIGHT
+--------------------------------------------------
+
+Use:
+
+useWindowDimensions()
+
+and calculate the layout from the actual viewport height.
+
+Example logic:
+
+const { height, width } = useWindowDimensions();
+
+const isShortScreen = height < 700;
+const isMediumScreen = height >= 700 && height < 820;
+const isTallScreen = height >= 820;
+
+The layout must respond to HEIGHT, not only width.
+
+Do not check specific iPhone model names.
+
+--------------------------------------------------
+3. REQUIRED SCREEN ARCHITECTURE
+--------------------------------------------------
+
+Rebuild the screen with this hierarchy:
+
+SafeAreaView
+  └── KeyboardAvoidingView
+       └── View flex={1}
+            ├── HeroSection
+            │    ├── Logo
+            │    ├── Subtitle
+            │    └── PetArtwork
+            │
+            └── AuthSection
+                 ├── LoginButton
+                 ├── RegisterButton
+                 ├── ForgotPassword
+                 └── LegalText
+
+The root container MUST use:
+
+flex: 1
+
+The HeroSection MUST use flexible remaining space.
+
+The AuthSection MUST remain inside the visible safe area.
+
+--------------------------------------------------
+4. HERO SECTION MUST BE FLEXIBLE
+--------------------------------------------------
+
+The pet artwork is currently consuming too much vertical space.
+
+The hero section must dynamically shrink based on viewport height.
+
+Recommended behavior:
+
+SHORT SCREEN:
+hero flex: 0.50
+auth flex: 0.50
+
+MEDIUM SCREEN:
+hero flex: 0.58
+auth flex: 0.42
+
+TALL SCREEN:
+hero flex: 0.64
+auth flex: 0.36
+
+These values are guidance.
+
+Implement the cleanest production solution based on the existing component.
+
+The pet illustration must use:
+
+resizeMode="contain"
+
+Never use a fixed height that can push the auth section off-screen.
+
+Use maxHeight and flexShrink where necessary.
+
+--------------------------------------------------
+5. RESPONSIVE ARTWORK SIZE
+--------------------------------------------------
+
+Calculate illustration dimensions dynamically.
+
+Example principle:
+
+const artworkHeight =
+  isShortScreen
+    ? height * 0.32
+    : isMediumScreen
+      ? height * 0.38
+      : height * 0.42;
+
+Do not blindly copy this if the current implementation requires another value.
+
+The final goal is:
+
+- artwork never clips
+- artwork never pushes buttons downward
+- logo remains visible
+- auth controls remain fully visible
+- legal text respects safe area
+
+--------------------------------------------------
+6. AUTH SECTION PRIORITY
+--------------------------------------------------
+
+The auth controls are HIGH PRIORITY UI.
+
+Their visibility has priority over decorative artwork.
+
+The following must ALWAYS be fully visible:
+
+Giriş Yap
+Kayıt Ol
+Şifremi Unuttum?
+Legal / privacy consent text
+
+Never hide or clip these elements.
+
+Do NOT reduce button tap targets to solve spacing.
+
+Button minimum height:
+
+52px
+
+Preferred height:
+
+54–56px
+
+--------------------------------------------------
+7. FIX BOTTOM SAFE AREA
+--------------------------------------------------
+
+The legal text is currently too close to the iOS bottom area.
+
+Use:
+
+useSafeAreaInsets()
+
+Apply the bottom spacing correctly.
+
+Example principle:
+
+paddingBottom: Math.max(insets.bottom, 16)
+
+Do not place legal text directly on the Home Indicator area.
+
+Maintain a minimum visual gap between legal text and the bottom safe area.
+
+--------------------------------------------------
+8. DYNAMIC VERTICAL SPACING
+--------------------------------------------------
+
+Create responsive spacing values from viewport height.
+
+For example:
+
+const spacing = {
+  heroTop: isShortScreen ? 4 : isMediumScreen ? 8 : 16,
+  logoToSubtitle: isShortScreen ? 4 : 8,
+  authGap: isShortScreen ? 8 : 10,
+  forgotMargin: isShortScreen ? 10 : 16,
+  legalMargin: isShortScreen ? 8 : 14,
+};
+
+Centralize spacing.
+
+Do not scatter magic numbers throughout the JSX.
+
+--------------------------------------------------
+9. SCROLL MUST BE FALLBACK ONLY
+--------------------------------------------------
+
+The normal layout must fit without scrolling on standard supported phones.
+
+ScrollView may be used only as an emergency fallback for extremely short screens or accessibility text scaling.
+
+Do NOT make the main screen depend on scrolling.
+
+If ScrollView is retained:
+
+contentContainerStyle={{
+  flexGrow: 1
+}}
+
+The screen must still visually behave like a fixed premium welcome screen.
+
+--------------------------------------------------
+10. SUPPORT ACCESSIBILITY TEXT SCALING
+--------------------------------------------------
+
+Audit large font scaling.
+
+Text must not overlap or push controls completely off-screen.
+
+For button labels, use reasonable maxFontSizeMultiplier values when appropriate.
+
+Legal text can wrap naturally.
+
+Do not truncate privacy or terms text.
+
+--------------------------------------------------
+11. TEST MATRIX
+--------------------------------------------------
+
+You MUST verify the screen at these viewport sizes:
+
+320x568
+375x667
+390x844
+393x852
+430x932
+
+Android:
+360x640
+360x800
+412x915
+
+Web/mobile responsive:
+375x812
+390x844
+430x932
+
+For EVERY viewport verify:
+
+- logo visible
+- subtitle visible
+- dog and cat artwork visible
+- Giriş Yap fully visible
+- Kayıt Ol fully visible
+- Şifremi Unuttum visible
+- legal text visible
+- legal text not touching bottom safe area
+- no vertical clipping
+- no layout overflow
+- no unnecessary scrolling
+- no absolute-positioning layout hacks
+
+--------------------------------------------------
+12. CROSS-PLATFORM REQUIREMENT
+--------------------------------------------------
+
+Apply the same responsive logic consistently to:
+
+- iOS
+- Android
+- Web
+
+Do not fix only the iOS Simulator.
+
+Check whether separate platform-specific screen files exist.
+
+Search recursively for:
+
+WelcomeScreen
+LoginScreen
+AuthScreen
+OnboardingScreen
+index.tsx
+index.web.tsx
+*.ios.tsx
+*.android.tsx
+*.web.tsx
+
+Make sure the active iOS, Android and Web implementations all receive the same layout fix.
+
+--------------------------------------------------
+13. IMPORTANT: DO NOT CHANGE DESIGN
+--------------------------------------------------
+
+Do NOT:
+
+- replace the logo
+- change the dog/cat artwork
+- change purple brand colors
+- remove decorative elements
+- redesign the buttons
+- remove legal text
+- add a new card
+- add a bottom sheet
+
+This task is a RESPONSIVE LAYOUT ARCHITECTURE FIX.
+
+--------------------------------------------------
+14. FINAL VALIDATION
+--------------------------------------------------
+
+After implementation:
+
+1. Identify the actual active screen component.
+2. Explain why the previous layout was unstable.
+3. List all removed fixed-height / absolute-positioning hacks.
+4. Report the responsive height breakpoints used.
+5. Confirm testing on iOS, Android and Web.
+6. Report the exact files modified.
+
+Do not say "fixed" without actually verifying the viewport matrix.
+
+The expected final result is a visually identical premium CanYoldaşı welcome screen that remains stable across different screen heights and safe-area sizes.
