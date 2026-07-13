@@ -28,6 +28,22 @@ export default function WelcomeScreen() {
   return (
     <View style={[styles.root, { paddingBottom: Math.max(insets.bottom, 20) }]}>
 
+      {/* ── Ambient glows — oversized so their physical edges never enter the viewport ── */}
+      <LinearGradient
+        colors={["rgba(124,92,246,0.22)", "rgba(167,139,250,0.12)", "rgba(196,181,253,0.04)", "transparent"]}
+        start={{ x: 0, y: 0 }}
+        end={{ x: 1, y: 1 }}
+        style={styles.glowTopLeft}
+        pointerEvents="none"
+      />
+      <LinearGradient
+        colors={["rgba(255,222,180,0.15)", "rgba(255,237,213,0.07)", "transparent"]}
+        start={{ x: 1, y: 0 }}
+        end={{ x: 0, y: 1 }}
+        style={styles.glowRight}
+        pointerEvents="none"
+      />
+
       {/* Hero */}
       <View style={[styles.heroWrap, { marginTop: insets.top, width: heroW, height: heroH }]}>
         <Image
@@ -113,6 +129,29 @@ const styles = StyleSheet.create({
   root: {
     flex: 1,
     backgroundColor: BG,
+    overflow: "visible",
+  },
+
+  /* Ambient glows — physically extend far beyond the viewport so no hard edge is ever visible */
+  glowTopLeft: {
+    position: "absolute",
+    top: -140,
+    left: -140,
+    width: 520,
+    height: 480,
+    borderRadius: 260,
+    zIndex: 0,
+    pointerEvents: "none",
+  },
+  glowRight: {
+    position: "absolute",
+    top: -60,
+    right: -160,
+    width: 440,
+    height: 520,
+    borderRadius: 260,
+    zIndex: 0,
+    pointerEvents: "none",
   },
 
   heroWrap: {

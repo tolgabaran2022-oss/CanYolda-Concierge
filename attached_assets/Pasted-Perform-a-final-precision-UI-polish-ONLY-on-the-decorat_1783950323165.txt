@@ -1,0 +1,99 @@
+Perform a final precision UI polish ONLY on the decorative background areas of the login screen.
+
+IMPORTANT:
+Do NOT redesign the screen.
+Do NOT modify the logo, animal illustration, buttons, texts, typography, spacing, safe area, or content positioning.
+
+CURRENT PROBLEM:
+The screen is visually much better now, but the decorative ambient background shapes are still slightly visible as physical objects.
+
+Specifically:
+
+1. The purple decorative area in the top-left still has a detectable outer contour.
+The user can still visually understand where the purple shape ends.
+
+2. The warm cream/orange decorative area on the right side also looks like a visible physical shape touching the screen edge.
+
+DESIGN GOAL:
+Create an ultra-soft premium ambient background effect.
+
+The decorative colors must feel like soft reflected light, NOT visible blobs or solid shapes.
+
+TOP-LEFT PURPLE AREA:
+- Keep the current purple/lavender atmosphere.
+- Reduce visible edge definition.
+- Increase blur and gradient softness.
+- Reduce edge opacity.
+- Extend the decorative layer further outside the viewport.
+- Make the purple color dissolve gradually into transparent and then naturally into the off-white background.
+- The physical edge of the purple shape must never be visible.
+
+Use a very soft multi-stop gradient concept:
+
+rgba(124, 92, 246, 0.22)
+→ rgba(167, 139, 250, 0.12)
+→ rgba(196, 181, 253, 0.04)
+→ transparent
+
+The final 30-40% of the gradient must be almost fully transparent.
+
+RIGHT-SIDE WARM AREA:
+- Preserve the subtle warm cream/orange atmosphere.
+- Remove the visible shape contour.
+- Move the source further outside the right side of the viewport.
+- Lower opacity.
+- Increase the fade distance.
+- Blend smoothly into the white/off-white background.
+
+Use a soft transition concept:
+
+rgba(255, 222, 180, 0.15)
+→ rgba(255, 237, 213, 0.07)
+→ transparent
+
+DO NOT:
+- create visible blobs
+- create solid decorative shapes
+- show gradient container boundaries
+- create hard curved edges
+- create rectangular clipping
+- introduce horizontal transition lines
+- modify the central purple illustration behind the dog and cat
+
+RECURSIVE UI AUDIT:
+Inspect the decorative background components and all parent containers recursively.
+
+Check for:
+- overflow: hidden
+- fixed height
+- fixed width
+- maxHeight
+- maxWidth
+- borderRadius clipping
+- absolute container boundaries
+- gradient View boundaries
+- SVG clipping
+- mask clipping
+- parent View clipping
+
+If a parent container causes the decorative glow to expose its physical boundary, fix the root cause.
+
+RESPONSIVE REQUIREMENT:
+Verify the same soft ambient transition on:
+- iOS Simulator
+- Android Simulator
+- Web mobile responsive view
+
+FINAL ACCEPTANCE CRITERIA:
+The top-left purple and right-side warm decorative areas must look like soft ambient light.
+
+A user looking at the screen must NOT be able to visually identify:
+- where the decorative shape starts
+- where it ends
+- its physical outline
+- its container boundary
+
+The colors must smoothly dissolve into the off-white background.
+
+Preserve the rest of the current login screen exactly as it is.
+Only perform this final decorative background transition polish.
