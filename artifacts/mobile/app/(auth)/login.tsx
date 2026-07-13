@@ -13,49 +13,79 @@ import {
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 
 const PURPLE = "#7B5CBF";
-const BG = "#FAF7F2";
+const BG     = "#FAF7F2";
 
 const HERO_IMAGE = require("@/assets/images/login-hero.jpg");
 
+/* Estimated height of the button section (2 btns + forgot + terms + gaps + padding) */
+const BTN_SECTION_H = 250;
+
 export default function WelcomeScreen() {
   const insets = useSafeAreaInsets();
-  const router = useRouter();
-  const { width: sw } = useWindowDimensions();
+  const router  = useRouter();
+  const { width: sw, height: sh } = useWindowDimensions();
 
+  const topPad    = Math.max(insets.top,    12);
+  const bottomPad = Math.max(insets.bottom, 16);
+
+  const isSmall  = sh < 800;
+  const isXSmall = sh < 680;
+
+  /* Hero gets everything that the button section + safe area doesn't use */
+  const heroH = Math.max(sh - topPad - bottomPad - BTN_SECTION_H, 160);
+  /* Cap at ~65 % of viewport height so tall tablets don't over-inflate it */
+  const heroHCapped = Math.min(heroH, Math.round(sh * 0.65));
+
+  /* On very small screens, slightly widen the hero (clamp to screen width) */
   const heroW = Math.min(sw, 430);
-  const heroH = Math.round(heroW * (1109 / 568));
 
   return (
-    <View style={[styles.root, { paddingBottom: Math.max(insets.bottom, 20) }]}>
+    <View style={[styles.root, { paddingTop: topPad, paddingBottom: bottomPad }]}>
 
-      {/* ── Ambient glows — oversized so their physical edges never enter the viewport ── */}
+      {/* Ambient glows */}
       <LinearGradient
-        colors={["rgba(124,92,246,0.22)", "rgba(167,139,250,0.10)", "rgba(196,181,253,0.03)", "rgba(196,181,253,0)"]}
+        colors={[
+          "rgba(124,92,246,0.20)",
+          "rgba(167,139,250,0.09)",
+          "rgba(196,181,253,0.03)",
+          "rgba(196,181,253,0)",
+        ]}
         start={{ x: 0, y: 0 }}
         end={{ x: 1, y: 1 }}
-        style={styles.glowTopLeft}
+        style={[styles.glowTopLeft, isSmall && styles.glowSmall]}
         pointerEvents="none"
       />
       <LinearGradient
-        colors={["rgba(255,222,180,0.15)", "rgba(255,237,213,0.06)", "rgba(255,237,213,0)"]}
+        colors={[
+          "rgba(255,222,180,0.14)",
+          "rgba(255,237,213,0.05)",
+          "rgba(255,237,213,0)",
+        ]}
         start={{ x: 1, y: 0 }}
         end={{ x: 0, y: 1 }}
-        style={styles.glowRight}
+        style={[styles.glowRight, isSmall && styles.glowSmall]}
         pointerEvents="none"
       />
 
-      {/* Hero */}
-      <View style={[styles.heroWrap, { marginTop: insets.top, width: heroW, height: heroH }]}>
+      {/* ── Hero — explicit dimensions so expo-image renders predictably cross-platform ── */}
+      <View style={{ width: heroW, height: heroHCapped, alignSelf: "center" }}>
         <Image
           source={HERO_IMAGE}
-          style={StyleSheet.absoluteFill}
+          style={{ width: "100%", height: "100%" }}
           contentFit="contain"
+          accessible
+          accessibilityLabel="Canyoldaşı - köpek ve kedi ile karşılama görseli"
         />
       </View>
 
-      {/* Buttons */}
-      <View style={styles.btnSection}>
-
+      {/* ── Auth controls — pinned below hero, never pushed off-screen ── */}
+      <View
+        style={[
+          styles.btnSection,
+          isSmall  && styles.btnSectionSmall,
+          isXSmall && styles.btnSectionXSmall,
+        ]}
+      >
         {/* Giriş Yap */}
         <Pressable
           onPress={() => {
@@ -129,43 +159,45 @@ const styles = StyleSheet.create({
   root: {
     flex: 1,
     backgroundColor: BG,
-    overflow: "visible",
   },
 
-  /*
-   * Ambient glows — NO borderRadius so no circular arc ever appears.
-   * Positioned so far outside the viewport that only the soft inner
-   * fade zone is visible on screen; gradient itself handles the fade.
-   */
   glowTopLeft: {
     position: "absolute",
-    top: -400,
-    left: -400,
-    width: 900,
-    height: 900,
+    top: -300,
+    left: -300,
+    width: 700,
+    height: 700,
     zIndex: 0,
     pointerEvents: "none",
   },
   glowRight: {
     position: "absolute",
-    top: -300,
-    right: -400,
-    width: 900,
-    height: 900,
+    top: -200,
+    right: -300,
+    width: 700,
+    height: 700,
     zIndex: 0,
     pointerEvents: "none",
   },
-
-  heroWrap: {
-    alignSelf: "center",
+  glowSmall: {
+    width: 440,
+    height: 440,
   },
 
   btnSection: {
-    flex: 1,
     paddingHorizontal: 26,
+    paddingTop: 16,
+    paddingBottom: 4,
     gap: 12,
-    justifyContent: "center",
-    paddingBottom: 8,
+    zIndex: 2,
+  },
+  btnSectionSmall: {
+    paddingTop: 12,
+    gap: 10,
+  },
+  btnSectionXSmall: {
+    paddingTop: 6,
+    gap: 8,
   },
 
   primaryBtn: {
@@ -173,12 +205,12 @@ const styles = StyleSheet.create({
     alignItems: "center",
     justifyContent: "center",
     borderRadius: 20,
-    paddingVertical: 18,
+    paddingVertical: 17,
     paddingHorizontal: 18,
     shadowColor: "#5A3BB2",
     shadowOffset: { width: 0, height: 8 },
-    shadowOpacity: 0.30,
-    shadowRadius: 18,
+    shadowOpacity: 0.28,
+    shadowRadius: 16,
     elevation: 10,
   },
   primaryBtnText: {
@@ -194,7 +226,7 @@ const styles = StyleSheet.create({
     justifyContent: "center",
     backgroundColor: "#FFFFFF",
     borderRadius: 20,
-    paddingVertical: 18,
+    paddingVertical: 17,
     paddingHorizontal: 18,
     borderWidth: 1.5,
     borderColor: `${PURPLE}35`,
@@ -219,7 +251,7 @@ const styles = StyleSheet.create({
 
   termsRow: {
     paddingHorizontal: 8,
-    marginTop: 4,
+    marginTop: 2,
     alignItems: "center",
   },
   termsText: {
