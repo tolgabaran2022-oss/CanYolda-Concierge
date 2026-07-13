@@ -1,0 +1,48 @@
+Sorunun iki kaynağı var, ikisi de kodda net görünüyor:
+
+Üstte taşma: Logo ve slogan hero görselinin içinde gömülü, ama heroWrap ekranın en tepesinden başlıyor — üst safe area yok. SafeAreaView'a sadece edges={["bottom"]} vermişsiniz, o yüzden logo status bar'ın altına giriyor.
+Altta boşluk: Hero'ya sabit height * 0.58 verip sheet'e flex: 1 + justifyContent: "flex-start" demişsiniz. Butonlar bitince kalan tüm esneme alanı altta boş kalıyor.
+
+Çözüm: hero'yu esnek yapın (flex: 1), buton alanını içerik kadar yer kaplayacak şekilde bırakın — böylece butonlar doğal olarak alta yaslanır ve hero aradaki tüm boşluğu doldurur. Üst tarafta da useSafeAreaInsets ile görseli status bar'ın altına itin.
+Değişiklikler:
+jsximport { SafeAreaView, useSafeAreaInsets } from "react-native-safe-area-context";
+
+export default function WelcomeScreen() {
+  const router = useRouter();
+  const insets = useSafeAreaInsets();
+  // useWindowDimensions artık gerekmiyor
+  ...
+
+  return (
+    <View style={styles.container}>
+      <StatusBar barStyle="dark-content" backgroundColor={C.cream} />
+
+      {/* Hero görseli — kalan tüm alanı doldurur */}
+      <View style={[styles.heroWrap, { marginTop: insets.top }]}>
+        <Image
+          source={HERO_IMAGE}
+          style={styles.heroImage}
+          resizeMode="cover"
+          ...
+        />
+        <LinearGradient ... />
+      </View>
+
+      {/* Buton alanı — sadece içeriği kadar yer kaplar */}
+      <SafeAreaView edges={["bottom"]} style={styles.sheet}>
+        ...
+      </SafeAreaView>
+    </View>
+  );
+}
+Stil tarafında:
+jsheroWrap: { width: "100%", flex: 1 },   // sabit height yerine flex
+sheet: {
+  paddingHorizontal: 26,
+  paddingTop: 8,
+  paddingBottom: 12,
+  gap: 14,
+  // flex: 1 ve justifyContent kaldırıldı
+},
+Mantık şu: sheet'ten flex: 1'i kaldırınca yüksekliği içeriğine (2 buton + link + yasal metin) göre belirlenir ve SafeAreaView sayesinde home indicator'ın hemen üstüne oturur. heroWrap ise flex: 1 ile aradaki tüm alanı kaplar — küçük ekranda görsel biraz daha kırpılır (cover sayesinde sorunsuz), büyük ekranda daha ferah görünür, ama butonlar her cihazda altta olur.
+marginTop: insets.top da logonun status bar ile çakışmasını önler; arka plan zaten krem olduğu için status bar alanı görselle uyumlu kalır. Eğer görselin status bar arkasına tam oturup logonun aşağıda kalmasını isterseniz, marginTop yerine görselin kendisini yeniden export edip logoya üstten daha fazla boşluk bırakmak daha temiz bir sonuç verir — ama kod tarafındaki hızlı çözüm bu.

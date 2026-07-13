@@ -22,10 +22,9 @@ import {
   StatusBar,
   StyleSheet,
   Text,
-  useWindowDimensions,
   View,
 } from "react-native";
-import { SafeAreaView } from "react-native-safe-area-context";
+import { SafeAreaView, useSafeAreaInsets } from "react-native-safe-area-context";
 
 /* ── Renk paleti ───────────────────────────────────────────────────── */
 const C = {
@@ -41,8 +40,8 @@ const C = {
 const HERO_IMAGE = require("@/assets/images/login-hero.jpg");
 
 export default function WelcomeScreen() {
-  const router = useRouter();
-  const { height } = useWindowDimensions();
+  const router  = useRouter();
+  const insets  = useSafeAreaInsets();
 
   const [fontsLoaded] = useFonts({
     Quicksand_500Medium,
@@ -56,8 +55,8 @@ export default function WelcomeScreen() {
     <View style={styles.container}>
       <StatusBar barStyle="dark-content" backgroundColor={C.cream} />
 
-      {/* ── Hero görseli ─────────────────────────────────────────── */}
-      <View style={[styles.heroWrap, { height: height * 0.58 }]}>
+      {/* ── Hero görseli — kalan tüm alanı doldurur ─────────────── */}
+      <View style={[styles.heroWrap, { marginTop: insets.top }]}>
         <Image
           source={HERO_IMAGE}
           style={styles.heroImage}
@@ -152,6 +151,7 @@ const styles = StyleSheet.create({
   /* Hero */
   heroWrap: {
     width: "100%",
+    flex:  1,
   },
   heroImage: {
     width: "100%",
@@ -167,12 +167,10 @@ const styles = StyleSheet.create({
 
   /* Sheet */
   sheet: {
-    flex:              1,
     paddingHorizontal: 26,
     paddingTop:        8,
     paddingBottom:     12,
     gap:               14,
-    justifyContent:    "flex-start",
   },
 
   /* Buttons */
