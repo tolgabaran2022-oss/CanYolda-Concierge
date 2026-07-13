@@ -1,7 +1,13 @@
 import { Icon } from "@/components/Icon";
+import { STATUS_COLORS } from "@/components/StatusBadge";
+import type { AnimalStatus } from "@/contexts/AnimalsContext";
+import { useAnimals } from "@/contexts/AnimalsContext";
+import { useAuth } from "@/contexts/AuthContext";
+import { useColors } from "@/hooks/useColors";
+import { ANIMAL_TYPES, type AnimalType } from "@/utils/animalDefaults";
 import * as Haptics from "expo-haptics";
-import * as ImagePicker from "expo-image-picker";
 import { Image } from "expo-image";
+import * as ImagePicker from "expo-image-picker";
 import * as Location from "expo-location";
 import { useRouter } from "expo-router";
 import React, { useState } from "react";
@@ -18,18 +24,56 @@ import {
 } from "react-native";
 import MapView, { Marker, PROVIDER_DEFAULT } from "react-native-maps";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
-import { STATUS_COLORS } from "@/components/StatusBadge";
-import type { AnimalStatus } from "@/contexts/AnimalsContext";
-import { useAnimals } from "@/contexts/AnimalsContext";
-import { useAuth } from "@/contexts/AuthContext";
-import { useColors } from "@/hooks/useColors";
-import { ANIMAL_TYPES, type AnimalType } from "@/utils/animalDefaults";
 
-const STATUSES: { key: AnimalStatus; label: string; icon: string }[] = [
-  { key: "hungry", label: "Aç", icon: "restaurant-outline" },
-  { key: "injured", label: "Yaralı", icon: "bandage-outline" },
-  { key: "healthy", label: "Sağlıklı", icon: "checkmark-circle-outline" },
-  { key: "unknown", label: "Bilinmiyor", icon: "help-circle-outline" },
+/* ── Icon mappings for animal types ──────────────────────────── */
+const ANIMAL_TYPE_ICONS: Record<AnimalType, string> = {
+  kedi:  "cat",
+  kopek: "dog",
+  kus:   "bird",
+  diger: "paw",
+};
+
+/* ── Status definitions ───────────────────────────────────────── */
+const STATUSES: {
+  key: AnimalStatus;
+  label: string;
+  icon: string;
+  tintBg: string;
+  tintBorder: string;
+  iconColor: string;
+}[] = [
+  {
+    key: "hungry",
+    label: "Aç",
+    icon: "restaurant-outline",
+    tintBg: "#FEF3C7",
+    tintBorder: "#F59E0B",
+    iconColor: "#92400E",
+  },
+  {
+    key: "injured",
+    label: "Yaralı",
+    icon: "pulse-outline",
+    tintBg: "#FEE2E2",
+    tintBorder: "#EF4444",
+    iconColor: "#991B1B",
+  },
+  {
+    key: "healthy",
+    label: "Sağlıklı",
+    icon: "checkmark-circle-outline",
+    tintBg: "#D1FAE5",
+    tintBorder: "#10B981",
+    iconColor: "#065F46",
+  },
+  {
+    key: "unknown",
+    label: "Bilinmiyor",
+    icon: "help-circle-outline",
+    tintBg: "#F3F4F6",
+    tintBorder: "#9CA3AF",
+    iconColor: "#374151",
+  },
 ];
 
 const DEFAULT_REGION = {
@@ -40,21 +84,23 @@ const DEFAULT_REGION = {
 };
 
 export default function AddAnimalScreen() {
-  const colors = useColors();
+  const C      = useColors();
   const insets = useSafeAreaInsets();
   const router = useRouter();
   const { addAnimal } = useAnimals();
   const { user } = useAuth();
 
-  const [image, setImage] = useState<string | undefined>();
-  const [animalType, setAnimalType] = useState<AnimalType>("diger");
-  const [status, setStatus] = useState<AnimalStatus>("unknown");
-  const [notes, setNotes] = useState("");
-  const [location, setLocation] = useState<{ latitude: number; longitude: number } | null>(null);
-  const [isLocating, setIsLocating] = useState(false);
-  const [isSaving, setIsSaving] = useState(false);
+  const [image, setImage]                 = useState<string | undefined>();
+  const [animalType, setAnimalType]       = useState<AnimalType>("diger");
+  const [status, setStatus]               = useState<AnimalStatus>("unknown");
+  const [notes, setNotes]                 = useState("");
+  const [notesFocused, setNotesFocused]   = useState(false);
+  const [location, setLocation]           = useState<{ latitude: number; longitude: number } | null>(null);
+  const [isLocating, setIsLocating]       = useState(false);
+  const [isSaving, setIsSaving]           = useState(false);
   const [locPermission, requestLocPermission] = Location.useForegroundPermissions();
 
+  /* ── Actions ─────────────────────────────────────────────────── */
   const pickImage = async () => {
     const result = await ImagePicker.launchImageLibraryAsync({
       mediaTypes: ["images"],
@@ -66,6 +112,8 @@ export default function AddAnimalScreen() {
       setImage(result.assets[0].uri);
     }
   };
+
+  const removeImage = () => setImage(undefined);
 
   const getLocation = async () => {
     setIsLocating(true);
@@ -128,270 +176,514 @@ export default function AddAnimalScreen() {
     : DEFAULT_REGION;
 
   return (
-    <ScrollView
-      style={{ backgroundColor: colors.background }}
-      contentContainerStyle={[
-        styles.container,
-        { paddingBottom: insets.bottom + 24 },
-      ]}
-      keyboardShouldPersistTaps="handled"
-      showsVerticalScrollIndicator={false}
-    >
-      {/* Photo */}
-      <Pressable style={styles.photoSection} onPress={pickImage}>
-        {image ? (
-          <Image source={{ uri: image }} style={styles.photo} contentFit="cover" />
-        ) : (
-          <View style={[styles.photoPlaceholder, { backgroundColor: colors.muted, borderColor: colors.border }]}>
-            <Icon name="camera-outline" size={32} color={colors.mutedForeground} />
-            <Text style={[styles.photoHint, { color: colors.mutedForeground }]}>
-              Fotoğraf Ekle (İsteğe Bağlı)
-            </Text>
+    <View style={[S.root, { backgroundColor: C.bg }]}>
+      {/* ── Custom Header ────────────────────────────────────────── */}
+      <View style={[S.header, { paddingTop: insets.top + 6, borderBottomColor: C.border }]}>
+        <Pressable
+          style={[S.backBtn, { backgroundColor: C.purpleFaint }]}
+          onPress={() => router.back()}
+          hitSlop={8}
+        >
+          <Icon name="chevron-back" size={20} color={C.purple} />
+        </Pressable>
+        <View style={S.headerTitles}>
+          <Text style={[S.headerTitle, { color: C.text }]}>Sokak Hayvanı Ekle</Text>
+          <Text style={[S.headerSubtitle, { color: C.textMuted }]}>
+            Yakındaki bir dost için yardım bildir
+          </Text>
+        </View>
+        <View style={S.headerSpacer} />
+      </View>
+
+      {/* ── Scrollable form body ─────────────────────────────────── */}
+      <ScrollView
+        contentContainerStyle={[S.scroll, { paddingBottom: insets.bottom + 28 }]}
+        keyboardShouldPersistTaps="handled"
+        showsVerticalScrollIndicator={false}
+      >
+
+        {/* ── 1. Photo card ───────────────────────────────────────── */}
+        <View style={S.section}>
+          <SectionLabel label="Fotoğraf" />
+          <Pressable onPress={image ? pickImage : pickImage} style={[
+            S.photoCard,
+            { backgroundColor: C.bgSecondary, borderColor: C.borderStrong },
+          ]}>
+            {image ? (
+              <>
+                <Image source={{ uri: image }} style={S.photoImage} contentFit="cover" />
+                {/* Top-right remove button */}
+                <Pressable style={S.photoRemoveBtn} onPress={removeImage} hitSlop={8}>
+                  <Icon name="close-circle" size={26} color="#FFFFFF" />
+                </Pressable>
+                {/* Bottom overlay */}
+                <View style={S.photoOverlay}>
+                  <Icon name="camera-reverse-outline" size={16} color="#FFFFFF" />
+                  <Text style={S.photoOverlayText}>Fotoğrafı Değiştir</Text>
+                </View>
+              </>
+            ) : (
+              <View style={S.photoPlaceholderInner}>
+                <View style={[S.photoCameraCircle, { backgroundColor: C.purpleFaint }]}>
+                  <Icon name="camera-outline" size={28} color={C.purple} />
+                </View>
+                <Text style={[S.photoAddTitle, { color: C.text }]}>Fotoğraf Ekle</Text>
+                <Text style={[S.photoAddSub, { color: C.textMuted }]}>
+                  Hayvanın durumunu daha iyi anlamamıza yardımcı olur
+                </Text>
+                <View style={[S.optionalPill, { backgroundColor: C.purpleFaint }]}>
+                  <Text style={[S.optionalPillText, { color: C.purple }]}>İsteğe bağlı</Text>
+                </View>
+              </View>
+            )}
+          </Pressable>
+        </View>
+
+        {/* ── 2. Animal type ──────────────────────────────────────── */}
+        <View style={S.section}>
+          <SectionLabel label="Hayvan Türü" />
+          <View style={S.typeRow}>
+            {ANIMAL_TYPES.map((t) => {
+              const isActive = animalType === t.key;
+              const iconName = ANIMAL_TYPE_ICONS[t.key];
+              return (
+                <Pressable
+                  key={t.key}
+                  style={[
+                    S.typeChip,
+                    {
+                      backgroundColor: isActive ? C.purple : C.card,
+                      borderColor: isActive ? C.purple : C.borderStrong,
+                      shadowColor: isActive ? C.purple : "transparent",
+                    },
+                  ]}
+                  onPress={() => setAnimalType(t.key)}
+                >
+                  <Icon
+                    name={iconName}
+                    size={18}
+                    color={isActive ? "#FFFFFF" : C.purple}
+                    strokeWidth={isActive ? 2.5 : 1.8}
+                  />
+                  <Text style={[S.typeChipText, { color: isActive ? "#FFFFFF" : C.text }]}>
+                    {t.label}
+                  </Text>
+                </Pressable>
+              );
+            })}
           </View>
-        )}
-      </Pressable>
-
-      {/* Animal type selector */}
-      <View style={styles.section}>
-        <Text style={[styles.sectionLabel, { color: colors.foreground }]}>Hayvan Türü</Text>
-        <View style={styles.statusRow}>
-          {ANIMAL_TYPES.map((t) => {
-            const isActive = animalType === t.key;
-            return (
-              <Pressable
-                key={t.key}
-                style={[
-                  styles.statusChip,
-                  {
-                    backgroundColor: isActive ? colors.primary : colors.muted,
-                    borderColor: isActive ? colors.primary : "transparent",
-                  },
-                ]}
-                onPress={() => setAnimalType(t.key)}
-              >
-                <Text style={styles.typeEmoji}>{t.emoji}</Text>
-                <Text
-                  style={[
-                    styles.statusChipText,
-                    { color: isActive ? "white" : colors.mutedForeground },
-                  ]}
-                >
-                  {t.label}
-                </Text>
-              </Pressable>
-            );
-          })}
         </View>
-      </View>
 
-      {/* Status selector */}
-      <View style={styles.section}>
-        <Text style={[styles.sectionLabel, { color: colors.foreground }]}>Durum</Text>
-        <View style={styles.statusRow}>
-          {STATUSES.map((s) => {
-            const isActive = status === s.key;
-            return (
-              <Pressable
-                key={s.key}
-                style={[
-                  styles.statusChip,
-                  {
-                    backgroundColor: isActive ? STATUS_COLORS[s.key] : colors.muted,
-                    borderColor: isActive ? STATUS_COLORS[s.key] : "transparent",
-                  },
-                ]}
-                onPress={() => setStatus(s.key)}
-              >
-                <Icon
-                  name={s.icon}
-                  size={16}
-                  color={isActive ? "white" : colors.mutedForeground}
-                />
-                <Text
+        {/* ── 3. Status ───────────────────────────────────────────── */}
+        <View style={S.section}>
+          <SectionLabel label="Durum" />
+          <View style={S.statusGrid}>
+            {STATUSES.map((s) => {
+              const isActive = status === s.key;
+              return (
+                <Pressable
+                  key={s.key}
                   style={[
-                    styles.statusChipText,
-                    { color: isActive ? "white" : colors.mutedForeground },
+                    S.statusCard,
+                    {
+                      backgroundColor: isActive ? s.tintBg : C.card,
+                      borderColor: isActive ? s.tintBorder : C.borderStrong,
+                      shadowColor: isActive ? s.tintBorder : "transparent",
+                    },
                   ]}
+                  onPress={() => setStatus(s.key)}
                 >
-                  {s.label}
-                </Text>
-              </Pressable>
-            );
-          })}
+                  <View style={[S.statusIconWrap, { backgroundColor: isActive ? s.tintBg : C.purpleFaint }]}>
+                    <Icon
+                      name={s.icon}
+                      size={18}
+                      color={isActive ? s.iconColor : C.purple}
+                      strokeWidth={2}
+                    />
+                  </View>
+                  <Text style={[S.statusCardLabel, { color: isActive ? s.iconColor : C.text }]}>
+                    {s.label}
+                  </Text>
+                  {isActive && (
+                    <View style={[S.statusCheck, { backgroundColor: s.tintBorder }]}>
+                      <Icon name="checkmark" size={11} color="#FFFFFF" strokeWidth={3} />
+                    </View>
+                  )}
+                </Pressable>
+              );
+            })}
+          </View>
         </View>
-      </View>
 
-      {/* Notes */}
-      <View style={styles.section}>
-        <Text style={[styles.sectionLabel, { color: colors.foreground }]}>Notlar</Text>
-        <TextInput
-          style={[
-            styles.notesInput,
-            { backgroundColor: colors.muted, color: colors.foreground, borderColor: colors.border },
-          ]}
-          value={notes}
-          onChangeText={setNotes}
-          placeholder="Hayvan hakkında bilgi ekle (isteğe bağlı)..."
-          placeholderTextColor={colors.mutedForeground}
-          multiline
-          numberOfLines={3}
-          textAlignVertical="top"
-        />
-      </View>
+        {/* ── 4. Notes ────────────────────────────────────────────── */}
+        <View style={S.section}>
+          <SectionLabel label="Notlar" sub="Durumu kısaca anlat" />
+          <TextInput
+            style={[
+              S.notesInput,
+              {
+                backgroundColor: C.card,
+                color: C.text,
+                borderColor: notesFocused ? C.purple : C.inputBorder,
+              },
+            ]}
+            value={notes}
+            onChangeText={setNotes}
+            onFocus={() => setNotesFocused(true)}
+            onBlur={() => setNotesFocused(false)}
+            placeholder="Örn. Ön bacağında yara var, veteriner yardımı gerekiyor..."
+            placeholderTextColor={C.placeholder}
+            multiline
+            numberOfLines={4}
+            textAlignVertical="top"
+          />
+        </View>
 
-      {/* Location */}
-      <View style={styles.section}>
-        <Text style={[styles.sectionLabel, { color: colors.foreground }]}>Konum</Text>
+        {/* ── 5. Location ─────────────────────────────────────────── */}
+        <View style={S.section}>
+          <SectionLabel label="Konum" sub="Hayvanın görüldüğü konumu ekle" />
+
+          {location ? (
+            <View style={[S.locationSuccess, { backgroundColor: "#D1FAE5", borderColor: "#10B981" }]}>
+              <Icon name="checkmark-circle" size={20} color="#065F46" />
+              <View style={{ flex: 1 }}>
+                <Text style={[S.locationSuccessTitle, { color: "#065F46" }]}>Konum Eklendi</Text>
+                <Text style={[S.locationSuccessCoords, { color: "#34724F" }]}>
+                  {location.latitude.toFixed(5)}, {location.longitude.toFixed(5)}
+                </Text>
+              </View>
+              <Pressable
+                onPress={getLocation}
+                disabled={isLocating}
+                style={[S.locationChangeBtn, { borderColor: "#10B981" }]}
+              >
+                {isLocating
+                  ? <ActivityIndicator size="small" color="#065F46" />
+                  : <Text style={[S.locationChangeBtnText, { color: "#065F46" }]}>Güncelle</Text>
+                }
+              </Pressable>
+            </View>
+          ) : (
+            <Pressable
+              style={[
+                S.locBtn,
+                { backgroundColor: C.purple, opacity: isLocating ? 0.8 : 1 },
+              ]}
+              onPress={getLocation}
+              disabled={isLocating}
+            >
+              {isLocating ? (
+                <>
+                  <ActivityIndicator color="white" size="small" />
+                  <Text style={S.locBtnText}>Konum alınıyor...</Text>
+                </>
+              ) : (
+                <>
+                  <Icon name="location-outline" size={20} color="white" strokeWidth={2} />
+                  <Text style={S.locBtnText}>Mevcut Konumumu Kullan</Text>
+                </>
+              )}
+            </Pressable>
+          )}
+
+          {/* Map card */}
+          <View style={[S.mapCard, { borderColor: C.border }]}>
+            <MapView
+              style={S.map}
+              provider={PROVIDER_DEFAULT}
+              region={mapRegion}
+              onPress={(e) => setLocation(e.nativeEvent.coordinate)}
+              scrollEnabled={false}
+              zoomEnabled={false}
+            >
+              {location && (
+                <Marker coordinate={location}>
+                  <View style={[S.mapMarker, { backgroundColor: STATUS_COLORS[status] }]}>
+                    <Icon name="paw" size={13} color="white" strokeWidth={2} />
+                  </View>
+                </Marker>
+              )}
+            </MapView>
+
+            {!location && (
+              <View style={S.mapNoLocOverlay}>
+                <View style={[S.mapNoLocCard, { backgroundColor: C.card }]}>
+                  <Icon name="location-outline" size={20} color={C.purple} />
+                  <Text style={[S.mapNoLocTitle, { color: C.text }]}>Henüz konum seçilmedi</Text>
+                  <Text style={[S.mapNoLocSub, { color: C.textMuted }]}>
+                    Yukarıdaki butonu kullanarak mevcut konumunu ekle
+                  </Text>
+                </View>
+              </View>
+            )}
+          </View>
+        </View>
+
+        {/* ── Submit ──────────────────────────────────────────────── */}
         <Pressable
           style={({ pressed }) => [
-            styles.locBtn,
-            { backgroundColor: colors.secondary, opacity: pressed ? 0.85 : 1 },
+            S.submitBtn,
+            { backgroundColor: C.purple, opacity: pressed || isSaving ? 0.88 : 1 },
           ]}
-          onPress={getLocation}
-          disabled={isLocating}
+          onPress={handleSave}
+          disabled={isSaving}
         >
-          {isLocating ? (
+          {isSaving ? (
             <ActivityIndicator color="white" size="small" />
           ) : (
-            <Icon name="location-outline" size={18} color="white" />
+            <>
+              <Icon name="send" size={20} color="white" strokeWidth={2.2} />
+              <Text style={S.submitBtnText}>Durumu Bildir</Text>
+            </>
           )}
-          <Text style={styles.locBtnText}>
-            {location ? "Konumu Güncelle" : "Mevcut Konumumu Kullan"}
-          </Text>
         </Pressable>
 
-        {location && (
-          <Text style={[styles.coordText, { color: colors.mutedForeground }]}>
-            {location.latitude.toFixed(5)}, {location.longitude.toFixed(5)}
-          </Text>
-        )}
-
-        <View style={styles.mapWrap}>
-          <MapView
-            style={styles.map}
-            provider={PROVIDER_DEFAULT}
-            region={mapRegion}
-            onPress={(e) => setLocation(e.nativeEvent.coordinate)}
-            scrollEnabled={false}
-            zoomEnabled={false}
-          >
-            {location && (
-              <Marker coordinate={location}>
-                <View style={[styles.mapMarker, { backgroundColor: STATUS_COLORS[status] }]}>
-                  <Icon name="paw" size={14} color="white" />
-                </View>
-              </Marker>
-            )}
-          </MapView>
-          {!location && (
-            <View style={styles.mapOverlay}>
-              <Text style={[styles.mapOverlayText, { color: colors.mutedForeground }]}>
-                Konum seçmek için yukarıdaki butonu kullan
-              </Text>
-            </View>
-          )}
-        </View>
-      </View>
-
-      {/* Save button */}
-      <Pressable
-        style={({ pressed }) => [
-          styles.saveBtn,
-          { backgroundColor: colors.primary, opacity: pressed || isSaving ? 0.85 : 1 },
-        ]}
-        onPress={handleSave}
-        disabled={isSaving}
-      >
-        {isSaving ? (
-          <ActivityIndicator color="white" />
-        ) : (
-          <>
-            <Icon name="checkmark-circle-outline" size={20} color="white" />
-            <Text style={styles.saveBtnText}>Kaydet</Text>
-          </>
-        )}
-      </Pressable>
-    </ScrollView>
+      </ScrollView>
+    </View>
   );
 }
 
-const styles = StyleSheet.create({
-  container: { padding: 16, gap: 20 },
-  photoSection: {},
-  photo: { width: "100%", height: 200, borderRadius: 16 },
-  photoPlaceholder: {
-    width: "100%",
-    height: 160,
-    borderRadius: 16,
-    borderWidth: 2,
-    borderStyle: "dashed",
+/* ── Helper ───────────────────────────────────────────────────── */
+function SectionLabel({ label, sub }: { label: string; sub?: string }) {
+  const C = useColors();
+  return (
+    <View style={{ gap: 2 }}>
+      <Text style={[S.sectionLabel, { color: C.text }]}>{label}</Text>
+      {sub && <Text style={[S.sectionSub, { color: C.textMuted }]}>{sub}</Text>}
+    </View>
+  );
+}
+
+/* ── Styles ───────────────────────────────────────────────────── */
+const S = StyleSheet.create({
+  root: { flex: 1 },
+
+  /* Header */
+  header: {
+    flexDirection: "row",
+    alignItems: "center",
+    paddingHorizontal: 16,
+    paddingBottom: 14,
+    borderBottomWidth: 1,
+    gap: 12,
+  },
+  backBtn: {
+    width: 40,
+    height: 40,
+    borderRadius: 20,
+    alignItems: "center",
+    justifyContent: "center",
+  },
+  headerTitles:   { flex: 1, gap: 2 },
+  headerTitle:    { fontSize: 20, fontFamily: "Inter_700Bold", letterSpacing: -0.3 },
+  headerSubtitle: { fontSize: 13, fontFamily: "Inter_400Regular" },
+  headerSpacer:   { width: 40 },
+
+  /* Scroll */
+  scroll: { padding: 20, gap: 24 },
+
+  /* Section */
+  section:      { gap: 10 },
+  sectionLabel: { fontSize: 15, fontFamily: "Inter_600SemiBold" },
+  sectionSub:   { fontSize: 13, fontFamily: "Inter_400Regular" },
+
+  /* Photo card */
+  photoCard: {
+    borderRadius: 22,
+    borderWidth: 1.5,
+    overflow: "hidden",
+    minHeight: 196,
+    alignItems: "stretch",
+  },
+  photoImage:       { width: "100%", height: 210 },
+  photoRemoveBtn:   { position: "absolute", top: 12, right: 12 },
+  photoOverlay: {
+    position: "absolute",
+    bottom: 0,
+    left: 0,
+    right: 0,
+    flexDirection: "row",
     alignItems: "center",
     justifyContent: "center",
     gap: 8,
+    backgroundColor: "rgba(0,0,0,0.48)",
+    paddingVertical: 12,
   },
-  photoHint: { fontSize: 14, fontFamily: "Inter_400Regular" },
-  section: { gap: 8 },
-  sectionLabel: { fontSize: 16, fontFamily: "Inter_600SemiBold" },
-  statusRow: { flexDirection: "row", flexWrap: "wrap", gap: 8 },
-  statusChip: {
-    flexDirection: "row",
+  photoOverlayText: { fontSize: 14, fontFamily: "Inter_600SemiBold", color: "#FFFFFF" },
+  photoPlaceholderInner: {
+    flex: 1,
     alignItems: "center",
-    gap: 6,
+    justifyContent: "center",
+    gap: 10,
+    paddingVertical: 32,
+    paddingHorizontal: 24,
+  },
+  photoCameraCircle: {
+    width: 60,
+    height: 60,
+    borderRadius: 30,
+    alignItems: "center",
+    justifyContent: "center",
+  },
+  photoAddTitle: { fontSize: 16, fontFamily: "Inter_600SemiBold" },
+  photoAddSub:   { fontSize: 13, fontFamily: "Inter_400Regular", textAlign: "center" },
+  optionalPill: {
     borderRadius: 20,
     paddingHorizontal: 14,
-    paddingVertical: 9,
-    borderWidth: 1.5,
+    paddingVertical: 5,
+    marginTop: 2,
   },
-  statusChipText: { fontSize: 14, fontFamily: "Inter_500Medium" },
-  typeEmoji: { fontSize: 14 },
-  notesInput: {
-    borderRadius: 12,
+  optionalPillText: { fontSize: 12, fontFamily: "Inter_600SemiBold" },
+
+  /* Animal type chips */
+  typeRow: { flexDirection: "row", flexWrap: "wrap", gap: 10 },
+  typeChip: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 7,
+    borderRadius: 16,
+    paddingHorizontal: 16,
+    paddingVertical: 11,
     borderWidth: 1.5,
-    padding: 14,
+    shadowOffset: { width: 0, height: 3 },
+    shadowOpacity: 0.18,
+    shadowRadius: 8,
+    elevation: 3,
+  },
+  typeChipText: { fontSize: 14, fontFamily: "Inter_600SemiBold" },
+
+  /* Status grid */
+  statusGrid: { flexDirection: "row", flexWrap: "wrap", gap: 10 },
+  statusCard: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 10,
+    borderRadius: 16,
+    borderWidth: 1.5,
+    paddingHorizontal: 14,
+    paddingVertical: 14,
+    minWidth: "47%",
+    flex: 1,
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.14,
+    shadowRadius: 6,
+    elevation: 2,
+  },
+  statusIconWrap: {
+    width: 34,
+    height: 34,
+    borderRadius: 10,
+    alignItems: "center",
+    justifyContent: "center",
+  },
+  statusCardLabel: { flex: 1, fontSize: 14, fontFamily: "Inter_600SemiBold" },
+  statusCheck: {
+    width: 20,
+    height: 20,
+    borderRadius: 10,
+    alignItems: "center",
+    justifyContent: "center",
+  },
+
+  /* Notes input */
+  notesInput: {
+    borderRadius: 18,
+    borderWidth: 1.5,
+    padding: 16,
     fontSize: 15,
     fontFamily: "Inter_400Regular",
-    minHeight: 90,
+    minHeight: 112,
+    lineHeight: 22,
   },
+
+  /* Location */
   locBtn: {
     flexDirection: "row",
     alignItems: "center",
     justifyContent: "center",
-    gap: 8,
-    borderRadius: 12,
-    paddingVertical: 13,
+    gap: 10,
+    borderRadius: 18,
+    height: 54,
+    shadowColor: "#7B5EA7",
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.22,
+    shadowRadius: 10,
+    elevation: 4,
   },
   locBtnText: { fontSize: 15, fontFamily: "Inter_600SemiBold", color: "white" },
-  coordText: { fontSize: 12, fontFamily: "Inter_400Regular", textAlign: "center" },
-  mapWrap: { borderRadius: 16, overflow: "hidden", height: 180 },
-  map: { width: "100%", height: "100%" },
-  mapOverlay: {
-    ...StyleSheet.absoluteFillObject,
-    backgroundColor: "rgba(0,0,0,0.15)",
+
+  locationSuccess: {
+    flexDirection: "row",
     alignItems: "center",
-    justifyContent: "center",
-  },
-  mapOverlayText: { fontSize: 13, fontFamily: "Inter_500Medium", textAlign: "center", paddingHorizontal: 20 },
-  mapMarker: {
-    width: 32,
-    height: 32,
+    gap: 12,
     borderRadius: 16,
+    borderWidth: 1.5,
+    paddingHorizontal: 16,
+    paddingVertical: 14,
+  },
+  locationSuccessTitle:  { fontSize: 14, fontFamily: "Inter_600SemiBold" },
+  locationSuccessCoords: { fontSize: 12, fontFamily: "Inter_400Regular", marginTop: 1 },
+  locationChangeBtn: {
+    borderRadius: 10,
+    borderWidth: 1.5,
+    paddingHorizontal: 12,
+    paddingVertical: 6,
+  },
+  locationChangeBtnText: { fontSize: 13, fontFamily: "Inter_600SemiBold" },
+
+  /* Map */
+  mapCard: {
+    borderRadius: 22,
+    overflow: "hidden",
+    height: 210,
+    borderWidth: 1,
+  },
+  map: { width: "100%", height: "100%" },
+  mapMarker: {
+    width: 30,
+    height: 30,
+    borderRadius: 15,
     alignItems: "center",
     justifyContent: "center",
     borderWidth: 2,
     borderColor: "white",
   },
-  saveBtn: {
-    flexDirection: "row",
+  mapNoLocOverlay: {
+    ...StyleSheet.absoluteFillObject,
     alignItems: "center",
-    justifyContent: "center",
-    gap: 8,
-    borderRadius: 14,
-    paddingVertical: 16,
-    shadowColor: "#E07A35",
-    shadowOffset: { width: 0, height: 4 },
-    shadowOpacity: 0.25,
+    justifyContent: "flex-end",
+    paddingBottom: 16,
+    paddingHorizontal: 16,
+  },
+  mapNoLocCard: {
+    width: "100%",
+    borderRadius: 16,
+    paddingHorizontal: 16,
+    paddingVertical: 14,
+    alignItems: "center",
+    gap: 4,
+    shadowColor: "#000",
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.12,
     shadowRadius: 8,
     elevation: 4,
   },
-  saveBtnText: { fontSize: 16, fontFamily: "Inter_700Bold", color: "white" },
+  mapNoLocTitle: { fontSize: 14, fontFamily: "Inter_600SemiBold" },
+  mapNoLocSub:   { fontSize: 12, fontFamily: "Inter_400Regular", textAlign: "center" },
+
+  /* Submit CTA */
+  submitBtn: {
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "center",
+    gap: 10,
+    height: 56,
+    borderRadius: 18,
+    shadowColor: "#7B5EA7",
+    shadowOffset: { width: 0, height: 6 },
+    shadowOpacity: 0.28,
+    shadowRadius: 14,
+    elevation: 6,
+  },
+  submitBtnText: { fontSize: 16, fontFamily: "Inter_700Bold", color: "white" },
 });

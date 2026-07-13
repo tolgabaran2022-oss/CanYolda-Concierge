@@ -49,14 +49,7 @@ function RootLayoutNav() {
       <Stack.Screen name="(auth)" />
       <Stack.Screen
         name="add-animal"
-        options={{
-          presentation: "modal",
-          headerShown: true,
-          title: "Sokak Hayvanı Ekle",
-          headerStyle: { backgroundColor: "#FAF7F0" },
-          headerTintColor: "#E07A35",
-          headerTitleStyle: { fontFamily: "Inter_600SemiBold" },
-        }}
+        options={{ presentation: "modal", headerShown: false }}
       />
       <Stack.Screen name="animal/[id]" />
       <Stack.Screen

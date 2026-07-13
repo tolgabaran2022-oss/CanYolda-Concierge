@@ -1,0 +1,850 @@
+Redesign ONLY the existing “Sokak Hayvanı Ekle” screen into a premium, modern, polished mobile form experience.
+
+The current screen is functional, but the visual design feels flat, dated, and inconsistent with the premium CanYoldaşı brand.
+
+DO NOT change the backend.
+DO NOT change Supabase.
+DO NOT change database fields.
+DO NOT change the animal report creation logic.
+DO NOT remove any existing form field.
+DO NOT break existing actions.
+
+This is a UI/UX redesign of the existing screen.
+
+The result must work consistently on:
+
+- iOS
+- Android
+- Web
+
+Use the existing centralized SVG AppIcon system.
+Do not use emoji characters or Unicode glyphs as functional UI icons.
+
+==================================================
+DESIGN DIRECTION
+==================================================
+
+Create a premium pet-community application form.
+
+Visual direction:
+
+- Apple-level mobile polish
+- Soft premium aesthetic
+- Friendly animal-care feeling
+- Modern rounded cards
+- Clean typography
+- Strong visual hierarchy
+- CanYoldaşı purple brand identity
+- Minimal but warm
+- Spacious without wasting vertical space
+
+The screen must feel like a real production application, not a basic generated form.
+
+==================================================
+1. SCREEN BACKGROUND
+==================================================
+
+Replace the current flat light-gray appearance with a soft warm neutral background.
+
+Use the existing application theme tokens where available.
+
+Suggested visual feeling:
+
+#F8F7FC
+#FAF9FD
+
+Do not hardcode colors if equivalent theme tokens already exist.
+
+Keep the background very subtle.
+
+Do not use a strong purple full-screen background.
+
+==================================================
+2. PREMIUM HEADER
+==================================================
+
+Redesign the top header.
+
+Current issue:
+
+- Orange title does not match the CanYoldaşı purple brand
+- Header feels disconnected from the rest of the application
+
+Create a clean navigation header.
+
+Layout:
+
+[Back button]    Sokak Hayvanı Ekle
+
+Back button:
+
+- 40x40 or 44x44 touch target
+- Soft circular or rounded container
+- SVG ChevronLeft icon
+- CanYoldaşı purple icon color
+- Very subtle purple background
+
+Title:
+
+“Sokak Hayvanı Ekle”
+
+Typography:
+
+- 20–22 px
+- semibold or bold
+- dark neutral text
+- vertically centered
+
+Optional subtitle below the title:
+
+“Yakındaki bir dost için yardım bildir”
+
+Subtitle:
+
+- 13–14 px
+- soft gray
+- single line
+
+Do not use orange.
+
+Use the existing purple brand color.
+
+==================================================
+3. PHOTO UPLOAD CARD
+==================================================
+
+Completely redesign the current large empty photo area.
+
+Create a premium image upload card.
+
+Card:
+
+- full content width
+- approximately 180–210 px height
+- border radius 22–24
+- soft purple tinted background
+- subtle border
+- no harsh dashed rectangle appearance
+
+Suggested structure:
+
+        [Camera icon inside circular container]
+
+        Fotoğraf Ekle
+
+  Hayvanın durumunu daha iyi anlamamıza yardımcı olur
+
+        İsteğe bağlı
+
+Camera icon:
+
+- SVG AppIcon
+- 26–30 px
+- purple
+- centered
+
+Create a small “İsteğe bağlı” pill.
+
+When an image is selected:
+
+- Show the image edge-to-edge inside the rounded card
+- Use cover resize mode
+- Preserve 22–24 radius
+- Add a subtle dark gradient or overlay only where needed
+- Add a top-right circular remove/change button
+- Add a bottom overlay action:
+
+“Fotoğrafı Değiştir”
+
+Use SVG icons.
+
+Do not display emoji.
+
+==================================================
+4. FORM SECTION HIERARCHY
+==================================================
+
+Create clear visual sections.
+
+Each section should have:
+
+- Section label
+- Optional helper text when necessary
+- Input/control below
+
+Section spacing:
+
+approximately 22–26 px between major sections.
+
+Suggested label style:
+
+- 15–16 px
+- semibold
+- dark neutral
+
+Do not make labels oversized.
+
+Sections:
+
+1. Fotoğraf
+2. Hayvan Türü
+3. Durum
+4. Notlar
+5. Konum
+
+==================================================
+5. ANIMAL TYPE SELECTOR
+==================================================
+
+Current chips feel flat and generic.
+
+Redesign “Hayvan Türü” as premium selectable pills/cards.
+
+Options:
+
+- Kedi
+- Köpek
+- Kuş
+- Diğer
+
+IMPORTANT:
+
+Do not use emoji icons.
+
+Use AppIcon SVG icons if an appropriate semantic icon exists.
+
+Suggested logical icons:
+
+Kedi → cat
+Köpek → dog
+Kuş → bird
+Diğer → paw or shapes
+
+If these icons do not exist in the current AppIcon map, add valid Lucide SVG component mappings.
+
+Do not use:
+
+🐱
+🐶
+🐦
+
+Layout:
+
+Horizontal row or responsive wrapping grid.
+
+Each option:
+
+- Height: 44–48
+- Rounded radius: 16
+- Icon + label
+- Comfortable horizontal padding
+
+Unselected:
+
+- white or very soft neutral background
+- subtle border
+- dark gray label
+
+Selected:
+
+- CanYoldaşı purple background
+- white icon
+- white text
+- subtle purple shadow
+
+Add a smooth press/selection state.
+
+Only one animal type may be selected at a time.
+
+Preserve existing form state logic.
+
+==================================================
+6. STATUS SELECTOR
+==================================================
+
+Redesign the “Durum” section.
+
+Current pills are inconsistent and visually weak.
+
+Options must preserve the existing real application status values.
+
+Do not invent new database enums.
+
+Current visible statuses include:
+
+- Aç
+- Yaralı
+- Sağlıklı
+- Bilinmiyor
+
+FIRST inspect the actual status enum/state/database values.
+
+The UI labels and submitted values must remain compatible.
+
+Create a two-column responsive status card grid when screen width allows.
+
+Each status control should feel like a small selectable card rather than a tiny chip.
+
+Suggested size:
+
+- Minimum height 52
+- Border radius 16
+- Icon left
+- Label right
+
+Semantic visual styling:
+
+Aç / Acil:
+- soft red tint
+- red status icon
+
+Yaralı:
+- soft coral/red tint
+- HeartPulse or medical SVG icon
+
+Sağlıklı:
+- soft green tint
+- CircleCheck SVG icon
+
+Bilinmiyor:
+- soft neutral gray tint
+- CircleHelp SVG icon
+
+Selected state:
+
+- stronger status tint
+- visible border
+- slight elevation
+- clear check indicator if appropriate
+
+Do not rely only on color to communicate selection.
+
+Use icon + text + selected visual state.
+
+==================================================
+7. NOTES INPUT
+==================================================
+
+Redesign the Notes field.
+
+Label:
+
+“Notlar”
+
+Helper text:
+
+“Durumu kısaca anlat”
+
+Input:
+
+- premium rounded multiline text area
+- min height approximately 110
+- radius 18
+- white background
+- subtle border
+- comfortable 16 px padding
+
+Placeholder:
+
+“Örn. Ön bacağında yara var, veteriner yardımı gerekiyor...”
+
+Do not use:
+
+“Hayvan hakkında bilgi ekle (isteğe bağlı)...”
+
+as the primary placeholder if a more helpful example improves user input quality.
+
+Preserve the optional nature of the field.
+
+Add character count only if the form already has a maximum length.
+
+Do not invent an arbitrary backend limit.
+
+Focused state:
+
+- purple border
+- subtle purple focus ring where supported
+
+==================================================
+8. LOCATION SECTION
+==================================================
+
+Redesign the entire location experience.
+
+Label:
+
+“Konum”
+
+Helper text:
+
+“Hayvanın görüldüğü konumu ekle”
+
+Create one clear primary location button.
+
+Button text:
+
+“Mevcut Konumumu Kullan”
+
+Button:
+
+- full width
+- height 52–56
+- radius 17–18
+- purple brand gradient or solid purple using the existing brand system
+- white text
+- SVG MapPin or Navigation icon
+- subtle premium shadow
+
+Do not use the current unrelated green button styling.
+
+The location button must visually belong to CanYoldaşı.
+
+Preserve existing geolocation logic.
+
+When location permission is loading:
+
+- Show loading state
+- Disable repeated presses
+- Preserve button size
+
+When a location is successfully selected:
+
+Change the location state UI to:
+
+[CircleCheck icon] Konum Eklendi
+
+and show a small location summary where data is available.
+
+Example:
+
+“Kadıköy, İstanbul”
+
+Do not invent a location string.
+
+Only show real reverse-geocoded or existing location data.
+
+==================================================
+9. MAP PREVIEW CARD
+==================================================
+
+Redesign the existing map area.
+
+Create a premium map preview card.
+
+Requirements:
+
+- Border radius 20–22
+- overflow hidden
+- approximately 190–230 px height
+- subtle border/shadow
+- actual map functionality preserved
+
+Do not place low-contrast gray instructional text directly over the map.
+
+If no location is selected:
+
+Use a subtle bottom overlay card over the map:
+
+[MapPin icon]
+
+“Henüz konum seçilmedi”
+
+“Yukarıdaki butonu kullanarak mevcut konumunu ekle”
+
+The overlay must be readable.
+
+When a location is selected:
+
+- Center the map on the selected location
+- Show the existing location marker
+- Do not create a fake coordinate
+- Keep existing map logic
+
+Optional top-right map action:
+
+[Expand icon]
+
+Only add this if an existing full-map action already exists or can be safely connected to the existing behavior.
+
+Do not create dead buttons.
+
+==================================================
+10. ADD A CLEAR FINAL SUBMIT ACTION
+==================================================
+
+The screen currently lacks a strong visible final action in the visible hierarchy.
+
+Preserve and redesign the existing report submission action.
+
+At the bottom of the form create a premium primary CTA:
+
+“Durumu Bildir”
+
+Use:
+
+- full width
+- 56 px height
+- 18 px radius
+- CanYoldaşı purple
+- white bold text
+- SVG Send, Plus, or Paw-related appropriate AppIcon
+
+Do not use emoji.
+
+The button must call the EXISTING animal report creation logic.
+
+Do not create duplicate submissions.
+
+When submitting:
+
+- Disable the button
+- Prevent double tap/double creation
+- Show loading state
+
+Example:
+
+“Bildiriliyor...”
+
+On success:
+
+- preserve the existing success/navigation behavior
+
+On error:
+
+- preserve or improve the current error state
+- do not swallow backend errors
+
+==================================================
+11. OPTIONAL STICKY BOTTOM CTA
+==================================================
+
+If the screen is implemented inside ScrollView and the submit button can disappear too far below the fold, use a premium sticky bottom action area.
+
+Structure:
+
+-------------------------
+soft top border / shadow
+
+[ Durumu Bildir ]
+-------------------------
+
+Respect:
+
+- iOS safe area
+- Android navigation bar
+- Web responsive layout
+
+Do not cover the map or form content.
+
+Add enough ScrollView bottom padding.
+
+Use only ONE submit button.
+
+Do not display both a sticky and normal duplicate CTA.
+
+==================================================
+12. FORM VALIDATION UX
+==================================================
+
+Keep existing validation rules.
+
+Improve the visual validation feedback.
+
+For required values:
+
+- Animal type
+- Status
+- Location
+
+or whichever fields are actually required by the current form logic.
+
+Do not invent requirements without inspecting the existing implementation.
+
+Validation errors should appear directly below the relevant section.
+
+Example:
+
+“Lütfen bir hayvan türü seç”
+
+Use:
+
+- small red text
+- AlertCircle SVG icon where appropriate
+
+Do not use native-looking intrusive alert dialogs for simple field validation where inline feedback is possible.
+
+==================================================
+13. SPACING SYSTEM
+==================================================
+
+Use a consistent spacing system.
+
+Suggested:
+
+Screen horizontal padding:
+20 px
+
+Header bottom spacing:
+20–24 px
+
+Section spacing:
+24 px
+
+Label to control:
+10–12 px
+
+Control internal padding:
+14–16 px
+
+Do not allow random margins such as:
+
+13
+17
+21
+29
+
+Use the existing design token system when available.
+
+==================================================
+14. TYPOGRAPHY
+==================================================
+
+Preserve the existing CanYoldaşı typography/font family.
+
+Improve hierarchy.
+
+Suggested hierarchy:
+
+Screen title:
+20–22 / semibold-bold
+
+Section label:
+15–16 / semibold
+
+Button:
+15–16 / semibold
+
+Body:
+14–15 / regular-medium
+
+Helper:
+12–13 / regular
+
+Do not apply custom fontFamily to AppIcon SVG components.
+
+==================================================
+15. REMOVE VISUAL INCONSISTENCY
+==================================================
+
+The current screen mixes:
+
+- Orange header
+- Purple selections
+- Green location button
+- Gray map
+- Pale lavender inputs
+
+This creates an inconsistent visual system.
+
+Create one cohesive CanYoldaşı design system.
+
+Primary brand:
+Purple
+
+Success:
+Green only for genuine success/healthy states
+
+Danger:
+Red/coral only for injury/emergency states
+
+Neutral:
+Soft gray
+
+Do not use green as the primary “use my location” action.
+
+Do not use orange for the navigation title.
+
+==================================================
+16. MICRO-INTERACTIONS
+==================================================
+
+Where already supported by the project architecture, add subtle interactions.
+
+Examples:
+
+- Chip press feedback
+- Selected card scale approximately 0.98 → 1
+- Button press opacity/scale
+- Smooth image preview appearance
+- Smooth validation feedback
+
+Keep animations subtle.
+
+Do not create heavy animations.
+
+Do not introduce large new animation dependencies unless already installed.
+
+==================================================
+17. ANDROID-SPECIFIC QUALITY CHECK
+==================================================
+
+The application recently had Android icon rendering issues.
+
+For this screen:
+
+- Use AppIcon SVG components
+- No UI emojis
+- No Unicode functional icons
+- No Text-based icon glyphs
+- No unsupported icon font characters
+
+Verify:
+
+- Back icon
+- Camera icon
+- Animal type icons
+- Status icons
+- Location icon
+- Map state icon
+- Submit button icon
+
+All must render correctly on Android.
+
+==================================================
+18. CROSS-PLATFORM RESPONSIVENESS
+==================================================
+
+Verify the redesigned screen on:
+
+Android:
+- current simulator width
+- no horizontal overflow
+- no clipped chips
+- keyboard does not permanently hide inputs
+- bottom CTA respects navigation bar
+
+iOS:
+- safe area preserved
+- premium spacing preserved
+
+Web:
+- Center the mobile form content
+- Use a sensible max width approximately 520–640 px
+- Do not stretch the form across the entire desktop screen
+- No mobile-only overflow hacks
+
+Use shared responsive architecture where possible.
+
+==================================================
+19. PRESERVE FUNCTIONALITY
+==================================================
+
+DO NOT break:
+
+- Photo picker
+- Image upload
+- Animal type state
+- Status state
+- Notes state
+- Geolocation
+- Map preview
+- Location marker
+- Form validation
+- Report creation
+- Supabase insert
+- Existing navigation behavior
+
+Do not rename database columns.
+
+Do not change status enum values without inspecting the backend.
+
+Do not create fake data.
+
+==================================================
+FINAL VISUAL STRUCTURE
+==================================================
+
+The final screen hierarchy should approximately be:
+
+[Premium Header]
+←  Sokak Hayvanı Ekle
+   Yakındaki bir dost için yardım bildir
+
+
+[Premium Photo Upload Card]
+          Camera
+       Fotoğraf Ekle
+Durumu anlamamıza yardımcı olur
+        İsteğe bağlı
+
+
+Hayvan Türü
+
+[ Cat Kedi ] [ Dog Köpek ]
+[ Bird Kuş ] [ Paw Diğer ]
+
+
+Durum
+
+[ Acil          ] [ Yaralı      ]
+[ Sağlıklı      ] [ Bilinmiyor  ]
+
+
+Notlar
+Durumu kısaca anlat
+
+[ Multiline premium input                ]
+[                                          ]
+
+
+Konum
+Hayvanın görüldüğü konumu ekle
+
+[ MapPin  Mevcut Konumumu Kullan ]
+
+
+[ Rounded premium map preview             ]
+[                                          ]
+[        location / empty state            ]
+[                                          ]
+
+
+[ Durumu Bildir ]
+
+==================================================
+FINAL CHECK
+==================================================
+
+Before completing:
+
+1. Verify photo selection
+2. Verify photo removal/change
+3. Verify all animal type selections
+4. Verify all status selections
+5. Verify notes input
+6. Verify keyboard behavior
+7. Verify location permission
+8. Verify current location action
+9. Verify map update
+10. Verify location marker
+11. Verify submit action
+12. Verify double-submit prevention
+13. Verify Android icons
+14. Verify Android layout
+15. Verify iOS layout
+16. Verify Web layout
+
+Report:
+
+- Exact screen file changed
+- Shared components changed
+- AppIcon mappings added
+- Existing logic preserved
+- Android result
+- iOS result
+- Web result
+- Any remaining issue
+
+Do not simply change colors.
+
+Redesign the full visual hierarchy of the existing “Sokak Hayvanı Ekle” screen while preserving its real application logic.

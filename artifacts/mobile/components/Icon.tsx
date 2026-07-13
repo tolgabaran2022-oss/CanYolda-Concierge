@@ -3,6 +3,9 @@ import { View } from "react-native";
 import {
   Activity,
   AlertCircle,
+  Bird,
+  Cat,
+  Dog,
   AlertTriangle,
   ArrowLeft,
   AtSign,
@@ -108,6 +111,9 @@ const ICON_MAP: Record<string, LucideIcon> = {
   "paw":                 PawPrint,
   "paw-outline":         PawPrint,
   "pawOutline":          PawPrint,
+  "cat":                 Cat,
+  "dog":                 Dog,
+  "bird":                Bird,
 
   // ── Heart ────────────────────────────────────────────
   "heart":               Heart,
