@@ -5,6 +5,7 @@ import {
   strayAnimals,
   animalInteractions,
   animalComments,
+  animalHelpUpdates,
 } from "@workspace/db";
 import { logger } from "../lib/logger.js";
 

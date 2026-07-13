@@ -4,6 +4,7 @@ import {
   Activity,
   AlertCircle,
   Bird,
+  Car,
   Cat,
   Dog,
   AlertTriangle,
@@ -28,6 +29,7 @@ import {
   Clock,
   CloudOff,
   CreditCard,
+  Droplets,
   Eye,
   EyeOff,
   ExternalLink,
@@ -261,6 +263,10 @@ const ICON_MAP: Record<string, LucideIcon> = {
   "food":                     UtensilsCrossed,
   "scale-outline":            Scale,
   "stethoscope":              Stethoscope,
+  "droplets":                 Droplets,
+  "water":                    Droplets,
+  "car":                      Car,
+  "car-outline":              Car,
 
   // ── Time ─────────────────────────────────────────────
   "calendar":                 Calendar,

@@ -37,6 +37,17 @@ export const animalComments = pgTable("animal_comments", {
   createdAt: timestamp("created_at", { withTimezone: true }).defaultNow(),
 });
 
+export const animalHelpUpdates = pgTable("animal_help_updates", {
+  id:        text("id").primaryKey().default(sql`gen_random_uuid()::text`),
+  animalId:  text("animal_id").notNull().references(() => strayAnimals.id, { onDelete: "cascade" }),
+  userId:    text("user_id").notNull(),
+  userName:  text("user_name").notNull().default(""),
+  photoUrl:  text("photo_url").notNull().default(""),
+  status:    text("status").notNull(),
+  note:      text("note").notNull().default(""),
+  createdAt: timestamp("created_at", { withTimezone: true }).defaultNow(),
+});
+
 export const adoptionListings = pgTable("adoption_listings", {
   id:                 text("id").primaryKey().default(sql`gen_random_uuid()::text`),
   petName:            text("pet_name").notNull(),
@@ -60,9 +71,11 @@ export const adoptionListings = pgTable("adoption_listings", {
   updatedAt:          timestamp("updated_at", { withTimezone: true }).defaultNow(),
 });
 
-export type StrayAnimal         = typeof strayAnimals.$inferSelect;
-export type InsertStrayAnimal   = typeof strayAnimals.$inferInsert;
-export type AnimalInteraction   = typeof animalInteractions.$inferSelect;
-export type AnimalComment       = typeof animalComments.$inferSelect;
-export type AdoptionListing     = typeof adoptionListings.$inferSelect;
+export type StrayAnimal           = typeof strayAnimals.$inferSelect;
+export type InsertStrayAnimal     = typeof strayAnimals.$inferInsert;
+export type AnimalInteraction     = typeof animalInteractions.$inferSelect;
+export type AnimalComment         = typeof animalComments.$inferSelect;
+export type AnimalHelpUpdate      = typeof animalHelpUpdates.$inferSelect;
+export type InsertAnimalHelpUpdate = typeof animalHelpUpdates.$inferInsert;
+export type AdoptionListing       = typeof adoptionListings.$inferSelect;
 export type InsertAdoptionListing = typeof adoptionListings.$inferInsert;

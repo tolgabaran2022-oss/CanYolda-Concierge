@@ -1,0 +1,1701 @@
+TASK: BUILD A COMPLETE REAL ANIMAL HELP CONTRIBUTION AND CURRENT STATUS UPDATE SYSTEM
+
+IMPORTANT CONTEXT
+
+The cards displayed on the "Sokak Hayvanları" screen are NOT advertisements, listings, or adoption listings.
+
+They are STREET ANIMAL HELP / STATUS POSTS.
+
+A registered user creates an initial street animal status report.
+
+Example:
+
+Ali R.
+"İlk kez görüldü, durumu bilinmiyor"
+Ataşehir, İstanbul
+
+Another registered user may later physically see or help the same animal.
+
+The "Yardım Et" button must allow that user to add a REAL CURRENT STATUS UPDATE to the SAME animal help post.
+
+Do not create a new animal post.
+
+Do not create a new listing.
+
+Do not duplicate the original report.
+
+The complete logical structure must be:
+
+ORIGINAL ANIMAL HELP POST
+        ↓
+HELP / CURRENT STATUS UPDATES
+        ↓
+LATEST CURRENT STATUS
+        ↓
+REAL UNIQUE HELPER COUNT
+
+Implement the complete feature end-to-end.
+
+Do not only change the UI.
+
+==================================================
+PHASE 1 — AUDIT THE EXISTING PROJECT FIRST
+==================================================
+
+Before making any changes, recursively inspect the existing project.
+
+Identify:
+
+- framework and Expo/React Native architecture
+- routing/navigation structure
+- Sokak Hayvanları screen
+- animal help card component
+- animal help detail screen
+- "Yardım Et" button implementation
+- current authenticated user logic
+- Supabase client implementation
+- auth session management
+- users/profile table structure
+- street animal/help report database tables
+- existing image upload/storage utilities
+- existing camera/gallery utilities
+- query hooks
+- cache/refetch logic
+- real-time subscriptions if currently used
+- existing RLS policies
+- iOS-specific code
+- Android-specific code
+- Web-specific code
+
+Search recursively.
+
+Do not assume file names.
+
+Do not create duplicate implementations before inspecting the existing architecture.
+
+Reuse existing:
+
+- components
+- hooks
+- services
+- Supabase client
+- design tokens
+- profile resolver
+- image uploader
+
+where technically appropriate.
+
+==================================================
+CORE FEATURE DEFINITION
+==================================================
+
+The existing "Yardım Et" button must become a real contribution action.
+
+CURRENT WRONG BEHAVIOR TO AVOID:
+
+User taps "Yardım Et"
+→ helper counter immediately increases.
+
+THIS IS WRONG.
+
+NEW CORRECT BEHAVIOR:
+
+User taps "Yardım Et"
+→ open current animal update flow
+→ take/select a current animal photo
+→ select current animal status
+→ optionally write a meaningful note
+→ submit the update
+→ database insert succeeds
+→ UI refreshes
+→ latest status appears
+→ helper information appears
+→ unique helper counter is recalculated
+
+A simple button tap must NEVER count as help.
+
+Cancelled flows must NEVER count as help.
+
+Failed uploads must NEVER count as help.
+
+Failed database inserts must NEVER count as help.
+
+==================================================
+YARDIM ET BUTTON FLOW
+==================================================
+
+When the authenticated user taps:
+
+"Yardım Et"
+
+Open a premium native modal, bottom sheet, or dedicated mobile screen based on the project's existing navigation architecture.
+
+Prefer a dedicated full-screen flow if the amount of content does not fit correctly inside a bottom sheet.
+
+Screen title:
+
+"Hayvanın Güncel Durumunu Bildir"
+
+Subtitle:
+
+"Bu hayvanı gördüysen güncel fotoğraf ve durum bilgisi ekleyerek diğer kullanıcılara yardımcı ol."
+
+Top-left:
+
+existing application back icon pattern
+
+Do not use an inconsistent default browser-style back button.
+
+The back button must:
+
+- use the existing CanYoldaşı design language
+- work on iOS
+- work on Android
+- work on Web
+- not overlap the status bar or Dynamic Island
+
+==================================================
+STEP 1 — CURRENT ANIMAL PHOTO
+==================================================
+
+Create a section:
+
+"Güncel Fotoğraf"
+
+Helper text:
+
+"Hayvanın şu anki durumunu gösteren güncel bir fotoğraf ekle."
+
+Primary action:
+
+"Fotoğraf Çek"
+
+Use the real native camera on supported mobile platforms.
+
+Secondary action:
+
+"Galeriden Seç"
+
+Use the real native photo library.
+
+WEB:
+
+Use supported image file selection behavior.
+
+Do not attempt unsupported native camera behavior that crashes Web.
+
+The user must be able to:
+
+- take a photo
+- select an existing image
+- preview the selected image
+- change the image
+- remove the image
+- retake the photo
+
+After an image is selected, display a large premium preview card.
+
+Suggested design:
+
+- full-width image
+- 16-20px corner radius
+- correct aspect ratio
+- object-fit/object-cover equivalent
+- no image distortion
+- subtle border
+- small "Değiştir" action
+- small remove icon
+
+Do not stretch the image.
+
+Do not show broken images.
+
+Do not use a fake placeholder after the user selects an image.
+
+The current animal photo is REQUIRED for a help update.
+
+==================================================
+CAMERA AND GALLERY PERMISSIONS
+==================================================
+
+Handle real permission states.
+
+CAMERA PERMISSION DENIED:
+
+Show a Turkish user-friendly message:
+
+"Kamera izni gerekli"
+
+Description:
+
+"Fotoğraf çekebilmek için cihaz ayarlarından CanYoldaşı uygulamasına kamera erişimi vermelisin."
+
+Provide an appropriate action if supported by the current architecture.
+
+PHOTO LIBRARY PERMISSION DENIED:
+
+Show:
+
+"Fotoğraf erişimi gerekli"
+
+Description:
+
+"Galeriden fotoğraf seçebilmek için fotoğraf erişimine izin vermelisin."
+
+Never crash after denied permission.
+
+Never enter an infinite permission request loop.
+
+Handle:
+
+- granted
+- denied
+- limited access where applicable
+- cancelled camera
+- cancelled gallery picker
+
+correctly.
+
+==================================================
+STEP 2 — CURRENT ANIMAL STATUS
+==================================================
+
+Create a section:
+
+"Hayvanın Mevcut Durumu"
+
+Question:
+
+"Hayvanın şu anki durumu nedir?"
+
+Use selectable status cards or premium compact chips.
+
+Available primary statuses:
+
+1. Aynı Bölgede
+2. Yaralı
+3. Acil Yardım Gerekli
+4. Beslendi
+5. Su Verildi
+6. Tedaviye Götürüldü
+7. Veteriner Kontrolünde
+8. Güvende
+9. Sahiplendirildi
+10. Bulunamadı
+
+Do not use operating system emojis as status icons.
+
+Use the application's existing vector icon system.
+
+Use supported cross-platform icons.
+
+This is important because Android currently has had emoji rendering inconsistencies.
+
+Only ONE primary status may be selected.
+
+Selected status:
+
+- purple/lavender active background
+- clearly visible purple border or accent
+- active icon
+- stronger text weight
+
+Unselected status:
+
+- neutral white/light surface
+- subtle border
+- normal text color
+
+Ensure proper text wrapping on narrow Android devices.
+
+Do not let Turkish labels overflow cards.
+
+Do not cut:
+
+"Acil Yardım Gerekli"
+
+or:
+
+"Veteriner Kontrolünde"
+
+Use responsive layouts.
+
+==================================================
+STEP 3 — CURRENT STATUS NOTE
+==================================================
+
+Create a section:
+
+"Güncel Durum Notu"
+
+Add a multiline input.
+
+Placeholder:
+
+"Örn. Hayvan aynı bölgede görüldü. Mama ve su verildi."
+
+Recommended maximum:
+
+300 characters
+
+Display:
+
+0 / 300
+
+or the remaining character count.
+
+Trim leading and trailing whitespace.
+
+Prevent a note consisting only of:
+
+- spaces
+- newlines
+- meaningless empty characters
+
+The note may be optional if a valid status and photo are submitted.
+
+However, if entered, validate and save the cleaned value.
+
+Do not save:
+
+"   "
+
+as a real note.
+
+==================================================
+STEP 4 — HELPER IDENTITY
+==================================================
+
+THIS IS A CRITICAL REQUIREMENT.
+
+The helping user must NEVER manually type:
+
+- first name
+- last name
+- full name
+- user ID
+
+The application must resolve the real currently authenticated user.
+
+Get the authenticated user from the existing Supabase authentication/session system.
+
+Then resolve the correct existing application profile.
+
+Retrieve the available real profile fields such as:
+
+- user ID
+- first name
+- last name
+- display/full name
+- profile image/avatar
+
+First inspect the real database field names.
+
+Do not assume the project uses:
+
+first_name
+
+or:
+
+last_name
+
+without checking the existing schema.
+
+Adapt to the current application data model.
+
+EXAMPLE:
+
+Logged-in application user:
+
+Mehmet Kaya
+
+Mehmet Kaya opens Ali R.'s animal help post.
+
+Mehmet taps:
+
+"Yardım Et"
+
+Mehmet submits a valid update.
+
+The system must automatically display:
+
+"Mehmet Kaya tarafından güncellendi"
+
+The user must NOT manually enter "Mehmet Kaya".
+
+NEVER USE:
+
+- hardcoded Mehmet Kaya
+- random names
+- mock names
+- fake profile records
+- test names in production UI
+- Math.random user selection
+
+Use the real authenticated user.
+
+==================================================
+PROFILE NAME FALLBACK
+==================================================
+
+Inspect the existing application's profile name logic.
+
+Use the same profile source used by the rest of the app.
+
+Recommended resolution logic only if compatible with the existing schema:
+
+1. valid application profile full name
+2. first name + last name
+3. existing display name
+4. existing username if no real name exists
+5. safe neutral profile fallback
+
+Do not expose the user's raw UUID.
+
+Do not display:
+
+"Unknown User"
+
+if the application already contains usable profile information.
+
+Do not parse arbitrary fake names from email addresses unless the existing application already intentionally uses that policy.
+
+==================================================
+STEP 5 — REVIEW AND SUBMIT
+==================================================
+
+At the bottom of the update flow create a primary CTA:
+
+"Güncellemeyi Kaydet"
+
+Before submission validate:
+
+- current authenticated session exists
+- authenticated user ID exists
+- original animal help post exists
+- original post ID is valid
+- selected current photo exists
+- selected current status exists
+- note is cleaned
+- the user profile can be resolved according to existing app logic
+
+Button disabled state:
+
+Disable "Güncellemeyi Kaydet" until all required information exists.
+
+During submission:
+
+disable the button
+
+prevent additional taps
+
+show:
+
+"Güncelleme Kaydediliyor..."
+
+Add a loading indicator consistent with the current UI.
+
+Do not allow double submission.
+
+==================================================
+SUBMISSION SEQUENCE
+==================================================
+
+Use a deterministic submission sequence.
+
+Recommended flow:
+
+1. validate authenticated session
+2. validate original animal help post ID
+3. validate local image
+4. validate selected status
+5. create a client submission lock
+6. upload the photo
+7. verify upload result
+8. create exactly one animal help update database record
+9. verify database insert success
+10. invalidate/refetch affected queries
+11. refresh the animal help detail
+12. refresh helper count
+13. refresh latest status
+14. refresh the Sokak Hayvanları card if required
+15. close the update flow
+16. show success feedback
+17. release submission lock safely
+
+SUCCESS MESSAGE:
+
+"Güncel durum bilgisi eklendi. Desteğin için teşekkürler 🐾"
+
+Do not increase the helper count manually before database success.
+
+The database must remain the source of truth.
+
+==================================================
+IMAGE STORAGE
+==================================================
+
+Inspect the current Supabase Storage implementation.
+
+Reuse the existing suitable image bucket if the application already has a correctly configured animal/help image storage system.
+
+Do not create unnecessary duplicate storage buckets.
+
+If a dedicated storage path is logically required, use a deterministic path.
+
+Example logical structure:
+
+animal-help-updates/
+  {animalHelpPostId}/
+    {authenticatedUserId}/
+      {uniqueFileName}.jpg
+
+Do not trust the original local file name as the only unique identifier.
+
+Handle filename collision.
+
+Save the final accessible image URL/path according to the existing app's storage architecture.
+
+If the application uses private buckets and signed URLs, preserve that architecture.
+
+Do not blindly convert everything to public URLs.
+
+==================================================
+DATABASE ARCHITECTURE
+==================================================
+
+FIRST inspect the current Supabase database schema.
+
+Find the real table representing the cards displayed on:
+
+"Sokak Hayvanları"
+
+Possible conceptual names may be:
+
+street_animal_reports
+animal_reports
+animal_status_reports
+animal_help_posts
+
+These are only examples.
+
+DO NOT create a duplicate main report table.
+
+Reuse the real existing table.
+
+Then inspect whether an existing help contribution/update table exists.
+
+If a suitable table exists, extend and reuse it.
+
+Only create a new table when required.
+
+Recommended logical entity:
+
+animal_help_updates
+
+Conceptual fields:
+
+id
+animal_help_post_id
+user_id
+photo_url or storage_path
+status
+note
+created_at
+updated_at
+
+Use the correct database types.
+
+Recommended conceptual relationships:
+
+animal_help_updates.animal_help_post_id
+→ original animal help post
+
+animal_help_updates.user_id
+→ authenticated application user/profile identity
+
+The exact foreign-key implementation must be adapted to the real current schema.
+
+Do not blindly create incompatible foreign keys.
+
+==================================================
+IMPORTANT DATA SOURCE RULE
+==================================================
+
+user_id is the relational identity and source of truth.
+
+Do not use copied display names as the primary ownership relationship.
+
+Correct:
+
+update.user_id = authenticated user UUID
+
+Then resolve:
+
+user profile
+→ name
+→ surname
+→ avatar
+
+for UI display.
+
+If the current architecture intentionally stores a denormalized name snapshot for historical presentation, user_id must STILL remain the authenticated relational source of truth.
+
+Do not replace user_id with:
+
+"Mehmet Kaya"
+
+as plain text.
+
+==================================================
+ORIGINAL CREATOR VS HELPING USER
+==================================================
+
+The original post creator and the helping user are two different concepts.
+
+EXAMPLE:
+
+Ali R.
+creates the original report.
+
+Mehmet Kaya
+later adds a current animal status update.
+
+The detail page must preserve:
+
+ORIGINAL CREATOR:
+Ali R.
+
+HELP UPDATE USER:
+Mehmet Kaya
+
+Do not overwrite:
+
+created_by
+user_id
+owner_id
+
+or the equivalent field of the original animal help post when a help update is submitted.
+
+The original post must still display:
+
+Ali R.
+2 gün önce
+
+after Mehmet Kaya submits an update.
+
+This requirement is critical.
+
+==================================================
+ANIMAL HELP DETAIL SCREEN UI
+==================================================
+
+Use the existing animal help detail screen shown in the application as the visual foundation.
+
+Do not completely redesign the entire page.
+
+Maintain the current CanYoldaşı visual language:
+
+- white backgrounds
+- soft lavender tones
+- purple primary actions
+- rounded cards
+- subtle borders
+- premium mobile spacing
+- clean typography
+- soft shadows only when needed
+
+Keep the current original report sections.
+
+Then add a new real section:
+
+"Mevcut Durum Güncellemeleri"
+
+Place this section in a logical position after the original animal/status information and before or near the interaction/comment area based on the current screen hierarchy.
+
+==================================================
+LATEST UPDATE CARD
+==================================================
+
+If at least one valid current status update exists, create a highlighted section:
+
+"Son Durum Güncellemesi"
+
+Use the newest update determined by:
+
+database created_at timestamp
+
+Order:
+
+created_at DESC
+
+Do NOT determine newest status using:
+
+- array index
+- UI insertion position
+- local component state ordering
+- fake timestamp
+
+Suggested card content:
+
+[helper avatar]
+
+Mehmet Kaya
+5 dakika önce
+
+[status badge: Beslendi]
+
+[current animal image]
+
+"Hayvan aynı bölgede görüldü. Mama ve su verildi."
+
+Footer:
+
+"Mehmet Kaya tarafından güncellendi"
+
+The image displayed here must be the image submitted in THIS help update.
+
+Do not show the original animal report image as the new update image unless that exact image was actually submitted.
+
+==================================================
+STATUS UPDATE HISTORY
+==================================================
+
+Below the latest status, provide update history.
+
+Title:
+
+"Durum Geçmişi"
+
+Display updates newest-first.
+
+Each update card/timeline item must include:
+
+- real helper profile image, if available
+- real helper full name
+- relative time or formatted date
+- selected status
+- submitted current animal photo
+- cleaned status note, if present
+
+Example:
+
+Mehmet Kaya
+5 dakika önce
+
+Beslendi
+
+[photo]
+
+Hayvan aynı bölgede. Mama ve su verildi.
+
+Another update:
+
+Ayşe Demir
+1 saat önce
+
+Yaralı
+
+[photo]
+
+Ön sağ bacağında yara görünüyor.
+
+Do not merge separate updates into one record.
+
+Do not lose status history when a new update arrives.
+
+==================================================
+EMPTY UPDATE STATE
+==================================================
+
+If no help update exists, display a premium empty state.
+
+Title:
+
+"Henüz güncel durum bilgisi yok"
+
+Description:
+
+"Bu hayvanı gördüysen güncel fotoğraf ve durum bilgisi ekleyerek yardımcı olabilirsin."
+
+CTA:
+
+"İlk Güncellemeyi Ekle"
+
+This CTA must open the SAME help update flow as:
+
+"Yardım Et"
+
+Do not implement two different submission systems.
+
+Use one reusable flow.
+
+==================================================
+HELPER COUNTER LOGIC
+==================================================
+
+The existing interaction card:
+
+"Yardımcı Oldu"
+
+must use REAL database data.
+
+The helper number must represent:
+
+COUNT OF UNIQUE AUTHENTICATED USERS WHO SUCCESSFULLY CREATED AT LEAST ONE VALID HELP UPDATE FOR THIS ORIGINAL ANIMAL HELP POST.
+
+EXAMPLE:
+
+Mehmet Kaya:
+3 updates
+
+Ayşe Demir:
+1 update
+
+Can Yılmaz:
+2 updates
+
+Yardımcı Oldu = 3
+
+NOT 6.
+
+Use unique user IDs.
+
+Conceptual database logic:
+
+COUNT(DISTINCT user_id)
+
+Use an equivalent correct Supabase/Postgres query based on the existing architecture.
+
+Do not count local button taps.
+
+Do not use:
+
+helper_count + 1
+
+as the primary persistent logic.
+
+Do not increment on modal open.
+
+Do not increment on camera open.
+
+Do not increment on photo selection.
+
+Do not increment on cancelled submission.
+
+Only successfully persisted updates qualify.
+
+==================================================
+SAME USER MULTIPLE UPDATES
+==================================================
+
+A user may submit multiple legitimate status updates over time.
+
+Example:
+
+Mehmet sees the animal Monday:
+Beslendi
+
+Mehmet sees the animal Tuesday:
+Veteriner Kontrolünde
+
+Both update records must remain in history.
+
+However:
+
+"Yardımcı Oldu"
+
+must still count Mehmet only once for that animal help post.
+
+Do not block legitimate future status updates from the same user.
+
+==================================================
+YARDIM EDENLER SCREEN
+==================================================
+
+Make the "Yardımcı Oldu" interaction card clickable.
+
+When tapped, open:
+
+"Yardım Edenler"
+
+Display the unique real registered users who contributed at least one valid help update.
+
+Each user row:
+
+[profile photo]
+
+Mehmet Kaya
+
+"Son katkı: 5 dakika önce"
+
+Optionally display:
+
+"3 durum güncellemesi"
+
+if this data can be queried efficiently and correctly.
+
+Users must appear only once in the list.
+
+Order helpers by their latest contribution:
+
+latest contribution DESC
+
+Do not display:
+
+- random application users
+- people who only viewed the post
+- people who opened the location
+- people who only pressed Yardım Et and cancelled
+
+==================================================
+ORIGINAL STREET ANIMAL CARD
+==================================================
+
+Update the card shown on:
+
+"Sokak Hayvanları"
+
+carefully.
+
+Preserve the original report title.
+
+Example:
+
+"İlk kez görüldü, durumu bilinmiyor"
+
+Preserve:
+
+Ali R.
+2 gün önce
+Ataşehir, İstanbul
+
+Do not replace Ali R. with Mehmet Kaya.
+
+If a latest valid status update exists, add a subtle secondary information row.
+
+Example:
+
+"Son durum: Beslendi"
+
+or:
+
+"Son güncelleme: Beslendi"
+
+Optionally include relative time:
+
+"5 dk önce"
+
+The latest status indicator must be visually secondary.
+
+It must not destroy the original report context.
+
+Recommended hierarchy:
+
+Status badge
+
+Original title
+
+Original creator + date
+
+Location
+
+divider
+
+Latest status indicator, if available
+
+interaction row
+
+==================================================
+STATUS SEMANTICS
+==================================================
+
+Keep these concepts separate:
+
+original_status
+latest_status
+status_update_history
+
+EXAMPLE:
+
+Original report status:
+Bilinmiyor
+
+Latest current status:
+Beslendi
+
+History:
+Bilinmiyor → Yaralı → Beslendi
+
+Do not overwrite the original status and lose history.
+
+The card may visually show the latest status.
+
+But the database and detail page must preserve the original report status.
+
+==================================================
+YARDIM ET BUTTON VISUAL STATES
+==================================================
+
+The fixed bottom action:
+
+"Yardım Et"
+
+must have the following states:
+
+DEFAULT:
+Yardım Et
+
+PRESS:
+open help update flow
+
+SUBMITTING INSIDE FLOW:
+Güncelleme Kaydediliyor...
+
+AFTER USER HAS PREVIOUSLY CONTRIBUTED:
+
+Do not permanently disable the button.
+
+The user may need to report a later current condition.
+
+Optionally change the bottom action text to:
+
+"Yeni Durum Güncelle"
+
+or keep:
+
+"Yardım Et"
+
+based on current UX consistency.
+
+Recommended:
+
+If current user has an existing update:
+
+"Yeni Durum Güncelle"
+
+If no existing update:
+
+"Yardım Et"
+
+This must be based on real data.
+
+Do not use local temporary state only.
+
+==================================================
+DUPLICATE INSERT PROTECTION
+==================================================
+
+Audit the current application for the previously observed risk of one tap creating duplicate effects.
+
+Recursively inspect:
+
+- onPress handlers
+- onClick handlers
+- form submit handlers
+- useEffect side effects
+- mutation callbacks
+- optimistic update code
+- real-time listeners
+- query refetches
+- event propagation
+- parent and child click handlers
+
+One press on:
+
+"Güncellemeyi Kaydet"
+
+must create exactly ONE database update record.
+
+Implement a synchronous submission lock.
+
+Example conceptual behavior:
+
+if (isSubmitting || submissionLock.current) return
+
+submissionLock.current = true
+
+Use try/finally to release safely.
+
+Do not rely only on asynchronous setState because rapid taps may happen before the UI rerenders.
+
+Do not attach both:
+
+onPress={submit}
+
+and:
+
+form onSubmit={submit}
+
+in a way that creates two inserts.
+
+Audit the complete flow.
+
+==================================================
+REAL-TIME / REFRESH BEHAVIOR
+==================================================
+
+After a successful status update:
+
+The detail screen must show the new update immediately.
+
+Update:
+
+- latest status card
+- update history
+- unique helper count
+- helper list
+- current user's contribution state
+
+Also refresh the relevant Sokak Hayvanları list/card data.
+
+Use the existing query/cache architecture.
+
+If using React Query/TanStack Query:
+
+invalidate the correct query keys.
+
+If the app uses custom state:
+
+update or refetch from Supabase correctly.
+
+If the app uses Supabase Realtime:
+
+ensure subscriptions do not duplicate inserted items.
+
+Avoid:
+
+local optimistic insert
++
+Realtime INSERT
++
+full refetch
+
+creating three visible copies.
+
+Deduplicate using the real database record ID if necessary.
+
+==================================================
+COMMENTS MUST REMAIN SEPARATE
+==================================================
+
+Do not confuse help updates with comments.
+
+COMMENTS:
+
+social conversation
+
+HELP UPDATES:
+
+structured real current animal condition information
+
+The existing:
+
+"Yorum Yap"
+
+flow must remain separate.
+
+Do not store status updates in the comments table.
+
+Do not count comments as help.
+
+Do not show comments inside:
+
+"Durum Geçmişi"
+
+==================================================
+LOCATION OPEN COUNT MUST REMAIN SEPARATE
+==================================================
+
+Keep:
+
+"Konum Açıldı"
+
+logic separate.
+
+Opening a map does not mean the user helped the animal.
+
+Do not add the user to:
+
+"Yardım Edenler"
+
+when the user only taps:
+
+"Konumu Aç"
+
+Only a successful structured help update qualifies.
+
+==================================================
+AUTHENTICATION SECURITY
+==================================================
+
+Only authenticated users may submit animal help updates.
+
+If no valid session exists and the user taps:
+
+"Yardım Et"
+
+use the current application's authentication requirement flow.
+
+Do not create anonymous fake helpers.
+
+Do not accept an arbitrary client-selected user_id as authority.
+
+The authenticated session must determine the helper identity.
+
+Where compatible with the architecture, use:
+
+auth.uid()
+
+or equivalent server/database authenticated identity validation.
+
+==================================================
+SUPABASE RLS
+==================================================
+
+Inspect the existing Row Level Security configuration.
+
+Create or modify policies only where required.
+
+Required logical behavior:
+
+SELECT:
+Users who are allowed to view the animal help post can view its valid updates.
+
+INSERT:
+Authenticated users can create help updates as themselves.
+
+A user must not insert:
+
+user_id = another user's UUID
+
+UPDATE:
+Follow the application's ownership rules.
+
+Do not allow a normal user to arbitrarily change another helper's update.
+
+DELETE:
+Follow the application's ownership/moderation policy.
+
+Do not disable RLS globally as a shortcut.
+
+Do not use the Supabase service role key in the frontend.
+
+Never expose sensitive keys.
+
+==================================================
+DATABASE QUERY PERFORMANCE
+==================================================
+
+Avoid obvious N+1 profile queries.
+
+Do not:
+
+fetch updates
+→ loop through every update
+→ make one Supabase request for every user's profile
+
+Prefer a relational select/join strategy compatible with the current schema.
+
+Fetch:
+
+update data
++
+profile data
+
+efficiently.
+
+Helper count must also be calculated efficiently.
+
+Do not download the complete application user table.
+
+==================================================
+LOADING STATES
+==================================================
+
+Add correct loading states.
+
+Detail screen:
+
+Show existing application skeleton/loading style while fetching.
+
+Latest status section:
+
+Do not briefly show:
+
+"Henüz güncel durum bilgisi yok"
+
+while the data is still loading.
+
+Distinguish:
+
+loading
+
+from:
+
+loaded and empty
+
+Helper counter:
+
+Do not temporarily display an incorrect zero if data is still unresolved where avoidable.
+
+==================================================
+ERROR HANDLING
+==================================================
+
+Handle:
+
+- no authenticated user
+- expired session
+- animal help post not found
+- deleted original post
+- camera permission denied
+- gallery permission denied
+- camera cancelled
+- gallery cancelled
+- invalid image
+- upload failure
+- storage error
+- database insert failure
+- profile resolution failure
+- network connection loss
+- Supabase query failure
+
+Use user-friendly Turkish messages.
+
+Examples:
+
+"Güncelleme kaydedilemedi. Lütfen tekrar dene."
+
+"Fotoğraf yüklenirken bir sorun oluştu."
+
+"Oturum bilgisi alınamadı. Lütfen tekrar giriş yap."
+
+"Bu hayvan bildirimi artık mevcut değil."
+
+Do not display raw Supabase error objects or stack traces to normal users.
+
+Log technical details only using the project's development logging approach.
+
+==================================================
+ROLLBACK / PARTIAL FAILURE
+==================================================
+
+Prevent inconsistent partial data.
+
+Example:
+
+Photo upload succeeds.
+
+Database insert fails.
+
+Do not show the help update as successfully saved.
+
+Where appropriate, clean up the newly uploaded orphan image or implement the current project's orphan media cleanup strategy.
+
+Do not increment any helper counters manually.
+
+Database state remains authoritative.
+
+==================================================
+IOS UI REQUIREMENTS
+==================================================
+
+Test using the existing iOS simulation environment.
+
+Ensure:
+
+- no Dynamic Island overlap
+- safe area respected
+- header aligned
+- photo picker works
+- camera permission handled
+- bottom fixed CTA respects home indicator
+- keyboard does not cover the note field
+- keyboard does not permanently cover submit CTA
+- list scroll works
+- image preview is not stretched
+
+Do not make the entire screen iOS-only.
+
+==================================================
+ANDROID UI REQUIREMENTS
+==================================================
+
+Test using the existing Android simulation environment.
+
+Pay special attention to previously observed cross-platform inconsistencies.
+
+Ensure:
+
+- status bar respected
+- keyboard behavior works
+- bottom navigation not overlapped
+- no broken emoji icons
+- use vector icons
+- Turkish text does not overflow
+- status chips wrap correctly
+- image picker works
+- Android camera permission works
+- pressing submit once creates one record
+- button touch target works correctly
+
+Do not fix iOS while leaving Android broken.
+
+==================================================
+WEB UI REQUIREMENTS
+==================================================
+
+Test the Web simulation separately.
+
+Do not assume the native mobile layout automatically works correctly on Web.
+
+Ensure:
+
+- layout has a sensible maximum width
+- content is centered where appropriate
+- cards do not stretch across huge desktop widths
+- text does not overflow
+- modal/dialog stays inside viewport
+- image file selection works
+- sticky/fixed bottom CTA does not overlap content
+- scrolling works
+- safe-area-specific mobile logic does not create huge empty Web spacing
+
+Maintain the same CanYoldaşı design language.
+
+==================================================
+RESPONSIVE UI AUDIT
+==================================================
+
+Recursively inspect the new screens/components for:
+
+- hardcoded screen widths
+- unnecessary absolute positioning
+- fixed heights that cut Turkish text
+- overflow
+- overlapping buttons
+- negative margin hacks
+- excessive z-index patches
+- device-specific magic numbers
+
+Prefer:
+
+flex layouts
+responsive width
+max width
+content-based height
+proper safe area handling
+
+Do not create a design that only works on one simulator screenshot.
+
+==================================================
+ACCESSIBILITY AND TOUCH TARGETS
+==================================================
+
+Ensure interactive controls have sensible touch sizes.
+
+Photo actions, status cards, back button, and submit CTA must be easy to tap.
+
+Do not create tiny 16px clickable icons without an adequate touch wrapper.
+
+Use accessible labels where supported by the current architecture.
+
+Selected status must not be communicated only by subtle color.
+
+==================================================
+FINAL EXACT END-TO-END TEST
+==================================================
+
+After implementation, manually/technically verify this exact workflow:
+
+TEST 1 — ORIGINAL CREATOR
+
+1. Log in as User A.
+2. Create a street animal help/status post.
+3. Open Sokak Hayvanları.
+4. Find User A's new help card.
+5. Open the card.
+6. Verify User A is displayed as the original creator.
+
+TEST 2 — BUTTON MUST NOT IMMEDIATELY COUNT
+
+7. Log in as User B.
+8. Open User A's help card.
+9. Record the current "Yardımcı Oldu" number.
+10. Tap "Yardım Et".
+11. Verify the update flow opens.
+12. Close the update flow without submitting.
+13. Verify "Yardımcı Oldu" has NOT changed.
+
+TEST 3 — REAL HELP UPDATE
+
+14. Tap "Yardım Et" again.
+15. Take or select a real test image.
+16. Verify image preview appears.
+17. Select "Beslendi".
+18. Enter:
+    "Hayvan aynı bölgede görüldü. Mama ve su verildi."
+19. Tap "Güncellemeyi Kaydet" exactly once.
+20. Verify the loading state appears.
+21. Verify exactly ONE database update record is created.
+22. Verify the flow closes after success.
+23. Verify the success feedback appears.
+
+TEST 4 — REAL USER INFORMATION
+
+24. Verify User B's real registered first and last name appear.
+25. Verify the application did not use a fake name.
+26. Verify User B's actual user ID is the relational identity of the help update.
+27. Verify User A STILL appears as the original report creator.
+
+TEST 5 — LATEST STATUS
+
+28. Verify "Son Durum Güncellemesi" appears.
+29. Verify the status is "Beslendi".
+30. Verify User B's submitted photo appears.
+31. Verify the submitted note appears.
+32. Verify User B's real name appears.
+33. Verify created_at ordering is correct.
+
+TEST 6 — HELPER COUNT
+
+34. Verify "Yardımcı Oldu" becomes 1.
+35. User B adds another valid update.
+36. Verify two update history records now exist for User B.
+37. Verify "Yardımcı Oldu" still equals 1.
+
+TEST 7 — SECOND HELPER
+
+38. Log in as User C.
+39. User C creates one valid current status update.
+40. Verify "Yardımcı Oldu" becomes 2.
+41. Tap "Yardımcı Oldu".
+42. Verify User B appears once.
+43. Verify User C appears once.
+
+TEST 8 — PERSISTENCE
+
+44. Completely restart/reload the application.
+45. Open the same animal help post.
+46. Verify all status updates remain.
+47. Verify helper names remain correct.
+48. Verify images remain correct.
+49. Verify helper count remains 2.
+50. Verify latest status is still determined from database timestamps.
+
+TEST 9 — CROSS PLATFORM
+
+51. Test the full flow on iOS simulation.
+52. Test the full flow on Android simulation.
+53. Test the supported equivalent flow on Web.
+54. Fix all platform-specific issues found.
+
+==================================================
+FINAL RECURSIVE AUDIT
+==================================================
+
+After finishing the feature, recursively audit all code paths related to:
+
+Yardım Et
+
+animal help update
+
+helper count
+
+latest animal status
+
+animal status history
+
+image upload
+
+camera
+
+gallery picker
+
+authenticated profile resolution
+
+Supabase queries
+
+RLS
+
+real-time subscriptions
+
+query cache invalidation
+
+Look for conflicting old implementations.
+
+Remove or refactor obsolete logic that still increments the help counter directly on button tap.
+
+There must be one source of truth.
+
+Do not leave the old incorrect help logic running in parallel.
+
+==================================================
+FINAL REPORT
+==================================================
+
+At the end, provide a concise technical implementation report with these exact headings:
+
+1. Existing Architecture Inspected
+2. Existing Animal Help Tables Found
+3. Existing User/Profile Source Found
+4. Files Modified
+5. New Files Created
+6. Database Changes
+7. Storage Changes
+8. RLS Changes
+9. Yardım Et Button Flow
+10. Camera and Gallery Implementation
+11. Authenticated User Name Resolution
+12. Original Creator Preservation
+13. Latest Status Logic
+14. Status History Logic
+15. Unique Helper Counter Logic
+16. Duplicate Insert Protection
+17. Query/Realtime Refresh Logic
+18. iOS Test Result
+19. Android Test Result
+20. Web Test Result
+21. Remaining Issues
+
+IMPORTANT FINAL RULES:
+
+DO NOT USE MOCK DATA.
+
+DO NOT USE RANDOM NAMES.
+
+DO NOT HARDCODE USER NAMES.
+
+DO NOT MANUALLY INCREMENT HELP COUNTERS.
+
+DO NOT CREATE A NEW ANIMAL POST WHEN HELPING.
+
+DO NOT REPLACE THE ORIGINAL POST CREATOR.
+
+DO NOT STORE HELP UPDATES AS COMMENTS.
+
+DO NOT COUNT LOCATION OPENS AS HELP.
+
+DO NOT COUNT CANCELLED HELP FLOWS.
+
+DO NOT ONLY BUILD THE VISUAL INTERFACE.
+
+IMPLEMENT THE REAL COMPLETE FLOW:
+
+Yardım Et
+→ current photo
+→ current status
+→ current note
+→ authenticated real user
+→ storage upload
+→ database record
+→ relational user/profile data
+→ latest status
+→ status history
+→ unique helper count
+→ helper list
+→ persistent database state
+→ iOS / Android / Web consistency
+
+Complete the implementation and recursively fix all related issues before stopping.
