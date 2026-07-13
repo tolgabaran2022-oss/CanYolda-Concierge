@@ -30,14 +30,14 @@ export default function WelcomeScreen() {
 
       {/* ── Ambient glows — oversized so their physical edges never enter the viewport ── */}
       <LinearGradient
-        colors={["rgba(124,92,246,0.22)", "rgba(167,139,250,0.12)", "rgba(196,181,253,0.04)", "transparent"]}
+        colors={["rgba(124,92,246,0.22)", "rgba(167,139,250,0.10)", "rgba(196,181,253,0.03)", "rgba(196,181,253,0)"]}
         start={{ x: 0, y: 0 }}
         end={{ x: 1, y: 1 }}
         style={styles.glowTopLeft}
         pointerEvents="none"
       />
       <LinearGradient
-        colors={["rgba(255,222,180,0.15)", "rgba(255,237,213,0.07)", "transparent"]}
+        colors={["rgba(255,222,180,0.15)", "rgba(255,237,213,0.06)", "rgba(255,237,213,0)"]}
         start={{ x: 1, y: 0 }}
         end={{ x: 0, y: 1 }}
         style={styles.glowRight}
@@ -132,24 +132,26 @@ const styles = StyleSheet.create({
     overflow: "visible",
   },
 
-  /* Ambient glows — physically extend far beyond the viewport so no hard edge is ever visible */
+  /*
+   * Ambient glows — NO borderRadius so no circular arc ever appears.
+   * Positioned so far outside the viewport that only the soft inner
+   * fade zone is visible on screen; gradient itself handles the fade.
+   */
   glowTopLeft: {
     position: "absolute",
-    top: -140,
-    left: -140,
-    width: 520,
-    height: 480,
-    borderRadius: 260,
+    top: -400,
+    left: -400,
+    width: 900,
+    height: 900,
     zIndex: 0,
     pointerEvents: "none",
   },
   glowRight: {
     position: "absolute",
-    top: -60,
-    right: -160,
-    width: 440,
-    height: 520,
-    borderRadius: 260,
+    top: -300,
+    right: -400,
+    width: 900,
+    height: 900,
     zIndex: 0,
     pointerEvents: "none",
   },

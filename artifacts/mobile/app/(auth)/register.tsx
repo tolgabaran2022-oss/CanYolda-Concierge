@@ -68,15 +68,14 @@ export default function RegisterScreen() {
     <View style={styles.root}>
       {/* Top-left ambient glow — oversized so its physical edge never appears on screen */}
       <LinearGradient
-        colors={["rgba(123,94,167,0.28)", "rgba(155,120,200,0.13)", "rgba(196,181,253,0.04)", "transparent"]}
+        colors={["rgba(123,94,167,0.26)", "rgba(155,120,200,0.11)", "rgba(196,181,253,0.03)", "rgba(196,181,253,0)"]}
         start={{ x: 0, y: 0 }}
         end={{ x: 1, y: 1 }}
         style={styles.glowTL}
         pointerEvents="none"
       />
-      {/* Top-right secondary glow */}
       <LinearGradient
-        colors={["rgba(160,130,210,0.20)", "rgba(180,155,220,0.08)", "transparent"]}
+        colors={["rgba(160,130,210,0.18)", "rgba(180,155,220,0.07)", "rgba(180,155,220,0)"]}
         start={{ x: 1, y: 0 }}
         end={{ x: 0, y: 1 }}
         style={styles.glowTR}
@@ -197,21 +196,19 @@ const styles = StyleSheet.create({
   root: { flex: 1, backgroundColor: BG },
   glowTL: {
     position: "absolute",
-    top: -110,
-    left: -110,
-    width: 440,
-    height: 400,
-    borderRadius: 220,
+    top: -400,
+    left: -400,
+    width: 900,
+    height: 900,
     zIndex: 0,
     pointerEvents: "none",
   },
   glowTR: {
     position: "absolute",
-    top: -90,
-    right: -90,
-    width: 360,
-    height: 340,
-    borderRadius: 180,
+    top: -300,
+    right: -400,
+    width: 900,
+    height: 900,
     zIndex: 0,
     pointerEvents: "none",
   },
