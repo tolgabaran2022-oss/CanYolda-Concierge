@@ -182,7 +182,7 @@ export default function CreatePostScreen() {
                 style={[S.captionInput, { color: T.text }]}
                 value={caption}
                 onChangeText={(v) => setCaption(v.slice(0, MAX_CAPTION))}
-                placeholder="Bugün sokaktaki dostlarımızla güzel bir gün geçirdik 🐾"
+                placeholder="Bugün sokaktaki dostlarımızla güzel bir gün geçirdik"
                 placeholderTextColor={T.placeholder}
                 multiline
                 maxLength={MAX_CAPTION}

@@ -1,0 +1,1059 @@
+We have a serious app-wide Android emoji, Unicode symbol, and icon rendering problem.
+
+The Android simulator is showing missing glyphs, square boxes, corrupted symbols, unsupported characters, and broken emoji-based UI icons.
+
+This is NOT a single-screen bug.
+
+DO NOT fix only the current Map screen.
+DO NOT manually replace only the icons visible in the screenshot.
+DO NOT apply temporary Android-only patches.
+
+I want a COMPLETE RECURSIVE AUDIT of the entire frontend source code and a permanent app-wide cross-platform fix.
+
+The final result must work consistently on:
+
+- Android
+- iOS
+- Web
+
+Preserve the existing CanYoldaşı design language, colors, navigation logic, backend integration, screen structure, and feature behavior.
+
+==================================================
+PHASE 1 — FULL RECURSIVE SOURCE CODE AUDIT
+==================================================
+
+Recursively scan the ENTIRE frontend project source tree.
+
+Do not inspect only currently opened files.
+
+Audit all relevant frontend folders and files including, where they exist:
+
+- app/
+- src/
+- screens/
+- components/
+- features/
+- modules/
+- layouts/
+- navigation/
+- routes/
+- tabs/
+- ui/
+- shared/
+- constants/
+- config/
+- theme/
+- styles/
+- hooks/
+- utils/
+
+Search every:
+
+- .tsx
+- .ts
+- .jsx
+- .js
+- .json
+
+file that can affect the frontend UI.
+
+Perform a complete recursive audit for all functional UI icons implemented as:
+
+- Emoji characters
+- Unicode symbols
+- Decorative Unicode characters
+- Hardcoded icon strings
+- Text-based icons
+- Unsupported glyphs
+- Broken replacement characters
+- Square placeholder symbols
+- Corrupted UTF characters
+
+Search for examples including but not limited to:
+
+🐾
+🐕
+🐈
+🐶
+🐱
+📍
+🗺️
+🏠
+❤️
+💜
+🩹
+🩺
+⚕️
+⚠️
+❗
+❓
+💬
+✉️
+👤
+👥
+🔔
+📷
+📸
+🔍
+➕
+➖
+✏️
+🗑️
+🔗
+🌎
+🌍
+🌐
+✓
+✔
+✕
+×
+→
+←
+↑
+↓
+⋯
+•••
+□
+�
+?
+
+Also detect characters that are currently appearing as:
+
+- empty squares
+- boxes
+- question marks
+- tofu glyphs
+- unsupported Android glyphs
+- incorrect icon placeholders
+
+IMPORTANT:
+
+Create an internal audit list of every affected file and every UI usage BEFORE starting the migration.
+
+The audit must cover the whole application.
+
+==================================================
+PHASE 2 — AUDIT EVERY SCREEN AND FEATURE
+==================================================
+
+Recursively audit every screen and UI area.
+
+This includes but is not limited to:
+
+AUTH:
+- Splash
+- Login
+- Register
+- Forgot password
+- Password reset
+- Email verification
+
+FEED:
+- Akış
+- Takip Ettiklerin
+- Posts
+- Stories
+- Story viewer
+- Story creation
+- Post creation
+- Like
+- Comment
+- Save
+- Share
+- Post menus
+
+PROFILES:
+- My profile
+- Other user profiles
+- Followers
+- Following
+- Saved posts
+- Profile editing
+
+PETS:
+- Evcilim
+- Pet profile
+- Pet creation
+- Pet editing
+- Pet photos
+- Vaccination information
+- Identity information
+- Food information
+- Appointment information
+- Health information
+
+MAP:
+- Harita
+- Nearby animals
+- Animal status markers
+- Filters
+- Location actions
+- Map buttons
+- Map cards
+- Bottom sheets
+
+STREET ANIMAL SYSTEM:
+- Unknown status
+- Injured status
+- Healthy status
+- Open status
+- Animal report creation
+- Animal report cards
+- Animal report details
+
+ADOPTION:
+- Sahiplendirme
+- Adoption listings
+- Listing creation
+- Listing editing
+- Listing details
+- Seller/contact actions
+
+LISTINGS:
+- İlanlarım
+- İlan oluştur
+- Listing preview
+- Promote listing
+- Payment UI
+- Listing cards
+
+MESSAGING:
+- DM
+- Conversation list
+- Message screen
+- Image messages
+- Message actions
+
+OTHER:
+- Notifications
+- Search
+- Settings
+- Empty states
+- Loading states
+- Error states
+- Toasts
+- Alerts
+- Modals
+- Bottom sheets
+- Headers
+- Tab bar
+- Navigation buttons
+- Floating buttons
+- Filter chips
+- Badges
+- Cards
+
+Do not skip screens that are not immediately visible in the main navigation.
+
+==================================================
+PHASE 3 — FIND THE REAL ROOT CAUSE
+==================================================
+
+Before applying random replacements, inspect the architecture and identify the actual root cause.
+
+Check whether the Android rendering problem is caused by:
+
+1. Emoji characters being used as functional UI icons
+2. Unicode symbols being rendered through React Native Text
+3. Custom fonts overriding Android system font fallback
+4. A global fontFamily incorrectly applied to icon elements
+5. Icon fonts not being loaded correctly
+6. Different icon libraries being mixed incorrectly
+7. Unsupported icons on Android
+8. Incorrect icon names
+9. Web icon components being used directly in React Native
+10. Encoding corruption
+11. Non-UTF-8 files
+12. Copy/paste corruption
+13. Double encoded strings
+14. Incorrect fallback icon strings
+15. Platform-specific rendering inconsistencies
+
+Find and document the root cause internally.
+
+Do not assume the problem is simply "Android does not support emojis".
+
+==================================================
+PHASE 4 — SELECT ONE PRIMARY VECTOR ICON SYSTEM
+==================================================
+
+Functional application UI icons must NOT rely on emojis or Unicode glyph rendering.
+
+Use ONE primary cross-platform vector icon system.
+
+Selection priority:
+
+1. The existing icon library already installed and correctly configured in the project
+2. @expo/vector-icons if this is an Expo React Native application
+3. lucide-react-native if already installed and stable in the current architecture
+
+Do not unnecessarily install multiple icon libraries.
+
+Do not mix:
+
+- Lucide
+- Material Icons
+- Ionicons
+- FontAwesome
+- Feather
+
+randomly throughout the application.
+
+Choose one primary system.
+
+Only use a secondary library if a technically necessary icon does not exist and there is no reasonable alternative.
+
+==================================================
+PHASE 5 — CREATE A CENTRALIZED APP ICON ARCHITECTURE
+==================================================
+
+Create a centralized reusable icon component.
+
+Use the existing design system folder if available.
+
+Example:
+
+components/ui/AppIcon.tsx
+
+or:
+
+src/components/ui/AppIcon.tsx
+
+or the equivalent existing shared UI directory.
+
+Create a logical icon abstraction.
+
+Example usage:
+
+<AppIcon
+  name="paw"
+  size={20}
+  color={theme.colors.primary}
+/>
+
+Create logical icon names such as:
+
+home
+map
+feed
+animals
+pet
+profile
+paw
+healthy
+injured
+unknown
+open
+message
+notification
+location
+navigation
+camera
+image
+add
+remove
+search
+more
+back
+forward
+close
+check
+warning
+info
+edit
+delete
+share
+save
+saved
+heart
+heartFilled
+comment
+settings
+lock
+mail
+phone
+calendar
+clock
+vaccine
+food
+medical
+user
+users
+eye
+eyeOff
+filter
+refresh
+externalLink
+
+Map these logical names to the selected vector icon library.
+
+The application should use logical AppIcon names instead of directly depending on library-specific icon names everywhere.
+
+Example concept:
+
+const iconMap = {
+  map: Map,
+  location: MapPin,
+  navigation: Navigation,
+  paw: PawPrint,
+  healthy: CircleCheck,
+  injured: Cross,
+  unknown: CircleHelp,
+  message: MessageCircle,
+  notification: Bell,
+  camera: Camera,
+  add: Plus,
+  search: Search,
+  more: Ellipsis,
+  profile: User,
+};
+
+Adapt this mapping to the actual icon library selected.
+
+Do not create fake icon names that do not exist in the selected library.
+
+==================================================
+PHASE 6 — REPLACE ALL FUNCTIONAL EMOJIS RECURSIVELY
+==================================================
+
+After the recursive audit, migrate ALL functional UI icons.
+
+Remove patterns such as:
+
+<Text>🐾</Text>
+<Text>📍</Text>
+<Text>❤️</Text>
+<Text>🩹</Text>
+<Text>🩺</Text>
+<Text>⚠️</Text>
+<Text>👤</Text>
+<Text>💬</Text>
+<Text>🔔</Text>
+<Text>📷</Text>
+<Text>🔍</Text>
+<Text>➕</Text>
+<Text>✓</Text>
+<Text>×</Text>
+<Text>→</Text>
+<Text>←</Text>
+<Text>⋯</Text>
+
+Also find patterns such as:
+
+const icon = "🐾";
+
+icon: "📍"
+
+labelIcon: "❤️"
+
+statusIcon = "🩹"
+
+return "⚠️";
+
+or arrays/constants containing emoji-based UI icons.
+
+Replace these functional UI icons with AppIcon.
+
+DO NOT replace emojis inside genuine user-generated content.
+
+User-generated emojis must continue to work in:
+
+- Post captions
+- Comments
+- Direct messages
+- User biography
+- User-entered text
+- Story captions
+
+Only migrate application-controlled UI icons and decoration icons.
+
+==================================================
+PHASE 7 — FIX THE CURRENT MAP SCREEN COMPLETELY
+==================================================
+
+The provided Android screenshot clearly shows broken glyph icons on the map screen.
+
+Fix every affected icon on this screen.
+
+Inspect:
+
+- Map header
+- Search/header bar
+- Animal count area
+- Map controls
+- Location/navigation button
+- Nearby Animals bottom sheet
+- "Hepsi" filter chip
+- "Aç" filter chip
+- "Yaralı" filter chip
+- "Sağlıklı" filter chip
+- Animal status avatars/icons
+- Animal list rows
+- Right-side row action icons
+- Bottom navigation
+
+Use proper vector icons.
+
+Recommended semantic mapping:
+
+Harita:
+Map or MapPinned
+
+Akış:
+Home or Newspaper
+
+Hayvanlar:
+PawPrint
+
+Evcilim:
+Heart or PawPrint
+
+Hesap:
+User
+
+Hepsi:
+ListFilter or Layers
+
+Aç:
+CircleAlert or appropriate existing status icon based on the actual application status meaning
+
+Yaralı:
+Cross or HeartPulse
+
+Sağlıklı:
+CircleCheck or HeartPulse
+
+Bilinmiyor:
+CircleHelp
+
+Konum:
+MapPin
+
+Haritada aç:
+Navigation or ExternalLink
+
+Do not change the meaning of the existing animal statuses.
+
+First inspect the actual application status enum and database logic.
+
+The icon must match the actual existing status.
+
+Do not invent new status values.
+
+==================================================
+PHASE 8 — BOTTOM TAB NAVIGATION ROOT FIX
+==================================================
+
+The Android screenshot shows broken icons in the bottom navigation.
+
+Audit the actual tab navigation implementation.
+
+The five tabs must use proper vector icon components.
+
+Expected semantic icon mapping:
+
+Harita → Map
+Akış → Home or Newspaper
+Hayvanlar → PawPrint
+Evcilim → Heart or PawPrint
+Hesap → User
+
+Check:
+
+- active icon state
+- inactive icon state
+- active label color
+- inactive label color
+- icon size
+- icon alignment
+- Android vertical alignment
+- tab height
+- safe area
+- bottom inset
+- web layout
+
+Do not render tab icons through Text.
+
+BAD:
+
+tabBarIcon: () => <Text>🐾</Text>
+
+GOOD:
+
+tabBarIcon: ({ color, size }) => (
+  <AppIcon name="paw" color={color} size={size} />
+)
+
+Preserve the current navigation routes and screen names.
+
+Do not recreate the navigator unnecessarily.
+
+==================================================
+PHASE 9 — AUDIT STATUS CONFIGURATION OBJECTS
+==================================================
+
+Search recursively for status configuration objects.
+
+Examples:
+
+statusConfig
+statusMap
+animalStatuses
+filterOptions
+tabs
+navigationItems
+menuItems
+actionItems
+categoryOptions
+
+Find objects similar to:
+
+{
+  label: "Yaralı",
+  icon: "🩹"
+}
+
+Convert them to:
+
+{
+  label: "Yaralı",
+  iconName: "injured"
+}
+
+Then render:
+
+<AppIcon name={item.iconName} />
+
+Do not store React icon components directly in database records.
+
+Do not store library-specific icon objects in Supabase.
+
+Keep database data semantic.
+
+UI icon mapping must stay in frontend application code.
+
+==================================================
+PHASE 10 — UTF-8 AND ENCODING AUDIT
+==================================================
+
+Recursively inspect source files for encoding corruption.
+
+Verify all source files use UTF-8.
+
+Search for:
+
+�
+Â
+Ã
+ðŸ
+â€
+âœ
+âš
+broken Turkish text
+double-encoded emoji strings
+invalid replacement characters
+
+Preserve Turkish characters correctly:
+
+ç
+Ç
+ğ
+Ğ
+ı
+İ
+ö
+Ö
+ş
+Ş
+ü
+Ü
+
+Examples of text that must remain correct:
+
+Şifremi Unuttum?
+Kayıt Ol
+Giriş Yap
+Yakındaki Hayvanlar
+Hepsini Gör
+Yaralı
+Sağlıklı
+Bilinmiyor
+Hayvanlar
+Evcilim
+Hesap
+Akış
+Harita
+Konumu Aç
+İlan Oluştur
+Sahiplendirme
+
+Do not perform broad string normalization that damages valid Turkish text.
+
+Only repair actually corrupted strings.
+
+==================================================
+PHASE 11 — FONT ARCHITECTURE AUDIT
+==================================================
+
+Audit the complete typography and font configuration.
+
+Inspect:
+
+- useFonts
+- expo-font
+- fontFamily
+- global text styles
+- theme typography
+- reusable Text components
+- custom Text wrappers
+- app layout font initialization
+- Android-specific typography
+
+Check whether a custom font is being forced globally.
+
+Example possible problem:
+
+const styles = {
+  text: {
+    fontFamily: "CustomFont"
+  }
+}
+
+and the same text wrapper is being used to render Unicode icons.
+
+Functional icons must not depend on custom text font fallback.
+
+Vector icon components must retain the renderer/font required by the selected icon library.
+
+Do not apply custom application typography fontFamily to AppIcon.
+
+Do not remove or redesign the application's typography.
+
+Fix only incorrect font inheritance or icon rendering architecture.
+
+==================================================
+PHASE 12 — CHECK ICON LIBRARY INITIALIZATION
+==================================================
+
+If the selected icon library uses font assets:
+
+Verify:
+
+- fonts are installed
+- fonts are loaded
+- Expo configuration is correct
+- bundler resolves the icon package
+- Android bundle includes required assets
+- no package version mismatch exists
+
+If the selected system uses SVG icons:
+
+Verify:
+
+- react-native-svg compatibility
+- Expo compatibility
+- Web compatibility
+- Android compatibility
+
+Do not downgrade major packages randomly.
+
+Do not perform unnecessary dependency migrations.
+
+Use the current project's package versions and architecture as the baseline.
+
+==================================================
+PHASE 13 — RESPONSIVE ICON LAYOUT FIX
+==================================================
+
+After replacing the icons, audit the UI layout.
+
+Verify:
+
+- icons are vertically centered
+- icons are horizontally centered
+- icons do not overlap text
+- icon baselines are stable
+- icons are not clipped
+- icons are not stretched
+- filter chips keep consistent height
+- cards preserve padding
+- tab icons remain inside safe areas
+- icons do not cause text wrapping
+- Android font scaling does not break icon layout
+
+Recommended approximate sizes:
+
+Bottom tab:
+20–24
+
+Header actions:
+20–24
+
+Filter chips:
+14–18
+
+List actions:
+16–20
+
+Status icons:
+18–24
+
+Large empty state icons:
+36–56
+
+Use the current design scale where a design token already exists.
+
+Do not randomly choose different icon sizes on every screen.
+
+==================================================
+PHASE 14 — TOUCH TARGETS
+==================================================
+
+Replacing emoji icons must not reduce touch target accessibility.
+
+Keep interactive icon buttons approximately 44x44 touch targets where reasonable.
+
+The visible icon can remain 20–24 px.
+
+Do not create tiny 16x16 clickable areas.
+
+Check:
+
+- back buttons
+- more buttons
+- delete buttons
+- edit buttons
+- map controls
+- camera buttons
+- notification buttons
+- story actions
+- DM actions
+
+==================================================
+PHASE 15 — CROSS-PLATFORM CONSISTENCY
+==================================================
+
+The final icon system must work on:
+
+ANDROID:
+- No missing glyphs
+- No squares
+- No broken emoji UI icons
+- No icon font loading errors
+
+IOS:
+- Preserve existing premium UI appearance
+- No regressions
+- Same icon meanings
+
+WEB:
+- No broken SVG/icon rendering
+- Correct responsive alignment
+- Correct desktop/mobile layout
+
+Do not build three independent icon systems.
+
+Use one shared icon architecture.
+
+Only add Platform.OS conditions if there is a proven technical need.
+
+==================================================
+PHASE 16 — CLEANUP LEGACY ICON CODE
+==================================================
+
+After completing the migration, recursively search the project again.
+
+Remove:
+
+- old emoji icon constants
+- old Unicode icon constants
+- duplicate icon maps
+- obsolete icon helper functions
+- unused icon imports
+- unsupported fallback icon strings
+- temporary Android icon patches
+- duplicate AppIcon implementations
+
+Do not leave both old and new icon systems active.
+
+There must be ONE clear primary icon architecture.
+
+==================================================
+PHASE 17 — SECOND RECURSIVE POST-MIGRATION AUDIT
+==================================================
+
+THIS STEP IS MANDATORY.
+
+After completing all changes, recursively scan the ENTIRE frontend source code AGAIN.
+
+Search again for functional UI emojis and Unicode icon usage.
+
+Compare the second recursive audit with the first audit.
+
+Verify that no application-controlled functional UI icons remain implemented as unreliable Text emojis or unsupported Unicode glyphs.
+
+Exceptions:
+
+User-generated content may contain emojis.
+
+Intentional textual punctuation and normal Turkish text are allowed.
+
+Do not incorrectly remove normal characters from content.
+
+==================================================
+PHASE 18 — TEST ALL NAVIGATION PATHS
+==================================================
+
+Navigate through every reachable frontend screen.
+
+Test all bottom tabs:
+
+- Harita
+- Akış
+- Hayvanlar
+- Evcilim
+- Hesap
+
+Then test nested screens.
+
+Check:
+
+- headers
+- buttons
+- cards
+- chips
+- status icons
+- empty states
+- modals
+- bottom sheets
+- menus
+- back buttons
+- navigation actions
+
+Android must be tested first because the bug is visible there.
+
+Then verify iOS.
+
+Then verify Web.
+
+Do not consider the task complete after only starting the development server.
+
+Actually inspect runtime rendering and console errors.
+
+==================================================
+PHASE 19 — PRESERVE EXISTING APPLICATION LOGIC
+==================================================
+
+This task is an icon/rendering architecture migration.
+
+Do NOT break:
+
+- Supabase
+- authentication
+- database queries
+- feed
+- stories
+- follow system
+- comments
+- likes
+- saved posts
+- DM
+- maps
+- animal reports
+- adoption listings
+- pet profiles
+- listing creation
+- payments
+- notification logic
+
+Do not rename database columns.
+
+Do not delete database tables.
+
+Do not change API payload contracts unless absolutely required for an existing frontend icon bug.
+
+Preserve existing navigation routes.
+
+Preserve existing button actions.
+
+==================================================
+STRICT RULES
+==================================================
+
+DO NOT:
+
+- Fix only the screenshot
+- Fix only the Map screen
+- Replace only 5 visible emojis
+- Use Android-only emoji fonts as the solution
+- Add random font fallback hacks
+- Use text characters as functional icons
+- Break Turkish characters
+- Redesign the application
+- Change backend logic
+- Mix many icon libraries
+- Leave duplicate icon systems
+- Claim completion without recursive verification
+
+MUST:
+
+- Perform a full recursive audit
+- Identify the root cause
+- Create one centralized icon architecture
+- Replace app-controlled functional emoji icons
+- Preserve user-generated emojis
+- Perform a second recursive audit
+- Verify Android
+- Verify iOS
+- Verify Web
+
+==================================================
+FINAL EXPECTED RESULT
+==================================================
+
+The CanYoldaşı application must have:
+
+- Zero broken square UI icons on Android
+- Zero unsupported functional Unicode glyphs
+- Zero corrupted UI emoji placeholders
+- Consistent vector icons
+- One centralized AppIcon architecture
+- Correct Turkish text
+- Stable Android rendering
+- Stable iOS rendering
+- Stable Web rendering
+- Existing design preserved
+- Existing feature logic preserved
+
+==================================================
+FINAL REPORT REQUIRED
+==================================================
+
+Before finishing, provide a technical report containing:
+
+1. Root cause found
+2. Primary icon library selected
+3. Why that icon library was selected
+4. Central AppIcon file path
+5. All files changed
+6. Total number of files recursively audited
+7. Total number of functional emoji/Unicode UI icons found
+8. Total number of UI icons migrated
+9. Encoding issues found
+10. Font configuration issues found
+11. Bottom navigation fixes
+12. Map screen fixes
+13. Other screens fixed
+14. Legacy icon code removed
+15. Result of the second recursive audit
+16. Remaining functional emoji UI icon count
+17. Android verification result
+18. iOS verification result
+19. Web verification result
+20. Any remaining known issue
+
+The remaining application-controlled functional emoji UI icon count should be ZERO unless there is a clearly documented technical reason.
+
+Do not tell me only that the issue is fixed.
+
+Perform the recursive audit, migration, cleanup, second recursive audit, and cross-platform verification.

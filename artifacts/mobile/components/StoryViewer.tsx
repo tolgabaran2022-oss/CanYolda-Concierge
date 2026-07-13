@@ -197,7 +197,7 @@ export function StoryViewer({ visible, group, viewerId, onClose, onNextGroup, on
       await apiReplyToStory(current.id, viewerId, group.userId, replyText.trim());
       setReplyText("");
       Keyboard.dismiss();
-      showToast("Mesajın gönderildi 💜");
+      showToast("Mesajın gönderildi");
     } catch {
       showToast("Gönderilemedi, tekrar dene");
     } finally {

@@ -228,7 +228,7 @@ export default function ChatScreen() {
           ListEmptyComponent={
             <View style={S.center}>
               <Text style={[S.noMsgs, { color: T.textMuted }]}>
-                Henüz mesaj yok. Merhaba de! 👋
+                Henüz mesaj yok. Merhaba de!
               </Text>
             </View>
           }

@@ -48,8 +48,8 @@ const SEED_AVATARS: Record<string, string> = {
 const CAT_FALLBACK = "https://loremflickr.com/300/300/cat?lock=500";
 
 const PET_TYPE_LABELS: Record<string, string> = {
-  cat: "🐱 Kedi", dog: "🐶 Köpek", bird: "🐦 Kuş",
-  rabbit: "🐰 Tavşan", hamster: "🐹 Hamster", fish: "🐟 Balık",
+  cat: "Kedi", dog: "Köpek", bird: "Kuş",
+  rabbit: "Tavşan", hamster: "Hamster", fish: "Balık",
 };
 
 type OwnTab = "posts" | "pets";
@@ -460,9 +460,7 @@ function PetsGrid({ pets, onPressPet }: { pets: ApiPetProfile[]; onPressPet: (pe
             {pet.avatarUrl ? (
               <Image source={{ uri: pet.avatarUrl }} style={S.petAvatar} contentFit="cover" />
             ) : (
-              <Text style={S.petEmoji}>
-                {pet.type === "dog" ? "🐶" : pet.type === "bird" ? "🐦" : pet.type === "rabbit" ? "🐰" : "🐱"}
-              </Text>
+              <Ionicons name="paw" size={26} color={T.purple} />
             )}
           </LinearGradient>
           <View style={S.petInfo}>

@@ -120,7 +120,7 @@ export default function ProfileScreen() {
             <Text style={[S.userHandle, { color: T.purple }]}>@{user.username}</Text>
           ) : null}
           <Text style={[S.userBio, { color: T.textMuted }]}>
-            {user.bio || "🐾 Sokak dostlarının yanındayım"}
+            {user.bio || "Sokak dostlarının yanındayım"}
             {user.location ? ` · ${user.location}` : " · İstanbul"}
           </Text>
           <Text style={[S.userEmail, { color: T.textFaint }]}>{user.email}</Text>

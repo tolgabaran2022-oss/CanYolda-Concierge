@@ -54,11 +54,11 @@ const PHOTO_H    = PHOTO_W * 1.15;
 
 /* ── Static data ─────────────────────────────────────────── */
 const PET_TYPES = [
-  { label: "Kedi",   emoji: "🐱" },
-  { label: "Köpek",  emoji: "🐶" },
-  { label: "Kuş",    emoji: "🐦" },
-  { label: "Tavşan", emoji: "🐰" },
-  { label: "Diğer",  emoji: "🐾" },
+  { label: "Kedi"   },
+  { label: "Köpek"  },
+  { label: "Kuş"    },
+  { label: "Tavşan" },
+  { label: "Diğer"  },
 ];
 
 const AGE_OPTIONS = [
@@ -424,7 +424,7 @@ export default function EditAdoptionScreen() {
         petAge,
         location:          `${district}, ${province}`,
         description:       description.trim(),
-        contactInfo:       `📞 +90 ${formatPhone(phone)} | ✉️ ${email.trim()}`,
+        contactInfo:       `Tel: +90 ${formatPhone(phone)} | E-posta: ${email.trim()}`,
         allowPhoneContact,
         allowMessages,
       });
@@ -594,17 +594,17 @@ export default function EditAdoptionScreen() {
               <View style={F.wrap}>
                 <Text style={F.label}>Tür <Text style={{ color: C.purple }}>*</Text></Text>
                 <View style={S.chipRow}>
-                  {PET_TYPES.map(({ label, emoji }) => {
+                  {PET_TYPES.map(({ label }) => {
                     const active = petType === label;
                     return (
                       <Pressable key={label} onPress={() => { Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light); setPetType(label); }}
                         style={({ pressed }) => [S.chip, active && S.chipActive, { transform: [{ scale: pressed ? 0.95 : 1 }] }]}>
                         {active ? (
                           <LinearGradient colors={[C.purpleLight, C.purpleDark]} start={{ x: 0, y: 0 }} end={{ x: 1, y: 1 }} style={S.chipInner}>
-                            <Text style={S.chipEmoji}>{emoji}</Text><Text style={S.chipTxtA}>{label}</Text>
+                            <Text style={S.chipTxtA}>{label}</Text>
                           </LinearGradient>
                         ) : (
-                          <View style={S.chipInner}><Text style={S.chipEmoji}>{emoji}</Text><Text style={S.chipTxt}>{label}</Text></View>
+                          <View style={S.chipInner}><Text style={S.chipTxt}>{label}</Text></View>
                         )}
                       </Pressable>
                     );

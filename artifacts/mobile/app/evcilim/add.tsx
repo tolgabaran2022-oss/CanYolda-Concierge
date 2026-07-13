@@ -33,15 +33,6 @@ const BORDER= "#EEE8F5";
 const PET_TYPES = ["Kedi", "Köpek", "Kuş", "Tavşan", "Balık", "Diğer"] as const;
 type PetType = typeof PET_TYPES[number];
 
-function petEmoji(type: string): string {
-  const t = type.toLowerCase();
-  if (t.includes("kedi") || t.includes("cat")) return "🐱";
-  if (t.includes("köpek") || t.includes("dog")) return "🐶";
-  if (t.includes("kuş") || t.includes("bird")) return "🦜";
-  if (t.includes("tavşan") || t.includes("rabbit")) return "🐰";
-  if (t.includes("balık") || t.includes("fish")) return "🐟";
-  return "🐾";
-}
 
 /* ── Field Component ────────────────────────────────────────── */
 function Field({
@@ -173,7 +164,7 @@ export default function AddPetScreen() {
             <Image source={{ uri: image }} style={st.avatar} contentFit="cover" />
           ) : (
             <LinearGradient colors={[`${P2}40`, `${P}20`]} style={st.avatarPlaceholder}>
-              <Text style={{ fontSize: 44 }}>{petEmoji(type)}</Text>
+              <Ionicons name="paw" size={44} color={P} />
             </LinearGradient>
           )}
           <View style={st.cameraBtn}>
@@ -195,7 +186,7 @@ export default function AddPetScreen() {
                     style={[st.typePill, type === t && st.typePillActive]}
                     onPress={() => { Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light); setType(t); }}
                   >
-                    <Text style={{ fontSize: 16 }}>{petEmoji(t)}</Text>
+                    <Ionicons name="paw" size={16} color={type === t ? WHITE : P} />
                     <Text style={[st.typeLabel, type === t && st.typeLabelActive]}>{t}</Text>
                   </Pressable>
                 ))}

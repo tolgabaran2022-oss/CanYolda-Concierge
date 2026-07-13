@@ -34,15 +34,6 @@ const RED   = "#FF3B30";
 const PET_TYPES = ["Kedi", "Köpek", "Kuş", "Tavşan", "Balık", "Diğer"] as const;
 type PetType = typeof PET_TYPES[number];
 
-function petEmoji(type: string): string {
-  const t = type.toLowerCase();
-  if (t.includes("kedi") || t.includes("cat")) return "🐱";
-  if (t.includes("köpek") || t.includes("dog")) return "🐶";
-  if (t.includes("kuş") || t.includes("bird")) return "🦜";
-  if (t.includes("tavşan") || t.includes("rabbit")) return "🐰";
-  if (t.includes("balık") || t.includes("fish")) return "🐟";
-  return "🐾";
-}
 
 function Field({
   label,
@@ -204,7 +195,7 @@ export default function PetDetailScreen() {
             <Image source={{ uri: image ?? pet.image }} style={st.avatar} contentFit="cover" />
           ) : (
             <LinearGradient colors={[`${P2}40`, `${P}20`]} style={st.avatarPlaceholder}>
-              <Text style={{ fontSize: 52 }}>{petEmoji(pet.type)}</Text>
+              <Ionicons name="paw" size={52} color={P} />
             </LinearGradient>
           )}
           {editing && (
@@ -230,7 +221,7 @@ export default function PetDetailScreen() {
                       style={[st.typePill, type === t && st.typePillActive]}
                       onPress={() => setType(t)}
                     >
-                      <Text style={{ fontSize: 16 }}>{petEmoji(t)}</Text>
+                      <Ionicons name="paw" size={16} color={type === t ? WHITE : P} />
                       <Text style={[st.typeLabel, type === t && st.typeLabelActive]}>{t}</Text>
                     </Pressable>
                   ))}

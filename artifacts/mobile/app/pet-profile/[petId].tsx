@@ -50,9 +50,6 @@ const PURPLE = "#7C3AED";
 const PURPLE_LIGHT = "#A480D8";
 const CAT_PLACEHOLDER = "https://loremflickr.com/300/300/cat?lock=501";
 
-const PET_EMOJI: Record<string, string> = {
-  cat: "🐱", dog: "🐶", bird: "🦜", rabbit: "🐰", other: "🐾",
-};
 const PET_LABEL: Record<string, string> = {
   cat: "Kedi", dog: "Köpek", bird: "Kuş", rabbit: "Tavşan", other: "Diğer",
 };
@@ -346,7 +343,6 @@ export default function PetProfileScreen() {
     );
   }
 
-  const emoji = PET_EMOJI[pet.type] ?? "🐾";
   const typeLabel = PET_LABEL[pet.type] ?? pet.type;
   const avatarUri = pet.avatarUrl || CAT_PLACEHOLDER;
 
@@ -387,7 +383,7 @@ export default function PetProfileScreen() {
 
         {/* Info */}
         <View style={[S.infoBlock, { backgroundColor: T.bg }]}>
-          <Text style={[S.petName, { color: T.text }]}>{emoji} {pet.name}</Text>
+          <Text style={[S.petName, { color: T.text }]}>{pet.name}</Text>
           <Text style={[S.petSub, { color: T.textMuted }]}>{typeLabel}{pet.breed ? ` · ${pet.breed}` : ""}</Text>
           {pet.bio ? <Text style={[S.bio, { color: T.textMuted }]}>{pet.bio}</Text> : null}
           {pet.location ? (

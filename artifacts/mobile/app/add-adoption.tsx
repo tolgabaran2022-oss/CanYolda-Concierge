@@ -36,11 +36,11 @@ const C = {
 
 /* ── Static data ── */
 const PET_TYPES = [
-  { label: "Kedi",   emoji: "🐱" },
-  { label: "Köpek",  emoji: "🐶" },
-  { label: "Kuş",    emoji: "🐦" },
-  { label: "Tavşan", emoji: "🐰" },
-  { label: "Diğer",  emoji: "🐾" },
+  { label: "Kedi"   },
+  { label: "Köpek"  },
+  { label: "Kuş"    },
+  { label: "Tavşan" },
+  { label: "Diğer"  },
 ];
 
 const AGE_OPTIONS = [
@@ -264,7 +264,7 @@ export default function AddAdoptionScreen() {
         description:      description.trim(),
         userId:           user.id,
         userName:         user.name,
-        contactInfo:      `📞 +90 ${formatPhoneDisplay(phone)} | ✉️ ${email.trim()}`,
+        contactInfo:      `Tel: +90 ${formatPhoneDisplay(phone)} | E-posta: ${email.trim()}`,
         allowPhoneContact,
         allowMessages,
       });
@@ -382,7 +382,7 @@ export default function AddAdoptionScreen() {
                   Tür <Text style={{ color: C.purple }}>*</Text>
                 </Text>
                 <View style={S.chipRow}>
-                  {PET_TYPES.map(({ label, emoji }) => {
+                  {PET_TYPES.map(({ label }) => {
                     const active = petType === label;
                     return (
                       <Pressable
@@ -406,12 +406,10 @@ export default function AddAdoptionScreen() {
                             end={{ x: 1, y: 1 }}
                             style={S.chipInner}
                           >
-                            <Text style={S.chipEmoji}>{emoji}</Text>
                             <Text style={S.chipTxtActive}>{label}</Text>
                           </LinearGradient>
                         ) : (
                           <View style={S.chipInner}>
-                            <Text style={S.chipEmoji}>{emoji}</Text>
                             <Text style={[S.chipTxt, { color: T.textMuted }]}>{label}</Text>
                           </View>
                         )}
