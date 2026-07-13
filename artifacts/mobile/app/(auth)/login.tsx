@@ -15,7 +15,7 @@ import { useSafeAreaInsets } from "react-native-safe-area-context";
 const PURPLE = "#7B5CBF";
 const BG = "#FAF7F2";
 
-const HERO_IMAGE = require("@/assets/images/hero-logo-pets.png");
+const HERO_IMAGE = require("@/assets/images/login-hero.jpg");
 
 export default function WelcomeScreen() {
   const insets = useSafeAreaInsets();
@@ -23,7 +23,7 @@ export default function WelcomeScreen() {
   const { width: sw } = useWindowDimensions();
 
   const heroW = Math.min(sw, 430);
-  const heroH = Math.round(heroW * (4585 / 4265));
+  const heroH = Math.round(heroW * (1109 / 568));
 
   return (
     <View style={[styles.root, { paddingBottom: Math.max(insets.bottom, 20) }]}>
@@ -157,7 +157,7 @@ const styles = StyleSheet.create({
   },
 
   heroWrap: {
-    overflow: "hidden",
+    alignSelf: "center",
   },
 
   btnSection: {

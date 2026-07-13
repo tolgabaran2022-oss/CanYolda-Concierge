@@ -1,0 +1,145 @@
+TASK: Replace the current login screen visual with the newly provided reference image.
+
+I have attached a new image named/reference image: c1.jpg.
+
+IMPORTANT:
+Do NOT redesign the login page.
+Do NOT change the authentication logic.
+Do NOT change input fields, buttons, navigation, validation, Supabase auth logic, or existing login functionality.
+
+Only replace the CURRENT LOGIN SCREEN IMAGE/VISUAL with the newly attached c1.jpg image.
+
+REQUIREMENTS:
+
+1. Find the exact image component or asset currently used on the Login screen.
+
+2. Remove the old login visual/image reference and replace it with the new provided c1.jpg asset.
+
+3. Store the image as a local application asset.
+For example:
+
+assets/images/login-hero.jpg
+
+Use the real project asset structure if a different asset folder already exists.
+
+4. The new image MUST display completely.
+
+CRITICAL IMAGE DISPLAY RULES:
+- Do not crop the top of the image.
+- Do not crop the logo.
+- Do not crop the dog or cat.
+- Do not zoom the image.
+- Do not stretch or distort the image.
+- Preserve the original aspect ratio.
+- The complete composition must remain visible.
+
+For React Native / Expo, prefer:
+
+resizeMode="contain"
+
+or:
+
+contentFit="contain"
+
+depending on the image component/library currently used.
+
+Example logic:
+
+<Image
+  source={require('../assets/images/login-hero.jpg')}
+  style={styles.loginHeroImage}
+  resizeMode="contain"
+/>
+
+The exact implementation must match the current project architecture.
+
+5. IMAGE CONTAINER
+
+The image container must adapt responsively to the available screen width.
+
+Use responsive sizing.
+
+Recommended behavior:
+
+width: '100%'
+height: undefined
+aspectRatio based on the original image
+
+Do NOT use fixed negative positioning such as:
+
+top: -50
+marginTop: -100
+transform: [{ scale: 1.3 }]
+
+Remove any existing scale, translateY, overflow clipping, or negative margin that causes the hero image to be cut off.
+
+6. If the parent container currently uses:
+
+overflow: 'hidden'
+
+and it causes the image to be cropped, fix the container structure.
+
+Do not blindly remove overflow from unrelated UI elements.
+
+7. SAFE AREA
+
+Respect iPhone Dynamic Island / notch and Android status bar.
+
+The image must start from the correct visual position and must not disappear behind the system status bar.
+
+Use the project's existing SafeAreaView / safe area implementation correctly.
+
+8. RESPONSIVE CROSS-PLATFORM AUDIT
+
+Verify the updated login visual on:
+
+- iOS simulator
+- Android simulator
+- Web responsive/mobile view
+
+The same new image must appear on ALL platforms.
+
+Do not create an iOS-only implementation.
+
+Check for platform-specific components such as:
+
+Platform.OS === 'ios'
+Platform.OS === 'android'
+
+and make sure both platforms use the new asset.
+
+9. WEB
+
+On Web:
+- Keep the image centered.
+- Preserve its aspect ratio.
+- Do not stretch the image horizontally.
+- Do not crop the image due to max-height or fixed container dimensions.
+
+10. CLEANUP
+
+After replacing the image:
+
+- Search the entire Login screen and related login components for references to the previous hero/login image.
+- Remove obsolete asset imports if they are no longer used.
+- Do not leave duplicate images layered behind the new image.
+- Check absolute-positioned decorative elements that could overlap the new image.
+
+FINAL EXPECTED RESULT:
+
+The Login screen must use the newly attached c1.jpg design as its main visual.
+
+The FULL image must be visible.
+The top purple shape must not be cut.
+The Canyoldaşı logo and slogan must remain fully visible.
+The dog and cat section must remain fully visible.
+The image must preserve its original proportions.
+
+Authentication UI and logic must continue working exactly as before.
+
+After implementation, report:
+1. Which Login component was modified.
+2. Which old asset was replaced.
+3. The final local path of the new image.
+4. Whether iOS, Android, and Web now reference the same image asset.
+5. Any style that previously caused image cropping.
