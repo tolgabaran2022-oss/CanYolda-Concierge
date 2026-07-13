@@ -69,7 +69,7 @@ export default function ForgotPasswordScreen() {
       // TODO: API çağrısı — sıfırlama kodu gönder
       // await sendResetCode(email.trim());
       router.push({
-        pathname: "/(auth)/reset-password",
+        pathname: "/(auth)/verify-code",
         params: { email: email.trim() },
       });
     } finally {
@@ -252,6 +252,7 @@ const styles = StyleSheet.create({
   iconBlob: {
     width: 88, height: 88,
     alignItems: "center", justifyContent: "center",
+    // Organik blob hissi: asimetrik köşeler
     borderTopLeftRadius: 44, borderTopRightRadius: 38,
     borderBottomLeftRadius: 36, borderBottomRightRadius: 46,
     shadowColor: C.purple600, shadowOpacity: 0.35,
