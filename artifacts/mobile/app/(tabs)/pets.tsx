@@ -839,7 +839,7 @@ function MyListingCard({
           {isAdopted && (
             <View style={ml.adoptedBanner}>
               <Ionicons name="heart-circle" size={16} color={P} />
-              <Text style={ml.adoptedBannerTxt}>Tebrikler! Bu hayvan yeni yuvasını buldu 🏠</Text>
+              <Text style={ml.adoptedBannerTxt}>Tebrikler! Bu hayvan yeni yuvasını buldu</Text>
             </View>
           )}
 
@@ -1080,7 +1080,7 @@ function MyListingsSection({
 
   const handleAdopted = useCallback((id: string, petName: string) => {
     Alert.alert(
-      "Sahiplendirildi 🏠",
+      "Sahiplendirildi",
       `"${petName}" artık yeni yuvasında. İlanı sahiplendirildi olarak işaretlensin mi?`,
       [
         { text: "İptal", style: "cancel" },
@@ -1192,7 +1192,7 @@ function MyListingsSection({
           <Pressable onPress={() => setSuccessModal(null)} style={sm.btn}>
             <LinearGradient colors={[P2, P]} start={{ x: 0, y: 0 }} end={{ x: 1, y: 0 }} style={sm.btnGrad}>
               <Ionicons name="rocket-outline" size={16} color={WHITE} />
-              <Text style={sm.btnTxt}>Harika! 🚀</Text>
+              <Text style={sm.btnTxt}>Harika!</Text>
             </LinearGradient>
           </Pressable>
         </View>

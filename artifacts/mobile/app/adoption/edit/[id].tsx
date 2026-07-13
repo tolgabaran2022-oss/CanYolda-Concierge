@@ -676,7 +676,7 @@ export default function EditAdoptionScreen() {
               <FieldWrap label="Telefon Numarası" required error={errors.phone}>
                 <View style={[S.phoneWrap, errors.phone ? S.inputErr : {}]}>
                   <View style={S.phonePrefix}>
-                    <Text style={{ fontSize: 18 }}>🇹🇷</Text>
+                    <Text style={{ fontSize: 14, fontFamily: "Inter_600SemiBold", color: "#7B5CBF" }}>TR</Text>
                     <Text style={S.phonePrefixTxt}>+90</Text>
                     <View style={S.phoneSep} />
                   </View>

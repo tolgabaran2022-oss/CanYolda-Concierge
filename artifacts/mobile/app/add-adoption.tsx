@@ -549,7 +549,7 @@ export default function AddAdoptionScreen() {
                   errors.phone ? S.inputError : {},
                 ]}>
                   <View style={[S.phonePrefix, { borderRightColor: T.border }]}>
-                    <Text style={S.phonePrefixFlag}>🇹🇷</Text>
+                    <Text style={S.phonePrefixFlag}>TR</Text>
                     <Text style={[S.phonePrefixTxt, { color: T.text }]}>+90</Text>
                     <View style={[S.phoneDivider, { backgroundColor: T.border }]} />
                   </View>

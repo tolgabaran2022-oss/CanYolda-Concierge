@@ -217,7 +217,7 @@ export default function AddPetScreen() {
                   onPress={() => { Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light); setGender(g); }}
                 >
                   <Text style={[st.genderLabel, gender === g && st.genderLabelActive]}>
-                    {g === "Erkek" ? "♂ Erkek" : "♀ Dişi"}
+                    {g === "Erkek" ? "Erkek" : "Dişi"}
                   </Text>
                 </Pressable>
               ))}

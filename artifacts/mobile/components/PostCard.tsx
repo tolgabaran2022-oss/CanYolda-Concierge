@@ -327,7 +327,7 @@ export function PostCard({
 
       {/* ── Share toast ──────────────────────────── */}
       <Animated.View pointerEvents="none" style={[S.toast, { opacity: toastAnim }]}>
-        <Text style={S.toastText}>🔗 Bağlantı kopyalandı!</Text>
+        <Text style={S.toastText}>Bağlantı kopyalandı!</Text>
       </Animated.View>
     </View>
   );

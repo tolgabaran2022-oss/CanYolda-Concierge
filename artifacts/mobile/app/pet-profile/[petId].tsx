@@ -413,9 +413,9 @@ export default function PetProfileScreen() {
           {/* Meta pills */}
           <View style={S.pills}>
             {pet.gender ? <View style={[S.pill, { backgroundColor: T.card }]}><Text style={[S.pillTxt, { color: T.textMuted }]}>{pet.gender}</Text></View> : null}
-            {pet.weight ? <View style={[S.pill, { backgroundColor: T.card }]}><Text style={[S.pillTxt, { color: T.textMuted }]}>⚖️ {pet.weight} kg</Text></View> : null}
+            {pet.weight ? <View style={[S.pill, { backgroundColor: T.card, flexDirection: "row", alignItems: "center", gap: 4 }]}><Ionicons name="barbell-outline" size={12} color={T.textMuted} /><Text style={[S.pillTxt, { color: T.textMuted }]}>{pet.weight} kg</Text></View> : null}
             {pet.color ? <View style={[S.pill, { backgroundColor: T.card }]}><Text style={[S.pillTxt, { color: T.textMuted }]}>{pet.color}</Text></View> : null}
-            {pet.birthDate ? <View style={[S.pill, { backgroundColor: T.card }]}><Text style={[S.pillTxt, { color: T.textMuted }]}>🎂 {pet.birthDate}</Text></View> : null}
+            {pet.birthDate ? <View style={[S.pill, { backgroundColor: T.card, flexDirection: "row", alignItems: "center", gap: 4 }]}><Ionicons name="calendar-outline" size={12} color={T.textMuted} /><Text style={[S.pillTxt, { color: T.textMuted }]}>{pet.birthDate}</Text></View> : null}
           </View>
 
           {/* Action buttons */}
