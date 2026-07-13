@@ -18,7 +18,7 @@ const BG     = "#FAF7F2";
 const HERO_IMAGE = require("@/assets/images/login-hero.jpg");
 
 /* Estimated height of the button section (2 btns + forgot + terms + gaps + padding) */
-const BTN_SECTION_H = 250;
+const BTN_SECTION_H = 210;
 
 export default function WelcomeScreen() {
   const insets = useSafeAreaInsets();
@@ -33,8 +33,8 @@ export default function WelcomeScreen() {
 
   /* Hero gets everything that the button section + safe area doesn't use */
   const heroH = Math.max(sh - topPad - bottomPad - BTN_SECTION_H, 160);
-  /* Cap at ~65 % of viewport height so tall tablets don't over-inflate it */
-  const heroHCapped = Math.min(heroH, Math.round(sh * 0.65));
+  /* Cap at ~78 % of viewport height so tall tablets don't over-inflate it */
+  const heroHCapped = Math.min(heroH, Math.round(sh * 0.78));
 
   /* On very small screens, slightly widen the hero (clamp to screen width) */
   const heroW = Math.min(sw, 430);
