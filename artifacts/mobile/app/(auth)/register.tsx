@@ -1,4 +1,3 @@
-import { Ionicons } from "@expo/vector-icons";
 import * as Haptics from "expo-haptics";
 import { useRouter } from "expo-router";
 import React, { useState } from "react";
@@ -36,8 +35,7 @@ export default function RegisterScreen() {
   const [showPassword, setShowPassword] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
 
-  const EMAIL_REGEX =
-    /^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$/i;
+  const EMAIL_REGEX = /^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$/i;
 
   const handleRegister = async () => {
     if (!name.trim() || !email.trim() || !password.trim()) {
@@ -45,10 +43,7 @@ export default function RegisterScreen() {
       return;
     }
     if (!EMAIL_REGEX.test(email.trim())) {
-      Alert.alert(
-        "Geçersiz E-posta",
-        "Lütfen geçerli bir e-posta adresi girin."
-      );
+      Alert.alert("Geçersiz E-posta", "Lütfen geçerli bir e-posta adresi girin.");
       return;
     }
     if (password.length < 6) {
@@ -92,14 +87,12 @@ export default function RegisterScreen() {
             style={({ pressed }) => [styles.backBtn, { opacity: pressed ? 0.7 : 1 }]}
             onPress={() => router.back()}
           >
-            <Ionicons name="chevron-back" size={22} color={PURPLE} />
+            <Text style={styles.backArrow}>{"<"}</Text>
           </Pressable>
 
           {/* Header */}
           <View style={styles.header}>
-            <View style={styles.iconCircle}>
-              <Ionicons name="heart" size={32} color="#FFFFFF" />
-            </View>
+            <View style={styles.iconCircle} />
             <Text style={styles.title}>Hesap Oluştur</Text>
             <Text style={styles.subtitle}>
               Topluluğa katıl, hayvan hayatlarına dokunuş yap
@@ -112,7 +105,6 @@ export default function RegisterScreen() {
             <View style={styles.inputGroup}>
               <Text style={[styles.label, { color: colors.mutedForeground }]}>Ad Soyad</Text>
               <View style={styles.inputWrap}>
-                <Ionicons name="person-outline" size={18} color={PURPLE} />
                 <TextInput
                   style={[styles.input, { color: colors.foreground }]}
                   value={name}
@@ -129,7 +121,6 @@ export default function RegisterScreen() {
             <View style={styles.inputGroup}>
               <Text style={[styles.label, { color: colors.mutedForeground }]}>E-posta</Text>
               <View style={styles.inputWrap}>
-                <Ionicons name="mail-outline" size={18} color={PURPLE} />
                 <TextInput
                   style={[styles.input, { color: colors.foreground }]}
                   value={email}
@@ -147,7 +138,6 @@ export default function RegisterScreen() {
             <View style={styles.inputGroup}>
               <Text style={[styles.label, { color: colors.mutedForeground }]}>Şifre</Text>
               <View style={styles.inputWrap}>
-                <Ionicons name="lock-closed-outline" size={18} color={PURPLE} />
                 <TextInput
                   style={[styles.input, { color: colors.foreground }]}
                   value={password}
@@ -158,11 +148,7 @@ export default function RegisterScreen() {
                   autoCapitalize="none"
                 />
                 <Pressable onPress={() => setShowPassword((v) => !v)}>
-                  <Ionicons
-                    name={showPassword ? "eye-off-outline" : "eye-outline"}
-                    size={18}
-                    color={PURPLE}
-                  />
+                  <Text style={styles.toggleTxt}>{showPassword ? "Gizle" : "Göster"}</Text>
                 </Pressable>
               </View>
             </View>
@@ -195,10 +181,7 @@ export default function RegisterScreen() {
 }
 
 const styles = StyleSheet.create({
-  root: {
-    flex: 1,
-    backgroundColor: BG,
-  },
+  root: { flex: 1, backgroundColor: BG },
   blobTL: {
     position: "absolute",
     left: -55,
@@ -219,12 +202,7 @@ const styles = StyleSheet.create({
     transform: [{ scaleY: 1.5 }],
     zIndex: 0,
   },
-  container: {
-    flexGrow: 1,
-    paddingHorizontal: 24,
-    gap: 24,
-    zIndex: 1,
-  },
+  container: { flexGrow: 1, paddingHorizontal: 24, gap: 24, zIndex: 1 },
   backBtn: {
     width: 40,
     height: 40,
@@ -233,17 +211,13 @@ const styles = StyleSheet.create({
     alignItems: "center",
     justifyContent: "center",
   },
-  header: {
-    alignItems: "center",
-    gap: 8,
-  },
+  backArrow: { fontSize: 20, fontWeight: "600", color: PURPLE },
+  header: { alignItems: "center", gap: 8 },
   iconCircle: {
     width: 72,
     height: 72,
     borderRadius: 36,
     backgroundColor: PURPLE,
-    alignItems: "center",
-    justifyContent: "center",
     marginBottom: 8,
     shadowColor: PURPLE,
     shadowOffset: { width: 0, height: 4 },
@@ -251,14 +225,10 @@ const styles = StyleSheet.create({
     shadowRadius: 12,
     elevation: 6,
   },
-  title: {
-    fontSize: 26,
-    fontFamily: "Inter_700Bold",
-    color: PURPLE_DARK,
-  },
+  title: { fontSize: 26, fontWeight: "700", color: PURPLE_DARK },
   subtitle: {
     fontSize: 14,
-    fontFamily: "Inter_400Regular",
+    fontWeight: "400",
     color: "#8874A8",
     textAlign: "center",
     lineHeight: 20,
@@ -277,10 +247,7 @@ const styles = StyleSheet.create({
     borderColor: "rgba(123,94,167,0.10)",
   },
   inputGroup: { gap: 6 },
-  label: {
-    fontSize: 13,
-    fontFamily: "Inter_500Medium",
-  },
+  label: { fontSize: 13, fontWeight: "500" },
   inputWrap: {
     flexDirection: "row",
     alignItems: "center",
@@ -292,11 +259,8 @@ const styles = StyleSheet.create({
     paddingVertical: 12,
     gap: 10,
   },
-  input: {
-    flex: 1,
-    fontSize: 15,
-    fontFamily: "Inter_400Regular",
-  },
+  input: { flex: 1, fontSize: 15, fontWeight: "400" },
+  toggleTxt: { fontSize: 13, fontWeight: "600", color: PURPLE },
   button: {
     borderRadius: 14,
     paddingVertical: 15,
@@ -309,24 +273,13 @@ const styles = StyleSheet.create({
     shadowRadius: 8,
     elevation: 4,
   },
-  buttonText: {
-    fontSize: 16,
-    fontFamily: "Inter_700Bold",
-    color: "#FFFFFF",
-  },
+  buttonText: { fontSize: 16, fontWeight: "700", color: "#FFFFFF" },
   loginRow: {
     flexDirection: "row",
     justifyContent: "center",
     alignItems: "center",
     marginTop: 4,
   },
-  loginLabel: {
-    fontSize: 14,
-    fontFamily: "Inter_400Regular",
-  },
-  loginLink: {
-    fontSize: 14,
-    fontFamily: "Inter_600SemiBold",
-    color: PURPLE,
-  },
+  loginLabel: { fontSize: 14, fontWeight: "400" },
+  loginLink: { fontSize: 14, fontWeight: "600", color: PURPLE },
 });

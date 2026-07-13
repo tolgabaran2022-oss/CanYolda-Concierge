@@ -1,4 +1,3 @@
-import { Ionicons } from "@expo/vector-icons";
 import * as Haptics from "expo-haptics";
 import { LinearGradient } from "expo-linear-gradient";
 import { useLocalSearchParams, useRouter } from "expo-router";
@@ -25,13 +24,12 @@ const API_BASE = process.env.EXPO_PUBLIC_DOMAIN
   ? `https://${process.env.EXPO_PUBLIC_DOMAIN}/api`
   : "http://localhost:8080/api";
 
-/* ── Password strength rules ── */
 type Rule = { label: string; test: (p: string) => boolean };
 const RULES: Rule[] = [
-  { label: "En az 8 karakter",    test: (p) => p.length >= 8 },
-  { label: "Büyük harf (A-Z)",    test: (p) => /[A-Z]/.test(p) },
-  { label: "Küçük harf (a-z)",    test: (p) => /[a-z]/.test(p) },
-  { label: "Rakam (0-9)",         test: (p) => /[0-9]/.test(p) },
+  { label: "En az 8 karakter",     test: (p) => p.length >= 8 },
+  { label: "Büyük harf (A-Z)",     test: (p) => /[A-Z]/.test(p) },
+  { label: "Küçük harf (a-z)",     test: (p) => /[a-z]/.test(p) },
+  { label: "Rakam (0-9)",          test: (p) => /[0-9]/.test(p) },
   { label: "Özel karakter (!@#…)", test: (p) => /[^A-Za-z0-9]/.test(p) },
 ];
 
@@ -44,14 +42,14 @@ export default function ResetPasswordScreen() {
   const router = useRouter();
   const { email } = useLocalSearchParams<{ email: string }>();
 
-  const [code,        setCode]        = useState("");
-  const [password,    setPassword]    = useState("");
-  const [confirm,     setConfirm]     = useState("");
-  const [showPwd,     setShowPwd]     = useState(false);
-  const [showCfm,     setShowCfm]     = useState(false);
-  const [isLoading,   setIsLoading]   = useState(false);
-  const [success,     setSuccess]     = useState(false);
-  const [errors,      setErrors]      = useState<Record<string, string>>({});
+  const [code,      setCode]      = useState("");
+  const [password,  setPassword]  = useState("");
+  const [confirm,   setConfirm]   = useState("");
+  const [showPwd,   setShowPwd]   = useState(false);
+  const [showCfm,   setShowCfm]   = useState(false);
+  const [isLoading, setIsLoading] = useState(false);
+  const [success,   setSuccess]   = useState(false);
+  const [errors,    setErrors]    = useState<Record<string, string>>({});
 
   const validate = (): boolean => {
     const errs: Record<string, string> = {};
@@ -82,7 +80,6 @@ export default function ResetPasswordScreen() {
         }),
       });
       const data = await res.json() as { ok?: boolean; error?: string };
-
       if (!res.ok) {
         const msg =
           res.status === 400 && data.error?.includes("süresi")
@@ -94,7 +91,6 @@ export default function ResetPasswordScreen() {
         Haptics.notificationAsync(Haptics.NotificationFeedbackType.Error);
         return;
       }
-
       setSuccess(true);
       Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
     } catch {
@@ -108,9 +104,7 @@ export default function ResetPasswordScreen() {
     return (
       <LinearGradient colors={["#F7F3FF", "#EDE5FF", "#F0E8FF"]} style={S.gradient}>
         <View style={[S.successRoot, { paddingTop: insets.top + 40, paddingBottom: insets.bottom + 32 }]}>
-          <View style={S.successCircle}>
-            <Ionicons name="checkmark-circle" size={64} color={GREEN} />
-          </View>
+          <View style={S.successCircle} />
           <Text style={S.successTitle}>Şifreniz Güncellendi!</Text>
           <Text style={S.successMsg}>
             Şifreniz başarıyla güncellendi. Yeni şifrenizle giriş yapabilirsiniz.
@@ -120,7 +114,6 @@ export default function ResetPasswordScreen() {
             onPress={() => router.replace("/(auth)/login-form" as any)}
           >
             <LinearGradient colors={["#9B7DE8", "#5A3BB2"]} start={{ x: 0, y: 0 }} end={{ x: 1, y: 1 }} style={S.btnGrad}>
-              <Ionicons name="log-in-outline" size={18} color="#FFF" />
               <Text style={S.btnTxt}>Giriş Yap</Text>
             </LinearGradient>
           </Pressable>
@@ -142,18 +135,16 @@ export default function ResetPasswordScreen() {
             style={({ pressed }) => [S.backBtn, { opacity: pressed ? 0.7 : 1 }]}
             onPress={() => router.back()}
           >
-            <Ionicons name="chevron-back" size={22} color={PURPLE} />
+            <Text style={S.backArrow}>{"<"}</Text>
           </Pressable>
 
           {/* Header */}
           <View style={S.header}>
-            <View style={S.iconCircle}>
-              <Ionicons name="shield-checkmark-outline" size={32} color="#FFF" />
-            </View>
+            <View style={S.iconCircle} />
             <Text style={S.title}>Yeni Şifre Oluştur</Text>
             <Text style={S.subtitle}>
               {email ? (
-                <><Text style={{ fontFamily: "Inter_600SemiBold" }}>{email}</Text>{" "}adresine gönderilen kodu gir</>
+                <><Text style={{ fontWeight: "600" }}>{email}</Text>{" "}adresine gönderilen kodu gir</>
               ) : "Sıfırlama kodunu ve yeni şifreni gir"}
             </Text>
           </View>
@@ -161,7 +152,6 @@ export default function ResetPasswordScreen() {
           {/* Global error */}
           {errors.global ? (
             <View style={S.globalErr}>
-              <Ionicons name="alert-circle" size={18} color="#E53E3E" />
               <Text style={S.globalErrTxt}>{errors.global}</Text>
             </View>
           ) : null}
@@ -171,7 +161,6 @@ export default function ResetPasswordScreen() {
             <View style={S.inputGroup}>
               <Text style={S.label}>Sıfırlama Kodu</Text>
               <View style={[S.inputWrap, errors.code ? S.inputWrapErr : {}]}>
-                <Ionicons name="keypad-outline" size={18} color={errors.code ? "#E53E3E" : PURPLE} />
                 <TextInput
                   style={[S.input, S.codeInput]}
                   value={code}
@@ -183,14 +172,13 @@ export default function ResetPasswordScreen() {
                   returnKeyType="next"
                 />
               </View>
-              {errors.code ? <ErrRow msg={errors.code} /> : null}
+              {errors.code ? <Text style={S.errTxt}>{errors.code}</Text> : null}
             </View>
 
             {/* New password */}
             <View style={S.inputGroup}>
               <Text style={S.label}>Yeni Şifre</Text>
               <View style={[S.inputWrap, errors.password ? S.inputWrapErr : {}]}>
-                <Ionicons name="lock-closed-outline" size={18} color={errors.password ? "#E53E3E" : PURPLE} />
                 <TextInput
                   style={S.input}
                   value={password}
@@ -201,10 +189,10 @@ export default function ResetPasswordScreen() {
                   autoCapitalize="none"
                 />
                 <Pressable onPress={() => setShowPwd((v) => !v)}>
-                  <Ionicons name={showPwd ? "eye-off-outline" : "eye-outline"} size={18} color={PURPLE} />
+                  <Text style={S.toggleTxt}>{showPwd ? "Gizle" : "Göster"}</Text>
                 </Pressable>
               </View>
-              {errors.password ? <ErrRow msg={errors.password} /> : null}
+              {errors.password ? <Text style={S.errTxt}>{errors.password}</Text> : null}
             </View>
 
             {/* Strength rules */}
@@ -214,7 +202,7 @@ export default function ResetPasswordScreen() {
                   const ok = r.test(password);
                   return (
                     <View key={r.label} style={S.ruleRow}>
-                      <Ionicons name={ok ? "checkmark-circle" : "ellipse-outline"} size={14} color={ok ? GREEN : "#BDB5D0"} />
+                      <View style={[S.ruleDot, { backgroundColor: ok ? GREEN : "#BDB5D0" }]} />
                       <Text style={[S.ruleTxt, ok && S.ruleTxtOk]}>{r.label}</Text>
                     </View>
                   );
@@ -226,7 +214,6 @@ export default function ResetPasswordScreen() {
             <View style={S.inputGroup}>
               <Text style={S.label}>Yeni Şifre Tekrar</Text>
               <View style={[S.inputWrap, errors.confirm ? S.inputWrapErr : {}]}>
-                <Ionicons name="lock-closed-outline" size={18} color={errors.confirm ? "#E53E3E" : PURPLE} />
                 <TextInput
                   style={S.input}
                   value={confirm}
@@ -239,15 +226,12 @@ export default function ResetPasswordScreen() {
                   onSubmitEditing={handleReset}
                 />
                 <Pressable onPress={() => setShowCfm((v) => !v)}>
-                  <Ionicons name={showCfm ? "eye-off-outline" : "eye-outline"} size={18} color={PURPLE} />
+                  <Text style={S.toggleTxt}>{showCfm ? "Gizle" : "Göster"}</Text>
                 </Pressable>
               </View>
-              {errors.confirm ? <ErrRow msg={errors.confirm} /> : null}
+              {errors.confirm ? <Text style={S.errTxt}>{errors.confirm}</Text> : null}
               {confirm.length > 0 && !errors.confirm && password === confirm ? (
-                <View style={S.errRow}>
-                  <Ionicons name="checkmark-circle" size={13} color={GREEN} />
-                  <Text style={[S.errTxt, { color: GREEN }]}>Şifreler uyuşuyor</Text>
-                </View>
+                <Text style={[S.errTxt, { color: GREEN }]}>Şifreler uyuşuyor</Text>
               ) : null}
             </View>
 
@@ -260,10 +244,7 @@ export default function ResetPasswordScreen() {
                 {isLoading ? (
                   <ActivityIndicator color="#FFF" />
                 ) : (
-                  <>
-                    <Ionicons name="shield-checkmark-outline" size={18} color="#FFF" />
-                    <Text style={S.btnTxt}>Şifremi Güncelle</Text>
-                  </>
+                  <Text style={S.btnTxt}>Şifremi Güncelle</Text>
                 )}
               </LinearGradient>
             </Pressable>
@@ -281,15 +262,6 @@ export default function ResetPasswordScreen() {
   );
 }
 
-function ErrRow({ msg }: { msg: string }) {
-  return (
-    <View style={S.errRow}>
-      <Ionicons name="alert-circle" size={13} color="#E53E3E" />
-      <Text style={S.errTxt}>{msg}</Text>
-    </View>
-  );
-}
-
 const S = StyleSheet.create({
   gradient:  { flex: 1 },
   container: { flexGrow: 1, paddingHorizontal: 24, gap: 24 },
@@ -298,19 +270,19 @@ const S = StyleSheet.create({
     backgroundColor: "rgba(123,94,167,0.12)",
     alignItems: "center", justifyContent: "center",
   },
+  backArrow: { fontSize: 20, fontWeight: "600", color: PURPLE },
   header:    { alignItems: "center", gap: 8 },
   iconCircle: {
     width: 72, height: 72, borderRadius: 36,
     backgroundColor: PURPLE,
-    alignItems: "center", justifyContent: "center",
     marginBottom: 8,
     shadowColor: PURPLE,
     shadowOffset: { width: 0, height: 4 },
     shadowOpacity: 0.3, shadowRadius: 12, elevation: 6,
   },
-  title: { fontSize: 26, fontFamily: "Inter_700Bold", color: PURPLE_DARK },
+  title: { fontSize: 26, fontWeight: "700", color: PURPLE_DARK },
   subtitle: {
-    fontSize: 14, fontFamily: "Inter_400Regular", color: "#888",
+    fontSize: 14, fontWeight: "400", color: "#888",
     textAlign: "center", paddingHorizontal: 8,
   },
   globalErr: {
@@ -318,7 +290,7 @@ const S = StyleSheet.create({
     backgroundColor: "#FFF5F5", borderRadius: 12, padding: 14,
     borderWidth: 1, borderColor: "rgba(229,62,62,0.25)",
   },
-  globalErrTxt: { fontSize: 13, fontFamily: "Inter_500Medium", color: "#E53E3E", flex: 1 },
+  globalErrTxt: { fontSize: 13, fontWeight: "500", color: "#E53E3E", flex: 1 },
   card: {
     backgroundColor: "rgba(255,255,255,0.75)",
     borderRadius: 24, padding: 24, gap: 16,
@@ -328,7 +300,7 @@ const S = StyleSheet.create({
     borderWidth: 1, borderColor: "rgba(123,94,167,0.10)",
   },
   inputGroup: { gap: 6 },
-  label: { fontSize: 13, fontFamily: "Inter_500Medium", color: "#666" },
+  label: { fontSize: 13, fontWeight: "500", color: "#666" },
   inputWrap: {
     flexDirection: "row", alignItems: "center",
     borderRadius: 12, borderWidth: 1.5,
@@ -337,39 +309,35 @@ const S = StyleSheet.create({
     paddingHorizontal: 14, paddingVertical: 12, gap: 10,
   },
   inputWrapErr: { borderColor: "#E53E3E", backgroundColor: "#FFF5F5" },
-  input: { flex: 1, fontSize: 15, fontFamily: "Inter_400Regular", color: "#1A0A3C" },
-  codeInput: { fontSize: 20, fontFamily: "Inter_700Bold", letterSpacing: 4 },
-  errRow:  { flexDirection: "row", alignItems: "center", gap: 5 },
-  errTxt:  { fontSize: 12, fontFamily: "Inter_400Regular", color: "#E53E3E" },
-
-  /* rules */
+  input: { flex: 1, fontSize: 15, fontWeight: "400", color: "#1A0A3C" },
+  codeInput: { fontSize: 20, fontWeight: "700", letterSpacing: 4 },
+  toggleTxt: { fontSize: 13, fontWeight: "600", color: PURPLE },
+  errTxt:  { fontSize: 12, fontWeight: "400", color: "#E53E3E" },
   rulesBox: { gap: 6, backgroundColor: "rgba(123,94,167,0.05)", borderRadius: 12, padding: 12 },
   ruleRow:  { flexDirection: "row", alignItems: "center", gap: 7 },
-  ruleTxt:  { fontSize: 12, fontFamily: "Inter_400Regular", color: "#AAA" },
-  ruleTxtOk:{ color: GREEN, fontFamily: "Inter_500Medium" },
-
+  ruleDot:  { width: 8, height: 8, borderRadius: 4 },
+  ruleTxt:  { fontSize: 12, fontWeight: "400", color: "#AAA" },
+  ruleTxtOk:{ color: GREEN, fontWeight: "500" },
   btn: { borderRadius: 14, overflow: "hidden" },
   btnGrad: {
     flexDirection: "row", alignItems: "center", justifyContent: "center",
     gap: 8, paddingVertical: 15,
   },
-  btnTxt: { fontSize: 16, fontFamily: "Inter_700Bold", color: "#FFF" },
+  btnTxt: { fontSize: 16, fontWeight: "700", color: "#FFF" },
   cancelRow: { alignItems: "center", paddingVertical: 4 },
-  cancelTxt: { fontSize: 14, fontFamily: "Inter_500Medium", color: PURPLE },
-
-  /* success */
+  cancelTxt: { fontSize: 14, fontWeight: "500", color: PURPLE },
   successRoot: {
     flex: 1, alignItems: "center", justifyContent: "center",
     paddingHorizontal: 32, gap: 16,
   },
   successCircle: {
     width: 100, height: 100, borderRadius: 50,
-    backgroundColor: "rgba(56,161,105,0.1)",
-    alignItems: "center", justifyContent: "center",
+    backgroundColor: "rgba(56,161,105,0.15)",
+    borderWidth: 4, borderColor: GREEN,
   },
-  successTitle: { fontSize: 26, fontFamily: "Inter_700Bold", color: "#1A0A3C" },
+  successTitle: { fontSize: 26, fontWeight: "700", color: "#1A0A3C" },
   successMsg: {
-    fontSize: 15, fontFamily: "Inter_400Regular", color: "#555",
+    fontSize: 15, fontWeight: "400", color: "#555",
     textAlign: "center", lineHeight: 22,
   },
 });
