@@ -1,0 +1,280 @@
+CRITICAL ANDROID GLYPH BUG — FORCE FIX, DO NOT PATCH
+
+The Android login screen is STILL showing square / broken glyph characters inside buttons and near the legal text.
+
+Previous fixes did NOT solve the issue.
+
+DO NOT make another visual patch.
+DO NOT just change icon names.
+DO NOT only edit styles.
+
+I need you to find the EXACT component and EXACT source value producing every broken square glyph visible on the Android login screen.
+
+CURRENT BROKEN AREAS:
+- Left side of "Giriş Yap"
+- Right side of "Giriş Yap"
+- Left side of "Kayıt Ol"
+- Right side of "Kayıt Ol"
+- Icon near "Kullanım Koşulları ve Gizlilik Politikası"
+
+STEP 1 — TRACE THE ACTUAL RENDERED COMPONENT
+
+Start from the Android login screen route.
+
+Trace the complete component tree and identify the exact JSX components rendering these broken characters.
+
+Search the entire project for:
+
+<Text>
+fontFamily
+icon
+leftIcon
+rightIcon
+unicode
+glyph
+emoji
+symbol
+String.fromCharCode
+String.fromCodePoint
+&#x
+\u
+content:
+FontAwesome
+Ionicons
+MaterialIcons
+Lucide
+Entypo
+
+Also search for literal hidden or unsupported characters inside button labels.
+
+Inspect shared components such as:
+Button
+GradientButton
+AuthButton
+PrimaryButton
+SecondaryButton
+IconButton
+
+DO NOT ASSUME THE BUG IS IN LoginScreen.
+
+Report the exact source file and JSX line responsible.
+
+STEP 2 — DELETE THE BROKEN ICON IMPLEMENTATION
+
+Completely REMOVE the current left and right icon implementation from both login buttons.
+
+For this test, render:
+
+<Giriş Yap>
+
+as TEXT ONLY.
+
+Render:
+
+<Kayıt Ol>
+
+as TEXT ONLY.
+
+Do not render:
+- leftIcon
+- rightIcon
+- icon slots
+- unicode symbols
+- emoji
+- custom icon font
+- decorative glyphs
+
+Example:
+
+<Pressable>
+  <Text style={styles.buttonText}>Giriş Yap</Text>
+</Pressable>
+
+<Pressable>
+  <Text style={styles.registerText}>Kayıt Ol</Text>
+</Pressable>
+
+The buttons MUST contain text only.
+
+Remove the broken icon near the Terms / Privacy text as well.
+
+STEP 3 — CHECK FOR PSEUDO ICONS
+
+Inspect whether the shared Button component automatically adds decorative icons.
+
+For example:
+
+{leftIcon || defaultIcon}
+{icon && ...}
+<Text>{prefix}</Text>
+<Text>{suffix}</Text>
+
+Remove all automatic default icon, prefix and suffix behavior from these login screen buttons.
+
+Check if the broken characters come from:
+- default props
+- translation strings
+- button variants
+- design tokens
+- shared UI components
+
+STEP 4 — CHECK TRANSLATION STRINGS
+
+Inspect Turkish localization files.
+
+Search the actual values for:
+
+"Giriş Yap"
+"Kayıt Ol"
+"Devam ederek"
+"Kullanım Koşulları"
+"Gizlilik Politikası"
+
+Make sure the translation values contain plain UTF-8 Turkish text ONLY.
+
+For example:
+
+login: "Giriş Yap"
+register: "Kayıt Ol"
+
+NOT:
+
+login: "⌘ Giriş Yap →"
+login: "\uXXXX Giriş Yap"
+register: "□ Kayıt Ol □"
+
+Delete invisible prefix and suffix characters.
+
+STEP 5 — REMOVE CUSTOM FONT FROM BUTTON ICON/TEXT
+
+On Android, temporarily force the login screen button text to use the system font.
+
+Do NOT apply any custom fontFamily to:
+- button labels
+- terms text
+- icon wrappers
+
+Remove:
+
+fontFamily: ...
+
+from these elements.
+
+Use:
+
+fontWeight: '600'
+
+Do not emulate font weight using a custom font glyph.
+
+STEP 6 — ANDROID CACHE RESET
+
+After changing the source code, fully clear the Expo / Metro cache.
+
+Stop the development server.
+
+Run:
+
+npx expo start -c
+
+If node_modules or native dependency resolution is corrupted, run the appropriate package reinstall without changing package versions unnecessarily.
+
+Restart the Android simulator completely.
+
+Do NOT validate using an already-running stale Android bundle.
+
+STEP 7 — VALIDATE TEXT-ONLY VERSION FIRST
+
+Before adding ANY icons back, verify Android.
+
+Expected result:
+
+Giriş Yap
+Şifremi Unuttum?
+Kayıt Ol
+Devam ederek Kullanım Koşulları ve Gizlilik Politikasını kabul etmiş olursunuz.
+
+There must be ZERO:
+□
+�
+missing glyph
+crossed square
+broken icon
+
+Take the login screen implementation to a TEXT-ONLY stable state first.
+
+STEP 8 — ONLY AFTER TEXT-ONLY VERSION WORKS
+
+Only if the text-only Android version is confirmed clean, add icons back individually.
+
+Use SVG-based native icons if possible.
+
+Prefer:
+lucide-react-native
+
+Example:
+
+import { LogIn, UserPlus, ShieldCheck } from 'lucide-react-native';
+
+Use actual React components:
+
+<LogIn size={18} color="#FFFFFF" />
+
+<UserPlus size={18} color="#5B4DB7" />
+
+<ShieldCheck size={13} color="#8C849C" />
+
+DO NOT render icons inside Text.
+
+BAD:
+<Text>
+  <LogIn />
+  Giriş Yap
+</Text>
+
+GOOD:
+<View style={styles.buttonContent}>
+  <LogIn size={18} color="#FFFFFF" />
+  <Text style={styles.buttonText}>Giriş Yap</Text>
+</View>
+
+Use:
+
+buttonContent: {
+  flexDirection: 'row',
+  alignItems: 'center',
+  justifyContent: 'center',
+  gap: 8,
+}
+
+Do not add decorative icons to both left and right sides.
+
+FINAL EXPECTED UI:
+
+Giriş Yap button:
+[login icon] Giriş Yap
+
+Kayıt Ol button:
+[user plus icon] Kayıt Ol
+
+Legal area:
+[shield icon] legal text
+
+No icon on the right side of the buttons.
+
+IMPORTANT:
+Do not redesign the screen.
+Do not modify the logo.
+Do not modify the dog/cat image.
+Do not modify colors.
+Do not modify button sizes.
+Do not modify iOS or Web layouts.
+
+The priority is to permanently remove the Android broken glyph source.
+
+FINAL REPORT MUST INCLUDE:
+1. Exact source file causing the glyph
+2. Exact component causing the glyph
+3. Exact original character/icon implementation that was broken
+4. Whether the issue came from translation, Text, fontFamily or shared Button component
+5. Android text-only test result
+6. Android icon re-add test result
