@@ -47,8 +47,8 @@ function RootLayoutNav() {
 
   return (
     <Stack screenOptions={{ headerShown: false }}>
-      <Stack.Screen name="(tabs)" options={{ headerShown: false }} />
-      <Stack.Screen name="(auth)" options={{ headerShown: false }} />
+      <Stack.Screen name="(tabs)" />
+      <Stack.Screen name="(auth)" />
       <Stack.Screen
         name="add-animal"
         options={{
@@ -60,10 +60,7 @@ function RootLayoutNav() {
           headerTitleStyle: { fontFamily: "Inter_600SemiBold" },
         }}
       />
-      <Stack.Screen
-        name="animal/[id]"
-        options={{ headerShown: false }}
-      />
+      <Stack.Screen name="animal/[id]" />
       <Stack.Screen
         name="add-pet"
         options={{
@@ -84,68 +81,22 @@ function RootLayoutNav() {
           headerTintColor: "#E07A35",
         }}
       />
-      <Stack.Screen
-        name="evcilim/[petId]"
-        options={{ headerShown: false }}
-      />
-      <Stack.Screen
-        name="evcilim/[petId]/vaccinations"
-        options={{ headerShown: false }}
-      />
-      <Stack.Screen
-        name="evcilim/[petId]/appointments"
-        options={{ headerShown: false }}
-      />
-      <Stack.Screen
-        name="evcilim/[petId]/identification"
-        options={{ headerShown: false }}
-      />
-      <Stack.Screen
-        name="evcilim/[petId]/nutrition"
-        options={{ headerShown: false }}
-      />
-      <Stack.Screen
-        name="evcilim/[petId]/notes"
-        options={{ headerShown: false }}
-      />
-      <Stack.Screen
-        name="add-adoption"
-        options={{ headerShown: false }}
-      />
-      <Stack.Screen
-        name="adoption/edit/[id]"
-        options={{ headerShown: false }}
-      />
-      <Stack.Screen
-        name="user-profile/[userId]"
-        options={{ headerShown: false }}
-      />
-      <Stack.Screen
-        name="pet-profile/[petId]"
-        options={{ headerShown: false }}
-      />
-      <Stack.Screen
-        name="adoption/edit/[id]"
-        options={{ headerShown: false }}
-      />
-      <Stack.Screen
-        name="messages"
-        options={{ headerShown: false }}
-      />
-      <Stack.Screen
-        name="pet-profile/[petId]"
-        options={{ headerShown: false }}
-      />
-      <Stack.Screen
-        name="adoption/edit/[id]"
-        options={{ headerShown: false }}
-      />
+      <Stack.Screen name="evcilim/[petId]" />
+      <Stack.Screen name="evcilim/[petId]/vaccinations" />
+      <Stack.Screen name="evcilim/[petId]/appointments" />
+      <Stack.Screen name="evcilim/[petId]/identification" />
+      <Stack.Screen name="evcilim/[petId]/nutrition" />
+      <Stack.Screen name="evcilim/[petId]/notes" />
+      <Stack.Screen name="add-adoption" />
+      <Stack.Screen name="adoption/edit/[id]" />
+      <Stack.Screen name="user-profile/[userId]" />
+      <Stack.Screen name="pet-profile/[petId]" />
+      <Stack.Screen name="messages" />
     </Stack>
   );
 }
 
 export default function RootLayout() {
-  // Step 1: Load Inter (Google Fonts) — isolated so icon font errors don't affect it
   const [interLoaded, interError] = useFonts({
     Inter_400Regular,
     Inter_500Medium,
@@ -153,9 +104,6 @@ export default function RootLayout() {
     Inter_700Bold,
   });
 
-  // Step 2: Load icon fonts separately via Font.loadAsync so that:
-  //   - errors are caught and don't propagate to interLoaded state
-  //   - the native font registration is awaited before we mark ready
   const [iconFontsReady, setIconFontsReady] = useState(false);
 
   useEffect(() => {
@@ -164,9 +112,7 @@ export default function RootLayout() {
       ...Feather.font,
     })
       .catch((_e) => {
-        // Fonts may already be registered by Expo Go's pre-bundled assets.
-        // If loading fails for that reason the component's own componentDidMount
-        // will attempt a second load — so we still proceed.
+        // Fonts may already be registered by Expo Go — proceed regardless
       })
       .finally(() => {
         setIconFontsReady(true);
@@ -194,14 +140,22 @@ export default function RootLayout() {
                   <BoostProvider>
                     <QueryClientProvider client={queryClient}>
                       <GestureHandlerRootView style={{ flex: 1 }}>
-                          {Platform.OS === "web" ? (
-                            <View style={{ flex: 1, width: "100%", maxWidth: 430, alignSelf: "center", overflow: "hidden" }}>
-                              <RootLayoutNav />
-                            </View>
-                          ) : (
+                        {Platform.OS === "web" ? (
+                          <View
+                            style={{
+                              flex: 1,
+                              width: "100%",
+                              maxWidth: 430,
+                              alignSelf: "center",
+                              overflow: "hidden",
+                            }}
+                          >
                             <RootLayoutNav />
-                          )}
-                        </GestureHandlerRootView>
+                          </View>
+                        ) : (
+                          <RootLayoutNav />
+                        )}
+                      </GestureHandlerRootView>
                     </QueryClientProvider>
                   </BoostProvider>
                 </AdoptionProvider>
