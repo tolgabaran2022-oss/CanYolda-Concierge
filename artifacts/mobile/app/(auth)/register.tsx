@@ -1,294 +1,559 @@
-import { Icon } from "@/components/Icon";
+/**
+ * RegisterScreen — canyoldaşı kayıt ol ekranı
+ *
+ * Tasarım: login-form ile aynı dil — krem zemin, organik blob'lar,
+ * Quicksand fontları, Reanimated stagger + döngü animasyonları.
+ */
+import { Ionicons } from "@expo/vector-icons";
 import * as Haptics from "expo-haptics";
 import { LinearGradient } from "expo-linear-gradient";
 import { useRouter } from "expo-router";
-import React, { useState } from "react";
 import {
+  Quicksand_500Medium,
+  Quicksand_600SemiBold,
+  Quicksand_700Bold,
+  useFonts,
+} from "@expo-google-fonts/quicksand";
+import React, { useEffect, useMemo, useRef, useState } from "react";
+import {
+  AccessibilityInfo,
   ActivityIndicator,
   Alert,
   KeyboardAvoidingView,
   Platform,
   Pressable,
   ScrollView,
+  StatusBar,
   StyleSheet,
   Text,
   TextInput,
   View,
 } from "react-native";
-import { useSafeAreaInsets } from "react-native-safe-area-context";
+import Animated, {
+  Easing,
+  FadeInDown,
+  interpolateColor,
+  useAnimatedStyle,
+  useSharedValue,
+  withRepeat,
+  withSequence,
+  withSpring,
+  withTiming,
+} from "react-native-reanimated";
+import { SafeAreaView } from "react-native-safe-area-context";
 import { useAuth } from "@/contexts/AuthContext";
-import { useColors } from "@/hooks/useColors";
 
-const PURPLE = "#7B5EA7";
-const PURPLE_DARK = "#3D2070";
-const BG = "#F5F1FF";
+const C = {
+  cream:     "#FBF2EA",
+  purple900: "#26215C",
+  purple600: "#534AB7",
+  purple500: "#6C5CE7",
+  purple200: "#CECBF6",
+  purple100: "#EAE7FB",
+  muted:     "#8B8798",
+  white:     "#FFFFFF",
+};
+
+const EMAIL_RE = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+const AnimatedPressable = Animated.createAnimatedComponent(Pressable);
+
+/* ── Animasyonlu input alanı ── */
+function AnimatedField({
+  label,
+  icon,
+  children,
+  focused,
+  delay,
+}: {
+  label: string;
+  icon: React.ReactNode;
+  children: React.ReactNode;
+  focused: boolean;
+  delay: number;
+}) {
+  const focus = useSharedValue(0);
+
+  useEffect(() => {
+    focus.value = withTiming(focused ? 1 : 0, { duration: 180 });
+  }, [focused]);
+
+  const wrapStyle = useAnimatedStyle(() => ({
+    borderColor: interpolateColor(focus.value, [0, 1], ["transparent", C.purple500]),
+    backgroundColor: interpolateColor(focus.value, [0, 1], [C.cream, C.white]),
+    transform: [{ scale: 1 + focus.value * 0.012 }],
+  }));
+
+  return (
+    <Animated.View entering={FadeInDown.delay(delay).springify().damping(16)}>
+      <Text style={styles.label}>{label}</Text>
+      <Animated.View style={[styles.inputWrap, wrapStyle]}>
+        {icon}
+        {children}
+      </Animated.View>
+    </Animated.View>
+  );
+}
 
 export default function RegisterScreen() {
-  const colors = useColors();
-  const insets = useSafeAreaInsets();
-  const { register } = useAuth();
   const router = useRouter();
+  const { register } = useAuth();
+
+  const emailRef = useRef<TextInput>(null);
+  const passwordRef = useRef<TextInput>(null);
 
   const [name, setName] = useState("");
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [showPassword, setShowPassword] = useState(false);
-  const [isLoading, setIsLoading] = useState(false);
+  const [focusedField, setFocusedField] = useState<"name" | "email" | "password" | null>(null);
+  const [loading, setLoading] = useState(false);
+  const [reduceMotion, setReduceMotion] = useState(false);
 
-  const EMAIL_REGEX = /^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$/i;
+  const [fontsLoaded] = useFonts({
+    Quicksand_500Medium,
+    Quicksand_600SemiBold,
+    Quicksand_700Bold,
+  });
 
-  const handleRegister = async () => {
-    if (!name.trim() || !email.trim() || !password.trim()) {
-      Alert.alert("Hata", "Lütfen tüm alanları doldurun.");
-      return;
-    }
-    if (!EMAIL_REGEX.test(email.trim())) {
-      Alert.alert("Geçersiz E-posta", "Lütfen geçerli bir e-posta adresi girin.");
-      return;
-    }
-    if (password.length < 6) {
-      Alert.alert("Hata", "Şifre en az 6 karakter olmalıdır.");
-      return;
-    }
-    setIsLoading(true);
+  const valid = useMemo(
+    () =>
+      name.trim().length >= 2 &&
+      EMAIL_RE.test(email.trim()) &&
+      password.length >= 6,
+    [name, email, password]
+  );
+
+  /* ── Döngü animasyonları ── */
+  const float = useSharedValue(0);
+  const drift = useSharedValue(0);
+  const btnScale = useSharedValue(1);
+
+  useEffect(() => {
+    AccessibilityInfo.isReduceMotionEnabled().then(setReduceMotion);
+  }, []);
+
+  useEffect(() => {
+    if (reduceMotion) return;
+    float.value = withRepeat(
+      withSequence(
+        withTiming(1, { duration: 2200, easing: Easing.inOut(Easing.sin) }),
+        withTiming(0, { duration: 2200, easing: Easing.inOut(Easing.sin) })
+      ),
+      -1
+    );
+    drift.value = withRepeat(
+      withTiming(1, { duration: 9000, easing: Easing.inOut(Easing.sin) }),
+      -1,
+      true
+    );
+  }, [reduceMotion]);
+
+  const pawStyle = useAnimatedStyle(() => ({
+    transform: [
+      { translateY: float.value * -8 },
+      { rotate: `${(float.value - 0.5) * 4}deg` },
+    ],
+    shadowOpacity: 0.28 + float.value * 0.14,
+  }));
+
+  const blobTRStyle = useAnimatedStyle(() => ({
+    transform: [
+      { translateX: drift.value * 14 },
+      { translateY: drift.value * 10 },
+      { scale: 1 + drift.value * 0.06 },
+    ],
+  }));
+  const blobBLStyle = useAnimatedStyle(() => ({
+    transform: [
+      { translateX: drift.value * -12 },
+      { translateY: drift.value * -8 },
+    ],
+  }));
+
+  const btnAnimStyle = useAnimatedStyle(() => ({
+    transform: [{ scale: btnScale.value }],
+  }));
+
+  if (!fontsLoaded) return null;
+
+  const onRegister = async () => {
+    if (!valid || loading) return;
+    Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
+    setLoading(true);
     try {
       await register(name.trim(), email.trim(), password);
       Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
       router.replace("/(tabs)");
     } catch (e: unknown) {
-      const msg = e instanceof Error ? e.message : "Kayit yapilamadi.";
+      const msg = e instanceof Error ? e.message : "Kayıt yapılamadı.";
       Alert.alert("Hata", msg);
       Haptics.notificationAsync(Haptics.NotificationFeedbackType.Error);
     } finally {
-      setIsLoading(false);
+      setLoading(false);
     }
   };
 
   return (
-    <View style={styles.root}>
-      {/* Top-left ambient glow — oversized so its physical edge never appears on screen */}
-      <LinearGradient
-        colors={["rgba(123,94,167,0.26)", "rgba(155,120,200,0.11)", "rgba(196,181,253,0.03)", "rgba(196,181,253,0)"]}
-        start={{ x: 0, y: 0 }}
-        end={{ x: 1, y: 1 }}
-        style={styles.glowTL}
+    <SafeAreaView style={styles.container} edges={["top", "bottom"]}>
+      <StatusBar barStyle="dark-content" backgroundColor={C.cream} />
+
+      {/* Süzülen arka plan blob'ları */}
+      <Animated.View
+        style={[styles.blob, styles.blobTopRight, blobTRStyle]}
         pointerEvents="none"
       />
-      <LinearGradient
-        colors={["rgba(160,130,210,0.18)", "rgba(180,155,220,0.07)", "rgba(180,155,220,0)"]}
-        start={{ x: 1, y: 0 }}
-        end={{ x: 0, y: 1 }}
-        style={styles.glowTR}
+      <Animated.View
+        style={[styles.blob, styles.blobBottomLeft, blobBLStyle]}
         pointerEvents="none"
       />
 
       <KeyboardAvoidingView
+        style={styles.flex}
         behavior={Platform.OS === "ios" ? "padding" : "height"}
-        style={{ flex: 1 }}
       >
         <ScrollView
-          contentContainerStyle={[
-            styles.container,
-            { paddingTop: insets.top + 24, paddingBottom: insets.bottom + 24 },
-          ]}
+          contentContainerStyle={styles.scroll}
           keyboardShouldPersistTaps="handled"
+          bounces={false}
           showsVerticalScrollIndicator={false}
         >
-          {/* Back button */}
-          <Pressable
-            style={({ pressed }) => [styles.backBtn, { opacity: pressed ? 0.7 : 1 }]}
-            onPress={() => router.back()}
+          {/* Geri butonu */}
+          <Animated.View entering={FadeInDown.delay(0).springify().damping(16)}>
+            <Pressable
+              onPress={() => {
+                Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+                router.back();
+              }}
+              style={({ pressed }) => [styles.backBtn, pressed && styles.pressed]}
+              accessibilityRole="button"
+              accessibilityLabel="Geri dön"
+              hitSlop={8}
+            >
+              <Ionicons name="chevron-back" size={22} color={C.purple900} />
+            </Pressable>
+          </Animated.View>
+
+          {/* Nefes alan pati blob'u */}
+          <Animated.View
+            entering={FadeInDown.delay(80).springify().damping(14)}
+            style={styles.iconWrap}
           >
-            <Icon name="back" size={21} color={PURPLE} strokeWidth={2.3} />
-          </Pressable>
+            <Animated.View style={pawStyle}>
+              <LinearGradient
+                colors={[C.purple500, C.purple600]}
+                start={{ x: 0, y: 0 }}
+                end={{ x: 1, y: 1 }}
+                style={styles.iconBlob}
+              >
+                <Ionicons name="paw" size={34} color={C.white} />
+              </LinearGradient>
+            </Animated.View>
+          </Animated.View>
 
-          {/* Header */}
-          <View style={styles.header}>
-            <View style={styles.iconCircle} />
-            <Text style={styles.title}>Hesap Oluştur</Text>
-            <Text style={styles.subtitle}>
-              Topluluğa katıl, hayvan hayatlarına dokunuş yap
+          <Animated.View entering={FadeInDown.delay(160).springify().damping(16)}>
+            <Text style={styles.title} maxFontSizeMultiplier={1.2}>
+              Hesap Oluştur
             </Text>
-          </View>
+            <Text style={styles.subtitle} maxFontSizeMultiplier={1.3}>
+              Topluluğa katıl, hayvan hayatlarına dokunuş yap.
+            </Text>
+          </Animated.View>
 
-          {/* Form card */}
-          <View style={styles.card}>
+          {/* Form kartı */}
+          <Animated.View
+            entering={FadeInDown.delay(240).springify().damping(16)}
+            style={styles.card}
+          >
             {/* Ad Soyad */}
-            <View style={styles.inputGroup}>
-              <Text style={[styles.label, { color: colors.mutedForeground }]}>Ad Soyad</Text>
-              <View style={styles.inputWrap}>
-                <TextInput
-                  style={[styles.input, { color: colors.foreground }]}
-                  value={name}
-                  onChangeText={setName}
-                  placeholder="Adın Soyadın"
-                  placeholderTextColor={colors.mutedForeground}
-                  autoCapitalize="words"
-                  autoCorrect={false}
+            <AnimatedField
+              label="Ad Soyad"
+              focused={focusedField === "name"}
+              delay={320}
+              icon={
+                <Ionicons
+                  name="person-outline"
+                  size={19}
+                  color={focusedField === "name" ? C.purple500 : C.muted}
+                  style={styles.inputIcon}
                 />
-              </View>
-            </View>
+              }
+            >
+              <TextInput
+                style={styles.input}
+                value={name}
+                onChangeText={setName}
+                onFocus={() => setFocusedField("name")}
+                onBlur={() => setFocusedField(null)}
+                placeholder="Adın Soyadın"
+                placeholderTextColor={C.muted}
+                autoCapitalize="words"
+                autoCorrect={false}
+                autoComplete="name"
+                textContentType="name"
+                returnKeyType="next"
+                onSubmitEditing={() => emailRef.current?.focus()}
+                accessibilityLabel="Ad Soyad"
+              />
+            </AnimatedField>
+
+            <View style={styles.fieldGap} />
 
             {/* E-posta */}
-            <View style={styles.inputGroup}>
-              <Text style={[styles.label, { color: colors.mutedForeground }]}>E-posta</Text>
-              <View style={styles.inputWrap}>
-                <TextInput
-                  style={[styles.input, { color: colors.foreground }]}
-                  value={email}
-                  onChangeText={setEmail}
-                  placeholder="ornek@mail.com"
-                  placeholderTextColor={colors.mutedForeground}
-                  keyboardType="default"
-                  autoCapitalize="none"
-                  autoCorrect={false}
+            <AnimatedField
+              label="E-posta"
+              focused={focusedField === "email"}
+              delay={390}
+              icon={
+                <Ionicons
+                  name="mail-outline"
+                  size={19}
+                  color={focusedField === "email" ? C.purple500 : C.muted}
+                  style={styles.inputIcon}
                 />
-              </View>
-            </View>
+              }
+            >
+              <TextInput
+                ref={emailRef}
+                style={styles.input}
+                value={email}
+                onChangeText={setEmail}
+                onFocus={() => setFocusedField("email")}
+                onBlur={() => setFocusedField(null)}
+                placeholder="ornek@mail.com"
+                placeholderTextColor={C.muted}
+                keyboardType="email-address"
+                autoCapitalize="none"
+                autoCorrect={false}
+                autoComplete="email"
+                textContentType="emailAddress"
+                returnKeyType="next"
+                onSubmitEditing={() => passwordRef.current?.focus()}
+                accessibilityLabel="E-posta adresi"
+              />
+            </AnimatedField>
+
+            <View style={styles.fieldGap} />
 
             {/* Şifre */}
-            <View style={styles.inputGroup}>
-              <Text style={[styles.label, { color: colors.mutedForeground }]}>Şifre</Text>
-              <View style={styles.inputWrap}>
-                <TextInput
-                  style={[styles.input, { color: colors.foreground }]}
-                  value={password}
-                  onChangeText={setPassword}
-                  placeholder="En az 6 karakter"
-                  placeholderTextColor={colors.mutedForeground}
-                  secureTextEntry={!showPassword}
-                  autoCapitalize="none"
+            <AnimatedField
+              label="Şifre"
+              focused={focusedField === "password"}
+              delay={460}
+              icon={
+                <Ionicons
+                  name="lock-closed-outline"
+                  size={19}
+                  color={focusedField === "password" ? C.purple500 : C.muted}
+                  style={styles.inputIcon}
                 />
-                <Pressable onPress={() => setShowPassword((v) => !v)}>
-                  <Text style={styles.toggleTxt}>{showPassword ? "Gizle" : "Göster"}</Text>
-                </Pressable>
-              </View>
-            </View>
-
-            <Pressable
-              style={({ pressed }) => [styles.button, { opacity: pressed ? 0.85 : 1 }]}
-              onPress={handleRegister}
-              disabled={isLoading}
+              }
             >
-              {isLoading ? (
-                <ActivityIndicator color="#FFFFFF" />
-              ) : (
-                <Text style={styles.buttonText}>Kayıt Ol</Text>
-              )}
-            </Pressable>
-
-            <View style={styles.loginRow}>
-              <Text style={[styles.loginLabel, { color: colors.mutedForeground }]}>
-                Zaten hesabın var mı?
-              </Text>
-              <Pressable onPress={() => router.replace("/(auth)/login-form")}>
-                <Text style={styles.loginLink}> Giriş Yap</Text>
+              <TextInput
+                ref={passwordRef}
+                style={styles.input}
+                value={password}
+                onChangeText={setPassword}
+                onFocus={() => setFocusedField("password")}
+                onBlur={() => setFocusedField(null)}
+                placeholder="En az 6 karakter"
+                placeholderTextColor={C.muted}
+                secureTextEntry={!showPassword}
+                autoCapitalize="none"
+                autoCorrect={false}
+                autoComplete="new-password"
+                textContentType="newPassword"
+                returnKeyType="go"
+                onSubmitEditing={onRegister}
+                accessibilityLabel="Şifre"
+              />
+              <Pressable
+                onPress={() => {
+                  Haptics.selectionAsync();
+                  setShowPassword((s) => !s);
+                }}
+                hitSlop={8}
+                accessibilityRole="button"
+                accessibilityLabel={showPassword ? "Şifreyi gizle" : "Şifreyi göster"}
+              >
+                <Ionicons
+                  name={showPassword ? "eye-off-outline" : "eye-outline"}
+                  size={20}
+                  color={C.purple600}
+                />
               </Pressable>
-            </View>
-          </View>
+            </AnimatedField>
+
+            {/* Kayıt ol butonu */}
+            <Animated.View entering={FadeInDown.delay(530).springify().damping(16)}>
+              <AnimatedPressable
+                onPress={onRegister}
+                onPressIn={() => {
+                  if (valid) btnScale.value = withSpring(0.96, { damping: 15 });
+                }}
+                onPressOut={() => {
+                  btnScale.value = withSpring(1, { damping: 12 });
+                }}
+                disabled={!valid || loading}
+                style={btnAnimStyle}
+                accessibilityRole="button"
+                accessibilityState={{ disabled: !valid || loading }}
+              >
+                <LinearGradient
+                  colors={valid ? [C.purple500, C.purple600] : [C.purple200, C.purple200]}
+                  start={{ x: 0, y: 0 }}
+                  end={{ x: 1, y: 1 }}
+                  style={[styles.btn, valid && styles.btnShadow]}
+                >
+                  {loading ? (
+                    <ActivityIndicator color={C.white} />
+                  ) : (
+                    <Text
+                      style={[styles.btnText, !valid && styles.btnTextDisabled]}
+                      maxFontSizeMultiplier={1.2}
+                    >
+                      Kayıt Ol
+                    </Text>
+                  )}
+                </LinearGradient>
+              </AnimatedPressable>
+            </Animated.View>
+
+            {/* Zaten hesabın var mı */}
+            <Animated.View
+              entering={FadeInDown.delay(600).springify().damping(16)}
+              style={styles.loginRow}
+            >
+              <Text style={styles.loginText} maxFontSizeMultiplier={1.2}>
+                Zaten hesabın var mı?{" "}
+              </Text>
+              <Pressable
+                onPress={() => {
+                  Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+                  router.replace("/(auth)/login-form");
+                }}
+                accessibilityRole="link"
+                hitSlop={8}
+              >
+                <Text style={styles.loginLink} maxFontSizeMultiplier={1.2}>
+                  Giriş Yap
+                </Text>
+              </Pressable>
+            </Animated.View>
+          </Animated.View>
+
+          {/* Alt ipucu */}
+          <Animated.View
+            entering={FadeInDown.delay(680).springify().damping(16)}
+            style={styles.hint}
+          >
+            <Ionicons name="shield-checkmark-outline" size={16} color={C.muted} />
+            <Text style={styles.hintText} maxFontSizeMultiplier={1.3}>
+              Bilgilerin güvenle şifrelenir; şifreni kimseyle paylaşma.
+            </Text>
+          </Animated.View>
         </ScrollView>
       </KeyboardAvoidingView>
-    </View>
+    </SafeAreaView>
   );
 }
 
 const styles = StyleSheet.create({
-  root: { flex: 1, backgroundColor: BG },
-  glowTL: {
-    position: "absolute",
-    top: -400,
-    left: -400,
-    width: 900,
-    height: 900,
-    zIndex: 0,
-    pointerEvents: "none",
+  container: { flex: 1, backgroundColor: C.cream },
+  flex: { flex: 1 },
+  scroll: { flexGrow: 1, paddingHorizontal: 26, paddingBottom: 24 },
+
+  blob: { position: "absolute", backgroundColor: C.purple100 },
+  blobTopRight: {
+    width: 220, height: 220, borderRadius: 110,
+    top: -70, right: -80, opacity: 0.9,
   },
-  glowTR: {
-    position: "absolute",
-    top: -300,
-    right: -400,
-    width: 900,
-    height: 900,
-    zIndex: 0,
-    pointerEvents: "none",
+  blobBottomLeft: {
+    width: 180, height: 180, borderRadius: 90,
+    bottom: -60, left: -70, opacity: 0.7,
   },
-  container: { flexGrow: 1, paddingHorizontal: 24, gap: 24, zIndex: 1 },
+
   backBtn: {
-    width: 40,
-    height: 40,
-    borderRadius: 20,
-    backgroundColor: "rgba(123,94,167,0.12)",
-    alignItems: "center",
-    justifyContent: "center",
+    width: 42, height: 42, borderRadius: 21, marginTop: 8,
+    backgroundColor: C.white, borderWidth: 1.5, borderColor: C.purple200,
+    alignItems: "center", justifyContent: "center",
+    shadowColor: C.purple900, shadowOpacity: 0.06,
+    shadowRadius: 6, shadowOffset: { width: 0, height: 3 }, elevation: 2,
   },
-  header: { alignItems: "center", gap: 8 },
-  iconCircle: {
-    width: 72,
-    height: 72,
-    borderRadius: 36,
-    backgroundColor: PURPLE,
-    marginBottom: 8,
-    shadowColor: PURPLE,
-    shadowOffset: { width: 0, height: 4 },
-    shadowOpacity: 0.3,
-    shadowRadius: 12,
-    elevation: 6,
+
+  iconWrap: { alignItems: "center", marginTop: 22 },
+  iconBlob: {
+    width: 88, height: 88,
+    alignItems: "center", justifyContent: "center",
+    borderTopLeftRadius: 44, borderTopRightRadius: 38,
+    borderBottomLeftRadius: 36, borderBottomRightRadius: 46,
+    shadowColor: C.purple600, shadowOpacity: 0.35,
+    shadowRadius: 14, shadowOffset: { width: 0, height: 8 }, elevation: 8,
   },
-  title: { fontSize: 26, fontWeight: "700", color: PURPLE_DARK },
+
+  title: {
+    textAlign: "center", marginTop: 18,
+    fontSize: 25, color: C.purple900, fontFamily: "Quicksand_700Bold",
+  },
   subtitle: {
-    fontSize: 14,
-    fontWeight: "400",
-    color: "#8874A8",
-    textAlign: "center",
-    lineHeight: 20,
+    textAlign: "center", marginTop: 8, lineHeight: 22,
+    fontSize: 14.5, color: C.muted, fontFamily: "Quicksand_500Medium",
   },
+
   card: {
-    backgroundColor: "rgba(255,255,255,0.82)",
-    borderRadius: 24,
-    padding: 24,
-    gap: 14,
-    shadowColor: PURPLE,
-    shadowOffset: { width: 0, height: 4 },
-    shadowOpacity: 0.10,
-    shadowRadius: 20,
-    elevation: 4,
-    borderWidth: 1,
-    borderColor: "rgba(123,94,167,0.10)",
+    marginTop: 24, padding: 20, borderRadius: 24,
+    backgroundColor: C.white,
+    shadowColor: C.purple900, shadowOpacity: 0.07,
+    shadowRadius: 16, shadowOffset: { width: 0, height: 8 }, elevation: 4,
   },
-  inputGroup: { gap: 6 },
-  label: { fontSize: 13, fontWeight: "500" },
+
+  label: {
+    fontSize: 13.5, color: C.purple900,
+    fontFamily: "Quicksand_600SemiBold", marginBottom: 8, marginLeft: 2,
+  },
+  fieldGap: { height: 16 },
   inputWrap: {
-    flexDirection: "row",
-    alignItems: "center",
-    borderRadius: 12,
+    flexDirection: "row", alignItems: "center",
+    height: 52, borderRadius: 16, paddingHorizontal: 14,
     borderWidth: 1.5,
-    borderColor: "rgba(123,94,167,0.25)",
-    backgroundColor: "rgba(255,255,255,0.9)",
-    paddingHorizontal: 14,
-    paddingVertical: 12,
-    gap: 10,
   },
-  input: { flex: 1, fontSize: 15, fontWeight: "400" },
-  toggleTxt: { fontSize: 13, fontWeight: "600", color: PURPLE },
-  button: {
-    borderRadius: 14,
-    paddingVertical: 15,
-    alignItems: "center",
-    marginTop: 4,
-    backgroundColor: PURPLE,
-    shadowColor: PURPLE,
-    shadowOffset: { width: 0, height: 4 },
-    shadowOpacity: 0.25,
-    shadowRadius: 8,
-    elevation: 4,
+  inputIcon: { marginRight: 10 },
+  input: {
+    flex: 1, fontSize: 15.5, color: C.purple900,
+    fontFamily: "Quicksand_600SemiBold",
   },
-  buttonText: { fontSize: 16, fontWeight: "700", color: "#FFFFFF" },
+
+  btn: {
+    height: 54, borderRadius: 27, marginTop: 20,
+    alignItems: "center", justifyContent: "center",
+  },
+  btnShadow: {
+    shadowColor: C.purple600, shadowOpacity: 0.35,
+    shadowRadius: 12, shadowOffset: { width: 0, height: 8 }, elevation: 6,
+  },
+  btnText: {
+    color: C.white, fontSize: 16, letterSpacing: 0.2,
+    fontFamily: "Quicksand_700Bold",
+  },
+  btnTextDisabled: { color: C.purple600, opacity: 0.55 },
+
   loginRow: {
-    flexDirection: "row",
-    justifyContent: "center",
-    alignItems: "center",
-    marginTop: 4,
+    flexDirection: "row", justifyContent: "center", alignItems: "center",
+    marginTop: 18,
   },
-  loginLabel: { fontSize: 14, fontWeight: "400" },
-  loginLink: { fontSize: 14, fontWeight: "600", color: PURPLE },
+  loginText: {
+    fontSize: 14, color: C.muted, fontFamily: "Quicksand_500Medium",
+  },
+  loginLink: {
+    fontSize: 14, color: C.purple600, fontFamily: "Quicksand_700Bold",
+  },
+
+  hint: {
+    flexDirection: "row", gap: 8, alignItems: "flex-start",
+    marginTop: "auto", paddingTop: 28, paddingHorizontal: 8,
+  },
+  hintText: {
+    flex: 1, fontSize: 12.5, lineHeight: 19,
+    color: C.muted, fontFamily: "Quicksand_500Medium",
+  },
+  pressed: { transform: [{ scale: 0.97 }] },
 });
