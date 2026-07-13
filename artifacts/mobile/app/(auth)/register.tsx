@@ -1,8 +1,12 @@
 /**
- * RegisterScreen — canyoldaşı kayıt ol ekranı
+ * RegisterScreen — kayıt ol ekranı
  *
- * Tasarım: login-form ile aynı dil — krem zemin, organik blob'lar,
- * Quicksand fontları, Reanimated stagger + döngü animasyonları.
+ * Animasyon felsefesi: "premium sessizlik" — login-form ile birebir aynı dil
+ *  - Bloom giriş (FadeIn, dikey kayma yok)
+ *  - Pati glow pulse (hareket yok, gölge nefes alır)
+ *  - Blob morfing (köşe yarıçapı organik değişim)
+ *  - Input glow halkası odakta
+ *  - Buton shimmer süpürmesi
  */
 import { Ionicons } from "@expo/vector-icons";
 import * as Haptics from "expo-haptics";
@@ -31,10 +35,12 @@ import {
 } from "react-native";
 import Animated, {
   Easing,
-  FadeInDown,
+  FadeIn,
+  interpolate,
   interpolateColor,
   useAnimatedStyle,
   useSharedValue,
+  withDelay,
   withRepeat,
   withSequence,
   withSpring,
@@ -57,7 +63,7 @@ const C = {
 const EMAIL_RE = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
 const AnimatedPressable = Animated.createAnimatedComponent(Pressable);
 
-/* ── Animasyonlu input alanı ── */
+/* ── Animasyonlu input alanı: glow halkası + renk geçişi ── */
 function AnimatedField({
   label,
   icon,
@@ -74,22 +80,167 @@ function AnimatedField({
   const focus = useSharedValue(0);
 
   useEffect(() => {
-    focus.value = withTiming(focused ? 1 : 0, { duration: 180 });
+    focus.value = withTiming(focused ? 1 : 0, { duration: 220, easing: Easing.out(Easing.quad) });
   }, [focused]);
 
   const wrapStyle = useAnimatedStyle(() => ({
     borderColor: interpolateColor(focus.value, [0, 1], ["transparent", C.purple500]),
     backgroundColor: interpolateColor(focus.value, [0, 1], [C.cream, C.white]),
-    transform: [{ scale: 1 + focus.value * 0.012 }],
+    transform: [{ scale: interpolate(focus.value, [0, 1], [1, 1.018]) }],
+    shadowOpacity: interpolate(focus.value, [0, 1], [0, 0.18]),
+    shadowRadius: interpolate(focus.value, [0, 1], [0, 10]),
+    shadowColor: C.purple500,
+    shadowOffset: { width: 0, height: 0 },
+    elevation: interpolate(focus.value, [0, 1], [0, 3]),
   }));
 
   return (
-    <Animated.View entering={FadeInDown.delay(delay).springify().damping(16)}>
+    <Animated.View entering={FadeIn.delay(delay).duration(400)}>
       <Text style={styles.label}>{label}</Text>
       <Animated.View style={[styles.inputWrap, wrapStyle]}>
         {icon}
         {children}
       </Animated.View>
+    </Animated.View>
+  );
+}
+
+/* ── Organik blob: köşe yarıçapı morfing ── */
+function MorphBlob({ style, delay = 0 }: { style: object; delay?: number }) {
+  const morph = useSharedValue(0);
+
+  useEffect(() => {
+    morph.value = withDelay(
+      delay,
+      withRepeat(
+        withSequence(
+          withTiming(1, { duration: 5000, easing: Easing.inOut(Easing.sin) }),
+          withTiming(0, { duration: 5000, easing: Easing.inOut(Easing.sin) })
+        ),
+        -1
+      )
+    );
+  }, []);
+
+  const blobStyle = useAnimatedStyle(() => ({
+    borderTopLeftRadius: interpolate(morph.value, [0, 1], [110, 70]),
+    borderTopRightRadius: interpolate(morph.value, [0, 1], [70, 130]),
+    borderBottomLeftRadius: interpolate(morph.value, [0, 1], [130, 80]),
+    borderBottomRightRadius: interpolate(morph.value, [0, 1], [80, 120]),
+    opacity: interpolate(morph.value, [0, 0.5, 1], [0.75, 0.95, 0.75]),
+  }));
+
+  return <Animated.View style={[style, blobStyle]} pointerEvents="none" />;
+}
+
+/* ── Pati glow pulse ── */
+function GlowPaw({ reduceMotion }: { reduceMotion: boolean }) {
+  const glow = useSharedValue(0);
+
+  useEffect(() => {
+    if (reduceMotion) return;
+    glow.value = withRepeat(
+      withSequence(
+        withTiming(1, { duration: 1800, easing: Easing.inOut(Easing.sin) }),
+        withTiming(0, { duration: 1800, easing: Easing.inOut(Easing.sin) })
+      ),
+      -1
+    );
+  }, [reduceMotion]);
+
+  const ringStyle = useAnimatedStyle(() => ({
+    opacity: interpolate(glow.value, [0, 1], [0, 0.45]),
+    transform: [{ scale: interpolate(glow.value, [0, 1], [1, 1.22]) }],
+  }));
+
+  const blobScale = useAnimatedStyle(() => ({
+    transform: [{ scale: interpolate(glow.value, [0, 1], [1, 1.035]) }],
+  }));
+
+  return (
+    <Animated.View entering={FadeIn.delay(120).duration(500)} style={styles.iconWrap}>
+      <Animated.View style={[styles.glowRing, ringStyle]} />
+      <Animated.View style={blobScale}>
+        <LinearGradient
+          colors={[C.purple500, C.purple600]}
+          start={{ x: 0, y: 0 }}
+          end={{ x: 1, y: 1 }}
+          style={styles.iconBlob}
+        >
+          <Ionicons name="paw" size={34} color={C.white} />
+        </LinearGradient>
+      </Animated.View>
+    </Animated.View>
+  );
+}
+
+/* ── Buton shimmer süpürmesi ── */
+function ShimmerBtn({
+  label,
+  valid,
+  loading,
+  onPress,
+  animStyle,
+  onPressIn,
+  onPressOut,
+  entryDelay,
+}: {
+  label: string;
+  valid: boolean;
+  loading: boolean;
+  onPress: () => void;
+  animStyle: object;
+  onPressIn: () => void;
+  onPressOut: () => void;
+  entryDelay: number;
+}) {
+  const sweep = useSharedValue(-120);
+
+  useEffect(() => {
+    if (!valid) { sweep.value = -120; return; }
+    sweep.value = withDelay(
+      300,
+      withRepeat(
+        withSequence(
+          withTiming(320, { duration: 1600, easing: Easing.inOut(Easing.quad) }),
+          withTiming(-120, { duration: 0 }),
+          withTiming(-120, { duration: 2200 })
+        ),
+        -1
+      )
+    );
+  }, [valid]);
+
+  const shimmerStyle = useAnimatedStyle(() => ({
+    transform: [{ translateX: sweep.value }],
+  }));
+
+  return (
+    <Animated.View entering={FadeIn.delay(entryDelay).duration(400)}>
+      <AnimatedPressable
+        onPress={onPress} onPressIn={onPressIn} onPressOut={onPressOut}
+        disabled={!valid || loading}
+        style={animStyle}
+        accessibilityRole="button"
+        accessibilityState={{ disabled: !valid || loading }}
+      >
+        <LinearGradient
+          colors={valid ? [C.purple500, C.purple600] : [C.purple200, C.purple200]}
+          start={{ x: 0, y: 0 }} end={{ x: 1, y: 1 }}
+          style={[styles.btn, valid && styles.btnShadow]}
+        >
+          {loading ? (
+            <ActivityIndicator color={C.white} />
+          ) : (
+            <Text style={[styles.btnText, !valid && styles.btnTextDisabled]} maxFontSizeMultiplier={1.2}>
+              {label}
+            </Text>
+          )}
+          {valid && (
+            <Animated.View style={[styles.shimmerStrip, shimmerStyle]} pointerEvents="none" />
+          )}
+        </LinearGradient>
+      </AnimatedPressable>
     </Animated.View>
   );
 }
@@ -109,66 +260,18 @@ export default function RegisterScreen() {
   const [loading, setLoading] = useState(false);
   const [reduceMotion, setReduceMotion] = useState(false);
 
-  const [fontsLoaded] = useFonts({
-    Quicksand_500Medium,
-    Quicksand_600SemiBold,
-    Quicksand_700Bold,
-  });
+  const [fontsLoaded] = useFonts({ Quicksand_500Medium, Quicksand_600SemiBold, Quicksand_700Bold });
 
   const valid = useMemo(
-    () =>
-      name.trim().length >= 2 &&
-      EMAIL_RE.test(email.trim()) &&
-      password.length >= 6,
+    () => name.trim().length >= 2 && EMAIL_RE.test(email.trim()) && password.length >= 6,
     [name, email, password]
   );
 
-  /* ── Döngü animasyonları ── */
-  const float = useSharedValue(0);
-  const drift = useSharedValue(0);
   const btnScale = useSharedValue(1);
 
   useEffect(() => {
     AccessibilityInfo.isReduceMotionEnabled().then(setReduceMotion);
   }, []);
-
-  useEffect(() => {
-    if (reduceMotion) return;
-    float.value = withRepeat(
-      withSequence(
-        withTiming(1, { duration: 2200, easing: Easing.inOut(Easing.sin) }),
-        withTiming(0, { duration: 2200, easing: Easing.inOut(Easing.sin) })
-      ),
-      -1
-    );
-    drift.value = withRepeat(
-      withTiming(1, { duration: 9000, easing: Easing.inOut(Easing.sin) }),
-      -1,
-      true
-    );
-  }, [reduceMotion]);
-
-  const pawStyle = useAnimatedStyle(() => ({
-    transform: [
-      { translateY: float.value * -8 },
-      { rotate: `${(float.value - 0.5) * 4}deg` },
-    ],
-    shadowOpacity: 0.28 + float.value * 0.14,
-  }));
-
-  const blobTRStyle = useAnimatedStyle(() => ({
-    transform: [
-      { translateX: drift.value * 14 },
-      { translateY: drift.value * 10 },
-      { scale: 1 + drift.value * 0.06 },
-    ],
-  }));
-  const blobBLStyle = useAnimatedStyle(() => ({
-    transform: [
-      { translateX: drift.value * -12 },
-      { translateY: drift.value * -8 },
-    ],
-  }));
 
   const btnAnimStyle = useAnimatedStyle(() => ({
     transform: [{ scale: btnScale.value }],
@@ -197,20 +300,10 @@ export default function RegisterScreen() {
     <SafeAreaView style={styles.container} edges={["top", "bottom"]}>
       <StatusBar barStyle="dark-content" backgroundColor={C.cream} />
 
-      {/* Süzülen arka plan blob'ları */}
-      <Animated.View
-        style={[styles.blob, styles.blobTopRight, blobTRStyle]}
-        pointerEvents="none"
-      />
-      <Animated.View
-        style={[styles.blob, styles.blobBottomLeft, blobBLStyle]}
-        pointerEvents="none"
-      />
+      <MorphBlob style={[styles.blob, styles.blobTopRight]} delay={0} />
+      <MorphBlob style={[styles.blob, styles.blobBottomLeft]} delay={2500} />
 
-      <KeyboardAvoidingView
-        style={styles.flex}
-        behavior={Platform.OS === "ios" ? "padding" : "height"}
-      >
+      <KeyboardAvoidingView style={styles.flex} behavior={Platform.OS === "ios" ? "padding" : "height"}>
         <ScrollView
           contentContainerStyle={styles.scroll}
           keyboardShouldPersistTaps="handled"
@@ -218,95 +311,56 @@ export default function RegisterScreen() {
           showsVerticalScrollIndicator={false}
         >
           {/* Geri butonu */}
-          <Animated.View entering={FadeInDown.delay(0).springify().damping(16)}>
+          <Animated.View entering={FadeIn.delay(0).duration(350)}>
             <Pressable
-              onPress={() => {
-                Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
-                router.back();
-              }}
+              onPress={() => { Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light); router.back(); }}
               style={({ pressed }) => [styles.backBtn, pressed && styles.pressed]}
-              accessibilityRole="button"
-              accessibilityLabel="Geri dön"
-              hitSlop={8}
+              accessibilityRole="button" accessibilityLabel="Geri dön" hitSlop={8}
             >
               <Ionicons name="chevron-back" size={22} color={C.purple900} />
             </Pressable>
           </Animated.View>
 
-          {/* Nefes alan pati blob'u */}
-          <Animated.View
-            entering={FadeInDown.delay(80).springify().damping(14)}
-            style={styles.iconWrap}
-          >
-            <Animated.View style={pawStyle}>
-              <LinearGradient
-                colors={[C.purple500, C.purple600]}
-                start={{ x: 0, y: 0 }}
-                end={{ x: 1, y: 1 }}
-                style={styles.iconBlob}
-              >
-                <Ionicons name="paw" size={34} color={C.white} />
-              </LinearGradient>
-            </Animated.View>
-          </Animated.View>
+          <GlowPaw reduceMotion={reduceMotion} />
 
-          <Animated.View entering={FadeInDown.delay(160).springify().damping(16)}>
-            <Text style={styles.title} maxFontSizeMultiplier={1.2}>
-              Hesap Oluştur
-            </Text>
+          <Animated.View entering={FadeIn.delay(200).duration(400)}>
+            <Text style={styles.title} maxFontSizeMultiplier={1.2}>Hesap Oluştur</Text>
             <Text style={styles.subtitle} maxFontSizeMultiplier={1.3}>
               Topluluğa katıl, hayvan hayatlarına dokunuş yap.
             </Text>
           </Animated.View>
 
           {/* Form kartı */}
-          <Animated.View
-            entering={FadeInDown.delay(240).springify().damping(16)}
-            style={styles.card}
-          >
-            {/* Ad Soyad */}
+          <Animated.View entering={FadeIn.delay(280).duration(400)} style={styles.card}>
+
             <AnimatedField
-              label="Ad Soyad"
-              focused={focusedField === "name"}
-              delay={320}
+              label="Ad Soyad" focused={focusedField === "name"} delay={330}
               icon={
                 <Ionicons
-                  name="person-outline"
-                  size={19}
+                  name="person-outline" size={19}
                   color={focusedField === "name" ? C.purple500 : C.muted}
                   style={styles.inputIcon}
                 />
               }
             >
               <TextInput
-                style={styles.input}
-                value={name}
-                onChangeText={setName}
-                onFocus={() => setFocusedField("name")}
-                onBlur={() => setFocusedField(null)}
-                placeholder="Adın Soyadın"
-                placeholderTextColor={C.muted}
-                autoCapitalize="words"
-                autoCorrect={false}
-                autoComplete="name"
-                textContentType="name"
-                returnKeyType="next"
-                onSubmitEditing={() => emailRef.current?.focus()}
+                style={styles.input} value={name} onChangeText={setName}
+                onFocus={() => setFocusedField("name")} onBlur={() => setFocusedField(null)}
+                placeholder="Adın Soyadın" placeholderTextColor={C.muted}
+                autoCapitalize="words" autoCorrect={false}
+                autoComplete="name" textContentType="name"
+                returnKeyType="next" onSubmitEditing={() => emailRef.current?.focus()}
                 accessibilityLabel="Ad Soyad"
               />
             </AnimatedField>
 
             <View style={styles.fieldGap} />
 
-            {/* E-posta */}
             <AnimatedField
-              label="E-posta"
-              focused={focusedField === "email"}
-              delay={390}
+              label="E-posta" focused={focusedField === "email"} delay={390}
               icon={
                 <Ionicons
-                  name="mail-outline"
-                  size={19}
+                  name="mail-outline" size={19}
                   color={focusedField === "email" ? C.purple500 : C.muted}
                   style={styles.inputIcon}
                 />
@@ -314,35 +368,23 @@ export default function RegisterScreen() {
             >
               <TextInput
                 ref={emailRef}
-                style={styles.input}
-                value={email}
-                onChangeText={setEmail}
-                onFocus={() => setFocusedField("email")}
-                onBlur={() => setFocusedField(null)}
-                placeholder="ornek@mail.com"
-                placeholderTextColor={C.muted}
-                keyboardType="email-address"
-                autoCapitalize="none"
-                autoCorrect={false}
-                autoComplete="email"
-                textContentType="emailAddress"
-                returnKeyType="next"
-                onSubmitEditing={() => passwordRef.current?.focus()}
+                style={styles.input} value={email} onChangeText={setEmail}
+                onFocus={() => setFocusedField("email")} onBlur={() => setFocusedField(null)}
+                placeholder="ornek@mail.com" placeholderTextColor={C.muted}
+                keyboardType="email-address" autoCapitalize="none" autoCorrect={false}
+                autoComplete="email" textContentType="emailAddress"
+                returnKeyType="next" onSubmitEditing={() => passwordRef.current?.focus()}
                 accessibilityLabel="E-posta adresi"
               />
             </AnimatedField>
 
             <View style={styles.fieldGap} />
 
-            {/* Şifre */}
             <AnimatedField
-              label="Şifre"
-              focused={focusedField === "password"}
-              delay={460}
+              label="Şifre" focused={focusedField === "password"} delay={450}
               icon={
                 <Ionicons
-                  name="lock-closed-outline"
-                  size={19}
+                  name="lock-closed-outline" size={19}
                   color={focusedField === "password" ? C.purple500 : C.muted}
                   style={styles.inputIcon}
                 />
@@ -350,102 +392,43 @@ export default function RegisterScreen() {
             >
               <TextInput
                 ref={passwordRef}
-                style={styles.input}
-                value={password}
-                onChangeText={setPassword}
-                onFocus={() => setFocusedField("password")}
-                onBlur={() => setFocusedField(null)}
-                placeholder="En az 6 karakter"
-                placeholderTextColor={C.muted}
-                secureTextEntry={!showPassword}
-                autoCapitalize="none"
-                autoCorrect={false}
-                autoComplete="new-password"
-                textContentType="newPassword"
-                returnKeyType="go"
-                onSubmitEditing={onRegister}
+                style={styles.input} value={password} onChangeText={setPassword}
+                onFocus={() => setFocusedField("password")} onBlur={() => setFocusedField(null)}
+                placeholder="En az 6 karakter" placeholderTextColor={C.muted}
+                secureTextEntry={!showPassword} autoCapitalize="none" autoCorrect={false}
+                autoComplete="new-password" textContentType="newPassword"
+                returnKeyType="go" onSubmitEditing={onRegister}
                 accessibilityLabel="Şifre"
               />
               <Pressable
-                onPress={() => {
-                  Haptics.selectionAsync();
-                  setShowPassword((s) => !s);
-                }}
-                hitSlop={8}
-                accessibilityRole="button"
+                onPress={() => { Haptics.selectionAsync(); setShowPassword((s) => !s); }}
+                hitSlop={8} accessibilityRole="button"
                 accessibilityLabel={showPassword ? "Şifreyi gizle" : "Şifreyi göster"}
               >
-                <Ionicons
-                  name={showPassword ? "eye-off-outline" : "eye-outline"}
-                  size={20}
-                  color={C.purple600}
-                />
+                <Ionicons name={showPassword ? "eye-off-outline" : "eye-outline"} size={20} color={C.purple600} />
               </Pressable>
             </AnimatedField>
 
-            {/* Kayıt ol butonu */}
-            <Animated.View entering={FadeInDown.delay(530).springify().damping(16)}>
-              <AnimatedPressable
-                onPress={onRegister}
-                onPressIn={() => {
-                  if (valid) btnScale.value = withSpring(0.96, { damping: 15 });
-                }}
-                onPressOut={() => {
-                  btnScale.value = withSpring(1, { damping: 12 });
-                }}
-                disabled={!valid || loading}
-                style={btnAnimStyle}
-                accessibilityRole="button"
-                accessibilityState={{ disabled: !valid || loading }}
-              >
-                <LinearGradient
-                  colors={valid ? [C.purple500, C.purple600] : [C.purple200, C.purple200]}
-                  start={{ x: 0, y: 0 }}
-                  end={{ x: 1, y: 1 }}
-                  style={[styles.btn, valid && styles.btnShadow]}
-                >
-                  {loading ? (
-                    <ActivityIndicator color={C.white} />
-                  ) : (
-                    <Text
-                      style={[styles.btnText, !valid && styles.btnTextDisabled]}
-                      maxFontSizeMultiplier={1.2}
-                    >
-                      Kayıt Ol
-                    </Text>
-                  )}
-                </LinearGradient>
-              </AnimatedPressable>
-            </Animated.View>
+            <ShimmerBtn
+              label="Kayıt Ol"
+              valid={valid} loading={loading} onPress={onRegister}
+              animStyle={btnAnimStyle} entryDelay={510}
+              onPressIn={() => { if (valid) btnScale.value = withSpring(0.97, { damping: 18 }); }}
+              onPressOut={() => { btnScale.value = withSpring(1, { damping: 14 }); }}
+            />
 
-            {/* Zaten hesabın var mı */}
-            <Animated.View
-              entering={FadeInDown.delay(600).springify().damping(16)}
-              style={styles.loginRow}
-            >
-              <Text style={styles.loginText} maxFontSizeMultiplier={1.2}>
-                Zaten hesabın var mı?{" "}
-              </Text>
+            <Animated.View entering={FadeIn.delay(570).duration(350)} style={styles.loginRow}>
+              <Text style={styles.loginText} maxFontSizeMultiplier={1.2}>Zaten hesabın var mı? </Text>
               <Pressable
-                onPress={() => {
-                  Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
-                  router.replace("/(auth)/login-form");
-                }}
-                accessibilityRole="link"
-                hitSlop={8}
+                onPress={() => { Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light); router.replace("/(auth)/login-form"); }}
+                accessibilityRole="link" hitSlop={8}
               >
-                <Text style={styles.loginLink} maxFontSizeMultiplier={1.2}>
-                  Giriş Yap
-                </Text>
+                <Text style={styles.loginLink} maxFontSizeMultiplier={1.2}>Giriş Yap</Text>
               </Pressable>
             </Animated.View>
           </Animated.View>
 
-          {/* Alt ipucu */}
-          <Animated.View
-            entering={FadeInDown.delay(680).springify().damping(16)}
-            style={styles.hint}
-          >
+          <Animated.View entering={FadeIn.delay(630).duration(350)} style={styles.hint}>
             <Ionicons name="shield-checkmark-outline" size={16} color={C.muted} />
             <Text style={styles.hintText} maxFontSizeMultiplier={1.3}>
               Bilgilerin güvenle şifrelenir; şifreni kimseyle paylaşma.
@@ -463,14 +446,8 @@ const styles = StyleSheet.create({
   scroll: { flexGrow: 1, paddingHorizontal: 26, paddingBottom: 24 },
 
   blob: { position: "absolute", backgroundColor: C.purple100 },
-  blobTopRight: {
-    width: 220, height: 220, borderRadius: 110,
-    top: -70, right: -80, opacity: 0.9,
-  },
-  blobBottomLeft: {
-    width: 180, height: 180, borderRadius: 90,
-    bottom: -60, left: -70, opacity: 0.7,
-  },
+  blobTopRight: { width: 220, height: 220, top: -70, right: -80 },
+  blobBottomLeft: { width: 180, height: 180, bottom: -60, left: -70 },
 
   backBtn: {
     width: 42, height: 42, borderRadius: 21, marginTop: 8,
@@ -480,14 +457,19 @@ const styles = StyleSheet.create({
     shadowRadius: 6, shadowOffset: { width: 0, height: 3 }, elevation: 2,
   },
 
-  iconWrap: { alignItems: "center", marginTop: 22 },
+  iconWrap: { alignItems: "center", marginTop: 22, position: "relative" },
+  glowRing: {
+    position: "absolute",
+    width: 108, height: 108, borderRadius: 54,
+    backgroundColor: C.purple500,
+    top: -10, left: "50%", marginLeft: -54,
+  },
   iconBlob: {
-    width: 88, height: 88,
-    alignItems: "center", justifyContent: "center",
+    width: 88, height: 88, alignItems: "center", justifyContent: "center",
     borderTopLeftRadius: 44, borderTopRightRadius: 38,
     borderBottomLeftRadius: 36, borderBottomRightRadius: 46,
-    shadowColor: C.purple600, shadowOpacity: 0.35,
-    shadowRadius: 14, shadowOffset: { width: 0, height: 8 }, elevation: 8,
+    shadowColor: C.purple600, shadowOpacity: 0.4,
+    shadowRadius: 16, shadowOffset: { width: 0, height: 8 }, elevation: 8,
   },
 
   title: {
@@ -500,12 +482,10 @@ const styles = StyleSheet.create({
   },
 
   card: {
-    marginTop: 24, padding: 20, borderRadius: 24,
-    backgroundColor: C.white,
+    marginTop: 24, padding: 20, borderRadius: 24, backgroundColor: C.white,
     shadowColor: C.purple900, shadowOpacity: 0.07,
     shadowRadius: 16, shadowOffset: { width: 0, height: 8 }, elevation: 4,
   },
-
   label: {
     fontSize: 13.5, color: C.purple900,
     fontFamily: "Quicksand_600SemiBold", marginBottom: 8, marginLeft: 2,
@@ -513,47 +493,36 @@ const styles = StyleSheet.create({
   fieldGap: { height: 16 },
   inputWrap: {
     flexDirection: "row", alignItems: "center",
-    height: 52, borderRadius: 16, paddingHorizontal: 14,
-    borderWidth: 1.5,
+    height: 52, borderRadius: 16, paddingHorizontal: 14, borderWidth: 1.5,
   },
   inputIcon: { marginRight: 10 },
-  input: {
-    flex: 1, fontSize: 15.5, color: C.purple900,
-    fontFamily: "Quicksand_600SemiBold",
-  },
+  input: { flex: 1, fontSize: 15.5, color: C.purple900, fontFamily: "Quicksand_600SemiBold" },
 
   btn: {
     height: 54, borderRadius: 27, marginTop: 20,
-    alignItems: "center", justifyContent: "center",
+    alignItems: "center", justifyContent: "center", overflow: "hidden",
   },
   btnShadow: {
     shadowColor: C.purple600, shadowOpacity: 0.35,
     shadowRadius: 12, shadowOffset: { width: 0, height: 8 }, elevation: 6,
   },
-  btnText: {
-    color: C.white, fontSize: 16, letterSpacing: 0.2,
-    fontFamily: "Quicksand_700Bold",
-  },
+  btnText: { color: C.white, fontSize: 16, letterSpacing: 0.2, fontFamily: "Quicksand_700Bold" },
   btnTextDisabled: { color: C.purple600, opacity: 0.55 },
+  shimmerStrip: {
+    position: "absolute",
+    top: 0, bottom: 0, width: 60,
+    backgroundColor: "rgba(255,255,255,0.22)",
+    transform: [{ skewX: "-18deg" }],
+  },
 
-  loginRow: {
-    flexDirection: "row", justifyContent: "center", alignItems: "center",
-    marginTop: 18,
-  },
-  loginText: {
-    fontSize: 14, color: C.muted, fontFamily: "Quicksand_500Medium",
-  },
-  loginLink: {
-    fontSize: 14, color: C.purple600, fontFamily: "Quicksand_700Bold",
-  },
+  loginRow: { flexDirection: "row", justifyContent: "center", alignItems: "center", marginTop: 18 },
+  loginText: { fontSize: 14, color: C.muted, fontFamily: "Quicksand_500Medium" },
+  loginLink: { fontSize: 14, color: C.purple600, fontFamily: "Quicksand_700Bold" },
 
   hint: {
     flexDirection: "row", gap: 8, alignItems: "flex-start",
     marginTop: "auto", paddingTop: 28, paddingHorizontal: 8,
   },
-  hintText: {
-    flex: 1, fontSize: 12.5, lineHeight: 19,
-    color: C.muted, fontFamily: "Quicksand_500Medium",
-  },
+  hintText: { flex: 1, fontSize: 12.5, lineHeight: 19, color: C.muted, fontFamily: "Quicksand_500Medium" },
   pressed: { transform: [{ scale: 0.97 }] },
 });
