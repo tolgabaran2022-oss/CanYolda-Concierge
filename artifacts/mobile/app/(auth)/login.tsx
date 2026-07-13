@@ -61,22 +61,6 @@ export default function WelcomeScreen() {
           </LinearGradient>
         </Pressable>
 
-        {/* Şifremi Unuttum */}
-        <Pressable
-          onPress={() => {
-            Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
-            router.push("/(auth)/forgot-password");
-          }}
-          style={({ pressed }) => ({
-            alignSelf: "center",
-            paddingVertical: 10,
-            paddingHorizontal: 20,
-            opacity: pressed ? 0.6 : 1,
-          })}
-        >
-          <Text style={styles.forgotText}>Şifremi Unuttum?</Text>
-        </Pressable>
-
         {/* Kayıt Ol */}
         <Pressable
           onPress={() => {
@@ -92,6 +76,22 @@ export default function WelcomeScreen() {
           ]}
         >
           <Text style={styles.secondaryBtnText}>Kayıt Ol</Text>
+        </Pressable>
+
+        {/* Şifremi Unuttum */}
+        <Pressable
+          onPress={() => {
+            Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+            router.push("/(auth)/forgot-password");
+          }}
+          style={({ pressed }) => ({
+            alignSelf: "center",
+            paddingVertical: 10,
+            paddingHorizontal: 20,
+            opacity: pressed ? 0.6 : 1,
+          })}
+        >
+          <Text style={styles.forgotText}>Şifremi Unuttum?</Text>
         </Pressable>
 
         {/* Terms */}
