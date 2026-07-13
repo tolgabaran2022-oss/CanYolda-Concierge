@@ -49,10 +49,8 @@ export default function WelcomeScreen() {
 
   const sc = screenClass(sh);
 
-  /* ── Responsive flex ratios ──────────────────────────────────────── */
-  //                   short  medium  tall
-  const heroFlex  = sc === "short" ? 0.58 : sc === "medium" ? 0.66 : 0.72;
-  const authFlex  = sc === "short" ? 0.42 : sc === "medium" ? 0.34 : 0.28;
+  // heroFlex / authFlex removed — hero fills all remaining space via flex:1,
+  // auth section sizes to its natural content height (no explicit flex).
 
   /* ── Centralised spacing — derived from viewport, never hardcoded ── */
   const sp = {
@@ -103,31 +101,29 @@ export default function WelcomeScreen() {
           />
 
           {/* ──────────────────────────────────────────────────────────────
-               HERO SECTION
-               flex ratio shrinks naturally when viewport is short.
-               Image fills 100 % of the section with contentFit="contain"
-               so it never crops and never distorts.
+               HERO SECTION — flex:1 consumes ALL remaining space above
+               the auth controls. Image fills 100 % with contentFit="contain"
+               so it never crops, never distorts, and naturally maximises size.
           ─────────────────────────────────────────────────────────────── */}
-          <View style={[styles.heroSection, { flex: heroFlex, paddingTop: sp.heroTop }]}>
+          <View style={[styles.heroSection, { paddingTop: sp.heroTop }]}>
             <Image
               source={HERO_IMAGE}
               style={styles.heroImg}
-              contentFit="contain"
+              contentFit="cover"
+              contentPosition={{ top: "0%", left: "50%" }}
               accessible
               accessibilityLabel="Canyoldaşı — köpek ve kedi ile karşılama görseli"
             />
           </View>
 
           {/* ──────────────────────────────────────────────────────────────
-               AUTH SECTION
-               Pinned below hero via flex. Always fully visible.
-               minHeight keeps the section usable on edge-case tall fonts.
+               AUTH SECTION — no flex; sizes to natural content height.
+               Hero section absorbs all the remaining viewport space.
           ─────────────────────────────────────────────────────────────── */}
           <View
             style={[
               styles.authSection,
               {
-                flex:             authFlex,
                 gap:              sp.authGap,
                 paddingHorizontal: sp.authPadH,
                 paddingTop:       sp.authPadTop,
@@ -246,8 +242,9 @@ const styles = StyleSheet.create({
     pointerEvents: "none",
   },
 
-  /* Hero section */
+  /* Hero section — flex:1 so it absorbs all space above auth controls */
   heroSection: {
+    flex:        1,
     width:       "100%",
     zIndex:      1,
     overflow:    "hidden",
