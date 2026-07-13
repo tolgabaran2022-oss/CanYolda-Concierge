@@ -351,7 +351,7 @@ function ListingCard({ listing, isFeatured, featuredUntil }: { listing: Adoption
           {isFeatured && (
             <LinearGradient colors={[P2, DARK]} start={{ x: 0, y: 0 }} end={{ x: 1, y: 1 }} style={lc.featuredBadge}>
               <Ionicons name="star" size={9} color={WHITE} />
-              <Text style={lc.featuredTxt}>⭐ ÖNE ÇIKAN</Text>
+              <Text style={lc.featuredTxt}>ÖNE ÇIKAN</Text>
             </LinearGradient>
           )}
 
@@ -1166,7 +1166,9 @@ function MyListingsSection({
     <Modal visible={successModal !== null} transparent animationType="fade" onRequestClose={() => setSuccessModal(null)}>
       <Pressable style={sm.overlay} onPress={() => setSuccessModal(null)}>
         <View style={sm.card}>
-          <Text style={sm.emoji}>🎉</Text>
+          <View style={sm.emoji}>
+            <Ionicons name="star" size={40} color="#F5A623" />
+          </View>
           <Text style={sm.title}>İlanın Öne Çıkarıldı!</Text>
           <Text style={sm.sub}>İlanın artık daha fazla kullanıcıya gösterilecek</Text>
           {successModal && (

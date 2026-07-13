@@ -289,7 +289,7 @@ export default function UserProfileScreen() {
                     <Text style={following
                       ? [S.btnOutlineTxt, { color: T.purple }]
                       : S.btnFillTxt}>
-                      {following ? "Takiptesin ✓" : "Takip Et"}
+                      {following ? "Takiptesin" : "Takip Et"}
                     </Text>
                   )}
                 </Pressable>

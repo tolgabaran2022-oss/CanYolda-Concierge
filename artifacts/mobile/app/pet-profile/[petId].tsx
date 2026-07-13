@@ -508,7 +508,10 @@ export default function PetProfileScreen() {
                   </View>
                   <View style={{ flex: 1 }}>
                     <Text style={[S.healthName, { color: T.text }]}>{h.vaccineName}</Text>
-                    <Text style={[S.healthDate, { color: T.textMuted }]}>📅 {h.date}{h.nextDate ? `  →  ${h.nextDate}` : ""}</Text>
+                    <View style={{ flexDirection: "row", alignItems: "center", gap: 4, marginTop: 2 }}>
+                      <Ionicons name="calendar-outline" size={13} color={T.textMuted} />
+                      <Text style={[S.healthDate, { color: T.textMuted }]}>{h.date}{h.nextDate ? ` · ${h.nextDate}` : ""}</Text>
+                    </View>
                     {h.note ? <Text style={[S.healthNote, { color: T.textMuted }]}>{h.note}</Text> : null}
                   </View>
                   {isOwner && (

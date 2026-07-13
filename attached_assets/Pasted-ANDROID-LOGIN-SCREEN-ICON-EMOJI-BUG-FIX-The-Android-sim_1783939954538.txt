@@ -1,0 +1,132 @@
+ANDROID LOGIN SCREEN ICON / EMOJI BUG FIX
+
+The Android simulator currently displays broken glyphs, square symbols, missing characters, or corrupted emoji/icons on the CanYoldaşı login screen.
+
+IMPORTANT:
+- Fix Android rendering only where necessary.
+- Do NOT break the current iOS design.
+- Do NOT break the Web design.
+- Preserve the existing visual design, spacing, colors, logo, background and layout.
+- Do not redesign the login screen.
+
+CURRENT BUGS:
+1. The icon on the left side of the "Giriş Yap" button is rendered as a broken/missing glyph on Android.
+2. The icon on the right side of the "Giriş Yap" button is rendered incorrectly.
+3. The icons inside the "Kayıt Ol" button are rendered as missing square characters.
+4. The small icon near the Terms of Use / Privacy Policy text is broken.
+5. Any raw emoji, Unicode symbol, web-only icon character, or unsupported font glyph is displaying incorrectly on Android.
+
+FIX REQUIREMENTS:
+
+1. Audit the entire Login / Auth screen for:
+- raw emoji characters
+- Unicode icon characters
+- text-based symbols used as icons
+- web-only icon fonts
+- incorrectly loaded custom icon fonts
+
+2. Do NOT use emoji or Unicode symbols as UI icons.
+
+BAD:
+<Text>🔒</Text>
+<Text>→</Text>
+<Text>✉</Text>
+<Text>🐾</Text>
+<Text></Text>
+
+Replace UI icons with a proper React Native icon library already available in the project.
+
+Prefer:
+@expo/vector-icons
+
+Use consistent icon families such as:
+Ionicons
+MaterialCommunityIcons
+Feather
+
+Example:
+import { Ionicons } from '@expo/vector-icons';
+
+3. Replace every broken login screen icon with real vector icons.
+
+Suggested mapping:
+- Login: Ionicons "log-in-outline"
+- Register: Ionicons "person-add-outline"
+- Terms / Privacy: Ionicons "shield-checkmark-outline"
+- Password: Ionicons "lock-closed-outline"
+- Email: Ionicons "mail-outline"
+- Arrow: Ionicons "chevron-forward"
+
+4. Search the COMPLETE auth screen component and its child components.
+Do not fix only one visible icon.
+
+Check:
+- LoginScreen
+- AuthScreen
+- WelcomeScreen
+- LoginButton
+- RegisterButton
+- Terms / Privacy component
+- Shared Button component
+- Icon wrapper components
+
+5. Check Android font loading.
+
+If @expo/vector-icons fonts or custom fonts are loaded asynchronously, make sure the root application waits until fonts are fully loaded before rendering the UI.
+
+Audit:
+App.tsx
+_layout.tsx
+RootLayout
+font loading hooks
+useFonts
+SplashScreen handling
+
+Do not render icon-dependent UI before required fonts are ready.
+
+6. Remove any CSS/web icon fallback logic from the native Android implementation.
+
+Do not use:
+font-family based web icons
+HTML entities
+CSS pseudo-elements
+icon text characters
+
+Use React Native vector icon components.
+
+7. Icon alignment:
+- vertical center
+- no clipping
+- no square glyph
+- no extra icon container unless required by the current design
+- preserve button height
+- preserve button radius
+- preserve existing purple gradient
+
+8. Android validation:
+Test the login screen in the Android simulator after the fix.
+
+Verify:
+- No □ characters
+- No crossed square symbols
+- No missing glyphs
+- No corrupted emoji
+- All icons render clearly
+- Turkish characters render correctly: ş, Ş, ı, İ, ğ, Ğ, ü, Ü, ö, Ö, ç, Ç
+- Giriş Yap button remains aligned
+- Kayıt Ol button remains aligned
+- Terms and Privacy text remains aligned
+
+9. Also search the project for the same unsupported icon pattern.
+Find other occurrences of the exact broken icon implementation and replace them safely with vector icons.
+
+DO NOT blindly redesign other screens.
+
+FINAL REPORT:
+After completing the fix, report:
+- Root cause of the Android broken glyph issue
+- Files modified
+- Icons replaced
+- Font loading changes made
+- Android simulator test result
+- Confirmation that iOS and Web were not visually changed

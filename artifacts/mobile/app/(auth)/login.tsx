@@ -23,9 +23,9 @@ export default function WelcomeScreen() {
   const router = useRouter();
   const { width: sw } = useWindowDimensions();
 
-  /* PNG native: 4265 × 4585 — full screen width, natural aspect ratio */
-  const heroW = sw;
-  const heroH = Math.round(sw * (4585 / 4265));
+  /* PNG native: 4265 × 4585 — cap at 430 for web container */
+  const heroW = Math.min(sw, 430);
+  const heroH = Math.round(heroW * (4585 / 4265));
 
   return (
     <View style={[styles.root, { paddingBottom: Math.max(insets.bottom, 20) }]}>
