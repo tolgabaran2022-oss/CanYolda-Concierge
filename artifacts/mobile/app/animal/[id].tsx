@@ -3,9 +3,10 @@ import { Icon } from "@/components/Icon";
 import * as Haptics from "expo-haptics";
 import { Image } from "expo-image";
 import { LinearGradient } from "expo-linear-gradient";
-import { useLocalSearchParams, useRouter } from "expo-router";
+import { useLocalSearchParams, useRouter, useFocusEffect } from "expo-router";
 import React, { useCallback, useEffect, useRef, useState } from "react";
 import {
+  ActivityIndicator,
   Alert,
   Animated,
   KeyboardAvoidingView,
@@ -79,6 +80,30 @@ const STATUS_LABEL: Record<AnimalStatus, string> = {
   healthy: "Sağlıklı",
   unknown: "Bilinmiyor",
 };
+
+const HELP_STATUS_MAP: Record<string, { label: string; color: string }> = {
+  same_location:  { label: "Aynı Bölgede",          color: "#7B5EA7" },
+  injured:        { label: "Yaralı",                  color: "#DC2626" },
+  emergency:      { label: "Acil Yardım Gerekli",     color: "#EA580C" },
+  fed:            { label: "Beslendi",                color: "#16A34A" },
+  watered:        { label: "Su Verildi",              color: "#0284C7" },
+  taken_to_vet:   { label: "Tedaviye Götürüldü",      color: "#7B5EA7" },
+  at_vet:         { label: "Veteriner Kontrolünde",   color: "#0EA5E9" },
+  safe:           { label: "Güvende",                 color: "#16A34A" },
+  adopted:        { label: "Sahiplendirildi",         color: "#7B5EA7" },
+  not_found:      { label: "Bulunamadı",              color: "#8B8FA8" },
+};
+
+interface HelpUpdateItem {
+  id:        string;
+  animalId:  string;
+  userId:    string;
+  userName:  string;
+  photoUrl:  string;
+  status:    string;
+  note:      string;
+  createdAt: string;
+}
 
 /* ── Animal type display ────────────────────────────────────────────────────── */
 function formatAnimalType(raw?: string): string {
@@ -209,7 +234,7 @@ export default function AnimalDetailScreen() {
   const router   = useRouter();
   const insets   = useSafeAreaInsets();
   const { user } = useAuth();
-  const { getAnimal, toggleNeedsHelp, addComment, deleteAnimal } = useAnimals();
+  const { getAnimal, addComment, deleteAnimal } = useAnimals();
 
   const animal   = getAnimal(id ?? "");
   const isOwner  = !!user?.id && !!animal && animal.userId === user.id;
@@ -221,6 +246,11 @@ export default function AnimalDetailScreen() {
   const [isSubmitting,       setIsSubmitting]       = useState(false);
   const [locationOpenCount,  setLocationOpenCount]  = useState(0);
   const [isOpeningMap,       setIsOpeningMap]       = useState(false);
+
+  /* ── Help updates ─── */
+  const [helpUpdates,        setHelpUpdates]        = useState<HelpUpdateItem[]>([]);
+  const [uniqueHelperCount,  setUniqueHelperCount]  = useState(0);
+  const [helpUpdatesLoading, setHelpUpdatesLoading] = useState(false);
 
   const helpScale = useRef(new Animated.Value(1)).current;
 
@@ -244,21 +274,43 @@ export default function AnimalDetailScreen() {
       .catch(() => {});
   }, [animal?.id]);
 
-  /* ── Handlers ─── */
-  const handleHelp = useCallback(async () => {
-    if (isSubmitting) return;
-    setIsSubmitting(true);
-    Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
-    Animated.sequence([
-      Animated.timing(helpScale, { toValue: 0.88, duration: 80, useNativeDriver: true }),
-      Animated.timing(helpScale, { toValue: 1,    duration: 160, useNativeDriver: true }),
-    ]).start();
+  /* ── Fetch help updates ─── */
+  const fetchHelpUpdates = useCallback(async () => {
+    if (!animal?.id) return;
+    setHelpUpdatesLoading(true);
     try {
-      if (user && animal) await toggleNeedsHelp(animal.id, user.id);
+      const res = await apiFetch(`/animals/${animal.id}/help-updates`);
+      if (res.ok) {
+        const data = await res.json() as { updates: HelpUpdateItem[]; uniqueHelperCount: number };
+        setHelpUpdates(data.updates ?? []);
+        setUniqueHelperCount(data.uniqueHelperCount ?? 0);
+      }
+    } catch (err) {
+      if (__DEV__) console.warn("[HELP FLOW] fetchHelpUpdates error:", err);
     } finally {
-      setIsSubmitting(false);
+      setHelpUpdatesLoading(false);
     }
-  }, [isSubmitting, user, animal, toggleNeedsHelp, helpScale]);
+  }, [animal?.id]);
+
+  useEffect(() => { fetchHelpUpdates(); }, [fetchHelpUpdates]);
+
+  useFocusEffect(useCallback(() => {
+    if (__DEV__) console.log("[HELP FLOW] update flow mounted, animalId:", animal?.id);
+    fetchHelpUpdates();
+  }, [fetchHelpUpdates]));
+
+  /* ── Handlers ─── */
+  const handleHelp = useCallback(() => {
+    if (!animal) return;
+    if (__DEV__) {
+      console.log("[HELP FLOW] Visible Yardım Et pressed");
+      console.log("[HELP FLOW] Opening animal help update flow");
+      console.log("[HELP FLOW] post id:", animal.id);
+      console.log("[HELP FLOW] authenticated user:", user?.id ?? "none");
+    }
+    Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
+    router.push(`/help-update/${animal.id}`);
+  }, [animal, router, user]);
 
   const handleComment = useCallback(async () => {
     const t = commentText.trim();
@@ -420,7 +472,7 @@ export default function AnimalDetailScreen() {
   const helped      = !!user && animal.needsHelpByUsers.some(
     (u) => u === user.id || u === "_current_user_"
   );
-  const helpCount   = animal.needsHelpByUsers.length;
+  const helpCount   = uniqueHelperCount;
   const thumbUri    = animal.image ?? animal.animalImage ?? getDefaultAnimalImageUri(animal.animalType);
   const animalLabel = formatAnimalType(animal.animalType);
 
@@ -635,8 +687,8 @@ export default function AnimalDetailScreen() {
               <Text style={D.sectionTitle}>Etkileşim</Text>
               <View style={D.statsRow}>
                 <StatCard
-                  icon={helped ? "heart" : "heart-outline"}
-                  iconColor={helped ? "#EF4444" : C.purple}
+                  icon="heart-outline"
+                  iconColor={C.purple}
                   value={helpCount}
                   label="Yardımcı Oldu"
                   onPress={handleHelp}
@@ -657,6 +709,90 @@ export default function AnimalDetailScreen() {
                   onPress={handleMapOpen}
                 />
               </View>
+            </View>
+
+            {/* Durum Güncellemeleri */}
+            <View style={D.section}>
+              <View style={{ flexDirection: "row", justifyContent: "space-between", alignItems: "center", marginBottom: 14 }}>
+                <Text style={D.sectionTitle}>
+                  {uniqueHelperCount > 0 ? `Durum Güncellemeleri (${uniqueHelperCount})` : "Durum Güncellemeleri"}
+                </Text>
+                <Pressable
+                  onPress={handleHelp}
+                  style={{ backgroundColor: `${C.purple}12`, paddingHorizontal: 12, paddingVertical: 6, borderRadius: 12 }}
+                >
+                  <Text style={{ fontSize: 12, fontFamily: "Inter_600SemiBold", color: C.purple }}>
+                    + Güncelle
+                  </Text>
+                </Pressable>
+              </View>
+              {helpUpdatesLoading ? (
+                <View style={{ alignItems: "center", paddingVertical: 20 }}>
+                  <ActivityIndicator size="small" color={C.purple} />
+                </View>
+              ) : helpUpdates.length === 0 ? (
+                <Pressable
+                  style={{ alignItems: "center", gap: 10, paddingVertical: 28, backgroundColor: "#F8F5FF", borderRadius: 18 }}
+                  onPress={handleHelp}
+                >
+                  <Icon name="heart-outline" size={28} color="#C0B8D8" />
+                  <Text style={{ fontSize: 13, fontFamily: "Inter_600SemiBold", color: C.purple }}>
+                    İlk Güncellemeyi Ekle
+                  </Text>
+                  <Text style={{ fontSize: 12, fontFamily: "Inter_400Regular", color: C.muted, textAlign: "center", paddingHorizontal: 24 }}>
+                    Bu hayvanı gördüysen güncel durumunu bildir
+                  </Text>
+                </Pressable>
+              ) : (
+                <View style={{ gap: 12 }}>
+                  {helpUpdates.slice(0, 3).map((u) => (
+                    <View key={u.id} style={{ backgroundColor: "#F8F5FF", borderRadius: 16, padding: 14, gap: 10, borderWidth: 1, borderColor: "rgba(116,79,190,0.08)" }}>
+                      <View style={{ flexDirection: "row", alignItems: "center", gap: 10 }}>
+                        <View style={{ width: 36, height: 36, borderRadius: 18, backgroundColor: `${C.purple}18`, alignItems: "center", justifyContent: "center" }}>
+                          <Text style={{ fontSize: 12, fontFamily: "Inter_700Bold", color: C.purple }}>
+                            {initialsOf(u.userName || "?")}
+                          </Text>
+                        </View>
+                        <View style={{ flex: 1 }}>
+                          <Text style={{ fontSize: 13, fontFamily: "Inter_600SemiBold", color: C.text }}>
+                            {u.userName || "Anonim"}
+                          </Text>
+                          <Text style={{ fontSize: 11, fontFamily: "Inter_400Regular", color: C.muted }}>
+                            {formatTimeAgo(u.createdAt)}
+                          </Text>
+                        </View>
+                        <View style={{
+                          backgroundColor: `${(HELP_STATUS_MAP[u.status]?.color ?? C.purple)}18`,
+                          paddingHorizontal: 10,
+                          paddingVertical: 4,
+                          borderRadius: 10,
+                        }}>
+                          <Text style={{ fontSize: 11, fontFamily: "Inter_600SemiBold", color: HELP_STATUS_MAP[u.status]?.color ?? C.purple }}>
+                            {HELP_STATUS_MAP[u.status]?.label ?? u.status}
+                          </Text>
+                        </View>
+                      </View>
+                      {!!u.photoUrl && (
+                        <Image
+                          source={{ uri: u.photoUrl }}
+                          style={{ width: "100%", aspectRatio: 4 / 3, borderRadius: 12 }}
+                          contentFit="cover"
+                        />
+                      )}
+                      {!!u.note && (
+                        <Text style={{ fontSize: 13, fontFamily: "Inter_400Regular", color: C.muted, lineHeight: 19 }}>
+                          {u.note}
+                        </Text>
+                      )}
+                    </View>
+                  ))}
+                  {helpUpdates.length > 3 && (
+                    <Text style={{ fontSize: 12, fontFamily: "Inter_400Regular", color: C.muted, textAlign: "center" }}>
+                      +{helpUpdates.length - 3} güncelleme daha
+                    </Text>
+                  )}
+                </View>
+              )}
             </View>
 
             {/* Comments */}
@@ -730,17 +866,17 @@ export default function AnimalDetailScreen() {
           style={({ pressed }) => [{ flex: 1.4 }, pressed && { opacity: 0.9 }]}
           onPress={handleHelp}
           accessibilityRole="button"
-          accessibilityLabel={helped ? "Yardım edildi" : "Yardım et"}
+          accessibilityLabel="Yardım et"
         >
           <Animated.View style={{ transform: [{ scale: helpScale }] }}>
             <LinearGradient
-              colors={helped ? ["#F87171", "#EF4444"] : ["#9C7FE0", "#5B3FD6"]}
+              colors={["#9C7FE0", "#5B3FD6"]}
               start={{ x: 0, y: 0 }}
               end={{ x: 1, y: 1 }}
               style={D.actionFill}
             >
-              <Icon name={helped ? "heart" : "heart-outline"} size={18} color="#FFF" />
-              <Text style={D.actionFillText}>{helped ? "Yardım Edildi!" : "Yardım Et"}</Text>
+              <Icon name="heart-outline" size={18} color="#FFF" />
+              <Text style={D.actionFillText}>Yardım Et</Text>
             </LinearGradient>
           </Animated.View>
         </Pressable>

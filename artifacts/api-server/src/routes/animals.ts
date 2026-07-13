@@ -84,26 +84,52 @@ router.get("/animals", async (req, res) => {
 
     const animals = await db.select().from(strayAnimals).orderBy(desc(strayAnimals.createdAt));
 
-    let fedSet = new Set<string>();
-    let helpSet = new Set<string>();
+    const [helpCountRows, latestHelpResult, fedRows, needsHelpRows, userHelpRows] = await Promise.all([
+      db.select({
+        animalId: animalHelpUpdates.animalId,
+        helperCount: sql<number>`COUNT(DISTINCT ${animalHelpUpdates.userId})::int`,
+      }).from(animalHelpUpdates).groupBy(animalHelpUpdates.animalId),
 
-    if (userId) {
-      const [fedRows, helpRows] = await Promise.all([
-        db.select({ animalId: animalInteractions.animalId })
-          .from(animalInteractions)
-          .where(and(eq(animalInteractions.userId, userId), eq(animalInteractions.type, "fed"))),
-        db.select({ animalId: animalInteractions.animalId })
-          .from(animalInteractions)
-          .where(and(eq(animalInteractions.userId, userId), eq(animalInteractions.type, "needs_help"))),
-      ]);
-      fedSet  = new Set(fedRows.map((r) => r.animalId));
-      helpSet = new Set(helpRows.map((r) => r.animalId));
+      db.execute(sql`
+        SELECT DISTINCT ON (animal_id) animal_id, status AS help_status, created_at AS help_at
+        FROM animal_help_updates ORDER BY animal_id, created_at DESC
+      `),
+
+      userId
+        ? db.select({ animalId: animalInteractions.animalId }).from(animalInteractions)
+            .where(and(eq(animalInteractions.userId, userId), eq(animalInteractions.type, "fed")))
+        : Promise.resolve([]),
+
+      userId
+        ? db.select({ animalId: animalInteractions.animalId }).from(animalInteractions)
+            .where(and(eq(animalInteractions.userId, userId), eq(animalInteractions.type, "needs_help")))
+        : Promise.resolve([]),
+
+      userId
+        ? db.select({ animalId: animalHelpUpdates.animalId }).from(animalHelpUpdates)
+            .where(eq(animalHelpUpdates.userId, userId))
+        : Promise.resolve([]),
+    ]);
+
+    const countMap = new Map(
+      (helpCountRows as Array<{ animalId: string; helperCount: number }>).map(r => [r.animalId, r.helperCount])
+    );
+    const latestMap = new Map<string, { helpStatus: string; helpAt: string }>();
+    for (const row of ((latestHelpResult as unknown as { rows: Array<{ animal_id: string; help_status: string; help_at: unknown }> }).rows)) {
+      latestMap.set(row.animal_id, { helpStatus: row.help_status, helpAt: String(row.help_at) });
     }
+    const fedSet       = new Set((fedRows as Array<{ animalId: string }>).map(r => r.animalId));
+    const needsHelpSet = new Set((needsHelpRows as Array<{ animalId: string }>).map(r => r.animalId));
+    const userHelpSet  = new Set((userHelpRows as Array<{ animalId: string }>).map(r => r.animalId));
 
     const result = animals.map((a) => ({
       ...a,
-      isFedByMe:         fedSet.has(a.id),
-      isNeedsHelpByMe:   helpSet.has(a.id),
+      isFedByMe:            fedSet.has(a.id),
+      isNeedsHelpByMe:      needsHelpSet.has(a.id),
+      helpUpdateCount:      countMap.get(a.id) ?? 0,
+      hasCurrentUserHelped: userHelpSet.has(a.id),
+      latestHelpStatus:     latestMap.get(a.id)?.helpStatus ?? null,
+      latestHelpAt:         latestMap.get(a.id)?.helpAt ?? null,
     }));
 
     res.json(result);
@@ -120,27 +146,52 @@ router.get("/animals/:id", async (req, res) => {
     const [animal] = await db.select().from(strayAnimals).where(eq(strayAnimals.id, req.params.id));
     if (!animal) { res.status(404).json({ error: "Hayvan bulunamadı" }); return; }
 
-    const comments = await db.select().from(animalComments)
-      .where(eq(animalComments.animalId, req.params.id))
-      .orderBy(animalComments.createdAt);
+    const [comments, helpCountRow, latestHelpResult, userHelpCheck, fedRow, helpRow] = await Promise.all([
+      db.select().from(animalComments)
+        .where(eq(animalComments.animalId, req.params.id))
+        .orderBy(animalComments.createdAt),
 
-    let isFedByMe = false;
-    let isNeedsHelpByMe = false;
+      db.select({
+        count: sql<number>`COUNT(DISTINCT ${animalHelpUpdates.userId})::int`,
+      }).from(animalHelpUpdates).where(eq(animalHelpUpdates.animalId, req.params.id)),
 
-    if (userId) {
-      const [fedRow, helpRow] = await Promise.all([
-        db.select().from(animalInteractions)
-          .where(and(eq(animalInteractions.animalId, req.params.id), eq(animalInteractions.userId, userId), eq(animalInteractions.type, "fed")))
-          .limit(1),
-        db.select().from(animalInteractions)
-          .where(and(eq(animalInteractions.animalId, req.params.id), eq(animalInteractions.userId, userId), eq(animalInteractions.type, "needs_help")))
-          .limit(1),
-      ]);
-      isFedByMe       = fedRow.length > 0;
-      isNeedsHelpByMe = helpRow.length > 0;
-    }
+      db.execute(sql`
+        SELECT status AS help_status, created_at AS help_at
+        FROM animal_help_updates WHERE animal_id = ${req.params.id}
+        ORDER BY created_at DESC LIMIT 1
+      `),
 
-    res.json({ ...animal, comments, isFedByMe, isNeedsHelpByMe });
+      userId
+        ? db.select({ id: animalHelpUpdates.id }).from(animalHelpUpdates)
+            .where(and(eq(animalHelpUpdates.animalId, req.params.id), eq(animalHelpUpdates.userId, userId)))
+            .limit(1)
+        : Promise.resolve([]),
+
+      userId
+        ? db.select().from(animalInteractions)
+            .where(and(eq(animalInteractions.animalId, req.params.id), eq(animalInteractions.userId, userId), eq(animalInteractions.type, "fed")))
+            .limit(1)
+        : Promise.resolve([]),
+
+      userId
+        ? db.select().from(animalInteractions)
+            .where(and(eq(animalInteractions.animalId, req.params.id), eq(animalInteractions.userId, userId), eq(animalInteractions.type, "needs_help")))
+            .limit(1)
+        : Promise.resolve([]),
+    ]);
+
+    const latestHelpRow = ((latestHelpResult as unknown as { rows: Array<{ help_status: string; help_at: unknown }> }).rows)[0];
+
+    res.json({
+      ...animal,
+      comments,
+      isFedByMe:            (fedRow as unknown[]).length > 0,
+      isNeedsHelpByMe:      (helpRow as unknown[]).length > 0,
+      helpUpdateCount:      (helpCountRow[0] as { count: number } | undefined)?.count ?? 0,
+      hasCurrentUserHelped: (userHelpCheck as unknown[]).length > 0,
+      latestHelpStatus:     latestHelpRow?.help_status ?? null,
+      latestHelpAt:         latestHelpRow?.help_at ? String(latestHelpRow.help_at) : null,
+    });
   } catch (err) {
     req.log.error({ err }, "GET /animals/:id failed");
     res.status(500).json({ error: "Hayvan bilgisi alınamadı" });
@@ -382,6 +433,82 @@ router.delete("/animals/:id/comments/:commentId", async (req, res) => {
   } catch (err) {
     req.log.error({ err }, "DELETE /animals/:id/comments/:commentId failed");
     res.status(500).json({ error: "Yorum silinemedi" });
+  }
+});
+
+/* ── GET /api/animals/:id/help-updates ───────────────────── */
+router.get("/animals/:id/help-updates", async (req, res) => {
+  try {
+    const updates = await db.select().from(animalHelpUpdates)
+      .where(eq(animalHelpUpdates.animalId, req.params.id))
+      .orderBy(desc(animalHelpUpdates.createdAt));
+
+    const uniqueHelperCount = (await db.select({
+      count: sql<number>`COUNT(DISTINCT ${animalHelpUpdates.userId})::int`,
+    }).from(animalHelpUpdates).where(eq(animalHelpUpdates.animalId, req.params.id)))[0]?.count ?? 0;
+
+    res.json({ updates, uniqueHelperCount });
+  } catch (err) {
+    req.log.error({ err }, "GET /animals/:id/help-updates failed");
+    res.status(500).json({ error: "Yardım güncellemeleri alınamadı" });
+  }
+});
+
+/* ── POST /api/animals/:id/help-updates ──────────────────── */
+router.post("/animals/:id/help-updates", async (req, res) => {
+  const userId = uid(req);
+  if (!userId) { res.status(401).json({ error: "Giriş yapılmamış" }); return; }
+
+  try {
+    const [animal] = await db.select().from(strayAnimals).where(eq(strayAnimals.id, req.params.id));
+    if (!animal) { res.status(404).json({ error: "Hayvan bulunamadı" }); return; }
+
+    const { status, note = "", photoUrl = "", userName = "Anonim" } = req.body as {
+      status: string;
+      note?: string;
+      photoUrl?: string;
+      userName?: string;
+    };
+
+    if (!status) { res.status(400).json({ error: "Durum gerekli" }); return; }
+
+    const [inserted] = await db.insert(animalHelpUpdates).values({
+      animalId: req.params.id,
+      userId,
+      userName,
+      status,
+      note,
+      photoUrl,
+    }).returning();
+
+    const [countRow] = await db.select({
+      count: sql<number>`COUNT(DISTINCT ${animalHelpUpdates.userId})::int`,
+    }).from(animalHelpUpdates).where(eq(animalHelpUpdates.animalId, req.params.id));
+
+    res.status(201).json({ update: inserted, uniqueHelperCount: countRow?.count ?? 1 });
+  } catch (err) {
+    req.log.error({ err }, "POST /animals/:id/help-updates failed");
+    res.status(500).json({ error: "Yardım güncellemesi eklenemedi" });
+  }
+});
+
+/* ── GET /api/animals/:id/helpers ────────────────────────── */
+router.get("/animals/:id/helpers", async (req, res) => {
+  try {
+    const rows = await db.select({
+      userId:   animalHelpUpdates.userId,
+      userName: animalHelpUpdates.userName,
+      count:    sql<number>`COUNT(*)::int`,
+      lastAt:   sql<string>`MAX(${animalHelpUpdates.createdAt})`,
+    }).from(animalHelpUpdates)
+      .where(eq(animalHelpUpdates.animalId, req.params.id))
+      .groupBy(animalHelpUpdates.userId, animalHelpUpdates.userName)
+      .orderBy(sql`MAX(${animalHelpUpdates.createdAt}) DESC`);
+
+    res.json({ helpers: rows, uniqueHelperCount: rows.length });
+  } catch (err) {
+    req.log.error({ err }, "GET /animals/:id/helpers failed");
+    res.status(500).json({ error: "Yardımcı listesi alınamadı" });
   }
 });
 

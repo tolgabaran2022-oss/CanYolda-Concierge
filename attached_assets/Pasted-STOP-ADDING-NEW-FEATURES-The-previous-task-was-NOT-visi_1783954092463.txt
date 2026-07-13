@@ -1,0 +1,674 @@
+STOP ADDING NEW FEATURES.
+
+The previous task was NOT visibly completed in the application.
+
+I cannot see the requested animal help status update features in the actual UI.
+
+Your task now is to AUDIT THE PREVIOUS IMPLEMENTATION, FIND WHY THE FEATURE IS NOT VISIBLE OR NOT CONNECTED, AND FIX IT COMPLETELY.
+
+DO NOT tell me the feature is already implemented unless you verify it from the actual running application and code flow.
+
+==================================================
+EXPECTED VISIBLE BEHAVIOR
+==================================================
+
+Open:
+
+Sokak Hayvanları
+→ open an animal help card
+→ animal help detail screen
+
+At the bottom I currently have:
+
+"Yorum Yap"
+"Yardım Et"
+
+When I tap:
+
+"Yardım Et"
+
+I MUST immediately see a real UI flow titled:
+
+"Hayvanın Güncel Durumunu Bildir"
+
+The visible screen/modal must contain:
+
+1. "Güncel Fotoğraf"
+2. "Fotoğraf Çek" button
+3. "Galeriden Seç" button
+4. selected image preview
+5. "Hayvanın Mevcut Durumu"
+6. selectable current status options
+7. "Güncel Durum Notu"
+8. multiline text input
+9. character counter
+10. "Güncellemeyi Kaydet" button
+
+IF THIS UI DOES NOT APPEAR AFTER TAPPING "YARDIM ET", THE FEATURE IS NOT IMPLEMENTED CORRECTLY.
+
+Do not consider hidden files or unused components as completed implementation.
+
+==================================================
+FIRST: TRACE THE REAL YARDIM ET BUTTON
+==================================================
+
+Find the EXACT button currently visible on the animal help detail screen.
+
+Search recursively for the visible Turkish text:
+
+"Yardım Et"
+
+Identify:
+
+- exact file path
+- exact component name
+- exact onPress/onClick handler
+- navigation action
+- state mutation
+- Supabase request
+- counter update logic
+
+Follow the handler from the visible button to its final action.
+
+Do not inspect a different unused Yardım Et component.
+
+I want the exact button rendered in the current animal help detail screen.
+
+Then answer internally:
+
+WHAT DOES THE CURRENT VISIBLE BUTTON ACTUALLY DO?
+
+If it currently:
+
+- directly increments helper count
+- toggles a helped state
+- calls an old mutation
+- changes button text only
+- does nothing
+- opens the wrong modal
+
+REMOVE OR REFACTOR THAT OLD BEHAVIOR.
+
+==================================================
+SECOND: FIND PREVIOUSLY CREATED HELP UPDATE UI
+==================================================
+
+Search the entire project for:
+
+"Hayvanın Güncel Durumunu Bildir"
+
+"Güncel Fotoğraf"
+
+"Fotoğraf Çek"
+
+"Galeriden Seç"
+
+"Güncel Durum Notu"
+
+"Güncellemeyi Kaydet"
+
+"Mevcut Durum Güncellemeleri"
+
+"Son Durum Güncellemesi"
+
+"Durum Geçmişi"
+
+Find all components/screens/files previously created for this feature.
+
+For every matching component determine:
+
+- Is it imported?
+- Is it rendered?
+- Is it registered in navigation?
+- Can the current Yardım Et button open it?
+- Is it dead code?
+- Is it Web-only?
+- Is it iOS-only?
+- Is it behind a false condition?
+- Is it hidden by a feature flag?
+- Is it rendered behind another modal?
+- Is it outside the viewport?
+- Is its route name incorrect?
+
+IMPORTANT:
+
+A file existing in the project does NOT mean the feature is implemented.
+
+The UI must be reachable from the current visible Yardım Et button.
+
+==================================================
+THIRD: CONNECT THE REAL BUTTON TO THE REAL FLOW
+==================================================
+
+The current visible animal help detail screen's "Yardım Et" button must open ONE reusable help update flow.
+
+Correct behavior:
+
+tap Yardım Et
+→ open help update screen/modal
+→ do NOT increment helper count
+→ do NOT mark helped immediately
+
+Use the architecture that is most compatible with the existing application.
+
+If using Expo Router, register and open the correct route.
+
+If using React Navigation, register the screen in the correct navigator.
+
+If using a modal component, mount the modal inside the actual detail screen and control it using real visible state.
+
+Do not create another unused screen.
+
+Verify the connection starting from the actual rendered button.
+
+==================================================
+ADD TEMPORARY DEVELOPMENT TRACE
+==================================================
+
+During development, add temporary development-only console traces.
+
+Example:
+
+[HELP FLOW] Visible Yardım Et pressed
+[HELP FLOW] Opening animal help update flow
+[HELP FLOW] post id: ...
+[HELP FLOW] authenticated user: ...
+[HELP FLOW] update flow mounted
+
+Do not show these logs to production users.
+
+Use them only to verify the actual running flow.
+
+After verifying, remove unnecessary noisy logs or keep them behind development mode.
+
+==================================================
+VERIFY THE POST ID
+==================================================
+
+When Yardım Et is pressed, the current animal help post ID must be passed to the update flow.
+
+Trace:
+
+animal card
+→ detail page
+→ Yardım Et
+→ update flow
+
+Verify the same real animal help post ID exists throughout the flow.
+
+Do not use:
+
+undefined
+null
+mock-post-id
+hardcoded IDs
+
+If the post ID is missing, fix the navigation/prop/route parameter chain.
+
+Show a user-friendly error only if the real post cannot be resolved.
+
+==================================================
+VERIFY AUTHENTICATED USER
+==================================================
+
+When the update flow opens, resolve the current authenticated application user.
+
+Verify:
+
+auth session exists
+auth user ID exists
+real profile is resolved
+
+Do not require the user to enter a name.
+
+The update must use the real logged-in account.
+
+Inspect the existing profile schema before choosing profile fields.
+
+The final UI must later display the real helper name.
+
+Example:
+
+"Mehmet Kaya tarafından güncellendi"
+
+This example is NOT mock data.
+
+Use the real currently logged-in user's registered first and last name.
+
+==================================================
+VISIBLE HELP UPDATE SCREEN DESIGN
+==================================================
+
+Implement or repair the visible help update screen.
+
+Use the current CanYoldaşı UI design language.
+
+HEADER
+
+Title:
+"Hayvanın Güncel Durumunu Bildir"
+
+Description:
+"Bu hayvanı gördüysen güncel fotoğraf ve durum bilgisi ekleyerek diğer kullanıcılara yardımcı ol."
+
+Use a scrollable screen.
+
+Respect safe areas.
+
+Do not overlap the Dynamic Island.
+
+Do not overlap the Android status bar.
+
+Do not allow the bottom button to overlap content.
+
+==================================================
+PHOTO SECTION
+==================================================
+
+Visible section title:
+
+"Güncel Fotoğraf"
+
+Description:
+
+"Hayvanın şu anki durumunu gösteren güncel bir fotoğraf ekle."
+
+Show two visible actions:
+
+"Fotoğraf Çek"
+
+"Galeriden Seç"
+
+They must be real clickable buttons.
+
+On mobile:
+
+- use the existing Expo/native image picker implementation
+- camera action must request camera permission
+- gallery action must open photo library
+
+On Web:
+
+- use supported image selection behavior
+
+After selection:
+
+SHOW THE SELECTED IMAGE ON SCREEN.
+
+Display:
+
+- selected image preview
+- "Değiştir"
+- remove action
+
+Photo is required.
+
+==================================================
+CURRENT STATUS SECTION
+==================================================
+
+Visible section title:
+
+"Hayvanın Mevcut Durumu"
+
+Show these visible status options:
+
+- Aynı Bölgede
+- Yaralı
+- Acil Yardım Gerekli
+- Beslendi
+- Su Verildi
+- Tedaviye Götürüldü
+- Veteriner Kontrolünde
+- Güvende
+- Sahiplendirildi
+- Bulunamadı
+
+Only one primary status can be selected.
+
+The selected status must visibly change to the purple active state.
+
+Do not use broken system emojis.
+
+Use the current vector icon library.
+
+==================================================
+NOTE SECTION
+==================================================
+
+Visible label:
+
+"Güncel Durum Notu"
+
+Visible input placeholder:
+
+"Örn. Hayvan aynı bölgede görüldü. Mama ve su verildi."
+
+Multiline input.
+
+Maximum 300 characters.
+
+Show a visible character counter.
+
+==================================================
+SUBMIT BUTTON
+==================================================
+
+At the bottom display:
+
+"Güncellemeyi Kaydet"
+
+The button must not be hidden below the screen.
+
+Respect safe area and keyboard.
+
+Required before enabling submit:
+
+- authenticated user
+- valid animal help post ID
+- selected photo
+- selected status
+
+When pressed exactly once:
+
+show:
+
+"Güncelleme Kaydediliyor..."
+
+Prevent duplicate taps.
+
+Upload the selected photo.
+
+Insert exactly ONE status update record.
+
+After successful database insert:
+
+close the flow
+
+refresh the detail screen
+
+show:
+
+"Güncel durum bilgisi eklendi. Desteğin için teşekkürler 🐾"
+
+==================================================
+DATABASE REALITY CHECK
+==================================================
+
+Inspect the REAL current Supabase schema.
+
+Identify the exact main database table used by the cards currently shown on:
+
+"Sokak Hayvanları"
+
+Report the exact table name.
+
+Then identify whether a real status update/help contribution table currently exists.
+
+Search for all relevant tables and code.
+
+Do not say you created a table if no migration/schema change was actually applied.
+
+If animal_help_updates or an equivalent table was only referenced in TypeScript but does not really exist in Supabase, FIX THE DATABASE IMPLEMENTATION.
+
+Reuse an existing suitable table if one exists.
+
+Otherwise implement the required real status update data model according to the existing project's migration/database workflow.
+
+Required logical fields:
+
+id
+animal_help_post_id
+user_id
+photo/storage path
+status
+note
+created_at
+
+Use the real table and column names based on the current schema.
+
+==================================================
+CHECK FOR SILENT DATABASE FALLBACKS
+==================================================
+
+Search for code that catches Supabase errors and silently returns:
+
+[]
+null
+0
+false
+mock data
+
+Example of wrong behavior:
+
+try {
+  ...
+} catch {
+  return [];
+}
+
+This may be hiding missing-table or RLS errors.
+
+Do not silently pretend there are zero updates when Supabase returns a real error.
+
+During development log the technical error.
+
+In the user UI show a safe Turkish message.
+
+Fix the actual database/table/query/RLS problem.
+
+==================================================
+HELP COUNTER
+==================================================
+
+Find the exact number displayed under:
+
+"Yardımcı Oldu"
+
+Trace its data source.
+
+Remove old direct button increment logic.
+
+It must be based on successfully saved help status updates.
+
+Count unique user IDs per animal help post.
+
+Same user:
+
+3 status updates
+
+helper count:
+
+1
+
+Two different real users:
+
+helper count:
+
+2
+
+Do not increment the number when opening the help screen.
+
+==================================================
+DETAIL SCREEN VISIBLE UPDATE SECTION
+==================================================
+
+On the CURRENT animal help detail screen, create or connect a visible section:
+
+"Son Durum Güncellemesi"
+
+and:
+
+"Durum Geçmişi"
+
+If no update exists show:
+
+"Henüz güncel durum bilgisi yok"
+
+"Bu hayvanı gördüysen güncel fotoğraf ve durum bilgisi ekleyerek yardımcı olabilirsin."
+
+After a valid update is submitted this empty state MUST disappear.
+
+The latest update must visibly display:
+
+- real helper avatar if available
+- real registered helper name
+- update time
+- status
+- submitted current animal photo
+- status note
+
+Example visual content:
+
+Mehmet Kaya
+5 dakika önce
+
+Beslendi
+
+[submitted photo]
+
+"Hayvan aynı bölgede görüldü. Mama ve su verildi."
+
+"Mehmet Kaya tarafından güncellendi"
+
+Again:
+
+Do not hardcode Mehmet Kaya.
+
+Use the authenticated helper profile.
+
+==================================================
+ORIGINAL USER MUST REMAIN
+==================================================
+
+The original report creator displayed near the top must remain unchanged.
+
+Example original report:
+
+Ali R.
+2 gün önce
+
+After another user helps:
+
+Ali R. MUST STILL BE THE ORIGINAL CREATOR.
+
+The new helper must only appear inside the current status update section.
+
+Do not overwrite the original post user_id/created_by/owner field.
+
+==================================================
+DO NOT HIDE THE FEATURE BEHIND FAKE CONDITIONS
+==================================================
+
+Search for conditions such as:
+
+updates.length > 0
+isOwner
+isIOS
+Platform.OS === 'ios'
+featureEnabled
+isHelpEnabled
+hasPermission
+profileLoaded
+
+Verify none of these incorrectly prevent the update flow from opening.
+
+The Yardım Et flow must be available to authenticated users according to the product requirements.
+
+==================================================
+RUN THE APP AND VERIFY THE VISIBLE UI
+==================================================
+
+Do not stop after code changes.
+
+Run the application.
+
+Open the real current animal help detail screen.
+
+Use the current visible Yardım Et button.
+
+VERIFY:
+
+1. Tap Yardım Et.
+2. The new update UI visibly opens.
+3. "Fotoğraf Çek" is visible.
+4. "Galeriden Seç" is visible.
+5. Status choices are visible.
+6. Note input is visible.
+7. "Güncellemeyi Kaydet" is visible.
+8. Closing without saving does not increment the helper count.
+
+Then submit a real test update.
+
+VERIFY:
+
+9. Exactly one update is saved.
+10. The real registered helper's name appears.
+11. The current animal photo appears.
+12. The selected status appears.
+13. The note appears.
+14. The original creator remains unchanged.
+15. "Yardımcı Oldu" uses the correct unique user count.
+
+==================================================
+CROSS PLATFORM
+==================================================
+
+Verify separately:
+
+iOS simulator
+Android simulator
+Web simulator
+
+Do not state:
+
+"Cross-platform compatible"
+
+without checking platform-specific rendering and handlers.
+
+The feature must be visibly reachable on every supported platform.
+
+==================================================
+NO FALSE COMPLETION REPORT
+==================================================
+
+Do not respond with only:
+
+"Implemented successfully"
+
+or:
+
+"The feature is complete"
+
+I need evidence from the actual code flow.
+
+At the end report the following exact information:
+
+1. Exact file containing the CURRENT visible Yardım Et button
+2. Previous Yardım Et onPress behavior
+3. Exact new Yardım Et onPress behavior
+4. Exact help update screen/component file
+5. Exact navigation route or modal connection
+6. Exact main animal help post table name
+7. Exact help update table name
+8. Exact authenticated profile source/table
+9. Exact image storage bucket/path
+10. Exact helper count query/logic
+11. Exact file displaying Son Durum Güncellemesi
+12. Exact file displaying Durum Geçmişi
+13. Why the feature was previously not visible
+14. What was fixed
+15. iOS visible test result
+16. Android visible test result
+17. Web visible test result
+18. Any remaining real error
+
+FINAL RULE:
+
+Do not create another disconnected component.
+
+Do not create unused UI.
+
+Start from the exact "Yardım Et" button currently visible in the running application and trace the entire real flow from that button.
+
+The task is complete only when tapping the visible Yardım Et button opens the visible help update UI and a successfully submitted update appears on the same animal help post detail screen.
