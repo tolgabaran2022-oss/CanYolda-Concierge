@@ -65,3 +65,9 @@ id = "1-OWIjVKXfLEZLTqJjqvR"
 uri = "file://screenshots/karsılama.jpg"
 type = "image"
 title = "Karşılama Ekranı — 390×844"
+
+[[outputs]]
+id = "xn75W6jUgzsc-mfiYshi5"
+uri = "file://canyoldasi.zip"
+type = "unspecified"
+title = "CanYoldaşı — Kaynak Kod (31 MB)"
