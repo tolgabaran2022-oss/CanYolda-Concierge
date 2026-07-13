@@ -1,5 +1,6 @@
 import { Icon } from "@/components/Icon";
 import * as Haptics from "expo-haptics";
+import { LinearGradient } from "expo-linear-gradient";
 import { useRouter } from "expo-router";
 import React, { useState } from "react";
 import {
@@ -21,8 +22,6 @@ import { useColors } from "@/hooks/useColors";
 const PURPLE = "#7B5EA7";
 const PURPLE_DARK = "#3D2070";
 const BG = "#F5F1FF";
-const BLOB = "rgba(180,155,220,0.22)";
-const BLOB2 = "rgba(160,130,210,0.16)";
 
 export default function RegisterScreen() {
   const colors = useColors();
@@ -67,9 +66,22 @@ export default function RegisterScreen() {
 
   return (
     <View style={styles.root}>
-      {/* Blobs */}
-      <View style={[styles.blobTL, { top: insets.top - 50 }]} />
-      <View style={[styles.blobTR, { top: insets.top - 30 }]} />
+      {/* Top-left ambient glow — oversized so its physical edge never appears on screen */}
+      <LinearGradient
+        colors={["rgba(123,94,167,0.28)", "rgba(155,120,200,0.13)", "rgba(196,181,253,0.04)", "transparent"]}
+        start={{ x: 0, y: 0 }}
+        end={{ x: 1, y: 1 }}
+        style={styles.glowTL}
+        pointerEvents="none"
+      />
+      {/* Top-right secondary glow */}
+      <LinearGradient
+        colors={["rgba(160,130,210,0.20)", "rgba(180,155,220,0.08)", "transparent"]}
+        start={{ x: 1, y: 0 }}
+        end={{ x: 0, y: 1 }}
+        style={styles.glowTR}
+        pointerEvents="none"
+      />
 
       <KeyboardAvoidingView
         behavior={Platform.OS === "ios" ? "padding" : "height"}
@@ -183,25 +195,25 @@ export default function RegisterScreen() {
 
 const styles = StyleSheet.create({
   root: { flex: 1, backgroundColor: BG },
-  blobTL: {
+  glowTL: {
     position: "absolute",
-    left: -55,
-    width: 180,
-    height: 180,
-    borderRadius: 90,
-    backgroundColor: BLOB,
-    transform: [{ scaleX: 1.3 }],
+    top: -110,
+    left: -110,
+    width: 440,
+    height: 400,
+    borderRadius: 220,
     zIndex: 0,
+    pointerEvents: "none",
   },
-  blobTR: {
+  glowTR: {
     position: "absolute",
-    right: -45,
-    width: 160,
-    height: 160,
-    borderRadius: 80,
-    backgroundColor: BLOB2,
-    transform: [{ scaleY: 1.5 }],
+    top: -90,
+    right: -90,
+    width: 360,
+    height: 340,
+    borderRadius: 180,
     zIndex: 0,
+    pointerEvents: "none",
   },
   container: { flexGrow: 1, paddingHorizontal: 24, gap: 24, zIndex: 1 },
   backBtn: {

@@ -1,0 +1,92 @@
+Fix the purple decorative background/glow area at the top-left of the screen.
+
+CURRENT UI PROBLEM:
+The purple background shape ends abruptly near the top-left area.
+Its bottom edge looks clipped, cut off, and visually unfinished.
+There is a visible hard transition between the purple decorative area and the white screen background.
+
+DESIGN GOAL:
+Create a seamless, premium, Apple-quality transition.
+The purple decorative background must softly fade into the white background.
+There must be NO visible hard edge, clipping line, rectangular boundary, or sudden ending point.
+
+IMPLEMENTATION REQUIREMENTS:
+
+1. Inspect the actual component responsible for the purple top-left decoration.
+Do not apply a temporary visual patch.
+Find the root cause of the clipping or abrupt ending.
+
+2. Replace the hard-ending purple shape with a soft gradient/glow layer.
+
+Preferred visual behavior:
+- Stronger soft purple near the top-left corner
+- Gradually lower opacity toward the bottom and center
+- Fully transparent before blending into the white background
+- No visible boundary
+
+3. Increase the decorative layer size beyond the visible viewport.
+The purple decoration should extend outside the screen bounds so its physical edge is never visible.
+
+Example concept:
+position: absolute
+top: -80
+left: -80
+width: 320-420
+height: 260-360
+borderRadius: very large / fully rounded
+
+4. Apply a soft blur/glow effect where platform support allows it.
+
+Recommended visual values:
+opacity: 0.20 - 0.35
+blur radius: 40 - 70
+very soft purple/lavender tones
+
+5. Prefer a radial or multi-stop gradient instead of a solid purple View.
+
+Gradient concept:
+rgba(139, 92, 246, 0.30)
+→ rgba(167, 139, 250, 0.15)
+→ rgba(196, 181, 253, 0.05)
+→ transparent
+
+6. The purple area must smoothly disappear into the white/off-white background.
+
+Do NOT:
+- create a sharp curved cutoff
+- create a rectangular ending
+- show the actual edge of the decorative View
+- use a solid purple block
+- create a visible horizontal transition line
+
+7. Preserve:
+- Dynamic Island area
+- iOS safe area
+- status bar spacing
+- current screen content
+- existing header positioning
+
+8. Make the result responsive and visually identical on:
+- iOS Simulator
+- Android Simulator
+- Web responsive mobile view
+
+9. Perform a recursive UI audit:
+Check parent containers for:
+- overflow: hidden
+- fixed height
+- maxHeight
+- clipping
+- borderRadius clipping
+- gradient container height
+- absolute positioning conflicts
+
+Fix the real parent/container issue if one of these causes the purple decoration to be cut.
+
+FINAL VISUAL RESULT:
+The top-left purple ambient glow should feel like a soft premium background light.
+The user must not be able to identify where the purple shape starts or ends.
+It should naturally and smoothly dissolve into the white background.
+
+Do not redesign the rest of the screen.
+Only fix and improve the purple top decorative background transition.

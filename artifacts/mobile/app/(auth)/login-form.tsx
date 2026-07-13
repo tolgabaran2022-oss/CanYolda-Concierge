@@ -104,6 +104,14 @@ export default function LoginFormScreen() {
 
   return (
     <LinearGradient colors={["#F7F3FF", "#EDE5FF", "#F0E8FF"]} style={styles.gradient}>
+      {/* Top-left ambient glow — large enough that its physical edge never appears on screen */}
+      <LinearGradient
+        colors={["rgba(123,94,167,0.26)", "rgba(155,120,200,0.12)", "rgba(196,181,253,0.04)", "transparent"]}
+        start={{ x: 0, y: 0 }}
+        end={{ x: 1, y: 1 }}
+        style={styles.glowTL}
+        pointerEvents="none"
+      />
       <KeyboardAvoidingView
         behavior={Platform.OS === "ios" ? "padding" : "height"}
         style={{ flex: 1 }}
@@ -211,6 +219,16 @@ export default function LoginFormScreen() {
 
 const styles = StyleSheet.create({
   gradient: { flex: 1 },
+  glowTL: {
+    position: "absolute",
+    top: -110,
+    left: -110,
+    width: 440,
+    height: 400,
+    borderRadius: 220,
+    zIndex: 0,
+    pointerEvents: "none",
+  },
   container: { flexGrow: 1, paddingHorizontal: 24, gap: 28 },
   backBtn: {
     width: 40, height: 40, borderRadius: 20,
