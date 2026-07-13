@@ -1,4 +1,4 @@
-import { Ionicons } from "@expo/vector-icons";
+import { Icon } from "@/components/Icon";
 import { Image } from "expo-image";
 import { useRouter } from "expo-router";
 import React, { useCallback, useEffect, useState } from "react";
@@ -108,7 +108,7 @@ function Header({ onBack }: { onBack: () => void }) {
   return (
     <View style={[S.header, { backgroundColor: T.card, borderBottomColor: T.border }]}>
       <Pressable onPress={onBack} hitSlop={14} style={S.backBtn}>
-        <Ionicons name="chevron-back" size={26} color={T.text} />
+        <Icon name="chevron-back" size={26} color={T.text} />
       </Pressable>
       <Text style={[S.headerTitle, { color: T.text }]}>Mesajlar</Text>
       <View style={{ width: 40 }} />
@@ -171,7 +171,7 @@ function EmptyState() {
   return (
     <View style={S.emptyWrap}>
       <View style={[S.emptyCircle, { backgroundColor: `${T.purple}18` }]}>
-        <Ionicons name="chatbubbles-outline" size={40} color={T.purple} />
+        <Icon name="chatbubbles-outline" size={40} color={T.purple} />
       </View>
       <Text style={[S.emptyTitle, { color: T.text }]}>Henüz mesaj yok</Text>
       <Text style={[S.emptySub, { color: T.textMuted }]}>Bir kullanıcı profiline giderek mesaj gönderebilirsin</Text>

@@ -1,5 +1,5 @@
 import AsyncStorage from "@react-native-async-storage/async-storage";
-import { Ionicons } from "@expo/vector-icons";
+import { Icon } from "@/components/Icon";
 import * as Haptics from "expo-haptics";
 import { Image } from "expo-image";
 import { LinearGradient } from "expo-linear-gradient";
@@ -62,7 +62,7 @@ const C = {
 
 /* ── Status mapping (Ionicons only — no emoji) ──────────────────────────────── */
 const STATUS_CFG: Record<AnimalStatus, {
-  icon: keyof typeof Ionicons.glyphMap;
+  icon: string;
   label: string;
   color: string;
   bg: string;
@@ -138,7 +138,7 @@ function OwnerSheet({
               }}
             >
               <View style={[OS.iconBox, { backgroundColor: "#FEE2E2" }]}>
-                <Ionicons name="trash-outline" size={20} color={C.red} />
+                <Icon name="trash-outline" size={20} color={C.red} />
               </View>
               <Text style={[OS.actionLabel, { color: C.red }]}>Bildirimi Sil</Text>
             </Pressable>
@@ -177,7 +177,7 @@ function InfoCard({
   value,
   valueColor,
 }: {
-  icon: keyof typeof Ionicons.glyphMap;
+  icon: string;
   label: string;
   value: string;
   valueColor?: string;
@@ -185,7 +185,7 @@ function InfoCard({
   return (
     <View style={IC.box}>
       <View style={IC.iconWrap}>
-        <Ionicons name={icon} size={16} color={C.purple} />
+        <Icon name={icon} size={16} color={C.purple} />
       </View>
       <Text style={IC.label}>{label}</Text>
       <Text style={[IC.value, valueColor ? { color: valueColor } : undefined]} numberOfLines={2}>
@@ -401,7 +401,7 @@ export default function AnimalDetailScreen() {
     return (
       <View style={D.center}>
         <View style={D.notFoundIcon}>
-          <Ionicons name="alert-circle-outline" size={36} color={C.muted} />
+          <Icon name="alert-circle-outline" size={36} color={C.muted} />
         </View>
         <Text style={D.notFoundTitle}>Bildirim bulunamadı</Text>
         <Text style={D.notFoundSub}>Bu ilan silinmiş ya da mevcut değil.</Text>
@@ -468,7 +468,7 @@ export default function AnimalDetailScreen() {
             ) : (
               <View style={D.imagePlaceholder}>
                 <View style={D.placeholderIconWrap}>
-                  <Ionicons name="camera-outline" size={36} color="#B0A8CC" />
+                  <Icon name="camera-outline" size={36} color="#B0A8CC" />
                 </View>
                 <Text style={D.imagePlaceholderText}>Henüz fotoğraf eklenmemiş</Text>
               </View>
@@ -497,7 +497,7 @@ export default function AnimalDetailScreen() {
                 accessibilityRole="button"
                 accessibilityLabel="Geri dön"
               >
-                <Ionicons name="arrow-back" size={19} color="#FFF" />
+                <Icon name="arrow-back" size={19} color="#FFF" />
               </Pressable>
               <View style={D.topBarRight}>
                 {isOwner && (
@@ -509,7 +509,7 @@ export default function AnimalDetailScreen() {
                     accessibilityRole="button"
                     accessibilityLabel="Bildirim işlemleri"
                   >
-                    <Ionicons name="ellipsis-horizontal" size={18} color="#FFF" />
+                    <Icon name="ellipsis-horizontal" size={18} color="#FFF" />
                   </Pressable>
                 )}
                 <Pressable
@@ -519,7 +519,7 @@ export default function AnimalDetailScreen() {
                   accessibilityRole="button"
                   accessibilityLabel="Paylaş"
                 >
-                  <Ionicons name="share-outline" size={18} color="#FFF" />
+                  <Icon name="share-outline" size={18} color="#FFF" />
                 </Pressable>
               </View>
             </View>
@@ -563,7 +563,7 @@ export default function AnimalDetailScreen() {
             {/* Location row (separate, tappable) */}
             {animal.locationName ? (
               <Pressable style={D.locRow} onPress={handleMapOpen} accessibilityRole="button">
-                <Ionicons name="location-outline" size={15} color={C.purple} />
+                <Icon name="location-outline" size={15} color={C.purple} />
                 <Text style={D.locText} numberOfLines={1}>{animal.locationName}</Text>
               </Pressable>
             ) : null}
@@ -616,16 +616,16 @@ export default function AnimalDetailScreen() {
               <Pressable style={D.mapPreview} onPress={handleMapOpen} accessibilityRole="button">
                 <LinearGradient colors={["#EDE9F8", "#DDD5F5"]} style={D.mapGradient}>
                   <View style={D.mapPinWrap}>
-                    <Ionicons name="location" size={28} color={C.purple} />
+                    <Icon name="location" size={28} color={C.purple} />
                   </View>
                   <Text style={D.mapCoords}>
                     {animal.locationName ?? `${animal.latitude.toFixed(4)}, ${animal.longitude.toFixed(4)}`}
                   </Text>
                 </LinearGradient>
                 <View style={D.mapOpenRow}>
-                  <Ionicons name="map-outline" size={15} color={C.purple} />
+                  <Icon name="map-outline" size={15} color={C.purple} />
                   <Text style={D.mapOpenText}>Haritada Aç</Text>
-                  <Ionicons name="chevron-forward" size={14} color={C.purple} />
+                  <Icon name="chevron-forward" size={14} color={C.purple} />
                 </View>
               </Pressable>
             </View>
@@ -666,7 +666,7 @@ export default function AnimalDetailScreen() {
               </Text>
               {animal.comments.length === 0 ? (
                 <View style={D.emptyComments}>
-                  <Ionicons name="chatbubbles-outline" size={24} color="#C0B8D8" />
+                  <Icon name="chatbubbles-outline" size={24} color="#C0B8D8" />
                   <Text style={D.noComment}>Henüz yorum yok. İlk yorumu sen yap!</Text>
                 </View>
               ) : (
@@ -701,7 +701,7 @@ export default function AnimalDetailScreen() {
                 />
                 <Pressable onPress={handleComment} style={D.sendBtn} hitSlop={10} accessibilityRole="button">
                   <View style={D.sendCircle}>
-                    <Ionicons name="send" size={14} color="#FFF" />
+                    <Icon name="send" size={14} color="#FFF" />
                   </View>
                 </Pressable>
               </View>
@@ -722,7 +722,7 @@ export default function AnimalDetailScreen() {
           accessibilityRole="button"
           accessibilityLabel="Yorum yap"
         >
-          <Ionicons name="chatbubble-outline" size={18} color={C.purple} />
+          <Icon name="chatbubble-outline" size={18} color={C.purple} />
           <Text style={D.actionOutlineText}>Yorum Yap</Text>
         </Pressable>
 
@@ -739,7 +739,7 @@ export default function AnimalDetailScreen() {
               end={{ x: 1, y: 1 }}
               style={D.actionFill}
             >
-              <Ionicons name={helped ? "heart" : "heart-outline"} size={18} color="#FFF" />
+              <Icon name={helped ? "heart" : "heart-outline"} size={18} color="#FFF" />
               <Text style={D.actionFillText}>{helped ? "Yardım Edildi!" : "Yardım Et"}</Text>
             </LinearGradient>
           </Animated.View>
@@ -758,7 +758,7 @@ function StatCard({
   onPress,
   scale,
 }: {
-  icon: keyof typeof Ionicons.glyphMap;
+  icon: string;
   iconColor: string;
   value: number;
   label: string;
@@ -777,7 +777,7 @@ function StatCard({
     >
       <Animated.View style={[{ alignItems: "center", gap: 6 }, { transform: [{ scale: s }] }]}>
         <View style={D.statIconWrap}>
-          <Ionicons name={icon} size={21} color={iconColor} />
+          <Icon name={icon} size={21} color={iconColor} />
         </View>
         <Text style={D.statNum}>{value}</Text>
         <Text style={D.statLabel}>{label}</Text>

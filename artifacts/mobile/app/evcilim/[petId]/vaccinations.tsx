@@ -1,4 +1,4 @@
-import { Ionicons } from "@expo/vector-icons";
+import { Icon } from "@/components/Icon";
 import * as Haptics from "expo-haptics";
 import { LinearGradient } from "expo-linear-gradient";
 import { useLocalSearchParams, useRouter } from "expo-router";
@@ -90,7 +90,7 @@ function InfoBanner() {
         </Text>
       </View>
       <View style={ib.iconWrap}>
-        <Ionicons name="shield-checkmark" size={28} color={P} />
+        <Icon name="shield-checkmark" size={28} color={P} />
       </View>
     </View>
   );
@@ -152,7 +152,7 @@ function VaccCard({
       {/* Top row: icon + name + status badge */}
       <View style={vc.top}>
         <View style={[vc.iconWrap, { backgroundColor: `${statusColor}18` }]}>
-          <Ionicons name="medkit-outline" size={20} color={statusColor} />
+          <Icon name="medkit-outline" size={20} color={statusColor} />
         </View>
         <View style={vc.nameWrap}>
           <Text style={vc.name} numberOfLines={1}>{vacc.vaccineName}</Text>
@@ -176,12 +176,12 @@ function VaccCard({
             {vacc.nextDueDate ? formatDate(vacc.nextDueDate) : "—"}
           </Text>
         </View>
-        <Ionicons name="chevron-forward" size={16} color={BODY} style={{ alignSelf: "center" }} />
+        <Icon name="chevron-forward" size={16} color={BODY} style={{ alignSelf: "center" }} />
       </View>
 
       {/* Delete */}
       <Pressable style={vc.deleteBtn} onPress={onDelete} hitSlop={10}>
-        <Ionicons name="trash-outline" size={15} color={RED} />
+        <Icon name="trash-outline" size={15} color={RED} />
       </Pressable>
     </Pressable>
   );
@@ -259,7 +259,7 @@ function AddEditSheet({
     <Modal visible={visible} animationType="slide" presentationStyle="pageSheet">
       <KeyboardAvoidingView style={{ flex: 1, backgroundColor: WHITE }} behavior={Platform.OS === "ios" ? "padding" : undefined}>
         <View style={[sh.header, { paddingTop: insets.top + 12 }]}>
-          <Pressable onPress={onClose} hitSlop={8}><Ionicons name="close" size={24} color={DARK} /></Pressable>
+          <Pressable onPress={onClose} hitSlop={8}><Icon name="close" size={24} color={DARK} /></Pressable>
           <Text style={sh.title}>{initial?.id ? "Aşıyı Düzenle" : "Aşı Ekle"}</Text>
           <View style={{ width: 24 }} />
         </View>
@@ -284,7 +284,7 @@ function AddEditSheet({
           <View style={sh.field}><Text style={sh.label}>Notlar</Text><TextInput style={[fld, { minHeight: 80, textAlignVertical: "top" }]} value={description} onChangeText={setDescription} placeholder="Ek notlar..." placeholderTextColor={BODY} multiline /></View>
           <Pressable style={sh.saveBtn} onPress={handleSave} disabled={saving}>
             <LinearGradient colors={[P2, P]} style={sh.saveGrad}>
-              <Ionicons name={saving ? "hourglass-outline" : "checkmark-circle-outline"} size={20} color={WHITE} />
+              <Icon name={saving ? "hourglass-outline" : "checkmark-circle-outline"} size={20} color={WHITE} />
               <Text style={sh.saveTxt}>{saving ? "Kaydediliyor..." : "Kaydet"}</Text>
             </LinearGradient>
           </Pressable>
@@ -311,7 +311,7 @@ const sh = StyleSheet.create({
 function FooterNote() {
   return (
     <View style={fn.wrap}>
-      <Ionicons name="time-outline" size={14} color={BODY} />
+      <Icon name="time-outline" size={14} color={BODY} />
       <Text style={fn.txt}>Aşı zamanları yaklaştığında size bildirim göndereceğiz.</Text>
     </View>
   );
@@ -379,7 +379,7 @@ export default function VaccinationsScreen() {
       {/* Header */}
       <View style={[ms.header, { paddingTop: insets.top + 12 }]}>
         <Pressable style={ms.backBtn} onPress={() => router.back()} hitSlop={8}>
-          <Ionicons name="chevron-back" size={22} color={DARK} />
+          <Icon name="chevron-back" size={22} color={DARK} />
         </Pressable>
         <View style={{ flex: 1, alignItems: "center" }}>
           <Text style={ms.headerTitle}>Aşılar</Text>
@@ -390,7 +390,7 @@ export default function VaccinationsScreen() {
           onPress={() => { Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light); setEditing(null); setSheetVisible(true); }}
         >
           <LinearGradient colors={[P2, P]} style={ms.addGrad}>
-            <Ionicons name="add" size={20} color={WHITE} />
+            <Icon name="add" size={20} color={WHITE} />
             <Text style={ms.addTxt}>Ekle</Text>
           </LinearGradient>
         </Pressable>
@@ -413,7 +413,7 @@ export default function VaccinationsScreen() {
           ListEmptyComponent={
             <View style={ms.empty}>
               <LinearGradient colors={[`${P2}20`, `${P}10`]} style={ms.emptyCircle}>
-                <Ionicons name="shield-checkmark-outline" size={36} color={P} />
+                <Icon name="shield-checkmark-outline" size={36} color={P} />
               </LinearGradient>
               <Text style={ms.emptyTitle}>
                 {filter === "all" ? "Aşı Kaydı Yok" : `${FILTERS.find(f => f.key === filter)?.label} aşı yok`}

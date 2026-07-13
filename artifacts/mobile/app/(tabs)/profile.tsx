@@ -1,4 +1,4 @@
-import { Ionicons } from "@expo/vector-icons";
+import { Icon } from "@/components/Icon";
 import * as Haptics from "expo-haptics";
 import { Image } from "expo-image";
 import { useFocusEffect, useRouter } from "expo-router";
@@ -137,19 +137,19 @@ export default function ProfileScreen() {
               style={({ pressed }) => [S.msgBtn, { opacity: pressed ? 0.8 : 1, backgroundColor: T.purpleFaint, borderColor: T.borderStrong }]}
               onPress={() => { Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light); router.push("/messages"); }}
             >
-              <Ionicons name="chatbubble-outline" size={19} color={T.purple} />
+              <Icon name="chatbubble-outline" size={19} color={T.purple} />
             </Pressable>
             <Pressable
               style={({ pressed }) => [S.newPostBtn, { opacity: pressed ? 0.8 : 1 }]}
               onPress={() => { Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light); router.push("/create-post"); }}
             >
-              <Ionicons name="add" size={22} color="#FFF" />
+              <Icon name="add" size={22} color="#FFF" />
             </Pressable>
             <Pressable
               style={({ pressed }) => [S.shareBtn, { opacity: pressed ? 0.8 : 1, backgroundColor: T.purpleFaint, borderColor: T.borderStrong }]}
               onPress={() => Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light)}
             >
-              <Ionicons name="share-outline" size={18} color={T.purple} />
+              <Icon name="share-outline" size={18} color={T.purple} />
             </Pressable>
           </View>
         </View>
@@ -165,7 +165,7 @@ export default function ProfileScreen() {
               style={[S.gridTabBtn, gridTab === key && S.gridTabActive]}
               onPress={() => { Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light); setGridTab(key); }}
             >
-              <Ionicons
+              <Icon
                 name={gridTab === key ? active : inactive}
                 size={22}
                 color={gridTab === key ? T.purple : T.textFaint}
@@ -181,7 +181,7 @@ export default function ProfileScreen() {
           </View>
         ) : currentGrid.length === 0 ? (
           <View style={S.emptyGrid}>
-            <Ionicons
+            <Icon
               name={gridTab === "saved" ? "bookmark-outline" : "images-outline"}
               size={48}
               color="#C5BAE8"

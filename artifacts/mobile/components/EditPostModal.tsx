@@ -1,4 +1,4 @@
-import { Ionicons } from "@expo/vector-icons";
+import { Icon } from "@/components/Icon";
 import * as Haptics from "expo-haptics";
 import React, { useEffect, useState } from "react";
 import {
@@ -84,7 +84,7 @@ export function EditPostModal({ visible, initialCaption, initialLocation, onClos
 
           <Text style={S.label}>Konum</Text>
           <View style={S.inputWrap}>
-            <Ionicons name="location-outline" size={18} color={PURPLE} />
+            <Icon name="location-outline" size={18} color={PURPLE} />
             <TextInput
               style={S.input}
               value={location}

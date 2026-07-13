@@ -1,4 +1,4 @@
-import { Ionicons } from "@expo/vector-icons";
+import { Icon } from "@/components/Icon";
 import * as Haptics from "expo-haptics";
 import { Image } from "expo-image";
 import { LinearGradient } from "expo-linear-gradient";
@@ -86,7 +86,7 @@ function NoPetsState({ onAdd }: { onAdd: () => void }) {
   return (
     <View style={np.root}>
       <LinearGradient colors={["#EDE5FF", "#F5F0FF"]} style={np.circle}>
-        <Ionicons name="paw" size={48} color={C.purple} />
+        <Icon name="paw" size={48} color={C.purple} />
       </LinearGradient>
       <Text style={np.title}>Evcil dostunu ekle</Text>
       <Text style={np.sub}>
@@ -99,7 +99,7 @@ function NoPetsState({ onAdd }: { onAdd: () => void }) {
         onPress={() => { Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium); onAdd(); }}
       >
         <LinearGradient colors={["#9B6EE8", C.purple]} start={{ x: 0, y: 0 }} end={{ x: 1, y: 0 }} style={np.btnGrad}>
-          <Ionicons name="add-circle-outline" size={18} color="#fff" />
+          <Icon name="add-circle-outline" size={18} color="#fff" />
           <Text style={np.btnTxt}>Evcil Hayvan Ekle</Text>
         </LinearGradient>
       </Pressable>
@@ -157,7 +157,7 @@ function PetProfileCard({
               />
             ) : (
               <LinearGradient colors={["#A07FE0", C.purple]} style={pc.avatarFallback}>
-                <Ionicons name="paw" size={30} color="rgba(255,255,255,0.9)" />
+                <Icon name="paw" size={30} color="rgba(255,255,255,0.9)" />
               </LinearGradient>
             )}
           </View>
@@ -166,7 +166,7 @@ function PetProfileCard({
           <View style={pc.info}>
             <View style={pc.nameRow}>
               <Text style={pc.name} numberOfLines={1}>{pet.name}</Text>
-              <Ionicons name="checkmark-circle" size={18} color="#5856D6" />
+              <Icon name="checkmark-circle" size={18} color="#5856D6" />
             </View>
 
             {subtitle ? (
@@ -190,7 +190,7 @@ function PetProfileCard({
               Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
             }}
           >
-            <Ionicons name="chevron-down" size={20} color={C.textSec} />
+            <Icon name="chevron-down" size={20} color={C.textSec} />
           </Pressable>
         </View>
       </Pressable>
@@ -217,7 +217,7 @@ function PetProfileCard({
         style={({ pressed }) => [pc.addBtn, { opacity: pressed ? 0.82 : 1 }]}
         onPress={() => { Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light); onAdd(); }}
       >
-        <Ionicons name="add-circle-outline" size={18} color={C.purple} />
+        <Icon name="add-circle-outline" size={18} color={C.purple} />
         <Text style={pc.addTxt}>Evcil Hayvan Ekle</Text>
       </Pressable>
     </View>
@@ -348,7 +348,7 @@ function QuickStatusCards({
               {c.value}
             </Text>
             <View style={qs.bottom}>
-              <Ionicons name={c.icon} size={14} color={c.color} />
+              <Icon name={c.icon} size={14} color={c.color} />
               <Text style={[qs.secondary, { color: c.isEmpty ? c.color : C.textSec }]} numberOfLines={1}>
                 {c.secondary}
               </Text>
@@ -377,7 +377,7 @@ const qs = StyleSheet.create({
 type GridItem = {
   key:   string;
   label: string;
-  icon:  keyof typeof Ionicons.glyphMap;
+  icon:  string;
   route: string;
   badge?: number;
 };
@@ -420,7 +420,7 @@ function ManagementGrid({
             onPress={() => { Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light); onNav(item.route); }}
           >
             <View style={mg.iconBox}>
-              <Ionicons name={item.icon} size={22} color={C.purple} />
+              <Icon name={item.icon} size={22} color={C.purple} />
               {item.badge !== undefined && item.badge > 0 && (
                 <View style={mg.badge}>
                   <Text style={mg.badgeTxt}>{item.badge}</Text>
@@ -500,7 +500,7 @@ function UpcomingReminders({
       {upcoming.length === 0 ? (
         <View style={ur.emptyCard}>
           <View style={ur.emptyIconWrap}>
-            <Ionicons name="calendar-outline" size={26} color={C.green} />
+            <Icon name="calendar-outline" size={26} color={C.green} />
           </View>
           <View style={ur.emptyText}>
             <Text style={ur.emptyTitle}>Yaklaşan hatırlatman yok</Text>
@@ -525,14 +525,14 @@ function UpcomingReminders({
               onPress={() => { Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light); }}
             >
               <View style={[ur.iconWrap, { backgroundColor: `${r.color}18` }]}>
-                <Ionicons name={r.icon as keyof typeof Ionicons.glyphMap} size={18} color={r.color} />
+                <Icon name={r.icon} size={18} color={r.color} />
               </View>
               <View style={ur.mid}>
                 <Text style={ur.itemTitle} numberOfLines={1}>{r.title}</Text>
                 <Text style={ur.itemDate}>{formatReminderDate(r.date)}</Text>
               </View>
               <View style={[ur.alarmWrap, { backgroundColor: `${r.color}18` }]}>
-                <Ionicons name="alarm-outline" size={18} color={r.color} />
+                <Icon name="alarm-outline" size={18} color={r.color} />
               </View>
             </Pressable>
           ))}
@@ -680,7 +680,7 @@ export function EvcilimTab({ botPad }: { botPad: number }) {
   if (petsError) {
     return (
       <View style={{ flex: 1, alignItems: "center", justifyContent: "center", gap: 16, paddingHorizontal: 40 }}>
-        <Ionicons name="alert-circle-outline" size={48} color={C.red} />
+        <Icon name="alert-circle-outline" size={48} color={C.red} />
         <Text style={{ fontSize: 16, fontFamily: "Inter_600SemiBold", color: C.text, textAlign: "center" }}>
           Evcil hayvan bilgileri yüklenemedi.
         </Text>

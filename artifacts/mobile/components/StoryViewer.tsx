@@ -1,4 +1,4 @@
-import { Ionicons } from "@expo/vector-icons";
+import { Icon } from "@/components/Icon";
 import { Image } from "expo-image";
 import { LinearGradient } from "expo-linear-gradient";
 import { useRouter } from "expo-router";
@@ -263,7 +263,7 @@ export function StoryViewer({ visible, group, viewerId, onClose, onNextGroup, on
         {/* Header */}
         <View style={[S.header, { paddingTop: insets.top + 14 }]}>
           <Pressable onPress={onClose} style={S.closeBtn}>
-            <Ionicons name="close" size={28} color="#FFF" />
+            <Icon name="close" size={28} color="#FFF" />
           </Pressable>
           <View style={S.userInfo}>
             <Image source={{ uri: group.avatarUrl }} style={S.headerAvatar} contentFit="cover" />
@@ -273,7 +273,7 @@ export function StoryViewer({ visible, group, viewerId, onClose, onNextGroup, on
             </View>
           </View>
           <View style={S.viewCount}>
-            <Ionicons name="eye-outline" size={14} color="rgba(255,255,255,0.7)" />
+            <Icon name="eye-outline" size={14} color="rgba(255,255,255,0.7)" />
             <Text style={S.viewCountText}>{count}</Text>
           </View>
         </View>
@@ -301,14 +301,14 @@ export function StoryViewer({ visible, group, viewerId, onClose, onNextGroup, on
             /* Owner view: show viewers/likers counts */
             <Pressable style={S.ownerRow} onPress={openOwnerPanel}>
               <View style={S.ownerStat}>
-                <Ionicons name="eye" size={18} color="rgba(255,255,255,0.85)" />
+                <Icon name="eye" size={18} color="rgba(255,255,255,0.85)" />
                 <Text style={S.ownerStatText}>{count} görüntüleme</Text>
               </View>
               <View style={S.ownerStat}>
-                <Ionicons name="heart" size={18} color={C.heart} />
+                <Icon name="heart" size={18} color={C.heart} />
                 <Text style={S.ownerStatText}>{likesTotal} beğeni</Text>
               </View>
-              <Ionicons name="chevron-up" size={16} color="rgba(255,255,255,0.6)" />
+              <Icon name="chevron-up" size={16} color="rgba(255,255,255,0.6)" />
             </Pressable>
           ) : (
             /* Viewer: reply input + like button */
@@ -332,11 +332,11 @@ export function StoryViewer({ visible, group, viewerId, onClose, onNextGroup, on
                   onPress={handleReply}
                   disabled={replySending}
                 >
-                  <Ionicons name="send" size={22} color="#FFF" />
+                  <Icon name="send" size={22} color="#FFF" />
                 </Pressable>
               ) : (
                 <Pressable style={S.iconBtn} onPress={handleLike}>
-                  <Ionicons
+                  <Icon
                     name={isLiked ? "heart" : "heart-outline"}
                     size={26}
                     color={isLiked ? C.heart : "#FFF"}
@@ -384,7 +384,7 @@ export function StoryViewer({ visible, group, viewerId, onClose, onNextGroup, on
                   viewers.map((v) => (
                     <View key={v.viewerId} style={S.panelRow}>
                       <View style={S.panelAvatarPlaceholder}>
-                        <Ionicons name="person" size={16} color="#FFF" />
+                        <Icon name="person" size={16} color="#FFF" />
                       </View>
                       <Text style={S.panelRowText}>{v.viewerId}</Text>
                       <Text style={S.panelRowTime}>{formatAgo(v.viewedAt)}</Text>
@@ -401,11 +401,11 @@ export function StoryViewer({ visible, group, viewerId, onClose, onNextGroup, on
                         <Image source={{ uri: l.avatarUrl }} style={S.panelAvatar} contentFit="cover" />
                       ) : (
                         <View style={S.panelAvatarPlaceholder}>
-                          <Ionicons name="person" size={16} color="#FFF" />
+                          <Icon name="person" size={16} color="#FFF" />
                         </View>
                       )}
                       <Text style={S.panelRowText}>{l.username || l.userId}</Text>
-                      <Ionicons name="heart" size={14} color={C.heart} />
+                      <Icon name="heart" size={14} color={C.heart} />
                     </View>
                   ))
                 )

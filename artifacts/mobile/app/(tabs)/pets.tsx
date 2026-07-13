@@ -1,4 +1,4 @@
-import { Ionicons } from "@expo/vector-icons";
+import { Icon } from "@/components/Icon";
 import * as Haptics from "expo-haptics";
 import { Image } from "expo-image";
 import { LinearGradient } from "expo-linear-gradient";
@@ -64,7 +64,7 @@ const TYPE_NORMALIZE: Record<string, Filter> = {
   Tavşan: "rabbit", tavşan: "rabbit", rabbit: "rabbit",
 };
 
-const FILTERS: { key: Filter; label: string; icon: keyof typeof Ionicons.glyphMap }[] = [
+const FILTERS: { key: Filter; label: string; icon: string }[] = [
   { key: "all",    label: "Tümü",   icon: "apps-outline"             },
   { key: "cat",    label: "Kedi",   icon: "paw-outline"              },
   { key: "dog",    label: "Köpek",  icon: "paw"                      },
@@ -103,7 +103,7 @@ function PetHeader({ topPad, mainTab, onChange }: { topPad: number; mainTab: Mai
         })}
       </View>
       <Pressable style={hdr.bellBtn} onPress={() => {}}>
-        <Ionicons name="notifications-outline" size={22} color={BODY} />
+        <Icon name="notifications-outline" size={22} color={BODY} />
         <View style={hdr.bellDot} />
       </Pressable>
     </View>
@@ -128,7 +128,7 @@ const ots = StyleSheet.create({
 });
 
 // ── Tab switcher (3-segment) ──────────────────────────────────────────────────
-const TAB_DEFS: { key: Tab; label: string; icon: keyof typeof Ionicons.glyphMap }[] = [
+const TAB_DEFS: { key: Tab; label: string; icon: string }[] = [
   { key: "create",     label: "İlan Oluştur", icon: "add-circle-outline" },
   { key: "mylistings", label: "İlanlarım",    icon: "list-outline"       },
   { key: "listings",   label: "Tüm İlanlar",  icon: "heart-outline"      },
@@ -148,12 +148,12 @@ function TabSwitcher({ active, onChange }: { active: Tab; onChange: (t: Tab) => 
           >
             {isActive ? (
               <LinearGradient colors={[P2, P]} start={{ x: 0, y: 0 }} end={{ x: 1, y: 0 }} style={tsw.grad}>
-                <Ionicons name={t.icon} size={13} color={WHITE} />
+                <Icon name={t.icon} size={13} color={WHITE} />
                 <Text style={tsw.lblActive} numberOfLines={1}>{t.label}</Text>
               </LinearGradient>
             ) : (
               <View style={tsw.inactiveRow}>
-                <Ionicons name={t.icon} size={13} color={T.purple} />
+                <Icon name={t.icon} size={13} color={T.purple} />
                 <Text style={[tsw.lblInactive, { color: T.textMuted }]} numberOfLines={1}>{t.label}</Text>
               </View>
             )}
@@ -178,7 +178,7 @@ function SearchBar({ query, onQuery, onFilter }: { query: string; onQuery: (q: s
   return (
     <View style={sb.wrap}>
       <View style={[sb.inputWrap, { backgroundColor: T.card, borderColor: T.border }]}>
-        <Ionicons name="search-outline" size={16} color={T.textMuted} />
+        <Icon name="search-outline" size={16} color={T.textMuted} />
         <TextInput
           style={[sb.input, { color: T.text }]}
           placeholder="Kedi, köpek, kuş ara..."
@@ -189,7 +189,7 @@ function SearchBar({ query, onQuery, onFilter }: { query: string; onQuery: (q: s
         />
         {query.length > 0 && (
           <Pressable onPress={() => onQuery("")} hitSlop={8}>
-            <Ionicons name="close-circle" size={16} color={T.textMuted} />
+            <Icon name="close-circle" size={16} color={T.textMuted} />
           </Pressable>
         )}
       </View>
@@ -198,7 +198,7 @@ function SearchBar({ query, onQuery, onFilter }: { query: string; onQuery: (q: s
         onPress={() => { Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light); onFilter(); }}
       >
         <LinearGradient colors={[P2, P]} style={sb.filterGrad}>
-          <Ionicons name="options-outline" size={17} color={WHITE} />
+          <Icon name="options-outline" size={17} color={WHITE} />
         </LinearGradient>
       </Pressable>
     </View>
@@ -254,12 +254,12 @@ function FilterRow({ active, onChange }: { active: Filter; onChange: (f: Filter)
                 end={{ x: 1, y: 0 }}
                 style={[fc.chip, fc.chipActiveShadow]}
               >
-                <Ionicons name={f.icon} size={13} color="#FFF" />
+                <Icon name={f.icon} size={13} color="#FFF" />
                 <Text style={fc.lblActive}>{f.label}</Text>
               </LinearGradient>
             ) : (
               <View style={[fc.chip, fc.chipInactive, { backgroundColor: T.card, borderColor: T.border }]}>
-                <Ionicons name={f.icon} size={13} color={P} />
+                <Icon name={f.icon} size={13} color={P} />
                 <Text style={[fc.lbl, { color: T.purple }]}>{f.label}</Text>
               </View>
             )}
@@ -338,7 +338,7 @@ function ListingCard({ listing, isFeatured, featuredUntil }: { listing: Adoption
             />
           ) : (
             <LinearGradient colors={[`${P2}40`, `${P}28`]} style={lc.imgFallback}>
-              <Ionicons name="paw" size={34} color={`${P}60`} />
+              <Icon name="paw" size={34} color={`${P}60`} />
             </LinearGradient>
           )}
 
@@ -350,7 +350,7 @@ function ListingCard({ listing, isFeatured, featuredUntil }: { listing: Adoption
 
           {isFeatured && (
             <LinearGradient colors={[P2, DARK]} start={{ x: 0, y: 0 }} end={{ x: 1, y: 1 }} style={lc.featuredBadge}>
-              <Ionicons name="star" size={9} color={WHITE} />
+              <Icon name="star" size={9} color={WHITE} />
               <Text style={lc.featuredTxt}>ÖNE ÇIKAN</Text>
             </LinearGradient>
           )}
@@ -368,7 +368,7 @@ function ListingCard({ listing, isFeatured, featuredUntil }: { listing: Adoption
             }}
             hitSlop={8}
           >
-            <Ionicons name={liked ? "heart" : "heart-outline"} size={16} color={liked ? "#FF4466" : WHITE} />
+            <Icon name={liked ? "heart" : "heart-outline"} size={16} color={liked ? "#FF4466" : WHITE} />
           </Pressable>
         </View>
 
@@ -389,7 +389,7 @@ function ListingCard({ listing, isFeatured, featuredUntil }: { listing: Adoption
 
           <View style={lc.footer}>
             <View style={lc.locRow}>
-              <Ionicons name="location-sharp" size={11} color={T.purple} />
+              <Icon name="location-sharp" size={11} color={T.purple} />
               <Text style={[lc.loc, { color: T.textMuted }]} numberOfLines={1}>{listing.location}</Text>
             </View>
             <Pressable
@@ -473,7 +473,7 @@ function CreateSection({ onPress, botPad }: { onPress: () => void; botPad: numbe
         <View style={[cr.heroCard, { backgroundColor: T.card, borderColor: T.border }]}>
           <View style={cr.heroLeft}>
             <LinearGradient colors={[`${P}22`, `${P2}14`]} style={cr.heroIconCircle}>
-              <Ionicons name="heart" size={22} color={P} />
+              <Icon name="heart" size={22} color={P} />
             </LinearGradient>
             <Text style={[cr.heroTitle, { color: T.text }]}>Evcil hayvanını{"\n"}sahiplendirme ilanına ekle</Text>
             <Text style={[cr.heroSub, { color: T.textMuted }]}>Fotoğraf, açıklama ve konum{"\n"}ekleyerek ilan oluştur</Text>
@@ -482,7 +482,7 @@ function CreateSection({ onPress, botPad }: { onPress: () => void; botPad: numbe
               onPress={() => { Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium); onPress(); }}
             >
               <LinearGradient colors={[P2, P]} start={{ x: 0, y: 0 }} end={{ x: 1, y: 0 }} style={cr.ctaGrad}>
-                <Ionicons name="add-circle-outline" size={15} color={WHITE} />
+                <Icon name="add-circle-outline" size={15} color={WHITE} />
                 <Text style={cr.ctaTxt}>İlan Oluştur</Text>
               </LinearGradient>
             </Pressable>
@@ -496,7 +496,7 @@ function CreateSection({ onPress, botPad }: { onPress: () => void; botPad: numbe
       {/* Tips */}
       <View style={[cr.card, { backgroundColor: T.card, borderColor: T.border }]}>
         <View style={{ flexDirection: "row", alignItems: "center", gap: 8, marginBottom: 12 }}>
-          <Ionicons name="information-circle-outline" size={16} color={P} />
+          <Icon name="information-circle-outline" size={16} color={P} />
           <Text style={[cr.tipsTitle, { color: T.text }]}>İlan verirken dikkat et</Text>
         </View>
         {TIPS.map((tip, i) => (
@@ -516,7 +516,7 @@ function CreateSection({ onPress, botPad }: { onPress: () => void; botPad: numbe
         ] as const).map((stat) => (
           <View key={stat.lbl} style={[cr.statCard, { backgroundColor: T.card, borderColor: T.border }]}>
             <LinearGradient colors={[`${P}18`, `${P2}10`]} style={cr.statIconWrap}>
-              <Ionicons name={stat.icon} size={18} color={P} />
+              <Icon name={stat.icon} size={18} color={P} />
             </LinearGradient>
             <Text style={[cr.statVal, { color: T.text }]}>{stat.val}</Text>
             <Text style={[cr.statLbl, { color: T.textMuted }]}>{stat.lbl}</Text>
@@ -532,7 +532,7 @@ function CreateSection({ onPress, botPad }: { onPress: () => void; botPad: numbe
         style={cr.banner}
       >
         <View style={cr.bannerIconWrap}>
-          <Ionicons name="shield-checkmark" size={22} color={WHITE} />
+          <Icon name="shield-checkmark" size={22} color={WHITE} />
         </View>
         <View style={{ flex: 1 }}>
           <Text style={cr.bannerTitle}>Güvenli Sahiplendirme</Text>
@@ -599,7 +599,7 @@ const MY_FILTERS: { key: MyFilter; label: string }[] = [
   { key: "adopted", label: "Sahiplendirilen" },
 ];
 
-const STATUS_CFG: Record<ListStatus, { color: string; bg: string; icon: keyof typeof Ionicons.glyphMap }> = {
+const STATUS_CFG: Record<ListStatus, { color: string; bg: string; icon: string }> = {
   "Aktif":           { color: "#18A558", bg: "#E6F7EE",    icon: "checkmark-circle"     },
   "Onay Bekliyor":   { color: "#D97706", bg: "#FEF3C7",    icon: "time-outline"         },
   "Pasif":           { color: BODY,      bg: `${BODY}14`,  icon: "pause-circle-outline" },
@@ -722,12 +722,12 @@ function MyListingCard({
         <View style={ml.statusRow}>
           {isFeatured ? (
             <LinearGradient colors={[P2, DARK]} start={{ x: 0, y: 0 }} end={{ x: 1, y: 1 }} style={ml.featBadge}>
-              <Ionicons name="star" size={10} color={WHITE} />
+              <Icon name="star" size={10} color={WHITE} />
               <Text style={ml.featBadgeTxt}>ÖNE ÇIKAN</Text>
             </LinearGradient>
           ) : (
             <View style={[ml.statusBadge, { backgroundColor: cfg.bg }]}>
-              <Ionicons name={cfg.icon} size={11} color={cfg.color} />
+              <Icon name={cfg.icon} size={11} color={cfg.color} />
               <Text style={[ml.statusTxt, { color: cfg.color }]}>{status}</Text>
             </View>
           )}
@@ -748,12 +748,12 @@ function MyListingCard({
             />
           ) : (
             <LinearGradient colors={[`${P2}40`, `${P}28`]} style={[ml.heroFallback, { flex: 1 }]}>
-              <Ionicons name="paw" size={34} color={`${P}60`} />
+              <Icon name="paw" size={34} color={`${P}60`} />
             </LinearGradient>
           )}
           {(!listing.photo || imgError) && (
             <View style={ml.heroNoPhotoOverlay}>
-              <Ionicons name="paw" size={22} color="rgba(255,255,255,0.85)" />
+              <Icon name="paw" size={22} color="rgba(255,255,255,0.85)" />
               <Text style={ml.heroNoPhotoTxt}>Fotoğraf eklenmedi</Text>
             </View>
           )}
@@ -765,11 +765,11 @@ function MyListingCard({
           {/* Featured active banner */}
           {isFeatured && (
             <View style={ml.featuredBannerInner}>
-              <Ionicons name="star" size={12} color={P} />
+              <Icon name="star" size={12} color={P} />
               <Text style={ml.featuredBannerTxt}>ÖNE ÇIKAN · Aktif</Text>
               {featuredUntil && (
                 <View style={ml.featuredTimeChip}>
-                  <Ionicons name="time-outline" size={10} color={P} />
+                  <Icon name="time-outline" size={10} color={P} />
                   <Text style={ml.featuredTimeTxt}>{remainingTime(featuredUntil)}</Text>
                 </View>
               )}
@@ -781,7 +781,7 @@ function MyListingCard({
 
           {/* Location + date */}
           <View style={ml.locRow}>
-            <Ionicons name="location-sharp" size={12} color={T.purple} />
+            <Icon name="location-sharp" size={12} color={T.purple} />
             <Text style={[ml.locTxt, { color: T.textMuted }]} numberOfLines={1}>{listing.location}</Text>
             <Text style={[ml.timeTxt, { color: T.textFaint }]}>{formatTimeAgo(listing.createdAt)}</Text>
           </View>
@@ -789,15 +789,15 @@ function MyListingCard({
           {/* Stats bar */}
           <View style={ml.statsBar}>
             <View style={ml.statChip}>
-              <Ionicons name="eye-outline" size={12} color={P} />
+              <Icon name="eye-outline" size={12} color={P} />
               <Text style={ml.statChipTxt}>{views}</Text>
             </View>
             <View style={[ml.statChip, ml.statChipHeart]}>
-              <Ionicons name="heart-outline" size={12} color="#DC2626" />
+              <Icon name="heart-outline" size={12} color="#DC2626" />
               <Text style={[ml.statChipTxt, { color: "#DC2626" }]}>{favs}</Text>
             </View>
             <View style={[ml.statChip, ml.statChipMsg]}>
-              <Ionicons name="chatbubble-outline" size={12} color="#0070F3" />
+              <Icon name="chatbubble-outline" size={12} color="#0070F3" />
               <Text style={[ml.statChipTxt, { color: "#0070F3" }]}>{msgs}</Text>
             </View>
             <Pressable
@@ -805,7 +805,7 @@ function MyListingCard({
               onPress={() => { Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light); setPerfOpen((v) => !v); }}
             >
               <Text style={ml.perfBtnTxt}>Performans</Text>
-              <Ionicons name={perfOpen ? "chevron-up" : "chevron-down"} size={10} color={BODY} />
+              <Icon name={perfOpen ? "chevron-up" : "chevron-down"} size={10} color={BODY} />
             </Pressable>
           </View>
 
@@ -815,19 +815,19 @@ function MyListingCard({
               <Text style={ml.perfPanelTitle}>SON 7 GÜN</Text>
               <View style={ml.perfRow}>
                 <View style={ml.perfItem}>
-                  <Ionicons name="eye" size={16} color={P} />
+                  <Icon name="eye" size={16} color={P} />
                   <Text style={ml.perfVal}>{views}</Text>
                   <Text style={ml.perfLbl}>Görüntülenme</Text>
                 </View>
                 <View style={ml.perfDivV} />
                 <View style={ml.perfItem}>
-                  <Ionicons name="heart" size={16} color="#DC2626" />
+                  <Icon name="heart" size={16} color="#DC2626" />
                   <Text style={[ml.perfVal, { color: "#DC2626" }]}>{favs}</Text>
                   <Text style={ml.perfLbl}>Favori</Text>
                 </View>
                 <View style={ml.perfDivV} />
                 <View style={ml.perfItem}>
-                  <Ionicons name="chatbubble" size={16} color="#0070F3" />
+                  <Icon name="chatbubble" size={16} color="#0070F3" />
                   <Text style={[ml.perfVal, { color: "#0070F3" }]}>{msgs}</Text>
                   <Text style={ml.perfLbl}>Mesaj</Text>
                 </View>
@@ -838,7 +838,7 @@ function MyListingCard({
           {/* Adopted banner */}
           {isAdopted && (
             <View style={ml.adoptedBanner}>
-              <Ionicons name="heart-circle" size={16} color={P} />
+              <Icon name="heart-circle" size={16} color={P} />
               <Text style={ml.adoptedBannerTxt}>Tebrikler! Bu hayvan yeni yuvasını buldu</Text>
             </View>
           )}
@@ -848,7 +848,7 @@ function MyListingCard({
             <View style={ml.promoteBanner}>
               <View style={ml.promoteLeft}>
                 <View style={ml.rocketCircle}>
-                  <Ionicons name="rocket-outline" size={18} color={P} />
+                  <Icon name="rocket-outline" size={18} color={P} />
                 </View>
                 <View style={ml.promoteTextWrap}>
                   <Text style={ml.promoteTitle}>İlanını öne çıkar</Text>
@@ -867,7 +867,7 @@ function MyListingCard({
                   end={{ x: 1, y: 0 }}
                   style={ml.promoteBtnGrad}
                 >
-                  <Ionicons name="sparkles" size={13} color={WHITE} />
+                  <Icon name="sparkles" size={13} color={WHITE} />
                   <Text style={ml.promoteBtnTxt}>Öne Çıkar</Text>
                 </LinearGradient>
               </Pressable>
@@ -879,7 +879,7 @@ function MyListingCard({
             <View style={ml.pkgSection}>
               {packages.length === 0 ? (
                 <View style={ml.pkgEmpty}>
-                  <Ionicons name="time-outline" size={22} color={`${P}60`} />
+                  <Icon name="time-outline" size={22} color={`${P}60`} />
                   <Text style={ml.pkgEmptyTxt}>Paketler yükleniyor…</Text>
                 </View>
               ) : (
@@ -907,7 +907,7 @@ function MyListingCard({
                           <Text style={[ml.pkgPrice, isSel && ml.pkgPriceSel]}>₺{pkgFormatPrice(pkg.unitAmount)}</Text>
                           <Text style={[ml.pkgDays, isSel && ml.pkgDaysSel]}>{pkgHoursLabel(pkg.packageHours)}</Text>
                           <Text style={[ml.pkgMult, isSel && ml.pkgMultSel]}>{pkgMultiplierLabel(pkg.packageHours)}</Text>
-                          {isSel && <Ionicons name="checkmark-circle" size={16} color={WHITE} style={{ marginTop: 4 }} />}
+                          {isSel && <Icon name="checkmark-circle" size={16} color={WHITE} style={{ marginTop: 4 }} />}
                         </View>
                       </Pressable>
                     );
@@ -943,7 +943,7 @@ function MyListingCard({
                   { opacity: pressed ? 0.9 : 1 },
                 ]}
               >
-                <Ionicons
+                <Icon
                   name={boosting ? "sync-outline" : "rocket-outline"}
                   size={15}
                   color={selectedPkg && !boosting ? WHITE : `${BODY}90`}
@@ -964,7 +964,7 @@ function MyListingCard({
               style={({ pressed }) => [ml.btn, ml.btnEdit, { opacity: pressed ? 0.8 : 1 }]}
               onPress={() => { Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light); onEdit(); }}
             >
-              <Ionicons name="create-outline" size={15} color={P} />
+              <Icon name="create-outline" size={15} color={P} />
               <Text style={[ml.btnTxt, { color: P }]}>Düzenle</Text>
             </Pressable>
 
@@ -972,7 +972,7 @@ function MyListingCard({
               style={({ pressed }) => [ml.btn, ml.btnPreview, { opacity: pressed ? 0.8 : 1 }]}
               onPress={() => { Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light); onPreview(); }}
             >
-              <Ionicons name="eye-outline" size={15} color={BODY} />
+              <Icon name="eye-outline" size={15} color={BODY} />
               <Text style={[ml.btnTxt, { color: BODY }]}>Önizle</Text>
             </Pressable>
 
@@ -980,7 +980,7 @@ function MyListingCard({
               style={({ pressed }) => [ml.btn, ml.btnDel, { opacity: pressed ? 0.75 : 1 }]}
               onPress={() => { Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium); onDelete(); }}
             >
-              <Ionicons name="trash-outline" size={15} color="#DC2626" />
+              <Icon name="trash-outline" size={15} color="#DC2626" />
               <Text style={[ml.btnTxt, { color: "#DC2626" }]}>Sil</Text>
             </Pressable>
 
@@ -1167,7 +1167,7 @@ function MyListingsSection({
       <Pressable style={sm.overlay} onPress={() => setSuccessModal(null)}>
         <View style={sm.card}>
           <View style={sm.emoji}>
-            <Ionicons name="star" size={40} color="#F5A623" />
+            <Icon name="star" size={40} color="#F5A623" />
           </View>
           <Text style={sm.title}>İlanın Öne Çıkarıldı!</Text>
           <Text style={sm.sub}>İlanın artık daha fazla kullanıcıya gösterilecek</Text>
@@ -1175,13 +1175,13 @@ function MyListingsSection({
             <View style={sm.infoBox}>
               <View style={sm.infoRow}>
                 <LinearGradient colors={[P2, DARK]} style={sm.infoIcon}>
-                  <Ionicons name="cube-outline" size={13} color={WHITE} />
+                  <Icon name="cube-outline" size={13} color={WHITE} />
                 </LinearGradient>
                 <Text style={sm.infoTxt}>{successModal.pkgLabel} Paketi</Text>
               </View>
               <View style={sm.infoRow}>
                 <LinearGradient colors={[P2, DARK]} style={sm.infoIcon}>
-                  <Ionicons name="time-outline" size={13} color={WHITE} />
+                  <Icon name="time-outline" size={13} color={WHITE} />
                 </LinearGradient>
                 <Text style={sm.infoTxt}>
                   {new Date(successModal.expiresAt).toLocaleDateString("tr-TR", { day: "numeric", month: "long" })} · {new Date(successModal.expiresAt).toLocaleTimeString("tr-TR", { hour: "2-digit", minute: "2-digit" })} tarihine kadar aktif
@@ -1191,7 +1191,7 @@ function MyListingsSection({
           )}
           <Pressable onPress={() => setSuccessModal(null)} style={sm.btn}>
             <LinearGradient colors={[P2, P]} start={{ x: 0, y: 0 }} end={{ x: 1, y: 0 }} style={sm.btnGrad}>
-              <Ionicons name="rocket-outline" size={16} color={WHITE} />
+              <Icon name="rocket-outline" size={16} color={WHITE} />
               <Text style={sm.btnTxt}>Harika!</Text>
             </LinearGradient>
           </Pressable>
@@ -1211,7 +1211,7 @@ function MyListingsSection({
                 <Text style={ed.sheetSub}>{editTarget?.petName}</Text>
               </View>
               <Pressable onPress={() => setEditTarget(null)} style={ed.closeBtn}>
-                <Ionicons name="close" size={20} color={BODY} />
+                <Icon name="close" size={20} color={BODY} />
               </Pressable>
             </View>
 
@@ -1284,7 +1284,7 @@ function MyListingsSection({
                 disabled={saving}
               >
                 <LinearGradient colors={[P2, P]} start={{ x: 0, y: 0 }} end={{ x: 1, y: 0 }} style={ed.saveGrad}>
-                  <Ionicons name={saving ? "sync-outline" : "checkmark-circle-outline"} size={16} color={WHITE} />
+                  <Icon name={saving ? "sync-outline" : "checkmark-circle-outline"} size={16} color={WHITE} />
                   <Text style={ed.saveTxt}>{saving ? "Kaydediliyor..." : "Kaydet"}</Text>
                 </LinearGradient>
               </Pressable>
@@ -1307,7 +1307,7 @@ function MyListingsSection({
           onPress={() => { Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium); onAdd(); }}
         >
           <LinearGradient colors={[P2, P]} start={{ x: 0, y: 0 }} end={{ x: 1, y: 0 }} style={ml.addBtn}>
-            <Ionicons name="add" size={16} color={WHITE} />
+            <Icon name="add" size={16} color={WHITE} />
             <Text style={ml.addBtnTxt}>Yeni İlan</Text>
           </LinearGradient>
         </Pressable>
@@ -1342,7 +1342,7 @@ function MyListingsSection({
       {myListings.length === 0 && (
         <View style={ml.emptyWrap}>
           <View style={ml.emptyIllo}>
-            <Ionicons name="list-outline" size={40} color={`${P}70`} />
+            <Icon name="list-outline" size={40} color={`${P}70`} />
           </View>
           <Text style={[ml.emptyTitle, { color: T.text }]}>Henüz İlan Yok</Text>
           <Text style={[ml.emptySub, { color: T.textMuted }]}>
@@ -1353,7 +1353,7 @@ function MyListingsSection({
             onPress={onAdd}
           >
             <LinearGradient colors={[P2, P]} start={{ x: 0, y: 0 }} end={{ x: 1, y: 0 }} style={ml.addBtn}>
-              <Ionicons name="add-circle-outline" size={15} color={WHITE} />
+              <Icon name="add-circle-outline" size={15} color={WHITE} />
               <Text style={ml.addBtnTxt}>İlan Oluştur</Text>
             </LinearGradient>
           </Pressable>
@@ -1363,7 +1363,7 @@ function MyListingsSection({
       {/* ── Filter empty state ── */}
       {myListings.length > 0 && visible.length === 0 && (
         <View style={ml.emptyFilter}>
-          <Ionicons name="filter-outline" size={32} color={`${P}50`} />
+          <Icon name="filter-outline" size={32} color={`${P}50`} />
           <Text style={ml.emptyFilterTxt}>Bu filtrede ilan yok</Text>
         </View>
       )}
@@ -1767,7 +1767,7 @@ export default function PetsScreen() {
             ListEmptyComponent={
               <View style={s.empty}>
                 <View style={s.emptyIllo}>
-                  <Ionicons name="heart-outline" size={40} color={`${P}70`} />
+                  <Icon name="heart-outline" size={40} color={`${P}70`} />
                 </View>
                 <Text style={s.emptyTitle}>
                   {query ? "Sonuç Bulunamadı" : "İlan Bulunamadı"}
@@ -1785,7 +1785,7 @@ export default function PetsScreen() {
                     onPress={() => setActiveTab("create")}
                   >
                     <LinearGradient colors={[P2, P]} style={s.emptyBtnGrad}>
-                      <Ionicons name="add-circle-outline" size={15} color={WHITE} />
+                      <Icon name="add-circle-outline" size={15} color={WHITE} />
                       <Text style={s.emptyBtnTxt}>İlan Oluştur</Text>
                     </LinearGradient>
                   </Pressable>

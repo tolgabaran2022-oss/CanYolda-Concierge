@@ -1,4 +1,4 @@
-import { Ionicons } from "@expo/vector-icons";
+import { Icon } from "@/components/Icon";
 import * as Haptics from "expo-haptics";
 import * as ImagePicker from "expo-image-picker";
 import { Image } from "expo-image";
@@ -146,7 +146,7 @@ export default function ProfileEditScreen() {
         {/* ── Top bar ──────────────────────────────── */}
         <View style={[S.topBar, { backgroundColor: T.card, borderBottomColor: T.border }]}>
           <Pressable onPress={() => router.back()} hitSlop={12} style={S.topBarBtn}>
-            <Ionicons name="chevron-back" size={24} color={T.text} />
+            <Icon name="chevron-back" size={24} color={T.text} />
           </Pressable>
           <Text style={[S.topBarTitle, { color: T.text }]}>Profili Düzenle</Text>
           <Pressable
@@ -185,7 +185,7 @@ export default function ProfileEditScreen() {
                 </View>
               </LinearGradient>
               <View style={S.cameraChip}>
-                <Ionicons name="camera" size={14} color="#FFF" />
+                <Icon name="camera" size={14} color="#FFF" />
               </View>
             </Pressable>
             <Pressable onPress={handleAvatarPress}>
@@ -217,7 +217,7 @@ export default function ProfileEditScreen() {
             <FieldDivider />
             <View style={S.fieldRow}>
               <View style={S.fieldIconWrap}>
-                <Ionicons name="text-outline" size={18} color={PURPLE} />
+                <Icon name="text-outline" size={18} color={PURPLE} />
               </View>
               <View style={{ flex: 1, gap: 4 }}>
                 <Text style={S.fieldLabel}>Biyografi</Text>
@@ -350,7 +350,7 @@ function Field({
   icon, label, value, onChange, placeholder, prefix, editable = true,
   autoCapitalize = "words", autoCorrect = true, hint,
 }: {
-  icon: React.ComponentProps<typeof Ionicons>["name"];
+  icon: string;
   label: string;
   value: string;
   onChange: (v: string) => void;
@@ -364,7 +364,7 @@ function Field({
   return (
     <View style={S.fieldRow}>
       <View style={S.fieldIconWrap}>
-        <Ionicons name={icon} size={18} color={editable ? PURPLE : "#ABABCC"} />
+        <Icon name={icon} size={18} color={editable ? PURPLE : "#ABABCC"} />
       </View>
       <View style={{ flex: 1 }}>
         <Text style={S.fieldLabel}>{label}</Text>
@@ -391,7 +391,7 @@ function Field({
 function ToggleRow({
   icon, label, sub, value, onChange,
 }: {
-  icon: React.ComponentProps<typeof Ionicons>["name"];
+  icon: string;
   label: string;
   sub?: string;
   value: boolean;
@@ -401,7 +401,7 @@ function ToggleRow({
   return (
     <View style={S.settingsRow}>
       <View style={S.settingsIconWrap}>
-        <Ionicons name={icon} size={18} color={T.purple} />
+        <Icon name={icon} size={18} color={T.purple} />
       </View>
       <View style={{ flex: 1 }}>
         <Text style={[S.settingsLabel, { color: T.text }]}>{label}</Text>

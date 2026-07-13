@@ -1,4 +1,4 @@
-import { Ionicons } from "@expo/vector-icons";
+import { Icon } from "@/components/Icon";
 import * as Haptics from "expo-haptics";
 import { Image } from "expo-image";
 import { LinearGradient } from "expo-linear-gradient";
@@ -96,7 +96,7 @@ export function StoryBar({
               <SafeAvatar uri={currentUserGroup.avatarUrl || currentUserAvatar} name={currentUserName} size={AV} />
             </View>
             <View style={S.addBadge}>
-              <Ionicons name="checkmark" size={9} color="#FFF" />
+              <Icon name="checkmark" size={9} color="#FFF" />
             </View>
           </LinearGradient>
         ) : currentUserAvatar ? (
@@ -104,14 +104,14 @@ export function StoryBar({
           <View style={S.seenCircle}>
             <SafeAvatar uri={currentUserAvatar} name={currentUserName} size={AV} />
             <View style={S.addBadge}>
-              <Ionicons name="add" size={10} color="#FFF" />
+              <Icon name="add" size={10} color="#FFF" />
             </View>
           </View>
         ) : (
           /* no avatar: dashed add circle */
           <View style={S.addCircle}>
             <View style={S.addInner}>
-              <Ionicons name="add" size={IS_WEB ? 18 : 22} color={PURPLE} />
+              <Icon name="add" size={IS_WEB ? 18 : 22} color={PURPLE} />
             </View>
           </View>
         )}

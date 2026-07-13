@@ -1,4 +1,4 @@
-import { Ionicons } from "@expo/vector-icons";
+import { Icon } from "@/components/Icon";
 import * as Haptics from "expo-haptics";
 import { Image } from "expo-image";
 import { useRouter } from "expo-router";
@@ -75,7 +75,7 @@ export default function SearchScreen() {
       {/* Header */}
       <View style={[S.header, { backgroundColor: T.card, borderBottomColor: T.border }]}>
         <Pressable onPress={() => router.back()} hitSlop={12}>
-          <Ionicons name="chevron-back" size={24} color={T.text} />
+          <Icon name="chevron-back" size={24} color={T.text} />
         </Pressable>
         <Text style={[S.headerTitle, { color: T.text }]}>Ara</Text>
         <View style={{ width: 32 }} />
@@ -83,7 +83,7 @@ export default function SearchScreen() {
 
       {/* Search bar */}
       <View style={[S.searchBar, { backgroundColor: T.card, borderColor: T.border }]}>
-        <Ionicons name="search-outline" size={18} color={T.textFaint} />
+        <Icon name="search-outline" size={18} color={T.textFaint} />
         <TextInput
           style={[S.searchInput, { color: T.text, outlineStyle: "none" } as any]}
           value={query}
@@ -112,7 +112,7 @@ export default function SearchScreen() {
         ListEmptyComponent={
           !loading && query.trim() ? (
             <View style={S.empty}>
-              <Ionicons name="person-outline" size={48} color="#C5BAE8" />
+              <Icon name="person-outline" size={48} color="#C5BAE8" />
               <Text style={[S.emptyText, { color: T.textMuted }]}>Kullanıcı bulunamadı</Text>
             </View>
           ) : null
@@ -131,7 +131,7 @@ export default function SearchScreen() {
               <Text style={[S.userName, { color: T.text }]}>@{u.username}</Text>
               <Text style={[S.userMeta, { color: T.textMuted }]}>{u.postCount} gönderi</Text>
             </View>
-            <Ionicons name="chevron-forward" size={18} color={T.textFaint} />
+            <Icon name="chevron-forward" size={18} color={T.textFaint} />
           </Pressable>
         )}
       />

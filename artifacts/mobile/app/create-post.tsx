@@ -1,4 +1,4 @@
-import { Ionicons } from "@expo/vector-icons";
+import { Icon } from "@/components/Icon";
 import * as Haptics from "expo-haptics";
 import * as ImagePicker from "expo-image-picker";
 import { Image } from "expo-image";
@@ -104,7 +104,7 @@ export default function CreatePostScreen() {
         {/* ── Top bar ──────────────────────────────── */}
         <View style={[S.topBar, { backgroundColor: T.card, borderBottomColor: T.border }]}>
           <Pressable onPress={() => router.back()} hitSlop={12} style={S.topBarBtn}>
-            <Ionicons name="close" size={24} color={T.text} />
+            <Icon name="close" size={24} color={T.text} />
           </Pressable>
           <Text style={[S.topBarTitle, { color: T.text }]}>Yeni Gönderi</Text>
           <Pressable
@@ -133,7 +133,7 @@ export default function CreatePostScreen() {
                 style={S.changePhotoChip}
                 onPress={pickImage}
               >
-                <Ionicons name="camera-reverse-outline" size={16} color="#FFF" />
+                <Icon name="camera-reverse-outline" size={16} color="#FFF" />
                 <Text style={S.changePhotoText}>Değiştir</Text>
               </Pressable>
             </View>
@@ -148,7 +148,7 @@ export default function CreatePostScreen() {
                   style={S.pickAreaInner}
                 >
                   <View style={S.pickIconCircle}>
-                    <Ionicons name="images-outline" size={36} color={PURPLE} />
+                    <Icon name="images-outline" size={36} color={PURPLE} />
                   </View>
                   <Text style={S.pickTitle}>Fotoğraf Seç</Text>
                   <Text style={S.pickSub}>Galeriden bir fotoğraf seçin</Text>
@@ -159,7 +159,7 @@ export default function CreatePostScreen() {
                 style={({ pressed }) => [S.cameraBtn, { opacity: pressed ? 0.85 : 1 }]}
                 onPress={takePhoto}
               >
-                <Ionicons name="camera-outline" size={20} color={PURPLE} />
+                <Icon name="camera-outline" size={20} color={PURPLE} />
                 <Text style={S.cameraBtnText}>Kameradan Çek</Text>
               </Pressable>
             </View>
@@ -196,7 +196,7 @@ export default function CreatePostScreen() {
           <View style={S.section}>
             <View style={[S.card, { backgroundColor: T.card, borderColor: T.border }]}>
               <View style={S.locationRow}>
-                <Ionicons name="location-outline" size={20} color={T.purple} />
+                <Icon name="location-outline" size={20} color={T.purple} />
                 <TextInput
                   style={[S.locationInput, { color: T.text }]}
                   value={location}
@@ -225,7 +225,7 @@ export default function CreatePostScreen() {
                 {publishing
                   ? <ActivityIndicator color="#FFF" />
                   : <>
-                      <Ionicons name="paper-plane-outline" size={18} color="#FFF" />
+                      <Icon name="paper-plane-outline" size={18} color="#FFF" />
                       <Text style={S.bigPublishText}>Gönderiyi Paylaş</Text>
                     </>
                 }

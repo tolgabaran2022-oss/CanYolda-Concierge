@@ -1,4 +1,4 @@
-import { Ionicons } from "@expo/vector-icons";
+import { Icon } from "@/components/Icon";
 import * as Haptics from "expo-haptics";
 import { Image } from "expo-image";
 import { BlurView } from "expo-blur";
@@ -55,7 +55,7 @@ function BoostBadge({ expiresAt, packageHours }: { expiresAt: string; packageHou
   return (
     <View style={S.boostBadge}>
       <LinearGradient colors={["#FFB347", "#E07A35"]} style={S.boostGrad}>
-        <Ionicons name="star" size={12} color={WHITE} />
+        <Icon name="star" size={12} color={WHITE} />
         <Text style={S.boostTxt}>Öne Çıkan · {hoursLeft > 0 ? `${hoursLeft}s ` : ""}{minutesLeft}dk kaldı</Text>
       </LinearGradient>
     </View>
@@ -63,11 +63,11 @@ function BoostBadge({ expiresAt, packageHours }: { expiresAt: string; packageHou
 }
 
 // Quick stat pill
-function StatPill({ icon, label, value }: { icon: keyof typeof Ionicons.glyphMap; label: string; value: string }) {
+function StatPill({ icon, label, value }: { icon: string; label: string; value: string }) {
   return (
     <View style={S.statPill}>
       <View style={S.statIcon}>
-        <Ionicons name={icon} size={16} color={P} />
+        <Icon name={icon} size={16} color={P} />
       </View>
       <Text style={S.statLabel}>{label}</Text>
       <Text style={S.statValue}>{value}</Text>
@@ -139,7 +139,7 @@ export default function AdoptionDetailScreen() {
       <View style={S.notFound}>
         <Stack.Screen options={{ headerShown: false }} />
         <View style={S.notFoundIllo}>
-          <Ionicons name="heart-dislike-outline" size={44} color={`${P}80`} />
+          <Icon name="heart-dislike-outline" size={44} color={`${P}80`} />
         </View>
         <Text style={S.notFoundTitle}>İlan Bulunamadı</Text>
         <Text style={S.notFoundSub}>Bu ilan kaldırılmış ya da mevcut değil.</Text>
@@ -244,7 +244,7 @@ export default function AdoptionDetailScreen() {
             ) : (
               <LinearGradient colors={[`${P2}60`, `${P}40`, `${DARK}50`]} style={S.heroImg}>
                 <View style={S.heroPlaceholderInner}>
-                  <Ionicons name="paw" size={56} color={`${WHITE}80`} />
+                  <Icon name="paw" size={56} color={`${WHITE}80`} />
                 </View>
               </LinearGradient>
             )}
@@ -266,11 +266,11 @@ export default function AdoptionDetailScreen() {
               >
                 {Platform.OS === "ios" ? (
                   <BlurView intensity={55} tint="dark" style={S.blurInner}>
-                    <Ionicons name="chevron-back" size={20} color={WHITE} />
+                    <Icon name="chevron-back" size={20} color={WHITE} />
                   </BlurView>
                 ) : (
                   <View style={[S.blurInner, { backgroundColor: "rgba(0,0,0,0.35)" }]}>
-                    <Ionicons name="chevron-back" size={20} color={WHITE} />
+                    <Icon name="chevron-back" size={20} color={WHITE} />
                   </View>
                 )}
               </Pressable>
@@ -282,11 +282,11 @@ export default function AdoptionDetailScreen() {
               >
                 {Platform.OS === "ios" ? (
                   <BlurView intensity={55} tint="dark" style={S.blurInner}>
-                    <Ionicons name={liked ? "heart" : "heart-outline"} size={19} color={liked ? "#FF4466" : WHITE} />
+                    <Icon name={liked ? "heart" : "heart-outline"} size={19} color={liked ? "#FF4466" : WHITE} />
                   </BlurView>
                 ) : (
                   <View style={[S.blurInner, { backgroundColor: "rgba(0,0,0,0.35)" }]}>
-                    <Ionicons name={liked ? "heart" : "heart-outline"} size={19} color={liked ? "#FF4466" : WHITE} />
+                    <Icon name={liked ? "heart" : "heart-outline"} size={19} color={liked ? "#FF4466" : WHITE} />
                   </View>
                 )}
               </Pressable>
@@ -300,7 +300,7 @@ export default function AdoptionDetailScreen() {
             {isPreviewMode && (
               <View style={S.previewBanner}>
                 <View style={S.previewBannerIcon}>
-                  <Ionicons name="eye-outline" size={15} color={P} />
+                  <Icon name="eye-outline" size={15} color={P} />
                 </View>
                 <View style={{ flex: 1 }}>
                   <Text style={S.previewBannerTitle}>Önizleme Modu</Text>
@@ -311,7 +311,7 @@ export default function AdoptionDetailScreen() {
                   hitSlop={10}
                   style={({ pressed }) => [S.previewBannerClose, { opacity: pressed ? 0.7 : 1 }]}
                 >
-                  <Ionicons name="close" size={18} color={`${P}80`} />
+                  <Icon name="close" size={18} color={`${P}80`} />
                 </Pressable>
               </View>
             )}
@@ -322,7 +322,7 @@ export default function AdoptionDetailScreen() {
                 <Text style={S.petName}>{listing.petName}</Text>
                 <View style={S.petTypeRow}>
                   <View style={S.typePill}>
-                    <Ionicons name="paw" size={11} color={P} />
+                    <Icon name="paw" size={11} color={P} />
                     <Text style={S.typePillTxt}>{listing.petType}</Text>
                   </View>
                   <View style={[S.statusPill, { backgroundColor: T.isDark ? "rgba(52,199,89,0.15)" : "#E8F8EE" }]}>
@@ -362,14 +362,14 @@ export default function AdoptionDetailScreen() {
                 <View style={S.ownerNameRow}>
                   <Text style={S.ownerName}>{listing.userName}</Text>
                   <View style={S.verifiedBadge}>
-                    <Ionicons name="checkmark-circle" size={13} color={P} />
+                    <Icon name="checkmark-circle" size={13} color={P} />
                     <Text style={S.verifiedTxt}>Doğrulandı</Text>
                   </View>
                 </View>
                 <Text style={S.ownerTime}>{formatTimeAgo(listing.createdAt)} yayınlandı</Text>
               </View>
               <View style={S.ownerChevron}>
-                <Ionicons name="chevron-forward" size={16} color={`${BODY}80`} />
+                <Icon name="chevron-forward" size={16} color={`${BODY}80`} />
               </View>
             </View>
 
@@ -392,22 +392,22 @@ export default function AdoptionDetailScreen() {
             <SectionHead title="Detay Bilgiler" />
             <View style={S.infoGrid}>
               <View style={S.infoCell}>
-                <Ionicons name="medkit-outline" size={18} color={P} />
+                <Icon name="medkit-outline" size={18} color={P} />
                 <Text style={S.infoCellLabel}>Sağlık Durumu</Text>
                 <Text style={S.infoCellValue}>İyi</Text>
               </View>
               <View style={S.infoCell}>
-                <Ionicons name="shield-checkmark-outline" size={18} color={"#34C759"} />
+                <Icon name="shield-checkmark-outline" size={18} color={"#34C759"} />
                 <Text style={S.infoCellLabel}>Aşı</Text>
                 <Text style={S.infoCellValue}>Var</Text>
               </View>
               <View style={S.infoCell}>
-                <Ionicons name="home-outline" size={18} color={"#007AFF"} />
+                <Icon name="home-outline" size={18} color={"#007AFF"} />
                 <Text style={S.infoCellLabel}>İç/Dış Mekan</Text>
                 <Text style={S.infoCellValue}>İç Mekan</Text>
               </View>
               <View style={S.infoCell}>
-                <Ionicons name="people-outline" size={18} color={"#FF9500"} />
+                <Icon name="people-outline" size={18} color={"#FF9500"} />
                 <Text style={S.infoCellLabel}>Çocuk Uyumu</Text>
                 <Text style={S.infoCellValue}>Uyumlu</Text>
               </View>
@@ -416,7 +416,7 @@ export default function AdoptionDetailScreen() {
             {/* Adoption note */}
             <View style={S.adoptionNote}>
               <LinearGradient colors={[`${P2}20`, `${P}12`]} style={S.adoptionNoteGrad}>
-                <Ionicons name="heart-circle-outline" size={20} color={P} />
+                <Icon name="heart-circle-outline" size={20} color={P} />
                 <Text style={S.adoptionNoteTxt}>
                   Sahiplenmeden önce lütfen yaşam koşullarınızı ve hayvanın ihtiyaçlarını değerlendirin. Yüz yüze tanışma önerilir.
                 </Text>
@@ -425,7 +425,7 @@ export default function AdoptionDetailScreen() {
 
             {/* Contact info display */}
             <View style={S.contactInfoCard}>
-              <Ionicons name={isPhone ? "call-outline" : "mail-outline"} size={16} color={BODY} />
+              <Icon name={isPhone ? "call-outline" : "mail-outline"} size={16} color={BODY} />
               <Text style={S.contactInfoTxt}>{listing.contactInfo}</Text>
             </View>
 
@@ -444,12 +444,12 @@ export default function AdoptionDetailScreen() {
                   }}
                 >
                   <View style={S.editBtnInner}>
-                    <Ionicons name="create-outline" size={18} color={P} />
+                    <Icon name="create-outline" size={18} color={P} />
                     <View style={{ flex: 1 }}>
                       <Text style={S.editBtnTitle}>İlanı Düzenle</Text>
                       <Text style={S.editBtnSub}>Fotoğraf, bilgi ve iletişim bilgilerini güncelle</Text>
                     </View>
-                    <Ionicons name="chevron-forward" size={16} color={`${P}80`} />
+                    <Icon name="chevron-forward" size={16} color={`${P}80`} />
                   </View>
                 </Pressable>
 
@@ -458,12 +458,12 @@ export default function AdoptionDetailScreen() {
                   onPress={handleBoost}
                 >
                   <LinearGradient colors={["#FFB347", "#E07A35"]} style={S.boostBtnGrad}>
-                    <Ionicons name="star" size={18} color={WHITE} />
+                    <Icon name="star" size={18} color={WHITE} />
                     <View style={{ flex: 1 }}>
                       <Text style={S.boostBtnTitle}>{boost?.isFeatured ? "Öne Çıkarmayı Yenile" : "İlanı Öne Çıkar"}</Text>
                       <Text style={S.boostBtnSub}>{boost?.isFeatured ? "Süre uzatmak için yeni paket al" : "₺50'den başlayan fiyatlarla"}</Text>
                     </View>
-                    <Ionicons name="chevron-forward" size={16} color={WHITE} />
+                    <Icon name="chevron-forward" size={16} color={WHITE} />
                   </LinearGradient>
                 </Pressable>
 
@@ -471,7 +471,7 @@ export default function AdoptionDetailScreen() {
                   style={({ pressed }) => [S.deleteBtn, { opacity: pressed ? 0.75 : 1, backgroundColor: T.card, borderColor: T.isDark ? "#7A3838" : "#FFD5D5" }]}
                   onPress={handleDelete}
                 >
-                  <Ionicons name="trash-outline" size={16} color="#E53E3E" />
+                  <Icon name="trash-outline" size={16} color="#E53E3E" />
                   <Text style={S.deleteBtnTxt}>İlanı Kaldır</Text>
                 </Pressable>
               </View>
@@ -493,7 +493,7 @@ export default function AdoptionDetailScreen() {
                 style={S.msgBtnOuter}
               >
                 <LinearGradient colors={[P2, P, DARK]} start={{ x: 0, y: 0 }} end={{ x: 1, y: 0 }} style={S.msgBtn}>
-                  <Ionicons name="create-outline" size={18} color={WHITE} />
+                  <Icon name="create-outline" size={18} color={WHITE} />
                   <Text style={S.msgBtnTxt}>İlanı Düzenle</Text>
                 </LinearGradient>
               </Pressable>
@@ -503,7 +503,7 @@ export default function AdoptionDetailScreen() {
               onPress={() => router.back()}
               hitSlop={8}
             >
-              <Ionicons name="eye-off-outline" size={20} color={P} />
+              <Icon name="eye-off-outline" size={20} color={P} />
             </Pressable>
           </View>
         ) : !isOwner ? (
@@ -525,7 +525,7 @@ export default function AdoptionDetailScreen() {
                     {msgSending ? (
                       <ActivityIndicator size="small" color={WHITE} />
                     ) : (
-                      <Ionicons name="chatbubble-ellipses" size={18} color={WHITE} />
+                      <Icon name="chatbubble-ellipses" size={18} color={WHITE} />
                     )}
                     <Text style={S.msgBtnTxt}>
                       {msgSending ? "Açılıyor…" : "Mesaj Gönder"}
@@ -540,7 +540,7 @@ export default function AdoptionDetailScreen() {
                 style={({ pressed }) => [S.callBtn, { opacity: pressed ? 0.85 : 1 }]}
                 onPress={handleRevealPhone}
               >
-                <Ionicons name="call" size={20} color={P} />
+                <Icon name="call" size={20} color={P} />
               </Pressable>
             )}
           </View>
@@ -566,13 +566,13 @@ export default function AdoptionDetailScreen() {
             </View>
           ) : revealError ? (
             <View style={{ paddingVertical: 20, alignItems: "center", gap: 12 }}>
-              <Ionicons name="alert-circle-outline" size={40} color="#E53E3E" />
+              <Icon name="alert-circle-outline" size={40} color="#E53E3E" />
               <Text style={{ fontSize: 15, fontFamily: "Inter_500Medium", color: "#E53E3E", textAlign: "center" }}>{revealError}</Text>
             </View>
           ) : revealedPhone ? (
             <View style={{ alignItems: "center", gap: 18, paddingVertical: 12 }}>
               <View style={S.phoneDisplay}>
-                <Ionicons name="call" size={20} color={P} />
+                <Icon name="call" size={20} color={P} />
                 <Text style={S.phoneDisplayTxt} selectable>{revealedPhone}</Text>
               </View>
               <Pressable
@@ -583,7 +583,7 @@ export default function AdoptionDetailScreen() {
                 }}
               >
                 <LinearGradient colors={[P2, P, DARK]} start={{ x: 0, y: 0 }} end={{ x: 1, y: 0 }} style={S.callNowBtnInner}>
-                  <Ionicons name="call" size={18} color={WHITE} />
+                  <Icon name="call" size={18} color={WHITE} />
                   <Text style={S.callNowBtnTxt}>Şimdi Ara</Text>
                 </LinearGradient>
               </Pressable>

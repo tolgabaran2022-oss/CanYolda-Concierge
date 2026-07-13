@@ -1,0 +1,735 @@
+STOP.
+
+The Android icon problem is NOT fixed.
+
+The new Android screenshot proves that the previous migration did not solve the root cause.
+
+I can still clearly see broken/missing glyph icons in:
+
+- Top-left app branding/icon
+- "Durum Bildir" button
+- "Hepsi" filter
+- "Acil" filter
+- "Yardım Bekleyen" filter
+- Animal card action icons
+- Count/action icons
+- "Konumu Aç"
+- Right-side card action
+- Bottom tab navigation:
+  - Harita
+  - Akış
+  - Hayvanlar
+  - Evcilim
+  - Hesap
+
+DO NOT repeat the previous generic recursive audit.
+
+DO NOT tell me emojis were replaced.
+
+The screenshot proves the replacement icon architecture itself is still broken on Android.
+
+I want you to debug the ACTUAL RUNTIME ICON RENDERING PIPELINE and fix the root cause.
+
+==================================================
+PHASE 1 — TRACE THE ACTUAL ICON RENDERER
+==================================================
+
+Open and inspect the REAL current implementation.
+
+Find the exact centralized icon component created during the previous migration.
+
+Possible files include:
+
+AppIcon.tsx
+Icon.tsx
+AppIcon/index.tsx
+components/ui/AppIcon.tsx
+src/components/ui/AppIcon.tsx
+
+Do not assume the file path.
+
+Find the real file.
+
+Then trace one broken Android icon end-to-end.
+
+Use the "Harita" bottom tab icon as the first test case.
+
+Trace:
+
+Bottom tab navigator
+→ tabBarIcon
+→ AppIcon
+→ icon mapping
+→ imported icon component
+→ actual icon library
+→ actual Android renderer
+
+Report internally:
+
+1. Exact tab navigator file
+2. Exact AppIcon file
+3. Exact icon library currently used
+4. Exact component used for the Harita icon
+5. Whether the icon ultimately renders with:
+   - Text
+   - icon font
+   - Unicode
+   - String.fromCharCode
+   - SVG
+   - react-native-svg
+
+DO NOT GUESS.
+
+Inspect the code.
+
+==================================================
+PHASE 2 — FIND WHY ANDROID SHOWS TOFU / MISSING GLYPHS
+==================================================
+
+The visible Android output strongly indicates that icons are still being rendered as unsupported font glyphs or broken icon-font characters.
+
+Search the CURRENT implementation for:
+
+<Text>{icon}</Text>
+
+<Text>{glyph}</Text>
+
+String.fromCharCode(...)
+
+String.fromCodePoint(...)
+
+unicode
+
+glyph
+
+glyphMap
+
+fontFamily
+
+createIconSet
+
+@expo/vector-icons
+
+MaterialIcons
+
+Ionicons
+
+FontAwesome
+
+Feather
+
+iconMap
+
+iconName
+
+AppIcon
+
+Also inspect generated/common UI wrappers.
+
+Check whether AppIcon does something similar to:
+
+return <Text>{iconMap[name]}</Text>
+
+or:
+
+const iconMap = {
+  map: "..."
+}
+
+where the map values are Unicode characters.
+
+This is NOT acceptable.
+
+Also detect mappings such as:
+
+map: "\uXXXX"
+paw: "\uXXXX"
+user: "\uXXXX"
+
+or hexadecimal glyph codes.
+
+A centralized Unicode mapping is still a Unicode icon system and does NOT solve the Android problem.
+
+==================================================
+PHASE 3 — CHECK WHETHER @expo/vector-icons FONT RENDERING IS BROKEN
+==================================================
+
+If the previous migration selected @expo/vector-icons or another font-based icon package, inspect its Android runtime behavior.
+
+Check:
+
+- package.json
+- Expo SDK version
+- React Native version
+- icon package version
+- expo-font version
+- app/_layout.tsx
+- App.tsx
+- font loading logic
+- useFonts
+- SplashScreen logic
+- custom typography provider
+- global Text wrappers
+
+Check Android runtime logs for:
+
+- font load failures
+- missing font assets
+- unloaded icon fonts
+- unrecognized font family
+- asset resolution failures
+- bundler asset errors
+
+Do not hide these errors.
+
+If the selected icon library depends on icon-font glyphs and is the source of the Android failure, REMOVE IT FROM THE APPICON RENDERING PATH.
+
+Do not try random fontFamily fallback hacks.
+
+Do not install an emoji font.
+
+Do not use system emoji fallback.
+
+==================================================
+PHASE 4 — USE SVG-BASED ICON RENDERING
+==================================================
+
+For application-controlled functional UI icons, migrate the centralized AppIcon system to SVG-based rendering.
+
+Preferred solution:
+
+lucide-react-native
++
+react-native-svg
+
+The final AppIcon renderer must use real React icon components rendered through SVG.
+
+It must NOT use:
+
+- Text
+- Unicode
+- Emoji
+- glyph strings
+- icon font character codes
+- String.fromCharCode
+- String.fromCodePoint
+
+First check whether lucide-react-native and react-native-svg are already installed.
+
+If this is an Expo project, install the SVG dependency with the Expo-compatible version.
+
+Use the project's package manager consistently.
+
+For Expo, use the equivalent of:
+
+npx expo install react-native-svg
+
+Then install lucide-react-native using the project's existing package manager if it is not already installed.
+
+Do not randomly change the Expo SDK or React Native version.
+
+==================================================
+PHASE 5 — REBUILD APPICON AS A REAL SVG COMPONENT MAP
+==================================================
+
+Rewrite the current centralized AppIcon implementation.
+
+The architecture must use COMPONENT REFERENCES.
+
+Concept:
+
+import {
+  Map,
+  House,
+  PawPrint,
+  Heart,
+  User,
+  Plus,
+  MapPin,
+  Navigation,
+  CircleHelp,
+  CircleCheck,
+  HeartPulse,
+  MessageCircle,
+  Bell,
+  Camera,
+  Search,
+  Ellipsis,
+  ChevronLeft,
+  ChevronRight,
+  X,
+  Check,
+  AlertCircle,
+  ListFilter,
+  ExternalLink,
+} from 'lucide-react-native';
+
+const ICON_MAP = {
+  map: Map,
+  home: House,
+  paw: PawPrint,
+  pet: Heart,
+  profile: User,
+  add: Plus,
+  location: MapPin,
+  navigation: Navigation,
+  unknown: CircleHelp,
+  healthy: CircleCheck,
+  injured: HeartPulse,
+  message: MessageCircle,
+  notification: Bell,
+  camera: Camera,
+  search: Search,
+  more: Ellipsis,
+  back: ChevronLeft,
+  forward: ChevronRight,
+  close: X,
+  check: Check,
+  warning: AlertCircle,
+  filter: ListFilter,
+  externalLink: ExternalLink,
+};
+
+Then render the COMPONENT:
+
+const IconComponent = ICON_MAP[name];
+
+return (
+  <IconComponent
+    width={size}
+    height={size}
+    size={size}
+    color={color}
+    strokeWidth={strokeWidth}
+  />
+);
+
+Adapt the exact props to the installed library API.
+
+IMPORTANT:
+
+ICON_MAP values must be React icon components.
+
+BAD:
+
+map: "🗺️"
+
+BAD:
+
+map: "\ue123"
+
+BAD:
+
+map: 0xe123
+
+BAD:
+
+map: "map"
+
+and then rendering it inside Text.
+
+GOOD:
+
+map: Map
+
+GOOD:
+
+paw: PawPrint
+
+GOOD:
+
+profile: User
+
+The final AppIcon component must NOT render a React Native Text component.
+
+==================================================
+PHASE 6 — PROVE THE RENDERER IS SVG
+==================================================
+
+After rebuilding AppIcon, verify the runtime component path.
+
+For the Harita tab icon:
+
+tabBarIcon
+→ AppIcon name="map"
+→ ICON_MAP.map
+→ Lucide Map component
+→ react-native-svg
+
+There must be NO Text or icon font renderer in this path.
+
+Repeat the same trace for:
+
+- Harita
+- Akış
+- Hayvanlar
+- Evcilim
+- Hesap
+
+Expected mapping:
+
+Harita → Map
+Akış → House
+Hayvanlar → PawPrint
+Evcilim → Heart
+Hesap → User
+
+==================================================
+PHASE 7 — FIX ALL CURRENTLY VISIBLE BROKEN ICONS
+==================================================
+
+Use the provided screenshot as a mandatory visual checklist.
+
+Fix every broken glyph visible in the screenshot.
+
+TOP AREA:
+
+- Brand/header icon
+- Durum Bildir icon
+
+FILTERS:
+
+- Hepsi
+- Acil
+- Yardım Bekleyen
+
+ANIMAL CARDS:
+
+- Count/action icon 1
+- Count/action icon 2
+- Konumu Aç
+- Right-side action icon
+- Location icon if present
+
+BOTTOM NAVIGATION:
+
+- Harita
+- Akış
+- Hayvanlar
+- Evcilim
+- Hesap
+
+No broken rectangle, tofu, missing glyph, or question-mark icon is acceptable.
+
+==================================================
+PHASE 8 — REMOVE OLD APPICON FALLBACKS
+==================================================
+
+Inspect AppIcon for fallback behavior.
+
+Remove fallback code such as:
+
+return <Text>□</Text>
+
+return <Text>?</Text>
+
+return <Text>�</Text>
+
+return <Text>{name}</Text>
+
+return <Text>{fallbackIcon}</Text>
+
+return <Text>{glyph}</Text>
+
+Unknown icon names must not silently render a broken Unicode symbol.
+
+During development, handle an invalid icon name safely.
+
+For example:
+
+- console.warn the invalid logical icon name
+- use a known SVG fallback component such as CircleHelp
+
+The fallback itself must also be an SVG icon component.
+
+==================================================
+PHASE 9 — DETECT INVALID ICON NAMES
+==================================================
+
+Audit every AppIcon usage.
+
+Compare every:
+
+<AppIcon name="..." />
+
+with the keys that actually exist in ICON_MAP.
+
+Find:
+
+- spelling errors
+- renamed icons
+- invalid logical icon names
+- stale icon keys
+- unsupported mappings
+
+Examples:
+
+"animal" vs "animals"
+"user" vs "profile"
+"location-pin" vs "location"
+"ellipsis" vs "more"
+
+Fix every invalid logical name.
+
+Use TypeScript typing.
+
+Concept:
+
+export type AppIconName = keyof typeof ICON_MAP;
+
+AppIcon props must use:
+
+name: AppIconName
+
+Do not use:
+
+name: string
+
+where avoidable.
+
+The compiler should catch invalid AppIcon names.
+
+==================================================
+PHASE 10 — INSPECT CUSTOM TEXT WRAPPERS
+==================================================
+
+Find every shared typography component:
+
+AppText
+Text
+Typography
+ThemedText
+StyledText
+
+Verify AppIcon is NOT wrapped in a text component that applies fontFamily.
+
+BAD:
+
+<AppText>
+  <AppIcon ... />
+</AppText>
+
+BAD:
+
+<Text style={styles.icon}>
+  <AppIcon ... />
+</Text>
+
+Render AppIcon directly inside View or Pressable.
+
+GOOD:
+
+<Pressable style={styles.button}>
+  <AppIcon name="location" size={18} color={color} />
+  <AppText>Konumu Aç</AppText>
+</Pressable>
+
+The icon and label must be siblings.
+
+==================================================
+PHASE 11 — FIX BUTTON AND CHIP ARCHITECTURE
+==================================================
+
+Inspect shared components used by the visible screen.
+
+Examples:
+
+Button
+IconButton
+FilterChip
+StatusChip
+TabItem
+AnimalCard
+ActionRow
+
+A shared component may still accept:
+
+icon: string
+
+and render:
+
+<Text>{icon}</Text>
+
+Change application UI component APIs from:
+
+icon: string
+
+to:
+
+iconName: AppIconName
+
+Example:
+
+BAD:
+
+<FilterChip icon="⚠️" />
+
+BAD:
+
+<FilterChip icon="\ue123" />
+
+GOOD:
+
+<FilterChip iconName="warning" />
+
+Inside FilterChip:
+
+<AppIcon name={iconName} />
+
+Perform the same migration for:
+
+- Buttons
+- Filter chips
+- Status chips
+- Card actions
+- Navigation items
+- Menu items
+
+==================================================
+PHASE 12 — CLEAR AND REBUILD ANDROID CACHE
+==================================================
+
+After changing the actual renderer, clear stale Metro/Expo caches.
+
+Do not rely on the currently running stale Android bundle.
+
+Stop the existing dev process if necessary.
+
+Clear the project's Expo/Metro cache using the appropriate project command.
+
+For Expo, use the project's equivalent of:
+
+npx expo start --clear
+
+Also rebuild/reload the Android preview completely.
+
+Do not only use Fast Refresh.
+
+The Android simulator must load the new JS bundle and SVG dependencies from a clean cache.
+
+If a native rebuild is required by the actual project architecture, perform the correct rebuild.
+
+Do not claim the code failed before testing a clean bundle.
+
+==================================================
+PHASE 13 — ANDROID RUNTIME TEST FIRST
+==================================================
+
+Android is the mandatory first verification platform.
+
+Open the exact "Sokak Hayvanları" screen shown in the screenshot.
+
+Visually inspect:
+
+1. Brand/header icon
+2. Durum Bildir
+3. Hepsi
+4. Acil
+5. Yardım Bekleyen
+6. First animal card icons
+7. Konumu Aç
+8. Second animal card icons
+9. All five bottom tabs
+
+Take each item as an individual pass/fail check.
+
+Expected:
+
+- recognizable SVG icon
+- correct size
+- correct color
+- no square
+- no box
+- no tofu glyph
+- no missing character
+- no Unicode placeholder
+
+Do not consider "text is visible" a successful icon test.
+
+==================================================
+PHASE 14 — THEN RECURSIVELY CHECK THE APP
+==================================================
+
+Once the ACTUAL Android renderer is fixed, recursively search the entire frontend again.
+
+Search for application-controlled functional icons rendered through:
+
+Text
+Unicode
+emoji
+glyph codes
+String.fromCharCode
+String.fromCodePoint
+
+Migrate remaining functional UI icon usage to the new SVG AppIcon architecture.
+
+Do not modify user-generated content.
+
+==================================================
+PHASE 15 — VERIFY IOS AND WEB
+==================================================
+
+After Android passes:
+
+Verify iOS.
+
+Verify Web.
+
+The same AppIcon SVG architecture should be shared.
+
+Do not create a second Android-only icon implementation.
+
+Fix any genuine react-native-svg / web compatibility issue in the shared architecture.
+
+==================================================
+STRICT FAILURE CONDITIONS
+==================================================
+
+The task is NOT complete if:
+
+- Harita still displays a square icon
+- Akış still displays a broken glyph
+- Hayvanlar still displays a broken glyph
+- Evcilim still displays a broken glyph
+- Hesap still displays a broken glyph
+- Konumu Aç still has a broken icon
+- Durum Bildir still has a broken icon
+- Filter chips still contain broken glyphs
+- AppIcon internally uses Text for functional icons
+- AppIcon internally maps logical names to Unicode
+- A font glyph code is used as the new icon system
+- You only clear the cache without fixing the renderer
+- You only replace visible icons without fixing shared components
+
+==================================================
+FINAL REPORT — SHOW EVIDENCE
+==================================================
+
+Do not reply only with "fixed".
+
+Provide:
+
+1. Exact AppIcon file path
+2. Previous AppIcon renderer implementation type
+3. Previous icon library
+4. Actual root cause
+5. New renderer type
+6. New icon library
+7. Confirmation that AppIcon no longer renders Text
+8. Confirmation that AppIcon no longer uses Unicode glyph maps
+9. Exact bottom tab navigator file changed
+10. Exact FilterChip/shared chip file changed
+11. Exact AnimalCard file changed
+12. Invalid AppIcon names found and fixed
+13. Metro/Expo cache clear command used
+14. Android Sokak Hayvanları screen visual checklist results
+15. Remaining broken icon count on that screen
+16. Remaining application-controlled Unicode functional icon count
+17. iOS verification
+18. Web verification
+
+The remaining broken icon count on the provided Android screen must be ZERO.
+
+Do not guess.
+
+Trace the real runtime renderer, replace the broken font/Unicode path with SVG-based rendering, clear the runtime cache, and verify the exact Android screen.

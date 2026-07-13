@@ -1,4 +1,4 @@
-import { Ionicons } from "@expo/vector-icons";
+import { Icon } from "@/components/Icon";
 import React from "react";
 import { StyleSheet, Text, View } from "react-native";
 
@@ -21,7 +21,7 @@ export function AppHeader({ topPad }: Props) {
       {/* Logo section */}
       <View style={[styles.logoSection, { paddingTop: topPad + 2 }]}>
         <View style={styles.logoRow}>
-          <Ionicons name="heart" size={16} color={PURPLE} />
+          <Icon name="heart" size={16} color={PURPLE} />
           <Text style={styles.appName}>canyoldaşı</Text>
         </View>
       </View>

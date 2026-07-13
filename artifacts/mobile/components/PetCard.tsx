@@ -1,4 +1,4 @@
-import { Ionicons } from "@expo/vector-icons";
+import { Icon } from "@/components/Icon";
 import { Image } from "expo-image";
 import { useRouter } from "expo-router";
 import React from "react";
@@ -6,7 +6,7 @@ import { Pressable, StyleSheet, Text, View } from "react-native";
 import type { Pet } from "@/contexts/PetsContext";
 import { useColors } from "@/hooks/useColors";
 
-const PET_TYPE_ICONS: Record<string, keyof typeof Ionicons.glyphMap> = {
+const PET_TYPE_ICONS: Record<string, string> = {
   Kedi: "paw",
   Köpek: "paw",
   Kuş: "leaf",
@@ -46,7 +46,7 @@ export function PetCard({ pet, isOwner }: Props) {
           <View
             style={[styles.imagePlaceholder, { backgroundColor: colors.muted }]}
           >
-            <Ionicons name={icon} size={30} color={colors.primary} />
+            <Icon name={icon} size={30} color={colors.primary} />
           </View>
         )}
       </View>
@@ -62,7 +62,7 @@ export function PetCard({ pet, isOwner }: Props) {
       </Text>
       {pet.vaccinationInfo ? (
         <View style={styles.vaccineBadge}>
-          <Ionicons name="shield-checkmark" size={10} color={colors.secondary} />
+          <Icon name="shield-checkmark" size={10} color={colors.secondary} />
           <Text style={[styles.vaccineText, { color: colors.secondary }]}>
             Aşılı
           </Text>

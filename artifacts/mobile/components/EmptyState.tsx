@@ -1,10 +1,10 @@
-import { Ionicons } from "@expo/vector-icons";
+import { Icon } from "@/components/Icon";
 import React from "react";
 import { StyleSheet, Text, View } from "react-native";
 import { useColors } from "@/hooks/useColors";
 
 interface Props {
-  icon: keyof typeof Ionicons.glyphMap;
+  icon: string;
   title: string;
   subtitle?: string;
 }
@@ -16,7 +16,7 @@ export function EmptyState({ icon, title, subtitle }: Props) {
       <View
         style={[styles.iconWrap, { backgroundColor: colors.muted }]}
       >
-        <Ionicons name={icon} size={32} color={colors.mutedForeground} />
+        <Icon name={icon} size={32} color={colors.mutedForeground} />
       </View>
       <Text style={[styles.title, { color: colors.foreground }]}>{title}</Text>
       {subtitle && (

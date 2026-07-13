@@ -1,4 +1,4 @@
-import { Ionicons } from "@expo/vector-icons";
+import { Icon } from "@/components/Icon";
 import * as Haptics from "expo-haptics";
 import { LinearGradient } from "expo-linear-gradient";
 import { useLocalSearchParams, useRouter } from "expo-router";
@@ -125,11 +125,11 @@ export default function BoostPackagesScreen() {
           onPress={() => router.back()}
           hitSlop={8}
         >
-          <Ionicons name="chevron-back" size={22} color="white" />
+          <Icon name="chevron-back" size={22} color="white" />
         </Pressable>
         <View style={styles.heroContent}>
           <View style={styles.starBadge}>
-            <Ionicons name="star" size={24} color="#FFD700" />
+            <Icon name="star" size={24} color="#FFD700" />
           </View>
           <Text style={styles.heroTitle}>İlanı Öne Çıkar</Text>
           <Text style={styles.heroSubtitle}>
@@ -165,7 +165,7 @@ export default function BoostPackagesScreen() {
                 ]}
               >
                 <View style={[styles.benefitIcon, { backgroundColor: `${colors.primary}15` }]}>
-                  <Ionicons name={b.icon as any} size={18} color={colors.primary} />
+                  <Icon name={b.icon as any} size={18} color={colors.primary} />
                 </View>
                 <Text style={[styles.benefitText, { color: colors.foreground }]}>
                   {b.text}
@@ -242,7 +242,7 @@ export default function BoostPackagesScreen() {
 
         {/* Future features note */}
         <View style={[styles.infoBox, { backgroundColor: colors.muted }]}>
-          <Ionicons name="information-circle-outline" size={16} color={colors.mutedForeground} />
+          <Icon name="information-circle-outline" size={16} color={colors.mutedForeground} />
           <Text style={[styles.infoText, { color: colors.mutedForeground }]}>
             İndirim kodu ve haftalık/aylık paketler yakında geliyor.
           </Text>
@@ -280,7 +280,7 @@ export default function BoostPackagesScreen() {
             <ActivityIndicator color="white" />
           ) : (
             <>
-              <Ionicons name="star" size={20} color="white" />
+              <Icon name="star" size={20} color="white" />
               <Text style={styles.ctaButtonText}>Öne Çıkarmayı Satın Al</Text>
             </>
           )}

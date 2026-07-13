@@ -1,4 +1,4 @@
-import { Ionicons } from "@expo/vector-icons";
+import { Icon } from "@/components/Icon";
 import * as Haptics from "expo-haptics";
 import { LinearGradient } from "expo-linear-gradient";
 import { useLocalSearchParams, useRouter } from "expo-router";
@@ -29,13 +29,13 @@ const WHITE = "#FFFFFF";
 const BORDER= "#EEE8F5";
 
 function Field({ label, icon, value, onChangeText, placeholder, keyboardType }: {
-  label: string; icon: keyof typeof Ionicons.glyphMap; value: string;
+  label: string; icon: string; value: string;
   onChangeText: (v: string) => void; placeholder?: string; keyboardType?: "default" | "phone-pad";
 }) {
   return (
     <View style={fi.wrap}>
       <View style={fi.labelRow}>
-        <Ionicons name={icon} size={14} color={P} />
+        <Icon name={icon} size={14} color={P} />
         <Text style={fi.label}>{label}</Text>
       </View>
       <TextInput
@@ -56,11 +56,11 @@ const fi = StyleSheet.create({
   input:    { backgroundColor: BG, borderRadius: 12, paddingHorizontal: 14, paddingVertical: 12, fontSize: 15, fontFamily: "Inter_400Regular", color: DARK, borderWidth: 1.5, borderColor: `${P}22` },
 });
 
-function SectionTitle({ title, icon }: { title: string; icon: keyof typeof Ionicons.glyphMap }) {
+function SectionTitle({ title, icon }: { title: string; icon: string }) {
   return (
     <View style={{ flexDirection: "row", alignItems: "center", gap: 8, marginTop: 8 }}>
       <View style={{ width: 28, height: 28, borderRadius: 14, backgroundColor: `${P}18`, alignItems: "center", justifyContent: "center" }}>
-        <Ionicons name={icon} size={14} color={P} />
+        <Icon name={icon} size={14} color={P} />
       </View>
       <Text style={{ fontSize: 14, fontFamily: "Inter_700Bold", color: P }}>{title}</Text>
     </View>
@@ -128,7 +128,7 @@ export default function IdentificationScreen() {
     <KeyboardAvoidingView style={{ flex: 1, backgroundColor: BG }} behavior={Platform.OS === "ios" ? "padding" : undefined}>
       <View style={[st.header, { paddingTop: insets.top + 12 }]}>
         <Pressable style={st.backBtn} onPress={() => router.back()} hitSlop={8}>
-          <Ionicons name="chevron-back" size={22} color={DARK} />
+          <Icon name="chevron-back" size={22} color={DARK} />
         </Pressable>
         <View>
           <Text style={st.headerTitle}>Kimlik Bilgileri</Text>
@@ -164,7 +164,7 @@ export default function IdentificationScreen() {
             disabled={saving}
           >
             <LinearGradient colors={[P2, P]} style={st.saveGrad}>
-              <Ionicons name={saving ? "hourglass-outline" : "checkmark-circle-outline"} size={20} color={WHITE} />
+              <Icon name={saving ? "hourglass-outline" : "checkmark-circle-outline"} size={20} color={WHITE} />
               <Text style={st.saveTxt}>{saving ? "Kaydediliyor..." : "Bilgileri Kaydet"}</Text>
             </LinearGradient>
           </Pressable>

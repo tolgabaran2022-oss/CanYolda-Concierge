@@ -1,4 +1,4 @@
-import { Ionicons } from "@expo/vector-icons";
+import { Icon } from "@/components/Icon";
 import * as Haptics from "expo-haptics";
 import * as ImagePicker from "expo-image-picker";
 import { Image } from "expo-image";
@@ -76,7 +76,7 @@ const fi = StyleSheet.create({
 type ManageGridItem = {
   key: string;
   label: string;
-  icon: keyof typeof Ionicons.glyphMap;
+  icon: string;
   color: string;
   route: string;
 };
@@ -167,7 +167,7 @@ export default function PetDetailScreen() {
       {/* Header */}
       <View style={[st.header, { paddingTop: insets.top + 12 }]}>
         <Pressable style={st.backBtn} onPress={() => router.back()} hitSlop={8}>
-          <Ionicons name="chevron-back" size={22} color={DARK} />
+          <Icon name="chevron-back" size={22} color={DARK} />
         </Pressable>
         <Text style={st.headerTitle} numberOfLines={1}>{pet.name}</Text>
         <Pressable
@@ -179,7 +179,7 @@ export default function PetDetailScreen() {
           }}
         >
           <LinearGradient colors={[P2, P]} style={st.editGrad}>
-            <Ionicons name={editing ? "checkmark" : "pencil"} size={16} color={WHITE} />
+            <Icon name={editing ? "checkmark" : "pencil"} size={16} color={WHITE} />
           </LinearGradient>
         </Pressable>
       </View>
@@ -195,13 +195,13 @@ export default function PetDetailScreen() {
             <Image source={{ uri: image ?? pet.image }} style={st.avatar} contentFit="cover" />
           ) : (
             <LinearGradient colors={[`${P2}40`, `${P}20`]} style={st.avatarPlaceholder}>
-              <Ionicons name="paw" size={52} color={P} />
+              <Icon name="paw" size={52} color={P} />
             </LinearGradient>
           )}
           {editing && (
             <View style={st.cameraBtn}>
               <LinearGradient colors={[P2, P]} style={st.cameraGrad}>
-                <Ionicons name="camera" size={14} color={WHITE} />
+                <Icon name="camera" size={14} color={WHITE} />
               </LinearGradient>
             </View>
           )}
@@ -221,7 +221,7 @@ export default function PetDetailScreen() {
                       style={[st.typePill, type === t && st.typePillActive]}
                       onPress={() => setType(t)}
                     >
-                      <Ionicons name="paw" size={16} color={type === t ? WHITE : P} />
+                      <Icon name="paw" size={16} color={type === t ? WHITE : P} />
                       <Text style={[st.typeLabel, type === t && st.typeLabelActive]}>{t}</Text>
                     </Pressable>
                   ))}
@@ -284,7 +284,7 @@ export default function PetDetailScreen() {
                   }}
                 >
                   <View style={[st.gridIcon, { backgroundColor: `${item.color}18` }]}>
-                    <Ionicons name={item.icon} size={26} color={item.color} />
+                    <Icon name={item.icon} size={26} color={item.color} />
                   </View>
                   <Text style={st.gridLabel}>{item.label}</Text>
                 </Pressable>

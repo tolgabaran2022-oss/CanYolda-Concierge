@@ -1,4 +1,4 @@
-import { Ionicons } from "@expo/vector-icons";
+import { Icon } from "@/components/Icon";
 import * as Haptics from "expo-haptics";
 import * as ImagePicker from "expo-image-picker";
 import { Image } from "expo-image";
@@ -217,7 +217,7 @@ function CreatePostModal({
                 <Image source={{ uri: image }} style={M.imagePreview} contentFit="cover" />
               ) : (
                 <LinearGradient colors={["rgba(164,140,220,0.10)", "rgba(124,92,255,0.06)"]} style={M.imagePlaceholder}>
-                  <View style={M.cameraCircle}><Ionicons name="camera-outline" size={30} color={T.purple} /></View>
+                  <View style={M.cameraCircle}><Icon name="camera-outline" size={30} color={T.purple} /></View>
                   <Text style={[M.imageHint, { color: T.purple }]}>Fotoğraf seç</Text>
                 </LinearGradient>
               )}
@@ -241,7 +241,7 @@ function CreatePostModal({
             <View style={M.field}>
               <Text style={[M.label, { color: T.text }]}>Konum</Text>
               <View style={[M.locationRow, { backgroundColor: T.input, borderColor: T.inputBorder }]}>
-                <Ionicons name="location-outline" size={18} color={T.purple} />
+                <Icon name="location-outline" size={18} color={T.purple} />
                 <TextInput
                   style={[M.locationInput, { color: T.text }]}
                   value={loc}
@@ -298,20 +298,20 @@ function FeedHeader({
   return (
     <View style={[H.root, { backgroundColor: T.bg }]}>
       <View style={H.left}>
-        <Ionicons name="heart" size={15} color={T.purple} />
+        <Icon name="heart" size={15} color={T.purple} />
         <Text style={[H.logo, { color: T.text }]}>canyoldaşı</Text>
       </View>
       <View style={H.right}>
         <Pressable onPress={() => { Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light); onSearch(); }} hitSlop={10}>
-          <Ionicons name="search-outline" size={23} color={T.purple} />
+          <Icon name="search-outline" size={23} color={T.purple} />
         </Pressable>
         <Pressable onPress={() => { Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light); onNewPost(); }} hitSlop={10} style={H.newPostBtn}>
           <LinearGradient colors={["#9478D8", "#5B3FD6"]} start={{ x: 0, y: 0 }} end={{ x: 1, y: 1 }} style={H.newPostGradient}>
-            <Ionicons name="add" size={18} color="#FFF" />
+            <Icon name="add" size={18} color="#FFF" />
           </LinearGradient>
         </Pressable>
         <Pressable onPress={onNotify} style={H.bellWrap} hitSlop={10}>
-          <Ionicons name="notifications-outline" size={24} color={T.purple} />
+          <Icon name="notifications-outline" size={24} color={T.purple} />
           {unreadCount > 0 && <View style={[H.badge, { borderColor: T.bg }]} />}
         </Pressable>
         <Pressable onPress={onAvatarPress} hitSlop={6}>
@@ -670,7 +670,7 @@ export default function FeedScreen() {
     if (hasError) {
       return (
         <View style={[F.centeredState, { backgroundColor: T.bg }]}>
-          <Ionicons name="cloud-offline-outline" size={48} color={T.textMuted} />
+          <Icon name="cloud-offline-outline" size={48} color={T.textMuted} />
           <Text style={[F.emptyTitle, { color: T.text }]}>Akış yüklenemedi</Text>
           <Text style={[F.emptySubtitle, { color: T.textMuted }]}>Lütfen tekrar deneyin.</Text>
           <Pressable
@@ -695,7 +695,7 @@ export default function FeedScreen() {
       if (followingCount === 0) {
         return (
           <View style={[F.centeredState, { backgroundColor: T.bg }]}>
-            <Ionicons name="people-outline" size={52} color="#C4B8E8" />
+            <Icon name="people-outline" size={52} color="#C4B8E8" />
             <Text style={[F.emptyTitle, { color: T.text }]}>Henüz kimseyi takip etmiyorsun</Text>
             <Text style={[F.emptySubtitle, { color: T.textMuted }]}>Keşfet'ten yeni dostlar bulabilirsin.</Text>
             <Pressable style={F.retryBtn} onPress={() => handleTabChange("discover")}>
@@ -707,7 +707,7 @@ export default function FeedScreen() {
       /* Follows people but no posts yet */
       return (
         <View style={[F.centeredState, { backgroundColor: T.bg }]}>
-          <Ionicons name="newspaper-outline" size={52} color="#C4B8E8" />
+          <Icon name="newspaper-outline" size={52} color="#C4B8E8" />
           <Text style={[F.emptyTitle, { color: T.text }]}>Henüz yeni gönderi yok</Text>
           <Text style={[F.emptySubtitle, { color: T.textMuted }]}>
             Takip ettiğin kişiler paylaşım yaptığında burada göreceksin.
@@ -717,7 +717,7 @@ export default function FeedScreen() {
     }
     return (
       <View style={[F.centeredState, { backgroundColor: T.bg }]}>
-        <Ionicons name="camera-outline" size={52} color="#C4B8E8" />
+        <Icon name="camera-outline" size={52} color="#C4B8E8" />
         <Text style={[F.emptyTitle, { color: T.text }]}>Henüz gönderi yok</Text>
         <Text style={[F.emptySubtitle, { color: T.textMuted }]}>İlk gönderiyi sen paylaş!</Text>
       </View>

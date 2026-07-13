@@ -1,4 +1,4 @@
-import { Ionicons } from "@expo/vector-icons";
+import { Icon } from "@/components/Icon";
 import * as Haptics from "expo-haptics";
 import { LinearGradient } from "expo-linear-gradient";
 import { useRouter } from "expo-router";
@@ -116,7 +116,7 @@ export default function AccountScreen() {
       >
         <View style={S.headerInner}>
           <View style={[S.avatarCircle, { backgroundColor: T.purple }]}>
-            <Ionicons name="person" size={28} color="#FFF" />
+            <Icon name="person" size={28} color="#FFF" />
           </View>
           <View style={{ flex: 1 }}>
             <Text style={[S.headerName, { color: T.purpleDark }]}>{user.name}</Text>
@@ -152,7 +152,7 @@ export default function AccountScreen() {
                       S.iconBadge,
                       { backgroundColor: active ? T.purpleFaint : T.purpleFaint },
                     ]}>
-                      <Ionicons
+                      <Icon
                         name={opt.icon}
                         size={18}
                         color={active ? T.purple : T.textMuted}
@@ -167,7 +167,7 @@ export default function AccountScreen() {
                       { borderColor: active ? T.purple : T.border },
                       active && { backgroundColor: T.purple },
                     ]}>
-                      {active && <Ionicons name="checkmark" size={11} color="#FFF" />}
+                      {active && <Icon name="checkmark" size={11} color="#FFF" />}
                     </View>
                   </Pressable>
                 </React.Fragment>
@@ -185,10 +185,10 @@ export default function AccountScreen() {
               onPress={openPwModal}
             >
               <View style={[S.iconBadge, { backgroundColor: T.purpleFaint }]}>
-                <Ionicons name="lock-closed-outline" size={18} color={T.purple} />
+                <Icon name="lock-closed-outline" size={18} color={T.purple} />
               </View>
               <Text style={[S.rowLabel, { flex: 1, color: T.text }]}>Şifre Değiştir</Text>
-              <Ionicons name="chevron-forward" size={16} color={T.textFaint} />
+              <Icon name="chevron-forward" size={16} color={T.textFaint} />
             </Pressable>
 
             <View style={[S.divider, { backgroundColor: T.divider }]} />
@@ -198,10 +198,10 @@ export default function AccountScreen() {
               onPress={() => router.push("/(auth)/forgot-password" as any)}
             >
               <View style={[S.iconBadge, { backgroundColor: T.purpleFaint }]}>
-                <Ionicons name="key-outline" size={18} color={T.purple} />
+                <Icon name="key-outline" size={18} color={T.purple} />
               </View>
               <Text style={[S.rowLabel, { flex: 1, color: T.text }]}>Şifremi Unuttum</Text>
-              <Ionicons name="chevron-forward" size={16} color={T.textFaint} />
+              <Icon name="chevron-forward" size={16} color={T.textFaint} />
             </Pressable>
           </View>
         </View>
@@ -215,10 +215,10 @@ export default function AccountScreen() {
               onPress={handleLogout}
             >
               <View style={[S.iconBadge, S.iconBadgeDanger]}>
-                <Ionicons name="log-out-outline" size={18} color="#D94040" />
+                <Icon name="log-out-outline" size={18} color="#D94040" />
               </View>
               <Text style={[S.rowLabel, { flex: 1, color: "#D94040" }]}>Çıkış Yap</Text>
-              <Ionicons name="chevron-forward" size={16} color="#D94040" />
+              <Icon name="chevron-forward" size={16} color="#D94040" />
             </Pressable>
           </View>
         </View>
@@ -255,7 +255,7 @@ export default function AccountScreen() {
               <View key={label} style={S.modalInputGroup}>
                 <Text style={[S.modalLabel, { color: T.textMuted }]}>{label}</Text>
                 <View style={[S.modalInputWrap, { backgroundColor: T.input, borderColor: T.inputBorder }]}>
-                  <Ionicons name={icon} size={18} color={T.purple} />
+                  <Icon name={icon} size={18} color={T.purple} />
                   <TextInput
                     style={[S.modalInput, { color: T.text }]}
                     value={val}
@@ -266,7 +266,7 @@ export default function AccountScreen() {
                     autoCapitalize="none"
                   />
                   <Pressable onPress={toggleShow}>
-                    <Ionicons name={show ? "eye-off-outline" : "eye-outline"} size={18} color={T.purple} />
+                    <Icon name={show ? "eye-off-outline" : "eye-outline"} size={18} color={T.purple} />
                   </Pressable>
                 </View>
               </View>

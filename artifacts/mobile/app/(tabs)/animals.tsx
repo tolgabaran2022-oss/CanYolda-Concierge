@@ -1,4 +1,4 @@
-import { Ionicons } from "@expo/vector-icons";
+import { Icon } from "@/components/Icon";
 import * as Haptics from "expo-haptics";
 import { LinearGradient } from "expo-linear-gradient";
 import { useRouter } from "expo-router";
@@ -27,7 +27,7 @@ const BG          = "#F8F9FC";
 
 type FilterKey = "all" | "injured" | "hungry" | "healthy";
 
-const FILTERS: { key: FilterKey; label: string; icon: keyof typeof Ionicons.glyphMap; accent: string }[] = [
+const FILTERS: { key: FilterKey; label: string; icon: string; accent: string }[] = [
   { key: "all",     label: "Hepsi",          icon: "paw-outline",              accent: PURPLE     },
   { key: "injured", label: "Acil",            icon: "medkit-outline",           accent: "#DC2626"  },
   { key: "hungry",  label: "Yardım Bekleyen", icon: "warning-outline",          accent: "#D97706"  },
@@ -84,7 +84,7 @@ function FilterChip({
             end={{ x: 1, y: 1 }}
             style={F.chipActive}
           >
-            <Ionicons name={f.icon} size={14} color="#FFF" />
+            <Icon name={f.icon} size={14} color="#FFF" />
             <Text style={F.chipLabelActive}>{f.label}</Text>
             <View style={F.chipBadge}>
               <Text style={F.chipBadgeText}>{count}</Text>
@@ -92,7 +92,7 @@ function FilterChip({
           </LinearGradient>
         ) : (
           <View style={[F.chipInactive, { backgroundColor: T.card, borderColor: T.border }]}>
-            <Ionicons name={f.icon} size={14} color={f.accent} />
+            <Icon name={f.icon} size={14} color={f.accent} />
             <Text style={[F.chipLabelInactive, { color: T.text }]}>{f.label}</Text>
             <View style={[F.chipBadgeInactive, { backgroundColor: `${f.accent}18` }]}>
               <Text style={[F.chipBadgeTextInactive, { color: f.accent }]}>{count}</Text>
@@ -145,7 +145,7 @@ export default function AnimalsScreen() {
         <View style={H.topRow}>
           <View style={H.logoRow}>
             <View style={H.logoPill}>
-              <Ionicons name="paw" size={14} color={PURPLE} />
+              <Icon name="paw" size={14} color={PURPLE} />
             </View>
             <Text style={[H.logoText, { color: T.text }]}>canyoldaşı</Text>
           </View>
@@ -158,7 +158,7 @@ export default function AnimalsScreen() {
                 end={{ x: 1, y: 1 }}
                 style={H.addBtn}
               >
-                <Ionicons name="add" size={15} color="#FFF" />
+                <Icon name="add" size={15} color="#FFF" />
                 <Text style={H.addBtnText}>Durum Bildir</Text>
               </LinearGradient>
             </Pressable>

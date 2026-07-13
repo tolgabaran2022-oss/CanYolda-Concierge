@@ -1,5 +1,11 @@
 import { Tabs, usePathname, useRouter } from "expo-router";
-import { Feather, Ionicons } from "@expo/vector-icons";
+import {
+  Map,
+  House,
+  PawPrint,
+  Heart,
+  User,
+} from "lucide-react-native";
 import React from "react";
 import {
   Platform,
@@ -12,23 +18,23 @@ import {
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { useTheme } from "@/hooks/useTheme";
 
-let SymbolView: any = null;
-if (Platform.OS === "ios") {
-  try { SymbolView = require("expo-symbols").SymbolView; } catch { SymbolView = null; }
-}
-
 const PURPLE     = "#7B5EA7";
 const TAB_H      = 68;
 const BP_DESKTOP = 1024;
 
-type TabItem = { name: string; path: string; title: string; sfSymbol: string; featherIcon: string };
+type TabItem = {
+  name: string;
+  path: string;
+  title: string;
+  Icon: React.ComponentType<{ size?: number; color?: string; strokeWidth?: number }>;
+};
 
 const TABS: TabItem[] = [
-  { name: "index",   path: "/",        title: "Harita",    sfSymbol: "map",           featherIcon: "map-pin" },
-  { name: "feed",    path: "/feed",    title: "Akış",      sfSymbol: "house",         featherIcon: "home"    },
-  { name: "animals", path: "/animals", title: "Hayvanlar", sfSymbol: "pawprint",      featherIcon: "list"    },
-  { name: "pets",    path: "/pets",    title: "Evcilim",   sfSymbol: "heart",         featherIcon: "heart"   },
-  { name: "account", path: "/account", title: "Hesap",     sfSymbol: "person.circle", featherIcon: "user"    },
+  { name: "index",   path: "/",        title: "Harita",    Icon: Map      },
+  { name: "feed",    path: "/feed",    title: "Akış",      Icon: House    },
+  { name: "animals", path: "/animals", title: "Hayvanlar", Icon: PawPrint },
+  { name: "pets",    path: "/pets",    title: "Evcilim",   Icon: Heart    },
+  { name: "account", path: "/account", title: "Hesap",     Icon: User     },
 ];
 
 /* ── Desktop sidebar (web ≥ 1024 px) ────────────────────────── */
@@ -41,7 +47,7 @@ function DesktopSidebar() {
   return (
     <View style={[DS.root, { backgroundColor: T.card, borderRightColor: T.border }]}>
       <View style={DS.logoRow}>
-        <Ionicons name="heart" size={15} color={T.purple} />
+        <Heart size={15} color={T.purple} strokeWidth={2} />
         <Text style={[DS.logoText, { color: T.purpleDark }]}>canyoldaşı</Text>
       </View>
 
@@ -60,7 +66,7 @@ function DesktopSidebar() {
             accessibilityLabel={tab.title}
           >
             <View style={[DS.iconWrap, active && DS.iconWrapActive]}>
-              <Feather name={tab.featherIcon as any} size={20} color={color} />
+              <tab.Icon size={20} color={color} strokeWidth={2} />
             </View>
             <Text style={[DS.label, { color }]}>{tab.title}</Text>
           </Pressable>
@@ -75,7 +81,6 @@ function CustomTabBar() {
   const { width } = useWindowDimensions();
   const insets    = useSafeAreaInsets();
   const isWeb     = Platform.OS === "web";
-  const isIOS     = Platform.OS === "ios";
   const pathname  = usePathname();
   const router    = useRouter();
   const T         = useTheme();
@@ -107,11 +112,7 @@ function CustomTabBar() {
             >
               {active && <View style={[styles.activeDot, { backgroundColor: T.purple }]} />}
               <View style={[styles.iconWrap, active && styles.iconWrapActive]}>
-                {isIOS && SymbolView ? (
-                  <SymbolView name={tab.sfSymbol as any} tintColor={color} size={20} />
-                ) : (
-                  <Feather name={tab.featherIcon as any} size={20} color={color} />
-                )}
+                <tab.Icon size={20} color={color} strokeWidth={2} />
               </View>
               <Text style={[styles.label, { color }]} numberOfLines={1}>
                 {tab.title}
@@ -190,13 +191,10 @@ const DS = StyleSheet.create({
   },
   logoRow:  { flexDirection: "row", alignItems: "center", gap: 7, paddingHorizontal: 10, marginBottom: 20 },
   logoText: { fontSize: 19, fontFamily: "Inter_700Bold", color: "#3D2080", letterSpacing: -0.5 },
-
   item:       { flexDirection: "row", alignItems: "center", gap: 12, borderRadius: 12, paddingHorizontal: 10, paddingVertical: 11, marginBottom: 2 },
   itemActive: { backgroundColor: `${PURPLE}10` },
-
   iconWrap:       { width: 32, height: 32, borderRadius: 8, alignItems: "center", justifyContent: "center" },
   iconWrapActive: { backgroundColor: `${PURPLE}15` },
-
   label: { fontSize: 14.5, fontFamily: "Inter_600SemiBold" },
 });
 

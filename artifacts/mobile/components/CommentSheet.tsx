@@ -1,4 +1,4 @@
-import { Ionicons } from "@expo/vector-icons";
+import { Icon } from "@/components/Icon";
 import * as Haptics from "expo-haptics";
 import React, { useCallback, useEffect, useRef, useState } from "react";
 import {
@@ -138,7 +138,7 @@ export function CommentSheet({ visible, postId, postOwnerId, onClose, onCountCha
           <View style={S.header}>
             <Text style={[S.headerTitle, { color: T.text }]}>Yorumlar</Text>
             <Pressable onPress={onClose} hitSlop={12}>
-              <Ionicons name="close" size={22} color={T.text} />
+              <Icon name="close" size={22} color={T.text} />
             </Pressable>
           </View>
 
@@ -165,7 +165,7 @@ export function CommentSheet({ visible, postId, postOwnerId, onClose, onCountCha
                     onLongPress={() => canDelete && handleDelete(c)}
                   >
                     <View style={S.commentAvatar}>
-                      <Ionicons name="person-circle" size={34} color={T.purple} />
+                      <Icon name="person-circle" size={34} color={T.purple} />
                     </View>
                     <View style={{ flex: 1 }}>
                       <Text style={[S.commentText, { color: T.text }]}>
@@ -176,7 +176,7 @@ export function CommentSheet({ visible, postId, postOwnerId, onClose, onCountCha
                     </View>
                     {canDelete && (
                       <Pressable hitSlop={10} onPress={() => handleDelete(c)}>
-                        <Ionicons name="trash-outline" size={14} color={T.textFaint} />
+                        <Icon name="trash-outline" size={14} color={T.textFaint} />
                       </Pressable>
                     )}
                   </Pressable>
@@ -188,7 +188,7 @@ export function CommentSheet({ visible, postId, postOwnerId, onClose, onCountCha
           {/* Input */}
           <View style={[S.inputBar, { borderTopColor: T.divider }]}>
             <View style={S.avatarSmall}>
-              <Ionicons name="person-circle" size={32} color={T.purple} />
+              <Icon name="person-circle" size={32} color={T.purple} />
             </View>
             <TextInput
               ref={inputRef}
@@ -209,7 +209,7 @@ export function CommentSheet({ visible, postId, postOwnerId, onClose, onCountCha
             >
               {submitting
                 ? <ActivityIndicator size="small" color="#FFF" />
-                : <Ionicons name="send" size={15} color="#FFF" />}
+                : <Icon name="send" size={15} color="#FFF" />}
             </Pressable>
           </View>
         </View>

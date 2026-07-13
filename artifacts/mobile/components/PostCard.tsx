@@ -1,4 +1,4 @@
-import { Ionicons, Feather } from "@expo/vector-icons";
+import { Icon } from "@/components/Icon";
 import * as Haptics from "expo-haptics";
 import { Image } from "expo-image";
 import React, { useRef, useState } from "react";
@@ -212,7 +212,7 @@ export function PostCard({
           </View>
         </Pressable>
         <Pressable hitSlop={12} onPress={handleMorePress}>
-          <Feather name="more-horizontal" size={20} color={T.text} />
+          <Icon name="more-horizontal" size={20} color={T.text} />
         </Pressable>
       </View>
 
@@ -239,7 +239,7 @@ export function PostCard({
         <View style={S.leftActions}>
           <Pressable onPress={handleLike} style={S.actionBtn} hitSlop={8}>
             <Animated.View style={{ transform: [{ scale: heartScale }] }}>
-              <Ionicons
+              <Icon
                 name={post.liked ? "heart" : "heart-outline"}
                 size={24}
                 color={post.liked ? "#FF3B6B" : T.text}
@@ -254,14 +254,14 @@ export function PostCard({
             }}
             style={S.actionBtn} hitSlop={8}
           >
-            <Ionicons name="chatbubble-outline" size={22} color={T.text} />
+            <Icon name="chatbubble-outline" size={22} color={T.text} />
           </Pressable>
           <Pressable onPress={handleShare} style={S.actionBtn} hitSlop={8}>
-            <Feather name="send" size={21} color={T.text} />
+            <Icon name="send" size={21} color={T.text} />
           </Pressable>
         </View>
         <Pressable onPress={handleBookmark} hitSlop={8}>
-          <Ionicons
+          <Icon
             name={post.bookmarked ? "bookmark" : "bookmark-outline"}
             size={22}
             color={post.bookmarked ? T.purple : T.text}
@@ -319,7 +319,7 @@ export function PostCard({
               onPress={submitComment}
               style={({ pressed }) => [S.sendBtn, { opacity: pressed ? 0.7 : 1 }]}
             >
-              <Ionicons name="send" size={17} color={T.purple} />
+              <Icon name="send" size={17} color={T.purple} />
             </Pressable>
           </View>
         </View>

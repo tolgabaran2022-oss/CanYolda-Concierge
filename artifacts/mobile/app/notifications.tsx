@@ -1,4 +1,4 @@
-import { Ionicons } from "@expo/vector-icons";
+import { Icon } from "@/components/Icon";
 import * as Haptics from "expo-haptics";
 import { Image } from "expo-image";
 import { useRouter } from "expo-router";
@@ -28,7 +28,7 @@ const PURPLE_DARK = "#3D2070";
 const BG          = "#F9F8FF";
 const CAT_DEFAULT = "https://loremflickr.com/300/300/cat?lock=500";
 
-const TYPE_ICONS: Record<string, { name: React.ComponentProps<typeof Ionicons>["name"]; color: string }> = {
+const TYPE_ICONS: Record<string, { name: string; color: string }> = {
   follow:     { name: "person-add",   color: PURPLE },
   like:       { name: "heart",        color: "#FF3B6B" },
   comment:    { name: "chatbubble",   color: "#5B9BD5" },
@@ -96,7 +96,7 @@ export default function NotificationsScreen() {
       {/* Header */}
       <View style={[S.header, { backgroundColor: T.card, borderBottomColor: T.border }]}>
         <Pressable onPress={() => router.back()} hitSlop={12}>
-          <Ionicons name="chevron-back" size={24} color={T.text} />
+          <Icon name="chevron-back" size={24} color={T.text} />
         </Pressable>
         <Text style={[S.headerTitle, { color: T.text }]}>Bildirimler</Text>
         {unreadCount > 0 ? (
@@ -128,7 +128,7 @@ export default function NotificationsScreen() {
           ]}
           ListEmptyComponent={
             <View style={S.empty}>
-              <Ionicons name="notifications-off-outline" size={64} color="#C5BAE8" />
+              <Icon name="notifications-off-outline" size={64} color="#C5BAE8" />
               <Text style={S.emptyTitle}>Henüz bildirim yok</Text>
               <Text style={S.emptySub}>Takip edilince veya beğeni aldığında buraya gelir</Text>
             </View>
@@ -148,7 +148,7 @@ export default function NotificationsScreen() {
                     contentFit="cover"
                   />
                   <View style={[S.iconBadge, { backgroundColor: icon.color }]}>
-                    <Ionicons name={icon.name} size={10} color="#FFF" />
+                    <Icon name={icon.name} size={10} color="#FFF" />
                   </View>
                 </View>
 

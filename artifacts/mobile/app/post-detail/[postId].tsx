@@ -1,4 +1,4 @@
-import { Feather, Ionicons } from "@expo/vector-icons";
+import { Icon } from "@/components/Icon";
 import * as Haptics from "expo-haptics";
 import { Image } from "expo-image";
 import { LinearGradient } from "expo-linear-gradient";
@@ -161,7 +161,7 @@ export default function PostDetailScreen() {
       <View style={[S.root, { paddingTop: topPad }]}>
         <View style={S.header}>
           <Pressable onPress={() => router.back()} hitSlop={12}>
-            <Ionicons name="chevron-back" size={24} color={PURPLE_DARK} />
+            <Icon name="chevron-back" size={24} color={PURPLE_DARK} />
           </Pressable>
           <Text style={S.headerTitle}>Gönderi</Text>
           <View style={{ width: 32 }} />
@@ -180,7 +180,7 @@ export default function PostDetailScreen() {
       {/* Header */}
       <View style={S.header}>
         <Pressable onPress={() => router.back()} hitSlop={12}>
-          <Ionicons name="chevron-back" size={24} color={PURPLE_DARK} />
+          <Icon name="chevron-back" size={24} color={PURPLE_DARK} />
         </Pressable>
         <Text style={S.headerTitle}>Gönderi</Text>
         <View style={{ width: 32 }} />
@@ -229,7 +229,7 @@ export default function PostDetailScreen() {
               <View style={S.leftActions}>
                 <Pressable onPress={handleLike} hitSlop={8} style={S.actionBtn}>
                   <Animated.View style={{ transform: [{ scale: heartScale }] }}>
-                    <Ionicons
+                    <Icon
                       name={post.liked ? "heart" : "heart-outline"}
                       size={26}
                       color={post.liked ? "#FF3B6B" : PURPLE_DARK}
@@ -240,14 +240,14 @@ export default function PostDetailScreen() {
                   hitSlop={8} style={S.actionBtn}
                   onPress={() => inputRef.current?.focus()}
                 >
-                  <Ionicons name="chatbubble-outline" size={24} color={PURPLE_DARK} />
+                  <Icon name="chatbubble-outline" size={24} color={PURPLE_DARK} />
                 </Pressable>
                 <Pressable hitSlop={8} style={S.actionBtn}>
-                  <Feather name="send" size={22} color={PURPLE_DARK} />
+                  <Icon name="send" size={22} color={PURPLE_DARK} />
                 </Pressable>
               </View>
               <Pressable onPress={handleBookmark} hitSlop={8}>
-                <Ionicons
+                <Icon
                   name={post.bookmarked ? "bookmark" : "bookmark-outline"}
                   size={24}
                   color={post.bookmarked ? PURPLE : PURPLE_DARK}
@@ -282,7 +282,7 @@ export default function PostDetailScreen() {
               onLongPress={() => canDelete && handleDeleteComment(c)}
             >
               <View style={S.commentAvatar}>
-                <Ionicons name="person-circle" size={32} color={PURPLE} />
+                <Icon name="person-circle" size={32} color={PURPLE} />
               </View>
               <View style={{ flex: 1 }}>
                 <Text style={S.commentText}>
@@ -293,7 +293,7 @@ export default function PostDetailScreen() {
               </View>
               {canDelete && (
                 <Pressable hitSlop={8} onPress={() => handleDeleteComment(c)}>
-                  <Ionicons name="trash-outline" size={14} color="#CCBBDD" />
+                  <Icon name="trash-outline" size={14} color="#CCBBDD" />
                 </Pressable>
               )}
             </Pressable>
@@ -325,7 +325,7 @@ export default function PostDetailScreen() {
         >
           {submitting
             ? <ActivityIndicator size="small" color="#FFF" />
-            : <Ionicons name="send" size={16} color="#FFF" />}
+            : <Icon name="send" size={16} color="#FFF" />}
         </Pressable>
       </View>
     </KeyboardAvoidingView>

@@ -1,4 +1,4 @@
-import { Ionicons } from "@expo/vector-icons";
+import { Icon } from "@/components/Icon";
 import * as Haptics from "expo-haptics";
 import * as ImagePicker from "expo-image-picker";
 import { Image } from "expo-image";
@@ -94,7 +94,7 @@ function FieldWrap({ label, required, error, children }: FieldProps) {
       {children}
       {error ? (
         <View style={S.errorRow}>
-          <Ionicons name="alert-circle" size={13} color={C.error} />
+          <Icon name="alert-circle" size={13} color={C.error} />
           <Text style={S.errorTxt}>{error}</Text>
         </View>
       ) : null}
@@ -127,13 +127,13 @@ function PickerModal({ visible, title, items, selected, onSelect, onClose, searc
           <View style={{ width: 36 }} />
           <Text style={[PM.title, { color: T.text }]}>{title}</Text>
           <Pressable onPress={onClose} hitSlop={12}>
-            <Ionicons name="close" size={24} color={T.purple} />
+            <Icon name="close" size={24} color={T.purple} />
           </Pressable>
         </View>
 
         {searchable && (
           <View style={[PM.searchWrap, { backgroundColor: T.input, borderColor: T.border }]}>
-            <Ionicons name="search-outline" size={18} color={T.textMuted} style={{ marginRight: 8 }} />
+            <Icon name="search-outline" size={18} color={T.textMuted} style={{ marginRight: 8 }} />
             <TextInput
               style={[PM.searchInput, { color: T.text }]}
               placeholder="Ara..."
@@ -166,7 +166,7 @@ function PickerModal({ visible, title, items, selected, onSelect, onClose, searc
               >
                 <Text style={[PM.rowTxt, { color: active ? C.purple : T.text },
                   active && { fontFamily: "Inter_700Bold" }]}>{item.label}</Text>
-                {active && <Ionicons name="checkmark" size={18} color={C.purple} />}
+                {active && <Icon name="checkmark" size={18} color={C.purple} />}
               </Pressable>
             );
           }}
@@ -293,7 +293,7 @@ export default function AddAdoptionScreen() {
         {/* Header */}
         <View style={[S.header, { paddingTop: topPad + 10, backgroundColor: T.bg }]}>
           <Pressable style={S.backBtn} onPress={() => router.back()} hitSlop={8}>
-            <Ionicons name="chevron-back" size={22} color={T.purple} />
+            <Icon name="chevron-back" size={22} color={T.purple} />
           </Pressable>
           <Text style={[S.headerTitle, { color: T.text }]}>Sahiplendirme İlanı</Text>
           {/* Spacer to centre title */}
@@ -322,7 +322,7 @@ export default function AddAdoptionScreen() {
             {/* Error banner */}
             {errorCount > 0 && (
               <View style={S.errorBanner}>
-                <Ionicons name="alert-circle" size={18} color={C.error} />
+                <Icon name="alert-circle" size={18} color={C.error} />
                 <Text style={S.errorBannerTxt}>
                   {errorCount} alan eksik veya hatalı. Lütfen kontrol edin.
                 </Text>
@@ -342,7 +342,7 @@ export default function AddAdoptionScreen() {
                     <View style={[S.photoWrap, errors.photo ? S.photoWrapError : {}]}>
                       <Image source={{ uri: photo }} style={S.photo} contentFit="cover" />
                       <View style={S.photoEditBadge}>
-                        <Ionicons name="camera" size={13} color="#FFF" />
+                        <Icon name="camera" size={13} color="#FFF" />
                         <Text style={S.photoEditText}>Değiştir</Text>
                       </View>
                     </View>
@@ -353,7 +353,7 @@ export default function AddAdoptionScreen() {
                       errors.photo ? S.photoBoxError : {},
                     ]}>
                       <View style={[S.cameraRing, { backgroundColor: T.purple + "18" }]}>
-                        <Ionicons name="camera-outline" size={28} color={C.purple} />
+                        <Icon name="camera-outline" size={28} color={C.purple} />
                       </View>
                       <Text style={[S.photoLabel, { color: C.purple }]}>Fotoğraf Ekle</Text>
                       <Text style={[S.photoSub, { color: T.textMuted }]}>JPG, PNG · Maks 10 MB</Text>
@@ -469,7 +469,7 @@ export default function AddAdoptionScreen() {
                       setShowProvince(true);
                     }}
                   >
-                    <Ionicons
+                    <Icon
                       name="location-outline" size={18}
                       color={province ? C.purple : T.placeholder}
                       style={{ marginRight: 8 }}
@@ -477,7 +477,7 @@ export default function AddAdoptionScreen() {
                     <Text style={[S.selectTxt, { color: province ? T.text : T.placeholder }]}>
                       {province || "İl seçin"}
                     </Text>
-                    <Ionicons name="chevron-down" size={18} color={T.textMuted} />
+                    <Icon name="chevron-down" size={18} color={T.textMuted} />
                   </Pressable>
 
                   <Pressable
@@ -493,7 +493,7 @@ export default function AddAdoptionScreen() {
                       setShowDistrict(true);
                     }}
                   >
-                    <Ionicons
+                    <Icon
                       name="navigate-outline" size={18}
                       color={district ? C.purple : T.placeholder}
                       style={{ marginRight: 8 }}
@@ -501,7 +501,7 @@ export default function AddAdoptionScreen() {
                     <Text style={[S.selectTxt, { color: district ? T.text : T.placeholder }]}>
                       {district || (province ? "İlçe seçin" : "Önce il seçin")}
                     </Text>
-                    <Ionicons name="chevron-down" size={18} color={T.textMuted} />
+                    <Icon name="chevron-down" size={18} color={T.textMuted} />
                   </Pressable>
                 </View>
               </FieldWrap>
@@ -535,7 +535,7 @@ export default function AddAdoptionScreen() {
 
               {/* İletişim başlığı */}
               <View style={S.sectionHeader}>
-                <Ionicons name="call-outline" size={18} color={C.purple} />
+                <Icon name="call-outline" size={18} color={C.purple} />
                 <Text style={[S.sectionTitle, { color: T.text }]}>İletişim Bilgileri</Text>
               </View>
 
@@ -562,7 +562,7 @@ export default function AddAdoptionScreen() {
                     returnKeyType="next"
                   />
                   {phone.length === 10 && !validatePhone(phone) && (
-                    <Ionicons name="checkmark-circle" size={20} color="#38A169" style={{ marginRight: 12 }} />
+                    <Icon name="checkmark-circle" size={20} color="#38A169" style={{ marginRight: 12 }} />
                   )}
                 </View>
                 <Text style={[S.phoneHint, { color: T.textMuted }]}>
@@ -577,7 +577,7 @@ export default function AddAdoptionScreen() {
                   { backgroundColor: T.input, borderColor: T.inputBorder },
                   errors.email ? S.inputError : {},
                 ]}>
-                  <Ionicons name="mail-outline" size={18} color={T.textMuted} style={{ marginLeft: 14, marginRight: 8 }} />
+                  <Icon name="mail-outline" size={18} color={T.textMuted} style={{ marginLeft: 14, marginRight: 8 }} />
                   <TextInput
                     style={[S.emailInput, { color: T.text }]}
                     placeholder="ornek@email.com"
@@ -590,7 +590,7 @@ export default function AddAdoptionScreen() {
                     returnKeyType="done"
                   />
                   {email && !validateEmail(email) && (
-                    <Ionicons name="checkmark-circle" size={20} color="#38A169" style={{ marginRight: 12 }} />
+                    <Icon name="checkmark-circle" size={20} color="#38A169" style={{ marginRight: 12 }} />
                   )}
                 </View>
               </FieldWrap>
@@ -600,7 +600,7 @@ export default function AddAdoptionScreen() {
               {/* İletişim Tercihleri */}
               <View>
                 <View style={S.sectionHeader}>
-                  <Ionicons name="shield-checkmark-outline" size={18} color={C.purpleDark} />
+                  <Icon name="shield-checkmark-outline" size={18} color={C.purpleDark} />
                   <Text style={[S.sectionTitle, { color: T.text }]}>İletişim Tercihleri</Text>
                 </View>
                 <Text style={{
@@ -616,7 +616,7 @@ export default function AddAdoptionScreen() {
                 >
                   <View style={S.toggleLeft}>
                     <View style={[S.toggleIcon, allowPhoneContact && S.toggleIconActive]}>
-                      <Ionicons name="call-outline" size={18} color={allowPhoneContact ? "#FFF" : T.textMuted} />
+                      <Icon name="call-outline" size={18} color={allowPhoneContact ? "#FFF" : T.textMuted} />
                     </View>
                     <View>
                       <Text style={[S.toggleLabel, { color: T.text }]}>Telefon ile iletişime izin ver</Text>
@@ -634,7 +634,7 @@ export default function AddAdoptionScreen() {
                 >
                   <View style={S.toggleLeft}>
                     <View style={[S.toggleIcon, allowMessages && S.toggleIconActive]}>
-                      <Ionicons name="chatbubble-outline" size={18} color={allowMessages ? "#FFF" : T.textMuted} />
+                      <Icon name="chatbubble-outline" size={18} color={allowMessages ? "#FFF" : T.textMuted} />
                     </View>
                     <View>
                       <Text style={[S.toggleLabel, { color: T.text }]}>Mesaj almaya izin ver</Text>
@@ -670,7 +670,7 @@ export default function AddAdoptionScreen() {
                 <ActivityIndicator color="#FFF" />
               ) : (
                 <>
-                  <Ionicons name="heart" size={20} color="#FFF" />
+                  <Icon name="heart" size={20} color="#FFF" />
                   <Text style={S.ctaTxt}>İlanı Yayınla</Text>
                 </>
               )}

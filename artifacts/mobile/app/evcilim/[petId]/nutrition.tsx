@@ -1,4 +1,4 @@
-import { Ionicons } from "@expo/vector-icons";
+import { Icon } from "@/components/Icon";
 import * as Haptics from "expo-haptics";
 import { LinearGradient } from "expo-linear-gradient";
 import { useLocalSearchParams, useRouter } from "expo-router";
@@ -137,7 +137,7 @@ export default function NutritionScreen() {
     <KeyboardAvoidingView style={{ flex: 1, backgroundColor: BG }} behavior={Platform.OS === "ios" ? "padding" : undefined}>
       <View style={[st.header, { paddingTop: insets.top + 12 }]}>
         <Pressable style={st.backBtn} onPress={() => router.back()} hitSlop={8}>
-          <Ionicons name="chevron-back" size={22} color={DARK} />
+          <Icon name="chevron-back" size={22} color={DARK} />
         </Pressable>
         <View>
           <Text style={st.headerTitle}>Beslenme</Text>
@@ -155,7 +155,7 @@ export default function NutritionScreen() {
             <View style={st.stockCard}>
               <View style={st.stockTop}>
                 <View style={[st.stockIcon, { backgroundColor: `${stockColor}18` }]}>
-                  <Ionicons name="bag-handle-outline" size={22} color={stockColor} />
+                  <Icon name="bag-handle-outline" size={22} color={stockColor} />
                 </View>
                 <View style={{ flex: 1 }}>
                   <Text style={st.stockTitle}>Stok Durumu</Text>
@@ -210,7 +210,7 @@ export default function NutritionScreen() {
             disabled={saving}
           >
             <LinearGradient colors={[P2, P]} style={st.saveGrad}>
-              <Ionicons name={saving ? "hourglass-outline" : "checkmark-circle-outline"} size={20} color={WHITE} />
+              <Icon name={saving ? "hourglass-outline" : "checkmark-circle-outline"} size={20} color={WHITE} />
               <Text style={st.saveTxt}>{saving ? "Kaydediliyor..." : "Bilgileri Kaydet"}</Text>
             </LinearGradient>
           </Pressable>

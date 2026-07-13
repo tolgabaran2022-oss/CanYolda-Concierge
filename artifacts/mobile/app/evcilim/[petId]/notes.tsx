@@ -1,4 +1,4 @@
-import { Ionicons } from "@expo/vector-icons";
+import { Icon } from "@/components/Icon";
 import * as Haptics from "expo-haptics";
 import { LinearGradient } from "expo-linear-gradient";
 import { useLocalSearchParams, useRouter } from "expo-router";
@@ -42,14 +42,14 @@ function NoteCard({ note, onEdit, onDelete }: { note: ApiPetNote; onEdit: () => 
     <Pressable style={({ pressed }) => [nc.card, pressed && { opacity: 0.85 }]} onPress={onEdit}>
       <View style={nc.top}>
         <View style={nc.iconWrap}>
-          <Ionicons name="document-text-outline" size={18} color={P} />
+          <Icon name="document-text-outline" size={18} color={P} />
         </View>
         <View style={nc.info}>
           <Text style={nc.title}>{note.title}</Text>
           <Text style={nc.date}>{formatDate(note.updatedAt)}</Text>
         </View>
         <Pressable style={nc.deleteBtn} onPress={onDelete} hitSlop={8}>
-          <Ionicons name="trash-outline" size={16} color={RED} />
+          <Icon name="trash-outline" size={16} color={RED} />
         </Pressable>
       </View>
       {note.content ? (
@@ -99,7 +99,7 @@ function AddEditModal({ visible, initial, onClose, onSave }: {
     <Modal visible={visible} animationType="slide" presentationStyle="pageSheet">
       <KeyboardAvoidingView style={{ flex: 1, backgroundColor: WHITE }} behavior={Platform.OS === "ios" ? "padding" : undefined}>
         <View style={[am.header, { paddingTop: insets.top + 12 }]}>
-          <Pressable onPress={onClose} hitSlop={8}><Ionicons name="close" size={24} color={DARK} /></Pressable>
+          <Pressable onPress={onClose} hitSlop={8}><Icon name="close" size={24} color={DARK} /></Pressable>
           <Text style={am.title}>{initial ? "Notu Düzenle" : "Not Ekle"}</Text>
           <View style={{ width: 24 }} />
         </View>
@@ -121,7 +121,7 @@ function AddEditModal({ visible, initial, onClose, onSave }: {
           </View>
           <Pressable style={am.saveBtn} onPress={handleSave} disabled={saving}>
             <LinearGradient colors={[P2, P]} style={am.saveGrad}>
-              <Ionicons name={saving ? "hourglass-outline" : "checkmark-circle-outline"} size={20} color={WHITE} />
+              <Icon name={saving ? "hourglass-outline" : "checkmark-circle-outline"} size={20} color={WHITE} />
               <Text style={am.saveTxt}>{saving ? "Kaydediliyor..." : "Kaydet"}</Text>
             </LinearGradient>
           </Pressable>
@@ -195,7 +195,7 @@ export default function NotesScreen() {
     <View style={{ flex: 1, backgroundColor: BG }}>
       <View style={[st.header, { paddingTop: insets.top + 12 }]}>
         <Pressable style={st.backBtn} onPress={() => router.back()} hitSlop={8}>
-          <Ionicons name="chevron-back" size={22} color={DARK} />
+          <Icon name="chevron-back" size={22} color={DARK} />
         </Pressable>
         <View>
           <Text style={st.headerTitle}>Notlar</Text>
@@ -203,7 +203,7 @@ export default function NotesScreen() {
         </View>
         <Pressable style={st.addBtn} onPress={() => { Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light); setEditing(null); setModalVisible(true); }}>
           <LinearGradient colors={[P2, P]} style={st.addGrad}>
-            <Ionicons name="add" size={22} color={WHITE} />
+            <Icon name="add" size={22} color={WHITE} />
           </LinearGradient>
         </Pressable>
       </View>
@@ -213,7 +213,7 @@ export default function NotesScreen() {
       ) : notes.length === 0 ? (
         <View style={st.empty}>
           <LinearGradient colors={[`${P2}20`, `${P}10`]} style={st.emptyCircle}>
-            <Ionicons name="pencil-outline" size={40} color={P} />
+            <Icon name="pencil-outline" size={40} color={P} />
           </LinearGradient>
           <Text style={st.emptyTitle}>Not Yok</Text>
           <Text style={st.emptySub}>Hayvanınla ilgili önemli bilgileri not al</Text>

@@ -5,3 +5,4 @@
 - [Stripe boost packages direct query](stripe-boost-packages-query.md) — syncBackfill unreliable in dev; query packages directly via Stripe API in storage layer
 - [Animals & Adoption backend migration](animals-adoption-backend.md) — stray_animals/animal_interactions/animal_comments/adoption_listings tables added; /api/animals and /api/adoption routes; drizzle-kit push needs TTY so use executeSql directly
 - [Evcilim dual-tab architecture](evcilim-tab-arch.md) — pets.tsx has outer Evcilim/Sahiplendirme switcher; 5 new DB tables (pet_vaccinations/appointments/identification/notes/nutrition); lib/db must be rebuilt with typecheck:libs after new schema exports before api-server typecheck passes
+- [Android icon rendering — SVG migration](android-icon-svg.md) — @expo/vector-icons font rendering broken on Android in pnpm workspace; migrated ALL icons to lucide-react-native + react-native-svg

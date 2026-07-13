@@ -1,4 +1,4 @@
-import { Ionicons } from "@expo/vector-icons";
+import { Icon } from "@/components/Icon";
 import { Image } from "expo-image";
 import { useRouter } from "expo-router";
 import React from "react";
@@ -34,7 +34,7 @@ export function AdoptionCard({ listing }: Props) {
     >
       {isFeatured && (
         <View style={styles.featuredBanner}>
-          <Ionicons name="star" size={11} color="white" />
+          <Icon name="star" size={11} color="white" />
           <Text style={styles.featuredText}>Öne Çıkan</Text>
         </View>
       )}
@@ -47,7 +47,7 @@ export function AdoptionCard({ listing }: Props) {
         />
       ) : (
         <View style={[styles.imagePlaceholder, { backgroundColor: colors.muted }]}>
-          <Ionicons name="heart" size={32} color={colors.primary} />
+          <Icon name="heart" size={32} color={colors.primary} />
         </View>
       )}
       <View style={styles.content}>
@@ -79,7 +79,7 @@ export function AdoptionCard({ listing }: Props) {
         </Text>
         <View style={styles.footer}>
           <View style={styles.locationRow}>
-            <Ionicons
+            <Icon
               name="location-outline"
               size={12}
               color={colors.mutedForeground}

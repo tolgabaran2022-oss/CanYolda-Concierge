@@ -1,4 +1,4 @@
-import { Ionicons } from "@expo/vector-icons";
+import { Icon } from "@/components/Icon";
 import * as Haptics from "expo-haptics";
 import * as ImagePicker from "expo-image-picker";
 import { Image } from "expo-image";
@@ -92,7 +92,7 @@ export default function AddPetScreen() {
           <Image source={{ uri: image }} style={styles.photo} contentFit="cover" />
         ) : (
           <View style={[styles.photoPlaceholder, { backgroundColor: colors.muted, borderColor: colors.border }]}>
-            <Ionicons name="camera-outline" size={32} color={colors.mutedForeground} />
+            <Icon name="camera-outline" size={32} color={colors.mutedForeground} />
             <Text style={[styles.photoHint, { color: colors.mutedForeground }]}>
               Fotoğraf Ekle
             </Text>
@@ -205,7 +205,7 @@ export default function AddPetScreen() {
           <ActivityIndicator color="white" />
         ) : (
           <>
-            <Ionicons name="checkmark-circle-outline" size={20} color="white" />
+            <Icon name="checkmark-circle-outline" size={20} color="white" />
             <Text style={styles.saveBtnText}>Profil Oluştur</Text>
           </>
         )}

@@ -1,4 +1,4 @@
-import { Ionicons } from "@expo/vector-icons";
+import { Icon } from "@/components/Icon";
 import * as Haptics from "expo-haptics";
 import * as ImagePicker from "expo-image-picker";
 import { Image } from "expo-image";
@@ -113,7 +113,7 @@ function FieldWrap({ label, required, error, children }: {
       <Text style={F.label}>{label}{required && <Text style={{ color: C.purple }}> *</Text>}</Text>
       {children}
       {error ? (
-        <View style={F.errRow}><Ionicons name="alert-circle" size={13} color={C.error} /><Text style={F.errTxt}>{error}</Text></View>
+        <View style={F.errRow}><Icon name="alert-circle" size={13} color={C.error} /><Text style={F.errTxt}>{error}</Text></View>
       ) : null}
     </View>
   );
@@ -140,10 +140,10 @@ function PickerModal({ visible, title, items, selected, onSelect, onClose }: {
         <View style={PM.header}>
           <View style={{ width: 36 }} />
           <Text style={PM.title}>{title}</Text>
-          <Pressable onPress={onClose} hitSlop={12}><Ionicons name="close" size={24} color={C.purpleDark} /></Pressable>
+          <Pressable onPress={onClose} hitSlop={12}><Icon name="close" size={24} color={C.purpleDark} /></Pressable>
         </View>
         <View style={PM.search}>
-          <Ionicons name="search-outline" size={18} color={C.sub} style={{ marginRight: 8 }} />
+          <Icon name="search-outline" size={18} color={C.sub} style={{ marginRight: 8 }} />
           <TextInput style={PM.searchInput} placeholder="Ara..." placeholderTextColor={C.placeholder} value={q} onChangeText={setQ} autoCorrect={false} />
         </View>
         <FlatList
@@ -155,7 +155,7 @@ function PickerModal({ visible, title, items, selected, onSelect, onClose }: {
             return (
               <Pressable style={[PM.row, active && PM.rowActive]} onPress={() => { Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light); onSelect(item.value); onClose(); }}>
                 <Text style={[PM.rowTxt, active && PM.rowTxtActive]}>{item.label}</Text>
-                {active && <Ionicons name="checkmark" size={18} color={C.purple} />}
+                {active && <Icon name="checkmark" size={18} color={C.purple} />}
               </Pressable>
             );
           }}
@@ -199,7 +199,7 @@ function PhotoActionSheet({ visible, isFirst, isLast, isCover, onAction }: {
         {btns.map((b) => (
           <Pressable key={b.action} style={({ pressed }) => [AS.row, { opacity: pressed ? 0.7 : 1 }]} onPress={() => { Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light); onAction(b.action); }}>
             <View style={[AS.iconWrap, b.color === C.error && AS.iconWrapRed]}>
-              <Ionicons name={b.icon as any} size={18} color={b.color ?? C.purpleDark} />
+              <Icon name={b.icon as any} size={18} color={b.color ?? C.purpleDark} />
             </View>
             <Text style={[AS.rowTxt, b.color === C.error && AS.rowTxtRed]}>{b.label}</Text>
           </Pressable>
@@ -237,11 +237,11 @@ function AddPhotoSheet({ visible, onCamera, onGallery, onClose }: {
         <View style={[AS.handle, { backgroundColor: T.divider }]} />
         <Text style={{ fontSize: 16, fontFamily: "Inter_700Bold", color: C.label, paddingVertical: 10, textAlign: "center" }}>Fotoğraf Ekle</Text>
         <Pressable style={({ pressed }) => [AS.row, { opacity: pressed ? 0.7 : 1 }]} onPress={onCamera}>
-          <View style={AS.iconWrap}><Ionicons name="camera-outline" size={20} color={C.purpleDark} /></View>
+          <View style={AS.iconWrap}><Icon name="camera-outline" size={20} color={C.purpleDark} /></View>
           <Text style={AS.rowTxt}>Kameradan Çek</Text>
         </Pressable>
         <Pressable style={({ pressed }) => [AS.row, { opacity: pressed ? 0.7 : 1 }]} onPress={onGallery}>
-          <View style={AS.iconWrap}><Ionicons name="images-outline" size={20} color={C.purpleDark} /></View>
+          <View style={AS.iconWrap}><Icon name="images-outline" size={20} color={C.purpleDark} /></View>
           <Text style={AS.rowTxt}>Galeriden Seç</Text>
         </Pressable>
         <Pressable style={({ pressed }) => [AS.cancelRow, { opacity: pressed ? 0.7 : 1 }]} onPress={onClose}>
@@ -315,7 +315,7 @@ export default function EditAdoptionScreen() {
     return (
       <View style={{ flex: 1, backgroundColor: C.bg, alignItems: "center", justifyContent: "center", gap: 12 }}>
         <Stack.Screen options={{ headerShown: false }} />
-        <Ionicons name="lock-closed-outline" size={44} color={`${C.purple}60`} />
+        <Icon name="lock-closed-outline" size={44} color={`${C.purple}60`} />
         <Text style={{ fontSize: 18, fontFamily: "Inter_700Bold", color: C.label }}>Yetkisiz Erişim</Text>
         <Pressable style={{ backgroundColor: C.purple, borderRadius: 14, paddingVertical: 12, paddingHorizontal: 28 }} onPress={() => router.back()}>
           <Text style={{ fontSize: 15, fontFamily: "Inter_600SemiBold", color: "#FFF" }}>Geri Dön</Text>
@@ -456,7 +456,7 @@ export default function EditAdoptionScreen() {
         {/* Header */}
         <View style={[S.header, { paddingTop: topPad + 10 }]}>
           <Pressable style={S.headerBtn} onPress={() => router.back()} hitSlop={8}>
-            <Ionicons name="close" size={22} color={C.label} />
+            <Icon name="close" size={22} color={C.label} />
           </Pressable>
           <Text style={S.headerTitle}>İlanı Düzenle</Text>
           <Pressable
@@ -482,7 +482,7 @@ export default function EditAdoptionScreen() {
             {/* Error banner */}
             {errorCount > 0 && (
               <View style={S.errorBanner}>
-                <Ionicons name="alert-circle" size={18} color={C.error} />
+                <Icon name="alert-circle" size={18} color={C.error} />
                 <Text style={S.errorBannerTxt}>{errorCount} alan eksik veya hatalı.</Text>
               </View>
             )}
@@ -492,14 +492,14 @@ export default function EditAdoptionScreen() {
             ═══════════════════════════════════════════════ */}
             <View style={S.sectionCard}>
               <View style={S.sectionTitleRow}>
-                <Ionicons name="images-outline" size={18} color={C.purple} />
+                <Icon name="images-outline" size={18} color={C.purple} />
                 <Text style={S.sectionTitle}>Fotoğraflar</Text>
                 <Text style={S.sectionSub}>{images.length}/{MAX_PHOTOS}</Text>
               </View>
 
               {errors.images ? (
                 <View style={S.photoError}>
-                  <Ionicons name="alert-circle" size={14} color={C.error} />
+                  <Icon name="alert-circle" size={14} color={C.error} />
                   <Text style={S.photoErrorTxt}>{errors.images}</Text>
                 </View>
               ) : (
@@ -526,7 +526,7 @@ export default function EditAdoptionScreen() {
                     {/* Cover badge */}
                     {idx === 0 && (
                       <View style={S.coverBadge}>
-                        <Ionicons name="star" size={9} color="#FFF" />
+                        <Icon name="star" size={9} color="#FFF" />
                         <Text style={S.coverBadgeTxt}>KAPAK</Text>
                       </View>
                     )}
@@ -550,7 +550,7 @@ export default function EditAdoptionScreen() {
                         ]);
                       }}
                     >
-                      <Ionicons name="close-circle" size={20} color="#FFF" />
+                      <Icon name="close-circle" size={20} color="#FFF" />
                     </Pressable>
                   </Pressable>
                 ))}
@@ -562,7 +562,7 @@ export default function EditAdoptionScreen() {
                     onPress={() => { Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light); setShowAddSheet(true); }}
                   >
                     <View style={S.addIconRing}>
-                      <Ionicons name="add" size={28} color={C.purple} />
+                      <Icon name="add" size={28} color={C.purple} />
                     </View>
                     <Text style={S.addPhotoTxt}>Fotoğraf{"\n"}Ekle</Text>
                   </Pressable>
@@ -575,7 +575,7 @@ export default function EditAdoptionScreen() {
             ═══════════════════════════════════════════════ */}
             <View style={S.sectionCard}>
               <View style={S.sectionTitleRow}>
-                <Ionicons name="paw-outline" size={18} color={C.purple} />
+                <Icon name="paw-outline" size={18} color={C.purple} />
                 <Text style={S.sectionTitle}>Hayvan Bilgileri</Text>
               </View>
 
@@ -632,15 +632,15 @@ export default function EditAdoptionScreen() {
               <FieldWrap label="Konum" required error={errors.province || errors.district}>
                 <View style={{ gap: 10 }}>
                   <Pressable style={[S.selectRow, errors.province ? S.inputErr : {}]} onPress={() => { Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light); setShowProvince(true); }}>
-                    <Ionicons name="location-outline" size={18} color={province ? C.purple : C.placeholder} style={{ marginRight: 8 }} />
+                    <Icon name="location-outline" size={18} color={province ? C.purple : C.placeholder} style={{ marginRight: 8 }} />
                     <Text style={[S.selectTxt, !province && S.selectPh]}>{province || "İl seçin"}</Text>
-                    <Ionicons name="chevron-down" size={18} color={C.sub} />
+                    <Icon name="chevron-down" size={18} color={C.sub} />
                   </Pressable>
                   <Pressable style={[S.selectRow, !province && S.selectDisabled, errors.district ? S.inputErr : {}]}
                     onPress={() => { if (!province) return; Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light); setShowDistrict(true); }}>
-                    <Ionicons name="navigate-outline" size={18} color={district ? C.purple : C.placeholder} style={{ marginRight: 8 }} />
+                    <Icon name="navigate-outline" size={18} color={district ? C.purple : C.placeholder} style={{ marginRight: 8 }} />
                     <Text style={[S.selectTxt, !district && S.selectPh]}>{district || (province ? "İlçe seçin" : "Önce il seçin")}</Text>
-                    <Ionicons name="chevron-down" size={18} color={C.sub} />
+                    <Icon name="chevron-down" size={18} color={C.sub} />
                   </Pressable>
                 </View>
               </FieldWrap>
@@ -668,7 +668,7 @@ export default function EditAdoptionScreen() {
             ═══════════════════════════════════════════════ */}
             <View style={S.sectionCard}>
               <View style={S.sectionTitleRow}>
-                <Ionicons name="call-outline" size={18} color={C.purple} />
+                <Icon name="call-outline" size={18} color={C.purple} />
                 <Text style={S.sectionTitle}>İletişim Bilgileri</Text>
               </View>
 
@@ -690,7 +690,7 @@ export default function EditAdoptionScreen() {
                     maxLength={13}
                   />
                   {phone.length === 10 && !validatePhone(phone) && (
-                    <Ionicons name="checkmark-circle" size={20} color="#38A169" style={{ marginRight: 12 }} />
+                    <Icon name="checkmark-circle" size={20} color="#38A169" style={{ marginRight: 12 }} />
                   )}
                 </View>
               </FieldWrap>
@@ -698,7 +698,7 @@ export default function EditAdoptionScreen() {
               {/* Email */}
               <FieldWrap label="E-Posta Adresi" required error={errors.email}>
                 <View style={[S.emailWrap, errors.email ? S.inputErr : {}]}>
-                  <Ionicons name="mail-outline" size={18} color={C.sub} style={{ marginLeft: 14, marginRight: 8 }} />
+                  <Icon name="mail-outline" size={18} color={C.sub} style={{ marginLeft: 14, marginRight: 8 }} />
                   <TextInput
                     style={S.emailInput}
                     placeholder="ornek@email.com"
@@ -708,7 +708,7 @@ export default function EditAdoptionScreen() {
                     keyboardType="email-address" autoCapitalize="none" autoCorrect={false}
                   />
                   {email && !validateEmail(email) && (
-                    <Ionicons name="checkmark-circle" size={20} color="#38A169" style={{ marginRight: 12 }} />
+                    <Icon name="checkmark-circle" size={20} color="#38A169" style={{ marginRight: 12 }} />
                   )}
                 </View>
               </FieldWrap>
@@ -718,7 +718,7 @@ export default function EditAdoptionScreen() {
               {/* ── İletişim Tercihleri ── */}
               <View>
                 <View style={S.sectionTitleRow}>
-                  <Ionicons name="shield-checkmark-outline" size={18} color={C.purpleDark} />
+                  <Icon name="shield-checkmark-outline" size={18} color={C.purpleDark} />
                   <Text style={S.sectionTitle}>İletişim Tercihleri</Text>
                 </View>
                 <Text style={{ fontSize: 12, fontFamily: "Inter_400Regular", color: C.sub, marginTop: 4, marginBottom: 14, lineHeight: 17 }}>
@@ -731,7 +731,7 @@ export default function EditAdoptionScreen() {
                 >
                   <View style={S.toggleLeft}>
                     <View style={[S.toggleIcon, allowPhoneContact && S.toggleIconActive]}>
-                      <Ionicons name="call-outline" size={18} color={allowPhoneContact ? "#FFF" : C.sub} />
+                      <Icon name="call-outline" size={18} color={allowPhoneContact ? "#FFF" : C.sub} />
                     </View>
                     <View>
                       <Text style={S.toggleLabel}>Telefon ile iletişime izin ver</Text>
@@ -749,7 +749,7 @@ export default function EditAdoptionScreen() {
                 >
                   <View style={S.toggleLeft}>
                     <View style={[S.toggleIcon, allowMessages && S.toggleIconActive]}>
-                      <Ionicons name="chatbubble-outline" size={18} color={allowMessages ? "#FFF" : C.sub} />
+                      <Icon name="chatbubble-outline" size={18} color={allowMessages ? "#FFF" : C.sub} />
                     </View>
                     <View>
                       <Text style={S.toggleLabel}>Mesaj almaya izin ver</Text>
@@ -775,7 +775,7 @@ export default function EditAdoptionScreen() {
           >
             <LinearGradient colors={[C.purpleLight, C.purpleDark]} start={{ x: 0, y: 0 }} end={{ x: 1, y: 0 }} style={S.cta}>
               {isSaving ? <ActivityIndicator color="#FFF" /> : (
-                <><Ionicons name="checkmark-circle" size={20} color="#FFF" /><Text style={S.ctaTxt}>Değişiklikleri Kaydet</Text></>
+                <><Icon name="checkmark-circle" size={20} color="#FFF" /><Text style={S.ctaTxt}>Değişiklikleri Kaydet</Text></>
               )}
             </LinearGradient>
           </Pressable>

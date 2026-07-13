@@ -1,4 +1,4 @@
-import { Ionicons } from "@expo/vector-icons";
+import { Icon } from "@/components/Icon";
 import * as Haptics from "expo-haptics";
 import { Image } from "expo-image";
 import { useLocalSearchParams, useRouter } from "expo-router";
@@ -166,7 +166,7 @@ export default function FollowListScreen() {
       {/* Header */}
       <View style={[S.header, { backgroundColor: T.bg, borderBottomColor: T.border }]}>
         <Pressable onPress={() => router.back()} hitSlop={14} style={S.backBtn}>
-          <Ionicons name="chevron-back" size={26} color={T.purple} />
+          <Icon name="chevron-back" size={26} color={T.purple} />
         </Pressable>
         <Text style={[S.title, { color: T.text }]}>{title}</Text>
         <View style={{ width: 40 }} />
@@ -174,7 +174,7 @@ export default function FollowListScreen() {
 
       {/* Search bar */}
       <View style={[S.searchRow, { backgroundColor: T.input }]}>
-        <Ionicons name="search-outline" size={17} color={T.textMuted} style={S.searchIcon} />
+        <Icon name="search-outline" size={17} color={T.textMuted} style={S.searchIcon} />
         <TextInput
           style={[S.searchInput, { color: T.text }]}
           placeholder="Ara"
@@ -194,7 +194,7 @@ export default function FollowListScreen() {
         </View>
       ) : filtered.length === 0 ? (
         <View style={S.center}>
-          <Ionicons name="people-outline" size={52} color={T.textFaint} />
+          <Icon name="people-outline" size={52} color={T.textFaint} />
           <Text style={[S.emptyTitle, { color: T.textMuted }]}>
             {query
               ? "Sonuç bulunamadı"

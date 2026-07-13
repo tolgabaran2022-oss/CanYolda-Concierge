@@ -1,4 +1,4 @@
-import { Ionicons } from "@expo/vector-icons";
+import { Icon } from "@/components/Icon";
 import * as Haptics from "expo-haptics";
 import { Image } from "expo-image";
 import * as ImagePicker from "expo-image-picker";
@@ -87,13 +87,13 @@ export function CreateStoryModal({ visible, onClose, onSubmit }: Props) {
               <View style={S.actions}>
                 <Pressable onPress={pickImage} style={S.actionBtn}>
                   <LinearGradient colors={["rgba(164,140,220,0.10)", "rgba(124,92,255,0.06)"]} style={S.actionGrad}>
-                    <View style={S.actionCircle}><Ionicons name="images-outline" size={28} color={C.purple} /></View>
+                    <View style={S.actionCircle}><Icon name="images-outline" size={28} color={C.purple} /></View>
                     <Text style={S.actionLabel}>Galeriden Seç</Text>
                   </LinearGradient>
                 </Pressable>
                 <Pressable onPress={takePhoto} style={S.actionBtn}>
                   <LinearGradient colors={["rgba(164,140,220,0.10)", "rgba(124,92,255,0.06)"]} style={S.actionGrad}>
-                    <View style={S.actionCircle}><Ionicons name="camera-outline" size={28} color={C.purple} /></View>
+                    <View style={S.actionCircle}><Icon name="camera-outline" size={28} color={C.purple} /></View>
                     <Text style={S.actionLabel}>Fotoğraf Çek</Text>
                   </LinearGradient>
                 </Pressable>
@@ -102,7 +102,7 @@ export function CreateStoryModal({ visible, onClose, onSubmit }: Props) {
 
             {image && (
               <Pressable onPress={() => setImage(null)} style={S.retake}>
-                <Ionicons name="refresh" size={16} color={C.purple} />
+                <Icon name="refresh" size={16} color={C.purple} />
                 <Text style={S.retakeText}>Farklı fotoğraf seç</Text>
               </Pressable>
             )}

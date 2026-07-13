@@ -1,4 +1,4 @@
-import { Ionicons } from "@expo/vector-icons";
+import { Icon } from "@/components/Icon";
 import * as Haptics from "expo-haptics";
 import { LinearGradient } from "expo-linear-gradient";
 import React, { useEffect, useRef } from "react";
@@ -123,7 +123,7 @@ export function ShareSelectionSheet({
               end={{ x: 1, y: 1 }}
               style={SS.iconCircle}
             >
-              <Ionicons name="radio-button-on" size={24} color="#FFF" />
+              <Icon name="radio-button-on" size={24} color="#FFF" />
             </LinearGradient>
             <View style={SS.optionTextBlock}>
               <Text style={[SS.optionTitle, { color: T.text }]}>Hikâye</Text>
@@ -131,7 +131,7 @@ export function ShareSelectionSheet({
                 24 saat boyunca görünen bir hikâye paylaş
               </Text>
             </View>
-            <Ionicons name="chevron-forward" size={18} color={T.textMuted} />
+            <Icon name="chevron-forward" size={18} color={T.textMuted} />
           </Pressable>
 
           {/* Post */}
@@ -148,7 +148,7 @@ export function ShareSelectionSheet({
               end={{ x: 1, y: 1 }}
               style={SS.iconCircle}
             >
-              <Ionicons name="images" size={22} color="#FFF" />
+              <Icon name="images" size={22} color="#FFF" />
             </LinearGradient>
             <View style={SS.optionTextBlock}>
               <Text style={[SS.optionTitle, { color: T.text }]}>Gönderi</Text>
@@ -156,7 +156,7 @@ export function ShareSelectionSheet({
                 Profilinde ve akışta kalıcı bir gönderi paylaş
               </Text>
             </View>
-            <Ionicons name="chevron-forward" size={18} color={T.textMuted} />
+            <Icon name="chevron-forward" size={18} color={T.textMuted} />
           </Pressable>
         </View>
 

@@ -1,4 +1,4 @@
-import { Ionicons } from "@expo/vector-icons";
+import { Icon } from "@/components/Icon";
 import * as Haptics from "expo-haptics";
 import * as ImagePicker from "expo-image-picker";
 import { Image } from "expo-image";
@@ -147,7 +147,7 @@ export default function AddPetScreen() {
       {/* Header */}
       <View style={[st.header, { paddingTop: insets.top + 12 }]}>
         <Pressable style={st.backBtn} onPress={() => router.back()} hitSlop={8}>
-          <Ionicons name="chevron-back" size={22} color={DARK} />
+          <Icon name="chevron-back" size={22} color={DARK} />
         </Pressable>
         <Text style={st.headerTitle}>Evcil Hayvan Ekle</Text>
         <View style={{ width: 38 }} />
@@ -164,12 +164,12 @@ export default function AddPetScreen() {
             <Image source={{ uri: image }} style={st.avatar} contentFit="cover" />
           ) : (
             <LinearGradient colors={[`${P2}40`, `${P}20`]} style={st.avatarPlaceholder}>
-              <Ionicons name="paw" size={44} color={P} />
+              <Icon name="paw" size={44} color={P} />
             </LinearGradient>
           )}
           <View style={st.cameraBtn}>
             <LinearGradient colors={[P2, P]} style={st.cameraGrad}>
-              <Ionicons name="camera" size={14} color={WHITE} />
+              <Icon name="camera" size={14} color={WHITE} />
             </LinearGradient>
           </View>
         </Pressable>
@@ -186,7 +186,7 @@ export default function AddPetScreen() {
                     style={[st.typePill, type === t && st.typePillActive]}
                     onPress={() => { Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light); setType(t); }}
                   >
-                    <Ionicons name="paw" size={16} color={type === t ? WHITE : P} />
+                    <Icon name="paw" size={16} color={type === t ? WHITE : P} />
                     <Text style={[st.typeLabel, type === t && st.typeLabelActive]}>{t}</Text>
                   </Pressable>
                 ))}
@@ -248,7 +248,7 @@ export default function AddPetScreen() {
           disabled={isSaving}
         >
           <LinearGradient colors={[P2, P]} style={st.saveGrad}>
-            <Ionicons name={isSaving ? "hourglass-outline" : "checkmark-circle-outline"} size={20} color={WHITE} />
+            <Icon name={isSaving ? "hourglass-outline" : "checkmark-circle-outline"} size={20} color={WHITE} />
             <Text style={st.saveTxt}>{isSaving ? "Kaydediliyor..." : "Kaydet"}</Text>
           </LinearGradient>
         </Pressable>

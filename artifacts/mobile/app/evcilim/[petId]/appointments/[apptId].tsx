@@ -1,4 +1,4 @@
-import { Ionicons } from "@expo/vector-icons";
+import { Icon } from "@/components/Icon";
 import * as Haptics from "expo-haptics";
 import { LinearGradient } from "expo-linear-gradient";
 import { useLocalSearchParams, useRouter } from "expo-router";
@@ -122,7 +122,7 @@ function EditSheet({
     <Modal visible={visible} animationType="slide" presentationStyle="pageSheet">
       <KeyboardAvoidingView style={{ flex: 1, backgroundColor: WHITE }} behavior={Platform.OS === "ios" ? "padding" : undefined}>
         <View style={[es.header, { paddingTop: insets.top + 12 }]}>
-          <Pressable onPress={onClose} hitSlop={8}><Ionicons name="close" size={24} color={DARK} /></Pressable>
+          <Pressable onPress={onClose} hitSlop={8}><Icon name="close" size={24} color={DARK} /></Pressable>
           <Text style={es.title}>Randevuyu Düzenle</Text>
           <View style={{ width: 24 }} />
         </View>
@@ -158,7 +158,7 @@ function EditSheet({
           <View style={es.field}><Text style={es.label}>Notlar</Text><TextInput style={[fld, { minHeight: 80, textAlignVertical: "top" }]} value={description} onChangeText={setDesc} placeholder="Ek notlar..." placeholderTextColor={BODY} multiline /></View>
           <Pressable style={es.saveBtn} onPress={handleSave} disabled={saving}>
             <LinearGradient colors={[P2, P]} style={es.saveGrad}>
-              <Ionicons name={saving ? "hourglass-outline" : "checkmark-circle-outline"} size={20} color={WHITE} />
+              <Icon name={saving ? "hourglass-outline" : "checkmark-circle-outline"} size={20} color={WHITE} />
               <Text style={es.saveTxt}>{saving ? "Kaydediliyor..." : "Kaydet"}</Text>
             </LinearGradient>
           </Pressable>
@@ -188,7 +188,7 @@ function DetailRow({
   text,
   right,
 }: {
-  icon: keyof typeof Ionicons.glyphMap;
+  icon: string;
   iconColor?: string;
   text: string;
   right?: React.ReactNode;
@@ -196,7 +196,7 @@ function DetailRow({
   return (
     <View style={dr.row}>
       <View style={[dr.iconWrap, { backgroundColor: `${iconColor ?? BODY}14` }]}>
-        <Ionicons name={icon} size={18} color={iconColor ?? BODY} />
+        <Icon name={icon} size={18} color={iconColor ?? BODY} />
       </View>
       <Text style={dr.text} numberOfLines={2}>{text}</Text>
       {right}
@@ -223,12 +223,12 @@ function RecurrencePicker({
     <>
       <Pressable style={rp.row} onPress={() => setOpen(true)}>
         <View style={[rp.iconWrap, { backgroundColor: `${BODY}14` }]}>
-          <Ionicons name="repeat-outline" size={18} color={BODY} />
+          <Icon name="repeat-outline" size={18} color={BODY} />
         </View>
         <Text style={rp.label}>Tekrarlama</Text>
         <View style={rp.right}>
           <Text style={rp.value}>{RECURRENCE_LABELS[value] ?? "Yok"}</Text>
-          <Ionicons name="chevron-forward" size={16} color={BODY} />
+          <Icon name="chevron-forward" size={16} color={BODY} />
         </View>
       </Pressable>
 
@@ -242,7 +242,7 @@ function RecurrencePicker({
                 onPress={() => { onChange(r); setOpen(false); }}
               >
                 <Text style={[rp.optionTxt, value === r && { color: P, fontFamily: "Inter_700Bold" }]}>{RECURRENCE_LABELS[r]}</Text>
-                {value === r && <Ionicons name="checkmark" size={16} color={P} />}
+                {value === r && <Icon name="checkmark" size={16} color={P} />}
               </Pressable>
             ))}
           </View>
@@ -336,7 +336,7 @@ export default function AppointmentDetailScreen() {
       <View style={{ flex: 1, backgroundColor: BG }}>
         <View style={[ms.header, { paddingTop: insets.top + 12 }]}>
           <Pressable style={ms.backBtn} onPress={() => router.back()} hitSlop={8}>
-            <Ionicons name="chevron-back" size={22} color={DARK} />
+            <Icon name="chevron-back" size={22} color={DARK} />
           </Pressable>
           <Text style={ms.headerTitle}>Randevu Detayı</Text>
           <View style={{ width: 38 }} />
@@ -357,7 +357,7 @@ export default function AppointmentDetailScreen() {
       {/* Header */}
       <View style={[ms.header, { paddingTop: insets.top + 12 }]}>
         <Pressable style={ms.backBtn} onPress={() => router.back()} hitSlop={8}>
-          <Ionicons name="chevron-back" size={22} color={DARK} />
+          <Icon name="chevron-back" size={22} color={DARK} />
         </Pressable>
         <Text style={ms.headerTitle}>Randevu Detayı</Text>
         <Pressable
@@ -365,7 +365,7 @@ export default function AppointmentDetailScreen() {
           onPress={() => { Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light); setEditOpen(true); }}
           hitSlop={8}
         >
-          <Ionicons name="pencil-outline" size={20} color={P} />
+          <Icon name="pencil-outline" size={20} color={P} />
         </Pressable>
       </View>
 
@@ -378,7 +378,7 @@ export default function AppointmentDetailScreen() {
           {/* Title row */}
           <View style={det.titleRow}>
             <View style={[det.bigIcon, { backgroundColor: `${sc}15` }]}>
-              <Ionicons name="calendar" size={28} color={sc} />
+              <Icon name="calendar" size={28} color={sc} />
             </View>
             <View style={det.titleInfo}>
               <Text style={det.title}>{appt.title}</Text>
@@ -418,7 +418,7 @@ export default function AppointmentDetailScreen() {
           <View style={det.separator} />
           <View style={det.reminderRow}>
             <View style={[det.reminderIcon, { backgroundColor: `${P}14` }]}>
-              <Ionicons name="notifications-outline" size={18} color={P} />
+              <Icon name="notifications-outline" size={18} color={P} />
             </View>
             <View style={{ flex: 1 }}>
               <Text style={det.reminderLabel}>Hatırlatma</Text>
@@ -454,7 +454,7 @@ export default function AppointmentDetailScreen() {
           style={({ pressed }) => [det.cancelBtn, { opacity: pressed ? 0.85 : 1 }]}
           onPress={handleCancel}
         >
-          <Ionicons name="close-circle-outline" size={20} color={WHITE} />
+          <Icon name="close-circle-outline" size={20} color={WHITE} />
           <Text style={det.cancelTxt}>Randevuyu İptal Et</Text>
         </Pressable>
       </ScrollView>

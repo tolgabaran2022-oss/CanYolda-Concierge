@@ -1,4 +1,4 @@
-import { Ionicons } from "@expo/vector-icons";
+import { Icon } from "@/components/Icon";
 import * as Haptics from "expo-haptics";
 import * as ImagePicker from "expo-image-picker";
 import { Image } from "expo-image";
@@ -25,7 +25,7 @@ import { useAuth } from "@/contexts/AuthContext";
 import { useColors } from "@/hooks/useColors";
 import { ANIMAL_TYPES, type AnimalType } from "@/utils/animalDefaults";
 
-const STATUSES: { key: AnimalStatus; label: string; icon: keyof typeof Ionicons.glyphMap }[] = [
+const STATUSES: { key: AnimalStatus; label: string; icon: string }[] = [
   { key: "hungry", label: "Aç", icon: "restaurant-outline" },
   { key: "injured", label: "Yaralı", icon: "bandage-outline" },
   { key: "healthy", label: "Sağlıklı", icon: "checkmark-circle-outline" },
@@ -143,7 +143,7 @@ export default function AddAnimalScreen() {
           <Image source={{ uri: image }} style={styles.photo} contentFit="cover" />
         ) : (
           <View style={[styles.photoPlaceholder, { backgroundColor: colors.muted, borderColor: colors.border }]}>
-            <Ionicons name="camera-outline" size={32} color={colors.mutedForeground} />
+            <Icon name="camera-outline" size={32} color={colors.mutedForeground} />
             <Text style={[styles.photoHint, { color: colors.mutedForeground }]}>
               Fotoğraf Ekle (İsteğe Bağlı)
             </Text>
@@ -202,7 +202,7 @@ export default function AddAnimalScreen() {
                 ]}
                 onPress={() => setStatus(s.key)}
               >
-                <Ionicons
+                <Icon
                   name={s.icon}
                   size={16}
                   color={isActive ? "white" : colors.mutedForeground}
@@ -253,7 +253,7 @@ export default function AddAnimalScreen() {
           {isLocating ? (
             <ActivityIndicator color="white" size="small" />
           ) : (
-            <Ionicons name="location-outline" size={18} color="white" />
+            <Icon name="location-outline" size={18} color="white" />
           )}
           <Text style={styles.locBtnText}>
             {location ? "Konumu Güncelle" : "Mevcut Konumumu Kullan"}
@@ -278,7 +278,7 @@ export default function AddAnimalScreen() {
             {location && (
               <Marker coordinate={location}>
                 <View style={[styles.mapMarker, { backgroundColor: STATUS_COLORS[status] }]}>
-                  <Ionicons name="paw" size={14} color="white" />
+                  <Icon name="paw" size={14} color="white" />
                 </View>
               </Marker>
             )}
@@ -306,7 +306,7 @@ export default function AddAnimalScreen() {
           <ActivityIndicator color="white" />
         ) : (
           <>
-            <Ionicons name="checkmark-circle-outline" size={20} color="white" />
+            <Icon name="checkmark-circle-outline" size={20} color="white" />
             <Text style={styles.saveBtnText}>Kaydet</Text>
           </>
         )}

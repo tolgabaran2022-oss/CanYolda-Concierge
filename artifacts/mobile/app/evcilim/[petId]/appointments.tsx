@@ -1,4 +1,4 @@
-import { Ionicons } from "@expo/vector-icons";
+import { Icon } from "@/components/Icon";
 import * as Haptics from "expo-haptics";
 import { LinearGradient } from "expo-linear-gradient";
 import { useLocalSearchParams, useRouter } from "expo-router";
@@ -69,7 +69,7 @@ function ApptCard({ appt, onPress }: { appt: ApiAppointment; onPress: () => void
     <Pressable style={({ pressed }) => [ac.card, pressed && { opacity: 0.85 }]} onPress={onPress}>
       <View style={ac.top}>
         <View style={[ac.iconWrap, { backgroundColor: `${sc}18` }]}>
-          <Ionicons name="calendar-outline" size={22} color={sc} />
+          <Icon name="calendar-outline" size={22} color={sc} />
         </View>
         <View style={ac.info}>
           <Text style={ac.title}>{appt.title}</Text>
@@ -84,13 +84,13 @@ function ApptCard({ appt, onPress }: { appt: ApiAppointment; onPress: () => void
       </View>
       <View style={ac.details}>
         <View style={ac.row}>
-          <Ionicons name="calendar-outline" size={13} color={BODY} />
+          <Icon name="calendar-outline" size={13} color={BODY} />
           <Text style={ac.rowLabel}>Tarih</Text>
           <Text style={ac.rowValue}>{formatDate(appt.appointmentDate)}{appt.appointmentTime ? ` · ${appt.appointmentTime}` : ""}</Text>
         </View>
         {days !== null && (
           <View style={ac.row}>
-            <Ionicons name="time-outline" size={13} color={days < 0 ? RED : BODY} />
+            <Icon name="time-outline" size={13} color={days < 0 ? RED : BODY} />
             <Text style={ac.rowLabel}>Kalan</Text>
             <Text style={[ac.rowValue, days < 0 && { color: RED }]}>
               {days < 0 ? `${Math.abs(days)} gün geçti` : days === 0 ? "Bugün!" : `${days} gün`}
@@ -99,13 +99,13 @@ function ApptCard({ appt, onPress }: { appt: ApiAppointment; onPress: () => void
         )}
         {appt.location ? (
           <View style={ac.row}>
-            <Ionicons name="location-outline" size={13} color={BODY} />
+            <Icon name="location-outline" size={13} color={BODY} />
             <Text style={ac.rowLabel}>Yer</Text>
             <Text style={ac.rowValue}>{appt.location}</Text>
           </View>
         ) : null}
       </View>
-      <Ionicons name="chevron-forward" size={16} color={BODY} style={{ position: "absolute", right: 14, bottom: 14 }} />
+      <Icon name="chevron-forward" size={16} color={BODY} style={{ position: "absolute", right: 14, bottom: 14 }} />
     </Pressable>
   );
 }
@@ -173,7 +173,7 @@ function AddSheet({
     <Modal visible={visible} animationType="slide" presentationStyle="pageSheet">
       <KeyboardAvoidingView style={{ flex: 1, backgroundColor: WHITE }} behavior={Platform.OS === "ios" ? "padding" : undefined}>
         <View style={[ash.header, { paddingTop: insets.top + 12 }]}>
-          <Pressable onPress={onClose} hitSlop={8}><Ionicons name="close" size={24} color={DARK} /></Pressable>
+          <Pressable onPress={onClose} hitSlop={8}><Icon name="close" size={24} color={DARK} /></Pressable>
           <Text style={ash.title}>Randevu Ekle</Text>
           <View style={{ width: 24 }} />
         </View>
@@ -199,7 +199,7 @@ function AddSheet({
           <View style={ash.field}><Text style={ash.label}>Notlar</Text><TextInput style={[fld, { minHeight: 80, textAlignVertical: "top" }]} value={description} onChangeText={setDesc} placeholder="Ek notlar..." placeholderTextColor={BODY} multiline /></View>
           <Pressable style={ash.saveBtn} onPress={handleSave} disabled={saving}>
             <LinearGradient colors={[P2, P]} style={ash.saveGrad}>
-              <Ionicons name={saving ? "hourglass-outline" : "checkmark-circle-outline"} size={20} color={WHITE} />
+              <Icon name={saving ? "hourglass-outline" : "checkmark-circle-outline"} size={20} color={WHITE} />
               <Text style={ash.saveTxt}>{saving ? "Kaydediliyor..." : "Kaydet"}</Text>
             </LinearGradient>
           </Pressable>
@@ -255,7 +255,7 @@ export default function AppointmentsScreen() {
     <View style={{ flex: 1, backgroundColor: BG }}>
       <View style={[ms.header, { paddingTop: insets.top + 12 }]}>
         <Pressable style={ms.backBtn} onPress={() => router.back()} hitSlop={8}>
-          <Ionicons name="chevron-back" size={22} color={DARK} />
+          <Icon name="chevron-back" size={22} color={DARK} />
         </Pressable>
         <View style={{ flex: 1, alignItems: "center" }}>
           <Text style={ms.headerTitle}>Randevular</Text>
@@ -263,7 +263,7 @@ export default function AppointmentsScreen() {
         </View>
         <Pressable style={ms.addBtn} onPress={() => { Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light); setAddVisible(true); }}>
           <LinearGradient colors={[P2, P]} style={ms.addGrad}>
-            <Ionicons name="add" size={20} color={WHITE} />
+            <Icon name="add" size={20} color={WHITE} />
             <Text style={ms.addTxt}>Ekle</Text>
           </LinearGradient>
         </Pressable>
@@ -274,7 +274,7 @@ export default function AppointmentsScreen() {
       ) : appointments.length === 0 ? (
         <View style={ms.empty}>
           <LinearGradient colors={[`${P2}20`, `${P}10`]} style={ms.emptyCircle}>
-            <Ionicons name="calendar-outline" size={40} color={P} />
+            <Icon name="calendar-outline" size={40} color={P} />
           </LinearGradient>
           <Text style={ms.emptyTitle}>Randevu Yok</Text>
           <Text style={ms.emptySub}>Veteriner, kuaför ve diğer randevularını takip et</Text>

@@ -1,4 +1,4 @@
-import { Ionicons } from "@expo/vector-icons";
+import { Icon } from "@/components/Icon";
 import * as Haptics from "expo-haptics";
 import { Image } from "expo-image";
 import { LinearGradient } from "expo-linear-gradient";
@@ -189,7 +189,7 @@ export default function UserProfileScreen() {
         <TopBar username="Profil" onBack={() => router.back()} />
         <View style={S.center}>
           <View style={[S.notFoundCircle, { backgroundColor: T.purpleFaint }]}>
-            <Ionicons name="person-outline" size={36} color={T.purple} />
+            <Icon name="person-outline" size={36} color={T.purple} />
           </View>
           <Text style={[S.notFoundTitle, { color: T.text }]}>Profil bulunamadı</Text>
           <Text style={[S.notFoundSub, { color: T.textMuted }]}>
@@ -253,7 +253,7 @@ export default function UserProfileScreen() {
           {bio ? <Text style={[S.bio, { color: T.textMuted }]}>{bio}</Text> : null}
           {location ? (
             <View style={S.locRow}>
-              <Ionicons name="location-outline" size={13} color={T.textMuted} />
+              <Icon name="location-outline" size={13} color={T.textMuted} />
               <Text style={[S.locTxt, { color: T.textMuted }]}>{location}</Text>
             </View>
           ) : null}
@@ -307,7 +307,7 @@ export default function UserProfileScreen() {
                     <ActivityIndicator size="small" color={T.purple} />
                   ) : (
                     <>
-                      <Ionicons name="chatbubble-outline" size={15} color={T.purple} style={{ marginRight: 5 }} />
+                      <Icon name="chatbubble-outline" size={15} color={T.purple} style={{ marginRight: 5 }} />
                       <Text style={[S.btnOutlineTxt, { color: T.purple }]}>Mesaj Gönder</Text>
                     </>
                   )}
@@ -321,10 +321,10 @@ export default function UserProfileScreen() {
         {isOwn && (
           <View style={[S.tabBar, { backgroundColor: T.card, borderBottomColor: T.border }]}>
             <Pressable style={S.tabBtn} onPress={() => switchTab("posts")}>
-              <Ionicons name="grid-outline" size={22} color={activeTab === "posts" ? T.purple : T.textMuted} />
+              <Icon name="grid-outline" size={22} color={activeTab === "posts" ? T.purple : T.textMuted} />
             </Pressable>
             <Pressable style={S.tabBtn} onPress={() => switchTab("pets")}>
-              <Ionicons name="paw-outline" size={22} color={activeTab === "pets" ? T.purple : T.textMuted} />
+              <Icon name="paw-outline" size={22} color={activeTab === "pets" ? T.purple : T.textMuted} />
             </Pressable>
             <Animated.View style={[S.tabIndicator, { backgroundColor: T.purple, transform: [{ translateX: tabIndicatorX }] }]} />
           </View>
@@ -363,7 +363,7 @@ function TopBar({ username, onBack }: { username: string; onBack: () => void }) 
   return (
     <View style={[S.topBar, { backgroundColor: T.card, borderBottomColor: T.border }]}>
       <Pressable onPress={onBack} hitSlop={14} style={S.topBackBtn}>
-        <Ionicons name="chevron-back" size={26} color={T.purple} />
+        <Icon name="chevron-back" size={26} color={T.purple} />
       </Pressable>
       <Text style={[S.topUsername, { color: T.text }]} numberOfLines={1}>
         {username ? `@${username}` : "Profil"}
@@ -393,7 +393,7 @@ function PostsGrid({ posts, onPressPost }: { posts: ApiPost[]; onPressPost: (id:
     return (
       <View style={[S.emptyWrap, { backgroundColor: T.bg }]}>
         <View style={[S.emptyIconCircle, { backgroundColor: T.purpleFaint }]}>
-          <Ionicons name="images-outline" size={36} color={T.purple} />
+          <Icon name="images-outline" size={36} color={T.purple} />
         </View>
         <Text style={[S.emptyTitle, { color: T.text }]}>Henüz gönderi yok</Text>
         <Text style={[S.emptySub, { color: T.textMuted }]}>Paylaşımlar burada görünecek</Text>
@@ -422,7 +422,7 @@ function PostsGrid({ posts, onPressPost }: { posts: ApiPost[]; onPressPost: (id:
             style={S.gridScrim}
           />
           <View style={S.gridOverlay}>
-            <Ionicons name="heart" size={13} color="#FFF" />
+            <Icon name="heart" size={13} color="#FFF" />
             <Text style={S.gridLikes}>{p.likesCount}</Text>
           </View>
         </Pressable>
@@ -437,7 +437,7 @@ function PetsGrid({ pets, onPressPet }: { pets: ApiPetProfile[]; onPressPet: (pe
     return (
       <View style={[S.emptyWrap, { backgroundColor: T.bg }]}>
         <View style={[S.emptyIconCircle, { backgroundColor: T.purpleFaint }]}>
-          <Ionicons name="paw-outline" size={36} color={T.purple} />
+          <Icon name="paw-outline" size={36} color={T.purple} />
         </View>
         <Text style={[S.emptyTitle, { color: T.text }]}>Evcil Dostu Yok</Text>
         <Text style={[S.emptySub, { color: T.textMuted }]}>Evcil hayvanlar burada görünecek</Text>
@@ -460,7 +460,7 @@ function PetsGrid({ pets, onPressPet }: { pets: ApiPetProfile[]; onPressPet: (pe
             {pet.avatarUrl ? (
               <Image source={{ uri: pet.avatarUrl }} style={S.petAvatar} contentFit="cover" />
             ) : (
-              <Ionicons name="paw" size={26} color={T.purple} />
+              <Icon name="paw" size={26} color={T.purple} />
             )}
           </LinearGradient>
           <View style={S.petInfo}>
@@ -470,7 +470,7 @@ function PetsGrid({ pets, onPressPet }: { pets: ApiPetProfile[]; onPressPet: (pe
             </Text>
             {pet.bio ? <Text style={[S.petBio, { color: T.textMuted }]} numberOfLines={2}>{pet.bio}</Text> : null}
           </View>
-          <Ionicons name="chevron-forward" size={18} color={T.textFaint} />
+          <Icon name="chevron-forward" size={18} color={T.textFaint} />
         </Pressable>
       ))}
     </View>
@@ -482,7 +482,7 @@ function PrivateLockState() {
   return (
     <View style={[S.lockWrap, { backgroundColor: T.bg }]}>
       <View style={[S.lockCircle, { backgroundColor: T.purpleFaint }]}>
-        <Ionicons name="lock-closed" size={32} color={T.purple} />
+        <Icon name="lock-closed" size={32} color={T.purple} />
       </View>
       <Text style={[S.lockTitle, { color: T.text }]}>Bu hesap gizli</Text>
       <Text style={[S.lockSub, { color: T.textMuted }]}>Gönderileri görmek için takip et</Text>

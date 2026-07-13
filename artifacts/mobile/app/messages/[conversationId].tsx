@@ -1,4 +1,4 @@
-import { Ionicons } from "@expo/vector-icons";
+import { Icon } from "@/components/Icon";
 import * as Haptics from "expo-haptics";
 import { Image } from "expo-image";
 import * as ImagePicker from "expo-image-picker";
@@ -200,7 +200,7 @@ export default function ChatScreen() {
             <Image source={{ uri: conv.listingImage }} style={S.listingImg} contentFit="cover" />
           ) : (
             <View style={[S.listingImg, S.listingImgPlaceholder, { backgroundColor: T.input }]}>
-              <Ionicons name="paw" size={20} color={T.textMuted} />
+              <Icon name="paw" size={20} color={T.textMuted} />
             </View>
           )}
           <View style={{ flex: 1 }}>
@@ -209,7 +209,7 @@ export default function ChatScreen() {
               {conv.listingTitle ?? "İlan"}
             </Text>
           </View>
-          <Ionicons name="chevron-forward" size={18} color={T.textMuted} />
+          <Icon name="chevron-forward" size={18} color={T.textMuted} />
         </View>
       )}
 
@@ -247,7 +247,7 @@ export default function ChatScreen() {
           { paddingBottom: insets.bottom + 6, backgroundColor: T.card, borderTopColor: T.border },
         ]}>
           <Pressable style={S.imgBtn} onPress={handleImage} hitSlop={8}>
-            <Ionicons name="image-outline" size={26} color={T.purple} />
+            <Icon name="image-outline" size={26} color={T.purple} />
           </Pressable>
 
           <TextInput
@@ -273,7 +273,7 @@ export default function ChatScreen() {
             {sending ? (
               <ActivityIndicator size="small" color="#FFF" />
             ) : (
-              <Ionicons name="send" size={18} color="#FFF" />
+              <Icon name="send" size={18} color="#FFF" />
             )}
           </Pressable>
         </View>
@@ -292,7 +292,7 @@ function ChatHeader({ T, conv, onBack }: ThemeProp & { conv: ApiConversation | n
   return (
     <View style={[S.header, { backgroundColor: T.card, borderBottomColor: T.border }]}>
       <Pressable onPress={onBack} hitSlop={14} style={S.backBtn}>
-        <Ionicons name="chevron-back" size={26} color={T.purple} />
+        <Icon name="chevron-back" size={26} color={T.purple} />
       </Pressable>
 
       <Pressable
@@ -359,7 +359,7 @@ function MessageBubble({ msg, isMine }: { msg: ApiMessage; isMine: boolean }) {
           {hasPhoto && (
             imgFailed ? (
               <View style={[S.imgErrorBox, { backgroundColor: T.bgSecondary }]}>
-                <Ionicons name="image-outline" size={28} color={T.textFaint} />
+                <Icon name="image-outline" size={28} color={T.textFaint} />
                 <Text style={[S.imgErrorTxt, { color: T.textMuted }]}>Görsel yüklenemedi</Text>
               </View>
             ) : (

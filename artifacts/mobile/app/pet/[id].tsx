@@ -1,4 +1,4 @@
-import { Ionicons } from "@expo/vector-icons";
+import { Icon } from "@/components/Icon";
 import * as Haptics from "expo-haptics";
 import { Image } from "expo-image";
 import { useLocalSearchParams, useRouter } from "expo-router";
@@ -88,7 +88,7 @@ export default function PetDetailScreen() {
         <Image source={{ uri: pet.image }} style={styles.heroImage} contentFit="cover" />
       ) : (
         <View style={[styles.heroPlaceholder, { backgroundColor: colors.muted }]}>
-          <Ionicons name="paw" size={64} color={colors.primary} />
+          <Icon name="paw" size={64} color={colors.primary} />
         </View>
       )}
 
@@ -105,7 +105,7 @@ export default function PetDetailScreen() {
           </View>
           {pet.vaccinationInfo ? (
             <View style={[styles.vacBadge, { backgroundColor: colors.secondary + "20" }]}>
-              <Ionicons name="shield-checkmark" size={14} color={colors.secondary} />
+              <Icon name="shield-checkmark" size={14} color={colors.secondary} />
               <Text style={[styles.vacText, { color: colors.secondary }]}>Aşılı</Text>
             </View>
           ) : null}
@@ -119,7 +119,7 @@ export default function PetDetailScreen() {
         {/* Active boost badge */}
         {boost?.isFeatured && boost.expiresAt && (
           <View style={[styles.boostActiveBadge, { backgroundColor: `${colors.primary}12`, borderColor: `${colors.primary}30` }]}>
-            <Ionicons name="star" size={14} color={colors.primary} />
+            <Icon name="star" size={14} color={colors.primary} />
             <Text style={[styles.boostActiveBadgeText, { color: colors.primary }]}>
               {(() => {
                 const remaining = new Date(boost.expiresAt).getTime() - Date.now();
@@ -142,7 +142,7 @@ export default function PetDetailScreen() {
               style={[styles.infoCard, { backgroundColor: colors.card, borderColor: colors.border }]}
             >
               <View style={styles.infoHeader}>
-                <Ionicons name={section.icon} size={18} color={colors.primary} />
+                <Icon name={section.icon} size={18} color={colors.primary} />
                 <Text style={[styles.infoLabel, { color: colors.foreground }]}>
                   {section.label}
                 </Text>
@@ -165,7 +165,7 @@ export default function PetDetailScreen() {
               ]}
               onPress={handleBoost}
             >
-              <Ionicons name="star" size={18} color={colors.primary} />
+              <Icon name="star" size={18} color={colors.primary} />
               <View style={{ flex: 1 }}>
                 <Text style={[styles.boostBtnTitle, { color: colors.primary }]}>
                   {boost?.isFeatured ? "Öne Çıkarmayı Yenile" : "İlanı Öne Çıkar"}
@@ -176,7 +176,7 @@ export default function PetDetailScreen() {
                     : "₺50'den başlayan fiyatlarla"}
                 </Text>
               </View>
-              <Ionicons name="chevron-forward" size={16} color={colors.primary} />
+              <Icon name="chevron-forward" size={16} color={colors.primary} />
             </Pressable>
 
             {/* Delete button */}
@@ -187,7 +187,7 @@ export default function PetDetailScreen() {
               ]}
               onPress={handleDelete}
             >
-              <Ionicons name="trash-outline" size={18} color={colors.destructive} />
+              <Icon name="trash-outline" size={18} color={colors.destructive} />
               <Text style={[styles.deleteBtnText, { color: colors.destructive }]}>
                 İlanı Sil
               </Text>

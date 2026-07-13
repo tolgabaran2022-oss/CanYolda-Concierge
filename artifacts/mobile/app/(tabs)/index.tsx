@@ -1,5 +1,5 @@
 import BottomSheet, { BottomSheetFlatList } from "@gorhom/bottom-sheet";
-import { Ionicons } from "@expo/vector-icons";
+import { Icon } from "@/components/Icon";
 import * as Haptics from "expo-haptics";
 import * as Location from "expo-location";
 import { useRouter } from "expo-router";
@@ -44,7 +44,7 @@ const PURPLE = "#7C3AED";
 const STATUS_FILTERS: {
   key: "all" | AnimalStatus;
   label: string;
-  icon: keyof typeof Ionicons.glyphMap;
+  icon: string;
   accent: string;
 }[] = [
   { key: "all",     label: "Hepsi",      icon: "paw-outline",              accent: PURPLE    },
@@ -280,7 +280,7 @@ export default function MapScreen() {
                   Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
                 }}
               >
-                <Ionicons
+                <Icon
                   name={f.icon}
                   size={13}
                   color={active ? "white" : accentColor}
@@ -348,7 +348,7 @@ export default function MapScreen() {
             { backgroundColor: STATUS_COLORS[animal.status] },
           ]}
         >
-          <Ionicons name="paw" size={16} color="white" />
+          <Icon name="paw" size={16} color="white" />
         </View>
         <View style={{ flex: 1 }}>
           <View style={styles.rowTop}>
@@ -371,7 +371,7 @@ export default function MapScreen() {
             {animal.userName} · {formatTimeAgo(animal.timestamp)}
           </Text>
         </View>
-        <Ionicons name="chevron-forward" size={16} color={colors.mutedForeground} />
+        <Icon name="chevron-forward" size={16} color={colors.mutedForeground} />
       </Pressable>
     ),
     [selectedId, colors, router]
@@ -380,7 +380,7 @@ export default function MapScreen() {
   const EmptyList = useMemo(
     () => (
       <View style={styles.emptyRow}>
-        <Ionicons name="paw-outline" size={22} color={colors.mutedForeground} />
+        <Icon name="paw-outline" size={22} color={colors.mutedForeground} />
         <Text style={[styles.emptyText, { color: colors.mutedForeground }]}>
           Bu filtrede hayvan yok
         </Text>
@@ -426,7 +426,7 @@ export default function MapScreen() {
                 },
               ]}
             >
-              <Ionicons name="paw" size={13} color="white" />
+              <Icon name="paw" size={13} color="white" />
               {animal.needsHelpByUsers.length > 0 && (
                 <View style={styles.urgentDot} />
               )}
@@ -448,7 +448,7 @@ export default function MapScreen() {
                 ]}
               />
               <View style={styles.userDot}>
-                <Ionicons name="navigate" size={12} color="white" />
+                <Icon name="navigate" size={12} color="white" />
               </View>
             </View>
           </Marker>
@@ -463,7 +463,7 @@ export default function MapScreen() {
             { backgroundColor: colors.background },
           ]}
         />
-        <Ionicons name="paw" size={17} color={colors.primary} />
+        <Icon name="paw" size={17} color={colors.primary} />
         <Text style={[styles.topTitle, { color: colors.foreground }]}>
           CanYoldaşı
         </Text>
@@ -495,7 +495,7 @@ export default function MapScreen() {
         {isLocating ? (
           <ActivityIndicator size="small" color={PURPLE} />
         ) : (
-          <Ionicons name="navigate" size={20} color={PURPLE} />
+          <Icon name="navigate" size={20} color={PURPLE} />
         )}
       </Pressable>
 
@@ -515,7 +515,7 @@ export default function MapScreen() {
           Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
         }}
       >
-        <Ionicons name="add" size={26} color="white" />
+        <Icon name="add" size={26} color="white" />
       </Pressable>
 
       {/* Bottom Sheet */}

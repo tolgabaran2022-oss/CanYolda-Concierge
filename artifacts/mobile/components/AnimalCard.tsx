@@ -1,4 +1,4 @@
-import { Ionicons } from "@expo/vector-icons";
+import { Icon } from "@/components/Icon";
 import * as Haptics from "expo-haptics";
 import { Image } from "expo-image";
 import { useRouter } from "expo-router";
@@ -104,10 +104,10 @@ function OwnerActionSheet({
               }}
             >
               <View style={[AS.iconWrap, { backgroundColor: `${C.purple}14` }]}>
-                <Ionicons name="information-circle-outline" size={20} color={C.purple} />
+                <Icon name="information-circle-outline" size={20} color={C.purple} />
               </View>
               <Text style={AS.actionLabel}>Bildirim Detayları</Text>
-              <Ionicons name="chevron-forward" size={16} color={C.muted} />
+              <Icon name="chevron-forward" size={16} color={C.muted} />
             </Pressable>
 
             {/* Delete */}
@@ -119,7 +119,7 @@ function OwnerActionSheet({
               }}
             >
               <View style={[AS.iconWrap, { backgroundColor: `${C.red}14` }]}>
-                <Ionicons name="trash-outline" size={20} color={C.red} />
+                <Icon name="trash-outline" size={20} color={C.red} />
               </View>
               <Text style={[AS.actionLabel, { color: C.red }]}>Bildirimi Sil</Text>
             </Pressable>
@@ -337,7 +337,7 @@ export function AnimalCard({ animal, onLike, index = 0 }: Props) {
             onPress={openMenu}
             disabled={deleting}
           >
-            <Ionicons name="ellipsis-horizontal" size={16} color={C.muted} />
+            <Icon name="ellipsis-horizontal" size={16} color={C.muted} />
           </Pressable>
         )}
 
@@ -375,7 +375,7 @@ export function AnimalCard({ animal, onLike, index = 0 }: Props) {
             </Text>
             {animal.locationName ? (
               <View style={S.locRow}>
-                <Ionicons name="location-outline" size={11} color={T.textMuted} />
+                <Icon name="location-outline" size={11} color={T.textMuted} />
                 <Text style={[S.locText, { color: T.textMuted }]} numberOfLines={1}>{animal.locationName}</Text>
               </View>
             ) : null}
@@ -384,7 +384,7 @@ export function AnimalCard({ animal, onLike, index = 0 }: Props) {
           {/* Arrow */}
           <View style={S.arrowWrap}>
             <View style={S.arrowCircle}>
-              <Ionicons name="chevron-forward" size={13} color={C.purple} />
+              <Icon name="chevron-forward" size={13} color={C.purple} />
             </View>
           </View>
         </Pressable>
@@ -400,7 +400,7 @@ export function AnimalCard({ animal, onLike, index = 0 }: Props) {
             hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}
           >
             <Animated.View style={{ transform: [{ scale: heartScale }] }}>
-              <Ionicons
+              <Icon
                 name={liked ? "heart" : "heart-outline"}
                 size={17}
                 color={liked ? "#EF4444" : C.muted}
@@ -422,7 +422,7 @@ export function AnimalCard({ animal, onLike, index = 0 }: Props) {
             style={({ pressed }) => [S.interactBtn, pressed && { opacity: 0.7 }]}
             hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}
           >
-            <Ionicons name="chatbubble-outline" size={16} color={T.textMuted} />
+            <Icon name="chatbubble-outline" size={16} color={T.textMuted} />
             <Text style={[S.interactText, { color: T.textMuted }]}>{animal.comments.length}</Text>
           </Pressable>
 
@@ -445,7 +445,7 @@ export function AnimalCard({ animal, onLike, index = 0 }: Props) {
             style={({ pressed }) => [S.interactBtn, pressed && { opacity: 0.7 }]}
             hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}
           >
-            <Ionicons name="location-outline" size={16} color={T.textMuted} />
+            <Icon name="location-outline" size={16} color={T.textMuted} />
             <Text style={[S.interactText, { color: T.textMuted }]}>Konumu Aç</Text>
           </Pressable>
 

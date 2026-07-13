@@ -21,7 +21,7 @@ import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { useLocalSearchParams, useRouter } from "expo-router";
 import * as ImagePicker from "expo-image-picker";
 import * as Haptics from "expo-haptics";
-import { Ionicons } from "@expo/vector-icons";
+import { Icon } from "@/components/Icon";
 import { LinearGradient } from "expo-linear-gradient";
 import { BlurView } from "expo-blur";
 import { useAuth } from "@/contexts/AuthContext";
@@ -105,7 +105,7 @@ function AddPostModal({
             {imageUri
               ? <Image source={{ uri: imageUri }} style={M.previewImg} />
               : <View style={M.imagePlaceholder}>
-                  <Ionicons name="image-outline" size={40} color={T.textMuted} />
+                  <Icon name="image-outline" size={40} color={T.textMuted} />
                   <Text style={{ color: T.textMuted, marginTop: 8 }}>Fotoğraf Seç</Text>
                 </View>
             }
@@ -354,12 +354,12 @@ export default function PetProfileScreen() {
           <BlurView intensity={60} style={StyleSheet.absoluteFill} tint={T.isDark ? "dark" : "light"} />
         </Animated.View>
         <TouchableOpacity onPress={() => router.back()} style={S.backBtn}>
-          <Ionicons name="chevron-back" size={24} color={T.text} />
+          <Icon name="chevron-back" size={24} color={T.text} />
         </TouchableOpacity>
         <Text style={[S.floatTitle, { color: T.text }]}>{pet.name}</Text>
         {isOwner && (
           <TouchableOpacity onPress={() => setShowEditPet(true)} style={S.backBtn}>
-            <Ionicons name="ellipsis-horizontal" size={22} color={T.text} />
+            <Icon name="ellipsis-horizontal" size={22} color={T.text} />
           </TouchableOpacity>
         )}
       </Animated.View>
@@ -388,7 +388,7 @@ export default function PetProfileScreen() {
           {pet.bio ? <Text style={[S.bio, { color: T.textMuted }]}>{pet.bio}</Text> : null}
           {pet.location ? (
             <View style={{ flexDirection: "row", alignItems: "center", gap: 4, marginTop: 4 }}>
-              <Ionicons name="location-outline" size={13} color={T.textMuted} />
+              <Icon name="location-outline" size={13} color={T.textMuted} />
               <Text style={[S.infoMeta, { color: T.textMuted }]}>{pet.location}</Text>
             </View>
           ) : null}
@@ -409,20 +409,20 @@ export default function PetProfileScreen() {
           {/* Meta pills */}
           <View style={S.pills}>
             {pet.gender ? <View style={[S.pill, { backgroundColor: T.card }]}><Text style={[S.pillTxt, { color: T.textMuted }]}>{pet.gender}</Text></View> : null}
-            {pet.weight ? <View style={[S.pill, { backgroundColor: T.card, flexDirection: "row", alignItems: "center", gap: 4 }]}><Ionicons name="barbell-outline" size={12} color={T.textMuted} /><Text style={[S.pillTxt, { color: T.textMuted }]}>{pet.weight} kg</Text></View> : null}
+            {pet.weight ? <View style={[S.pill, { backgroundColor: T.card, flexDirection: "row", alignItems: "center", gap: 4 }]}><Icon name="barbell-outline" size={12} color={T.textMuted} /><Text style={[S.pillTxt, { color: T.textMuted }]}>{pet.weight} kg</Text></View> : null}
             {pet.color ? <View style={[S.pill, { backgroundColor: T.card }]}><Text style={[S.pillTxt, { color: T.textMuted }]}>{pet.color}</Text></View> : null}
-            {pet.birthDate ? <View style={[S.pill, { backgroundColor: T.card, flexDirection: "row", alignItems: "center", gap: 4 }]}><Ionicons name="calendar-outline" size={12} color={T.textMuted} /><Text style={[S.pillTxt, { color: T.textMuted }]}>{pet.birthDate}</Text></View> : null}
+            {pet.birthDate ? <View style={[S.pill, { backgroundColor: T.card, flexDirection: "row", alignItems: "center", gap: 4 }]}><Icon name="calendar-outline" size={12} color={T.textMuted} /><Text style={[S.pillTxt, { color: T.textMuted }]}>{pet.birthDate}</Text></View> : null}
           </View>
 
           {/* Action buttons */}
           {isOwner ? (
             <View style={S.actionRow}>
               <TouchableOpacity style={[S.actionBtn, { flex: 1 }]} onPress={() => setShowAddPost(true)}>
-                <Ionicons name="add-circle-outline" size={16} color="#fff" />
+                <Icon name="add-circle-outline" size={16} color="#fff" />
                 <Text style={S.actionTxt}>Gönderi Ekle</Text>
               </TouchableOpacity>
               <TouchableOpacity style={[S.actionBtn, S.actionBtnOutline, { flex: 1, borderColor: T.border }]} onPress={() => setShowAddHealth(true)}>
-                <Ionicons name="heart-outline" size={16} color={T.text} />
+                <Icon name="heart-outline" size={16} color={T.text} />
                 <Text style={[S.actionTxt, { color: T.text }]}>Sağlık Ekle</Text>
               </TouchableOpacity>
             </View>
@@ -445,7 +445,7 @@ export default function PetProfileScreen() {
             { key: "health" as TabKey, icon: "medical-outline", label: "Sağlık" },
           ] as const).map(({ key, icon, label }) => (
             <TouchableOpacity key={key} style={[S.tab, activeTab === key && S.tabActive]} onPress={() => setActiveTab(key)}>
-              <Ionicons name={icon} size={18} color={activeTab === key ? PURPLE : T.textMuted} />
+              <Icon name={icon} size={18} color={activeTab === key ? PURPLE : T.textMuted} />
               <Text style={[S.tabTxt, { color: T.textMuted }, activeTab === key && { color: PURPLE }]}>{label}</Text>
             </TouchableOpacity>
           ))}
@@ -456,7 +456,7 @@ export default function PetProfileScreen() {
           posts.length === 0
             ? (
               <View style={S.empty}>
-                <Ionicons name="image-outline" size={44} color={T.textFaint} />
+                <Icon name="image-outline" size={44} color={T.textFaint} />
                 <Text style={[S.emptyTxt, { color: T.textMuted }]}>Henüz gönderi yok</Text>
                 {isOwner && (
                   <TouchableOpacity style={[S.actionBtn, { marginTop: 16, paddingHorizontal: 24 }]} onPress={() => setShowAddPost(true)}>
@@ -488,7 +488,7 @@ export default function PetProfileScreen() {
             {health.length === 0
               ? (
                 <View style={S.empty}>
-                  <Ionicons name="medical-outline" size={44} color={T.textFaint} />
+                  <Icon name="medical-outline" size={44} color={T.textFaint} />
                   <Text style={[S.emptyTxt, { color: T.textMuted }]}>Sağlık kaydı bulunamadı</Text>
                   {isOwner && (
                     <TouchableOpacity style={[S.actionBtn, { marginTop: 16, paddingHorizontal: 24 }]} onPress={() => setShowAddHealth(true)}>
@@ -500,19 +500,19 @@ export default function PetProfileScreen() {
               : health.map((h) => (
                 <View key={h.id} style={[S.healthCard, { backgroundColor: T.card }]}>
                   <View style={[S.healthCardIcon, { backgroundColor: T.purpleFaint }]}>
-                    <Ionicons name="shield-checkmark-outline" size={22} color={PURPLE} />
+                    <Icon name="shield-checkmark-outline" size={22} color={PURPLE} />
                   </View>
                   <View style={{ flex: 1 }}>
                     <Text style={[S.healthName, { color: T.text }]}>{h.vaccineName}</Text>
                     <View style={{ flexDirection: "row", alignItems: "center", gap: 4, marginTop: 2 }}>
-                      <Ionicons name="calendar-outline" size={13} color={T.textMuted} />
+                      <Icon name="calendar-outline" size={13} color={T.textMuted} />
                       <Text style={[S.healthDate, { color: T.textMuted }]}>{h.date}{h.nextDate ? ` · ${h.nextDate}` : ""}</Text>
                     </View>
                     {h.note ? <Text style={[S.healthNote, { color: T.textMuted }]}>{h.note}</Text> : null}
                   </View>
                   {isOwner && (
                     <TouchableOpacity onPress={() => handleDeleteHealth(h.id)} style={{ padding: 4 }}>
-                      <Ionicons name="trash-outline" size={18} color={T.textMuted} />
+                      <Icon name="trash-outline" size={18} color={T.textMuted} />
                     </TouchableOpacity>
                   )}
                 </View>
