@@ -51,8 +51,8 @@ export default function WelcomeScreen() {
 
   /* ── Responsive flex ratios ──────────────────────────────────────── */
   //                   short  medium  tall
-  const heroFlex  = sc === "short" ? 0.52 : sc === "medium" ? 0.59 : 0.65;
-  const authFlex  = sc === "short" ? 0.48 : sc === "medium" ? 0.41 : 0.35;
+  const heroFlex  = sc === "short" ? 0.58 : sc === "medium" ? 0.66 : 0.72;
+  const authFlex  = sc === "short" ? 0.42 : sc === "medium" ? 0.34 : 0.28;
 
   /* ── Centralised spacing — derived from viewport, never hardcoded ── */
   const sp = {
