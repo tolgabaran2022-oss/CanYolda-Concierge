@@ -22,6 +22,7 @@ import React, { useEffect, useMemo, useRef, useState } from "react";
 import {
   AccessibilityInfo,
   ActivityIndicator,
+  Alert,
   KeyboardAvoidingView,
   Platform,
   Pressable,
@@ -46,6 +47,7 @@ import Animated, {
   withTiming,
 } from "react-native-reanimated";
 import { SafeAreaView } from "react-native-safe-area-context";
+import { useAuth } from "@/contexts/AuthContext";
 
 const C = {
   cream:     "#FBF2EA",
@@ -245,6 +247,7 @@ function ShimmerBtn({
 
 export default function LoginScreen() {
   const router = useRouter();
+  const { login } = useAuth();
   const passwordRef = useRef<TextInput>(null);
 
   const [email, setEmail] = useState("");
@@ -278,7 +281,13 @@ export default function LoginScreen() {
     Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
     setLoading(true);
     try {
+      await login(email.trim(), password);
+      Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
       router.replace("/(tabs)");
+    } catch (e: unknown) {
+      const msg = e instanceof Error ? e.message : "Giriş yapılamadı.";
+      Alert.alert("Hata", msg);
+      Haptics.notificationAsync(Haptics.NotificationFeedbackType.Error);
     } finally {
       setLoading(false);
     }
