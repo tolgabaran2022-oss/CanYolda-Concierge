@@ -46,8 +46,7 @@ export function ThemeProvider({ children }: { children: React.ReactNode }) {
     AsyncStorage.setItem(STORAGE_KEY, pref).catch(() => {});
   }, [urlOverride]);
 
-  const resolvedScheme: "light" | "dark" =
-    urlOverride ?? (preference === "system" ? (systemScheme ?? "light") : preference);
+  const resolvedScheme: "light" | "dark" = "light";
 
   return (
     <ThemeContext.Provider value={{ preference, resolvedScheme, setTheme }}>

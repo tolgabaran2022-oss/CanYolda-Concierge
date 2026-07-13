@@ -20,18 +20,7 @@ import {
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { useAuth } from "@/contexts/AuthContext";
 import { useTheme } from "@/hooks/useTheme";
-import { useThemeContext, type ThemePreference } from "@/contexts/ThemeContext";
 
-const THEME_OPTIONS: {
-  key: ThemePreference;
-  label: string;
-  icon: "sunny-outline" | "moon-outline" | "phone-portrait-outline";
-  desc: string;
-}[] = [
-  { key: "light",  label: "Açık",   icon: "sunny-outline",          desc: "Her zaman açık tema" },
-  { key: "dark",   label: "Koyu",   icon: "moon-outline",           desc: "Her zaman koyu tema" },
-  { key: "system", label: "Sistem", icon: "phone-portrait-outline",  desc: "Cihaz ayarını takip et" },
-];
 
 const TAB_FLOAT_H    = 64;
 const TAB_BOTTOM_GAP = Platform.OS === "web" ? 12 : 10;
@@ -42,7 +31,6 @@ export default function AccountScreen() {
   const { user, logout, changePassword } = useAuth();
   const router        = useRouter();
   const T             = useTheme();
-  const { preference, setTheme } = useThemeContext();
 
   const topPad       = Platform.OS === "web" ? (SW < 1024 ? 54 : 16) : insets.top;
   const tabClearance = Platform.OS === "web" ? (SW < 1024 ? 100 : 24) : (insets.bottom + TAB_BOTTOM_GAP + TAB_FLOAT_H);
@@ -129,52 +117,6 @@ export default function AccountScreen() {
         contentContainerStyle={[S.container, { paddingBottom: tabClearance + 24 }]}
         showsVerticalScrollIndicator={false}
       >
-
-        {/* ── GÖRÜNÜM ─────────────────────────────────────── */}
-        <View style={S.section}>
-          <Text style={[S.sectionTitle, { color: T.textFaint }]}>Görünüm</Text>
-          <View style={[S.card, { backgroundColor: T.card, borderColor: T.border }]}>
-            {THEME_OPTIONS.map((opt, idx) => {
-              const active = preference === opt.key;
-              return (
-                <React.Fragment key={opt.key}>
-                  {idx > 0 && (
-                    <View style={[S.divider, { backgroundColor: T.divider, marginLeft: 16 }]} />
-                  )}
-                  <Pressable
-                    style={({ pressed }) => [S.row, { opacity: pressed ? 0.75 : 1 }]}
-                    onPress={() => {
-                      setTheme(opt.key);
-                      Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
-                    }}
-                  >
-                    <View style={[
-                      S.iconBadge,
-                      { backgroundColor: active ? T.purpleFaint : T.purpleFaint },
-                    ]}>
-                      <Icon
-                        name={opt.icon}
-                        size={18}
-                        color={active ? T.purple : T.textMuted}
-                      />
-                    </View>
-                    <View style={{ flex: 1 }}>
-                      <Text style={[S.rowLabel, { color: T.text }]}>{opt.label}</Text>
-                      <Text style={[S.rowDesc, { color: T.textMuted }]}>{opt.desc}</Text>
-                    </View>
-                    <View style={[
-                      S.radioOuter,
-                      { borderColor: active ? T.purple : T.border },
-                      active && { backgroundColor: T.purple },
-                    ]}>
-                      {active && <Icon name="checkmark" size={11} color="#FFF" />}
-                    </View>
-                  </Pressable>
-                </React.Fragment>
-              );
-            })}
-          </View>
-        </View>
 
         {/* ── Hesap Ayarları ─────────────────────────────── */}
         <View style={S.section}>
