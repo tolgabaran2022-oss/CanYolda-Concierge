@@ -8,8 +8,9 @@ import {
 import { Feather, Ionicons } from "@expo/vector-icons";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { Stack, useRouter, useSegments } from "expo-router";
+import * as Font from "expo-font";
 import * as SplashScreen from "expo-splash-screen";
-import React, { useEffect } from "react";
+import React, { useEffect, useState } from "react";
 import { Platform, View } from "react-native";
 import { GestureHandlerRootView } from "react-native-gesture-handler";
 import { SafeAreaProvider } from "react-native-safe-area-context";
@@ -84,50 +85,35 @@ function RootLayoutNav() {
         }}
       />
       <Stack.Screen
+        name="evcilim/[petId]"
+        options={{ headerShown: false }}
+      />
+      <Stack.Screen
+        name="evcilim/[petId]/vaccinations"
+        options={{ headerShown: false }}
+      />
+      <Stack.Screen
+        name="evcilim/[petId]/appointments"
+        options={{ headerShown: false }}
+      />
+      <Stack.Screen
+        name="evcilim/[petId]/identification"
+        options={{ headerShown: false }}
+      />
+      <Stack.Screen
+        name="evcilim/[petId]/nutrition"
+        options={{ headerShown: false }}
+      />
+      <Stack.Screen
+        name="evcilim/[petId]/notes"
+        options={{ headerShown: false }}
+      />
+      <Stack.Screen
         name="add-adoption"
-        options={{
-          presentation: "modal",
-          headerShown: false,
-        }}
-      />
-      <Stack.Screen
-        name="adoption/[id]"
-        options={{
-          headerShown: true,
-          title: "İlan Detayı",
-          headerStyle: { backgroundColor: "#FAF7F0" },
-          headerTintColor: "#E07A35",
-          headerTitleStyle: { fontFamily: "Inter_600SemiBold" },
-        }}
-      />
-      <Stack.Screen
-        name="boost-packages"
-        options={{
-          presentation: "modal",
-          headerShown: false,
-        }}
-      />
-      <Stack.Screen
-        name="create-post"
-        options={{
-          presentation: "modal",
-          headerShown: false,
-        }}
-      />
-      <Stack.Screen
-        name="notifications"
         options={{ headerShown: false }}
       />
       <Stack.Screen
-        name="search"
-        options={{ headerShown: false }}
-      />
-      <Stack.Screen
-        name="profile-edit"
-        options={{ headerShown: false }}
-      />
-      <Stack.Screen
-        name="post-detail/[postId]"
+        name="adoption/edit/[id]"
         options={{ headerShown: false }}
       />
       <Stack.Screen
@@ -135,7 +121,11 @@ function RootLayoutNav() {
         options={{ headerShown: false }}
       />
       <Stack.Screen
-        name="follow-list/[userId]"
+        name="pet-profile/[petId]"
+        options={{ headerShown: false }}
+      />
+      <Stack.Screen
+        name="adoption/edit/[id]"
         options={{ headerShown: false }}
       />
       <Stack.Screen
@@ -155,22 +145,43 @@ function RootLayoutNav() {
 }
 
 export default function RootLayout() {
-  const [fontsLoaded, fontError] = useFonts({
+  // Step 1: Load Inter (Google Fonts) — isolated so icon font errors don't affect it
+  const [interLoaded, interError] = useFonts({
     Inter_400Regular,
     Inter_500Medium,
     Inter_600SemiBold,
     Inter_700Bold,
-    ...Ionicons.font,
-    ...Feather.font,
   });
 
+  // Step 2: Load icon fonts separately via Font.loadAsync so that:
+  //   - errors are caught and don't propagate to interLoaded state
+  //   - the native font registration is awaited before we mark ready
+  const [iconFontsReady, setIconFontsReady] = useState(false);
+
   useEffect(() => {
-    if (fontsLoaded || fontError) {
+    Font.loadAsync({
+      ...Ionicons.font,
+      ...Feather.font,
+    })
+      .catch((_e) => {
+        // Fonts may already be registered by Expo Go's pre-bundled assets.
+        // If loading fails for that reason the component's own componentDidMount
+        // will attempt a second load — so we still proceed.
+      })
+      .finally(() => {
+        setIconFontsReady(true);
+      });
+  }, []);
+
+  const appReady = (interLoaded || !!interError) && iconFontsReady;
+
+  useEffect(() => {
+    if (appReady) {
       SplashScreen.hideAsync();
     }
-  }, [fontsLoaded, fontError]);
+  }, [appReady]);
 
-  if (!fontsLoaded && !fontError) return null;
+  if (!appReady) return null;
 
   return (
     <SafeAreaProvider>
