@@ -82,9 +82,9 @@ export default function ForgotPasswordScreen() {
         return;
       }
       router.push({
-        pathname: "/(auth)/reset-password",
+        pathname: "/(auth)/verify-reset-code" as never,
         params: { email: email.trim().toLowerCase() },
-      });
+      } as never);
     } catch {
       Alert.alert("Hata", "İnternet bağlantınızı kontrol edin ve tekrar deneyin.");
     } finally {

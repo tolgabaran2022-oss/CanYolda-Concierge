@@ -1,0 +1,169 @@
+Seçenek A ile devam et.
+
+E-posta gönderim servisi olarak Resend kullan.
+
+Mevcut authentication sistemini değiştirme.
+Supabase Auth'a migration yapma.
+Mevcut localUsers, JWT, login/register routes, AuthContext ve AsyncStorage token sistemini bozma.
+
+Ancak mevcut password reset sistemini production-ready ve güvenli hale getir.
+
+ÖNEMLİ:
+Mevcut kod üretiyor ve tabloya yazıyor olabilirsin fakat önce mevcut implementasyonu güvenlik açısından denetle.
+
+Şifre sıfırlama kodu üretiminde Math.random() kullanma.
+
+Node.js crypto modülünden cryptographically secure random code üret:
+
+crypto.randomInt()
+
+6 haneli sayısal tek kullanımlık doğrulama kodu oluştur.
+
+Reset kodunu veritabanında plaintext olarak saklama.
+
+Kodun SHA-256 hash değerini sakla.
+
+Veritabanında yalnızca şunlar tutulmalı:
+
+- user_id veya güvenli kullanıcı referansı
+- email ilişkisi gerekiyorsa normalize edilmiş email
+- code_hash
+- expires_at
+- used_at
+- created_at
+- attempt_count
+
+Şifre sıfırlama kodu 10 dakika geçerli olsun.
+
+Bir kod yalnızca bir kez kullanılabilsin.
+
+Başarılı doğrulamadan sonra used_at alanını güncelle.
+
+Aynı kullanıcı yeni kod isterse önceki aktif kodları geçersiz hale getir.
+
+Kod doğrulama deneme sayısını sınırla.
+
+Maksimum 5 başarısız doğrulama denemesi sonrası kodu geçersiz hale getir.
+
+E-posta adresinin sistemde kayıtlı olup olmadığını kullanıcıya açıklama.
+
+Her durumda generic response göster:
+
+"Eğer bu e-posta adresiyle kayıtlı bir hesap varsa, şifre sıfırlama kodu gönderildi."
+
+Resend API key yalnızca backend environment variable içinde bulunmalı:
+
+RESEND_API_KEY
+
+API key'i frontend bundle içine koyma.
+EXPO_PUBLIC_ prefix kullanma.
+Client-side koddan Resend API çağrısı yapma.
+
+Tüm e-posta gönderimi backend üzerinden yapılmalı.
+
+Şifre sıfırlama e-postasının konusu:
+
+CanYoldaşı Şifre Sıfırlama Kodu
+
+E-posta içeriği Türkçe ve CanYoldaşı markasına uygun olsun.
+
+Kullanıcıya 6 haneli kodu göster.
+
+E-posta örneği:
+
+Merhaba,
+
+CanYoldaşı hesabınız için bir şifre sıfırlama isteği aldık.
+
+Şifre sıfırlama kodunuz:
+
+123456
+
+Bu kod 10 dakika boyunca geçerlidir.
+
+Bu işlemi siz istemediyseniz bu e-postayı dikkate almayabilirsiniz.
+
+CanYoldaşı
+Dostların İçin, Hep Yanında 🐾
+
+E-posta HTML tasarımı responsive ve sade olsun.
+
+Şu endpoint akışını güvenli şekilde tamamla:
+
+POST /auth/forgot-password
+
+POST /auth/verify-reset-code
+
+POST /auth/reset-password
+
+forgot-password:
+- email normalize et
+- rate limit uygula
+- güvenli kod üret
+- hash sakla
+- expiry oluştur
+- Resend ile mail gönder
+- email enumeration engelle
+
+verify-reset-code:
+- kodu plaintext database query ile arama
+- gelen kodu hashle
+- güvenli şekilde doğrula
+- expiry kontrol et
+- used_at kontrol et
+- attempt_count kontrol et
+
+Başarılı kod doğrulamasından sonra kısa ömürlü, yalnızca password reset işlemi için kullanılabilen signed reset token üret.
+
+reset-password endpoint'i yalnızca bu reset token ile çalışsın.
+
+Sadece email + yeni şifre göndererek parola değiştirmeye izin verme.
+
+Yeni şifreyi mevcut password hashing sistemi ile güvenli şekilde hashle.
+
+Plaintext password saklama veya loglama.
+
+Reset tamamlandıktan sonra:
+
+- reset kodunu used olarak işaretle
+- reset token tekrar kullanılamasın
+- mümkünse mevcut kullanıcı session/token'larını geçersiz hale getir
+- kullanıcıyı login ekranına yönlendir
+
+60 saniye resend cooldown uygula.
+
+Backend rate limiting uygula.
+
+IP ve email bazlı abuse protection ekle.
+
+Raw backend error veya stack trace'i kullanıcıya gösterme.
+
+Mevcut Şifremi Unuttum UI tasarımını değiştirme.
+
+Kod doğrulama ekranı ve Yeni Şifre Oluştur ekranını mevcut CanYoldaşı auth tasarım diliyle oluştur.
+
+iOS, Android ve Web üzerinde test et.
+
+Son olarak recursive audit yap ve özellikle şu açıkları ara:
+
+- Math.random OTP
+- plaintext reset codes
+- plaintext passwords
+- frontend Resend API key
+- email enumeration
+- unlimited OTP attempts
+- unlimited resend
+- reusable reset code
+- expired code acceptance
+- password reset using only email
+- auth bypass
+- duplicate API calls
+- race conditions
+
+TypeScript check, lint ve production build çalıştır.
+
+Bulduğun tüm sorunları düzelt.
+
+Gerçek Resend e-postası gönderilmeden sistemi çalışıyor olarak raporlama.
+
+En son benden yalnızca RESEND_API_KEY gerekiyorsa iste ve Resend dashboard'da yapmam gereken manuel işlemleri açıkça bildir.
