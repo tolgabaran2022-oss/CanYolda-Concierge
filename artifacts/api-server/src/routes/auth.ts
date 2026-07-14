@@ -405,7 +405,7 @@ router.post("/auth/forgot-password", async (req, res): Promise<void> => {
       await sendResetEmail(normalizedEmail, code);
       req.log.info({ userId: user.id }, "Password reset email sent via Resend");
     } catch (emailErr) {
-      req.log.error({ emailErr }, "Resend email failed — RESEND_API_KEY configured?");
+      req.log.error({ err: emailErr, msg: emailErr instanceof Error ? emailErr.message : String(emailErr) }, "Resend email failed");
       // In dev: expose code in logs only (never in response)
       if (process.env.NODE_ENV !== "production") {
         req.log.warn({ code }, "DEV MODE — reset code (not sent via email)");
