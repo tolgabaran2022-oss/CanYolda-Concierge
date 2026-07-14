@@ -6,9 +6,12 @@
   "scripts": {
     "hello": "tsx ./src/hello.ts",
     "seed-boost-products": "tsx ./src/seed-boost-products.ts",
+    "seed-revenuecat": "tsx ./src/seedRevenueCat.ts",
     "typecheck": "tsc -p tsconfig.json --noEmit"
   },
   "devDependencies": {
+    "@replit/connectors-sdk": "catalog:",
+    "@replit/revenuecat-sdk": "catalog:",
     "@types/node": "catalog:",
     "stripe": "catalog:",
     "stripe-replit-sync": "catalog:",

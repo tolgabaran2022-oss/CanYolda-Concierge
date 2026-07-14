@@ -60,6 +60,7 @@
     "@gorhom/bottom-sheet": "^5.2.14",
     "lucide-react-native": "^1.24.0",
     "react-native-maps": "1.18.0",
+    "react-native-purchases": "^10.4.2",
     "react-native-svg": "15.12.1"
   }
 }
