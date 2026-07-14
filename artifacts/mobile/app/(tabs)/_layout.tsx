@@ -1,7 +1,6 @@
 import { Tabs, usePathname, useRouter } from "expo-router";
 import {
   Map,
-  House,
   PawPrint,
   Heart,
   User,
@@ -31,7 +30,6 @@ type TabItem = {
 
 const TABS: TabItem[] = [
   { name: "index",   path: "/",        title: "Harita",    Icon: Map      },
-  { name: "feed",    path: "/feed",    title: "Akış",      Icon: House    },
   { name: "animals", path: "/animals", title: "Hayvanlar", Icon: PawPrint },
   { name: "pets",    path: "/pets",    title: "Evcilim",   Icon: Heart    },
   { name: "account", path: "/account", title: "Hesap",     Icon: User     },
@@ -137,6 +135,7 @@ export default function TabLayout() {
       {TABS.map((tab) => (
         <Tabs.Screen key={tab.name} name={tab.name} options={{ title: tab.title }} />
       ))}
+      <Tabs.Screen name="feed"    options={{ href: null, headerShown: false }} />
       <Tabs.Screen name="profile" options={{ href: null, headerShown: false }} />
     </Tabs>
   );
