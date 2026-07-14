@@ -57,6 +57,7 @@ export const adoptionListings = pgTable("adoption_listings", {
   gender:             text("gender").notNull().default(""),
   vaccinated:         boolean("vaccinated").notNull().default(false),
   photoUrl:           text("photo_url").notNull().default(""),
+  images:             text("images").array().notNull().default(sql`'{}'::text[]`),
   location:           text("location").notNull().default(""),
   description:        text("description").notNull().default(""),
   userId:             text("user_id").notNull(),

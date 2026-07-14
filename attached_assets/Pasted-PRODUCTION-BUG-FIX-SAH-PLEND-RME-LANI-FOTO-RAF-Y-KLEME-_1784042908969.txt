@@ -1,0 +1,806 @@
+PRODUCTION BUG FIX — SAHİPLENDİRME İLANI FOTOĞRAF YÜKLEME / MULTI IMAGE UPLOAD
+
+Referans ekran görüntüsündeki “İlanı Düzenle” sayfasını ve mevcut proje kodunu incele.
+
+Şu anda “Fotoğraflar” bölümünde 1/10 yazıyor ve “Fotoğraf Ekle” kartı bulunuyor. Ancak ilk fotoğraftan sonra ikinci, üçüncü ve diğer fotoğraflar eklenemiyor.
+
+BU SORUNU YÜZEYSEL BİR UI DEĞİŞİKLİĞİYLE ÇÖZME.
+
+Fotoğraf seçme, local state, upload, storage, database, ilan oluşturma, ilan düzenleme, veri okuma ve yeniden render akışını uçtan uca incele ve gerçek root cause'u bul.
+
+AMAÇ:
+
+Kullanıcı bir sahiplendirme ilanına minimum 1, maksimum 10 adet fotoğraf ekleyebilmeli.
+
+Örnek:
+
+Başlangıç:
+[Fotoğraf 1]
+
+Kullanıcı “Fotoğraf Ekle” butonuna basar ve yeni fotoğraf seçer.
+
+Sonuç:
+[Fotoğraf 1]
+[Fotoğraf 2]
+
+Tekrar fotoğraf ekler:
+
+[Fotoğraf 1]
+[Fotoğraf 2]
+[Fotoğraf 3]
+
+Mevcut fotoğraflar ASLA yeni fotoğraf seçildiğinde silinmemeli veya replace edilmemeli.
+
+==================================================
+1. ROOT CAUSE AUDIT
+==================================================
+
+Önce projede aşağıdaki kodları recursive olarak ara:
+
+- image
+- images
+- imageUrl
+- image_url
+- imageUrls
+- image_urls
+- photos
+- photoUrls
+- selectedImage
+- selectedImages
+- pickedImage
+- pickedImages
+- setImage
+- setImages
+- ImagePicker
+- launchImageLibraryAsync
+- allowsMultipleSelection
+- uploadImage
+- uploadImages
+- listing image
+- adoption image
+
+Sahiplendirme ilanı oluşturma ve düzenleme ekranlarında kullanılan tüm fotoğraf akışını takip et.
+
+Özellikle şu hataları kontrol et:
+
+setImages(newImages)
+
+veya:
+
+setImages([newImage])
+
+veya:
+
+setImage(uri)
+
+veya:
+
+images: uploadedImages[0]
+
+veya:
+
+image_url: uploadedUrl
+
+gibi mevcut fotoğrafların üzerine yazan logic var mı kontrol et.
+
+Fotoğraf alanının yanlışlıkla tek string olarak modellenip modellenmediğini kontrol et.
+
+Sadece görünen component'i değil, hook, context, store, API route, Supabase query ve database schema'yı da incele.
+
+==================================================
+2. IMAGE STATE ARRAY OLMALI
+==================================================
+
+Sahiplendirme ilanı fotoğraf state'i tek bir string veya object olmamalı.
+
+Yanlış:
+
+const [image, setImage] = useState(null);
+
+Doğru mantık:
+
+const [images, setImages] = useState<ImageItem[]>([]);
+
+ImageItem için mevcut proje mimarisine uyumlu bir type oluştur.
+
+Örneğin:
+
+type ImageItem = {
+  id: string;
+  uri: string;
+  storagePath?: string;
+  uploadedUrl?: string;
+  isExisting?: boolean;
+};
+
+Mevcut projede farklı bir image type sistemi varsa onu bozma ve mevcut type sistemini düzgün şekilde genişlet.
+
+==================================================
+3. FOTOĞRAF EKLE BUTONU HER ZAMAN ÇALIŞMALI
+==================================================
+
+“Fotoğraf Ekle” kartının press/tap event'ini kontrol et.
+
+Kullanıcının mevcut 1 fotoğrafı olsa bile “Fotoğraf Ekle” butonuna basıldığında image picker tekrar açılmalı.
+
+2 fotoğraf olsa da açılmalı.
+
+3 fotoğraf olsa da açılmalı.
+
+Yalnızca image count 10 olduğunda yeni fotoğraf seçimi engellenmeli.
+
+Mantık:
+
+if (images.length >= 10) {
+  show max photo limit feedback;
+  return;
+}
+
+Bunun dışında picker açılmalı.
+
+Şunları kontrol et:
+
+- disabled prop yanlış mı?
+- pointerEvents engelliyor mu?
+- overlay press event'i kapatıyor mu?
+- absolute positioned component butonun üstünde mi?
+- loading state sürekli true mu kalıyor?
+- isUploading kontrolü yanlış mı?
+- images.length > 0 olduğunda button yanlışlıkla render dışı mı kalıyor?
+
+==================================================
+4. IMAGE PICKER MULTI IMAGE SUPPORT
+==================================================
+
+Proje Expo / React Native ise mevcut Expo ImagePicker implementasyonunu düzelt.
+
+Picker mevcut project dependency sürümüne uygun şekilde kullanılmalı.
+
+Mümkünse multiple selection destekle.
+
+Ancak bazı platformlarda veya picker implementasyonlarında kullanıcı tek fotoğraf seçerse bile aynı “Fotoğraf Ekle” butonuna tekrar tekrar basarak yeni fotoğraflar ekleyebilmeli.
+
+Seçilen yeni fotoğrafları mevcut array'e APPEND et.
+
+Örnek mantık:
+
+setImages(prevImages => {
+  const availableSlots = 10 - prevImages.length;
+
+  const imagesToAdd = newImages
+    .filter(valid image)
+    .slice(0, availableSlots);
+
+  return [...prevImages, ...imagesToAdd];
+});
+
+ASLA:
+
+setImages(newImages);
+
+kullanarak mevcut listeyi overwrite etme.
+
+==================================================
+5. DUPLICATE IMAGE KONTROLÜ
+==================================================
+
+Aynı local URI veya aynı storage path ikinci kez yanlışlıkla eklenmemeli.
+
+Yeni fotoğrafları append etmeden önce duplicate kontrolü yap.
+
+Ancak duplicate kontrolü yanlış tasarlanıp bütün yeni görselleri engellememeli.
+
+URI, assetId veya mevcut projedeki güvenilir identifier üzerinden kontrol et.
+
+==================================================
+6. MAKSİMUM 10 FOTOĞRAF
+==================================================
+
+Toplam fotoğraf sayısı maksimum 10 olmalı.
+
+Üst sağ sayaç dinamik olmalı:
+
+0/10
+1/10
+2/10
+3/10
+...
+10/10
+
+Sayaç hardcoded olmamalı.
+
+images.length kullanılmalı.
+
+Kullanıcının 8 fotoğrafı varsa ve picker'dan 5 yeni fotoğraf seçerse yalnızca kalan 2 slot kabul edilmeli.
+
+Sonuç 10 fotoğraf olmalı.
+
+11 veya daha fazla kayıt oluşmamalı.
+
+==================================================
+7. FOTOĞRAFLARI UI'DA TAMAMEN GÖSTER
+==================================================
+
+Şu an yalnızca kapak fotoğrafı ve “Fotoğraf Ekle” kartı görünüyor olabilir.
+
+Bunu düzelt.
+
+images array içerisindeki HER fotoğraf render edilmeli.
+
+Örnek:
+
+[Kapak] [Fotoğraf 2]
+[Fotoğraf 3] [Fotoğraf 4]
+[Fotoğraf 5] [+ Fotoğraf Ekle]
+
+Mevcut premium CanYoldaşı tasarım sistemini koru.
+
+UI'yı gereksiz şekilde yeniden tasarlama.
+
+Mevcut:
+
+- mor/lila renk sistemi
+- radius
+- spacing
+- typography
+- kart tasarımı
+
+korunmalı.
+
+Fotoğraf thumbnail ölçüleri ve hizaları responsive olmalı.
+
+iOS ve Android ekranlarında taşma yapmamalı.
+
+Web görünümünde de layout kırılmamalı.
+
+FlatList, flexWrap veya mevcut mimariye en uygun performant çözümü kullan.
+
+==================================================
+8. KAPAK FOTOĞRAFI MANTIĞI
+==================================================
+
+images[0] varsayılan olarak kapak fotoğrafıdır.
+
+İlk fotoğrafın üzerinde:
+
+KAPAK
+
+etiketi göster.
+
+Fotoğraflar yeniden sıralanırsa index 0 olan yeni fotoğraf kapak olmalı.
+
+Mevcut kapak mantığı ayrı bir coverImage alanı kullanıyorsa veri flow'unu incele.
+
+İki farklı source of truth oluşturma.
+
+Mümkünse fotoğraf sırası tek source of truth olsun.
+
+==================================================
+9. FOTOĞRAF SİLME
+==================================================
+
+Her fotoğraf üzerindeki X butonu yalnızca seçilen fotoğrafı silmeli.
+
+Örnek:
+
+const handleRemoveImage = (imageId: string) => {
+  setImages(prev => prev.filter(image => image.id !== imageId));
+};
+
+Yanlışlıkla tüm images array temizlenmemeli.
+
+Kapak fotoğrafı silinirse kalan array içerisindeki yeni index 0 otomatik kapak olmalı.
+
+Minimum 1 fotoğraf zorunluysa kaydetme sırasında validation göster.
+
+Kullanıcı fotoğrafı UI'dan sildiğinde mevcut storage dosyasını hemen hard delete etmek veri kaybına yol açabilecekse güvenli pending deletion sistemi kullan.
+
+Save başarılı olduktan sonra orphan cleanup mantığını uygula.
+
+==================================================
+10. LONG PRESS / REORDER
+==================================================
+
+Ekrandaki açıklamada:
+
+“Uzun basarak sırayı değiştirebilirsiniz.”
+
+yazıyor.
+
+Bu özellik gerçekten çalışmalı.
+
+Eğer şu an yalnızca metin olarak bulunuyor fakat drag-and-drop implementasyonu yoksa gerçek reorder desteği ekle.
+
+Uzun bas:
+
+drag start
+
+Sürükle:
+
+item position update
+
+Bırak:
+
+images array order update
+
+İlk sıraya gelen görsel otomatik kapak olmalı.
+
+Mevcut project dependencies içinde uygun draggable list library varsa onu kullan.
+
+Yeni dependency eklemek gerekiyorsa önce mevcut Expo / React Native sürümü ile compatibility kontrolü yap.
+
+Web desteğini de bozma.
+
+Drag işlemi sırasında yanlışlıkla fotoğraf silinmemeli veya picker açılmamalı.
+
+==================================================
+11. EDIT LISTING INITIAL DATA
+==================================================
+
+“İlanı Düzenle” ekranı açıldığında database'de bulunan TÜM ilan fotoğrafları state'e yüklenmeli.
+
+Örneğin database:
+
+[
+  "image1.jpg",
+  "image2.jpg",
+  "image3.jpg"
+]
+
+ise ekranda üç görsel görünmeli.
+
+Sadece:
+
+images[0]
+
+yüklenmemeli.
+
+Şu tarz yanlış mapping varsa düzelt:
+
+setImages([listing.images[0]]);
+
+Doğru olarak tüm kayıtları normalize ederek yükle.
+
+Existing remote image ile newly picked local image aynı state içerisinde güvenli şekilde yönetilmeli.
+
+==================================================
+12. CREATE VE EDIT AYNI FOTOĞRAF MANTIĞINI KULLANSIN
+==================================================
+
+Sahiplendirme ilanı oluşturma ekranı ile ilan düzenleme ekranında iki farklı ve çelişen fotoğraf sistemi bulunmasın.
+
+Ortak reusable logic oluştur.
+
+Örneğin:
+
+useListingImages()
+
+veya mevcut proje mimarisine uygun service/hook.
+
+Şunlar ortak olmalı:
+
+- picker
+- max 10 validation
+- append
+- duplicate validation
+- remove
+- reorder
+- upload
+- serialization
+
+Copy-paste edilmiş ve birbirinden farklı çalışan iki fotoğraf sistemi bırakma.
+
+==================================================
+13. UPLOAD FLOW
+==================================================
+
+Save işlemi sırasında local olarak yeni seçilmiş görseller storage'a yüklenmeli.
+
+Existing remote images tekrar upload edilmemeli.
+
+Örnek logic:
+
+existing images
++
+new local images upload
+=
+final ordered image URL array
+
+Upload işlemi sırasında image order korunmalı.
+
+Promise.all sonucu sıra bozmayacak şekilde uygulanmalı.
+
+Bir upload başarısız olursa ilan verisi eksik veya corrupt şekilde save edilmemeli.
+
+Partial failure için güvenli error handling yap.
+
+Kullanıcıya Türkçe hata mesajı göster.
+
+Örneğin:
+
+“Fotoğraflardan biri yüklenemedi. Lütfen tekrar deneyin.”
+
+Save butonundaki loading state finally bloğunda mutlaka reset edilmeli.
+
+==================================================
+14. SUPABASE STORAGE AUDIT
+==================================================
+
+Proje Supabase kullanıyorsa:
+
+- bucket adını kontrol et
+- upload path yapısını kontrol et
+- RLS / storage policies kontrol et
+- authenticated user upload permission kontrol et
+- MIME type kontrol et
+- file extension kontrol et
+- public URL / signed URL kullanımını kontrol et
+- duplicate filename collision kontrol et
+
+Storage filename unique olmalı.
+
+Örneğin:
+
+userId/listingId/timestamp-random.ext
+
+veya production-safe UUID yapısı.
+
+Aynı isimli iki fotoğraf birbirinin üzerine yazılmamalı.
+
+upsert: true yalnızca gerçekten gerekliyse kullanılmalı.
+
+Yeni fotoğraf eklenirken önceki storage image overwrite edilmemeli.
+
+==================================================
+15. DATABASE SCHEMA AUDIT
+==================================================
+
+Sahiplendirme ilanı tablosunu incele.
+
+Fotoğraflar şu anda tek bir image_url string alanına kaydediliyorsa bunu production-safe multi-image yapısına taşı.
+
+Mevcut schema ile uyumlu en doğru çözümü seç:
+
+Option A:
+
+image_urls text[]
+
+Option B:
+
+images jsonb
+
+Option C:
+
+normalized listing_images table
+
+Mevcut proje mimarisine göre en güvenli yapıyı seç.
+
+Ancak tek image_url alanı multi image için source of truth olarak kullanılmamalı.
+
+Legacy ilanları bozma.
+
+Migration gerekiyorsa migration oluştur.
+
+Eski:
+
+image_url = "photo1.jpg"
+
+kayıtlarını kaybetme.
+
+Migration sonrası örnek:
+
+image_urls = ["photo1.jpg"]
+
+olmalı.
+
+Production database'e destructive reset uygulama.
+
+Tabloyu drop etme.
+
+Mevcut ilanları silme.
+
+==================================================
+16. DATABASE READ / WRITE DATA FLOW
+==================================================
+
+Recursive olarak şu alanların kullanımını kontrol et:
+
+image_url
+image_urls
+images
+cover_image
+coverImage
+
+Backend write sırasında tüm ordered array database'e gönderilmeli.
+
+Örnek:
+
+image_urls: finalImageUrls
+
+ASLA:
+
+image_url: finalImageUrls[0]
+
+ile yalnızca ilk fotoğrafı kaydedip diğerlerini kaybetme.
+
+Listing read mapper tüm görselleri okumalı.
+
+Listing card için yalnızca cover gerekiyorsa:
+
+const cover = imageUrls[0];
+
+kullanılabilir.
+
+Ancak detail/edit data model tüm image array'i korumalı.
+
+==================================================
+17. QUERY SELECT AUDIT
+==================================================
+
+Supabase select query'lerini kontrol et.
+
+Örneğin yalnızca:
+
+.select('id, title, image_url')
+
+kullanılıp image_urls alanı unutulmuş olabilir.
+
+Sahiplendirme:
+
+- listing create
+- listing edit
+- listing detail
+- my listings
+- all listings
+
+query'lerinde image data doğru çekilmeli.
+
+Database'de veri mevcut olup UI'da görünmüyorsa mapper ve select sorunlarını düzelt.
+
+==================================================
+18. CACHE / STATE SYNCHRONIZATION
+==================================================
+
+İlan kaydedildikten sonra eski 1 fotoğraflı data UI'da kalmamalı.
+
+React Query, Zustand, Context veya mevcut store sistemini incele.
+
+Mutation success sonrası gerekli query invalidation / state update işlemlerini yap.
+
+Örneğin mevcut architecture React Query ise ilgili listing query key'lerini invalidate et.
+
+Navigation back sonrası ilan eski cache'ten gösterilmemeli.
+
+Save:
+
+3 photos
+
+Back
+
+Open listing again
+
+Expected:
+
+3 photos
+
+App restart
+
+Open listing
+
+Expected:
+
+3 photos
+
+==================================================
+19. DOUBLE TAP / RACE CONDITION
+==================================================
+
+Kullanıcı “Fotoğraf Ekle” butonuna hızlı şekilde iki kez basarsa iki image picker üst üste açılmamalı.
+
+Picker opening lock oluştur.
+
+Ancak lock picker kapandıktan sonra kesinlikle reset edilmeli.
+
+Kullanıcı seçimden vazgeçerse “Fotoğraf Ekle” butonu tekrar çalışmalı.
+
+isPicking state finally mantığı ile güvenli reset edilmeli.
+
+Upload sırasında aynı fotoğraf iki kez upload edilmemeli.
+
+Save butonuna çift basılması duplicate update/create oluşturmamalı.
+
+==================================================
+20. PERMISSION HANDLING
+==================================================
+
+iOS ve Android galeri permission flow'unu kontrol et.
+
+Permission denied ise buton sessizce hiçbir şey yapmamalı.
+
+Türkçe açıklayıcı feedback göster.
+
+Örneğin:
+
+“Fotoğraflarınıza erişebilmek için galeri izni vermeniz gerekiyor.”
+
+Platform destekliyorsa ayarları açma yönlendirmesi mevcut app UX standardına uygun şekilde uygulanabilir.
+
+Permission granted olduğunda picker açılmalı.
+
+==================================================
+21. IMAGE VALIDATION
+==================================================
+
+Boş veya geçersiz asset URI kabul etme.
+
+Desteklenen görsel tiplerini doğrula.
+
+JPEG
+JPG
+PNG
+WEBP
+
+Mevcut platform ve backend destekliyorsa HEIC/HEIF'i güvenli şekilde handle et.
+
+Gerekirse upload öncesi image normalize/compress flow kullan.
+
+Ancak image quality'yi gereksiz şekilde aşırı düşürme.
+
+Corrupt image save edilmemeli.
+
+==================================================
+22. SAVE BUTTONS AUDIT
+==================================================
+
+Ekranda üst sağda “Kaydet” ve altta “Değişiklikleri Kaydet” butonu bulunuyor.
+
+Bu iki butonun aynı güvenilir submit handler'ı kullandığından emin ol.
+
+İki farklı update logic bulunmamalı.
+
+Örnek:
+
+handleSaveListing
+
+tek source of truth olsun.
+
+Her iki buton:
+
+onPress={handleSaveListing}
+
+kullanmalı.
+
+Bir buton yeni fotoğrafları kaydedip diğer buton yalnızca text alanlarını kaydediyor gibi bir bug bırakma.
+
+==================================================
+23. FULL REGRESSION TEST
+==================================================
+
+Fix sonrası şu akışların tamamını gerçekten test et:
+
+TEST 1:
+Yeni ilan aç.
+1 fotoğraf ekle.
+2. fotoğraf ekle.
+3. fotoğraf ekle.
+Expected: 3/10 ve 3 thumbnail.
+
+TEST 2:
+3 fotoğraflı ilanı kaydet.
+İlan detayına gir.
+Expected: 3 fotoğraf mevcut.
+
+TEST 3:
+App navigation ile çık.
+İlanı tekrar aç.
+Expected: 3 fotoğraf mevcut.
+
+TEST 4:
+App state/cache reset sonrası ilanı aç.
+Expected: database'den 3 fotoğraf geliyor.
+
+TEST 5:
+Edit screen aç.
+4. ve 5. fotoğraf ekle.
+Save.
+Expected: toplam 5 fotoğraf.
+
+TEST 6:
+Fotoğraf 2'yi sil.
+Expected: yalnızca fotoğraf 2 silinir.
+
+TEST 7:
+Kapak fotoğrafını sil.
+Expected: eski fotoğraf 2 yeni kapak olur.
+
+TEST 8:
+Fotoğraf sırasını değiştir.
+Save.
+Ekranı kapat ve tekrar aç.
+Expected: yeni sıra korunur.
+
+TEST 9:
+10 fotoğrafa ulaş.
+Expected: 10/10.
+
+Yeni fotoğraf eklemeye çalış.
+Expected: limit feedback.
+
+TEST 10:
+iOS test.
+
+TEST 11:
+Android test.
+
+TEST 12:
+Web test.
+
+TEST 13:
+Picker'ı aç ve seçim yapmadan kapat.
+Tekrar “Fotoğraf Ekle” butonuna bas.
+Expected: picker tekrar açılır.
+
+TEST 14:
+Kaydet butonuna hızlı şekilde iki kez bas.
+Expected: duplicate save/upload oluşmaz.
+
+==================================================
+24. IMPORTANT CONSTRAINTS
+==================================================
+
+- Mevcut premium CanYoldaşı UI tasarımını değiştirme.
+- Ekranı baştan tasarlama.
+- Renkleri değiştirme.
+- Typography sistemini bozma.
+- Fotoğraf kartlarını gereksiz büyütme.
+- Existing listing data'yı silme.
+- Database reset yapma.
+- Fake data oluşturma.
+- Hardcoded image URL ekleme.
+- Sadece frontend mock fix yapma.
+- TODO bırakma.
+- Placeholder implementation bırakma.
+- Console-only fix yapma.
+- TypeScript error bırakma.
+- iOS fix yapıp Android'i bozma.
+- Web fix yapıp native'i bozma.
+
+==================================================
+25. FINAL PRODUCTION AUDIT
+==================================================
+
+Düzeltmeden sonra sahiplendirme fotoğraf özelliği ile ilişkili tüm dosyaları tekrar recursive audit et.
+
+Kontrol et:
+
+- stale single-image logic kaldı mı?
+- setImages overwrite kaldı mı?
+- image_url dependency kaldı mı?
+- edit/create logic farklı mı?
+- storage overwrite riski var mı?
+- image count hardcoded mı?
+- database sadece cover image mı kaydediyor?
+- mapper sadece first image mı döndürüyor?
+- TypeScript nullable error var mı?
+- unhandled promise rejection var mı?
+- stale cache var mı?
+
+Bulduğun bağlantılı tüm gerçek bugları düzelt.
+
+SONUNDA BANA KISA AMA NET BİR RAPOR VER:
+
+1. Root cause neydi?
+2. Hangi dosyalar değişti?
+3. Fotoğraf state yapısı nasıldı, neye çevrildi?
+4. Database/schema değişti mi?
+5. Storage upload flow'da ne düzeltildi?
+6. Create ve Edit screen ortak logic kullanıyor mu?
+7. 10 fotoğraf limiti gerçekten çalışıyor mu?
+8. Reorder gerçekten çalışıyor mu?
+9. iOS test sonucu.
+10. Android test sonucu.
+11. Web test sonucu.
+12. Kalan bilinen risk var mı?
+
+Do not only explain the solution.
+Inspect the existing codebase, implement the fix, run the relevant checks/tests, and correct connected bugs you find.

@@ -304,16 +304,21 @@ router.post("/adoption", async (req, res) => {
   try {
     const {
       petName, petType, petAge, breed, gender, vaccinated,
-      photoUrl, location, description, userName, contactInfo,
+      photoUrl, images: imagesRaw, location, description, userName, contactInfo,
       allowPhoneContact, allowMessages, status,
       healthStatus, vaccinationStatus, environmentType,
       childCompatibility, catCompatibility, dogCompatibility, toiletTraining,
-    } = req.body as Record<string, string | boolean>;
+    } = req.body as Record<string, string | boolean | string[]>;
 
     if (!petName || !String(petName).trim()) {
       res.status(400).json({ error: "Hayvan adı zorunlu" });
       return;
     }
+
+    const imagesArr: string[] = Array.isArray(imagesRaw)
+      ? (imagesRaw as string[]).filter(Boolean)
+      : imagesRaw ? [String(imagesRaw)] : photoUrl ? [String(photoUrl)] : [];
+    const coverUrl = imagesArr[0] ?? String(photoUrl ?? "");
 
     const [listing] = await db.insert(adoptionListings).values({
       petName:            String(petName),
@@ -322,7 +327,8 @@ router.post("/adoption", async (req, res) => {
       breed:              String(breed ?? ""),
       gender:             String(gender ?? ""),
       vaccinated:         vaccinated === true || vaccinated === "true",
-      photoUrl:           String(photoUrl ?? ""),
+      photoUrl:           coverUrl,
+      images:             imagesArr,
       location:           String(location ?? ""),
       description:        String(description ?? ""),
       userId,
@@ -359,11 +365,11 @@ router.patch("/adoption/:id", async (req, res) => {
 
     const {
       petName, petType, petAge, breed, gender, vaccinated,
-      photoUrl, location, description, contactInfo,
+      photoUrl, images: imagesRaw, location, description, contactInfo,
       allowPhoneContact, allowMessages, status,
       healthStatus, vaccinationStatus, environmentType,
       childCompatibility, catCompatibility, dogCompatibility, toiletTraining,
-    } = req.body as Record<string, string | boolean | undefined>;
+    } = req.body as Record<string, string | boolean | string[] | undefined>;
 
     const updates: Partial<typeof adoptionListings.$inferInsert> = { updatedAt: new Date() };
     if (petName             !== undefined) updates.petName            = String(petName);
@@ -372,7 +378,15 @@ router.patch("/adoption/:id", async (req, res) => {
     if (breed               !== undefined) updates.breed              = String(breed);
     if (gender              !== undefined) updates.gender             = String(gender);
     if (vaccinated          !== undefined) updates.vaccinated         = vaccinated === true || vaccinated === "true";
-    if (photoUrl            !== undefined) updates.photoUrl           = String(photoUrl);
+    if (imagesRaw !== undefined) {
+      const imagesArr: string[] = Array.isArray(imagesRaw)
+        ? (imagesRaw as string[]).filter(Boolean)
+        : imagesRaw ? [String(imagesRaw)] : [];
+      updates.images   = imagesArr;
+      updates.photoUrl = imagesArr[0] ?? String(photoUrl ?? existing.photoUrl ?? "");
+    } else if (photoUrl !== undefined) {
+      updates.photoUrl = String(photoUrl);
+    }
     if (location            !== undefined) updates.location           = String(location);
     if (description         !== undefined) updates.description        = String(description);
     if (contactInfo         !== undefined) updates.contactInfo        = String(contactInfo);

@@ -8,6 +8,7 @@ import React, { useRef, useState } from "react";
 import {
   ActivityIndicator,
   Alert,
+  Dimensions,
   FlatList,
   KeyboardAvoidingView,
   Modal,
@@ -202,6 +203,47 @@ function PickerModal({ visible, title, items, selected, onSelect, onClose, searc
   );
 }
 
+/* ── Photo grid constants ── */
+const MAX_PHOTOS = 10;
+const _WIN_W  = Dimensions.get("window").width;
+const WIN_W   = Math.min(_WIN_W, 430);
+const GRID_GAP = 6;
+const GRID_PAD = 20;
+const PHOTO_W = (WIN_W - GRID_PAD * 2 - GRID_GAP * 2) / 3;
+const PHOTO_H = PHOTO_W * 1.15;
+
+/* ── AddPhotoSheet ── */
+function AddPhotoSheet({ visible, onCamera, onGallery, onClose }: {
+  visible: boolean; onCamera: () => void; onGallery: () => void; onClose: () => void;
+}) {
+  const T      = useTheme();
+  const insets = useSafeAreaInsets();
+  return (
+    <Modal visible={visible} animationType="slide" transparent onRequestClose={onClose}>
+      <Pressable style={{ flex: 1, backgroundColor: "rgba(0,0,0,0.35)" }} onPress={onClose} />
+      <View style={[APS.sheet, { backgroundColor: T.card, paddingBottom: insets.bottom + 16 }]}>
+        <View style={APS.handle} />
+        <Text style={[APS.title, { color: T.text }]}>Fotoğraf Ekle</Text>
+        <Pressable style={[APS.row, { borderBottomColor: T.border }]} onPress={onCamera}>
+          <Icon name="camera-outline" size={20} color={C.purple} />
+          <Text style={[APS.rowTxt, { color: T.text }]}>Kamera</Text>
+        </Pressable>
+        <Pressable style={APS.row} onPress={onGallery}>
+          <Icon name="images-outline" size={20} color={C.purple} />
+          <Text style={[APS.rowTxt, { color: T.text }]}>Galeri</Text>
+        </Pressable>
+      </View>
+    </Modal>
+  );
+}
+const APS = StyleSheet.create({
+  sheet:  { borderTopLeftRadius: 24, borderTopRightRadius: 24, padding: 20, paddingTop: 12 },
+  handle: { width: 40, height: 4, borderRadius: 2, backgroundColor: "#D1D5DB", alignSelf: "center", marginBottom: 16 },
+  title:  { fontSize: 16, fontFamily: "Inter_700Bold", marginBottom: 16 },
+  row:    { flexDirection: "row", alignItems: "center", gap: 14, paddingVertical: 16, borderBottomWidth: StyleSheet.hairlineWidth },
+  rowTxt: { fontSize: 16, fontFamily: "Inter_500Medium" },
+});
+
 /* ── Main screen ── */
 export default function AddAdoptionScreen() {
   const T              = useTheme();
@@ -213,7 +255,8 @@ export default function AddAdoptionScreen() {
   const [petName,           setPetName]           = useState("");
   const [petType,           setPetType]           = useState("Kedi");
   const [petAge,            setPetAge]            = useState("");
-  const [photo,             setPhoto]             = useState<string | undefined>();
+  const [images,            setImages]            = useState<string[]>([]);
+  const [showAddSheet,      setShowAddSheet]      = useState(false);
   const [province,          setProvince]          = useState("");
   const [district,          setDistrict]          = useState("");
   const [description,       setDescription]       = useState("");
@@ -241,16 +284,27 @@ export default function AddAdoptionScreen() {
   const selectedProvince: Province | undefined = TURKEY_PROVINCES.find((p) => p.value === province);
   const districts = selectedProvince?.districts ?? [];
 
-  const pickPhoto = async () => {
-    Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
-    const result = await ImagePicker.launchImageLibraryAsync({
-      mediaTypes: ["images"],
-      allowsEditing: true,
-      aspect: [4, 3],
-      quality: 0.8,
-    });
+  const openCamera = async () => {
+    setShowAddSheet(false);
+    const perm = await ImagePicker.requestCameraPermissionsAsync();
+    if (!perm.granted) { Alert.alert("Kamera izni gerekli"); return; }
+    const result = await ImagePicker.launchCameraAsync({ allowsEditing: true, aspect: [4, 3], quality: 0.8 });
     if (!result.canceled && result.assets[0]) {
-      setPhoto(result.assets[0].uri);
+      setImages((prev) => [...prev, result.assets[0].uri].slice(0, MAX_PHOTOS));
+      setErrors((e) => ({ ...e, photo: "" }));
+    }
+  };
+
+  const openGallery = async () => {
+    setShowAddSheet(false);
+    const result = await ImagePicker.launchImageLibraryAsync({
+      mediaTypes: ["images"], allowsMultipleSelection: true,
+      selectionLimit: MAX_PHOTOS - images.length,
+      allowsEditing: images.length === 0, aspect: [4, 3], quality: 0.8,
+    });
+    if (!result.canceled && result.assets.length > 0) {
+      const uris = result.assets.map((a) => a.uri);
+      setImages((prev) => [...prev, ...uris].slice(0, MAX_PHOTOS));
       setErrors((e) => ({ ...e, photo: "" }));
     }
   };
@@ -263,7 +317,7 @@ export default function AddAdoptionScreen() {
 
   const validate = (): boolean => {
     const errs: Record<string, string> = {};
-    if (!photo)               errs.photo              = "Fotoğraf eklenmesi zorunludur";
+    if (images.length === 0)  errs.photo              = "Fotoğraf eklenmesi zorunludur";
     if (!petName.trim())      errs.petName            = "Hayvan adı zorunludur";
     if (!petAge)              errs.petAge             = "Yaş seçimi zorunludur";
     if (!province)            errs.province           = "İl seçimi zorunludur";
@@ -295,25 +349,27 @@ export default function AddAdoptionScreen() {
     if (!validate() || !user) return;
     setIsSaving(true);
     try {
-      let remotePhotoUrl: string | undefined;
-      if (photo) {
-        try {
-          remotePhotoUrl = await uploadPhoto(photo);
-        } catch {
-          Alert.alert(
-            "Fotoğraf Yüklenemedi",
-            "Fotoğraf sunucuya yüklenirken bir hata oluştu. Lütfen tekrar deneyin.",
-          );
-          setIsSaving(false);
-          return;
-        }
+      let remoteImages: string[];
+      try {
+        remoteImages = await Promise.all(
+          images.map((uri) =>
+            (uri.startsWith("file://") || uri.startsWith("content://") || uri.startsWith("ph://"))
+              ? uploadPhoto(uri)
+              : Promise.resolve(uri)
+          )
+        );
+      } catch {
+        Alert.alert("Fotoğraf Yüklenemedi", "Fotoğraflardan biri yüklenemedi. Lütfen tekrar deneyin.");
+        setIsSaving(false);
+        return;
       }
 
       const newId = await addListing({
         petName:            petName.trim(),
         petType,
         petAge,
-        photo:              remotePhotoUrl,
+        images:             remoteImages,
+        photo:              remoteImages[0],
         location:           `${district}, ${province}`,
         description:        description.trim(),
         userId:             user.id,
@@ -393,35 +449,59 @@ export default function AddAdoptionScreen() {
             {/* Form card */}
             <View style={[S.card, { backgroundColor: T.card }]}>
 
-              {/* Photo */}
-              <FieldWrap label="Fotoğraf" required error={errors.photo}>
-                <Pressable
-                  onPress={pickPhoto}
-                  style={({ pressed }) => [{ opacity: pressed ? 0.86 : 1 }]}
-                >
-                  {photo ? (
-                    <View style={[S.photoWrap, errors.photo ? S.photoWrapError : {}]}>
-                      <Image source={{ uri: photo }} style={S.photo} contentFit="cover" />
-                      <View style={S.photoEditBadge}>
-                        <Icon name="camera" size={13} color="#FFF" />
-                        <Text style={S.photoEditText}>Değiştir</Text>
-                      </View>
+              {/* Photos — multi-image grid */}
+              <View style={S.photosWrap}>
+                <View style={S.photosTitleRow}>
+                  <Text style={[S.fieldLabel, { color: T.textMuted }]}>
+                    FOTOĞRAFLAR <Text style={{ color: C.purple }}>*</Text>
+                  </Text>
+                  <Text style={[S.photosCount, { color: T.textMuted }]}>{images.length}/{MAX_PHOTOS}</Text>
+                </View>
+                {errors.photo ? (
+                  <View style={S.errorRow}>
+                    <Icon name="alert-circle" size={13} color={C.error} />
+                    <Text style={S.errorTxt}>{errors.photo}</Text>
+                  </View>
+                ) : (
+                  <Text style={[S.photosHint, { color: T.textMuted }]}>
+                    İlk fotoğraf kapak olarak gösterilir.
+                  </Text>
+                )}
+                <View style={S.photoGrid}>
+                  {images.map((uri, idx) => (
+                    <View key={`${uri}-${idx}`} style={S.photoCell}>
+                      <Image source={{ uri }} style={S.photoImg} contentFit="cover" />
+                      {idx === 0 && (
+                        <View style={S.coverBadge}>
+                          <Icon name="star" size={9} color="#FFF" />
+                          <Text style={S.coverBadgeTxt}>KAPAK</Text>
+                        </View>
+                      )}
+                      <Pressable
+                        style={S.deletePhotoBtn}
+                        hitSlop={6}
+                        onPress={() => setImages((prev) => prev.filter((_, i) => i !== idx))}
+                      >
+                        <Icon name="close-circle" size={20} color="#FFF" />
+                      </Pressable>
                     </View>
-                  ) : (
-                    <View style={[
-                      S.photoBox,
-                      { backgroundColor: T.input, borderColor: T.border },
-                      errors.photo ? S.photoBoxError : {},
-                    ]}>
-                      <View style={[S.cameraRing, { backgroundColor: T.purple + "18" }]}>
-                        <Icon name="camera-outline" size={28} color={C.purple} />
+                  ))}
+                  {images.length < MAX_PHOTOS && (
+                    <Pressable
+                      style={({ pressed }) => [
+                        S.addPhotoBtn,
+                        { opacity: pressed ? 0.75 : 1, borderColor: errors.photo ? C.error : T.border },
+                      ]}
+                      onPress={() => { Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light); setShowAddSheet(true); }}
+                    >
+                      <View style={[S.addIconRing, { backgroundColor: T.purple + "18" }]}>
+                        <Icon name="add" size={28} color={C.purple} />
                       </View>
-                      <Text style={[S.photoLabel, { color: C.purple }]}>Fotoğraf Ekle</Text>
-                      <Text style={[S.photoSub, { color: T.textMuted }]}>JPG, PNG · Maks 10 MB</Text>
-                    </View>
+                      <Text style={[S.addPhotoTxt, { color: C.purple }]}>Fotoğraf{"\n"}Ekle</Text>
+                    </Pressable>
                   )}
-                </Pressable>
-              </FieldWrap>
+                </View>
+              </View>
 
               <View style={[S.divider, { backgroundColor: T.border }]} />
 
@@ -802,6 +882,13 @@ export default function AddAdoptionScreen() {
         </View>
       </View>
 
+      <AddPhotoSheet
+        visible={showAddSheet}
+        onCamera={openCamera}
+        onGallery={openGallery}
+        onClose={() => setShowAddSheet(false)}
+      />
+
       <PickerModal
         visible={showProvince}
         title="İl Seçin"
@@ -926,27 +1013,28 @@ const S = StyleSheet.create({
   },
   toggleThumbOn: { alignSelf: "flex-end" },
 
-  photoWrap:      { width: "100%", height: 180, borderRadius: 14, overflow: "hidden" },
-  photoWrapError: { borderWidth: 2, borderColor: C.error },
-  photo:          { width: "100%", height: "100%" },
-  photoEditBadge: {
-    position: "absolute", bottom: 10, right: 10,
-    flexDirection: "row", alignItems: "center", gap: 4,
-    backgroundColor: "rgba(0,0,0,0.52)", paddingHorizontal: 10, paddingVertical: 5, borderRadius: 20,
+  /* multi-photo grid */
+  photosWrap:     { gap: 8 },
+  photosTitleRow: { flexDirection: "row", alignItems: "center", justifyContent: "space-between" },
+  photosCount:    { fontSize: 11, fontFamily: "Inter_500Medium" },
+  photosHint:     { fontSize: 11, fontFamily: "Inter_400Regular" },
+  photoGrid:      { flexDirection: "row", flexWrap: "wrap", gap: GRID_GAP },
+  photoCell:      { width: PHOTO_W, height: PHOTO_H, borderRadius: 12, overflow: "hidden" },
+  photoImg:       { width: "100%", height: "100%" },
+  coverBadge:     {
+    position: "absolute", top: 6, left: 6,
+    flexDirection: "row", alignItems: "center", gap: 3,
+    backgroundColor: "rgba(0,0,0,0.55)", paddingHorizontal: 7, paddingVertical: 3, borderRadius: 8,
   },
-  photoEditText: { fontSize: 12, fontFamily: "Inter_600SemiBold", color: "#FFF" },
-  photoBox: {
-    width: "100%", height: 140, borderRadius: 14,
+  coverBadgeTxt: { fontSize: 8, fontFamily: "Inter_700Bold", color: "#FFF" },
+  deletePhotoBtn: { position: "absolute", top: 4, right: 4 },
+  addPhotoBtn:    {
+    width: PHOTO_W, height: PHOTO_H, borderRadius: 12,
+    borderWidth: 1.5, borderStyle: "dashed",
     alignItems: "center", justifyContent: "center", gap: 6,
-    borderWidth: 2, borderStyle: "dashed",
   },
-  photoBoxError: { borderColor: C.error, backgroundColor: C.errorBg },
-  cameraRing: {
-    width: 52, height: 52, borderRadius: 26,
-    alignItems: "center", justifyContent: "center", marginBottom: 2,
-  },
-  photoLabel: { fontSize: 14, fontFamily: "Inter_600SemiBold" },
-  photoSub:   { fontSize: 12, fontFamily: "Inter_400Regular" },
+  addIconRing:    { width: 44, height: 44, borderRadius: 22, alignItems: "center", justifyContent: "center" },
+  addPhotoTxt:    { fontSize: 12, fontFamily: "Inter_500Medium", textAlign: "center" },
 
   chipRow:   { flexDirection: "row", flexWrap: "wrap", gap: 8 },
   chip:      { borderRadius: 99, borderWidth: 1.5, overflow: "hidden" },
