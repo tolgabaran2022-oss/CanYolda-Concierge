@@ -1335,19 +1335,8 @@ function MyListingsSection({
 
       {/* ── Section header ── */}
       <View style={ml.secHeader}>
-        <View>
-          <Text style={[ml.secTitle, { color: T.text }]}>İlanlarım</Text>
-          <Text style={[ml.secSub, { color: T.textMuted }]}>Verdiğin ilanları yönet, performansını takip et</Text>
-        </View>
-        <Pressable
-          style={({ pressed }) => [{ opacity: pressed ? 0.85 : 1 }]}
-          onPress={() => { Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium); onAdd(); }}
-        >
-          <LinearGradient colors={[P2, P]} start={{ x: 0, y: 0 }} end={{ x: 1, y: 0 }} style={ml.addBtn}>
-            <Icon name="add" size={16} color={WHITE} />
-            <Text style={ml.addBtnTxt}>Yeni İlan</Text>
-          </LinearGradient>
-        </Pressable>
+        <Text style={[ml.secTitle, { color: T.text }]}>İlanlarım</Text>
+        <Text style={[ml.secSub, { color: T.textMuted }]}>Verdiğin ilanları yönet, performansını takip et</Text>
       </View>
 
       {/* ── Filter chips ── */}
@@ -1627,7 +1616,7 @@ const ml = StyleSheet.create({
   btnTxt:     { fontSize: 13, fontFamily: "Inter_600SemiBold" },
 
   // Section header
-  secHeader: { flexDirection: "row", alignItems: "center", justifyContent: "space-between", paddingHorizontal: 20, marginBottom: 16, paddingTop: 4 },
+  secHeader: { paddingHorizontal: 20, marginBottom: 16, paddingTop: 4 },
   secTitle:  { fontSize: 22, fontFamily: "Inter_700Bold",    color: DARK, letterSpacing: -0.4 },
   secSub:    { fontSize: 12, fontFamily: "Inter_400Regular", color: BODY, marginTop: 2 },
   addBtn:    { flexDirection: "row", alignItems: "center", gap: 6, paddingVertical: 10, paddingHorizontal: 16, borderRadius: 50 },
