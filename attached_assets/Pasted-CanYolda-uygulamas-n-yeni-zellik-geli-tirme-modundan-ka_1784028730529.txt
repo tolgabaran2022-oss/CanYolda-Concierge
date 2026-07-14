@@ -1,0 +1,1704 @@
+CanYoldaşı uygulamasını yeni özellik geliştirme modundan çıkar ve PRODUCTION READINESS AUDIT moduna geç.
+
+BU GÖREVDE YENİ ÜRÜN ÖZELLİĞİ EKLEME.
+
+Amaç:
+
+CanYoldaşı uygulamasını App Store / Google Play yayını öncesinde teknik olarak uçtan uca denetlemek, gerçek root cause problemlerini tespit etmek ve mevcut özellikleri güvenilir, kalıcı ve platformlar arası tutarlı hale getirmektir.
+
+Uygulamada daha önce tekrar eden kritik problem örnekleri:
+
+- Fotoğraf seçiliyor ancak daha sonra kartlarda görünmüyor.
+- Local image URI yanlışlıkla persist ediliyor olabilir.
+- Supabase Storage upload zincirleri tutarsız olabilir.
+- Kullanıcı konum seçiyor ancak yayınlanan durumda "Konum Belirtilmedi" görünüyor.
+- UI state güncelleniyor ancak database write eksik kalabiliyor.
+- Kalp / takip işlemleri local state'te görünüp database relation'a yansımayabiliyor.
+- API JSON beklerken HTML response geliyor.
+- "JSON Parse error: Unexpected character: <" hataları oluşuyor.
+- iOS'ta çalışan değişiklik Android veya Web'de aynı sonucu vermeyebiliyor.
+- Query, mapper ve UI farklı field isimleri okuyabiliyor.
+- Stale navigation params veya cache nedeniyle eski data gösterilebiliyor.
+
+BU DENETİM YÜZEYSEL BİR LINT / UI AUDIT DEĞİLDİR.
+
+Gerçek:
+
+UI
+→ state
+→ validation
+→ service
+→ API/Supabase
+→ database
+→ storage
+→ query
+→ mapper
+→ cache
+→ realtime
+→ UI refresh
+
+data-flow zincirlerini uçtan uca analiz et.
+
+==================================================
+BÖLÜM 0 — ÇALIŞMA KURALLARI
+==================================================
+
+Bu audit sırasında:
+
+1. Yeni feature ekleme.
+2. Tasarımı sebepsiz değiştirme.
+3. Mevcut çalışan UX'i yeniden yazma.
+4. Sadece try/catch ekleyip root cause'u gizleme.
+5. Teknik hata mesajlarını kullanıcıdan gizleyerek problemi çözülmüş kabul etme.
+6. Mock/fake/default data ile production bug'larını maskeleme.
+7. Broken data için rastgele fallback oluşturma.
+8. Database schema'yı anlamadan yeni duplicate tablolar oluşturma.
+9. Mevcut service varken ikinci bir service architecture oluşturma.
+10. Her ekran için farklı image/location/network çözümü üretme.
+
+Her bug için şu yaklaşımı kullan:
+
+REPRODUCE
+→ TRACE
+→ LOG RAW DATA
+→ FIND ROOT CAUSE
+→ FIX SOURCE
+→ ADD VALIDATION/GUARD
+→ TEST COLD START
+→ TEST iOS
+→ TEST Android
+→ TEST Web
+→ REPORT
+
+Tahmin yapma.
+
+Gerçek request, payload, row ve response üzerinden analiz yap.
+
+==================================================
+BÖLÜM 1 — CODEBASE ARCHITECTURE MAP
+==================================================
+
+Önce codebase'in gerçek mimarisini çıkar.
+
+Recursive audit yap.
+
+Şunları tespit et:
+
+- app/router structure
+- screens
+- components
+- hooks
+- contexts
+- stores
+- services
+- API client
+- Supabase client
+- database access files
+- media/image services
+- location services
+- notification services
+- authentication services
+- query/cache layer
+- realtime subscriptions
+- TypeScript models
+- DTOs
+- data mappers
+- validators
+- constants
+- environment config
+
+Bana internal architecture map oluştur.
+
+Örnek:
+
+AUTH
+UI → auth hook → auth service → Supabase Auth
+
+ADOPTION
+UI → adoption hook → adoption service → Supabase adoption table
+
+ANIMAL REPORT
+UI → report form → report service → Supabase report table
+
+MEDIA
+UI → image picker → upload service → Supabase Storage
+
+Gerçek codebase'e göre oluştur.
+
+Aynı feature için birden fazla paralel data access yolu varsa işaretle.
+
+Örneğin:
+
+Component A → direct supabase
+Component B → adoptionService
+Component C → /api/adoption
+
+Bu tür architecture fragmentation'ı raporla.
+
+==================================================
+BÖLÜM 2 — ENVIRONMENT VE PLATFORM CONFIG AUDIT
+==================================================
+
+Tüm environment ve API configuration dosyalarını kontrol et.
+
+Ara:
+
+.env
+.env.local
+.env.production
+app.config
+app.json
+expo config
+EXPO_PUBLIC_
+API_URL
+BASE_URL
+SUPABASE_URL
+SUPABASE_ANON_KEY
+localhost
+127.0.0.1
+replit
+process.env
+Platform.OS
+
+Şunları doğrula:
+
+- iOS hangi backend'e gidiyor?
+- Android hangi backend'e gidiyor?
+- Web hangi backend'e gidiyor?
+- Development environment nedir?
+- Production environment nedir?
+- Supabase project tek mi?
+- Farklı platformlar yanlışlıkla farklı database kullanıyor mu?
+- Native uygulama web dev server'a request gönderiyor mu?
+- Hardcoded localhost var mı?
+- Secrets client bundle içine yanlışlıkla konmuş mu?
+
+Centralized environment config oluştur veya mevcut olanı düzelt.
+
+Kod tabanında environment URL duplication bırakma.
+
+Startup sırasında development mode için sanitized config diagnostic oluştur:
+
+{
+  platform,
+  environment,
+  apiBaseUrl,
+  supabaseHost
+}
+
+SECRET VALUE LOG'LAMA.
+
+==================================================
+BÖLÜM 3 — DATABASE SCHEMA REALITY AUDIT
+==================================================
+
+Uygulamanın kullandığı gerçek Supabase/PostgreSQL schema'yı incele.
+
+Tüm aktif feature tablolarını listele.
+
+Özellikle:
+
+profiles / users
+pets
+adoption listings
+adoption favorites/follows
+animal help reports
+animal status updates
+comments
+messages / conversations if still active
+notifications
+storage references
+any reminder tables
+any vaccination / pet care tables
+
+Her tablo için kontrol et:
+
+- primary key
+- foreign keys
+- nullable columns
+- default values
+- unique constraints
+- indexes
+- created_at
+- updated_at
+- user ownership fields
+- status columns
+- enum/check constraints
+
+Schema ile TypeScript types'ı karşılaştır.
+
+Örnek problemleri ara:
+
+database:
+image_url
+
+frontend type:
+photoUrl
+
+mapper:
+images
+
+UI:
+listing.image
+
+Bu mismatch'leri tablo halinde çıkar.
+
+Database column naming gerçeğini source of truth olarak belirle.
+
+UI component'lerde database snake_case alanlarını doğrudan dağınık şekilde kullanma.
+
+Data mapper / normalized domain model kullan.
+
+==================================================
+BÖLÜM 4 — ROW LEVEL SECURITY AUDIT
+==================================================
+
+Tüm production tablolarının RLS durumunu kontrol et.
+
+Her tablo için:
+
+- RLS enabled mı?
+- SELECT policy
+- INSERT policy
+- UPDATE policy
+- DELETE policy
+
+kontrol et.
+
+Özellikle user-owned data için şunu doğrula:
+
+auth.uid() = user_id
+
+veya gerçek ownership relation.
+
+Kontrol edilmesi gereken kritik senaryolar:
+
+- User A User B'nin evcil hayvanını düzenleyebilir mi?
+- User A User B'nin ilanını silebilir mi?
+- User A başka kullanıcının favorite/follow row'unu silebilir mi?
+- User A başka kullanıcının özel bildirimlerini okuyabilir mi?
+- User A başka kullanıcı adına status update oluşturabilir mi?
+- Public adoption listings read policy doğru mu?
+- Animal help reports visibility doğru mu?
+
+RLS kapalı veya aşırı geniş policy varsa production blocker olarak işaretle.
+
+Service role key client tarafında kullanılıyorsa CRITICAL BLOCKER olarak raporla.
+
+==================================================
+BÖLÜM 5 — AUTHENTICATION VE SESSION AUDIT
+==================================================
+
+Şu akışları gerçek test et:
+
+Kayıt ol
+→ email validation rules
+→ login
+→ app session restore
+→ logout
+→ relogin
+
+Şifremi unuttum:
+email gir
+→ reset request
+→ reset link
+→ app/deep link
+→ yeni şifre oluştur
+→ yeni şifreyle login
+
+Session audit:
+
+- cold start sonrası kullanıcı korunuyor mu?
+- expired session nasıl ele alınıyor?
+- refresh token çalışıyor mu?
+- auth listener duplicate mı?
+- logout tüm user-specific cache'i temizliyor mu?
+- User A logout → User B login sonrası User A datası ekranda kalıyor mu?
+
+Kullanıcıya raw Supabase auth error gösterme.
+
+Canonical auth error mapper kullan.
+
+Email validation yap.
+
+Password validation frontend ve backend/Auth requirements ile tutarlı olsun.
+
+==================================================
+BÖLÜM 6 — NETWORK / API RESPONSE AUDIT
+==================================================
+
+Tüm:
+
+fetch(
+axios
+response.json()
+JSON.parse()
+
+kullanımlarını recursive audit et.
+
+Hiçbir endpoint response'unu kör şekilde JSON parse etme.
+
+Central response parser oluştur veya mevcut olanı düzelt.
+
+Response zinciri:
+
+status
+content-type
+raw text
+JSON parsing
+
+kontrol edilmeli.
+
+Development log örneği:
+
+console.log("[API RESPONSE]", {
+  requestId,
+  url,
+  method,
+  status,
+  contentType
+});
+
+Sensitive body loglama kurallarına dikkat et.
+
+Şu hatanın tekrar oluşmasını engelle:
+
+JSON Parse error: Unexpected character: <
+
+HTML response kaynaklarını bul:
+
+- wrong endpoint
+- Expo web fallback
+- Replit HTML page
+- 404 HTML
+- 500 HTML
+- auth redirect
+- proxy error
+
+Tüm API error'larını canonical app error model'e map et:
+
+NETWORK_ERROR
+AUTH_EXPIRED
+VALIDATION_ERROR
+NOT_FOUND
+PERMISSION_DENIED
+SERVER_ERROR
+INVALID_RESPONSE
+UNKNOWN_ERROR
+
+UI teknik stack/message göstermesin.
+
+==================================================
+BÖLÜM 7 — IMAGE / MEDIA DATA FLOW AUDIT
+==================================================
+
+CanYoldaşı uygulamasındaki TÜM image flow'ları denetle:
+
+- sahiplendirme ilan görselleri
+- Evcilim hayvan fotoğrafları
+- profil fotoğrafları if present
+- sokak hayvanı yardım fotoğrafları
+- durum güncelleme fotoğrafları
+- notification thumbnails if present
+
+Her flow için:
+
+Image picker
+→ selected URI
+→ preview
+→ upload
+→ storage object
+→ storage reference
+→ database
+→ query
+→ normalization
+→ UI
+
+zincirini takip et.
+
+Ara:
+
+file://
+content://
+ph://
+assets-library://
+
+Local URI database'e persist ediliyorsa CRITICAL BUG.
+
+Database'e sadece canonical remote storage reference persist edilmeli.
+
+Önce gerçek mevcut storage model'i tespit et:
+
+A) full public URL
+veya
+B) storage path
+
+İki modeli karıştırma.
+
+Tek canonical media model kullan.
+
+Önerilen domain model:
+
+type MediaAsset = {
+  storagePath: string;
+  url: string;
+};
+
+Gerçek architecture'a göre uyumla.
+
+Supabase Storage audit:
+
+- bucket list
+- public/private status
+- upload policy
+- read policy
+- delete policy
+- path ownership
+- file naming
+- collision risk
+- MIME type
+- max size
+- allowed image formats
+
+Upload başarısızsa database entity create işlemine sessizce devam etme.
+
+Seçilmiş image varsa upload success doğrulanmalı.
+
+Image URL resolver merkezi hale getir.
+
+Card component'ler içinde:
+
+image ?? photo ?? image_url ?? images?.[0]
+
+gibi compatibility logic bırakma.
+
+Data mapper normalize etsin.
+
+Her Image component'te production-safe error handling kullan.
+
+Development'ta:
+
+onLoad
+onError
+
+diagnostic ekle.
+
+Broken URL'leri gerçek root cause olarak tespit et.
+
+==================================================
+BÖLÜM 8 — LOCATION DATA FLOW AUDIT
+==================================================
+
+Tüm location akışlarını incele:
+
+- sokak hayvanı durum bildirimi
+- yardım kartları
+- harita markers
+- sahiplendirme ilan konumu
+- yakınımdakiler
+- ilan filtreleri
+- haritada aç
+
+Zincir:
+
+permission
+→ location service
+→ coordinates
+→ form state
+→ submit payload
+→ database
+→ query
+→ normalization
+→ detail
+→ map
+
+kontrol edilmeli.
+
+Canonical model:
+
+type GeoLocation = {
+  latitude: number;
+  longitude: number;
+  address: string | null;
+  city: string | null;
+  district: string | null;
+};
+
+Gerçek schema'ya göre mapper oluştur.
+
+Ara:
+
+lat
+lng
+lon
+latitude
+longitude
+coords
+coordinates
+location
+location_lat
+location_lng
+
+Field mismatch'leri düzelt.
+
+Şu bug'ları özellikle ara:
+
+setLocation(coords)
+→ aynı function içinde stale state kullanımı
+
+if (!latitude || !longitude)
+
+string vs number mismatch
+
+coordinates navigation param'da drop oluyor
+
+query latitude/longitude select etmiyor
+
+mapper coordinates drop ediyor
+
+detail screen başka field okuyor
+
+Konum seçilmişse payload'da koordinat yoksa request'i reddet.
+
+Coordinates source of truth olsun.
+
+Reverse geocode optional metadata olsun.
+
+Reverse geocode başarısız olduğunda koordinatları kaybetme.
+
+==================================================
+BÖLÜM 9 — ADOPTION LISTING END-TO-END AUDIT
+==================================================
+
+Sahiplendirme sistemini uçtan uca test et.
+
+CREATE:
+
+İlan Oluştur
+→ photo select
+→ photo upload
+→ animal fields
+→ location
+→ submit
+→ database row
+
+READ:
+
+Tüm İlanlar
+→ search
+→ type chips
+→ advanced filters
+→ image
+→ name
+→ breed
+→ age
+→ location
+
+DETAIL:
+
+listingId
+→ fresh database fetch
+→ current listing data
+
+UPDATE:
+
+İlanlarım
+→ Düzenle
+→ photo add/remove/change
+→ fields update
+→ database update
+→ cache invalidation
+
+DELETE:
+
+İlanlarım
+→ Sil
+→ confirmation
+→ database delete
+→ associated media cleanup strategy
+→ follow relation cleanup
+
+FOLLOW:
+
+heart
+→ follow relation
+→ cold start
+→ heart persists
+→ Takip Ettiklerim
+
+STATUS:
+
+active
+passive
+pending if real
+adopted
+
+Gerçek database status enum/value'ları ile UI mapping'i karşılaştır.
+
+Fake status üretme.
+
+Test listing olarak mevcut kayıtları kullanabilirsin ancak destructive test gerekiyorsa kontrollü test entity oluştur.
+
+==================================================
+BÖLÜM 10 — ANIMAL HELP REPORT END-TO-END AUDIT
+==================================================
+
+Sokak hayvanı yardım sistemini tam test et.
+
+CREATE:
+
+photo
+→ status/category
+→ note
+→ current location
+→ submit
+
+Kontrol:
+
+- selected photo storage upload
+- coordinates payload
+- row created
+- creator id
+- creator display name source
+- created_at
+- initial status
+
+LIST:
+
+yardım kartları
+→ image
+→ title/note
+→ status
+→ location data
+
+DETAIL:
+
+report id ile fresh fetch kullan.
+
+Navigation param'daki stale full report object'i source of truth yapma.
+
+YARDIM ET:
+
+Kullanıcı Yardım Et'e basınca mevcut product logic'e göre:
+
+- action mutation
+- count
+- helper relation
+- duplicate protection
+
+kontrol et.
+
+Tek click = tek action.
+
+Daha önce görülen double count bug'larının geri dönmediğini doğrula.
+
+STATUS UPDATE:
+
+Hayvanın Güncel Durumunu Bildir
+→ photo if used
+→ selected status
+→ note
+→ updater
+→ submit
+→ status update row / report update
+→ detail refresh
+
+JSON parsing bug'ını gerçek endpoint üzerinden test et.
+
+Current status data model ile history data model'i karıştırma.
+
+==================================================
+BÖLÜM 11 — FAVORITE / FOLLOW RELATION AUDIT
+==================================================
+
+Tüm heart ikonlarını listele.
+
+Her heart icon'un semantic anlamını belirle.
+
+Örneğin:
+
+Adoption listing heart
+= follow/watch adoption listing
+
+Aynı heart icon başka feature'da farklı action yapıyorsa açık naming kullan.
+
+Sahiplendirme heart akışı:
+
+user_id
++
+listing_id
+
+relation'a persist edilmeli.
+
+Kontrol:
+
+- unique(user_id, listing_id)
+- RLS
+- insert
+- delete
+- cold start state
+- query invalidation
+- Takip Ettiklerim query
+
+Local-only favorite state bırakma.
+
+User A / User B isolation testi yap.
+
+==================================================
+BÖLÜM 12 — NOTIFICATION SYSTEM AUDIT
+==================================================
+
+Mevcut notification data model'ini analiz et.
+
+Bu bölümde Push Notification ayrı, In-App Notification ayrı değerlendirilmeli.
+
+IN-APP:
+
+- notifications table var mı?
+- notification types
+- user_id
+- entity id
+- read status
+- created_at
+
+Sekmeler:
+
+Tümü
+Talepler
+İlanlarım
+Takip Ettiklerim
+
+her birinin gerçek semantics ve query'sini kontrol et.
+
+Generic query + client-side yanlış category filtering varsa düzelt.
+
+"Takip Ettiklerim":
+
+kullanıcının takip ettiği sahiplendirme ilanları ve ilgili değişiklikler ile tutarlı olmalı.
+
+Notification entity references canonical olmalı:
+
+listing_id
+report_id
+request_id
+
+Navigation:
+
+notification
+→ entity id
+→ fresh entity fetch
+
+Broken/deleted entity safe handling yap.
+
+PUSH:
+
+Mevcut push altyapısı varsa denetle.
+
+Expo Push / FCM / APNs hangi yapı gerçekse tespit et.
+
+Kontrol:
+
+- permission
+- push token
+- token persist
+- token refresh
+- user association
+- logout cleanup
+- duplicate tokens
+- notification handler
+- deep link
+- foreground behavior
+- background behavior
+
+Push altyapısı henüz gerçekten kurulmadıysa bunu "çalışıyor" diye raporlama.
+
+Production blocker / pending infrastructure olarak açıkça belirt.
+
+==================================================
+BÖLÜM 13 — CACHE / STATE / QUERY INVALIDATION AUDIT
+==================================================
+
+Uygulamada kullanılan state/cache sistemini tespit et:
+
+React Query
+TanStack Query
+Context
+Zustand
+Redux
+custom hooks
+raw useEffect/useState
+
+Her mutation sonrası gerekli refresh'i kontrol et.
+
+Özellikle:
+
+create adoption listing
+update adoption listing
+delete adoption listing
+follow listing
+unfollow listing
+create animal report
+update animal status
+help action
+profile/pet update
+
+Sonrasında ilgili query invalidate/refetch olmalı.
+
+Stale local array patch ve server source of truth çakışmalarını bul.
+
+Logout sırasında user-scoped cache temizlenmeli.
+
+User A datasının User B'ye sızmaması için query key'lerde user id kullanılması gereken yerleri kontrol et.
+
+Duplicate realtime + manual cache update nedeniyle double item oluşuyor mu kontrol et.
+
+==================================================
+BÖLÜM 14 — REALTIME AUDIT
+==================================================
+
+Supabase realtime kullanılan tüm yerleri bul.
+
+Ara:
+
+channel(
+postgres_changes
+subscribe(
+removeChannel
+unsubscribe
+
+Her subscription için kontrol:
+
+- hangi table?
+- hangi event?
+- hangi filter?
+- component lifecycle
+- cleanup var mı?
+- duplicate subscription oluşuyor mu?
+- tab focus sonrası ikinci listener oluşuyor mu?
+- strict mode duplicate?
+- reconnect behavior?
+
+Şu problemleri ara:
+
+tek database event
+→ iki UI increment
+
+tek yeni row
+→ listede duplicate item
+
+eski subscription logout sonrası aktif kalıyor
+
+Realtime gerekli olmayan yerde kullanılıyorsa sadeleştir.
+
+Realtime kullanılan yerde event id üzerinden deduplication yap.
+
+==================================================
+BÖLÜM 15 — FORM VALIDATION AUDIT
+==================================================
+
+Uygulamadaki tüm user input form'larını listele.
+
+Özellikle:
+
+register
+login
+password reset
+new password
+adoption create/edit
+animal report
+status update
+pet profile
+user profile if present
+contact info
+
+Her alan için:
+
+- required
+- min/max length
+- type
+- trim
+- numeric format
+- phone format
+- email format
+- date validity
+- enum validity
+
+kontrol et.
+
+Örnek:
+
+telefon numarası alanına serbest metin girilememeli.
+
+Yaş alanına:
+
+"abc"
+
+girilememeli.
+
+Status value UI label'dan direkt database'e yazılmamalı.
+
+Canonical enum mapping kullan.
+
+Textarea limits gerçekten submit sırasında da kontrol edilmeli.
+
+Sadece UI maxLength'e güvenme.
+
+==================================================
+BÖLÜM 16 — TYPE SAFETY AUDIT
+==================================================
+
+TypeScript audit yap.
+
+Ara:
+
+any
+as any
+unknown cast
+@ts-ignore
+@ts-expect-error
+non-null assertion !
+
+Feature data-flow dosyalarında riskli cast'leri incele.
+
+Özellikle database row → domain entity dönüşümünde runtime validation/normalization eksikliği varsa düzelt.
+
+Mümkün olan yerde generated Supabase database types kullan.
+
+Eğer mevcut generated type sistemi varsa eski manual interfaces ile çakışmaları kaldır.
+
+Compile/typecheck çalıştır.
+
+Type error bırakma.
+
+==================================================
+BÖLÜM 17 — DATABASE CONSTRAINT VE INDEX AUDIT
+==================================================
+
+Application logic ile korunmaya çalışılan ancak database constraint gerektiren alanları tespit et.
+
+Örnek:
+
+duplicate follow
+duplicate help action
+duplicate favorite
+invalid status
+orphan relation
+
+Uygun yerlerde:
+
+UNIQUE
+FOREIGN KEY
+ON DELETE CASCADE
+CHECK
+NOT NULL
+
+kullan.
+
+Ancak production data'yı kırabilecek migration uygulamadan önce mevcut duplicate/invalid row'ları incele.
+
+Migration öncesi data audit yap.
+
+Indexes:
+
+Foreign keys
+user_id
+listing_id
+report_id
+created_at
+status
+
+gibi sık query edilen alanlarda index durumunu kontrol et.
+
+Gereksiz index spam oluşturma.
+
+Query pattern'e göre değerlendir.
+
+==================================================
+BÖLÜM 18 — DATA INTEGRITY AUDIT
+==================================================
+
+Mevcut database verilerinde invalid record ara.
+
+Özellikle:
+
+local image URI
+empty image strings
+malformed image arrays
+invalid HTTP URLs
+latitude without longitude
+longitude without latitude
+invalid coordinate ranges
+missing user_id
+orphan foreign references
+duplicate follows
+duplicate helper actions
+unknown status values
+future impossible dates
+empty names
+whitespace-only notes
+JSON string stored where array expected
+
+Data integrity report oluştur.
+
+Safe auto-fix yapılabilen kayıtları düzelt.
+
+Örneğin:
+
+trim empty string → null
+
+Ancak recover edilemeyen local simulator image URI için fake remote image oluşturma.
+
+Bu kayıtları "unrecoverable media reference" olarak raporla.
+
+==================================================
+BÖLÜM 19 — ERROR HANDLING VE USER MESSAGES
+==================================================
+
+Tüm:
+
+Alert.alert
+Toast
+error.message
+console.error
+
+kullanımlarını audit et.
+
+Production UI'da kullanıcı şu mesajları görmemeli:
+
+JSON Parse error
+Unexpected character
+PostgREST error
+PGRST...
+duplicate key value
+violates row-level security
+Network request failed raw stack
+undefined is not an object
+
+Canonical user-friendly error mapper oluştur.
+
+Örnek:
+
+AUTH_EXPIRED:
+"Oturumunuzun süresi doldu. Lütfen tekrar giriş yapın."
+
+NETWORK_ERROR:
+"Bağlantı kurulamadı. İnternet bağlantınızı kontrol edin."
+
+IMAGE_UPLOAD_FAILED:
+"Fotoğraf yüklenemedi. Lütfen tekrar deneyin."
+
+LOCATION_REQUIRED:
+"Lütfen hayvanın görüldüğü konumu ekleyin."
+
+PERMISSION_DENIED:
+"Bu işlem için yetkiniz bulunmuyor."
+
+UNKNOWN:
+"İşlem tamamlanamadı. Lütfen tekrar deneyin."
+
+Development diagnostic kaybolmamalı.
+
+Kullanıcı mesajı ile developer log'u ayır.
+
+==================================================
+BÖLÜM 20 — LOADING / DOUBLE SUBMIT AUDIT
+==================================================
+
+Tüm mutation CTA butonlarını kontrol et.
+
+Özellikle:
+
+Giriş Yap
+Kayıt Ol
+Şifre Sıfırla
+Yeni Şifre Kaydet
+İlan Oluştur
+İlan Güncelle
+Durumu Bildir
+Güncellemeyi Kaydet
+Yardım Et
+Kalp
+Mesaj Gönder if active
+
+Mutation sırasında:
+
+- isSubmitting/isSaving
+- disabled
+- loading state
+
+olmalı.
+
+Tek tap = tek write.
+
+Debounce'u database mutation çözümü olarak kullanma.
+
+Database uniqueness ve mutation lock birlikte kullanılmalı.
+
+==================================================
+BÖLÜM 21 — NAVIGATION DATA FLOW AUDIT
+==================================================
+
+Tüm detail navigation'ları kontrol et.
+
+Şu anti-pattern'i ara:
+
+router.push({
+  params: {
+    listing: JSON.stringify(listing)
+  }
+});
+
+Full database object navigation param içinde source of truth olarak taşınmamalı.
+
+Tercih:
+
+entityId
+→ detail screen
+→ query/fetch by id
+→ fresh server data
+
+Navigation param'daki stale entity nedeniyle:
+
+konum kaybı
+görsel kaybı
+eski status
+eski follow state
+
+problemlerini engelle.
+
+Geçici optimistic display gerekiyorsa server fetch yine source of truth olmalı.
+
+==================================================
+BÖLÜM 22 — DATE / TIME AUDIT
+==================================================
+
+created_at / updated_at kullanımlarını kontrol et.
+
+Database timestamptz tercihlerini doğrula.
+
+Client tarafından gereksiz created_at üretme.
+
+Relative labels:
+
+2 sa önce
+1 dk önce
+
+locale-safe olmalı.
+
+Invalid date ve timezone bug'larını kontrol et.
+
+iOS / Android / Web aynı tarihi tutarlı göstermeli.
+
+==================================================
+BÖLÜM 23 — APP STORE / GOOGLE PLAY TECHNICAL READINESS
+==================================================
+
+Teknik yayın hazırlığını kontrol et.
+
+Expo/React Native config üzerinden mevcut duruma göre:
+
+- app name
+- slug
+- scheme
+- iOS bundle identifier
+- Android package
+- version
+- build number
+- versionCode
+- icon
+- adaptive icon
+- splash
+- permissions
+- privacy-sensitive permission descriptions
+- camera permission
+- photo library permission
+- location permission
+- notification permission
+
+kontrol et.
+
+Kullanılmayan permission isteme.
+
+Konum kullanım açıklaması uygulamanın gerçek amacıyla uyumlu olsun.
+
+Camera kullanılmıyorsa permission ekleme.
+
+Development endpoints production build'e gitmemeli.
+
+Console/debug tooling production behavior'ı etkilememeli.
+
+Store policy konusunda kesin hukuki onay verdiğini iddia etme.
+
+Teknik eksikleri raporla.
+
+==================================================
+BÖLÜM 24 — SECURITY AUDIT
+==================================================
+
+Kontrol et:
+
+- service role key exposed?
+- secrets in source?
+- secrets in git?
+- API keys hardcoded?
+- admin role client-side only?
+- user-supplied file path?
+- unrestricted storage upload?
+- arbitrary MIME upload?
+- predictable insecure ownership mutation?
+- raw SQL from client?
+- insecure deep links?
+- user data in logs?
+
+Admin authorization sadece:
+
+if (profile.role === "admin")
+
+client check ile korunmamalı.
+
+Database/backend authorization da olmalı.
+
+Sensitive log'ları production'da kapat veya redact et.
+
+==================================================
+BÖLÜM 25 — PERFORMANCE AUDIT
+==================================================
+
+Ana ekranlar için kontrol:
+
+- unnecessary repeated query
+- N+1 fetch
+- useEffect loop
+- duplicate realtime
+- large image loading
+- original 4K image directly rendered
+- missing pagination
+- FlatList yerine ScrollView huge list
+- unstable keys
+- inline expensive filters
+- repeated reverse geocoding
+- repeated distance calculation
+
+Sahiplendirme listing ve yardım kartı listelerinde pagination strategy'yi incele.
+
+Filtre sistemi server pagination ile uyumlu olmalı.
+
+Image upload sırasında uygun compression/resizing mevcutsa kontrol et.
+
+Fotoğraf kalitesini gereksiz yok etmeden mobil için makul optimizasyon yap.
+
+==================================================
+BÖLÜM 26 — OFFLINE / NETWORK FAILURE BEHAVIOR
+==================================================
+
+Network kapalıyken kritik akışları test et.
+
+- login
+- listing load
+- create listing
+- image upload
+- location report
+- status update
+- follow action
+
+Uygulama crash olmamalı.
+
+Infinite loading oluşmamalı.
+
+Kullanıcı anlamlı hata görmeli.
+
+Retry mümkün olan read ekranlarında retry davranışı değerlendir.
+
+Mutation offline olduğunda başarı mesajı gösterme.
+
+==================================================
+BÖLÜM 27 — COLD START TEST
+==================================================
+
+Bu audit'te hot reload başarı kabul edilmez.
+
+Her kritik feature için:
+
+1. İşlemi yap.
+2. Uygulamayı tamamen kapat.
+3. Runtime state'i kaybet.
+4. Uygulamayı yeniden aç.
+5. Login/session restore et.
+6. Aynı entity'yi database'den tekrar yükle.
+
+Kontrol:
+
+- image persists
+- location persists
+- follow persists
+- listing status persists
+- pet data persists
+- notification read state persists
+
+Local-only state bug'larını bu testle tespit et.
+
+==================================================
+BÖLÜM 28 — USER A / USER B ISOLATION TEST
+==================================================
+
+İki test kullanıcı ile test yap.
+
+USER A:
+- ilan oluşturur
+- yardım bildirimi oluşturur
+- kendi evcil hayvanını oluşturur
+
+USER B:
+- User A ilanını görür
+- ilana kalp atar
+- kendi Takip Ettiklerim bölümünde görür
+- User A ilanını düzenleyemez
+- User A ilanını silemez
+- User A'nın özel pet verisini değiştiremez
+
+USER A:
+- User B'nin follow relation'ını değiştiremez
+
+Bu test hem UI hem gerçek database permission üzerinden yapılmalı.
+
+Disabled button security değildir.
+
+Direct mutation attempt de policy tarafından reddedilmeli.
+
+==================================================
+BÖLÜM 29 — PLATFORM PARITY TEST
+==================================================
+
+Üç platformu ayrı ayrı test et:
+
+iOS Simulator
+Android Emulator
+Web
+
+Aşağıdaki smoke test matrix'i çalıştır:
+
+AUTH
+login
+logout
+session restore
+
+ADOPTION
+create
+image
+location
+list
+filter
+detail
+edit
+follow
+delete
+
+ANIMAL REPORT
+create
+image
+location
+detail
+help
+status update
+
+PET
+create/read/update if active
+
+NOTIFICATIONS
+tabs
+followed listings
+entity navigation
+
+Her test için:
+
+PASS
+FAIL
+BLOCKED
+
+sonucu ver.
+
+"Web'de bakıldı" demek yeterli değil.
+
+Üç platformu ayrı raporla.
+
+Eğer environment gereği bir platform gerçekten çalıştırılamıyorsa "TEST EDİLMEDİ" yaz.
+
+Test edilmiş gibi iddia etme.
+
+==================================================
+BÖLÜM 30 — AUTOMATED QUALITY CHECKS
+==================================================
+
+Mevcut project scripts'i incele.
+
+Çalıştır:
+
+typecheck
+lint
+tests
+build checks
+
+Gerçek package.json script isimlerini kullan.
+
+Eksik script varsa gereksiz toolchain migration yapmadan uygun temel kalite script'lerini değerlendir.
+
+En kritik pure function'lar için test ekle:
+
+- image normalization
+- location normalization
+- adoption filter
+- age normalization
+- status mapping
+- API response parser
+
+Mevcut test framework varsa onu kullan.
+
+Sırf bu audit için ikinci test framework kurma.
+
+==================================================
+BÖLÜM 31 — DEAD CODE / REMOVED FEED SYSTEM AUDIT
+==================================================
+
+CanYoldaşı uygulamasında Feed/Akış sistemi kaldırıldı.
+
+Codebase içinde eski Feed/Akış kalıntılarını recursive audit et.
+
+Ara:
+
+feed
+posts
+post likes
+post comments
+saved posts
+following feed
+stories if only feed-related
+feed realtime subscriptions
+feed query keys
+feed navigation
+post notification types
+
+DİKKAT:
+
+Sahiplendirme ilanı takibi ile eski sosyal medya following sistemini karıştırma.
+
+Gerçekten artık kullanılmayan Feed/Akış kodlarını tespit et.
+
+Önce imports/routes/references kontrol et.
+
+Safe dead code ise kaldır.
+
+Aktif başka feature tarafından kullanılan shared component/service'i yanlışlıkla silme.
+
+Report'ta kaldırılan feed-related dosyaları listele.
+
+==================================================
+BÖLÜM 32 — PRODUCTION BLOCKER SEVERITY SYSTEM
+==================================================
+
+Bulduğun sorunları severity ile sınıflandır:
+
+P0 — CRITICAL BLOCKER
+Security breach
+data loss
+wrong user data exposure
+service role exposed
+app crash on core flow
+
+P1 — RELEASE BLOCKER
+core feature does not persist
+image broken
+location lost
+auth/reset broken
+database relation broken
+platform core flow broken
+
+P2 — HIGH
+stale UI
+duplicate realtime
+poor error handling
+significant validation bug
+
+P3 — MEDIUM
+performance issue
+minor inconsistent state
+non-core UX logic
+
+P4 — LOW
+cosmetic/cleanup
+
+Önce P0.
+Sonra P1.
+Sonra P2.
+
+P3/P4 için core flows'u bozacak büyük refactor yapma.
+
+==================================================
+BÖLÜM 33 — FIX STRATEGY
+==================================================
+
+Audit'i sadece raporlamakla bırakma.
+
+P0/P1/P2 root cause'larını güvenli şekilde düzelt.
+
+Ancak her fix'ten önce:
+
+- current behavior
+- root cause
+- impacted files
+- database impact
+
+tespit et.
+
+Database migration gerekiyorsa migration oluştur.
+
+Migration'ları versioned ve repeat-safe yaklaşımda tut.
+
+Destructive operation öncesi mevcut data'yı incele.
+
+Production-like data'yı kör şekilde truncate/delete etme.
+
+==================================================
+BÖLÜM 34 — FINAL ACCEPTANCE CRITERIA
+==================================================
+
+Audit ancak şu koşullar sağlanınca tamamlanmış kabul edilir:
+
+1. Kullanıcı oturumu cold start sonrası doğru restore oluyor.
+2. User A / User B datası izole.
+3. Yeni sahiplendirme ilanı fotoğrafı remote storage'a upload oluyor.
+4. Cold start sonrası ilan fotoğrafı tekrar görünüyor.
+5. Sahiplendirme ilan konumu persist oluyor.
+6. İlan heart/follow relation database'de persist oluyor.
+7. Takip Ettiklerim doğru ilanları gösteriyor.
+8. Sokak hayvanı bildirimi konumu persist oluyor.
+9. Durum detayında "Belirtilmedi" yanlış şekilde gösterilmiyor.
+10. Yardım kartı fotoğrafı persist oluyor.
+11. Status update JSON parse hatası vermiyor.
+12. API HTML response root cause'u çözülmüş.
+13. Tek click duplicate mutation üretmiyor.
+14. Realtime duplicate item/count üretmiyor.
+15. Logout user cache temizliyor.
+16. Raw technical database/API errors kullanıcıya gösterilmiyor.
+17. iOS core smoke test sonucu belli.
+18. Android core smoke test sonucu belli.
+19. Web core smoke test sonucu belli.
+20. Typecheck sonucu belli.
+21. Lint sonucu belli.
+22. Build/readiness sonucu belli.
+
+==================================================
+BÖLÜM 35 — SON RAPOR FORMATI
+==================================================
+
+İşlem sonunda bana yüzeysel özet verme.
+
+Şu formatta rapor üret:
+
+# CANYOLDAŞI PRODUCTION READINESS AUDIT
+
+## 1. Executive Summary
+
+Release status:
+
+READY
+CONDITIONALLY READY
+NOT READY
+
+Ana gerekçe.
+
+## 2. Architecture Map
+
+Gerçek data access mimarisi.
+
+## 3. Production Blockers
+
+Tablo:
+
+Severity
+Feature
+Bug
+Root Cause
+Fix
+Status
+
+## 4. Database Audit
+
+Tables
+RLS
+Constraints
+Indexes
+Data integrity issues
+
+## 5. Data Flow Audit
+
+### Images
+### Locations
+### Adoption
+### Animal Reports
+### Follow/Favorites
+### Notifications
+### Authentication
+
+Her biri için:
+
+Before
+Root Cause
+Fix
+Test Result
+
+## 6. Platform Test Matrix
+
+Feature | iOS | Android | Web
+
+PASS / FAIL / BLOCKED / NOT TESTED
+
+## 7. Security Findings
+
+Severity ile.
+
+## 8. Performance Findings
+
+## 9. Automated Checks
+
+Typecheck:
+Lint:
+Tests:
+Build:
+
+Gerçek command ve sonuçları yaz.
+
+## 10. Database Migrations
+
+Migration dosyalarının isimlerini ve ne yaptığını yaz.
+
+## 11. Changed Files
+
+Değiştirilen her dosyayı gruplayarak listele.
+
+## 12. Remaining Risks
+
+Düzeltilmeyen veya dış altyapı gerektiren konular.
+
+## 13. Release Recommendation
+
+Şunlardan sadece birini seç:
+
+READY FOR STORE SUBMISSION
+
+READY AFTER LISTED BLOCKERS
+
+DO NOT RELEASE
+
+Sebebini açıkça yaz.
+
+ÖNEMLİ:
+
+Bir test gerçekten yapılmadıysa PASS yazma.
+
+Bir platform çalıştırılmadıysa NOT TESTED yaz.
+
+Push altyapısı gerçek cihazda test edilmediyse çalışıyor iddiasında bulunma.
+
+Root cause bulmadan fallback ekleyip "fixed" deme.
+
+CanYoldaşı'nı production release adayı gibi incele.

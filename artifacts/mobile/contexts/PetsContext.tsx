@@ -51,6 +51,15 @@ async function apiFetch(path: string, opts: RequestInit = {}): Promise<Response>
   return fetch(`${API_BASE}${path}`, { ...opts, headers });
 }
 
+async function safeJson<T>(res: Response): Promise<T> {
+  const contentType = res.headers.get("content-type") ?? "";
+  if (!contentType.includes("application/json")) {
+    await res.text().catch(() => "");
+    throw new Error(`Beklenmedik sunucu yanıtı (${res.status})`);
+  }
+  return res.json() as Promise<T>;
+}
+
 function mapFromApi(raw: Record<string, unknown>): Pet {
   return {
     id:              String(raw.id ?? ""),
@@ -92,7 +101,7 @@ export function PetsProvider({ children }: { children: React.ReactNode }) {
         headers: { "x-user-id": userId },
       });
       if (!res.ok) throw new Error("Sunucu hatası");
-      const data = await res.json() as Array<Record<string, unknown>>;
+      const data = await safeJson<Array<Record<string, unknown>>>(res);
       setPets(data.map(mapFromApi));
     } catch {
       setError("Evcil hayvanlar yüklenemedi");
@@ -121,7 +130,7 @@ export function PetsProvider({ children }: { children: React.ReactNode }) {
           feedingNotes:    pet.feedingNotes,
         }),
       });
-      const data = await res.json() as Record<string, unknown>;
+      const data = await safeJson<Record<string, unknown>>(res);
       if (!res.ok) throw new Error(String(data.error ?? "Evcil hayvan eklenemedi"));
       const newPet = mapFromApi(data);
       setPets((prev) => [newPet, ...prev]);
@@ -148,7 +157,7 @@ export function PetsProvider({ children }: { children: React.ReactNode }) {
           feedingNotes:    updates.feedingNotes,
         }),
       });
-      const data = await res.json() as Record<string, unknown>;
+      const data = await safeJson<Record<string, unknown>>(res);
       if (!res.ok) throw new Error(String(data.error ?? "Evcil hayvan güncellenemedi"));
       setPets((prev) =>
         prev.map((p) => (p.id === id ? mapFromApi(data) : p))
@@ -163,7 +172,7 @@ export function PetsProvider({ children }: { children: React.ReactNode }) {
       method: "DELETE",
       headers: { "x-user-id": uid },
     });
-    const data = await res.json() as Record<string, unknown>;
+    const data = await safeJson<Record<string, unknown>>(res);
     if (!res.ok) throw new Error(String(data.error ?? "Evcil hayvan silinemedi"));
     setPets((prev) => prev.filter((p) => p.id !== id));
   }, [pets]);

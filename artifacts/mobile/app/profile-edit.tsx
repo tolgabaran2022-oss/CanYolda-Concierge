@@ -30,6 +30,28 @@ const PURPLE_DARK = "#3D2070";
 const BG = "#F9F8FF";
 const CAT_AVATAR = "https://loremflickr.com/300/300/cat?lock=500";
 
+const API_BASE = process.env.EXPO_PUBLIC_DOMAIN
+  ? `https://${process.env.EXPO_PUBLIC_DOMAIN}/api`
+  : "http://localhost:8080/api";
+
+async function uploadAvatar(localUri: string): Promise<string> {
+  const filename = localUri.split("/").pop() ?? "avatar.jpg";
+  const match = /\.(\w+)$/.exec(filename);
+  const mimeType = match ? `image/${match[1].toLowerCase().replace("jpg", "jpeg")}` : "image/jpeg";
+  const formData = new FormData();
+  if (Platform.OS === "web") {
+    const response = await fetch(localUri);
+    const blob = await response.blob();
+    formData.append("image", blob, filename);
+  } else {
+    formData.append("image", { uri: localUri, name: filename, type: mimeType } as unknown as Blob);
+  }
+  const res = await fetch(`${API_BASE}/upload`, { method: "POST", body: formData });
+  if (!res.ok) throw new Error("Fotoğraf yüklenemedi");
+  const data = await res.json() as { url: string };
+  return data.url;
+}
+
 export default function ProfileEditScreen() {
   const T      = useTheme();
   const insets = useSafeAreaInsets();
@@ -113,13 +135,23 @@ export default function ProfileEditScreen() {
     const trimmedUsername = username.trim().toLowerCase().replace(/[^a-z0-9_.]/g, "");
     setSaving(true);
     try {
+      /* Upload avatar if user picked a new local photo */
+      let resolvedAvatar = avatar;
+      if (avatar && (avatar.startsWith("file://") || avatar.startsWith("content://") || avatar.startsWith("ph://"))) {
+        try {
+          resolvedAvatar = await uploadAvatar(avatar);
+        } catch {
+          Alert.alert("Fotoğraf Yüklenemedi", "Profil fotoğrafı yüklenemedi, önceki fotoğraf korunacak.");
+          resolvedAvatar = user?.avatar ?? null;
+        }
+      }
       await Promise.all([
         updateProfile({
           name: trimmedName,
           username: trimmedUsername || undefined,
           bio: bio.trim(),
           location: location.trim(),
-          avatar: avatar,
+          avatar: resolvedAvatar,
         }),
         updateSettings(settings),
       ]);

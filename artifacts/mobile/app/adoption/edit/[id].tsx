@@ -70,6 +70,32 @@ const AGE_OPTIONS = [
   { label: "3 Yaş+",  value: "3 yaş+" },
 ];
 
+const API_BASE = process.env.EXPO_PUBLIC_DOMAIN
+  ? `https://${process.env.EXPO_PUBLIC_DOMAIN}/api`
+  : "http://localhost:8080/api";
+
+async function uploadPhoto(localUri: string): Promise<string> {
+  const filename = localUri.split("/").pop() ?? "photo.jpg";
+  const match = /\.(\w+)$/.exec(filename);
+  const mimeType = match ? `image/${match[1].toLowerCase().replace("jpg", "jpeg")}` : "image/jpeg";
+  const formData = new FormData();
+  if (Platform.OS === "web") {
+    const response = await fetch(localUri);
+    const blob = await response.blob();
+    formData.append("image", blob, filename);
+  } else {
+    formData.append("image", { uri: localUri, name: filename, type: mimeType } as unknown as Blob);
+  }
+  const res = await fetch(`${API_BASE}/upload`, { method: "POST", body: formData });
+  if (!res.ok) throw new Error("Fotoğraf yüklenemedi");
+  const data = await res.json() as { url: string };
+  return data.url;
+}
+
+function isLocalUri(uri: string) {
+  return uri.startsWith("file://") || uri.startsWith("content://") || uri.startsWith("ph://");
+}
+
 /* ── Phone helpers ───────────────────────────────────────── */
 function formatPhone(digits: string) {
   const d = digits.replace(/\D/g, "").slice(0, 10);
@@ -416,9 +442,15 @@ export default function EditAdoptionScreen() {
     if (!validate() || !user) return;
     setIsSaving(true);
     try {
+      /* Upload any newly picked local URIs — keep already-remote URLs as-is */
+      const remoteImages = await Promise.all(
+        images.map((uri) =>
+          isLocalUri(uri) ? uploadPhoto(uri).catch(() => uri) : Promise.resolve(uri)
+        )
+      );
       await updateListing(listing.id, {
-        images,
-        photo:             images[0],
+        images:            remoteImages,
+        photo:             remoteImages[0],
         petName:           petName.trim(),
         petType,
         petAge,

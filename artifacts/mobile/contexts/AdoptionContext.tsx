@@ -77,6 +77,15 @@ async function apiFetch(path: string, opts: RequestInit = {}): Promise<Response>
   return fetch(`${API_BASE}${path}`, { ...opts, headers });
 }
 
+async function safeJson<T>(res: Response): Promise<T> {
+  const contentType = res.headers.get("content-type") ?? "";
+  if (!contentType.includes("application/json")) {
+    await res.text().catch(() => "");
+    throw new Error(`Beklenmedik sunucu yanıtı (${res.status})`);
+  }
+  return res.json() as Promise<T>;
+}
+
 function mapFromApi(raw: Record<string, unknown>): AdoptionListing {
   return {
     id:                 String(raw.id ?? ""),
@@ -126,7 +135,7 @@ export function AdoptionProvider({ children }: { children: React.ReactNode }) {
       setError(null);
       const res = await apiFetch("/adoption");
       if (!res.ok) throw new Error("Sunucu hatası");
-      const data = await res.json() as Array<Record<string, unknown>>;
+      const data = await safeJson<Array<Record<string, unknown>>>(res);
       setListings(data.map(mapFromApi));
     } catch {
       setError("İlanlar yüklenemedi");
@@ -142,7 +151,7 @@ export function AdoptionProvider({ children }: { children: React.ReactNode }) {
     try {
       const res = await apiFetch("/adoption/followed");
       if (!res.ok) return;
-      const data = await res.json() as Array<Record<string, unknown>>;
+      const data = await safeJson<Array<Record<string, unknown>>>(res);
       const mapped = data.map(mapFromApi);
       setFollowedListings(mapped);
       setFollowedIds(new Set(mapped.map((l) => l.id)));
@@ -245,7 +254,7 @@ export function AdoptionProvider({ children }: { children: React.ReactNode }) {
           toiletTraining:     listing.toiletTraining,
         }),
       });
-      const data = await res.json() as Record<string, unknown>;
+      const data = await safeJson<Record<string, unknown>>(res);
       if (!res.ok) throw new Error(String(data.error ?? "İlan oluşturulamadı"));
 
       const newListing = mapFromApi(data);
@@ -284,7 +293,7 @@ export function AdoptionProvider({ children }: { children: React.ReactNode }) {
           toiletTraining:     updates.toiletTraining,
         }),
       });
-      const data = await res.json() as Record<string, unknown>;
+      const data = await safeJson<Record<string, unknown>>(res);
       if (!res.ok) throw new Error(String(data.error ?? "İlan güncellenemedi"));
 
       setListings((prev) =>
@@ -300,7 +309,7 @@ export function AdoptionProvider({ children }: { children: React.ReactNode }) {
       method: "DELETE",
       headers: { "x-user-id": userId },
     });
-    const data = await res.json() as Record<string, unknown>;
+    const data = await safeJson<Record<string, unknown>>(res);
     if (!res.ok) throw new Error(String(data.error ?? "İlan silinemedi"));
     setListings((prev) => prev.filter((l) => l.id !== id));
     /* Also remove from followed */

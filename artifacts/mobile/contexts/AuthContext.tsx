@@ -66,6 +66,14 @@ async function apiFetch(path: string, opts: RequestInit = {}): Promise<Response>
   });
 }
 
+async function safeJson<T>(res: Response): Promise<T> {
+  const ct = res.headers.get("content-type") ?? "";
+  if (!ct.includes("application/json")) {
+    throw new Error(`Sunucudan beklenmedik yanıt alındı (HTTP ${res.status})`);
+  }
+  return res.json() as Promise<T>;
+}
+
 const DEMO_USER: User = {
   id:       "demo-preview-user",
   name:     "Ayşe Kaya",
@@ -105,7 +113,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         method: "POST",
         body: JSON.stringify({ name, email, password }),
       });
-      const data = await res.json() as { error?: string; token?: string; user?: { id: string; email: string; name: string; avatar?: string | null } };
+      const data = await safeJson<{ error?: string; token?: string; user?: { id: string; email: string; name: string; avatar?: string | null } }>(res);
       if (!res.ok) throw new Error(data.error ?? "Kayıt başarısız.");
 
       const safe: User = {
@@ -131,7 +139,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       method: "POST",
       body: JSON.stringify({ email, password }),
     });
-    const data = await res.json() as { error?: string; token?: string; user?: { id: string; email: string; name: string; avatar?: string | null } };
+    const data = await safeJson<{ error?: string; token?: string; user?: { id: string; email: string; name: string; avatar?: string | null } }>(res);
     if (!res.ok) throw new Error(data.error ?? "Giriş başarısız.");
 
     const safe: User = {
@@ -176,7 +184,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         headers: token ? { Authorization: `Bearer ${token}` } : {},
         body: JSON.stringify({ currentPassword, newPassword }),
       });
-      const data = await res.json() as { error?: string };
+      const data = await safeJson<{ error?: string }>(res);
       if (!res.ok) throw new Error(data.error ?? "Şifre değiştirilemedi.");
     },
     [user]
@@ -223,7 +231,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         },
       });
       if (!res.ok) return { ...DEFAULT_SETTINGS };
-      const data = await res.json() as Partial<UserSettings>;
+      const data = await safeJson<Partial<UserSettings>>(res);
       return { ...DEFAULT_SETTINGS, ...data };
     } catch {
       return { ...DEFAULT_SETTINGS };
@@ -242,7 +250,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       },
       body: JSON.stringify(settings),
     });
-    const data = await res.json() as { error?: string };
+    const data = await safeJson<{ error?: string }>(res);
     if (!res.ok) throw new Error(data.error ?? "Ayarlar kaydedilemedi.");
   }, [user]);
 

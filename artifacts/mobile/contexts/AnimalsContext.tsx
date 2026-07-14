@@ -68,6 +68,15 @@ async function apiFetch(path: string, opts: RequestInit = {}): Promise<Response>
   return fetch(`${API_BASE}${path}`, { ...opts, headers });
 }
 
+async function safeJson<T>(res: Response): Promise<T> {
+  const contentType = res.headers.get("content-type") ?? "";
+  if (!contentType.includes("application/json")) {
+    await res.text().catch(() => "");
+    throw new Error(`Beklenmedik sunucu yanıtı (${res.status})`);
+  }
+  return res.json() as Promise<T>;
+}
+
 function mapFromApi(raw: Record<string, unknown>): StrayAnimal {
   const interactions = (raw.interactions as string[] | undefined) ?? [];
   const comments = (raw.comments as Array<Record<string, unknown>> | undefined) ?? [];
@@ -106,7 +115,7 @@ export function AnimalsProvider({ children }: { children: React.ReactNode }) {
       setError(null);
       const res = await apiFetch("/animals");
       if (!res.ok) throw new Error("Sunucu hatası");
-      const data = await res.json() as Array<Record<string, unknown>>;
+      const data = await safeJson<Array<Record<string, unknown>>>(res);
       setAnimals(data.map((raw) => {
         const fedSet: string[]  = [];
         const helpSet: string[] = [];
@@ -148,15 +157,15 @@ export function AnimalsProvider({ children }: { children: React.ReactNode }) {
           imageUrl:     animal.image ?? "",
           animalType:   animal.animalType ?? "",
           locationName: animal.locationName ?? "",
-          latitude:     String(animal.latitude),
-          longitude:    String(animal.longitude),
+          latitude:     animal.latitude,
+          longitude:    animal.longitude,
           status:       animal.status,
           notes:        animal.notes,
           userName:     animal.userName,
         }),
         headers: { "x-user-id": animal.userId },
       });
-      const data = await res.json() as Record<string, unknown>;
+      const data = await safeJson<Record<string, unknown>>(res);
       if (!res.ok) throw new Error(String(data.error ?? "Rapor oluşturulamadı"));
 
       const newAnimal: StrayAnimal = {
@@ -178,7 +187,7 @@ export function AnimalsProvider({ children }: { children: React.ReactNode }) {
       headers: { "x-user-id": userId },
     });
     if (!res.ok) throw new Error("İşlem başarısız");
-    const { fed } = await res.json() as { fed: boolean; fedCount: number };
+    const { fed } = await safeJson<{ fed: boolean; fedCount: number }>(res);
 
     setAnimals((prev) =>
       prev.map((a) => {
@@ -199,7 +208,7 @@ export function AnimalsProvider({ children }: { children: React.ReactNode }) {
       headers: { "x-user-id": userId },
     });
     if (!res.ok) throw new Error("İşlem başarısız");
-    const { needsHelp } = await res.json() as { needsHelp: boolean; needsHelpCount: number };
+    const { needsHelp } = await safeJson<{ needsHelp: boolean; needsHelpCount: number }>(res);
 
     setAnimals((prev) =>
       prev.map((a) => {
@@ -221,7 +230,7 @@ export function AnimalsProvider({ children }: { children: React.ReactNode }) {
         headers: { "x-user-id": comment.userId },
         body: JSON.stringify({ text: comment.text, userName: comment.userName }),
       });
-      const data = await res.json() as Record<string, unknown>;
+      const data = await safeJson<Record<string, unknown>>(res);
       if (!res.ok) throw new Error(String(data.error ?? "Yorum eklenemedi"));
 
       const newComment: AnimalComment = {
@@ -246,7 +255,7 @@ export function AnimalsProvider({ children }: { children: React.ReactNode }) {
       method: "DELETE",
       headers: { "x-user-id": userId },
     });
-    const data = await res.json() as Record<string, unknown>;
+    const data = await safeJson<Record<string, unknown>>(res);
     if (!res.ok) throw new Error(String(data.error ?? "Bildirim silinemedi"));
     setAnimals((prev) => prev.filter((a) => a.id !== id));
   }, []);

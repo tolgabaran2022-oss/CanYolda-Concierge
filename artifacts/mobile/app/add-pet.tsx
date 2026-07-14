@@ -15,10 +15,33 @@ import {
   TextInput,
   View,
 } from "react-native";
+
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { useAuth } from "@/contexts/AuthContext";
 import { usePets } from "@/contexts/PetsContext";
 import { useColors } from "@/hooks/useColors";
+
+const API_BASE = process.env.EXPO_PUBLIC_DOMAIN
+  ? `https://${process.env.EXPO_PUBLIC_DOMAIN}/api`
+  : "http://localhost:8080/api";
+
+async function uploadImage(localUri: string): Promise<string> {
+  const filename = localUri.split("/").pop() ?? "photo.jpg";
+  const match = /\.(\w+)$/.exec(filename);
+  const mimeType = match ? `image/${match[1].toLowerCase().replace("jpg", "jpeg")}` : "image/jpeg";
+  const formData = new FormData();
+  if (Platform.OS === "web") {
+    const response = await fetch(localUri);
+    const blob = await response.blob();
+    formData.append("image", blob, filename);
+  } else {
+    formData.append("image", { uri: localUri, name: filename, type: mimeType } as unknown as Blob);
+  }
+  const res = await fetch(`${API_BASE}/upload`, { method: "POST", body: formData });
+  if (!res.ok) throw new Error("Fotoğraf yüklenemedi");
+  const data = await res.json() as { url: string };
+  return data.url;
+}
 
 const PET_TYPES = ["Kedi", "Köpek", "Kuş", "Tavşan", "Balık", "Diğer"];
 
@@ -58,12 +81,23 @@ export default function AddPetScreen() {
     if (!user) return;
     setIsSaving(true);
     try {
+      let remoteImageUrl: string | undefined;
+      if (image) {
+        try {
+          remoteImageUrl = await uploadImage(image);
+        } catch {
+          Alert.alert(
+            "Fotoğraf Yüklenemedi",
+            "Fotoğraf sunucuya yüklenirken hata oluştu. Hayvan fotoğrafsız kaydedilecek.",
+          );
+        }
+      }
       await addPet({
         name: name.trim(),
         type,
         breed: breed.trim() || undefined,
         age: age.trim() || undefined,
-        image,
+        image: remoteImageUrl,
         vaccinationInfo: vaccinationInfo.trim(),
         feedingNotes: feedingNotes.trim(),
         userId: user.id,

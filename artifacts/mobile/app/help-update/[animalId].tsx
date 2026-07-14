@@ -35,6 +35,27 @@ async function apiFetch(path: string, opts: RequestInit = {}) {
   return fetch(`${API_BASE}${path}`, { ...opts, headers });
 }
 
+async function uploadPhoto(localUri: string): Promise<string> {
+  const filename = localUri.split("/").pop() ?? "photo.jpg";
+  const match = /\.(\w+)$/.exec(filename);
+  const mimeType = match ? `image/${match[1].toLowerCase().replace("jpg", "jpeg")}` : "image/jpeg";
+  const formData = new FormData();
+  if (Platform.OS === "web") {
+    const response = await fetch(localUri);
+    const blob = await response.blob();
+    formData.append("image", blob, filename);
+  } else {
+    formData.append("image", { uri: localUri, name: filename, type: mimeType } as unknown as Blob);
+  }
+  const token = await AsyncStorage.getItem("@canyoldasi:jwt");
+  const headers: Record<string, string> = {};
+  if (token) headers["Authorization"] = `Bearer ${token}`;
+  const res = await fetch(`${API_BASE}/upload`, { method: "POST", body: formData, headers });
+  if (!res.ok) throw new Error("Fotoğraf yüklenemedi");
+  const data = await res.json() as { url: string };
+  return data.url;
+}
+
 const C = {
   purple:     "#7B5EA7",
   purpleDark: "#4A2D8F",
@@ -66,7 +87,6 @@ export default function HelpUpdateScreen() {
   const { user }     = useAuth();
 
   const [photoUri,       setPhotoUri]       = useState<string | null>(null);
-  const [photoBase64,    setPhotoBase64]    = useState<string | null>(null);
   const [selectedStatus, setSelectedStatus] = useState<string | null>(null);
   const [note,           setNote]           = useState("");
   const [isSubmitting,   setIsSubmitting]   = useState(false);
@@ -76,7 +96,6 @@ export default function HelpUpdateScreen() {
 
   const clearPhoto = useCallback(() => {
     setPhotoUri(null);
-    setPhotoBase64(null);
   }, []);
 
   const handleCamera = useCallback(async () => {
@@ -94,11 +113,9 @@ export default function HelpUpdateScreen() {
       allowsEditing: true,
       aspect: [4, 3],
       quality: 0.5,
-      base64: true,
     });
     if (!result.canceled && result.assets[0]) {
       setPhotoUri(result.assets[0].uri);
-      setPhotoBase64(result.assets[0].base64 ?? null);
     }
   }, []);
 
@@ -116,11 +133,9 @@ export default function HelpUpdateScreen() {
       allowsEditing: true,
       aspect: [4, 3],
       quality: 0.5,
-      base64: true,
     });
     if (!result.canceled && result.assets[0]) {
       setPhotoUri(result.assets[0].uri);
-      setPhotoBase64(result.assets[0].base64 ?? null);
     }
   }, []);
 
@@ -137,9 +152,8 @@ export default function HelpUpdateScreen() {
     setIsSubmitting(true);
 
     try {
-      const photoUrl = photoBase64
-        ? `data:image/jpeg;base64,${photoBase64}`
-        : photoUri!;
+      /* Upload the photo first — avoids 413 errors from base64 JSON payloads */
+      const photoUrl = await uploadPhoto(photoUri!);
 
       const res = await apiFetch(`/animals/${animalId}/help-updates`, {
         method: "POST",
@@ -158,7 +172,7 @@ export default function HelpUpdateScreen() {
           const errData = await res.json() as { error?: string };
           if (errData.error) errMsg = errData.error;
         } catch {
-          if (res.status === 413) errMsg = "Fotoğraf çok büyük. Lütfen daha küçük bir fotoğraf seç.";
+          /* ignore JSON parse errors */
         }
         throw new Error(errMsg);
       }
@@ -176,7 +190,7 @@ export default function HelpUpdateScreen() {
       setIsSubmitting(false);
       submissionLock.current = false;
     }
-  }, [canSubmit, user, animalId, photoBase64, photoUri, selectedStatus, note, router]);
+  }, [canSubmit, user, animalId, photoUri, selectedStatus, note, router]);
 
   const topPad = Platform.OS === "web" ? 16 : insets.top;
 
