@@ -131,18 +131,20 @@ function PetHeader({ topPad, mainTab, onChange }: { topPad: number; mainTab: Mai
           );
         })}
       </View>
-      <Pressable
-        style={hdr.bellBtn}
-        onPress={() => { Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light); router.push("/adoption-notifications" as any); }}
-        hitSlop={10}
-      >
-        <Icon name="notifications-outline" size={22} color={badgeLabel ? P : BODY} />
-        {badgeLabel ? (
-          <View style={hdr.bellBadge}>
-            <Text style={hdr.bellBadgeTxt}>{badgeLabel}</Text>
-          </View>
-        ) : null}
-      </Pressable>
+      {mainTab === "adoption" && (
+        <Pressable
+          style={hdr.bellBtn}
+          onPress={() => { Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light); router.push("/adoption-notifications" as any); }}
+          hitSlop={10}
+        >
+          <Icon name="notifications-outline" size={22} color={badgeLabel ? P : BODY} />
+          {badgeLabel ? (
+            <View style={hdr.bellBadge}>
+              <Text style={hdr.bellBadgeTxt}>{badgeLabel}</Text>
+            </View>
+          ) : null}
+        </Pressable>
+      )}
     </View>
   );
 }

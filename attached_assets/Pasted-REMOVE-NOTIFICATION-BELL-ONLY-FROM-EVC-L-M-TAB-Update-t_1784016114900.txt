@@ -1,0 +1,153 @@
+REMOVE NOTIFICATION BELL ONLY FROM EVCİLİM TAB
+
+Update the top header behavior of the existing Evcilim section.
+
+CURRENT TOP-LEVEL TABS:
+
+- Sahiplendirme
+- Evcilim
+
+CURRENT ISSUE:
+
+The notification bell icon is also visible when the "Evcilim" tab is active.
+
+REQUIRED CHANGE:
+
+When the active top-level tab is:
+
+Evcilim
+
+remove/hide the notification bell from the top-right header.
+
+The Evcilim header must display only:
+
+Sahiplendirme     Evcilim
+
+There must be NO notification bell icon on the right side.
+
+==================================================
+IMPORTANT TAB-SPECIFIC BEHAVIOR
+==================================================
+
+When active tab = Sahiplendirme:
+
+- keep the existing notification bell
+- keep adoption notification unread badge logic
+- keep Sahiplendirme notifications working
+
+When active tab = Evcilim:
+
+- do not render the notification bell
+- do not render the unread badge
+- do not reserve empty horizontal space for the bell
+- do not render an invisible Pressable/TouchableOpacity
+- do not keep a hidden absolute-positioned header action
+
+The bell belongs only to the Sahiplendirme notification system.
+
+==================================================
+IMPLEMENTATION
+==================================================
+
+Audit the existing shared top header component.
+
+The notification icon may currently be rendered globally.
+
+Find logic similar to:
+
+<NotificationBell />
+
+or:
+
+<Pressable onPress={openNotifications}>
+  <Bell />
+</Pressable>
+
+or:
+
+headerRight
+
+Render it conditionally based on the REAL active top tab state.
+
+Conceptual logic:
+
+{activeTab === 'adoption' && (
+  <AdoptionNotificationBell />
+)}
+
+Use the project's REAL tab key.
+
+Do not assume the key is "adoption".
+
+Inspect the existing implementation first.
+
+If numeric tab indexes are used:
+
+0 = Sahiplendirme
+1 = Evcilim
+
+then render the bell only for index 0.
+
+Do not create duplicate header components unless absolutely necessary.
+
+==================================================
+LAYOUT FIX
+==================================================
+
+After removing the bell from Evcilim:
+
+1. Remove any reserved right-side width.
+2. Keep tab labels left-aligned in their current positions.
+3. Preserve the existing header height.
+4. Preserve the active purple underline.
+5. Do not stretch the tabs unnaturally across the entire screen.
+6. Do not move the pet profile card upward into the header.
+7. Preserve the current top spacing.
+
+There must not be an empty clickable area where the bell previously existed.
+
+==================================================
+DO NOT CHANGE
+==================================================
+
+Do not change:
+
+- Sahiplendirme notification system
+- Sahiplendirme unread badge
+- adoption request notifications
+- Sahiplendirme / Evcilim tab order
+- default active tab behavior
+- Evcilim pet profile card
+- Evcil Hayvan Ekle button
+- Hızlı Durum section
+- Yönetim cards
+- Yaklaşan Hatırlatmalar
+- bottom navigation
+- Supabase logic
+
+Only remove the notification bell from the Evcilim active tab.
+
+==================================================
+FINAL EXPECTED RESULT
+==================================================
+
+SAHİPLENDİRME ACTIVE:
+
+Sahiplendirme     Evcilim                  [Bell]
+
+Bell remains visible and functional.
+
+EVCİLİM ACTIVE:
+
+Sahiplendirme     Evcilim
+
+No bell.
+No badge.
+No empty reserved bell space.
+No invisible touch target.
+
+Verify on:
+
+- iOS
+- Android
+- Web
