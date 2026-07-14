@@ -218,7 +218,7 @@ function TabSwitcher({
   );
 }
 const tsw = StyleSheet.create({
-  wrap:        { flexDirection: "row", marginHorizontal: 8, marginBottom: 16, backgroundColor: WHITE, borderRadius: 18, padding: 5, borderWidth: 1, borderColor: BORDER, ...IOS_SHADOW },
+  wrap:        { flexDirection: "row", marginHorizontal: 7, marginBottom: 16, backgroundColor: WHITE, borderRadius: 18, padding: 5, borderWidth: 1, borderColor: BORDER, ...IOS_SHADOW },
   item:        { flex: 1, borderRadius: 14, overflow: "hidden" },
   grad:        { flexDirection: "row", alignItems: "center", justifyContent: "center", gap: 4, paddingVertical: 13, paddingHorizontal: 2 },
   inactiveRow: { flexDirection: "row", alignItems: "center", justifyContent: "center", gap: 4, paddingVertical: 13, paddingHorizontal: 2 },
