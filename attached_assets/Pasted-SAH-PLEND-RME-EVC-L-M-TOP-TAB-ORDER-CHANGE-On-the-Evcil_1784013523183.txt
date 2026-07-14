@@ -1,0 +1,66 @@
+SAHİPLENDİRME / EVCİLİM TOP TAB ORDER CHANGE
+
+On the Evcilim screen, change ONLY the order of the two top-level tabs.
+
+CURRENT ORDER:
+[ Evcilim ] [ Sahiplendirme ]
+
+NEW REQUIRED ORDER:
+[ Sahiplendirme ] [ Evcilim ]
+
+REQUIREMENTS:
+
+1. "Sahiplendirme" must be the FIRST tab on the LEFT.
+2. "Evcilim" must be the SECOND tab, directly to the RIGHT of Sahiplendirme.
+3. When the user opens this screen from the bottom navigation, "Sahiplendirme" must be the DEFAULT active tab.
+4. The purple active underline must appear under "Sahiplendirme" by default.
+5. The Sahiplendirme page content must be displayed by default.
+6. When the user taps "Evcilim", show the existing Evcilim content.
+7. When the user taps "Sahiplendirme", show the existing Sahiplendirme content.
+8. Preserve the existing tab transition and interaction behavior.
+9. Preserve the existing notification bell position on the top-right.
+10. Keep the current typography, spacing, purple colors, underline design and header height.
+
+IMPORTANT:
+Do NOT redesign the page.
+Do NOT create duplicate screens.
+Do NOT create duplicate tabs.
+Do NOT rename the tabs.
+Do NOT change the bottom navigation.
+Do NOT modify Sahiplendirme features.
+Do NOT modify Evcilim features.
+Do NOT change existing database or Supabase logic.
+
+Only reorder the existing top tabs and change the default selected tab.
+
+EXPECTED RESULT:
+
+LEFT:
+Sahiplendirme — active by default
+
+RIGHT:
+Evcilim — inactive by default
+
+Default activeTab / selectedTab / tab state must point to the existing Sahiplendirme tab.
+
+Also audit any tab index-based logic.
+
+If the current implementation uses indexes such as:
+
+0 = Evcilim
+1 = Sahiplendirme
+
+update the UI and navigation logic safely so the new visible order is:
+
+0 = Sahiplendirme
+1 = Evcilim
+
+Make sure content mapping, swipe navigation, active underline, accessibility state and tab press handlers all match the new order.
+
+Test on:
+- iOS
+- Android
+- Web
+
+FINAL RESULT:
+Opening the Evcilim bottom navigation section must immediately display the Sahiplendirme tab on the LEFT as the active first tab, with Evcilim displayed on its RIGHT.

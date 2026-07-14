@@ -84,8 +84,8 @@ const TIPS = [
 function PetHeader({ topPad, mainTab, onChange }: { topPad: number; mainTab: MainTab; onChange: (t: MainTab) => void }) {
   const T = useTheme();
   const TABS: { key: MainTab; label: string }[] = [
-    { key: "evcilim",  label: "Evcilim"      },
     { key: "adoption", label: "Sahiplendirme" },
+    { key: "evcilim",  label: "Evcilim"      },
   ];
   return (
     <View style={[hdr.wrap, { paddingTop: topPad + 6, backgroundColor: T.bg }]}>
@@ -1675,7 +1675,7 @@ export default function PetsScreen() {
   const { listings, deleteListing } = useAdoption();
   const { boostStatuses }           = useBoost();
   const { user }                    = useAuth();
-  const [mainTab, setMainTab]       = useState<MainTab>("evcilim");
+  const [mainTab, setMainTab]       = useState<MainTab>("adoption");
   const [activeTab, setActiveTab]   = useState<Tab>("listings");
   const [filter, setFilter]         = useState<Filter>("all");
   const [query, setQuery]           = useState("");
