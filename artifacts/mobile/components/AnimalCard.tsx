@@ -301,7 +301,10 @@ export function AnimalCard({ animal, onLike, index = 0 }: Props) {
   };
 
   const statusDotColor = STATUS_COLORS[animal.status];
-  const thumbUri = animal.image ?? animal.animalImage ?? getDefaultAnimalImageUri(animal.animalType);
+  const rawImage = animal.image || animal.animalImage || "";
+  const thumbUri = rawImage.trim().length > 0
+    ? rawImage.trim()
+    : getDefaultAnimalImageUri(animal.animalType);
 
   return (
     <>

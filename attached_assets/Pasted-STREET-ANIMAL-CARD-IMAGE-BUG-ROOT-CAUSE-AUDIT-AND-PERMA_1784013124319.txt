@@ -1,0 +1,541 @@
+STREET ANIMAL CARD IMAGE BUG — ROOT CAUSE AUDIT AND PERMANENT FIX
+
+There is a critical image rendering bug on the "Sokak Hayvanları" screen.
+
+CURRENT BUG:
+The street animal status cards render correctly, but the animal photos are not visible.
+
+Observed UI behavior:
+- Some cards show only a light purple empty rectangle.
+- Some cards show a generic cat fallback icon.
+- The real uploaded animal photo is not displayed.
+- Card text, status, user name and time render correctly.
+- Therefore, do NOT redesign the card UI.
+- Fix the image data and rendering pipeline.
+
+IMPORTANT:
+Do not apply a visual workaround.
+Do not hardcode demo animal images.
+Do not only fix iOS.
+Perform a recursive audit and fix the root cause for iOS, Android and Web.
+
+==================================================
+1. AUDIT THE IMAGE DATA PIPELINE
+==================================================
+
+Trace the animal image from creation to card rendering:
+
+User selects/captures animal photo
+→ upload starts
+→ image is uploaded to storage
+→ public/signed URL is generated
+→ URL/path is saved in database
+→ status record is fetched
+→ data is mapped to frontend model
+→ card receives image source
+→ Image component renders the photo
+
+Inspect every step.
+
+Find the exact root cause before applying the fix.
+
+Check all possible image fields currently used in the project:
+
+image
+imageUrl
+image_url
+photo
+photoUrl
+photo_url
+imagePath
+image_path
+animalImage
+animal_image
+animalPhoto
+animal_photo
+media
+mediaUrl
+media_url
+photos
+images
+attachments
+
+Search the ENTIRE project recursively.
+
+There must be ONE canonical image field for street animal status records.
+
+Prefer:
+
+image_url
+
+If the current database schema already has another valid canonical field,
+keep the existing database field and normalize it in the frontend mapper.
+
+Do not create duplicate image fields unnecessarily.
+
+==================================================
+2. FIX DATABASE → FRONTEND FIELD MAPPING
+==================================================
+
+Audit the Supabase query used by the "Sokak Hayvanları" screen.
+
+Verify that the image field is actually selected.
+
+Bad example:
+
+.select('id, title, status, user_id, created_at')
+
+If the image column is missing, include it.
+
+Example:
+
+.select(`
+  id,
+  title,
+  note,
+  status,
+  image_url,
+  location,
+  latitude,
+  longitude,
+  user_id,
+  created_at
+`)
+
+Then audit all mapping functions.
+
+The fetched image URL must not be lost during transformation.
+
+Example:
+
+const mappedStatus = {
+  id: item.id,
+  title: item.title,
+  status: item.status,
+  imageUrl: resolveAnimalImage(item),
+  createdAt: item.created_at,
+};
+
+Create a single centralized image resolver if necessary.
+
+Example logic:
+
+function resolveAnimalImage(item) {
+  const value =
+    item.image_url ??
+    item.imageUrl ??
+    item.photo_url ??
+    item.photoUrl ??
+    item.animal_image ??
+    item.animalImage ??
+    item.images?.[0] ??
+    item.photos?.[0] ??
+    null;
+
+  if (typeof value === 'string' && value.trim().length > 0) {
+    return value.trim();
+  }
+
+  if (value?.url && typeof value.url === 'string') {
+    return value.url;
+  }
+
+  return null;
+}
+
+IMPORTANT:
+This compatibility resolver is for reading existing records.
+
+All NEW status records must use the canonical database image field.
+
+==================================================
+3. AUDIT SUPABASE STORAGE URL HANDLING
+==================================================
+
+Check how animal images are stored.
+
+Determine whether the database contains:
+
+A) Full public URL
+
+Example:
+https://PROJECT.supabase.co/storage/v1/object/public/BUCKET/path/image.jpg
+
+OR
+
+B) Storage object path
+
+Example:
+street-animals/user-id/image.jpg
+
+Do not pass a raw storage path directly to React Native Image.
+
+If the database contains a storage path, convert it to a valid URL.
+
+Example:
+
+const { data } = supabase.storage
+  .from('street-animal-images')
+  .getPublicUrl(imagePath);
+
+const publicUrl = data.publicUrl;
+
+Use the REAL existing bucket name from the project.
+Do not invent a new bucket if one already exists.
+
+If the bucket is private:
+use createSignedUrl with an appropriate expiration time.
+
+Audit:
+- bucket name
+- bucket public/private configuration
+- storage policies
+- upload permissions
+- read permissions
+- object path
+- URL generation
+
+Do not expose service role keys in the frontend.
+
+==================================================
+4. FIX THE IMAGE COMPONENT
+==================================================
+
+Find the exact card component used on the "Sokak Hayvanları" screen.
+
+The real animal image must render inside the existing image area.
+
+For React Native / Expo, use the project's existing image library.
+
+If using React Native Image:
+
+<Image
+  source={{ uri: resolvedImageUrl }}
+  style={styles.animalImage}
+  resizeMode="cover"
+  onError={(event) => {
+    console.warn(
+      '[StreetAnimalCard] Image load failed:',
+      resolvedImageUrl,
+      event.nativeEvent?.error
+    );
+  }}
+/>
+
+If the project already uses expo-image, keep expo-image and fix its source.
+
+Do NOT unnecessarily replace the project's image library.
+
+The image must:
+- fill the existing image container
+- use cover scaling
+- preserve aspect ratio
+- respect border radius
+- never stretch
+- never overflow outside the card
+
+Required styles:
+
+imageContainer:
+- overflow: hidden
+- existing border radius must be preserved
+
+animalImage:
+- width: 100%
+- height: 100%
+
+Remove any absolute overlay or placeholder View that accidentally covers the real image.
+
+Check zIndex and position styles.
+
+The status color dot may remain above the image.
+
+==================================================
+5. FIX FALLBACK LOGIC
+==================================================
+
+Current fallback behavior appears inconsistent.
+
+Implement deterministic fallback logic:
+
+IF valid image URL exists:
+→ render real animal image
+
+ELSE IF image is loading:
+→ show subtle skeleton/loading state
+
+ELSE IF image fails to load:
+→ show the existing neutral animal fallback icon
+
+ELSE:
+→ show neutral animal fallback
+
+IMPORTANT:
+Do not render fallback before image loading has completed.
+
+Do not permanently cover the image with the fallback component.
+
+Suggested state logic:
+
+const [imageError, setImageError] = useState(false);
+
+useEffect(() => {
+  setImageError(false);
+}, [resolvedImageUrl]);
+
+const hasImage =
+  typeof resolvedImageUrl === 'string' &&
+  resolvedImageUrl.trim().length > 0;
+
+if (hasImage && !imageError) {
+  return real image;
+}
+
+return fallback;
+
+onError:
+setImageError(true);
+
+==================================================
+6. FIX PHOTO CREATION FLOW
+==================================================
+
+Audit the "+ Durum Bildir" flow.
+
+When the user:
+- takes an animal photo
+OR
+- selects an animal photo
+
+the app must:
+
+1. Validate local URI
+2. Upload the file to Supabase Storage
+3. Wait until upload succeeds
+4. Generate the correct public/signed URL
+5. Save image URL/path to the canonical database column
+6. Create the street animal status record
+7. Refresh/invalidate the street animal status query
+8. Display the newly created card with the real photo
+
+DO NOT create the database record before confirming the image upload result if a photo was selected.
+
+If upload fails:
+- do not silently save an empty image field
+- show a user-friendly error
+- log the technical error in development mode
+
+==================================================
+7. HANDLE LOCAL URI BUGS
+==================================================
+
+Audit image picker and camera URI handling.
+
+Possible values:
+
+file://...
+content://...
+blob:...
+ph://...
+
+These local URIs must only be used for upload/temporary preview.
+
+DO NOT save local device URIs as permanent database image URLs.
+
+Specifically search the database creation logic for:
+
+image_url: asset.uri
+
+or:
+
+photo_url: image.uri
+
+If a local URI is being saved directly, this is a critical bug.
+
+Fix it.
+
+The permanent database value must reference the uploaded storage object,
+not the original local device URI.
+
+==================================================
+8. CROSS-PLATFORM AUDIT
+==================================================
+
+Test the final implementation on:
+
+- iOS simulator
+- Android emulator
+- Web
+
+Check URL compatibility.
+
+For Web:
+- inspect browser Network and Console errors
+- check CORS-related failures
+- check invalid blob/local URLs
+
+For Android:
+- check content:// URI upload handling
+- check HTTP cleartext issues
+- check invalid localhost URLs
+
+For iOS:
+- check file:// URI handling
+- check ATS-related URL failures
+
+Supabase production image URLs must use HTTPS.
+
+Do not use:
+localhost
+127.0.0.1
+local filesystem paths
+
+as permanent image sources.
+
+==================================================
+9. AUDIT EXISTING BROKEN RECORDS
+==================================================
+
+Inspect existing street animal status records.
+
+Report how many records have:
+
+- null image field
+- empty image field
+- local file:// URI
+- content:// URI
+- blob URL
+- invalid URL
+- missing Supabase storage object
+- valid image URL
+
+Do not delete user records automatically.
+
+Create a safe compatibility strategy for old records.
+
+If an old record has no recoverable image:
+show the fallback icon.
+
+Do not show an empty purple rectangle.
+
+==================================================
+10. QUERY CACHE / STATE REFRESH
+==================================================
+
+After a new animal status is created:
+
+invalidate or refresh the exact street animal query.
+
+Audit React Query / TanStack Query / custom state logic.
+
+Example:
+
+await queryClient.invalidateQueries({
+  queryKey: ['street-animal-statuses'],
+});
+
+Use the REAL existing query key.
+
+Do not invent parallel cache keys.
+
+Make sure the new image URL appears immediately without requiring:
+- app restart
+- page refresh
+- logout/login
+
+==================================================
+11. DO NOT CHANGE
+==================================================
+
+Do NOT redesign:
+- top header
+- statistics card
+- filter chips
+- bottom navigation
+- street animal card dimensions
+- card typography
+- status badge colors
+
+Only fix:
+- image upload
+- image URL persistence
+- database mapping
+- storage URL resolution
+- image rendering
+- fallback behavior
+- cache refresh
+
+==================================================
+12. FINAL VERIFICATION
+==================================================
+
+Create or use test records with real animal photos.
+
+Verify:
+
+TEST 1:
+Create status with camera photo
+→ real photo appears on card
+
+TEST 2:
+Create status with gallery photo
+→ real photo appears on card
+
+TEST 3:
+Close and reopen app
+→ photo still appears
+
+TEST 4:
+Open same status on iOS
+→ photo appears
+
+TEST 5:
+Open same status on Android
+→ photo appears
+
+TEST 6:
+Open same status on Web
+→ photo appears
+
+TEST 7:
+Invalid image URL
+→ fallback icon appears, not empty purple box
+
+TEST 8:
+New status creation
+→ card and photo appear immediately
+
+TEST 9:
+Existing valid records
+→ their photos render correctly
+
+TEST 10:
+No duplicate status records are created during refresh
+
+==================================================
+FINAL REPORT REQUIRED
+==================================================
+
+After completing the fix, report:
+
+1. Exact root cause found
+2. Database image column being used
+3. Supabase Storage bucket being used
+4. Whether DB stores full URL or object path
+5. Files/components changed
+6. Query/cache key fixed
+7. Old broken record compatibility behavior
+8. iOS test result
+9. Android test result
+10. Web test result
+
+Do not say "fixed" without verifying the full photo lifecycle:
+
+capture/select
+→ upload
+→ storage
+→ database
+→ fetch
+→ mapping
+→ card rendering
+→ app restart persistence
