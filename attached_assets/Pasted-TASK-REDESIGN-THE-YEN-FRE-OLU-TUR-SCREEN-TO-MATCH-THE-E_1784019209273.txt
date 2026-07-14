@@ -1,0 +1,517 @@
+TASK: REDESIGN THE “YENİ ŞİFRE OLUŞTUR” SCREEN TO MATCH THE EXISTING “HESAP OLUŞTUR” SCREEN DESIGN SYSTEM
+
+Use the attached “Hesap Oluştur” screen as the primary visual reference.
+
+Redesign only the Yeni Şifre Oluştur / Reset Password screen.
+
+Do not redesign the registration screen.
+
+The reset password page must look like it belongs to the exact same application and design system as the reference.
+
+1. GENERAL VISUAL DIRECTION
+
+Match the reference screen:
+
+same soft cream / very light lavender background
+same decorative large corner circles
+same typography hierarchy
+same spacing system
+same rounded card style
+same input style
+same purple palette
+same icon style
+same premium soft mobile UI feeling
+same border radius logic
+same subtle shadows
+same content width
+
+Do not use the old reset password screen design.
+
+Remove the old strong purple glow and blurry glass card appearance.
+
+The page must visually feel like the next screen of the registration flow.
+
+2. BACKGROUND
+
+Recreate the same background structure used on the “Hesap Oluştur” page.
+
+Use:
+
+warm off-white / cream base background
+very subtle lavender tint
+large decorative lavender circular shape in the top-right corner
+subtle decorative circular shape in the bottom-left corner
+
+The background decorations must stay behind the content.
+
+They must:
+
+not block touches
+not overlap text
+not cause horizontal overflow
+scale correctly on iOS, Android and Web
+
+Use absolute positioning carefully.
+
+3. BACK BUTTON
+
+Use the exact same back button design as the reference.
+
+Position:
+
+top-left
+respect safe area
+same size and spacing
+
+Design:
+
+white circular button
+thin light-purple border
+dark navy/purple chevron-left icon
+
+Do not use:
+
+<
+text characters
+emoji
+
+Use the same vector icon library already used in the project.
+
+4. TOP RESET PASSWORD ICON
+
+Replace the existing empty purple circle.
+
+Create the same circular icon structure shown on the registration screen.
+
+Structure:
+
+large soft lavender outer circle
+smaller solid purple inner circle
+centered white vector icon
+
+For the icon use:
+
+LockKeyhole
+
+or
+
+KeyRound
+
+or the closest available vector icon from the project's current icon library.
+
+Prefer LockKeyhole.
+
+The icon must communicate password security.
+
+Do not use a paw icon on this screen.
+
+Do not use emoji.
+
+5. TITLE SECTION
+
+Below the icon display:
+
+Title
+
+Yeni Şifre Oluştur
+
+Match exactly the visual style of:
+
+Hesap Oluştur
+
+Use:
+
+same font family
+same font weight
+same font size
+same dark navy/purple color
+centered alignment
+Subtitle
+
+Replace the current subtitle layout.
+
+Use:
+
+6 haneli doğrulama kodunu şu adrese gönderdik
+
+Then display the user's email below it:
+
+bilgimerkezix@gmail.com
+
+The email must come dynamically from the current reset password flow.
+
+Never hardcode the email address.
+
+Email styling:
+
+medium font weight
+slightly darker than subtitle text
+centered
+
+Example visual hierarchy:
+
+Yeni Şifre Oluştur
+
+6 haneli doğrulama kodunu şu adrese gönderdik
+
+bilgimerkezix@gmail.com
+
+Do not allow awkward text wrapping.
+
+Use responsive width constraints.
+
+6. FORM CARD
+
+Create a form card matching the registration screen.
+
+Use:
+
+white / slightly translucent white surface
+same border radius
+same horizontal width
+same subtle shadow
+same internal padding
+
+Remove excessive glow effects.
+
+The card height must be content-driven.
+
+Do not use a fixed large height.
+
+7. VERIFICATION CODE FIELD
+
+Label:
+
+Doğrulama Kodu
+
+Use the exact same label typography as:
+
+Ad Soyad
+E-posta
+Şifre
+
+For the input, match the reference input style:
+
+soft cream tinted input background
+no aggressive purple border
+large rounded corners
+consistent input height
+
+Left icon:
+
+Use a vector icon such as:
+
+ShieldCheck
+
+or
+
+KeyRound
+
+Placeholder:
+
+6 haneli kod
+
+Do not use excessive letter spacing.
+
+Do not display:
+
+6 h a n e l i k o d
+
+Input behavior:
+
+numeric keyboard
+accept digits only
+maximum 6 digits
+sanitize pasted values
+support code paste
+support iOS one-time-code autofill where available
+support Android autofill where available
+
+For React Native / Expo use the correct platform-supported props such as the appropriate:
+
+keyboardType
+
+textContentType
+
+autoComplete
+
+Do not break Web compatibility.
+
+8. NEW PASSWORD FIELD
+
+Label:
+
+Yeni Şifre
+
+Use the same password input design from the registration screen.
+
+Left icon:
+
+Lock
+
+Placeholder:
+
+En az 6 karakter
+
+Right side:
+
+Use the same eye / eye-off vector icon behavior as the reference screen.
+
+The visibility toggle must actually work.
+
+Do not use a text button saying:
+
+Göster
+
+Use the visual design language of the registration page.
+
+9. PASSWORD CONFIRMATION FIELD
+
+Label:
+
+Yeni Şifre Tekrar
+
+Left icon:
+
+Lock
+
+Placeholder:
+
+Şifreni tekrar gir
+
+Right side:
+
+same eye / eye-off icon
+
+Visibility state may be controlled independently from the first password field.
+
+Validate that both passwords match.
+
+10. MAIN BUTTON
+
+Button text:
+
+Yeni Şifreyi Kaydet
+
+Use exactly the same button structure as the Kayıt Ol button in the reference.
+
+Match:
+
+width
+height
+border radius
+purple visual language
+typography
+disabled state
+
+When the form is invalid:
+
+button must appear disabled
+no fake click action
+
+Button becomes active only when:
+
+verification code contains exactly 6 digits
+password meets minimum requirements
+password confirmation matches
+
+When active, use the application's primary purple state.
+
+During submission show a loading indicator.
+
+Prevent duplicate submissions.
+
+11. RESEND CODE AREA
+
+Below the main button display:
+
+Kod gelmedi mi? Tekrar Gönder
+
+Visual structure must match:
+
+Zaten hesabın var mı? Giriş Yap
+
+from the registration screen.
+
+Use:
+
+neutral gray question text
+purple bold action text
+
+Example:
+
+Kod gelmedi mi? Tekrar Gönder
+
+Add a cooldown.
+
+After sending:
+
+59 sn sonra tekrar gönder
+
+Countdown should update correctly.
+
+When countdown reaches zero, enable resend again.
+
+Do not allow repeated rapid email requests.
+
+12. BOTTOM SECURITY MESSAGE
+
+Add a security message below the form card using the same footer visual style as the registration screen.
+
+Use a small vector shield icon.
+
+Text:
+
+Yeni şifren güçlü şekilde korunur; doğrulama kodunu kimseyle paylaşma.
+
+Match the same:
+
+font size
+gray tone
+icon alignment
+horizontal margins
+
+Do not use emoji.
+
+13. SPACING AND LAYOUT
+
+Use the registration screen as the spacing reference.
+
+The vertical layout should visually follow:
+
+Back button
+
+Password security icon
+
+Title
+
+Subtitle
+
+Dynamic email
+
+Form card
+
+Verification code
+
+New password
+
+Password confirmation
+
+Primary button
+
+Resend code action
+
+Security note
+
+Do not leave a huge empty unused area at the bottom.
+
+Do not compress components excessively.
+
+Maintain balanced vertical rhythm.
+
+Use SafeAreaView or the project's existing safe-area architecture.
+
+The UI must correctly handle:
+
+Dynamic Island
+iPhone notch
+Android status bar
+small Android screens
+keyboard opening
+web responsive view
+
+Use a keyboard-aware scroll structure if required.
+
+14. IMPORTANT FUNCTIONAL REQUIREMENT
+
+This is not a visual-only task.
+
+Preserve and verify the real reset password flow.
+
+Do not replace working backend logic with mock state.
+
+Maintain the existing Supabase password reset infrastructure.
+
+The expected flow is:
+
+Forgot Password
+→ user enters email
+→ email verification code is sent
+→ user opens Yeni Şifre Oluştur
+→ enters the real 6-digit verification code
+→ enters new password
+→ confirms password
+→ code/session is verified
+→ password is updated
+→ user is redirected to Login
+
+The email displayed on this screen must come from the active password reset flow.
+
+Do not hardcode test credentials.
+
+Do not fake successful password updates.
+
+Show user-friendly Turkish errors for:
+
+invalid code
+expired code
+passwords do not match
+password too short
+network error
+resend cooldown
+email send failure
+session expired
+15. CROSS-PLATFORM RECURSIVE AUDIT
+
+After implementing the redesign, recursively inspect all files imported or used by the reset password screen.
+
+Audit:
+
+screen component
+navigation route
+auth provider
+Supabase client
+reset password service
+form validation
+shared input components
+button components
+icon components
+theme tokens
+styles
+keyboard handling
+
+Verify the screen on:
+
+iOS simulator
+Android simulator
+Web
+
+Do not fix the design only for iOS.
+
+Any shared component modification must be checked for regressions on other screens.
+
+FINAL ACCEPTANCE CRITERIA
+
+The final Yeni Şifre Oluştur page must visually look like it was designed at the exact same time as the attached Hesap Oluştur page.
+
+A user must immediately understand that both screens belong to the same CanYoldaşı application.
+
+No emoji.
+
+No < text icons.
+
+No hardcoded email.
+
+No mock reset success.
+
+No excessive glow.
+
+No large unexplained purple circle.
+
+No UI overflow.
+
+No platform-specific broken layout.
+
+Preserve the real Supabase authentication logic.
+
+Implement the changes directly. Do not only describe the solution.

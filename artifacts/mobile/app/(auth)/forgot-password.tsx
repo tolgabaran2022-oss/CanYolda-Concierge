@@ -82,7 +82,7 @@ export default function ForgotPasswordScreen() {
         return;
       }
       router.push({
-        pathname: "/(auth)/verify-reset-code" as never,
+        pathname: "/(auth)/reset-password" as never,
         params: { email: email.trim().toLowerCase() },
       } as never);
     } catch {
