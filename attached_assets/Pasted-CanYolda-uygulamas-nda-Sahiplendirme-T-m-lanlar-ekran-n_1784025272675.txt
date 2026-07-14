@@ -1,0 +1,766 @@
+CanYoldaşı uygulamasında:
+
+Sahiplendirme
+→ Tüm İlanlar
+
+ekranında arama çubuğunun sağında bulunan mor filtre ikonunu gerçek ve çalışan bir gelişmiş filtre sistemi haline getir.
+
+MEVCUT DURUM:
+
+Ekranda:
+
+- arama alanı
+- Tümü
+- Kedi
+- Köpek
+- Kuş
+
+hızlı kategori filtreleri bulunuyor.
+
+Arama alanının sağında ayrıca mor bir filtre ikonu var.
+
+Bu filtre ikonu sadece dekoratif veya işlevsiz kalmamalı.
+
+Kullanıcı filtre ikonuna bastığında modern bir bottom sheet / modal filtre paneli açılmalı.
+
+AMAÇ:
+
+Sahiplendirme ilanlarının:
+
+- konum
+- yaş
+- cinsiyet
+- ırk
+- ilan durumu
+- sıralama
+
+özelliklerine göre gerçekten filtrelenebilmesini sağla.
+
+Bu filtre yalnızca UI üzerinde görünmemeli.
+
+Seçilen filtreler gerçek ilan datasına uygulanmalı.
+
+==================================================
+1. FİLTRE BUTONUNU BUL
+==================================================
+
+Kod tabanında recursive search yap.
+
+Şunları ara:
+
+filter
+filters
+filterButton
+openFilter
+filterModal
+filterSheet
+sliders
+SlidersHorizontal
+Tune
+Adjustments
+search
+adoption
+adoption listings
+Tüm İlanlar
+
+Arama alanının sağındaki gerçek filtre ikonunu ve onPress handler'ını bul.
+
+Mevcut işlevsiz handler varsa kaldırma.
+
+Gerçek filtre açma mantığına bağla.
+
+==================================================
+2. MODERN BOTTOM SHEET TASARIMI OLUŞTUR
+==================================================
+
+Kullanıcı filtre ikonuna bastığında ekranın altından açılan modern bir filtre paneli göster.
+
+Tasarım CanYoldaşı uygulamasının mevcut premium mor UI diliyle uyumlu olsun.
+
+Bottom sheet yapısı:
+
+Üst bölüm:
+
+Filtrele
+
+sağ üst:
+
+Temizle
+
+veya:
+
+Sıfırla
+
+Altında filtre bölümleri yer alsın.
+
+Panel:
+
+- yuvarlatılmış üst köşeler
+- beyaz / çok açık lila yüzey
+- ince border
+- yumuşak shadow
+- native mobile spacing
+- iOS ve Android safe area uyumu
+- web responsive davranış
+
+Bottom sheet yüksekliği içeriğe göre scroll edebilsin.
+
+Arka planda yarı şeffaf overlay kullan.
+
+Overlay'e basıldığında panel kapansın.
+
+Swipe down destekleniyorsa mevcut bottom sheet altyapısını kullan.
+
+Yeni gereksiz modal library kurma.
+
+==================================================
+3. KONUM FİLTRESİ
+==================================================
+
+İlk bölüm:
+
+Konum
+
+Seçenekler:
+
+Tümü
+Yakınımdakiler
+İl seç
+İlçe seç
+
+"Yakınımdakiler" seçildiğinde mevcut konum izni ve location servislerini kullan.
+
+Yeni duplicate location system oluşturma.
+
+Kullanıcının mevcut latitude / longitude bilgisini al.
+
+İlanların latitude / longitude bilgilerine göre distance hesapla.
+
+Yakınımdakiler için varsayılan mesafe:
+
+25 km
+
+Ancak mesafe seçeneği ekle:
+
+5 km
+10 km
+25 km
+50 km
+100 km
+
+Mesafe sadece "Yakınımdakiler" seçildiğinde gösterilsin.
+
+Haversine distance helper kullan veya mevcut distance utility varsa onu kullan.
+
+Fake konum veya default İstanbul koordinatı kullanma.
+
+Konum izni reddedilirse kullanıcıya:
+
+"Yakındaki ilanları gösterebilmek için konum izni gerekiyor."
+
+mesajını göster.
+
+==================================================
+4. YAŞ FİLTRESİ
+==================================================
+
+Bölüm:
+
+Yaş
+
+Seçenekler:
+
+Tümü
+0–6 ay
+6–12 ay
+1–3 yaş
+3 yaş+
+
+Chip / pill selector tasarımı kullan.
+
+Aynı anda bir yaş filtresi seçilebilsin.
+
+Eğer mevcut ilan modelinde yaş:
+
+age
+age_months
+age_years
+age_text
+
+gibi farklı alanlarda tutuluyorsa önce normalize et.
+
+Örnek canonical model:
+
+ageInMonths: number | null
+
+Filtreleme bu normalized value üzerinden yapılsın.
+
+Metin karşılaştırmasıyla:
+
+"3 ay"
+"2 yaş"
+
+gibi string araması yapma.
+
+==================================================
+5. CİNSİYET FİLTRESİ
+==================================================
+
+Bölüm:
+
+Cinsiyet
+
+Seçenekler:
+
+Tümü
+Dişi
+Erkek
+Bilinmiyor
+
+Canonical values kullan.
+
+Örnek:
+
+all
+female
+male
+unknown
+
+UI Türkçe label göstersin.
+
+Database'deki farklı string değerlerini normalize et.
+
+Örneğin:
+
+"Dişi"
+"dişi"
+"female"
+"FEMALE"
+
+aynı canonical value'a çevrilsin.
+
+==================================================
+6. IRK FİLTRESİ
+==================================================
+
+Bölüm:
+
+Irk
+
+İlanlarda bulunan gerçek breed verilerinden dinamik seçenek oluştur.
+
+Hardcoded 100 adet ırk listesi ekleme.
+
+Aktif ilanlardaki benzersiz ırkları çıkar.
+
+Örnek:
+
+British Shorthair
+Tekir
+Golden Retriever
+Pug
+
+Irk alanı boş olan kayıtları:
+
+Belirtilmedi
+
+olarak değerlendirebilirsin.
+
+Irk seçimi için:
+
+searchable dropdown
+
+veya mevcut UI altyapısına uygun seçim listesi kullan.
+
+Tek seçim yeterli.
+
+==================================================
+7. İLAN DURUMU FİLTRESİ
+==================================================
+
+Bölüm:
+
+İlan Durumu
+
+Seçenekler:
+
+Tümü
+Aktif
+Sahiplendirildi
+
+Mevcut uygulamada passive veya pending status gerçekten kullanıcıya açık kullanılıyorsa ayrıca ekle.
+
+Ancak database'de olmayan durumları fake olarak üretme.
+
+Gerçek status enum / database values kontrol et.
+
+Canonical status mapping oluştur.
+
+==================================================
+8. SIRALAMA
+==================================================
+
+Bölüm:
+
+Sıralama
+
+Seçenekler:
+
+En Yeni
+En Eski
+En Yakın
+Yaş: Küçükten Büyüğe
+Yaş: Büyükten Küçüğe
+
+Varsayılan:
+
+En Yeni
+
+"En Yakın" seçeneği sadece kullanıcı konumu mevcutsa doğru distance verisine göre çalışmalı.
+
+Konum yoksa kullanıcıdan izin iste.
+
+Konum alınamıyorsa "En Yakın" uygulama.
+
+==================================================
+9. FİLTRE STATE MODELİNİ MERKEZİ HALE GETİR
+==================================================
+
+Filtreleri dağınık useState yapısında tekrar tekrar yönetme.
+
+Canonical filter model oluştur.
+
+Örnek:
+
+type AdoptionFilters = {
+  animalType: "all" | "cat" | "dog" | "bird";
+  locationMode: "all" | "nearby" | "city" | "district";
+  city: string | null;
+  district: string | null;
+  radiusKm: 5 | 10 | 25 | 50 | 100;
+  ageRange: "all" | "0_6_months" | "6_12_months" | "1_3_years" | "3_plus";
+  gender: "all" | "female" | "male" | "unknown";
+  breed: string | null;
+  status: "all" | "active" | "adopted";
+  sortBy:
+    | "newest"
+    | "oldest"
+    | "nearest"
+    | "age_asc"
+    | "age_desc";
+};
+
+Gerçek codebase type yapısına göre isimleri uyumlu hale getir.
+
+==================================================
+10. ÜSTTEKİ KEDİ / KÖPEK / KUŞ FİLTRELERİNİ KORU
+==================================================
+
+Mevcut hızlı filtreler:
+
+Tümü
+Kedi
+Köpek
+Kuş
+
+korunacak.
+
+Bunlar:
+
+animalType
+
+filtresini değiştirsin.
+
+Örnek:
+
+Kedi seçildi
++
+Dişi
++
+0–6 ay
++
+İstanbul
+
+filtreleri birlikte çalışabilmeli.
+
+Bir filtre diğer filtreyi gereksiz şekilde resetlememeli.
+
+Hayvan türü değiştiğinde sadece seçili ırk yeni türle uyumsuzsa breed filtresini temizle.
+
+==================================================
+11. ARAMA VE FİLTRELER BİRLİKTE ÇALIŞSIN
+==================================================
+
+Arama alanı filtrelerden ayrı çalışmamalı.
+
+Örnek:
+
+Search:
+
+"Pamuk"
+
+Filters:
+
+Kedi
+Dişi
+0–6 ay
+
+Sonuç sadece bütün kriterleri karşılayan ilanlar olmalı.
+
+Canonical pipeline:
+
+raw listings
+→ normalize
+→ search filter
+→ animal type filter
+→ location filter
+→ age filter
+→ gender filter
+→ breed filter
+→ status filter
+→ sort
+→ render
+
+Filtre uygulama sırasını merkezi helper/service içinde yönet.
+
+UI component içinde uzun iç içe filter zinciri oluşturma.
+
+==================================================
+12. UYGULA BUTONU
+==================================================
+
+Bottom sheet alt kısmında sticky action area oluştur.
+
+Buton:
+
+Filtreleri Uygula
+
+Buton tam genişlikte mor gradient / mevcut ana CTA stilinde olsun.
+
+Kullanıcı seçim yaptığı anda ana listeyi sürekli değiştirmek zorunda değilsin.
+
+Draft filter state kullan.
+
+Mantık:
+
+opened filters
+→ draftFilters
+→ user changes selections
+→ Filtreleri Uygula
+→ activeFilters = draftFilters
+→ sheet closes
+→ listing query/list updates
+
+Bu sayede kullanıcı modal içinde rahat seçim yapar.
+
+==================================================
+13. SIFIRLA / TEMİZLE
+==================================================
+
+Sağ üstte:
+
+Sıfırla
+
+butonu olsun.
+
+Basılınca filtreler varsayılana dönsün:
+
+animalType mevcut üst hızlı kategori seçimine göre korunabilir.
+
+Diğerleri:
+
+locationMode = all
+city = null
+district = null
+radiusKm = 25
+ageRange = all
+gender = all
+breed = null
+status = all
+sortBy = newest
+
+UX açısından üst kategori filtresini sıfırlama davranışını mevcut ekran mantığına göre tutarlı yap.
+
+==================================================
+14. AKTİF FİLTRE SAYISI GÖSTER
+==================================================
+
+Filtre ikonunda aktif detay filtre sayısını göster.
+
+Örnek:
+
+Kullanıcı:
+
+Dişi
+0–6 ay
+İstanbul
+
+seçtiyse filtre ikonunun sağ üstünde küçük badge:
+
+3
+
+görünsün.
+
+Animal type hızlı chip filtrelerini badge sayısına dahil etme.
+
+Search query'yi de badge sayısına dahil etme.
+
+Sadece advanced filters sayılmalı.
+
+Filtre yoksa badge gösterme.
+
+==================================================
+15. AKTİF FİLTRELERİ LİSTE ÜSTÜNDE GÖSTER
+==================================================
+
+Filtre uygulandıktan sonra arama alanının altında veya hızlı kategori chip'lerinin yakınında horizontal aktif filtre chip listesi gösterebilirsin.
+
+Örnek:
+
+[Dişi ×]
+[0–6 ay ×]
+[İstanbul ×]
+
+Her chip'teki × ikonuna basınca sadece ilgili filtre kaldırılsın.
+
+Ancak mevcut ekranı kalabalıklaştırma.
+
+Sadece advanced filter aktif olduğunda bu alan render edilsin.
+
+==================================================
+16. DATABASE / QUERY STRATEJİSİNİ KONTROL ET
+==================================================
+
+İlan sayısı küçükse mevcut client-side filtre sistemi kullanılabilir.
+
+Ancak codebase'deki gerçek pagination ve query yapısını kontrol et.
+
+Eğer server-side pagination varsa sadece yüklenen ilk 20 kaydı filtrelemek yanlış sonuç verir.
+
+Bu durumda Supabase query'ye uygun filtreleri uygula.
+
+Örneğin:
+
+.eq()
+.gte()
+.lte()
+.order()
+
+Konum distance işlemi PostGIS/RPC ile mevcut altyapıda destekleniyorsa onu kullan.
+
+PostGIS yoksa gereksiz büyük database migration yapmadan mevcut ölçeğe uygun güvenli çözüm uygula.
+
+ÖNEMLİ:
+
+"1000 ilan var ancak ilk 20 ilana filtre uygulanıyor"
+
+gibi yanlış client-side pagination problemi oluşturma.
+
+==================================================
+17. İLAN DATA NORMALIZATION
+==================================================
+
+Filtrelerin stabil çalışması için listing data model'i normalize et.
+
+Canonical frontend listing model minimum:
+
+{
+  id
+  animalType
+  name
+  breed
+  gender
+  ageInMonths
+  status
+  latitude
+  longitude
+  city
+  district
+  createdAt
+}
+
+Database field mismatch varsa data mapper'da çöz.
+
+UI'da şu tarz kodlar istemiyorum:
+
+listing.age || listing.age_text || listing.pet_age
+listing.city || listing.location_city || listing.address
+
+Compatibility logic'i merkezi normalization katmanına taşı.
+
+==================================================
+18. EMPTY STATE
+==================================================
+
+Filtre sonucu ilan bulunamazsa generic boş ekran gösterme.
+
+Başlık:
+
+"Uygun ilan bulunamadı"
+
+Alt metin:
+
+"Filtrelerini değiştirerek daha fazla ilana ulaşabilirsin."
+
+Buton:
+
+Filtreleri Temizle
+
+Bu butona basınca advanced filters temizlensin ve liste tekrar gösterilsin.
+
+==================================================
+19. PERFORMANS
+==================================================
+
+Search input debounce kullan.
+
+Yaklaşık:
+
+300 ms
+
+Her render'da tekrar tekrar distance veya normalization hesaplama.
+
+useMemo veya mevcut query/cache altyapısını doğru kullan.
+
+Premature optimization yapma ancak gereksiz render loop oluşturma.
+
+==================================================
+20. ACCESSIBILITY VE TOUCH TARGET
+==================================================
+
+Filtre ikonunun touch area minimum 44x44 pt olsun.
+
+Filter chips de rahat tıklanabilir olmalı.
+
+Selected/unselected durumlar sadece renkle anlaşılmamalı.
+
+Selected state için:
+
+- background
+- text weight
+- border
+
+farkı kullan.
+
+Screen reader label ekle:
+
+"İlan filtrelerini aç"
+
+==================================================
+21. iOS / ANDROID / WEB TASARIM TESTİ
+==================================================
+
+Test:
+
+iOS Simulator
+Android
+Web
+
+Kontrol et:
+
+- filter button opens
+- bottom sheet does not overflow
+- keyboard does not break layout
+- searchable breed works
+- scrolling works
+- Apply button remains usable
+- safe area correct
+- backdrop closes panel
+- selected chips render correctly
+- filter badge is correct
+
+Web'de bottom sheet mobil genişlikte modal gibi görünmeli.
+
+Desktop'ta gereksiz tam ekran panel açma.
+
+==================================================
+22. GERÇEK FONKSİYON TESTLERİ
+==================================================
+
+Şu senaryoları gerçekten test et:
+
+TEST 1
+
+Kedi
+→ Dişi
+→ 0–6 ay
+→ En Yeni
+
+Sadece uygun ilanlar görünmeli.
+
+TEST 2
+
+Köpek
+→ Erkek
+→ 1–3 yaş
+
+Sadece uygun ilanlar görünmeli.
+
+TEST 3
+
+Yakınımdakiler
+→ 25 km
+→ En Yakın
+
+Gerçek distance sıralaması çalışmalı.
+
+TEST 4
+
+Search "Pamuk"
++
+Kedi
+
+Pamuk adlı uygun kedi ilanı görünmeli.
+
+TEST 5
+
+Filtre uygula
+→ uygulamayı farklı sekmeye geçir
+→ geri dön
+
+Ekran lifecycle mantığına göre filtre state korunmalı.
+
+Ancak kullanıcı logout olduğunda kişisel/geçici filtre state temizlenebilir.
+
+TEST 6
+
+Filtreleri Temizle
+
+Tüm ilanlar tekrar görünmeli.
+
+==================================================
+23. ROOT CAUSE / IMPLEMENTATION RAPORU
+==================================================
+
+İşlem sonunda bana şu bilgileri raporla:
+
+1. Filtre butonu daha önce gerçekten çalışıyor muydu?
+2. Hangi component filtre ikonunu render ediyor?
+3. Hangi bottom sheet/modal altyapısı kullanıldı?
+4. AdoptionFilters modeli hangi dosyada?
+5. Yaş verisi nasıl normalize edildi?
+6. Cinsiyet değerleri nasıl normalize edildi?
+7. Irklar dinamik mi?
+8. Konum filtresi gerçek koordinat kullanıyor mu?
+9. Distance hesaplaması nerede yapılıyor?
+10. Client-side mı server-side mı filtre uygulanıyor?
+11. Pagination ile filtre sorunu var mıydı?
+12. Aktif filtre badge'i çalışıyor mu?
+13. Search ve filters birlikte çalışıyor mu?
+14. Empty state doğru mu?
+15. iOS testi başarılı mı?
+16. Android testi başarılı mı?
+17. Web testi başarılı mı?
+18. Hangi dosyalar değiştirildi?
+
+Sadece görsel bir filtre paneli oluşturma.
+
+Filter button
+→ filter state
+→ listing query/data
+→ normalization
+→ real filtering
+→ sorting
+→ rendered results
+
+zincirini uçtan uca gerçek ve çalışan hale getir.

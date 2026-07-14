@@ -1,6 +1,6 @@
 import { Router } from "express";
-import { desc, eq, sql } from "drizzle-orm";
-import { db, adoptionListings } from "@workspace/db";
+import { and, desc, eq, inArray, sql } from "drizzle-orm";
+import { db, adoptionListings, adoptionListingFollows } from "@workspace/db";
 import { logger } from "../lib/logger.js";
 import { extractUserId } from "../lib/jwtAuth.js";
 
@@ -112,22 +112,82 @@ router.get("/adoption/my", async (req, res) => {
   }
 });
 
-/* ── GET /api/adoption/:id ─────────────────────────────────── */
-router.get("/adoption/:id", async (req, res) => {
+/* ── GET /api/adoption/followed ─────────────────────────────── */
+/* MUST be before /:id to avoid "followed" being caught as an id param */
+router.get("/adoption/followed", async (req, res) => {
+  const userId = uid(req);
+  if (!userId) { res.status(401).json({ error: "Giriş yapılmamış" }); return; }
   try {
-    const [listing] = await db.select().from(adoptionListings).where(eq(adoptionListings.id, req.params.id));
+    const follows = await db
+      .select({ listingId: adoptionListingFollows.listingId, followedAt: adoptionListingFollows.createdAt })
+      .from(adoptionListingFollows)
+      .where(eq(adoptionListingFollows.userId, userId))
+      .orderBy(desc(adoptionListingFollows.createdAt));
+
+    if (follows.length === 0) { res.json([]); return; }
+
+    const ids = follows.map((f) => f.listingId);
+    const listings = await db.select().from(adoptionListings).where(inArray(adoptionListings.id, ids));
+
+    /* Preserve follow order (most recent first) and attach followedAt */
+    const listingMap = new Map(listings.map((l) => [l.id, l]));
+    const ordered = follows
+      .map((f) => {
+        const l = listingMap.get(f.listingId);
+        if (!l) return null;
+        return { ...l, followedAt: f.followedAt, isFollowedByMe: true };
+      })
+      .filter(Boolean);
+
+    res.json(ordered);
+  } catch (err) {
+    req.log.error({ err }, "GET /adoption/followed failed");
+    res.status(500).json({ error: "Takip edilen ilanlar alınamadı" });
+  }
+});
+
+/* ── POST /api/adoption/:id/follow ──────────────────────────── */
+router.post("/adoption/:id/follow", async (req, res) => {
+  const userId = uid(req);
+  if (!userId) { res.status(401).json({ error: "Giriş yapılmamış" }); return; }
+  try {
+    const [listing] = await db.select({ id: adoptionListings.id }).from(adoptionListings).where(eq(adoptionListings.id, req.params.id));
     if (!listing) { res.status(404).json({ error: "İlan bulunamadı" }); return; }
 
-    /* Increment view count (fire and forget) */
+    await db.insert(adoptionListingFollows).values({ userId, listingId: req.params.id }).onConflictDoNothing();
+
+    /* Bump favorite count */
     db.update(adoptionListings)
-      .set({ viewsCount: sql`views_count + 1` })
+      .set({ favoriteCount: sql`favorite_count + 1` })
       .where(eq(adoptionListings.id, req.params.id))
       .catch(() => {});
 
-    res.json(listing);
+    res.json({ ok: true, isFollowedByMe: true });
   } catch (err) {
-    req.log.error({ err }, "GET /adoption/:id failed");
-    res.status(500).json({ error: "İlan alınamadı" });
+    req.log.error({ err }, "POST /adoption/:id/follow failed");
+    res.status(500).json({ error: "Takip edilemedi" });
+  }
+});
+
+/* ── DELETE /api/adoption/:id/follow ────────────────────────── */
+router.delete("/adoption/:id/follow", async (req, res) => {
+  const userId = uid(req);
+  if (!userId) { res.status(401).json({ error: "Giriş yapılmamış" }); return; }
+  try {
+    await db.delete(adoptionListingFollows).where(
+      and(eq(adoptionListingFollows.userId, userId), eq(adoptionListingFollows.listingId, req.params.id))
+    );
+
+    /* Decrement favorite count (floor at 0) */
+    db.update(adoptionListings)
+      .set({ favoriteCount: sql`GREATEST(favorite_count - 1, 0)` })
+      .where(eq(adoptionListings.id, req.params.id))
+      .catch(() => {});
+
+    res.json({ ok: true, isFollowedByMe: false });
+  } catch (err) {
+    req.log.error({ err }, "DELETE /adoption/:id/follow failed");
+    res.status(500).json({ error: "Takip bırakılamadı" });
   }
 });
 

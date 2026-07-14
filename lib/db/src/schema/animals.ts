@@ -97,6 +97,16 @@ export const adoptionRequests = pgTable("adoption_requests", {
   rejectedAt:     timestamp("rejected_at", { withTimezone: true }),
 }, (t) => [unique("adoption_requests_unique").on(t.listingId, t.requesterId)]);
 
+export const adoptionListingFollows = pgTable("adoption_listing_follows", {
+  id:        text("id").primaryKey().default(sql`gen_random_uuid()::text`),
+  userId:    text("user_id").notNull(),
+  listingId: text("listing_id").notNull().references(() => adoptionListings.id, { onDelete: "cascade" }),
+  createdAt: timestamp("created_at", { withTimezone: true }).defaultNow(),
+}, (t) => [unique("adoption_listing_follows_unique").on(t.userId, t.listingId)]);
+
+export type AdoptionListingFollow       = typeof adoptionListingFollows.$inferSelect;
+export type InsertAdoptionListingFollow = typeof adoptionListingFollows.$inferInsert;
+
 export type AdoptionRequest       = typeof adoptionRequests.$inferSelect;
 export type InsertAdoptionRequest = typeof adoptionRequests.$inferInsert;
 

@@ -4,6 +4,7 @@ import React, {
   useCallback,
   useContext,
   useEffect,
+  useRef,
   useState,
 } from "react";
 
@@ -30,6 +31,7 @@ export interface AdoptionListing {
   messageCount?: number;
   createdAt: string;
   updatedAt?: string;
+  followedAt?: string;
   healthStatus?: string;
   vaccinationStatus?: string;
   environmentType?: string;
@@ -48,6 +50,14 @@ interface AdoptionContextType {
   updateListing: (id: string, updates: Partial<Omit<AdoptionListing, "id" | "createdAt">>) => Promise<void>;
   deleteListing: (id: string) => Promise<void>;
   getListing: (id: string) => AdoptionListing | undefined;
+  /* Follow / Takip */
+  followedIds: Set<string>;
+  followListing: (id: string) => Promise<void>;
+  unfollowListing: (id: string) => Promise<void>;
+  isFollowed: (id: string) => boolean;
+  followedListings: AdoptionListing[];
+  loadFollowed: () => Promise<void>;
+  followedLoading: boolean;
 }
 
 const AdoptionContext = createContext<AdoptionContextType | null>(null);
@@ -89,6 +99,7 @@ function mapFromApi(raw: Record<string, unknown>): AdoptionListing {
     favoriteCount:      Number(raw.favoriteCount ?? 0),
     createdAt:          raw.createdAt ? String(raw.createdAt) : new Date().toISOString(),
     updatedAt:          raw.updatedAt ? String(raw.updatedAt) : undefined,
+    followedAt:         raw.followedAt ? String(raw.followedAt) : undefined,
     healthStatus:       raw.healthStatus ? String(raw.healthStatus) : undefined,
     vaccinationStatus:  raw.vaccinationStatus ? String(raw.vaccinationStatus) : undefined,
     environmentType:    raw.environmentType ? String(raw.environmentType) : undefined,
@@ -100,9 +111,15 @@ function mapFromApi(raw: Record<string, unknown>): AdoptionListing {
 }
 
 export function AdoptionProvider({ children }: { children: React.ReactNode }) {
-  const [listings, setListings]   = useState<AdoptionListing[]>([]);
-  const [isLoading, setIsLoading] = useState(true);
-  const [error, setError]         = useState<string | null>(null);
+  const [listings, setListings]         = useState<AdoptionListing[]>([]);
+  const [isLoading, setIsLoading]       = useState(true);
+  const [error, setError]               = useState<string | null>(null);
+  const [followedIds, setFollowedIds]   = useState<Set<string>>(new Set());
+  const [followedListings, setFollowedListings] = useState<AdoptionListing[]>([]);
+  const [followedLoading, setFollowedLoading]   = useState(false);
+
+  /* mutation lock — prevents double-tap duplicates */
+  const followInFlight = useRef<Set<string>>(new Set());
 
   const fetchListings = useCallback(async () => {
     try {
@@ -118,7 +135,86 @@ export function AdoptionProvider({ children }: { children: React.ReactNode }) {
     }
   }, []);
 
-  useEffect(() => { fetchListings(); }, [fetchListings]);
+  const loadFollowed = useCallback(async () => {
+    const token = await AsyncStorage.getItem(TOKEN_KEY);
+    if (!token) return;                    /* not logged in */
+    setFollowedLoading(true);
+    try {
+      const res = await apiFetch("/adoption/followed");
+      if (!res.ok) return;
+      const data = await res.json() as Array<Record<string, unknown>>;
+      const mapped = data.map(mapFromApi);
+      setFollowedListings(mapped);
+      setFollowedIds(new Set(mapped.map((l) => l.id)));
+    } catch {
+      /* silently ignore — heart states simply won't pre-populate */
+    } finally {
+      setFollowedLoading(false);
+    }
+  }, []);
+
+  useEffect(() => {
+    fetchListings();
+    loadFollowed();
+  }, [fetchListings, loadFollowed]);
+
+  const followListing = useCallback(async (id: string) => {
+    if (followInFlight.current.has(id)) return;
+    followInFlight.current.add(id);
+
+    /* Optimistic update */
+    setFollowedIds((prev) => new Set([...prev, id]));
+    const listing = listings.find((l) => l.id === id);
+    if (listing) {
+      setFollowedListings((prev) => [
+        { ...listing, followedAt: new Date().toISOString() },
+        ...prev.filter((l) => l.id !== id),
+      ]);
+    }
+
+    try {
+      const res = await apiFetch(`/adoption/${id}/follow`, { method: "POST" });
+      if (!res.ok) {
+        /* rollback */
+        setFollowedIds((prev) => { const next = new Set(prev); next.delete(id); return next; });
+        setFollowedListings((prev) => prev.filter((l) => l.id !== id));
+      }
+    } catch {
+      /* rollback */
+      setFollowedIds((prev) => { const next = new Set(prev); next.delete(id); return next; });
+      setFollowedListings((prev) => prev.filter((l) => l.id !== id));
+    } finally {
+      followInFlight.current.delete(id);
+    }
+  }, [listings]);
+
+  const unfollowListing = useCallback(async (id: string) => {
+    if (followInFlight.current.has(id)) return;
+    followInFlight.current.add(id);
+
+    /* Optimistic update */
+    const prevFollowedIds = new Set(followedIds);
+    const prevFollowedListings = [...followedListings];
+    setFollowedIds((prev) => { const next = new Set(prev); next.delete(id); return next; });
+    setFollowedListings((prev) => prev.filter((l) => l.id !== id));
+
+    try {
+      const res = await apiFetch(`/adoption/${id}/follow`, { method: "DELETE" });
+      if (!res.ok) {
+        /* rollback */
+        setFollowedIds(prevFollowedIds);
+        setFollowedListings(prevFollowedListings);
+      }
+    } catch {
+      /* rollback */
+      setFollowedIds(prevFollowedIds);
+      setFollowedListings(prevFollowedListings);
+    } finally {
+      followInFlight.current.delete(id);
+    }
+  }, [followedIds, followedListings]);
+
+  const isFollowed = useCallback((id: string) => followedIds.has(id), [followedIds]);
 
   const addListing = useCallback(
     async (listing: Omit<AdoptionListing, "id" | "createdAt">): Promise<string> => {
@@ -207,6 +303,9 @@ export function AdoptionProvider({ children }: { children: React.ReactNode }) {
     const data = await res.json() as Record<string, unknown>;
     if (!res.ok) throw new Error(String(data.error ?? "İlan silinemedi"));
     setListings((prev) => prev.filter((l) => l.id !== id));
+    /* Also remove from followed */
+    setFollowedIds((prev) => { const next = new Set(prev); next.delete(id); return next; });
+    setFollowedListings((prev) => prev.filter((l) => l.id !== id));
   }, [listings]);
 
   const getListing = useCallback(
@@ -215,7 +314,13 @@ export function AdoptionProvider({ children }: { children: React.ReactNode }) {
   );
 
   return (
-    <AdoptionContext.Provider value={{ listings, isLoading, error, refresh: fetchListings, addListing, updateListing, deleteListing, getListing }}>
+    <AdoptionContext.Provider value={{
+      listings, isLoading, error,
+      refresh: fetchListings,
+      addListing, updateListing, deleteListing, getListing,
+      followedIds, followListing, unfollowListing, isFollowed,
+      followedListings, loadFollowed, followedLoading,
+    }}>
       {children}
     </AdoptionContext.Provider>
   );

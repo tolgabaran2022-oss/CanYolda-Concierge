@@ -97,10 +97,10 @@ export default function AdoptionDetailScreen() {
   const isPreviewMode = preview === "true";
   const insets = useSafeAreaInsets();
   const router = useRouter();
-  const { getListing, deleteListing } = useAdoption();
+  const { getListing, deleteListing, isFollowed, followListing, unfollowListing } = useAdoption();
   const { user } = useAuth();
   const { boostStatuses, fetchBoostStatus } = useBoost();
-  const [liked, setLiked] = useState(false);
+  const [followLoading, setFollowLoading] = useState(false);
 
   /* Contact-reveal state */
   const [contactPrefs,     setContactPrefs]     = useState<ContactPrefs>({ allowPhoneContact: true, allowMessages: true });
@@ -117,6 +117,26 @@ export default function AdoptionDetailScreen() {
   const isOwner = listing?.userId === user?.id;
   const boost   = boostStatuses[id ?? ""];
   const botPad  = Platform.OS === "web" ? 34 : insets.bottom;
+  const liked   = isFollowed(id ?? "");
+
+  const handleToggleFollow = async () => {
+    if (!user) {
+      Alert.alert("Giriş Gerekli", "İlanı takip etmek için giriş yapın.");
+      return;
+    }
+    if (followLoading) return;
+    Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+    setFollowLoading(true);
+    try {
+      if (liked) {
+        await unfollowListing(id!);
+      } else {
+        await followListing(id!);
+      }
+    } finally {
+      setFollowLoading(false);
+    }
+  };
 
   const pressScale = useRef(new Animated.Value(1)).current;
   const onPressIn  = () => Animated.spring(pressScale, { toValue: 0.97, useNativeDriver: true, speed: 40 }).start();
@@ -279,8 +299,9 @@ export default function AdoptionDetailScreen() {
 
               <Pressable
                 style={S.blurBtn}
-                onPress={() => { setLiked((v) => !v); Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light); }}
+                onPress={handleToggleFollow}
                 hitSlop={10}
+                disabled={followLoading}
               >
                 {Platform.OS === "ios" ? (
                   <BlurView intensity={55} tint="dark" style={S.blurInner}>

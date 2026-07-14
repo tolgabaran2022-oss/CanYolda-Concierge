@@ -1,0 +1,534 @@
+CanYoldaşı uygulamasında "Sahiplendirme Bildirimleri > Takip Ettiklerim" sekmesinin iş mantığını düzelt.
+
+MEVCUT DURUM:
+
+Sahiplendirme ilan kartlarında sağ üstte kalp ikonu bulunuyor.
+
+Kullanıcı bir ilana kalp attığında ilan görsel olarak favorileniyor / takip ediliyor gibi görünüyor.
+
+Ancak:
+
+Bildirimler
+→ Sahiplendirme Bildirimleri
+→ Takip Ettiklerim
+
+sekmesinde hiçbir kayıt görünmüyor.
+
+Ekranda:
+
+"Bildirim yok"
+"Bu kategoride henüz bildirim yok."
+
+yazıyor.
+
+İSTENEN MANTIK:
+
+Kullanıcı sahiplendirme ilanındaki kalp ikonuna bastığında bu ilan kullanıcı tarafından "takip edilen sahiplendirme ilanı" olarak kaydedilsin.
+
+Kalp atılan ilan:
+
+Bildirimler
+→ Sahiplendirme Bildirimleri
+→ Takip Ettiklerim
+
+sekmesinde görüntülensin.
+
+Bu bölümü sosyal medya kullanıcı takip sistemiyle karıştırma.
+
+Buradaki "Takip Ettiklerim" mantığı:
+
+USER FOLLOWS ADOPTION LISTING
+
+yani:
+
+kullanıcının kalp attığı / takip ettiği sahiplendirme ilanlarıdır.
+
+==================================================
+1. MEVCUT HEART / FAVORITE AKIŞINI BUL
+==================================================
+
+Kod tabanında recursive search yap.
+
+Şunları ara:
+
+heart
+favorite
+favourite
+wishlist
+follow
+following
+tracked
+watched
+watchlist
+saved
+liked
+isFavorite
+isFavourite
+isFollowing
+isTracked
+toggleFavorite
+toggleFollow
+
+Kalp ikonunun bulunduğu sahiplendirme ilan kartını bul.
+
+Kalp ikonunun onPress handler'ını tespit et.
+
+Akışı takip et:
+
+Heart button
+→ onPress
+→ handler
+→ service
+→ Supabase/API
+→ database
+→ local state
+→ UI
+
+Kalp ikonuna basıldığında şu anda gerçek database write yapılıyor mu kontrol et.
+
+Sadece local state değişiyorsa bu hatadır.
+
+==================================================
+2. TAKİP EDİLEN İLAN DATA MODELİNİ KONTROL ET
+==================================================
+
+Mevcut database'de sahiplendirme ilan takip/favori tablosu var mı kontrol et.
+
+Şu tip tabloları ara:
+
+adoption_favorites
+adoption_listing_favorites
+adoption_follows
+adoption_listing_follows
+saved_adoption_listings
+favorite_listings
+listing_favorites
+
+Mevcut uygun tablo varsa onu kullan.
+
+Gereksiz duplicate tablo oluşturma.
+
+Eğer uygun bir tablo yoksa canonical relation table oluştur.
+
+Önerilen yapı:
+
+adoption_listing_follows
+
+columns:
+
+id uuid primary key
+user_id uuid not null
+listing_id uuid not null
+created_at timestamptz default now()
+
+Foreign keys:
+
+user_id → auth.users.id
+listing_id → adoption_listings.id
+
+Unique constraint:
+
+unique(user_id, listing_id)
+
+Bu sayede aynı kullanıcı aynı ilanı iki kez takip edemez.
+
+==================================================
+3. KALP İKONU = TAKİP ET / TAKİPTEN ÇIK
+==================================================
+
+Sahiplendirme ilanındaki kalp ikonunun mantığını gerçek toggle haline getir.
+
+Kullanıcı kalbe bastığında:
+
+Eğer ilan takip edilmiyorsa:
+
+INSERT adoption_listing_follows
+
+{
+  user_id: currentUser.id,
+  listing_id: listing.id
+}
+
+Eğer zaten takip ediliyorsa:
+
+DELETE FROM adoption_listing_follows
+WHERE user_id = currentUser.id
+AND listing_id = listing.id
+
+Beklenen davranış:
+
+empty heart
+→ tap
+→ filled heart
+→ database follow row created
+
+filled heart
+→ tap
+→ empty heart
+→ database follow row deleted
+
+Optimistic UI kullanılabilir ancak database error olursa state rollback yapılmalı.
+
+==================================================
+4. DOUBLE TAP / DUPLICATE WRITE KONTROLÜ
+==================================================
+
+Kalp ikonuna hızlı şekilde iki kez basıldığında duplicate row oluşmamalı.
+
+Unique constraint zorunlu.
+
+UI'da mutation lock uygula.
+
+Örnek:
+
+if (isUpdatingFollow) return;
+
+setIsUpdatingFollow(true);
+
+try {
+  await toggleAdoptionListingFollow(listing.id);
+} finally {
+  setIsUpdatingFollow(false);
+}
+
+Tek kullanıcı aksiyonu = tek mutation.
+
+==================================================
+5. TAKİP ETTİKLERİM QUERY'SİNİ DÜZELT
+==================================================
+
+"Sahiplendirme Bildirimleri > Takip Ettiklerim" sekmesinin gerçek query'sini bul.
+
+Bu sekme kullanıcı profillerini veya sosyal medya follow relation'larını sorgulamamalı.
+
+Current authenticated user için takip edilen sahiplendirme ilanlarını sorgula.
+
+Mantık:
+
+current user
+→ adoption_listing_follows
+→ listing_id
+→ adoption_listings
+
+Örnek Supabase relation query mantığı:
+
+const { data, error } = await supabase
+  .from("adoption_listing_follows")
+  .select(`
+    id,
+    created_at,
+    listing:adoption_listings (
+      *
+    )
+  `)
+  .eq("user_id", user.id)
+  .order("created_at", {
+    ascending: false
+  });
+
+Gerçek tablo ve foreign key isimlerini codebase/database şemasına göre kullan.
+
+Örnek isimleri kör şekilde kopyalama.
+
+==================================================
+6. TAKİP ETTİKLERİM SEKME İÇERİĞİ
+==================================================
+
+Kullanıcının takip ettiği her sahiplendirme ilanını bu ekranda listele.
+
+Kartta minimum şu bilgiler gösterilsin:
+
+- hayvan fotoğrafı
+- ilan başlığı veya hayvan adı
+- hayvan türü
+- yaş
+- konum
+- ilan durumu
+- takip tarihi gerekirse
+- ilan detayına gitme aksiyonu
+
+Bu ekran sadece "bildirim metni listesi" olmak zorunda değil.
+
+Takip edilen ilanlar için notification-style compact card kullanılabilir.
+
+Önerilen mantık:
+
+[Hayvan görseli]
+
+Elif
+Köpek · 3 yaş+
+Yunusemre, Manisa
+
+"Takip ettiğin sahiplendirme ilanı"
+
+[İlanı Gör]
+
+Kartın tamamına basıldığında ilan detay ekranı açılsın.
+
+==================================================
+7. İLAN DETAYINA YÖNLENDİR
+==================================================
+
+Takip Ettiklerim sekmesindeki ilana basıldığında:
+
+adoption listing detail
+
+ekranı açılsın.
+
+Navigation param olarak stale full object taşıma.
+
+Sadece:
+
+listingId
+
+gönder.
+
+Detay ekranı listingId ile database'den güncel ilanı fetch etsin.
+
+==================================================
+8. TAKİP EDİLEN İLAN SİLİNDİYSE
+==================================================
+
+İlan sahibi ilanı silmişse orphan follow relation oluşmamalı.
+
+Foreign key:
+
+ON DELETE CASCADE
+
+kullan.
+
+Böylece ilan silindiğinde follow kayıtları otomatik silinsin.
+
+Eğer mevcut database şeması cascade desteklemiyorsa query sırasında null listing kayıtlarını filtrele.
+
+==================================================
+9. İLAN PASİFE ALINDIYSA
+==================================================
+
+Takip edilen ilan pasif, sahiplendirildi veya kaldırıldıysa kaydı tamamen sessizce yok etme.
+
+Takip Ettiklerim ekranında durumunu göster.
+
+Örnek:
+
+Aktif
+Sahiplendirildi
+Pasif
+
+Kullanıcının takip ettiği ilan değiştiğinde durumu anlayabilmesi gerekir.
+
+==================================================
+10. TAKİP ETTİKLERİM BİLDİRİM MANTIĞINI HAZIRLA
+==================================================
+
+Takip edilen ilanda önemli değişiklik olduğunda bu bölüm gerçek bildirim gösterebilecek şekilde data model'i hazırla.
+
+Önemli değişiklikler:
+
+- ilan sahibi ilanı güncelledi
+- ilan sahiplendirildi
+- ilan pasife alındı
+- ilan yeniden aktif edildi
+- ilan sahibi iletişim bilgisini değiştirdi
+
+Eğer mevcut notification altyapısı varsa duplicate notification system oluşturma.
+
+Mevcut notification system'i kullan.
+
+Notification type örnekleri:
+
+ADOPTION_LISTING_UPDATED
+ADOPTION_LISTING_ADOPTED
+ADOPTION_LISTING_DEACTIVATED
+ADOPTION_LISTING_REACTIVATED
+
+Notification payload minimum:
+
+user_id
+type
+listing_id
+title
+message
+is_read
+created_at
+
+==================================================
+11. SEKME İSMİ VE ANLAMI
+==================================================
+
+"Takip Ettiklerim" sekmesi şimdilik korunabilir.
+
+Ancak internal code naming açık olmalı:
+
+followedAdoptionListings
+
+veya
+
+watchedAdoptionListings
+
+Şunları kullanma:
+
+followingUsers
+socialFollowing
+feedFollowing
+
+Çünkü CanYoldaşı uygulamasında Feed/Akış sistemi kaldırıldı.
+
+Bu özelliği sosyal medya feed follow sistemiyle birleştirme.
+
+==================================================
+12. EMPTY STATE
+==================================================
+
+Kullanıcının takip ettiği ilan yoksa mevcut empty state kullanılabilir.
+
+Ancak metni daha açıklayıcı yap.
+
+Başlık:
+
+"Takip ettiğin ilan yok"
+
+Alt metin:
+
+"Kalp simgesine dokunduğun sahiplendirme ilanları burada görünür."
+
+Generic:
+
+"Bildirim yok"
+
+metnini bu sekmede kullanma.
+
+==================================================
+13. HEART STATE COLD START TESTİ
+==================================================
+
+Kalp state sadece local state'e bağlı olmamalı.
+
+Test:
+
+1. Bir ilana kalp at
+2. Kalp dolu görünsün
+3. Uygulamayı tamamen kapat
+4. Tekrar aç
+5. Aynı ilanı aç
+6. Kalp hala dolu görünmeli
+7. Sahiplendirme Bildirimleri'ne git
+8. Takip Ettiklerim sekmesini aç
+9. İlan burada görünmeli
+
+Cold restart sonrası state korunmuyorsa işlem tamamlanmış sayılmasın.
+
+==================================================
+14. REALTIME / QUERY INVALIDATION
+==================================================
+
+Kullanıcı kalbe bastıktan hemen sonra Takip Ettiklerim sekmesine geçtiğinde ilan görünmeli.
+
+React Query / TanStack Query varsa:
+
+invalidateQueries({
+  queryKey: ["followed-adoption-listings", user.id]
+});
+
+Kalpten çıkarılırsa aynı query invalidate edilmeli.
+
+Realtime subscription mevcutsa uygun relation için kullanılabilir.
+
+Ancak duplicate realtime listener oluşturma.
+
+==================================================
+15. USER SCOPE KONTROLÜ
+==================================================
+
+Takip edilen ilanlar kullanıcı bazlı olmalı.
+
+User A'nın kalp attığı ilan:
+
+User B'nin Takip Ettiklerim ekranında görünmemeli.
+
+Her query current authenticated user id ile scope edilmeli.
+
+RLS policy kontrol et.
+
+SELECT:
+auth.uid() = user_id
+
+INSERT:
+auth.uid() = user_id
+
+DELETE:
+auth.uid() = user_id
+
+Başka kullanıcının follow kaydı değiştirilememeli.
+
+==================================================
+16. GERÇEK TEST SENARYOSU
+==================================================
+
+Ekran görüntüsündeki "Elif" isimli ilanı test için kullan.
+
+Test:
+
+1. Elif ilanını aç
+2. Sağ üst kalp ikonuna bas
+3. Kalp dolu hale gelsin
+4. Database'de follow/favorite row oluşsun
+5. Bildirimler ekranını aç
+6. Sahiplendirme Bildirimleri'ne gir
+7. Takip Ettiklerim sekmesini aç
+8. Elif ilanı burada görünmeli
+9. Elif kartına bas
+10. Gerçek ilan detay ekranı açılmalı
+11. Geri dön
+12. İlan kalp state'i korunmalı
+13. Kalbi kaldır
+14. Follow row silinmeli
+15. Takip Ettiklerim sekmesinden Elif ilanı kaldırılmalı
+
+==================================================
+17. iOS / ANDROID / WEB TESTİ
+==================================================
+
+Aynı akışı test et:
+
+iOS Simulator
+Android
+Web
+
+Üç platform aynı database relation'ını kullanmalı.
+
+Platforma özel favorite state oluşturma.
+
+==================================================
+18. ROOT CAUSE RAPORU
+==================================================
+
+İşlem sonunda bana şunları açıkça raporla:
+
+1. Kalp ikonuna basıldığında daha önce ne oluyordu?
+2. Sadece local state mi değişiyordu?
+3. Database write yapılıyor muydu?
+4. Kullanılan gerçek follow/favorite tablosu hangisi?
+5. Yeni tablo oluşturuldu mu?
+6. user_id ve listing_id doğru kaydediliyor mu?
+7. Unique constraint var mı?
+8. Takip Ettiklerim sekmesi daha önce hangi query'yi kullanıyordu?
+9. Yeni query hangi relation'ı kullanıyor?
+10. Elif ilanı kalp atıldıktan sonra sekmede görünüyor mu?
+11. İlan detayına yönlendirme çalışıyor mu?
+12. Kalp kaldırıldığında listeden çıkıyor mu?
+13. Cold restart sonrası kalp state korunuyor mu?
+14. iOS testi başarılı mı?
+15. Android testi başarılı mı?
+16. Web testi başarılı mı?
+17. Hangi dosyalar değiştirildi?
+
+Sadece empty state metnini veya UI görünümünü değiştirme.
+
+Kalp ikonu
+→ database follow relation
+→ Takip Ettiklerim query
+→ ilan kartı
+→ ilan detay ekranı
+
+zincirini uçtan uca çalışır hale getir.

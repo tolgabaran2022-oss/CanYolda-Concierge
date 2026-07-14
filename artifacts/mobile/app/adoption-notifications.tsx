@@ -15,6 +15,7 @@ import {
 } from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { useAuth } from "@/contexts/AuthContext";
+import { useAdoption, type AdoptionListing } from "@/contexts/AdoptionContext";
 import {
   apiFetchNotifications,
   apiMarkAllNotificationsRead,
@@ -22,6 +23,7 @@ import {
   type AppNotification,
 } from "@/lib/socialApi";
 import { apiGetOrCreateConversation } from "@/lib/messagesApi";
+import { formatTimeAgo } from "@/utils/formatters";
 
 const P    = "#7C4DCC";
 const DARK = "#4B267D";
@@ -98,10 +100,6 @@ function filterNotifs(notifs: AppNotification[], filter: FilterTab): AppNotifica
         n.type === "adoption_listing_updated" ||
         n.type === "adoption_listing_reminder"
       );
-    case "following":
-      return adoptionOnly.filter((n) =>
-        n.type === "adoption_listing_updated"
-      );
     case "all":
     default:
       return adoptionOnly;
@@ -167,10 +165,92 @@ function NotifCard({
   );
 }
 
+/* ── Followed listing card ─────────────────────────────────── */
+function statusColor(status?: string): { bg: string; text: string; label: string } {
+  switch (status) {
+    case "Sahiplendirildi": return { bg: "#E8F8EE", text: "#34C759", label: "Sahiplendirildi" };
+    case "Pasif":           return { bg: "#FFF0F0", text: "#FF6B6B", label: "Pasif" };
+    case "Süresi Doldu":    return { bg: "#FFF5E6", text: "#FF9500", label: "Süresi Doldu" };
+    case "Onay Bekliyor":   return { bg: `${P}14`, text: P,          label: "Onay Bekliyor" };
+    default:                return { bg: "#E8F8EE", text: "#34C759", label: "Aktif" };
+  }
+}
+
+function FollowedCard({
+  listing,
+  onPress,
+  onUnfollow,
+}: {
+  listing: AdoptionListing;
+  onPress: () => void;
+  onUnfollow: () => void;
+}) {
+  const sc = statusColor(listing.status);
+  return (
+    <Pressable
+      style={({ pressed }) => [S.followCard, { opacity: pressed ? 0.92 : 1 }]}
+      onPress={() => { Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light); onPress(); }}
+    >
+      {/* Thumbnail */}
+      {listing.photo ? (
+        <Image source={{ uri: listing.photo }} style={S.followThumb} contentFit="cover" />
+      ) : (
+        <View style={[S.followThumb, S.followThumbPlaceholder]}>
+          <Icon name="paw" size={22} color={`${P}60`} />
+        </View>
+      )}
+
+      {/* Info */}
+      <View style={S.followBody}>
+        <View style={S.followTopRow}>
+          <Text style={S.followName} numberOfLines={1}>{listing.petName}</Text>
+          <View style={[S.statusBadge, { backgroundColor: sc.bg }]}>
+            <Text style={[S.statusTxt, { color: sc.text }]}>{sc.label}</Text>
+          </View>
+        </View>
+
+        <Text style={S.followMeta} numberOfLines={1}>
+          {[listing.petType, listing.petAge].filter(Boolean).join(" · ")}
+        </Text>
+
+        {listing.location ? (
+          <View style={S.followLocRow}>
+            <Icon name="location-outline" size={11} color={BODY} />
+            <Text style={S.followLoc} numberOfLines={1}>{listing.location}</Text>
+          </View>
+        ) : null}
+
+        <Text style={S.followSub}>Takip ettiğin sahiplendirme ilanı</Text>
+      </View>
+
+      {/* Actions */}
+      <View style={S.followActions}>
+        <Pressable
+          style={({ pressed }) => [S.followGoBtn, { opacity: pressed ? 0.7 : 1 }]}
+          onPress={() => { Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light); onPress(); }}
+          hitSlop={6}
+        >
+          <Text style={S.followGoBtnTxt}>İlanı Gör</Text>
+          <Icon name="chevron-forward" size={11} color={P} />
+        </Pressable>
+        <Pressable
+          style={({ pressed }) => [S.unfollowBtn, { opacity: pressed ? 0.7 : 1 }]}
+          onPress={() => { Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium); onUnfollow(); }}
+          hitSlop={6}
+        >
+          <Icon name="heart-dislike-outline" size={14} color="#FF6B6B" />
+        </Pressable>
+      </View>
+    </Pressable>
+  );
+}
+
+/* ── Main screen ───────────────────────────────────────────── */
 export default function AdoptionNotificationsScreen() {
   const insets = useSafeAreaInsets();
   const router = useRouter();
   const { user } = useAuth();
+  const { followedListings, followedLoading, loadFollowed, unfollowListing } = useAdoption();
 
   const [notifs,     setNotifs]     = useState<AppNotification[]>([]);
   const [loading,    setLoading]    = useState(true);
@@ -198,7 +278,16 @@ export default function AdoptionNotificationsScreen() {
     }
   }, [user]);
 
-  useEffect(() => { load(); }, [load]);
+  const loadAll = useCallback(async (refresh = false) => {
+    if (refresh) setRefreshing(true);
+    await Promise.all([
+      load(false),
+      loadFollowed(),
+    ]).catch(() => {});
+    if (refresh) setRefreshing(false);
+  }, [load, loadFollowed]);
+
+  useEffect(() => { loadAll(); }, [loadAll]);
 
   const handleMarkAll = async () => {
     if (!user || unreadCount === 0) return;
@@ -229,6 +318,9 @@ export default function AdoptionNotificationsScreen() {
     }
   };
 
+  const isFollowingTab = filter === "following";
+  const showFollowedLoading = isFollowingTab && followedLoading && followedListings.length === 0;
+
   return (
     <View style={[S.root, { paddingTop: topPad }]}>
       {/* Header */}
@@ -244,7 +336,7 @@ export default function AdoptionNotificationsScreen() {
             </View>
           )}
         </View>
-        {unreadCount > 0 && (
+        {unreadCount > 0 && !isFollowingTab && (
           <Pressable style={S.markAllBtn} onPress={handleMarkAll} hitSlop={8}>
             <Text style={S.markAllTxt}>Tümünü oku</Text>
           </Pressable>
@@ -260,47 +352,90 @@ export default function AdoptionNotificationsScreen() {
             onPress={() => { setFilter(f.key); Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light); }}
           >
             <Text style={[S.filterTabTxt, filter === f.key && S.filterTabTxtActive]}>{f.label}</Text>
+            {f.key === "following" && followedListings.length > 0 && (
+              <View style={S.tabBadge}>
+                <Text style={S.tabBadgeTxt}>{followedListings.length}</Text>
+              </View>
+            )}
           </Pressable>
         ))}
       </View>
 
-      {/* List */}
-      <FlatList
-        data={displayed}
-        keyExtractor={(item) => item.id}
-        contentContainerStyle={{ paddingHorizontal: 16, paddingBottom: botPad, gap: 10, paddingTop: 8 }}
-        showsVerticalScrollIndicator={false}
-        refreshControl={
-          <RefreshControl
-            refreshing={refreshing}
-            onRefresh={() => load(true)}
-            tintColor={P}
-            colors={[P]}
-          />
-        }
-        renderItem={({ item }) => (
-          <NotifCard
-            notif={item}
-            onRead={() => handleMarkOne(item.id)}
-            onPress={() => handleCta(item)}
-          />
-        )}
-        ListEmptyComponent={
-          loading ? null : (
-            <View style={S.empty}>
-              <View style={S.emptyIllo}>
-                <Icon name="notifications-outline" size={36} color={`${P}60`} />
+      {/* Followed listings tab */}
+      {isFollowingTab ? (
+        <FlatList
+          data={followedListings}
+          keyExtractor={(item) => item.id}
+          contentContainerStyle={{ paddingHorizontal: 16, paddingBottom: botPad, gap: 10, paddingTop: 8 }}
+          showsVerticalScrollIndicator={false}
+          refreshControl={
+            <RefreshControl
+              refreshing={refreshing}
+              onRefresh={() => loadAll(true)}
+              tintColor={P}
+              colors={[P]}
+            />
+          }
+          renderItem={({ item }) => (
+            <FollowedCard
+              listing={item}
+              onPress={() => router.push(`/adoption/${item.id}` as any)}
+              onUnfollow={() => unfollowListing(item.id)}
+            />
+          )}
+          ListEmptyComponent={
+            showFollowedLoading ? null : (
+              <View style={S.empty}>
+                <View style={S.emptyIllo}>
+                  <Icon name="heart-outline" size={36} color={`${P}60`} />
+                </View>
+                <Text style={S.emptyTitle}>Takip ettiğin ilan yok</Text>
+                <Text style={S.emptySub}>
+                  Kalp simgesine dokunduğun sahiplendirme ilanları burada görünür.
+                </Text>
               </View>
-              <Text style={S.emptyTitle}>Bildirim yok</Text>
-              <Text style={S.emptySub}>
-                {filter === "all"
-                  ? "Sahiplendirme bildirimlerin burada görünecek."
-                  : "Bu kategoride henüz bildirim yok."}
-              </Text>
-            </View>
-          )
-        }
-      />
+            )
+          }
+        />
+      ) : (
+        /* Notification tabs */
+        <FlatList
+          data={displayed}
+          keyExtractor={(item) => item.id}
+          contentContainerStyle={{ paddingHorizontal: 16, paddingBottom: botPad, gap: 10, paddingTop: 8 }}
+          showsVerticalScrollIndicator={false}
+          refreshControl={
+            <RefreshControl
+              refreshing={refreshing}
+              onRefresh={() => loadAll(true)}
+              tintColor={P}
+              colors={[P]}
+            />
+          }
+          renderItem={({ item }) => (
+            <NotifCard
+              notif={item}
+              onRead={() => handleMarkOne(item.id)}
+              onPress={() => handleCta(item)}
+            />
+          )}
+          ListEmptyComponent={
+            loading ? null : (
+              <View style={S.empty}>
+                <View style={S.emptyIllo}>
+                  <Icon name="notifications-outline" size={36} color={`${P}60`} />
+                </View>
+                <Text style={S.emptyTitle}>Bildirim yok</Text>
+                <Text style={S.emptySub}>
+                  {filter === "all"
+                    ? "Sahiplendirme bildirimlerin burada görünecek."
+                    : "Bu kategoride henüz bildirim yok."}
+                </Text>
+              </View>
+            )
+          }
+        />
+      )}
     </View>
   );
 }
@@ -321,10 +456,12 @@ const S = StyleSheet.create({
     flexDirection: "row", paddingHorizontal: 16, gap: 8, paddingBottom: 10,
     borderBottomWidth: 1, borderBottomColor: BORDER,
   },
-  filterTab:       { paddingHorizontal: 13, paddingVertical: 7, borderRadius: 20, backgroundColor: "transparent" },
+  filterTab:       { flexDirection: "row", alignItems: "center", gap: 5, paddingHorizontal: 13, paddingVertical: 7, borderRadius: 20, backgroundColor: "transparent" },
   filterTabActive: { backgroundColor: `${P}14` },
   filterTabTxt:    { fontSize: 13, fontFamily: "Inter_500Medium", color: BODY },
   filterTabTxtActive: { color: P, fontFamily: "Inter_700Bold" },
+  tabBadge:    { backgroundColor: "#FF3B6B", borderRadius: 8, paddingHorizontal: 5, paddingVertical: 1, minWidth: 18, alignItems: "center" },
+  tabBadgeTxt: { fontSize: 10, fontFamily: "Inter_700Bold", color: WHITE },
 
   notifCard: {
     borderRadius: 18, borderWidth: 1, borderColor: BORDER,
@@ -350,6 +487,37 @@ const S = StyleSheet.create({
   },
   ctaBtn:    { flexDirection: "row", alignItems: "center", gap: 4, backgroundColor: `${P}10`, borderRadius: 10, paddingHorizontal: 12, paddingVertical: 6 },
   ctaBtnTxt: { fontSize: 12, fontFamily: "Inter_700Bold", color: P },
+
+  /* Followed card */
+  followCard: {
+    flexDirection: "row", alignItems: "center", gap: 12,
+    borderRadius: 18, borderWidth: 1, borderColor: BORDER,
+    backgroundColor: WHITE, padding: 12,
+    ...Platform.select({
+      ios:     { shadowColor: "#4B267D", shadowOffset: { width: 0, height: 2 }, shadowOpacity: 0.06, shadowRadius: 8 },
+      android: { elevation: 2 },
+      default: {},
+    }),
+  },
+  followThumb: {
+    width: 64, height: 64, borderRadius: 14, flexShrink: 0,
+  },
+  followThumbPlaceholder: {
+    backgroundColor: `${P}14`, alignItems: "center", justifyContent: "center",
+  },
+  followBody:   { flex: 1, gap: 3 },
+  followTopRow: { flexDirection: "row", alignItems: "center", gap: 6 },
+  followName:   { fontSize: 15, fontFamily: "Inter_700Bold", color: DARK, flex: 1 },
+  statusBadge:  { borderRadius: 8, paddingHorizontal: 7, paddingVertical: 2, flexShrink: 0 },
+  statusTxt:    { fontSize: 11, fontFamily: "Inter_600SemiBold" },
+  followMeta:   { fontSize: 12, fontFamily: "Inter_400Regular", color: BODY },
+  followLocRow: { flexDirection: "row", alignItems: "center", gap: 3 },
+  followLoc:    { fontSize: 12, fontFamily: "Inter_400Regular", color: BODY, flex: 1 },
+  followSub:    { fontSize: 11, fontFamily: "Inter_400Regular", color: `${P}70`, marginTop: 2 },
+  followActions:{ gap: 6, alignItems: "flex-end", flexShrink: 0 },
+  followGoBtn:  { flexDirection: "row", alignItems: "center", gap: 3, backgroundColor: `${P}12`, borderRadius: 10, paddingHorizontal: 10, paddingVertical: 6 },
+  followGoBtnTxt:{ fontSize: 12, fontFamily: "Inter_700Bold", color: P },
+  unfollowBtn:  { width: 30, height: 30, borderRadius: 15, backgroundColor: "#FFF0F0", alignItems: "center", justifyContent: "center" },
 
   empty:      { flex: 1, alignItems: "center", justifyContent: "center", paddingTop: 80, gap: 12 },
   emptyIllo:  { width: 80, height: 80, borderRadius: 40, backgroundColor: `${P}10`, alignItems: "center", justifyContent: "center", marginBottom: 4 },
