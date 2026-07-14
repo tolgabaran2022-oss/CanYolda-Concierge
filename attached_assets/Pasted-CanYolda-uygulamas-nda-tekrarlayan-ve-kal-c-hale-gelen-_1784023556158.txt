@@ -1,0 +1,667 @@
+CanYoldaşı uygulamasında tekrarlayan ve kalıcı hale gelen kritik bir IMAGE DATA PIPELINE problemi var.
+
+SORUN:
+
+Sahiplendirme > İlanlarım ekranındaki ilan kartlarında yüklenen hayvan fotoğrafları görünmüyor.
+
+Kartta sürekli:
+
+"Fotoğraf eklenmedi"
+
+fallback alanı gösteriliyor.
+
+Bu sorun daha önce de birçok farklı ekranda tekrarlandı.
+
+Bu nedenle sadece mevcut kart component'ine geçici image fallback veya koşul ekleme.
+
+ROOT CAUSE ANALYSIS yap.
+
+Amaç:
+
+Kullanıcının seçtiği fotoğrafın:
+
+image picker
+→ local URI
+→ upload
+→ Supabase Storage
+→ public/signed URL
+→ database
+→ query
+→ normalization
+→ UI Image component
+
+zincirinde nerede kaybolduğunu gerçek verilerle tespit et ve kalıcı olarak düzelt.
+
+==================================================
+1. RECURSIVE IMAGE AUDIT YAP
+==================================================
+
+Tüm codebase içinde recursive search yap.
+
+Şunları ara:
+
+Fotoğraf eklenmedi
+Image
+expo-image
+ImageBackground
+source={{ uri:
+photo
+photos
+image
+images
+imageUrl
+image_url
+photoUrl
+photo_url
+media
+mediaUrl
+media_url
+coverImage
+cover_image
+thumbnail
+thumbnail_url
+Supabase Storage
+storage.from
+upload(
+getPublicUrl
+createSignedUrl
+ImagePicker
+launchImageLibraryAsync
+
+Sahiplendirme ilanı ile ilgili tüm dosyaları tespit et.
+
+Özellikle şu akışı bul:
+
+İlan Oluştur
+→ fotoğraf seç
+→ submit
+→ upload
+→ database insert
+→ İlanlarım query
+→ listing mapping
+→ ilan kartı
+→ Image component
+
+Bütün zinciri dosya dosya takip et.
+
+==================================================
+2. DATABASE'DEKİ GERÇEK İLAN VERİSİNİ KONTROL ET
+==================================================
+
+İlanlarım ekranında gösterilen "Pamuk" ilanının gerçek database kaydını incele.
+
+Şu alanların gerçek değerini logla:
+
+id
+name
+user_id
+image
+image_url
+photo
+photo_url
+photos
+images
+media
+media_url
+cover_image
+created_at
+
+Tahmin yapma.
+
+Database row'u gerçek haliyle console'a yazdır.
+
+Örnek:
+
+console.log("[ADOPTION LISTING RAW ROW]", JSON.stringify(row, null, 2));
+
+Şunu açıkça tespit et:
+
+1. Database'de fotoğraf alanı var mı?
+2. Değeri null mı?
+3. Empty string mi?
+4. Local file URI mı?
+5. Supabase Storage path mi?
+6. Full HTTPS URL mi?
+7. JSON string mi?
+8. Array mi?
+
+Root cause'u gerçek data üzerinden belirle.
+
+==================================================
+3. FIELD NAME MISMATCH KONTROLÜ
+==================================================
+
+Bu uygulamada image field naming tutarsızlığı olup olmadığını kontrol et.
+
+Örnek problem:
+
+Create screen:
+
+photo_url
+
+kaydediyor.
+
+Query:
+
+image_url
+
+okuyor.
+
+Card:
+
+listing.image
+
+bekliyor.
+
+Bu durumda görsel doğal olarak görünmez.
+
+Şunları kontrol et:
+
+Create payload
+Database column
+TypeScript interface
+API mapper
+Query select
+UI props
+Card component
+
+Tek bir canonical image model belirle.
+
+Önerilen model:
+
+type AdoptionListing = {
+  id: string;
+  images: string[];
+  coverImageUrl: string | null;
+};
+
+Database mevcut yapısını gereksiz şekilde bozma.
+
+Ancak data layer'da normalize et.
+
+Örnek:
+
+function normalizeImageArray(value: unknown): string[] {
+  if (!value) return [];
+
+  if (Array.isArray(value)) {
+    return value
+      .filter((item): item is string => typeof item === "string")
+      .map(item => item.trim())
+      .filter(Boolean);
+  }
+
+  if (typeof value === "string") {
+    const trimmed = value.trim();
+
+    if (!trimmed) return [];
+
+    try {
+      const parsed = JSON.parse(trimmed);
+
+      if (Array.isArray(parsed)) {
+        return parsed.filter(
+          (item): item is string =>
+            typeof item === "string" && item.trim().length > 0
+        );
+      }
+    } catch {
+      return [trimmed];
+    }
+  }
+
+  return [];
+}
+
+Normalize edilmiş data:
+
+const images = normalizeImageArray(
+  row.images ??
+  row.photos ??
+  row.image_url ??
+  row.photo_url ??
+  row.image ??
+  row.photo
+);
+
+const coverImageUrl = images[0] ?? null;
+
+Ancak eski field isimlerini sonsuza kadar UI içinde taşımayın.
+
+Compatibility normalization data/service layer'da olmalı.
+
+==================================================
+4. LOCAL URI DATABASE'E KAYDEDİLİYOR MU KONTROL ET
+==================================================
+
+Aşağıdakine benzeyen URI database'e kaydediliyorsa bu KRİTİK BUG'dır:
+
+file://...
+ph://...
+content://...
+assets-library://...
+
+Örnek:
+
+file:///Users/.../Simulator/...
+content://media/...
+ph://ABC123...
+
+Local device URI başka session veya platformda kullanılamaz.
+
+Fotoğraf seçildikten sonra mutlaka storage'a upload edilmelidir.
+
+Akış:
+
+selected local URI
+→ read file
+→ upload storage
+→ obtain storage path/public URL
+→ database'e remote URL kaydet
+
+Database'e local URI kaydetme.
+
+Şu kontrolü ekle:
+
+function isLocalUri(uri: string) {
+  return (
+    uri.startsWith("file://") ||
+    uri.startsWith("content://") ||
+    uri.startsWith("ph://") ||
+    uri.startsWith("assets-library://")
+  );
+}
+
+Remote persistence öncesi local URI kalmışsa development sırasında açık error oluştur.
+
+==================================================
+5. SUPABASE STORAGE UPLOAD AKIŞINI DÜZELT
+==================================================
+
+Sahiplendirme ilanı fotoğraf upload servisini bul.
+
+React Native / Expo üzerinde çalışan doğru upload yöntemini doğrula.
+
+Browser-only Blob/File yaklaşımının native tarafta sessizce hata vermediğinden emin ol.
+
+Upload işleminden sonra:
+
+const { data, error } = await supabase.storage
+  .from(BUCKET_NAME)
+  .upload(storagePath, fileData, {
+    contentType,
+    upsert: false,
+  });
+
+error varsa database insert işlemine devam etme.
+
+Log:
+
+console.log("[ADOPTION IMAGE UPLOAD]", {
+  bucket: BUCKET_NAME,
+  storagePath,
+  uploadedPath: data?.path,
+  error,
+});
+
+Fotoğraf upload başarısızken ilanın fotoğrafsız oluşturulmasına sessizce izin verme.
+
+Kullanıcı fotoğraf seçtiyse upload başarısız olduğunda:
+
+- listing create durdurulsun
+- kullanıcıya anlamlı mesaj gösterilsin
+
+Mesaj:
+
+"Fotoğraf yüklenemedi. Lütfen tekrar deneyin."
+
+==================================================
+6. STORAGE BUCKET VE URL KONTROLÜ
+==================================================
+
+Kullanılan gerçek bucket adını tespit et.
+
+Şunları kontrol et:
+
+bucket mevcut mu?
+public mı?
+private mı?
+RLS/storage policy doğru mu?
+authenticated user upload yapabiliyor mu?
+SELECT/read policy var mı?
+
+Eğer public bucket ise:
+
+const {
+  data: { publicUrl },
+} = supabase.storage
+  .from(bucket)
+  .getPublicUrl(storagePath);
+
+publicUrl değerini logla.
+
+Şunları doğrula:
+
+- URL https:// ile başlıyor
+- localhost içermiyor
+- file:// içermiyor
+- undefined içermiyor
+- [object Object] içermiyor
+- storage path tek başına URL olarak kullanılmıyor
+
+URL'yi gerçek request ile test et.
+
+HTTP status kontrol et.
+
+200 / 304 bekleniyor.
+
+403 ise storage policy problemi.
+404 ise path/bucket problemi.
+400 ise URL üretme problemi.
+
+==================================================
+7. PUBLIC URL VE STORAGE PATH KARIŞIKLIĞINI DÜZELT
+==================================================
+
+Database'de şu şekilde sadece path tutuluyor olabilir:
+
+user-id/listing-id/image.jpg
+
+UI bunu direkt şu şekilde kullanıyorsa:
+
+<Image source={{ uri: listing.image_url }} />
+
+görsel yüklenmez.
+
+Data model'in ne tuttuğunu kesinleştir.
+
+Seçenek A:
+
+Database full public URL tutar.
+
+veya
+
+Seçenek B:
+
+Database storage path tutar ve data layer URL resolve eder.
+
+İki modeli karıştırma.
+
+Önerilen yaklaşım:
+
+Database storage path tutuyorsa merkezi helper kullan:
+
+function resolveStorageImageUrl(pathOrUrl?: string | null) {
+  if (!pathOrUrl) return null;
+
+  const value = pathOrUrl.trim();
+
+  if (
+    value.startsWith("https://") ||
+    value.startsWith("http://")
+  ) {
+    return value;
+  }
+
+  const {
+    data: { publicUrl },
+  } = supabase.storage
+    .from(ADOPTION_IMAGES_BUCKET)
+    .getPublicUrl(value);
+
+  return publicUrl;
+}
+
+Bu mantığı kart component'lerinin içinde duplicate etme.
+
+==================================================
+8. IMAGE COMPONENT AUDIT
+==================================================
+
+Sahiplendirme ilan kartının gerçek Image render kodunu kontrol et.
+
+Yanlış koşul örneği:
+
+{listing.image ? (
+  <Image source={{ uri: listing.image }} />
+) : (
+  <EmptyImage />
+)}
+
+Ama data:
+
+listing.images[0]
+
+içinde olabilir.
+
+Canonical model kullan:
+
+const coverImageUrl = listing.coverImageUrl;
+
+Render:
+
+{coverImageUrl ? (
+  <Image
+    source={{ uri: coverImageUrl }}
+    style={styles.image}
+    resizeMode="cover"
+    onLoadStart={() => {
+      console.log("[IMAGE LOAD START]", coverImageUrl);
+    }}
+    onLoad={() => {
+      console.log("[IMAGE LOAD SUCCESS]", coverImageUrl);
+    }}
+    onError={(event) => {
+      console.error("[IMAGE LOAD ERROR]", {
+        url: coverImageUrl,
+        nativeEvent: event.nativeEvent,
+      });
+    }}
+  />
+) : (
+  <EmptyImageState />
+)}
+
+expo-image kullanılıyorsa aynı şekilde onError logla.
+
+Fallback sadece gerçekten URL yoksa veya gerçek image load error varsa gösterilmeli.
+
+==================================================
+9. REACT NATIVE NETWORK IMAGE KONTROLÜ
+==================================================
+
+iOS ve Android native image loading davranışını kontrol et.
+
+Şunları kontrol et:
+
+- http URL kullanılıyor mu?
+- insecure transport var mı?
+- malformed URL
+- URL encode sorunu
+- whitespace
+- escaped quotes
+- JSON array string
+- object yerine string
+- cache problemi
+
+URL normalize et:
+
+function normalizeRemoteUrl(value?: string | null) {
+  if (!value) return null;
+
+  const url = value.trim();
+
+  if (!/^https?:\/\//i.test(url)) {
+    return null;
+  }
+
+  return url;
+}
+
+HTTP URL kullanılıyorsa storage bağlantısını HTTPS yap.
+
+==================================================
+10. İLAN OLUŞTURMA FORMUNU TEST ET
+==================================================
+
+Yeni bir test ilanı oluştur.
+
+Gerçek test:
+
+1. İlan Oluştur'a bas
+2. Galeriden fotoğraf seç
+3. Fotoğraf preview görünsün
+4. Submit yap
+5. Upload request başarılı olsun
+6. Supabase Storage'da obje oluşsun
+7. Database row'da fotoğraf referansı bulunsun
+8. İlanlarım ekranını aç
+9. Kartta görsel görünsün
+10. App'i tamamen kapat
+11. Yeniden aç
+12. Aynı görsel tekrar görünsün
+
+Hot state içinden gelen local URI ile başarılı kabul etme.
+
+Cold start sonrası görüntüyü test et.
+
+==================================================
+11. ESKİ İLANLARI KONTROL ET
+==================================================
+
+Mevcut ilanlarda eski veya hatalı image formatları bulunabilir.
+
+Özellikle "Pamuk" ilanını kontrol et.
+
+Eski kayıtlarda:
+
+- null image
+- broken local URI
+- JSON encoded array
+- old storage path
+- invalid public URL
+
+varsa tespit et.
+
+Otomatik ve güvenli migration/normalization uygula.
+
+Geçerli olmayan local simulator URI'larını gerçek fotoğrafmış gibi göstermeye çalışma.
+
+Bu kayıtlarda gerçek remote image yoksa teknik olarak fotoğraf geri getirilemez.
+
+Ancak yeni ilanlarda sorun tekrar etmemeli.
+
+==================================================
+12. FOTOĞRAF YÜKLENMEDEN İLAN OLUŞTURMA MANTIĞI
+==================================================
+
+Ürün gereksinimini kontrol et.
+
+Sahiplendirme ilanında en az 1 fotoğraf zorunlu olmalı.
+
+Fotoğraf seçilmemişse:
+
+"En az 1 hayvan fotoğrafı ekleyin."
+
+Fotoğraf seçilip upload başarısızsa:
+
+"Fotoğraf yüklenemedi. Lütfen tekrar deneyin."
+
+Upload başarısızken boş görselli ilan oluşturma.
+
+==================================================
+13. TÜM IMAGE PIPELINE İÇİN ORTAK SERVİS
+==================================================
+
+CanYoldaşı uygulamasında aynı görsel problemi sürekli tekrarlandığı için image upload ve URL resolution işlemlerini merkezi hale getir.
+
+Önerilen yapı:
+
+services/media/
+  imageUploadService.ts
+  imageUrlResolver.ts
+  imageNormalizer.ts
+
+Örnek fonksiyonlar:
+
+uploadImage()
+uploadImages()
+resolveImageUrl()
+normalizeImageArray()
+isLocalUri()
+validateRemoteImageUrl()
+
+Sahiplendirme
+Evcilim
+Profil fotoğrafı
+Yardım kartı
+Durum güncelleme fotoğrafı
+
+aynı ortak servisleri kullanmalı.
+
+Her ekranın ayrı ve farklı image upload sistemi oluşturmasını engelle.
+
+==================================================
+14. FAKE / PLACEHOLDER DATA KONTROLÜ
+==================================================
+
+İlanlarım ekranında gerçek database verisinin yerine mock/fake/default data kullanılmadığını doğrula.
+
+Ara:
+
+mock
+dummy
+sample
+placeholder
+fallbackListing
+demoListing
+DEFAULT_IMAGE
+DEFAULT_ADOPTION
+
+Pamuk ilanının gerçek database row'dan geldiğini doğrula.
+
+Hardcoded image field veya fake data mapping varsa kaldır.
+
+==================================================
+15. PLATFORM TEST MATRİSİ
+==================================================
+
+Düzeltmeden sonra gerçek cihaz akışını test et:
+
+iOS Simulator:
+create → upload → display → restart → display
+
+Android:
+create → upload → display → restart → display
+
+Web:
+create → upload → display → refresh → display
+
+Aynı storage object ve database kaydı üç platformda görüntülenmeli.
+
+==================================================
+16. BANA ROOT CAUSE RAPORU VER
+==================================================
+
+İş sonunda şu soruların tamamını cevapla:
+
+1. Fotoğraf neden görünmüyordu?
+2. Image picker local URI üretiyor muydu?
+3. Local URI database'e kaydediliyor muydu?
+4. Storage upload gerçekten çalışıyor muydu?
+5. Kullanılan bucket adı ne?
+6. Storage path neydi?
+7. Database'de kullanılan image column hangisiydi?
+8. UI hangi field'ı okuyordu?
+9. Field mismatch var mıydı?
+10. Image URL örnek formatı neydi?
+11. Image request HTTP status neydi?
+12. iOS testi başarılı mı?
+13. Android testi başarılı mı?
+14. Web testi başarılı mı?
+15. Cold restart sonrası görsel tekrar göründü mü?
+16. Hangi dosyalar değiştirildi?
+
+"Image fallback düzeltildi" şeklinde yüzeysel cevap verme.
+
+Gerçek image data pipeline root cause'unu bul ve kalıcı olarak düzelt.

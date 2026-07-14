@@ -7,6 +7,7 @@ import { useRouter } from "expo-router";
 import React, { useRef, useState } from "react";
 import {
   ActivityIndicator,
+  Alert,
   FlatList,
   KeyboardAvoidingView,
   Modal,
@@ -25,6 +26,30 @@ import { useTheme } from "@/hooks/useTheme";
 import { TURKEY_PROVINCES, type Province } from "@/constants/turkeyLocations";
 import { apiSaveListingContact } from "@/lib/contactApi";
 import { PET_DETAIL_OPTIONS, type DetailOption } from "@/lib/petDetailOptions";
+
+const API_BASE = process.env.EXPO_PUBLIC_DOMAIN
+  ? `https://${process.env.EXPO_PUBLIC_DOMAIN}/api`
+  : "http://localhost:8080/api";
+
+async function uploadPhoto(localUri: string): Promise<string> {
+  const filename = localUri.split("/").pop() ?? "photo.jpg";
+  const match = /\.(\w+)$/.exec(filename);
+  const type = match ? `image/${match[1].toLowerCase().replace("jpg", "jpeg")}` : "image/jpeg";
+
+  const formData = new FormData();
+  if (Platform.OS === "web") {
+    const response = await fetch(localUri);
+    const blob = await response.blob();
+    formData.append("image", blob, filename);
+  } else {
+    formData.append("image", { uri: localUri, name: filename, type } as unknown as Blob);
+  }
+
+  const res = await fetch(`${API_BASE}/upload`, { method: "POST", body: formData });
+  if (!res.ok) throw new Error("Fotoğraf yüklenemedi");
+  const data = await res.json() as { url: string };
+  return data.url;
+}
 
 /* ── Static tokens (structural only — no bg/text colors) ── */
 const C = {
@@ -270,11 +295,25 @@ export default function AddAdoptionScreen() {
     if (!validate() || !user) return;
     setIsSaving(true);
     try {
+      let remotePhotoUrl: string | undefined;
+      if (photo) {
+        try {
+          remotePhotoUrl = await uploadPhoto(photo);
+        } catch {
+          Alert.alert(
+            "Fotoğraf Yüklenemedi",
+            "Fotoğraf sunucuya yüklenirken bir hata oluştu. Lütfen tekrar deneyin.",
+          );
+          setIsSaving(false);
+          return;
+        }
+      }
+
       const newId = await addListing({
         petName:            petName.trim(),
         petType,
         petAge,
-        photo,
+        photo:              remotePhotoUrl,
         location:           `${district}, ${province}`,
         description:        description.trim(),
         userId:             user.id,
