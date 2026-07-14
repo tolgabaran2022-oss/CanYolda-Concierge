@@ -1,4 +1,7 @@
 import { Icon } from "@/components/Icon";
+import { useAuth } from "@/contexts/AuthContext";
+import { useBoost, type BoostPackage } from "@/contexts/BoostContext";
+import { useColors } from "@/hooks/useColors";
 import * as Haptics from "expo-haptics";
 import { LinearGradient } from "expo-linear-gradient";
 import { useLocalSearchParams, useRouter } from "expo-router";
@@ -6,7 +9,6 @@ import React, { useEffect, useState } from "react";
 import {
   ActivityIndicator,
   Alert,
-  Linking,
   Platform,
   Pressable,
   ScrollView,
@@ -15,20 +17,42 @@ import {
   View,
 } from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
-import { useAuth } from "@/contexts/AuthContext";
-import { useBoost, type BoostPackage } from "@/contexts/BoostContext";
-import { useColors } from "@/hooks/useColors";
 
-function formatPrice(priceAmount: number) {
-  return `₺${(priceAmount / 100).toFixed(0)}`;
+function formatPrice(pkg: BoostPackage): string {
+  return `₺${(pkg.priceAmount / 100).toFixed(0)}`;
+}
+
+async function purchaseWithRC(rcPackageIdentifier: string): Promise<string | null> {
+  if (Platform.OS === "web") return null;
+  try {
+    const Purchases = (await import("react-native-purchases")).default;
+    const offerings = await Purchases.getOfferings();
+    const offering = offerings.all["listing_boost_offering"] ?? offerings.current;
+    if (!offering) throw new Error("Teklif bulunamadı");
+    const pkg = offering.availablePackages.find((p) => p.identifier === rcPackageIdentifier)
+      ?? offering.availablePackages[0];
+    if (!pkg) throw new Error("Paket bulunamadı");
+    const { customerInfo } = await Purchases.purchasePackage(pkg);
+    const entitlement = customerInfo.entitlements.active["listing_boost"];
+    return entitlement?.productIdentifier ?? pkg.product.identifier;
+  } catch (err: unknown) {
+    if (
+      err instanceof Error &&
+      (err.message.includes("PURCHASE_CANCELLED") ||
+        (err as any).code === "1")
+    ) {
+      return null;
+    }
+    throw err;
+  }
 }
 
 export default function BoostPackagesScreen() {
   const colors = useColors();
   const insets = useSafeAreaInsets();
   const router = useRouter();
-  const { user } = useAuth();
-  const { packages, packagesLoading, createCheckout, fetchBoostStatus } = useBoost();
+  const { user, token } = useAuth();
+  const { packages, packagesLoading, purchaseBoost, fetchBoostStatus } = useBoost();
 
   const { listingId, petName } = useLocalSearchParams<{
     listingId: string;
@@ -36,7 +60,7 @@ export default function BoostPackagesScreen() {
   }>();
 
   const [selectedId, setSelectedId] = useState<string | null>(null);
-  const [checkoutLoading, setCheckoutLoading] = useState(false);
+  const [purchaseLoading, setPurchaseLoading] = useState(false);
 
   useEffect(() => {
     if (packages.length > 0 && !selectedId) {
@@ -48,46 +72,67 @@ export default function BoostPackagesScreen() {
   const selectedPkg = packages.find((p) => p.id === selectedId) ?? null;
 
   const handleBoost = async () => {
-    if (!selectedPkg || !user || !listingId) return;
+    if (!selectedPkg || !user || !listingId || !token) return;
 
-    setCheckoutLoading(true);
+    if (Platform.OS === "web") {
+      Alert.alert(
+        "Uygulama Gerekli",
+        "Öne çıkarma satın almak için iOS veya Android uygulamasını kullanın.",
+        [{ text: "Tamam" }]
+      );
+      return;
+    }
+
+    setPurchaseLoading(true);
     Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
 
     try {
-      const checkoutUrl = await createCheckout({
+      const productId = await purchaseWithRC(selectedPkg.rcPackageIdentifier);
+      if (!productId) {
+        setPurchaseLoading(false);
+        return;
+      }
+
+      await purchaseBoost({
         listingId,
-        userEmail: user.email,
-        packageCode: selectedPkg.code,
-        petName: petName ?? "",
+        rcPackageIdentifier: selectedPkg.rcPackageIdentifier,
+        durationDays: selectedPkg.durationDays,
+        packageName: selectedPkg.name,
+        token,
       });
 
-      await Linking.openURL(checkoutUrl);
+      Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
 
-      setTimeout(() => {
-        if (listingId) fetchBoostStatus([listingId]);
-        router.back();
-      }, 3000);
+      Alert.alert(
+        "İlan Öne Çıkarıldı! 🎉",
+        `${selectedPkg.name} başarıyla aktive edildi. ${selectedPkg.durationDays} gün boyunca ilanın listenin en üstünde görünecek.`,
+        [{ text: "Harika!", onPress: () => router.back() }]
+      );
+
+      fetchBoostStatus([listingId]);
     } catch (err: unknown) {
-      const msg = err instanceof Error ? err.message : "Ödeme sayfası açılamadı. Lütfen tekrar deneyin.";
+      const msg =
+        err instanceof Error
+          ? err.message
+          : "Satın alma tamamlanamadı. Lütfen tekrar deneyin.";
       Alert.alert("Hata", msg, [{ text: "Tamam" }]);
     } finally {
-      setCheckoutLoading(false);
+      setPurchaseLoading(false);
     }
   };
 
   return (
     <View style={[styles.container, { backgroundColor: colors.background }]}>
-      {/* Header gradient */}
       <LinearGradient
         colors={["#E07A35", "#C96320"]}
         style={[styles.hero, { paddingTop: Platform.OS === "web" ? 20 : insets.top + 12 }]}
       >
         <Pressable style={styles.backBtn} onPress={() => router.back()} hitSlop={8}>
-          <Icon name="chevron-back" size={22} color="white" />
+          <Icon name="ChevronLeft" size={22} color="white" />
         </Pressable>
         <View style={styles.heroContent}>
           <View style={styles.starBadge}>
-            <Icon name="star" size={24} color="#FFD700" />
+            <Icon name="Star" size={24} color="#FFD700" />
           </View>
           <Text style={styles.heroTitle}>İlanı Öne Çıkar</Text>
           <Text style={styles.heroSubtitle}>
@@ -102,19 +147,24 @@ export default function BoostPackagesScreen() {
       >
         {/* Benefits */}
         <View style={styles.section}>
-          <Text style={[styles.sectionTitle, { color: colors.foreground }]}>Öne Çıkarma Avantajları</Text>
+          <Text style={[styles.sectionTitle, { color: colors.foreground }]}>
+            Öne Çıkarma Avantajları
+          </Text>
           <View style={[styles.benefitCard, { backgroundColor: colors.card, borderColor: colors.border }]}>
             {[
-              { icon: "trending-up-outline", text: "Listelerin en üstünde gösterilir" },
-              { icon: "star-outline", text: '"Öne Çıkan" etiketi ile dikkat çeker' },
-              { icon: "eye-outline", text: "Normal ilanlardan daha fazla görüntüleme alır" },
-              { icon: "refresh-outline", text: "Süre bitince tekrar satın alınabilir" },
+              { icon: "TrendingUp", text: "Listelerin en üstünde gösterilir" },
+              { icon: "Star", text: '"Öne Çıkan" etiketi ile dikkat çeker' },
+              { icon: "Eye", text: "Normal ilanlardan daha fazla görüntüleme alır" },
+              { icon: "RefreshCw", text: "Süre bitince tekrar satın alınabilir" },
             ].map((b, i) => (
               <View
                 key={i}
                 style={[
                   styles.benefitRow,
-                  i > 0 && { borderTopWidth: StyleSheet.hairlineWidth, borderTopColor: colors.border },
+                  i > 0 && {
+                    borderTopWidth: StyleSheet.hairlineWidth,
+                    borderTopColor: colors.border,
+                  },
                 ]}
               >
                 <View style={[styles.benefitIcon, { backgroundColor: `${colors.primary}15` }]}>
@@ -126,15 +176,21 @@ export default function BoostPackagesScreen() {
           </View>
         </View>
 
+        {/* Platform notice for web */}
+        {Platform.OS === "web" && (
+          <View style={[styles.webNotice, { backgroundColor: `${colors.primary}12`, borderColor: `${colors.primary}30` }]}>
+            <Icon name="Smartphone" size={18} color={colors.primary} />
+            <Text style={[styles.webNoticeText, { color: colors.primary }]}>
+              Öne çıkarma satın almak için iOS veya Android uygulamasını kullanın.
+            </Text>
+          </View>
+        )}
+
         {/* Packages */}
         <View style={styles.section}>
           <Text style={[styles.sectionTitle, { color: colors.foreground }]}>Paket Seç</Text>
           {packagesLoading ? (
             <ActivityIndicator color={colors.primary} style={{ marginTop: 20 }} />
-          ) : packages.length === 0 ? (
-            <Text style={[styles.emptyText, { color: colors.mutedForeground }]}>
-              Paketler yüklenemedi. Lütfen tekrar deneyin.
-            </Text>
           ) : (
             packages.map((pkg: BoostPackage) => {
               const isSelected = selectedId === pkg.id;
@@ -163,11 +219,20 @@ export default function BoostPackagesScreen() {
                   )}
                   <View style={styles.packageRow}>
                     <View style={styles.packageLeft}>
-                      <View style={[styles.radioOuter, { borderColor: isSelected ? colors.primary : colors.border }]}>
-                        {isSelected && <View style={[styles.radioInner, { backgroundColor: colors.primary }]} />}
+                      <View
+                        style={[
+                          styles.radioOuter,
+                          { borderColor: isSelected ? colors.primary : colors.border },
+                        ]}
+                      >
+                        {isSelected && (
+                          <View style={[styles.radioInner, { backgroundColor: colors.primary }]} />
+                        )}
                       </View>
                       <View>
-                        <Text style={[styles.packageLabel, { color: colors.foreground }]}>{pkg.name}</Text>
+                        <Text style={[styles.packageLabel, { color: colors.foreground }]}>
+                          {pkg.name}
+                        </Text>
                         <Text style={[styles.packageDesc, { color: colors.mutedForeground }]}>
                           {pkg.shortDescription || `${pkg.durationDays} gün öne çıkarma`}
                         </Text>
@@ -175,7 +240,7 @@ export default function BoostPackagesScreen() {
                     </View>
                     <View style={{ alignItems: "flex-end" }}>
                       <Text style={[styles.packagePrice, { color: colors.primary }]}>
-                        {formatPrice(pkg.priceAmount)}
+                        {formatPrice(pkg)}
                       </Text>
                       <Text style={[styles.packageDays, { color: colors.mutedForeground }]}>
                         {pkg.durationDays} Gün
@@ -188,11 +253,10 @@ export default function BoostPackagesScreen() {
           )}
         </View>
 
-        {/* Info note */}
         <View style={[styles.infoBox, { backgroundColor: colors.muted }]}>
-          <Icon name="information-circle-outline" size={16} color={colors.mutedForeground} />
+          <Icon name="Info" size={16} color={colors.mutedForeground} />
           <Text style={[styles.infoText, { color: colors.mutedForeground }]}>
-            İndirim kodu ve haftalık/aylık paketler yakında geliyor.
+            Satın alma Apple/Google hesabınız üzerinden gerçekleşir. Süre bitince tekrar öne çıkarabilirsiniz.
           </Text>
         </View>
       </ScrollView>
@@ -201,28 +265,37 @@ export default function BoostPackagesScreen() {
       <View
         style={[
           styles.ctaContainer,
-          { backgroundColor: colors.background, paddingBottom: insets.bottom + 16, borderTopColor: colors.border },
+          {
+            backgroundColor: colors.background,
+            paddingBottom: insets.bottom + 16,
+            borderTopColor: colors.border,
+          },
         ]}
       >
         {selectedPkg && (
           <Text style={[styles.ctaSummary, { color: colors.mutedForeground }]}>
-            {selectedPkg.name} · {formatPrice(selectedPkg.priceAmount)}
+            {selectedPkg.name} · {formatPrice(selectedPkg)} · {selectedPkg.durationDays} Gün
           </Text>
         )}
         <Pressable
           style={({ pressed }) => [
             styles.ctaButton,
-            { backgroundColor: colors.primary, opacity: pressed || checkoutLoading || !selectedPkg ? 0.75 : 1 },
+            {
+              backgroundColor: Platform.OS === "web" ? colors.mutedForeground : colors.primary,
+              opacity: pressed || purchaseLoading || !selectedPkg ? 0.75 : 1,
+            },
           ]}
           onPress={handleBoost}
-          disabled={checkoutLoading || !selectedPkg}
+          disabled={purchaseLoading || !selectedPkg}
         >
-          {checkoutLoading ? (
+          {purchaseLoading ? (
             <ActivityIndicator color="white" />
           ) : (
             <>
-              <Icon name="star" size={20} color="white" />
-              <Text style={styles.ctaButtonText}>Öne Çıkarmayı Satın Al</Text>
+              <Icon name="Star" size={20} color="white" />
+              <Text style={styles.ctaButtonText}>
+                {Platform.OS === "web" ? "Uygulama Gerekli" : "Öne Çıkarmayı Satın Al"}
+              </Text>
             </>
           )}
         </Pressable>
@@ -234,45 +307,77 @@ export default function BoostPackagesScreen() {
 const styles = StyleSheet.create({
   container: { flex: 1 },
   hero: { paddingHorizontal: 20, paddingBottom: 32 },
-  backBtn: { width: 36, height: 36, alignItems: "center", justifyContent: "center", marginBottom: 12 },
+  backBtn: {
+    width: 36, height: 36,
+    alignItems: "center", justifyContent: "center",
+    marginBottom: 12,
+  },
   heroContent: { alignItems: "center", gap: 8 },
   starBadge: {
     width: 56, height: 56, borderRadius: 28,
     backgroundColor: "rgba(255,255,255,0.2)",
-    alignItems: "center", justifyContent: "center", marginBottom: 4,
+    alignItems: "center", justifyContent: "center",
+    marginBottom: 4,
   },
   heroTitle: { fontSize: 24, fontFamily: "Inter_700Bold", color: "white" },
-  heroSubtitle: { fontSize: 14, fontFamily: "Inter_400Regular", color: "rgba(255,255,255,0.85)", textAlign: "center" },
+  heroSubtitle: {
+    fontSize: 14, fontFamily: "Inter_400Regular",
+    color: "rgba(255,255,255,0.85)", textAlign: "center",
+  },
   content: { padding: 20, gap: 20 },
   section: { gap: 12 },
   sectionTitle: { fontSize: 18, fontFamily: "Inter_700Bold" },
-  emptyText: { fontSize: 14, fontFamily: "Inter_400Regular", textAlign: "center", marginTop: 20 },
   benefitCard: { borderRadius: 16, borderWidth: 1, overflow: "hidden" },
   benefitRow: { flexDirection: "row", alignItems: "center", gap: 12, padding: 14 },
-  benefitIcon: { width: 36, height: 36, borderRadius: 10, alignItems: "center", justifyContent: "center" },
+  benefitIcon: {
+    width: 36, height: 36, borderRadius: 10,
+    alignItems: "center", justifyContent: "center",
+  },
   benefitText: { fontSize: 14, fontFamily: "Inter_500Medium", flex: 1 },
+  webNotice: {
+    flexDirection: "row", alignItems: "center", gap: 10,
+    borderRadius: 12, padding: 14, borderWidth: 1,
+  },
+  webNoticeText: { fontSize: 14, fontFamily: "Inter_500Medium", flex: 1 },
   packageCard: { borderRadius: 16, padding: 16, overflow: "hidden" },
-  bestValueBadge: { alignSelf: "flex-start", paddingHorizontal: 10, paddingVertical: 3, borderRadius: 8, marginBottom: 10 },
+  bestValueBadge: {
+    alignSelf: "flex-start",
+    paddingHorizontal: 10, paddingVertical: 3,
+    borderRadius: 8, marginBottom: 10,
+  },
   bestValueText: { fontSize: 11, fontFamily: "Inter_700Bold", color: "white" },
-  packageRow: { flexDirection: "row", alignItems: "center", justifyContent: "space-between" },
+  packageRow: {
+    flexDirection: "row", alignItems: "center",
+    justifyContent: "space-between",
+  },
   packageLeft: { flexDirection: "row", alignItems: "center", gap: 12, flex: 1 },
-  radioOuter: { width: 22, height: 22, borderRadius: 11, borderWidth: 2, alignItems: "center", justifyContent: "center" },
+  radioOuter: {
+    width: 22, height: 22, borderRadius: 11, borderWidth: 2,
+    alignItems: "center", justifyContent: "center",
+  },
   radioInner: { width: 12, height: 12, borderRadius: 6 },
   packageLabel: { fontSize: 16, fontFamily: "Inter_600SemiBold" },
   packageDesc: { fontSize: 13, fontFamily: "Inter_400Regular", marginTop: 2 },
   packagePrice: { fontSize: 22, fontFamily: "Inter_700Bold" },
   packageDays: { fontSize: 12, fontFamily: "Inter_400Regular", marginTop: 2 },
-  infoBox: { flexDirection: "row", alignItems: "center", gap: 8, borderRadius: 12, padding: 12 },
+  infoBox: {
+    flexDirection: "row", alignItems: "center", gap: 8,
+    borderRadius: 12, padding: 12,
+  },
   infoText: { fontSize: 13, fontFamily: "Inter_400Regular", flex: 1 },
   ctaContainer: {
     position: "absolute", bottom: 0, left: 0, right: 0,
-    paddingHorizontal: 20, paddingTop: 16, borderTopWidth: StyleSheet.hairlineWidth, gap: 8,
+    paddingHorizontal: 20, paddingTop: 16,
+    borderTopWidth: StyleSheet.hairlineWidth,
+    gap: 8,
   },
   ctaSummary: { fontSize: 13, fontFamily: "Inter_500Medium", textAlign: "center" },
   ctaButton: {
     flexDirection: "row", alignItems: "center", justifyContent: "center", gap: 8,
     borderRadius: 16, paddingVertical: 16,
-    shadowColor: "#E07A35", shadowOffset: { width: 0, height: 4 }, shadowOpacity: 0.3, shadowRadius: 12, elevation: 6,
+    shadowColor: "#E07A35",
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.3, shadowRadius: 12, elevation: 6,
   },
   ctaButtonText: { fontSize: 17, fontFamily: "Inter_700Bold", color: "white" },
 });

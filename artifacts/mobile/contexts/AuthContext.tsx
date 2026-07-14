@@ -43,6 +43,7 @@ export type ProfileUpdates = Partial<Pick<User, "name" | "username" | "bio" | "l
 
 interface AuthContextType {
   user: User | null;
+  token: string | null;
   isLoading: boolean;
   login: (email: string, password: string) => Promise<void>;
   register: (name: string, email: string, password: string) => Promise<void>;
@@ -96,13 +97,20 @@ function isPreviewMode(): boolean {
 
 export function AuthProvider({ children }: { children: React.ReactNode }) {
   const [user, setUser]           = useState<User | null>(isPreviewMode() ? DEMO_USER : null);
+  const [token, setToken]         = useState<string | null>(null);
   const [isLoading, setIsLoading] = useState(!isPreviewMode());
 
   /* ── Restore session on boot ──────────────────────────── */
   useEffect(() => {
     if (isPreviewMode()) return;
-    AsyncStorage.getItem(AUTH_KEY)
-      .then((data) => { if (data) setUser(JSON.parse(data)); })
+    Promise.all([
+      AsyncStorage.getItem(AUTH_KEY),
+      AsyncStorage.getItem(TOKEN_KEY),
+    ])
+      .then(([userData, tokenData]) => {
+        if (userData) setUser(JSON.parse(userData));
+        if (tokenData) setToken(tokenData);
+      })
       .finally(() => setIsLoading(false));
   }, []);
 
@@ -126,6 +134,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       await AsyncStorage.setItem(TOKEN_KEY, data.token!);
       await AsyncStorage.setItem(AUTH_KEY, JSON.stringify(safe));
       setUser(safe);
+      setToken(data.token!);
 
       /* Sync social profile (non-blocking) */
       apiSyncProfile({ id: safe.id, email: safe.email, name: safe.name }).catch(() => {});
@@ -152,6 +161,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     await AsyncStorage.setItem(TOKEN_KEY, data.token!);
     await AsyncStorage.setItem(AUTH_KEY, JSON.stringify(safe));
     setUser(safe);
+    setToken(data.token!);
 
     /* Sync social profile (non-blocking) */
     apiSyncProfile({
@@ -169,6 +179,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       AsyncStorage.removeItem(TOKEN_KEY),
     ]);
     setUser(null);
+    setToken(null);
   }, []);
 
   /* ── Change password ──────────────────────────────────── */
@@ -256,7 +267,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
 
   return (
     <AuthContext.Provider
-      value={{ user, isLoading, login, register, logout, changePassword, updateProfile, getSettings, updateSettings }}
+      value={{ user, token, isLoading, login, register, logout, changePassword, updateProfile, getSettings, updateSettings }}
     >
       {children}
     </AuthContext.Provider>

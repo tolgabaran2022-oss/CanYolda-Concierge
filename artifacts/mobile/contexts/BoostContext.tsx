@@ -19,6 +19,7 @@ export interface BoostPackage {
   shortDescription: string;
   isPopular: boolean;
   displayOrder: number;
+  rcPackageIdentifier: string;
 }
 
 export interface BoostStatus {
@@ -32,22 +33,15 @@ interface BoostContextType {
   packages: BoostPackage[];
   packagesLoading: boolean;
   boostStatuses: Record<string, BoostStatus>;
-  myBoosts: any[];
-  fetchPackages: () => Promise<void>;
   fetchBoostStatus: (listingIds: string[]) => Promise<void>;
-  fetchMyBoosts: (userEmail: string) => Promise<void>;
-  createCheckout: (params: {
+  purchaseBoost: (params: {
     listingId: string;
-    userEmail: string;
-    packageCode: string;
-    petName?: string;
-  }) => Promise<string>;
-  activateBoost: (params: {
-    listingId: string;
-    userEmail: string;
-    packageId: string;
-  }) => Promise<{ expiresAt: string; packageHours: number }>;
-  isStripeReady: boolean;
+    rcPackageIdentifier: string;
+    durationDays: number;
+    packageName: string;
+    token: string;
+  }) => Promise<{ expiresAt: string }>;
+  isIapReady: boolean;
 }
 
 const BoostContext = createContext<BoostContextType | null>(null);
@@ -67,32 +61,67 @@ async function apiFetch(path: string, options?: RequestInit) {
   });
   if (!res.ok) {
     const body = await res.json().catch(() => ({}));
-    throw new Error(body.error || `Request failed: ${res.status}`);
+    throw new Error((body as any).error || `Request failed: ${res.status}`);
   }
   return res.json();
 }
 
+const RC_PACKAGES: BoostPackage[] = [
+  {
+    id: "boost_1_day",
+    code: "boost_1_day",
+    name: "1 Günlük Boost",
+    durationDays: 1,
+    priceAmount: 2999,
+    currency: "try",
+    badgeText: null,
+    shortDescription: "1 gün daha fazla kişiye ulaş.",
+    isPopular: false,
+    displayOrder: 1,
+    rcPackageIdentifier: "$rc_weekly",
+  },
+  {
+    id: "boost_3_days",
+    code: "boost_3_days",
+    name: "3 Günlük Boost",
+    durationDays: 3,
+    priceAmount: 5999,
+    currency: "try",
+    badgeText: "EN ÇOK TERCİH EDİLEN",
+    shortDescription: "3 gün güçlü görünürlük kazan.",
+    isPopular: true,
+    displayOrder: 2,
+    rcPackageIdentifier: "$rc_weekly",
+  },
+  {
+    id: "boost_7_days",
+    code: "boost_7_days",
+    name: "7 Günlük Boost",
+    durationDays: 7,
+    priceAmount: 9999,
+    currency: "try",
+    badgeText: null,
+    shortDescription: "7 gün boyunca ilanını öne taşı.",
+    isPopular: false,
+    displayOrder: 3,
+    rcPackageIdentifier: "$rc_monthly",
+  },
+];
+
 export function BoostProvider({ children }: { children: React.ReactNode }) {
-  const [packages, setPackages] = useState<BoostPackage[]>([]);
-  const [packagesLoading, setPackagesLoading] = useState(false);
+  const [packages] = useState<BoostPackage[]>(RC_PACKAGES);
+  const [packagesLoading] = useState(false);
   const [boostStatuses, setBoostStatuses] = useState<Record<string, BoostStatus>>({});
-  const [myBoosts, setMyBoosts] = useState<any[]>([]);
-  const [isStripeReady, setIsStripeReady] = useState(false);
+  const [isIapReady, setIsIapReady] = useState(false);
   const pollRef = useRef<ReturnType<typeof setInterval> | null>(null);
 
-  const fetchPackages = useCallback(async () => {
-    setPackagesLoading(true);
-    try {
-      const data = await apiFetch("/boost/packages");
-      const pkgs: BoostPackage[] = data.data ?? [];
-      setPackages(pkgs);
-      setIsStripeReady(pkgs.length > 0);
-    } catch {
-      setPackages([]);
-      setIsStripeReady(false);
-    } finally {
-      setPackagesLoading(false);
+  useEffect(() => {
+    if (Platform.OS !== "web") {
+      setIsIapReady(true);
     }
+    return () => {
+      if (pollRef.current) clearInterval(pollRef.current);
+    };
   }, []);
 
   const fetchBoostStatus = useCallback(async (listingIds: string[]) => {
@@ -102,61 +131,34 @@ export function BoostProvider({ children }: { children: React.ReactNode }) {
         method: "POST",
         body: JSON.stringify({ listingIds }),
       });
-      setBoostStatuses((prev) => ({ ...prev, ...(data.data ?? {}) }));
+      setBoostStatuses((prev) => ({ ...prev, ...((data as any).data ?? {}) }));
     } catch {
     }
   }, []);
 
-  const fetchMyBoosts = useCallback(async (userEmail: string) => {
-    try {
-      const data = await apiFetch(
-        `/boost/my-boosts?email=${encodeURIComponent(userEmail)}`
-      );
-      setMyBoosts(data.data ?? []);
-    } catch {
-      setMyBoosts([]);
-    }
-  }, []);
-
-  const createCheckout = useCallback(
+  const purchaseBoost = useCallback(
     async (params: {
       listingId: string;
-      userEmail: string;
-      packageCode: string;
-      petName?: string;
-    }): Promise<string> => {
-      const data = await apiFetch("/boost/checkout", {
+      rcPackageIdentifier: string;
+      durationDays: number;
+      packageName: string;
+      token: string;
+    }): Promise<{ expiresAt: string }> => {
+      const data = await apiFetch("/boost/verify-iap", {
         method: "POST",
-        body: JSON.stringify(params),
-      });
-      return data.checkoutUrl as string;
-    },
-    []
-  );
-
-  const activateBoost = useCallback(
-    async (params: {
-      listingId: string;
-      userEmail: string;
-      packageId: string;
-    }): Promise<{ expiresAt: string; packageHours: number }> => {
-      const data = await apiFetch("/boost/activate", {
-        method: "POST",
-        body: JSON.stringify(params),
+        headers: { Authorization: `Bearer ${params.token}` },
+        body: JSON.stringify({
+          listingId: params.listingId,
+          rcPackageIdentifier: params.rcPackageIdentifier,
+          durationDays: params.durationDays,
+          packageName: params.packageName,
+        }),
       });
       await fetchBoostStatus([params.listingId]);
-      return data.data as { expiresAt: string; packageHours: number };
+      return { expiresAt: (data as any).expiresAt };
     },
     [fetchBoostStatus]
   );
-
-  useEffect(() => {
-    fetchPackages();
-    pollRef.current = setInterval(fetchPackages, 60_000);
-    return () => {
-      if (pollRef.current) clearInterval(pollRef.current);
-    };
-  }, [fetchPackages]);
 
   return (
     <BoostContext.Provider
@@ -164,13 +166,9 @@ export function BoostProvider({ children }: { children: React.ReactNode }) {
         packages,
         packagesLoading,
         boostStatuses,
-        myBoosts,
-        fetchPackages,
         fetchBoostStatus,
-        fetchMyBoosts,
-        createCheckout,
-        activateBoost,
-        isStripeReady,
+        purchaseBoost,
+        isIapReady,
       }}
     >
       {children}

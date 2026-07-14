@@ -897,16 +897,15 @@ interface MyCard {
 
 function MyListingCard({
   card, onEdit, onTogglePassive, onAdopted, onPreview, onDelete,
-  packages, onBoost, isFeatured, featuredUntil, packageName,
+  onBoost, isFeatured, featuredUntil, packageName,
 }: {
   card: MyCard;
-  packages: BoostPackage[];
   onEdit: () => void;
   onTogglePassive: () => void;
   onAdopted: () => void;
   onPreview: () => void;
   onDelete: () => void;
-  onBoost: (pkg: BoostPackage) => Promise<void>;
+  onBoost: () => void;
   isFeatured?: boolean;
   featuredUntil?: string | null;
   packageName?: string | null;
@@ -914,10 +913,7 @@ function MyListingCard({
   const T = useTheme();
   const { listing, status, views, favs, msgs } = card;
   const cfg = STATUS_CFG[status];
-  const [selectedPkg, setSelectedPkg] = useState<BoostPackage | null>(null);
-  const [boosting, setBoosting] = useState(false);
   const [perfOpen, setPerfOpen] = useState(false);
-  const [boostExpanded, setBoostExpanded] = useState(false);
   const [imgError, setImgError] = useState(false);
 
   const isAdopted = status === "Sahiplendirildi";
@@ -1044,72 +1040,15 @@ function MyListingCard({
                 </View>
                 <View style={ml.promoteTextWrap}>
                   <Text style={ml.promoteTitle}>İlanını öne çıkar</Text>
-                  <Text style={ml.promoteSub}>Daha fazla kişiye ulaş, daha hızlı sat!</Text>
+                  <Text style={ml.promoteSub}>Daha fazla kişiye ulaş, daha hızlı sahiplendir!</Text>
                 </View>
               </View>
-              <Pressable onPress={() => { Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light); setBoostExpanded((v) => !v); }}>
+              <Pressable onPress={() => { Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light); onBoost(); }}>
                 <LinearGradient colors={[P2, P]} start={{ x: 0, y: 0 }} end={{ x: 1, y: 0 }} style={ml.promoteBtnGrad}>
                   <Icon name="sparkles" size={13} color={WHITE} />
                   <Text style={ml.promoteBtnTxt}>Öne Çıkar</Text>
                 </LinearGradient>
               </Pressable>
-            </View>
-          )}
-
-          {canBoost && boostExpanded && (
-            <View style={ml.pkgSection}>
-              {packages.length === 0 ? (
-                <View style={ml.pkgEmpty}>
-                  <Icon name="time-outline" size={22} color={`${P}60`} />
-                  <Text style={ml.pkgEmptyTxt}>Paketler yükleniyor…</Text>
-                </View>
-              ) : (
-                <View style={ml.pkgRow}>
-                  {packages.map((pkg) => {
-                    const isSel = selectedPkg?.id === pkg.id;
-                    const isPopular = pkg.isPopular;
-                    return (
-                      <Pressable key={pkg.id} onPress={() => { if (boosting) return; Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light); setSelectedPkg(isSel ? null : pkg); }} style={{ flex: 1 }}>
-                        <View style={[ml.pkgCard, isSel ? ml.pkgCardSel : ml.pkgIdle, isPopular && !isSel && ml.pkgPop]}>
-                          {isPopular && (
-                            <View style={[ml.popBadge, isSel && { backgroundColor: "rgba(255,255,255,0.25)" }]}>
-                              <Text style={ml.popBadgeTxt}>En Popüler</Text>
-                            </View>
-                          )}
-                          <Text style={[ml.pkgName, isSel && ml.pkgNameSel]}>{pkg.name}</Text>
-                          <Text style={[ml.pkgPrice, isSel && ml.pkgPriceSel]}>₺{pkgFormatPrice(pkg.priceAmount)}</Text>
-                          <Text style={[ml.pkgDays, isSel && ml.pkgDaysSel]}>{pkg.durationDays} Gün</Text>
-                          <Text style={[ml.pkgMult, isSel && ml.pkgMultSel]}>{pkg.durationDays >= 15 ? "≈10× görünürlük" : pkg.durationDays >= 7 ? "≈5× görünürlük" : "≈2× görünürlük"}</Text>
-                          {isSel && <Icon name="checkmark-circle" size={16} color={WHITE} style={{ marginTop: 4 }} />}
-                        </View>
-                      </Pressable>
-                    );
-                  })}
-                </View>
-              )}
-              {selectedPkg && (
-                <View style={ml.boostSummary}>
-                  <Text style={ml.boostSummaryPkg}>{selectedPkg.name} · {selectedPkg.durationDays} Gün</Text>
-                  <Text style={ml.boostSummaryPrice}>Toplam: ₺{pkgFormatPrice(selectedPkg.priceAmount)}</Text>
-                </View>
-              )}
-              <Pressable
-                onPress={async () => {
-                  if (!selectedPkg || boosting) return;
-                  setBoosting(true);
-                  try { await onBoost(selectedPkg); setBoostExpanded(false); }
-                  catch { Alert.alert("Hata", "Ödeme sayfası açılamadı. Lütfen tekrar dene."); }
-                  finally { setBoosting(false); setSelectedPkg(null); }
-                }}
-                disabled={!selectedPkg || boosting}
-                style={({ pressed }) => [ml.boostCta, (!selectedPkg || boosting) && ml.boostCtaDisabled, { opacity: pressed ? 0.9 : 1 }]}
-              >
-                <Icon name={boosting ? "sync-outline" : "rocket-outline"} size={15} color={selectedPkg && !boosting ? WHITE : `${BODY}90`} />
-                <Text style={[ml.boostCtaTxt, (!selectedPkg || boosting) && { color: `${BODY}90` }]}>
-                  {boosting ? "Ödeme Hazırlanıyor…" : selectedPkg ? `₺${pkgFormatPrice(selectedPkg.priceAmount)} · Ödemeye Geç` : "Bir Paket Seç"}
-                </Text>
-              </Pressable>
-              <Text style={ml.boostNote}>Stripe güvenli ödeme sayfasına yönlendirileceksiniz.</Text>
             </View>
           )}
 
@@ -1143,7 +1082,7 @@ function MyListingsSection({
   deleteListing: (id: string) => Promise<void>; botPad: number; onAdd: () => void;
 }) {
   const T = useTheme();
-  const { createCheckout, packages, fetchBoostStatus } = useBoost();
+  const { fetchBoostStatus } = useBoost();
   const router = useRouter();
 
   const [successModal, setSuccessModal] = useState<{ petName: string; pkgLabel: string; expiresAt: string } | null>(null);
@@ -1170,13 +1109,9 @@ function MyListingsSection({
     ]);
   }, [deleteListing]);
 
-  const handleBoost = useCallback(async (listingId: string, petName: string, pkg: BoostPackage) => {
-    const url = await createCheckout({ listingId, userEmail, packageCode: pkg.code, petName });
-    await Linking.openURL(url);
-    setTimeout(() => { fetchBoostStatus([listingId]); }, 5000);
-    setTimeout(() => { fetchBoostStatus([listingId]); }, 15000);
-    Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
-  }, [createCheckout, userEmail, fetchBoostStatus]);
+  const handleBoost = useCallback((listingId: string, petName: string) => {
+    router.push({ pathname: "/boost-packages", params: { listingId, petName } });
+  }, [router]);
 
   const myListings = useMemo(() => listings.filter((l) => l.userId === userId), [listings, userId]);
   const cards: MyCard[] = useMemo(() => myListings.map((l) => ({ listing: l, status: getStatus(l.id), views: mockViews(l.id), favs: mockFavs(l.id), msgs: mockMsgs(l.id) })), [myListings, statusMap]);
@@ -1266,13 +1201,12 @@ function MyListingsSection({
           isFeatured={(c.listing.isFeatured || boostStatuses[c.listing.id]?.isFeatured) ?? false}
           featuredUntil={boostStatuses[c.listing.id]?.expiresAt ?? c.listing.featuredUntil ?? null}
           packageName={boostStatuses[c.listing.id]?.packageName ?? c.listing.featuredPackageName ?? null}
-          packages={packages}
           onEdit={() => { Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light); router.push(`/adoption/edit/${c.listing.id}` as any); }}
           onTogglePassive={() => togglePassive(c.listing.id)}
           onAdopted={() => handleAdopted(c.listing.id, c.listing.petName)}
           onPreview={() => { Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light); router.push({ pathname: "/adoption/[id]", params: { id: c.listing.id, preview: "true" } } as any); }}
           onDelete={() => handleDelete(c.listing)}
-          onBoost={(pkg) => handleBoost(c.listing.id, c.listing.petName, pkg)}
+          onBoost={() => handleBoost(c.listing.id, c.listing.petName)}
         />
       ))}
     </ScrollView>

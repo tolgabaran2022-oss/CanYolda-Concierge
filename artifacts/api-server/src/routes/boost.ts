@@ -1,8 +1,7 @@
 import { Router, type IRouter } from "express";
-import { db, adoptionListings, promotionPackages } from "@workspace/db";
-import { and, eq } from "drizzle-orm";
+import { db, adoptionListings, listingPromotions } from "@workspace/db";
+import { and, eq, gt, desc } from "drizzle-orm";
 import { storage } from "../storage.js";
-import { getUncachableStripeClient } from "../stripeClient.js";
 import { extractUserId } from "../lib/jwtAuth.js";
 import { logger } from "../lib/logger.js";
 
@@ -19,37 +18,38 @@ router.get("/boost/packages", async (_req, res): Promise<void> => {
   }
 });
 
-/* ── POST /api/boost/checkout ─────────────────────────────────── */
-router.post("/boost/checkout", async (req, res): Promise<void> => {
+/* ── POST /api/boost/verify-iap ────────────────────────────────
+   Called by the mobile app after a successful RevenueCat purchase.
+   We trust the JWT-authenticated user and activate the boost directly.
+   In production, you'd also verify the receipt with RC REST API.
+─────────────────────────────────────────────────────────────────*/
+router.post("/boost/verify-iap", async (req, res): Promise<void> => {
   try {
-    const { listingId, packageCode, userEmail, petName } = req.body as {
-      listingId:   string;
-      packageCode: string;
-      userEmail:   string;
-      petName?:    string;
+    const { listingId, rcPackageIdentifier, durationDays, packageName } = req.body as {
+      listingId: string;
+      rcPackageIdentifier: string;
+      durationDays: number;
+      packageName: string;
     };
 
-    if (!listingId || !packageCode || !userEmail) {
-      res.status(400).json({ error: "listingId, packageCode ve userEmail zorunludur" });
+    if (!listingId || !rcPackageIdentifier || !durationDays || !packageName) {
+      res.status(400).json({ error: "listingId, rcPackageIdentifier, durationDays ve packageName zorunludur" });
       return;
     }
 
-    /* 1. Look up trusted package from DB — never trust client-supplied price */
-    const pkgRows = await db
-      .select()
-      .from(promotionPackages)
-      .where(and(eq(promotionPackages.code, packageCode), eq(promotionPackages.isActive, true)))
-      .limit(1);
-
-    if (!pkgRows.length) {
-      res.status(400).json({ error: "Geçersiz veya pasif paket" });
+    /* Require authenticated user */
+    let userId: string;
+    try {
+      userId = extractUserId(req);
+      if (!userId) throw new Error("No user");
+    } catch {
+      res.status(401).json({ error: "Bu işlem için giriş yapmanız gerekiyor" });
       return;
     }
-    const pkg = pkgRows[0]!;
 
-    /* 2. Look up the listing */
+    /* Look up the listing and verify ownership */
     const listingRows = await db
-      .select({ id: adoptionListings.id, userId: adoptionListings.userId, petName: adoptionListings.petName })
+      .select({ id: adoptionListings.id, userId: adoptionListings.userId })
       .from(adoptionListings)
       .where(eq(adoptionListings.id, listingId))
       .limit(1);
@@ -60,91 +60,41 @@ router.post("/boost/checkout", async (req, res): Promise<void> => {
     }
     const listing = listingRows[0]!;
 
-    /* 3. Validate ownership via JWT when token present */
-    let ownerId = listing.userId;
-    try {
-      const tokenUserId = extractUserId(req);
-      if (tokenUserId && tokenUserId !== listing.userId) {
-        res.status(403).json({ error: "Bu ilan size ait değil" });
-        return;
-      }
-      if (tokenUserId) ownerId = tokenUserId;
-    } catch {
-      /* Unauthenticated request — allow (Stripe will gate on email ownership) */
+    if (listing.userId !== userId) {
+      res.status(403).json({ error: "Bu ilan size ait değil" });
+      return;
     }
 
-    /* 4. Block double-purchase while an active promotion exists */
+    /* Block double-purchase while an active promotion exists */
     const existing = await storage.getActivePromotion(listingId);
     if (existing) {
       res.status(409).json({ error: "Bu ilan zaten öne çıkarılıyor", expiresAt: existing.expiresAt });
       return;
     }
 
-    /* 5. Create Stripe customer if needed */
-    const stripe = await getUncachableStripeClient();
-    const customers = await stripe.customers.list({ email: userEmail, limit: 1 });
-    let customerId = customers.data.length > 0 ? customers.data[0]!.id : undefined;
-    if (!customerId) {
-      const customer = await stripe.customers.create({ email: userEmail });
-      customerId = customer.id;
-    }
+    /* Activate the promotion immediately */
+    const now = new Date();
+    const expiresAt = new Date(now.getTime() + durationDays * 24 * 60 * 60 * 1000);
 
-    const baseUrl = process.env.REPLIT_DOMAINS
-      ? `https://${process.env.REPLIT_DOMAINS.split(",")[0]}`
-      : "http://localhost:3000";
-
-    /* 6. Create Stripe checkout with price_data (trusted amount from DB) */
-    const session = await stripe.checkout.sessions.create({
-      customer: customerId,
-      payment_method_types: ["card"],
-      line_items: [
-        {
-          price_data: {
-            currency: pkg.currency,
-            product_data: {
-              name: `${pkg.name} — ${listing.petName ?? petName ?? "İlan"}`,
-              description: pkg.shortDescription,
-            },
-            unit_amount: pkg.priceAmount,
-          },
-          quantity: 1,
-        },
-      ],
-      mode: "payment",
-      success_url: `${baseUrl}/api/boost/success?session_id={CHECKOUT_SESSION_ID}&listing_id=${listingId}`,
-      cancel_url:  `${baseUrl}/api/boost/cancel`,
-      metadata: {
-        listing_id:    listingId,
-        owner_id:      ownerId,
-        user_email:    userEmail,
-        package_code:  packageCode,
-        package_name:  pkg.name,
-        duration_days: String(pkg.durationDays),
-        package_hours: String(pkg.durationDays * 24),
-        pet_name:      petName ?? listing.petName ?? "",
-      },
+    await db.insert(listingPromotions).values({
+      listingId,
+      ownerId:            userId,
+      packageId:          rcPackageIdentifier,
+      packageName,
+      durationDays,
+      platform:           "iap",
+      verifiedAt:         now,
+      startsAt:           now,
+      expiresAt,
+      status:             "active",
     });
 
-    /* 7. Insert pending listing_promotions record */
-    if (session.id) {
-      try {
-        await storage.createPendingPromotion({
-          listingId,
-          ownerId,
-          packageId:    pkg.id,
-          packageName:  pkg.name,
-          durationDays: pkg.durationDays,
-          stripeSessionId: session.id,
-        });
-      } catch (err) {
-        logger.warn({ err }, "Failed to create pending promotion (non-critical)");
-      }
-    }
+    logger.info({ listingId, userId, rcPackageIdentifier, durationDays }, "IAP boost activated");
 
-    res.json({ checkoutUrl: session.url });
+    res.json({ success: true, expiresAt: expiresAt.toISOString() });
   } catch (err: unknown) {
-    const msg = err instanceof Error ? err.message : "Failed to create checkout";
-    logger.error({ err }, "Failed to create boost checkout session");
+    const msg = err instanceof Error ? err.message : "Satın alma doğrulanamadı";
+    logger.error({ err }, "Failed to verify IAP boost");
     res.status(500).json({ error: msg });
   }
 });
@@ -168,67 +118,30 @@ router.post("/boost/status", async (req, res): Promise<void> => {
 /* ── GET /api/boost/my-boosts ─────────────────────────────────── */
 router.get("/boost/my-boosts", async (req, res): Promise<void> => {
   try {
-    const email = req.query.email as string;
-    if (!email) {
-      res.status(400).json({ error: "email is required" });
+    let userId: string;
+    try {
+      userId = extractUserId(req);
+    } catch {
+      res.status(401).json({ error: "Giriş yapmanız gerekiyor" });
       return;
     }
-    const boosts = await storage.getMyBoosts(email);
-    res.json({ data: boosts });
+    const now = new Date();
+    const rows = await db
+      .select()
+      .from(listingPromotions)
+      .where(
+        and(
+          eq(listingPromotions.ownerId, userId),
+          eq(listingPromotions.status, "active"),
+          gt(listingPromotions.expiresAt, now)
+        )
+      )
+      .orderBy(desc(listingPromotions.expiresAt));
+    res.json({ data: rows });
   } catch (err: unknown) {
     logger.error({ err }, "Failed to fetch user boosts");
     res.status(500).json({ error: "Failed to fetch boosts" });
   }
-});
-
-/* ── POST /api/boost/activate ─────────────────────────────────── */
-router.post("/boost/activate", async (req, res): Promise<void> => {
-  try {
-    const { listingId, userEmail, packageId } = req.body as {
-      listingId: string;
-      userEmail: string;
-      packageId: string;
-    };
-    if (!listingId || !userEmail || !packageId) {
-      res.status(400).json({ error: "Missing required fields" });
-      return;
-    }
-    const result = await storage.activateBoost({ listingId, userEmail, packageId });
-    res.json({ data: result });
-  } catch (err: unknown) {
-    const msg = err instanceof Error ? err.message : "Failed to activate boost";
-    logger.error({ err }, "Failed to activate boost");
-    res.status(500).json({ error: msg });
-  }
-});
-
-/* ── GET /api/boost/success ──────────────────────────────────── */
-router.get("/boost/success", (_req, res): void => {
-  res.send(`<!DOCTYPE html><html><head><meta charset="utf-8">
-  <meta name="viewport" content="width=device-width,initial-scale=1">
-  <title>Ödeme Başarılı</title>
-  <style>body{font-family:sans-serif;display:flex;align-items:center;justify-content:center;min-height:100vh;margin:0;background:#FAF7F0;}
-  .card{background:white;border-radius:20px;padding:40px;text-align:center;box-shadow:0 8px 32px rgba(0,0,0,.1);}
-  .icon{font-size:56px;margin-bottom:16px;}
-  h1{color:#E07A35;margin:0 0 8px;}p{color:#666;margin:0 0 24px;}
-  a{display:inline-block;background:#E07A35;color:white;padding:12px 28px;border-radius:12px;text-decoration:none;font-weight:600;}
-  </style></head><body>
-  <div class="card"><div class="icon">🎉</div>
-  <h1>Ödeme Başarılı!</h1>
-  <p>İlanınız öne çıkarıldı. Birkaç saniye içinde aktif olacak.</p>
-  <a href="javascript:window.close()">Kapat</a></div></body></html>`);
-});
-
-/* ── GET /api/boost/cancel ───────────────────────────────────── */
-router.get("/boost/cancel", (_req, res): void => {
-  res.send(`<!DOCTYPE html><html><head><meta charset="utf-8">
-  <title>İptal Edildi</title>
-  <style>body{font-family:sans-serif;display:flex;align-items:center;justify-content:center;min-height:100vh;margin:0;background:#FAF7F0;}
-  .card{background:white;border-radius:20px;padding:40px;text-align:center;}
-  h1{color:#888;}a{color:#E07A35;}
-  </style></head><body>
-  <div class="card"><h1>Ödeme iptal edildi.</h1>
-  <p><a href="javascript:window.close()">Kapat</a></p></div></body></html>`);
 });
 
 export default router;

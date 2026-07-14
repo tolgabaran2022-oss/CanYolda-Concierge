@@ -2,135 +2,56 @@ import { ReplitConnectors } from "@replit/connectors-sdk";
 
 const connectors = new ReplitConnectors();
 
-const RC_BASE = "https://api.revenuecat.com";
-
-async function rcFetch(path: string, options: RequestInit = {}): Promise<Response> {
-  const hostname = process.env.REPLIT_CONNECTORS_HOSTNAME;
-  const xReplitToken = process.env.REPL_IDENTITY
-    ? "repl " + process.env.REPL_IDENTITY
-    : process.env.WEB_REPL_RENEWAL
-      ? "depl " + process.env.WEB_REPL_RENEWAL
-      : null;
-
-  if (!hostname || !xReplitToken) {
-    throw new Error("Missing Replit environment variables for connector proxy");
-  }
-
-  const resp = await fetch(
-    `https://${hostname}/api/v2/connection?include_secrets=true&connector_names=revenuecat`,
-    {
-      headers: { Accept: "application/json", X_REPLIT_TOKEN: xReplitToken },
-      signal: AbortSignal.timeout(10_000),
-    }
-  );
-
-  if (!resp.ok) throw new Error(`Failed to fetch RevenueCat credentials: ${resp.status}`);
-
-  const data = await resp.json() as { items?: Array<{ settings?: { api_key?: string } }> };
-  const apiKey = data.items?.[0]?.settings?.api_key;
-  if (!apiKey) throw new Error("RevenueCat API key not found in connector settings");
-
-  return fetch(`${RC_BASE}${path}`, {
-    ...options,
-    headers: {
-      "Content-Type": "application/json",
-      "Authorization": `Bearer ${apiKey}`,
-      ...(options.headers ?? {}),
-    },
-  });
-}
-
 type RcResult<T> = { data?: T; error?: unknown };
 
-async function rcGet<T>(path: string): Promise<RcResult<T>> {
-  const resp = await rcFetch(path, { method: "GET" });
-  const json = await resp.json() as T | { type: string; message: string };
+async function rcReq<T>(path: string, options: { method: string; body?: unknown } = { method: "GET" }): Promise<RcResult<T>> {
+  const fetchOpts: RequestInit = { method: options.method };
+  if (options.body !== undefined) {
+    fetchOpts.body = JSON.stringify(options.body);
+    fetchOpts.headers = { "Content-Type": "application/json" };
+  }
+  const resp = await connectors.proxy("revenuecat", path, fetchOpts);
+  const json = await resp.json() as T;
   if (!resp.ok) return { error: json };
-  return { data: json as T };
+  return { data: json };
 }
 
-async function rcPost<T>(path: string, body: unknown): Promise<RcResult<T>> {
-  const resp = await rcFetch(path, {
-    method: "POST",
-    body: JSON.stringify(body),
-  });
-  const json = await resp.json() as T | { type: string; message: string };
-  if (!resp.ok) return { error: json };
-  return { data: json as T };
-}
+export interface RcList<T> { items: T[]; next_page?: string | null; object: string }
+export interface RcProject { id: string; name: string; created_at: number; object: string }
+export interface RcApp { id: string; name: string; type: string; created_at: number; object: string }
+export interface RcProduct { id: string; store_identifier: string; app_id: string; type: string; display_name: string; object: string }
+export interface RcEntitlement { id: string; lookup_key: string; display_name: string; object: string }
+export interface RcOffering { id: string; lookup_key: string; display_name: string; is_current: boolean; object: string }
+export interface RcPackage { id: string; lookup_key: string; display_name: string; object: string }
+export interface RcApiKey { key: string; type: string; name: string }
 
-async function rcPatch<T>(path: string, body: unknown): Promise<RcResult<T>> {
-  const resp = await rcFetch(path, {
-    method: "PATCH",
-    body: JSON.stringify(body),
-  });
-  const json = await resp.json() as T | { type: string; message: string };
-  if (!resp.ok) return { error: json };
-  return { data: json as T };
-}
+export const rc = {
+  listProjects:   ()                              => rcReq<RcList<RcProject>>("/v2/projects?limit=20"),
+  createProject:  (name: string)                  => rcReq<RcProject>("/v2/projects", { method: "POST", body: { name } }),
 
-/* ── Types ── */
-interface RcList<T> { items: T[]; next_page?: string; object: string }
+  listApps:       (pid: string)                   => rcReq<RcList<RcApp>>(`/v2/projects/${pid}/apps?limit=20`),
+  createApp:      (pid: string, body: unknown)    => rcReq<RcApp>(`/v2/projects/${pid}/apps`, { method: "POST", body }),
 
-interface RcProject { id: string; name: string; created_at: number }
-interface RcApp { id: string; name: string; type: string; created_at: number }
-interface RcProduct { id: string; store_identifier: string; app_id: string; type: string; display_name: string }
-interface RcEntitlement { id: string; lookup_key: string; display_name: string }
-interface RcOffering { id: string; lookup_key: string; display_name: string; is_current: boolean }
-interface RcPackage { id: string; lookup_key: string; display_name: string }
-interface RcApiKey { key: string; type: string }
+  listProducts:   (pid: string)                   => rcReq<RcList<RcProduct>>(`/v2/projects/${pid}/products?limit=100`),
+  createProduct:  (pid: string, body: unknown)    => rcReq<RcProduct>(`/v2/projects/${pid}/products`, { method: "POST", body }),
+  setTestPrices:  (pid: string, prodId: string, prices: unknown) =>
+    rcReq<unknown>(`/v2/projects/${pid}/products/${prodId}/test_store_prices`, { method: "POST", body: { prices } }),
 
-export async function getUncachableRevenueCatClient() {
-  return {
-    /* Projects */
-    listProjects: () => rcGet<RcList<RcProject>>("/v2/projects?limit=20"),
-    createProject: (name: string) => rcPost<RcProject>("/v2/projects", { name }),
+  listEntitlements:        (pid: string)          => rcReq<RcList<RcEntitlement>>(`/v2/projects/${pid}/entitlements?limit=20`),
+  createEntitlement:       (pid: string, b: unknown) => rcReq<RcEntitlement>(`/v2/projects/${pid}/entitlements`, { method: "POST", body: b }),
+  attachEntitlementProducts: (pid: string, eid: string, product_ids: string[]) =>
+    rcReq<unknown>(`/v2/projects/${pid}/entitlements/${eid}/product_ids/attach`, { method: "POST", body: { product_ids } }),
 
-    /* Apps */
-    listApps: (projectId: string) => rcGet<RcList<RcApp>>(`/v2/projects/${projectId}/apps?limit=20`),
-    createAppStore: (projectId: string, name: string, bundleId: string) =>
-      rcPost<RcApp>(`/v2/projects/${projectId}/apps`, { name, type: "app_store", app_store: { bundle_id: bundleId } }),
-    createPlayStore: (projectId: string, name: string, packageName: string) =>
-      rcPost<RcApp>(`/v2/projects/${projectId}/apps`, { name, type: "play_store", play_store: { package_name: packageName } }),
+  listOfferings:    (pid: string)                 => rcReq<RcList<RcOffering>>(`/v2/projects/${pid}/offerings?limit=20`),
+  createOffering:   (pid: string, b: unknown)     => rcReq<RcOffering>(`/v2/projects/${pid}/offerings`, { method: "POST", body: b }),
+  patchOffering:    (pid: string, oid: string, b: unknown) =>
+    rcReq<RcOffering>(`/v2/projects/${pid}/offerings/${oid}`, { method: "PATCH", body: b }),
 
-    /* Products */
-    listProducts: (projectId: string) => rcGet<RcList<RcProduct>>(`/v2/projects/${projectId}/products?limit=100`),
-    createProductTestStore: (projectId: string, appId: string, storeId: string, displayName: string, title: string, duration: string) =>
-      rcPost<RcProduct>(`/v2/projects/${projectId}/products`, {
-        store_identifier: storeId, app_id: appId, type: "subscription",
-        display_name: displayName, title, subscription: { duration },
-      }),
-    createProductStore: (projectId: string, appId: string, storeId: string, displayName: string) =>
-      rcPost<RcProduct>(`/v2/projects/${projectId}/products`, {
-        store_identifier: storeId, app_id: appId, type: "non_subscription", display_name: displayName,
-      }),
-    setTestStorePrices: (projectId: string, productId: string, prices: { amount_micros: number; currency: string }[]) =>
-      rcPost<unknown>(`/v2/projects/${projectId}/products/${productId}/test_store_prices`, { prices }),
+  listPackages:     (pid: string, oid: string)    => rcReq<RcList<RcPackage>>(`/v2/projects/${pid}/offerings/${oid}/packages?limit=20`),
+  createPackage:    (pid: string, oid: string, b: unknown) =>
+    rcReq<RcPackage>(`/v2/projects/${pid}/offerings/${oid}/packages`, { method: "POST", body: b }),
+  attachPackageProducts: (pid: string, pkgId: string, products: unknown) =>
+    rcReq<unknown>(`/v2/projects/${pid}/packages/${pkgId}/products/attach`, { method: "POST", body: { products } }),
 
-    /* Entitlements */
-    listEntitlements: (projectId: string) => rcGet<RcList<RcEntitlement>>(`/v2/projects/${projectId}/entitlements?limit=20`),
-    createEntitlement: (projectId: string, lookupKey: string, displayName: string) =>
-      rcPost<RcEntitlement>(`/v2/projects/${projectId}/entitlements`, { lookup_key: lookupKey, display_name: displayName }),
-    attachProductsToEntitlement: (projectId: string, entitlementId: string, productIds: string[]) =>
-      rcPost<unknown>(`/v2/projects/${projectId}/entitlements/${entitlementId}/product_ids/attach`, { product_ids: productIds }),
-
-    /* Offerings */
-    listOfferings: (projectId: string) => rcGet<RcList<RcOffering>>(`/v2/projects/${projectId}/offerings?limit=20`),
-    createOffering: (projectId: string, lookupKey: string, displayName: string) =>
-      rcPost<RcOffering>(`/v2/projects/${projectId}/offerings`, { lookup_key: lookupKey, display_name: displayName }),
-    setOfferingCurrent: (projectId: string, offeringId: string) =>
-      rcPatch<RcOffering>(`/v2/projects/${projectId}/offerings/${offeringId}`, { is_current: true }),
-
-    /* Packages */
-    listPackages: (projectId: string, offeringId: string) =>
-      rcGet<RcList<RcPackage>>(`/v2/projects/${projectId}/offerings/${offeringId}/packages?limit=20`),
-    createPackage: (projectId: string, offeringId: string, lookupKey: string, displayName: string) =>
-      rcPost<RcPackage>(`/v2/projects/${projectId}/offerings/${offeringId}/packages`, { lookup_key: lookupKey, display_name: displayName }),
-    attachProductsToPackage: (projectId: string, packageId: string, products: { product_id: string; eligibility_criteria: string }[]) =>
-      rcPost<unknown>(`/v2/projects/${projectId}/packages/${packageId}/products/attach`, { products }),
-
-    /* API Keys */
-    listPublicApiKeys: (projectId: string, appId: string) =>
-      rcGet<RcList<RcApiKey>>(`/v2/projects/${projectId}/apps/${appId}/api_keys/public?limit=10`),
-  };
-}
+  listApiKeys:      (pid: string, appId: string)  => rcReq<RcList<RcApiKey>>(`/v2/projects/${pid}/apps/${appId}/api_keys/public?limit=10`),
+};

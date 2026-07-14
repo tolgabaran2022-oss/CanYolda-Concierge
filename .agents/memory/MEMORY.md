@@ -8,3 +8,4 @@
 - [Android icon rendering — SVG migration](android-icon-svg.md) — @expo/vector-icons font rendering broken on Android in pnpm workspace; migrated ALL icons to lucide-react-native + react-native-svg
 - [Password reset secure architecture](password-reset-arch.md) — 3-endpoint flow (forgot/verify-reset-code/reset-password); code_hash SHA-256 in DB, 5-attempt limit, 60s cooldown, 10-min TTL, 15-min signed reset JWT; Resend for email via RESEND_API_KEY env var
 - [Local URI upload bug pattern](local-uri-upload-bug.md) — ImagePicker returns local file:// URIs; ALL screens that persist images must call uploadImage(/api/upload) first; 6 screens were missing this step
+- [RevenueCat IAP Boost system](revenuecat-iap-boost.md) — RC project/app/product IDs; connector proxy limitations; architecture for listing_boost IAP flow
