@@ -486,20 +486,6 @@ export default function AdoptionDetailScreen() {
                 </Pressable>
 
                 <Pressable
-                  style={({ pressed }) => [S.boostBtn, { opacity: pressed ? 0.85 : 1 }]}
-                  onPress={handleBoost}
-                >
-                  <LinearGradient colors={["#FFB347", "#E07A35"]} style={S.boostBtnGrad}>
-                    <Icon name="star" size={18} color={WHITE} />
-                    <View style={{ flex: 1 }}>
-                      <Text style={S.boostBtnTitle}>{boost?.isFeatured ? "Öne Çıkarmayı Yenile" : "İlanı Öne Çıkar"}</Text>
-                      <Text style={S.boostBtnSub}>{boost?.isFeatured ? "Süre uzatmak için yeni paket al" : "₺50'den başlayan fiyatlarla"}</Text>
-                    </View>
-                    <Icon name="chevron-forward" size={16} color={WHITE} />
-                  </LinearGradient>
-                </Pressable>
-
-                <Pressable
                   style={({ pressed }) => [S.deleteBtn, { opacity: pressed ? 0.75 : 1, backgroundColor: T.card, borderColor: T.isDark ? "#7A3838" : "#FFD5D5" }]}
                   onPress={handleDelete}
                 >

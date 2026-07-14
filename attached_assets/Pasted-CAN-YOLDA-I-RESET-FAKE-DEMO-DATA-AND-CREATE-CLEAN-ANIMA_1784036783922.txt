@@ -1,0 +1,1346 @@
+CAN YOLDAŞI — RESET FAKE DEMO DATA AND CREATE CLEAN ANIMAL-ONLY SEED DATA
+
+Perform a controlled development/demo data reset for:
+
+1. Sokak Hayvanları / Animal Situation Reports
+2. Sahiplendirme / Adoption Listings
+
+IMPORTANT:
+
+This task is about development/demo seed data.
+
+Do not delete real production user data blindly.
+
+First inspect the database and determine how existing fake/demo/test records are identified.
+
+Use existing development flags, seed metadata, test user IDs, known fake records, or explicit seed identifiers.
+
+If the current fake records cannot be safely distinguished from real user-created data:
+
+DO NOT bulk delete all records.
+
+Instead create a safe migration/seed strategy and remove only clearly identified fake/demo records.
+
+==================================================
+MAIN GOAL
+==================================================
+
+Reset the existing fake/demo animal reports and fake/demo adoption listings.
+
+Then create:
+
+10 Sokak Hayvanları situation reports
+
+AND
+
+10 Sahiplendirme adoption listings
+
+Total:
+
+20 clean demo records.
+
+All records must look realistic and suitable for the CanYoldaşı application.
+
+==================================================
+CRITICAL IMAGE RULE
+==================================================
+
+EVERY record image must show an ANIMAL.
+
+Allowed image subjects:
+
+- cat
+- dog
+
+Optionally use other domestic animals only if the current product supports them.
+
+DO NOT use:
+
+- waterfall photos
+- landscape photos
+- mountains
+- buildings
+- streets without animals
+- food
+- furniture
+- products
+- abstract images
+- logos
+- app screenshots
+- humans as the main image
+- random placeholder images
+
+The animal must be clearly visible in every listing/report image.
+
+Do not use generic unrelated Unsplash images.
+
+Do not assign random image URLs without validating the subject.
+
+==================================================
+IMAGE DATA INTEGRITY
+==================================================
+
+Audit the current image source architecture.
+
+Inspect:
+
+- image_url
+- images
+- photo_url
+- media
+- attachments
+- Supabase Storage
+- current seed image URLs
+
+Use the existing image field structure.
+
+Do not create a second incompatible media system.
+
+Every seeded record must have at least one valid animal image.
+
+If multiple images are supported:
+
+Use 1–3 animal images per adoption listing.
+
+For Sokak Hayvanları reports:
+
+Prefer one clear animal report image.
+
+Do not duplicate the exact same image across all records.
+
+Avoid assigning one cat image to a dog record or one dog image to a cat record.
+
+Image and animal type must match.
+
+==================================================
+RESET CURRENT FAKE DATA
+==================================================
+
+Audit current fake/demo data in:
+
+- animal reports
+- street animal reports
+- situation reports
+- adoption listings
+- pet adoption listings
+
+Find records such as current obvious demo/test records.
+
+Examples currently visible may include titles similar to:
+
+"bacağında şişlik var"
+
+"Park girişinde yaşıyor, mahalle sakinleri besliyor"
+
+or adoption listings with unrelated landscape/waterfall images.
+
+IMPORTANT:
+
+Only remove records confirmed to be fake/demo/test data.
+
+Do not delete legitimate user content.
+
+Recommended long-term seed identification:
+
+is_demo = true
+
+OR:
+
+seed_key
+
+OR:
+
+created_by = dedicated_demo_user_id
+
+OR an equivalent existing architecture.
+
+All new seeded records should be explicitly identifiable as demo/development seed data.
+
+Do not depend on title matching for future seed cleanup.
+
+==================================================
+SOKAK HAYVANLARI — CREATE EXACTLY 10 REPORTS
+==================================================
+
+Create exactly 10 clean animal situation reports.
+
+Use realistic Turkish titles and descriptions.
+
+Use a balanced status distribution matching the application's current status architecture.
+
+Adapt exact status enum/database values to the existing project.
+
+Suggested records:
+
+REPORT 1
+
+Animal:
+Cat
+
+Title:
+"Arka bacağında şişlik var"
+
+Description:
+"Yürürken arka bacağına tam basamıyor. Bölgede bir süredir görülüyor ve kontrol edilmesi gerekiyor."
+
+Status:
+Yardım Bekleyen / appropriate current equivalent
+
+Location:
+Kadıköy, İstanbul
+
+Image:
+Clear cat photo
+
+==================================================
+
+REPORT 2
+
+Animal:
+Dog
+
+Title:
+"Park girişinde düzenli besleniyor"
+
+Description:
+"Mahalle sakinleri tarafından mama ve su veriliyor. Genel görünümü sağlıklı."
+
+Status:
+Sağlıklı
+
+Location:
+Beşiktaş, İstanbul
+
+Image:
+Clear dog photo
+
+==================================================
+
+REPORT 3
+
+Animal:
+Cat
+
+Title:
+"Ön patisinde yara var"
+
+Description:
+"Ön patisinde açık yara görülüyor. Yürürken zorlanıyor ve veteriner desteğine ihtiyaç duyabilir."
+
+Status:
+Acil
+
+Location:
+Üsküdar, İstanbul
+
+Image:
+Clear cat photo
+
+==================================================
+
+REPORT 4
+
+Animal:
+Dog
+
+Title:
+"Uzun süredir aç görünüyor"
+
+Description:
+"Oldukça zayıf ve çevrede yiyecek arıyor. Mama ve su desteğine ihtiyaç duyuyor."
+
+Status:
+Yardım Bekleyen / Aç
+
+Location:
+Fatih, İstanbul
+
+Image:
+Clear dog photo
+
+==================================================
+
+REPORT 5
+
+Animal:
+Cat
+
+Title:
+"Gözünde akıntı var"
+
+Description:
+"Sol gözünde yoğun akıntı görülüyor. Bölgede sakin şekilde bekliyor."
+
+Status:
+Yardım Bekleyen
+
+Location:
+Şişli, İstanbul
+
+Image:
+Clear cat photo
+
+==================================================
+
+REPORT 6
+
+Animal:
+Dog
+
+Title:
+"Boynunda tasma izi bulunuyor"
+
+Description:
+"Boyun çevresinde belirgin iz var. Sahipli olup olmadığı bilinmiyor."
+
+Status:
+Yardım Bekleyen
+
+Location:
+Bakırköy, İstanbul
+
+Image:
+Clear dog photo
+
+==================================================
+
+REPORT 7
+
+Animal:
+Cat
+
+Title:
+"Yavrularıyla birlikte güvenli alanda"
+
+Description:
+"Anne kedi üç yavrusuyla birlikte bina bahçesinde yaşıyor. Mama ve su bırakılıyor."
+
+Status:
+Sağlıklı
+
+Location:
+Ataşehir, İstanbul
+
+Image:
+Clear mother cat or cat photo
+
+==================================================
+
+REPORT 8
+
+Animal:
+Dog
+
+Title:
+"Arka ayağına basamıyor"
+
+Description:
+"Koşmaya çalışırken arka ayağını havada tutuyor. Yaralanmış olabilir."
+
+Status:
+Acil
+
+Location:
+Maltepe, İstanbul
+
+Image:
+Clear dog photo
+
+==================================================
+
+REPORT 9
+
+Animal:
+Cat
+
+Title:
+"Durakta tek başına bekliyor"
+
+Description:
+"İnsanlara alışkın görünüyor. Temiz ve sakin ancak sahibinin olup olmadığı bilinmiyor."
+
+Status:
+Yardım Bekleyen
+
+Location:
+Beyoğlu, İstanbul
+
+Image:
+Clear cat photo
+
+==================================================
+
+REPORT 10
+
+Animal:
+Dog
+
+Title:
+"Mahalle sakinleri tarafından bakılıyor"
+
+Description:
+"Düzenli mama ve su veriliyor. Genel sağlık durumu iyi görünüyor."
+
+Status:
+Sağlıklı
+
+Location:
+Sarıyer, İstanbul
+
+Image:
+Clear dog photo
+
+==================================================
+REPORT DATA RULES
+==================================================
+
+Every report must contain valid project-compatible fields.
+
+Audit the current schema and populate required fields such as:
+
+- id
+- created_by
+- title
+- description
+- animal_type
+- status
+- urgency
+- latitude
+- longitude
+- location_text
+- image_url / media relationship
+- created_at
+- updated_at
+
+Do not blindly create nonexistent columns.
+
+Adapt to the actual database schema.
+
+Coordinates must be valid and reasonably correspond to the displayed city/district.
+
+Do not use:
+
+0,0
+
+Do not use identical coordinates for every report.
+
+Do not fabricate exact street addresses.
+
+District/city-level location is sufficient for demo data.
+
+==================================================
+SAHİPLENDİRME — CREATE EXACTLY 10 LISTINGS
+==================================================
+
+Create exactly 10 adoption listings.
+
+Use a balanced cat/dog distribution.
+
+Suggested listings:
+
+LISTING 1
+
+Name:
+Pamuk
+
+Animal:
+Cat
+
+Breed:
+British Shorthair
+
+Age:
+2 years
+
+Gender:
+Female
+
+Location:
+Kadıköy, İstanbul
+
+Health:
+Healthy
+
+Title/summary:
+"Sakin ve oyuncu Pamuk yuvasını arıyor"
+
+Description:
+"Pamuk ev ortamına alışkın, sakin ve insanlarla iletişimi güçlü bir kedi. Ona uzun süreli ve güvenli bir yuva arıyoruz."
+
+Cat compatibility:
+Unknown
+
+Dog compatibility:
+Compatible
+
+Toilet training:
+Training completed
+
+Images:
+Only cat images matching Pamuk
+
+==================================================
+
+LISTING 2
+
+Name:
+Boncuk
+
+Animal:
+Dog
+
+Breed:
+Golden Retriever
+
+Age:
+3 years
+
+Gender:
+Male
+
+Location:
+Beşiktaş, İstanbul
+
+Health:
+Healthy
+
+Description:
+"Boncuk insanlarla çok iyi anlaşan, enerjik ve sevgi dolu bir köpek. Aktif bir aile için uygun."
+
+Cat compatibility:
+Compatible
+
+Dog compatibility:
+Compatible
+
+Toilet training:
+Training completed
+
+Images:
+Only Golden Retriever/dog images
+
+==================================================
+
+LISTING 3
+
+Name:
+Mia
+
+Animal:
+Cat
+
+Breed:
+Tabby / Tekir
+
+Age:
+1 year
+
+Gender:
+Female
+
+Location:
+Üsküdar, İstanbul
+
+Health:
+Healthy
+
+Description:
+"Mia meraklı ve oyuncu bir genç kedi. Ev ortamına kısa sürede uyum sağlıyor."
+
+Cat compatibility:
+Compatible
+
+Dog compatibility:
+Unknown
+
+Toilet training:
+Training completed
+
+Images:
+Only cat images
+
+==================================================
+
+LISTING 4
+
+Name:
+Tarçın
+
+Animal:
+Dog
+
+Breed:
+Mixed breed
+
+Age:
+2 years
+
+Gender:
+Male
+
+Location:
+Maltepe, İstanbul
+
+Health:
+Healthy
+
+Description:
+"Tarçın yürüyüş yapmayı ve insanlarla vakit geçirmeyi seviyor. Sorumluluk sahibi bir yuva aranıyor."
+
+Cat compatibility:
+Unknown
+
+Dog compatibility:
+Compatible
+
+Toilet training:
+Training in progress
+
+Images:
+Only dog images
+
+==================================================
+
+LISTING 5
+
+Name:
+Luna
+
+Animal:
+Cat
+
+Breed:
+Scottish Straight
+
+Age:
+3 years
+
+Gender:
+Female
+
+Location:
+Ataşehir, İstanbul
+
+Health:
+Healthy
+
+Description:
+"Luna sakin bir ev ortamını seven, insanlara alışkın ve nazik bir kedi."
+
+Cat compatibility:
+Compatible
+
+Dog compatibility:
+Not compatible
+
+Toilet training:
+Training completed
+
+Images:
+Only cat images
+
+==================================================
+
+LISTING 6
+
+Name:
+Max
+
+Animal:
+Dog
+
+Breed:
+Labrador mix
+
+Age:
+4 years
+
+Gender:
+Male
+
+Location:
+Bakırköy, İstanbul
+
+Health:
+Healthy
+
+Description:
+"Max sosyal ve oyuncu bir köpek. Düzenli yürüyüş yapabilecek bir aile aranıyor."
+
+Cat compatibility:
+Unknown
+
+Dog compatibility:
+Compatible
+
+Toilet training:
+Training completed
+
+Images:
+Only dog images
+
+==================================================
+
+LISTING 7
+
+Name:
+Zeytin
+
+Animal:
+Cat
+
+Breed:
+Black domestic cat
+
+Age:
+8 months
+
+Gender:
+Male
+
+Location:
+Şişli, İstanbul
+
+Health:
+Healthy
+
+Description:
+"Zeytin genç, hareketli ve oyuncu. Ev yaşamına alışkın ve kum eğitimini tamamladı."
+
+Cat compatibility:
+Compatible
+
+Dog compatibility:
+Unknown
+
+Toilet training:
+Training completed
+
+Images:
+Only black cat images
+
+==================================================
+
+LISTING 8
+
+Name:
+Pati
+
+Animal:
+Dog
+
+Breed:
+Terrier mix
+
+Age:
+1 year
+
+Gender:
+Female
+
+Location:
+Beyoğlu, İstanbul
+
+Health:
+Healthy
+
+Description:
+"Pati küçük yapılı, enerjik ve insanlarla iletişimi güçlü bir köpek."
+
+Cat compatibility:
+Unknown
+
+Dog compatibility:
+Compatible
+
+Toilet training:
+Training in progress
+
+Images:
+Only dog images
+
+==================================================
+
+LISTING 9
+
+Name:
+Duman
+
+Animal:
+Cat
+
+Breed:
+British Shorthair mix
+
+Age:
+4 years
+
+Gender:
+Male
+
+Location:
+Sarıyer, İstanbul
+
+Health:
+Healthy
+
+Description:
+"Duman sakin, ev ortamını seven ve günün büyük bölümünü dinlenerek geçiren bir kedi."
+
+Cat compatibility:
+Unknown
+
+Dog compatibility:
+Not compatible
+
+Toilet training:
+Training completed
+
+Images:
+Only cat images
+
+==================================================
+
+LISTING 10
+
+Name:
+Karamel
+
+Animal:
+Dog
+
+Breed:
+Mixed breed
+
+Age:
+2 years
+
+Gender:
+Female
+
+Location:
+Kartal, İstanbul
+
+Health:
+Healthy
+
+Description:
+"Karamel sevgi dolu ve sosyal bir köpek. Güvenli ve kalıcı bir aile arıyor."
+
+Cat compatibility:
+Compatible
+
+Dog compatibility:
+Compatible
+
+Toilet training:
+Training completed
+
+Images:
+Only dog images
+
+==================================================
+ADOPTION LISTING REQUIRED FIELDS
+==================================================
+
+Inspect the current adoption listing schema.
+
+Populate all required current fields correctly.
+
+Possible fields may include:
+
+- id
+- owner_id
+- pet_name
+- animal_type
+- breed
+- age
+- age_unit
+- gender
+- description
+- location
+- latitude
+- longitude
+- health_status
+- cat_compatibility
+- dog_compatibility
+- toilet_training
+- adoption_status
+- created_at
+- updated_at
+
+Use the ACTUAL existing schema.
+
+Do not create duplicate columns because seed property names differ.
+
+Every listing must be a separate database record with a unique listing ID.
+
+==================================================
+NO RANDOM OWNER DATA
+==================================================
+
+Do not use meaningless usernames such as:
+
+user1
+test123
+asdf
+xxx
+
+Use a dedicated development/demo owner architecture.
+
+Preferred:
+
+Create or use controlled demo profiles with realistic Turkish display names.
+
+Example names:
+
+- Ayşe Demir
+- Mehmet Kaya
+- Elif Yılmaz
+- Tolga Aydın
+- Zeynep Arslan
+- Mert Çelik
+- Deniz Koç
+- Selin Şahin
+- Emre Aksoy
+- Ceren Yıldız
+
+IMPORTANT:
+
+Do not create fake authenticated Supabase users insecurely from the client.
+
+If demo seed users are needed, use the existing server-side seed/development strategy.
+
+If listings require a valid auth.users foreign key, inspect current constraints and create seed data safely.
+
+Do not break auth relationships.
+
+==================================================
+NO FAKE STATISTICS
+==================================================
+
+Do not randomly create huge view, favorite, help, comment, or message counts.
+
+Initial seed metrics should use realistic clean values.
+
+Recommended:
+
+views:
+0–25
+
+favorites:
+0–4
+
+comments/messages:
+0–3
+
+But only populate these if the current application actually stores metrics this way.
+
+If metrics are derived from interaction tables:
+
+Do not manually fake aggregate counters.
+
+Use the real relationships or leave the counts at 0.
+
+Do not show:
+
+2.4K views
+
+on newly seeded demo listings unless those metrics actually exist.
+
+==================================================
+NO FEATURED LISTINGS BY DEFAULT
+==================================================
+
+All 10 adoption listings must initially be NORMAL listings.
+
+Do not seed them as promoted.
+
+Expected:
+
+is_featured = false
+
+No active listing promotion.
+
+No "Öne Çıkarılan" badge.
+
+No fake payment record.
+
+The promotion system must be tested separately through the real promotion flow.
+
+==================================================
+NO FAKE CONVERSATIONS
+==================================================
+
+Do not create fake messages or conversations for the 10 adoption listings.
+
+"Mesajlarım" must remain based on real user interactions.
+
+A conversation should only be created when a real user taps:
+
+"Mesaj Gönder"
+
+and starts the messaging flow.
+
+==================================================
+NO FAKE HELP INTERACTIONS
+==================================================
+
+Do not create fake:
+
+- Yardım Et records
+- help participants
+- likes
+- comments
+
+for the 10 animal reports unless the project specifically requires seed interactions.
+
+Start interaction state clean.
+
+==================================================
+DATA SORTING
+==================================================
+
+Use realistic created_at timestamps.
+
+Distribute seeded content across the last several days.
+
+Example:
+
+- today
+- 1 day ago
+- 2 days ago
+- 3 days ago
+- 4 days ago
+
+Do not give all 20 records the exact same timestamp.
+
+Maintain deterministic seed timestamps where possible.
+
+The newest normal listings should follow the current normal sorting rules.
+
+==================================================
+SEED IDEMPOTENCY
+==================================================
+
+The seed process must be idempotent.
+
+Running the seed twice must NOT create:
+
+20 reports
+20 listings
+
+then:
+
+40 reports
+40 listings
+
+Use stable:
+
+seed_key
+
+or equivalent identifiers.
+
+Recommended seed keys:
+
+street_report_001
+street_report_002
+...
+street_report_010
+
+adoption_listing_001
+adoption_listing_002
+...
+adoption_listing_010
+
+Before creating seed data:
+
+Delete/update existing records with the same seed keys.
+
+Then insert the clean seed dataset.
+
+Do not identify seed records only by visible title.
+
+==================================================
+UI VERIFICATION — SOKAK HAYVANLARI
+==================================================
+
+After seeding:
+
+Open:
+
+Hayvanlar
+→ Sokak Hayvanları
+
+Verify:
+
+Exactly 10 seeded demo situation reports exist.
+
+Every card must display:
+
+- matching animal photo
+- valid status
+- realistic title
+- creator information
+- location
+- time
+- current interaction counts
+
+No waterfall or landscape image may appear.
+
+Test filters:
+
+- Hepsi
+- Acil
+- Yardım Bekleyen
+- Sağlıklı
+
+Counts must be derived from the actual 10 reports.
+
+Do not hardcode:
+
+1
+3
+1
+5
+
+from the previous screenshot/demo state.
+
+Recalculate all filter and summary counts from the actual report dataset.
+
+==================================================
+MAP VERIFICATION
+==================================================
+
+All valid seeded situation reports with coordinates must appear on Harita.
+
+Each map marker must use the exact report ID.
+
+Tap each marker.
+
+Verify the exact matching animal report opens.
+
+Do not break the previously implemented:
+
+MAP MARKER
+→ REPORT ID
+→ EXACT REPORT DETAIL
+
+relationship.
+
+==================================================
+UI VERIFICATION — SAHİPLENDİRME
+==================================================
+
+Open:
+
+Sahiplendirme
+→ Tüm İlanlar
+
+Verify:
+
+Exactly 10 clean seeded adoption listings are available in the demo dataset.
+
+Every listing card must display an ANIMAL image.
+
+No:
+
+- waterfall
+- landscape
+- random nature image
+- unrelated photo
+
+may appear.
+
+Open each listing.
+
+Verify the detail data matches the card.
+
+Example:
+
+Pamuk card
+↓
+Pamuk detail
+
+Boncuk card
+↓
+Boncuk detail
+
+Do not mix listing images or data.
+
+==================================================
+IMAGE FALLBACK FIX
+==================================================
+
+Audit the current image fallback system.
+
+There may currently be code that displays a generic remote image when:
+
+image_url is null
+
+or invalid.
+
+If the generic fallback can produce unrelated images such as landscapes:
+
+REMOVE THAT BEHAVIOR.
+
+For animal reports/listings:
+
+If an animal image is missing:
+
+Use a controlled local CanYoldaşı animal placeholder appropriate to the animal type.
+
+Example:
+
+cat missing image
+→ local generic cat placeholder
+
+dog missing image
+→ local generic dog placeholder
+
+Do not use a random remote image API.
+
+Do not use randomized Unsplash source URLs.
+
+Image output must remain deterministic.
+
+==================================================
+CACHE CLEANUP
+==================================================
+
+After replacing seed data:
+
+Audit query cache and local state.
+
+Ensure previous fake records do not remain visible because of:
+
+- React Query cache
+- Zustand persisted state
+- AsyncStorage
+- localStorage
+- stale Supabase query state
+
+Invalidate the relevant queries.
+
+Examples conceptually:
+
+animal-reports
+adoption-listings
+nearby-animals
+
+Adapt to the current query architecture.
+
+Do not require users to uninstall the app to see the new dataset.
+
+==================================================
+FINAL ACCEPTANCE TESTS
+==================================================
+
+1. Run the controlled demo reset.
+
+2. Verify previous confirmed fake animal reports are removed.
+
+3. Verify previous confirmed fake adoption listings are removed.
+
+4. Verify real production/user-created records were not blindly deleted.
+
+5. Verify exactly 10 demo animal reports exist.
+
+6. Verify exactly 10 demo adoption listings exist.
+
+7. Verify every animal report image visibly contains an animal.
+
+8. Verify every adoption listing image visibly contains an animal.
+
+9. Verify no waterfall image exists.
+
+10. Verify no landscape-only image exists.
+
+11. Verify no furniture/product image exists.
+
+12. Verify report animal_type matches the image.
+
+13. Verify adoption animal_type matches the image.
+
+14. Test Sokak Hayvanları filters.
+
+15. Verify summary/filter counts are derived from the 10 report records.
+
+16. Open map.
+
+17. Verify report markers exist.
+
+18. Tap each marker.
+
+19. Verify exact matching report opens.
+
+20. Open Tüm İlanlar.
+
+21. Verify the 10 seeded adoption listings.
+
+22. Open every adoption listing.
+
+23. Verify card/detail data consistency.
+
+24. Verify no listing is featured by default.
+
+25. Verify no fake payment records were created.
+
+26. Verify no fake message conversations were created.
+
+27. Verify no fake help/like/comment interactions were created.
+
+28. Reload iOS.
+
+29. Reload Android.
+
+30. Reload Web.
+
+31. Verify the same backend dataset is displayed consistently.
+
+32. Run the seed process a second time.
+
+33. Verify the dataset remains 10 reports and 10 adoption listings.
+
+34. Verify duplicate seed records are not created.
+
+==================================================
+IMPORTANT RESTRICTIONS
+==================================================
+
+DO NOT:
+
+- delete all production records blindly
+- delete real user content
+- use random remote image APIs
+- use waterfall images
+- use landscape-only images
+- use unrelated images
+- use product images
+- use furniture images
+- use screenshots as listing photos
+- mismatch cat records with dog images
+- mismatch dog records with cat images
+- hardcode old filter counts
+- create 10 copies of the same image
+- create fake promoted listings
+- create fake payments
+- create fake conversations
+- create fake help interactions
+- create random huge statistics
+- use array indexes as seed identity
+- create duplicate records every time the seed runs
+
+GOAL:
+
+Replace the current confirmed fake/demo content with a clean, controlled CanYoldaşı demo dataset containing:
+
+10 realistic Sokak Hayvanları situation reports
+
+AND
+
+10 realistic Sahiplendirme listings.
+
+Every content image must visibly contain the relevant animal.
+
+The seed data must be realistic, deterministic, safe, idempotent, and compatible with the current database architecture.
