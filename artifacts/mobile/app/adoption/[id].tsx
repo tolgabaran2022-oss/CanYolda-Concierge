@@ -76,15 +76,6 @@ function StatPill({ icon, label, value }: { icon: string; label: string; value: 
   );
 }
 
-// Trait chip
-function TraitChip({ label }: { label: string }) {
-  return (
-    <View style={S.traitChip}>
-      <Text style={S.traitTxt}>{label}</Text>
-    </View>
-  );
-}
-
 // Section header
 function SectionHead({ title }: { title: string }) {
   return <Text style={S.sectionHead}>{title}</Text>;
@@ -161,14 +152,6 @@ export default function AdoptionDetailScreen() {
   }
 
   // Derive display data from available fields
-  const typeTraits: Record<string, string[]> = {
-    Kedi:   ["Bağımsız", "Oyuncu", "Sevecen"],
-    Köpek:  ["Sadık", "Enerjik", "Eğitilebilir"],
-    Kuş:    ["Sosyal", "Akıllı", "Neşeli"],
-    Tavşan: ["Sakin", "Nazik", "Meraklı"],
-  };
-  const traits = typeTraits[listing.petType] ?? ["Uyumlu", "Sağlıklı", "Dostane"];
-
   const isPhone = !listing.contactInfo.includes("@");
   const topBarPad = Platform.OS === "web" ? 20 : insets.top + 6;
 
@@ -390,12 +373,6 @@ export default function AdoptionDetailScreen() {
             <SectionHead title="Hakkında" />
             <View style={S.descCard}>
               <Text style={S.descText}>{listing.description}</Text>
-            </View>
-
-            {/* Personality traits */}
-            <SectionHead title="Karakter Özellikleri" />
-            <View style={S.traitsWrap}>
-              {traits.map((t) => <TraitChip key={t} label={t} />)}
             </View>
 
             {/* Info grid */}
