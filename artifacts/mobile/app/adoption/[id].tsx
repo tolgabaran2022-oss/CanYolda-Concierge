@@ -27,6 +27,15 @@ import { useTheme } from "@/hooks/useTheme";
 import { formatTimeAgo } from "@/utils/formatters";
 import { apiGetContactPrefs, apiRevealPhone, type ContactPrefs } from "@/lib/contactApi";
 import { apiGetOrCreateConversation } from "@/lib/messagesApi";
+import {
+  getHealthStatusLabel,
+  getVaccinationStatusLabel,
+  getEnvironmentTypeLabel,
+  getChildCompatibilityLabel,
+  getCatCompatibilityLabel,
+  getDogCompatibilityLabel,
+  getToiletTrainingLabel,
+} from "@/lib/petDetailOptions";
 
 // ── Palette (same as rest of app) ────────────────────────────────────────────
 const P     = "#7C4DCC";
@@ -339,7 +348,7 @@ export default function AdoptionDetailScreen() {
                 <StatPill icon="calendar-outline" label="Yaş" value="Belirtilmemiş" />
               )}
               <StatPill icon="location-outline" label="Konum" value={listing.location.split(",")[0]} />
-              <StatPill icon="shield-checkmark-outline" label="Sağlık" value="İyi" />
+              <StatPill icon="shield-checkmark-outline" label="Sağlık" value={getHealthStatusLabel(listing.healthStatus)} />
             </View>
 
             {/* Divider */}
@@ -381,23 +390,38 @@ export default function AdoptionDetailScreen() {
               <View style={S.infoCell}>
                 <Icon name="medkit-outline" size={18} color={P} />
                 <Text style={S.infoCellLabel}>Sağlık Durumu</Text>
-                <Text style={S.infoCellValue}>İyi</Text>
+                <Text style={S.infoCellValue}>{getHealthStatusLabel(listing.healthStatus)}</Text>
               </View>
               <View style={S.infoCell}>
                 <Icon name="shield-checkmark-outline" size={18} color={"#34C759"} />
                 <Text style={S.infoCellLabel}>Aşı</Text>
-                <Text style={S.infoCellValue}>Var</Text>
+                <Text style={S.infoCellValue}>{getVaccinationStatusLabel(listing.vaccinationStatus)}</Text>
               </View>
               <View style={S.infoCell}>
                 <Icon name="home-outline" size={18} color={"#007AFF"} />
                 <Text style={S.infoCellLabel}>İç/Dış Mekan</Text>
-                <Text style={S.infoCellValue}>İç Mekan</Text>
+                <Text style={S.infoCellValue}>{getEnvironmentTypeLabel(listing.environmentType)}</Text>
               </View>
               <View style={S.infoCell}>
                 <Icon name="people-outline" size={18} color={"#FF9500"} />
                 <Text style={S.infoCellLabel}>Çocuk Uyumu</Text>
-                <Text style={S.infoCellValue}>Uyumlu</Text>
+                <Text style={S.infoCellValue}>{getChildCompatibilityLabel(listing.childCompatibility)}</Text>
               </View>
+              <View style={S.infoCell}>
+                <Icon name="paw" size={18} color={"#AF52DE"} />
+                <Text style={S.infoCellLabel}>Kedi Uyumu</Text>
+                <Text style={S.infoCellValue}>{getCatCompatibilityLabel(listing.catCompatibility)}</Text>
+              </View>
+              <View style={S.infoCell}>
+                <Icon name="paw" size={18} color={"#FF6B35"} />
+                <Text style={S.infoCellLabel}>Köpek Uyumu</Text>
+                <Text style={S.infoCellValue}>{getDogCompatibilityLabel(listing.dogCompatibility)}</Text>
+              </View>
+            </View>
+            <View style={[S.infoCell, S.infoCellFull]}>
+              <Icon name="checkmark-circle-outline" size={18} color={"#34C759"} />
+              <Text style={S.infoCellLabel}>Tuvalet Eğitimi</Text>
+              <Text style={S.infoCellValue}>{getToiletTrainingLabel(listing.toiletTraining)}</Text>
             </View>
 
             {/* Adoption note */}
@@ -739,6 +763,7 @@ const S = StyleSheet.create({
   // Info grid
   infoGrid: { flexDirection: "row", flexWrap: "wrap", gap: 10 },
   infoCell: { width: "47%", backgroundColor: WHITE, borderRadius: 18, borderWidth: 1, borderColor: BORDER, padding: 14, gap: 6, alignItems: "flex-start", ...IOS_SHADOW },
+  infoCellFull: { width: "100%", marginTop: 10 },
   infoCellLabel: { fontSize: 11, fontFamily: "Inter_400Regular", color: BODY },
   infoCellValue: { fontSize: 14, fontFamily: "Inter_700Bold", color: DARK },
 

@@ -28,6 +28,7 @@ import { useTheme } from "@/hooks/useTheme";
 import { formatTimeAgo } from "@/utils/formatters";
 import { EvcilimTab } from "@/components/EvcilimTab";
 import { apiFetchNotifications } from "@/lib/socialApi";
+import { PET_DETAIL_OPTIONS, type DetailOption } from "@/lib/petDetailOptions";
 
 // ── Palette ───────────────────────────────────────────────────────────────────
 const P      = "#7C4DCC";
@@ -1035,6 +1036,13 @@ interface EditForm {
   location: string;
   description: string;
   contactInfo: string;
+  healthStatus: string;
+  vaccinationStatus: string;
+  environmentType: string;
+  childCompatibility: string;
+  catCompatibility: string;
+  dogCompatibility: string;
+  toiletTraining: string;
 }
 
 function MyListingsSection({
@@ -1068,17 +1076,24 @@ function MyListingsSection({
 
   // ── Edit modal ──
   const [editTarget, setEditTarget] = useState<AdoptionListing | null>(null);
-  const [editForm, setEditForm] = useState<EditForm>({ petName: "", petType: "", petAge: "", location: "", description: "", contactInfo: "" });
+  const [editForm, setEditForm] = useState<EditForm>({ petName: "", petType: "", petAge: "", location: "", description: "", contactInfo: "", healthStatus: "", vaccinationStatus: "", environmentType: "", childCompatibility: "", catCompatibility: "", dogCompatibility: "", toiletTraining: "" });
   const [saving, setSaving] = useState(false);
 
   const openEdit = useCallback((listing: AdoptionListing) => {
     setEditForm({
-      petName: listing.petName,
-      petType: listing.petType,
-      petAge: listing.petAge ?? "",
-      location: listing.location,
-      description: listing.description,
-      contactInfo: listing.contactInfo,
+      petName:            listing.petName,
+      petType:            listing.petType,
+      petAge:             listing.petAge ?? "",
+      location:           listing.location,
+      description:        listing.description,
+      contactInfo:        listing.contactInfo,
+      healthStatus:       listing.healthStatus       ?? "",
+      vaccinationStatus:  listing.vaccinationStatus  ?? "",
+      environmentType:    listing.environmentType    ?? "",
+      childCompatibility: listing.childCompatibility ?? "",
+      catCompatibility:   listing.catCompatibility   ?? "",
+      dogCompatibility:   listing.dogCompatibility   ?? "",
+      toiletTraining:     listing.toiletTraining     ?? "",
     });
     setEditTarget(listing);
   }, []);
@@ -1088,12 +1103,19 @@ function MyListingsSection({
     setSaving(true);
     try {
       await updateListing(editTarget.id, {
-        petName:     editForm.petName.trim()     || editTarget.petName,
-        petType:     editForm.petType.trim()     || editTarget.petType,
-        petAge:      editForm.petAge.trim()      || undefined,
-        location:    editForm.location.trim()    || editTarget.location,
-        description: editForm.description.trim() || editTarget.description,
-        contactInfo: editForm.contactInfo.trim() || editTarget.contactInfo,
+        petName:            editForm.petName.trim()     || editTarget.petName,
+        petType:            editForm.petType.trim()     || editTarget.petType,
+        petAge:             editForm.petAge.trim()      || undefined,
+        location:           editForm.location.trim()    || editTarget.location,
+        description:        editForm.description.trim() || editTarget.description,
+        contactInfo:        editForm.contactInfo.trim() || editTarget.contactInfo,
+        healthStatus:       editForm.healthStatus       || undefined,
+        vaccinationStatus:  editForm.vaccinationStatus  || undefined,
+        environmentType:    editForm.environmentType    || undefined,
+        childCompatibility: editForm.childCompatibility || undefined,
+        catCompatibility:   editForm.catCompatibility   || undefined,
+        dogCompatibility:   editForm.dogCompatibility   || undefined,
+        toiletTraining:     editForm.toiletTraining     || undefined,
       });
       Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
       setEditTarget(null);
@@ -1305,6 +1327,55 @@ function MyListingsSection({
                   placeholderTextColor={`${BODY}60`}
                   keyboardType="email-address"
                 />
+              </View>
+
+              {/* ── Detay Bilgiler chips ── */}
+              <View style={[ed.fieldWrap, { marginTop: 4 }]}>
+                <Text style={[ed.fieldLabel, { fontSize: 14, marginBottom: 12 }]}>Detay Bilgiler</Text>
+                {([
+                  { key: "healthStatus"       as const, label: "Sağlık Durumu",   opts: PET_DETAIL_OPTIONS.healthStatus       },
+                  { key: "vaccinationStatus"  as const, label: "Aşı",             opts: PET_DETAIL_OPTIONS.vaccinationStatus  },
+                  { key: "environmentType"    as const, label: "İç/Dış Mekan",    opts: PET_DETAIL_OPTIONS.environmentType    },
+                  { key: "childCompatibility" as const, label: "Çocuk Uyumu",     opts: PET_DETAIL_OPTIONS.childCompatibility },
+                  { key: "catCompatibility"   as const, label: "Kedi Uyumu",      opts: PET_DETAIL_OPTIONS.catCompatibility   },
+                  { key: "dogCompatibility"   as const, label: "Köpek Uyumu",     opts: PET_DETAIL_OPTIONS.dogCompatibility   },
+                  { key: "toiletTraining"     as const, label: "Tuvalet Eğitimi", opts: PET_DETAIL_OPTIONS.toiletTraining     },
+                ] as const).map(({ key, label, opts }) => (
+                  <View key={key} style={{ marginBottom: 12 }}>
+                    <Text style={[ed.fieldLabel, { marginBottom: 7, fontSize: 12, color: BODY }]}>{label}</Text>
+                    <View style={{ flexDirection: "row", flexWrap: "wrap", gap: 6 }}>
+                      {(opts as readonly DetailOption[]).map((opt) => {
+                        const active = editForm[key] === opt.value;
+                        return (
+                          <Pressable
+                            key={opt.value}
+                            onPress={() => {
+                              Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+                              setEditForm((prev) => ({ ...prev, [key]: opt.value }));
+                            }}
+                            style={({ pressed }) => [{
+                              flexDirection: "row" as const,
+                              alignItems: "center" as const,
+                              gap: 4,
+                              borderWidth: 1.5,
+                              borderRadius: 50,
+                              paddingVertical: 6,
+                              paddingHorizontal: 11,
+                              borderColor: active ? P : `${BODY}30`,
+                              backgroundColor: active ? `${P}14` : "transparent",
+                              opacity: pressed ? 0.8 : 1,
+                            }]}
+                          >
+                            {active && <Icon name="checkmark" size={11} color={P} />}
+                            <Text style={{ fontSize: 12, fontFamily: active ? "Inter_700Bold" : "Inter_400Regular", color: active ? P : BODY }}>
+                              {opt.label}
+                            </Text>
+                          </Pressable>
+                        );
+                      })}
+                    </View>
+                  </View>
+                ))}
               </View>
             </ScrollView>
 

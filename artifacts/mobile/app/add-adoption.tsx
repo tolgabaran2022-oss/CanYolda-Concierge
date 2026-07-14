@@ -24,6 +24,7 @@ import { useAuth } from "@/contexts/AuthContext";
 import { useTheme } from "@/hooks/useTheme";
 import { TURKEY_PROVINCES, type Province } from "@/constants/turkeyLocations";
 import { apiSaveListingContact } from "@/lib/contactApi";
+import { PET_DETAIL_OPTIONS, type DetailOption } from "@/lib/petDetailOptions";
 
 /* ── Static tokens (structural only — no bg/text colors) ── */
 const C = {
@@ -193,10 +194,17 @@ export default function AddAdoptionScreen() {
   const [description,       setDescription]       = useState("");
   const [phone,             setPhone]             = useState("");
   const [email,             setEmail]             = useState("");
-  const [allowPhoneContact, setAllowPhoneContact] = useState(true);
-  const [allowMessages,     setAllowMessages]     = useState(true);
-  const [isSaving,          setIsSaving]          = useState(false);
-  const [errors,            setErrors]            = useState<Record<string, string>>({});
+  const [allowPhoneContact,  setAllowPhoneContact]  = useState(true);
+  const [allowMessages,      setAllowMessages]      = useState(true);
+  const [isSaving,           setIsSaving]           = useState(false);
+  const [errors,             setErrors]             = useState<Record<string, string>>({});
+  const [healthStatus,       setHealthStatus]       = useState("");
+  const [vaccinationStatus,  setVaccinationStatus]  = useState("");
+  const [environmentType,    setEnvironmentType]    = useState("");
+  const [childCompatibility, setChildCompatibility] = useState("");
+  const [catCompatibility,   setCatCompatibility]   = useState("");
+  const [dogCompatibility,   setDogCompatibility]   = useState("");
+  const [toiletTraining,     setToiletTraining]     = useState("");
 
   const [showProvince, setShowProvince] = useState(false);
   const [showDistrict, setShowDistrict] = useState(false);
@@ -230,17 +238,24 @@ export default function AddAdoptionScreen() {
 
   const validate = (): boolean => {
     const errs: Record<string, string> = {};
-    if (!photo)               errs.photo       = "Fotoğraf eklenmesi zorunludur";
-    if (!petName.trim())      errs.petName     = "Hayvan adı zorunludur";
-    if (!petAge)              errs.petAge      = "Yaş seçimi zorunludur";
-    if (!province)            errs.province    = "İl seçimi zorunludur";
-    if (!district)            errs.district    = "İlçe seçimi zorunludur";
+    if (!photo)               errs.photo              = "Fotoğraf eklenmesi zorunludur";
+    if (!petName.trim())      errs.petName            = "Hayvan adı zorunludur";
+    if (!petAge)              errs.petAge             = "Yaş seçimi zorunludur";
+    if (!province)            errs.province           = "İl seçimi zorunludur";
+    if (!district)            errs.district           = "İlçe seçimi zorunludur";
     if (description.trim().length < 30)
-                              errs.description = "Açıklama en az 30 karakter olmalıdır";
+                              errs.description        = "Açıklama en az 30 karakter olmalıdır";
+    if (!healthStatus)        errs.healthStatus       = "Lütfen detay bilgilerini tamamla.";
+    if (!vaccinationStatus)   errs.vaccinationStatus  = "Lütfen detay bilgilerini tamamla.";
+    if (!environmentType)     errs.environmentType    = "Lütfen detay bilgilerini tamamla.";
+    if (!childCompatibility)  errs.childCompatibility = "Lütfen detay bilgilerini tamamla.";
+    if (!catCompatibility)    errs.catCompatibility   = "Lütfen detay bilgilerini tamamla.";
+    if (!dogCompatibility)    errs.dogCompatibility   = "Lütfen detay bilgilerini tamamla.";
+    if (!toiletTraining)      errs.toiletTraining     = "Lütfen detay bilgilerini tamamla.";
     const phoneErr = validatePhone(phone);
-    if (phoneErr)             errs.phone       = phoneErr;
+    if (phoneErr)             errs.phone              = phoneErr;
     const emailErr = validateEmail(email);
-    if (emailErr)             errs.email       = emailErr;
+    if (emailErr)             errs.email              = emailErr;
 
     setErrors(errs);
     if (Object.keys(errs).length > 0) {
@@ -256,17 +271,24 @@ export default function AddAdoptionScreen() {
     setIsSaving(true);
     try {
       const newId = await addListing({
-        petName:          petName.trim(),
+        petName:            petName.trim(),
         petType,
         petAge,
         photo,
-        location:         `${district}, ${province}`,
-        description:      description.trim(),
-        userId:           user.id,
-        userName:         user.name,
-        contactInfo:      `Tel: +90 ${formatPhoneDisplay(phone)} | E-posta: ${email.trim()}`,
+        location:           `${district}, ${province}`,
+        description:        description.trim(),
+        userId:             user.id,
+        userName:           user.name,
+        contactInfo:        `Tel: +90 ${formatPhoneDisplay(phone)} | E-posta: ${email.trim()}`,
         allowPhoneContact,
         allowMessages,
+        healthStatus,
+        vaccinationStatus,
+        environmentType,
+        childCompatibility,
+        catCompatibility,
+        dogCompatibility,
+        toiletTraining,
       });
       apiSaveListingContact(user.id, newId, `+90${phone}`, allowPhoneContact, allowMessages).catch(() => {});
       Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
@@ -533,6 +555,68 @@ export default function AddAdoptionScreen() {
 
               <View style={[S.divider, { backgroundColor: T.border }]} />
 
+              {/* Detay Bilgiler */}
+              <View style={S.sectionHeader}>
+                <Icon name="list-outline" size={18} color={C.purple} />
+                <Text style={[S.sectionTitle, { color: T.text }]}>Detay Bilgiler</Text>
+              </View>
+              <Text style={{ fontSize: 12, fontFamily: "Inter_400Regular", color: T.textMuted, marginTop: 2, marginBottom: 16, lineHeight: 17 }}>
+                Patili dostun hakkında temel bilgileri seç
+              </Text>
+
+              {(errors.healthStatus || errors.vaccinationStatus || errors.environmentType ||
+                errors.childCompatibility || errors.catCompatibility || errors.dogCompatibility || errors.toiletTraining) ? (
+                <View style={S.detailErrorBanner}>
+                  <Icon name="alert-circle" size={14} color={C.error} />
+                  <Text style={S.detailErrorTxt}>Lütfen detay bilgilerini tamamla.</Text>
+                </View>
+              ) : null}
+
+              {([
+                { key: "healthStatus"       as const, label: "Sağlık Durumu",   iconName: "medkit-outline"            as const, opts: PET_DETAIL_OPTIONS.healthStatus,       state: healthStatus,       setter: setHealthStatus },
+                { key: "vaccinationStatus"  as const, label: "Aşı",             iconName: "shield-checkmark-outline"  as const, opts: PET_DETAIL_OPTIONS.vaccinationStatus,  state: vaccinationStatus,  setter: setVaccinationStatus },
+                { key: "environmentType"    as const, label: "İç/Dış Mekan",    iconName: "home-outline"              as const, opts: PET_DETAIL_OPTIONS.environmentType,    state: environmentType,    setter: setEnvironmentType },
+                { key: "childCompatibility" as const, label: "Çocuk Uyumu",     iconName: "people-outline"            as const, opts: PET_DETAIL_OPTIONS.childCompatibility, state: childCompatibility, setter: setChildCompatibility },
+                { key: "catCompatibility"   as const, label: "Kedi Uyumu",      iconName: "paw"                       as const, opts: PET_DETAIL_OPTIONS.catCompatibility,   state: catCompatibility,   setter: setCatCompatibility },
+                { key: "dogCompatibility"   as const, label: "Köpek Uyumu",     iconName: "paw"                       as const, opts: PET_DETAIL_OPTIONS.dogCompatibility,   state: dogCompatibility,   setter: setDogCompatibility },
+                { key: "toiletTraining"     as const, label: "Tuvalet Eğitimi", iconName: "checkmark-circle-outline"  as const, opts: PET_DETAIL_OPTIONS.toiletTraining,     state: toiletTraining,     setter: setToiletTraining },
+              ] as const).map(({ key, label, iconName, opts, state, setter }) => (
+                <View key={key} style={S.detailFieldWrap}>
+                  <View style={S.detailFieldHeader}>
+                    <Icon name={iconName} size={15} color={C.purpleDark} />
+                    <Text style={[S.detailFieldLabel, { color: T.text, flex: 1 }, !!errors[key] && { color: C.error }]}>{label}</Text>
+                    {!!errors[key] && <Icon name="alert-circle" size={13} color={C.error} />}
+                  </View>
+                  <View style={S.detailChipRow}>
+                    {(opts as readonly DetailOption[]).map((opt) => {
+                      const active = state === opt.value;
+                      return (
+                        <Pressable
+                          key={opt.value}
+                          onPress={() => {
+                            Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+                            setter(opt.value);
+                            setErrors((e) => ({ ...e, [key]: "" }));
+                          }}
+                          style={({ pressed }) => [
+                            S.detailChip,
+                            { borderColor: active ? C.purple : T.inputBorder, backgroundColor: active ? C.purple + "14" : T.input },
+                            { opacity: pressed ? 0.8 : 1 },
+                          ]}
+                        >
+                          {active && <Icon name="checkmark" size={12} color={C.purple} />}
+                          <Text style={[S.detailChipTxt, { color: active ? C.purple : T.textMuted }, active && { fontFamily: "Inter_700Bold" }]}>
+                            {opt.label}
+                          </Text>
+                        </Pressable>
+                      );
+                    })}
+                  </View>
+                </View>
+              ))}
+
+              <View style={[S.divider, { backgroundColor: T.border }]} />
+
               {/* İletişim başlığı */}
               <View style={S.sectionHeader}>
                 <Icon name="call-outline" size={18} color={C.purple} />
@@ -775,6 +859,15 @@ const S = StyleSheet.create({
   },
   charCount:     { fontSize: 11, fontFamily: "Inter_400Regular", textAlign: "right", marginTop: 4 },
   charCountWarn: { color: C.error },
+
+  detailErrorBanner: { flexDirection: "row", alignItems: "center", gap: 8, backgroundColor: C.errorBg, borderRadius: 10, padding: 12, marginBottom: 12 },
+  detailErrorTxt:    { flex: 1, fontSize: 13, fontFamily: "Inter_500Medium", color: C.error },
+  detailFieldWrap:   { marginBottom: 16 },
+  detailFieldHeader: { flexDirection: "row", alignItems: "center", gap: 7, marginBottom: 10 },
+  detailFieldLabel:  { fontSize: 13, fontFamily: "Inter_600SemiBold" },
+  detailChipRow:     { flexDirection: "row", flexWrap: "wrap", gap: 8 },
+  detailChip:        { flexDirection: "row", alignItems: "center", gap: 5, borderWidth: 1.5, borderRadius: 50, paddingVertical: 7, paddingHorizontal: 13 },
+  detailChipTxt:     { fontSize: 13, fontFamily: "Inter_500Medium" },
 
   toggleRow:    { flexDirection: "row", alignItems: "center", justifyContent: "space-between" },
   toggleLeft:   { flexDirection: "row", alignItems: "center", gap: 12, flex: 1 },

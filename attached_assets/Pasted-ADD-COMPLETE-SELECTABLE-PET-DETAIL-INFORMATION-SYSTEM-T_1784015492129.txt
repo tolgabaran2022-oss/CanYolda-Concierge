@@ -1,0 +1,956 @@
+ADD COMPLETE SELECTABLE PET DETAIL INFORMATION SYSTEM TO ADOPTION LISTINGS
+
+Update the existing:
+
+Sahiplendirme
+→ İlan Oluştur
+
+and:
+
+Sahiplendirme
+→ İlanlarım
+→ Düzenle
+
+flows.
+
+Users must be able to explicitly select detailed animal information while creating or editing an adoption listing.
+
+All selected values must be stored in the real Supabase adoption listing record and displayed dynamically in the existing adoption listing detail page.
+
+IMPORTANT:
+
+Do not redesign the existing Sahiplendirme system.
+
+Do not create a duplicate adoption listing system.
+
+Audit the current project, database schema, form components and detail screen before changing anything.
+
+The final system must contain these 7 detail fields:
+
+1. Sağlık Durumu
+2. Aşı
+3. İç/Dış Mekan
+4. Çocuk Uyumu
+5. Kedi Uyumu
+6. Köpek Uyumu
+7. Tuvalet Eğitimi
+
+==================================================
+1. ADD "DETAY BİLGİLER" FORM SECTION
+==================================================
+
+Inside:
+
+Sahiplendirme
+→ İlan Oluştur
+
+add a new form section.
+
+TITLE:
+
+"Detay Bilgiler"
+
+SUBTITLE:
+
+"Patili dostun hakkında temel bilgileri seç"
+
+The section must contain seven selectable fields.
+
+Use the existing CanYoldaşı premium purple visual language.
+
+Do NOT use native HTML select dropdowns on mobile.
+
+Use selectable chips or compact selectable cards.
+
+Every field must have:
+
+- existing project icon
+- field title
+- selectable options
+- clearly visible active state
+
+SELECTED STATE:
+
+- purple border
+- subtle light purple background
+- purple text
+- optional check icon
+
+UNSELECTED STATE:
+
+- white or neutral background
+- subtle border
+- muted text
+
+Do not use emojis.
+
+Use the project's existing icon library.
+
+==================================================
+2. SAĞLIK DURUMU
+==================================================
+
+FIELD TITLE:
+
+"Sağlık Durumu"
+
+OPTIONS:
+
+- İyi
+- Tedavi Görüyor
+- Özel Bakım Gerekiyor
+- Bilinmiyor
+
+Only ONE option can be selected.
+
+Required field.
+
+DATABASE VALUES:
+
+good
+under_treatment
+special_care
+unknown
+
+DISPLAY MAPPING:
+
+good → İyi
+under_treatment → Tedavi Görüyor
+special_care → Özel Bakım Gerekiyor
+unknown → Bilinmiyor
+
+==================================================
+3. AŞI DURUMU
+==================================================
+
+FIELD TITLE:
+
+"Aşı"
+
+OPTIONS:
+
+- Var
+- Yok
+- Bilinmiyor
+
+Only ONE option can be selected.
+
+Required field.
+
+DATABASE VALUES:
+
+vaccinated
+not_vaccinated
+unknown
+
+DISPLAY MAPPING:
+
+vaccinated → Var
+not_vaccinated → Yok
+unknown → Bilinmiyor
+
+==================================================
+4. İÇ / DIŞ MEKAN
+==================================================
+
+FIELD TITLE:
+
+"İç/Dış Mekan"
+
+OPTIONS:
+
+- İç Mekan
+- Dış Mekan
+- İç ve Dış Mekan
+
+Only ONE option can be selected.
+
+Required field.
+
+DATABASE VALUES:
+
+indoor
+outdoor
+both
+
+DISPLAY MAPPING:
+
+indoor → İç Mekan
+outdoor → Dış Mekan
+both → İç ve Dış Mekan
+
+==================================================
+5. ÇOCUK UYUMU
+==================================================
+
+FIELD TITLE:
+
+"Çocuk Uyumu"
+
+OPTIONS:
+
+- Uyumlu
+- Uyumlu Değil
+- Bilinmiyor
+
+Only ONE option can be selected.
+
+Required field.
+
+DATABASE VALUES:
+
+compatible
+not_compatible
+unknown
+
+DISPLAY MAPPING:
+
+compatible → Uyumlu
+not_compatible → Uyumlu Değil
+unknown → Bilinmiyor
+
+==================================================
+6. KEDİ UYUMU
+==================================================
+
+FIELD TITLE:
+
+"Kedi Uyumu"
+
+OPTIONS:
+
+- Uyumlu
+- Uyumlu Değil
+- Bilinmiyor
+
+Only ONE option can be selected.
+
+Required field.
+
+DATABASE VALUES:
+
+compatible
+not_compatible
+unknown
+
+Suggested database field:
+
+cat_compatibility
+
+DISPLAY MAPPING:
+
+compatible → Uyumlu
+not_compatible → Uyumlu Değil
+unknown → Bilinmiyor
+
+Use an appropriate cat icon from the existing icon library if available.
+
+Do not use a cat emoji.
+
+==================================================
+7. KÖPEK UYUMU
+==================================================
+
+FIELD TITLE:
+
+"Köpek Uyumu"
+
+OPTIONS:
+
+- Uyumlu
+- Uyumlu Değil
+- Bilinmiyor
+
+Only ONE option can be selected.
+
+Required field.
+
+DATABASE VALUES:
+
+compatible
+not_compatible
+unknown
+
+Suggested database field:
+
+dog_compatibility
+
+DISPLAY MAPPING:
+
+compatible → Uyumlu
+not_compatible → Uyumlu Değil
+unknown → Bilinmiyor
+
+Use an appropriate dog/paw icon from the existing icon library.
+
+Do not use a dog emoji.
+
+==================================================
+8. TUVALET EĞİTİMİ
+==================================================
+
+FIELD TITLE:
+
+"Tuvalet Eğitimi"
+
+OPTIONS:
+
+- Var
+- Yok
+- Eğitim Aşamasında
+- Bilinmiyor
+
+Only ONE option can be selected.
+
+Required field.
+
+DATABASE VALUES:
+
+trained
+not_trained
+in_training
+unknown
+
+Suggested database field:
+
+toilet_training
+
+DISPLAY MAPPING:
+
+trained → Var
+not_trained → Yok
+in_training → Eğitim Aşamasında
+unknown → Bilinmiyor
+
+Use an appropriate existing training/check icon.
+
+Do not use emojis.
+
+==================================================
+9. FORM VALIDATION
+==================================================
+
+Before publishing an adoption listing, validate all seven fields:
+
+- Sağlık Durumu
+- Aşı
+- İç/Dış Mekan
+- Çocuk Uyumu
+- Kedi Uyumu
+- Köpek Uyumu
+- Tuvalet Eğitimi
+
+The user must explicitly select an option for every field.
+
+Do not automatically assume:
+
+İyi
+Var
+İç Mekan
+Uyumlu
+Uyumlu
+Uyumlu
+Var
+
+Do not save fake default values.
+
+If one or more fields are missing:
+
+Do not publish the listing.
+
+Show:
+
+"Lütfen detay bilgilerini tamamla."
+
+Then scroll to the first incomplete detail field if the existing form architecture safely supports scroll-to-error.
+
+The missing field should receive a subtle validation state.
+
+Do not show aggressive red error UI across the entire section.
+
+==================================================
+10. DATABASE SCHEMA AUDIT
+==================================================
+
+Audit the REAL Supabase table currently used for Sahiplendirme listings.
+
+Search the entire project for:
+
+from('...')
+insert(...)
+update(...)
+adoption
+listing
+pet_listing
+adoption_listing
+adoption_listings
+
+Identify the real table.
+
+Do not create another listing table.
+
+Audit whether equivalent fields already exist.
+
+Possible existing fields:
+
+health_status
+vaccination_status
+vaccinated
+environment_type
+living_environment
+child_compatibility
+good_with_children
+cat_compatibility
+good_with_cats
+dog_compatibility
+good_with_dogs
+toilet_training
+house_trained
+
+Reuse compatible existing columns.
+
+If equivalent fields do not exist, safely add:
+
+health_status text
+vaccination_status text
+environment_type text
+child_compatibility text
+cat_compatibility text
+dog_compatibility text
+toilet_training text
+
+Use the project's existing Supabase migration architecture.
+
+Do not manually create a parallel schema.
+
+==================================================
+11. DATABASE CONSTRAINTS
+==================================================
+
+Where compatible with the current database architecture, add CHECK constraints.
+
+health_status allowed values:
+
+good
+under_treatment
+special_care
+unknown
+
+vaccination_status allowed values:
+
+vaccinated
+not_vaccinated
+unknown
+
+environment_type allowed values:
+
+indoor
+outdoor
+both
+
+child_compatibility allowed values:
+
+compatible
+not_compatible
+unknown
+
+cat_compatibility allowed values:
+
+compatible
+not_compatible
+unknown
+
+dog_compatibility allowed values:
+
+compatible
+not_compatible
+unknown
+
+toilet_training allowed values:
+
+trained
+not_trained
+in_training
+unknown
+
+IMPORTANT:
+
+Before adding constraints, audit existing data.
+
+Do not add a constraint that breaks existing records.
+
+If legacy values exist:
+
+- inspect them
+- normalize safely where meaning is unambiguous
+- preserve unknown values as unknown when necessary
+
+Do not delete listings.
+
+==================================================
+12. SAVE SELECTED VALUES
+==================================================
+
+When the user publishes a listing, save all seven selected values to the real listing record.
+
+Conceptual payload:
+
+{
+  ...existingListingData,
+  health_status: selectedHealthStatus,
+  vaccination_status: selectedVaccinationStatus,
+  environment_type: selectedEnvironmentType,
+  child_compatibility: selectedChildCompatibility,
+  cat_compatibility: selectedCatCompatibility,
+  dog_compatibility: selectedDogCompatibility,
+  toilet_training: selectedToiletTraining
+}
+
+Use the real field names discovered during the schema audit.
+
+Do not store translated UI labels if normalized values are being used.
+
+SAVE:
+
+compatible
+
+NOT:
+
+Uyumlu
+
+SAVE:
+
+trained
+
+NOT:
+
+Var
+
+UI translation and database values must remain separate.
+
+==================================================
+13. UPDATE "DETAY BİLGİLER" DETAIL PAGE
+==================================================
+
+Update the existing adoption listing detail page.
+
+Find the existing section:
+
+"Detay Bilgiler"
+
+The current four information cards are:
+
+- Sağlık Durumu
+- Aşı
+- İç/Dış Mekan
+- Çocuk Uyumu
+
+Extend this section to seven cards:
+
+1. Sağlık Durumu
+2. Aşı
+3. İç/Dış Mekan
+4. Çocuk Uyumu
+5. Kedi Uyumu
+6. Köpek Uyumu
+7. Tuvalet Eğitimi
+
+All values must come from the REAL listing record.
+
+Remove hardcoded demo values.
+
+Search recursively for static values such as:
+
+"İyi"
+"Var"
+"İç Mekan"
+"Uyumlu"
+
+Do not remove these strings from mapping constants.
+
+Only remove them where they are being rendered as hardcoded listing data.
+
+==================================================
+14. DETAIL CARD LAYOUT
+==================================================
+
+Preserve the existing visual style shown in the current "Detay Bilgiler" section.
+
+Existing card visual language:
+
+- white card
+- large rounded corners
+- subtle shadow
+- small colored icon
+- muted field label
+- dark purple bold value
+
+Do not redesign these cards.
+
+Use a responsive two-column grid.
+
+Suggested order:
+
+ROW 1:
+Sağlık Durumu | Aşı
+
+ROW 2:
+İç/Dış Mekan | Çocuk Uyumu
+
+ROW 3:
+Kedi Uyumu | Köpek Uyumu
+
+ROW 4:
+Tuvalet Eğitimi | optional empty space
+
+IMPORTANT:
+
+Do not render a visible empty white card next to Tuvalet Eğitimi.
+
+The final Tuvalet Eğitimi card can:
+
+- occupy one grid column
+
+OR
+
+- span the full row
+
+Choose whichever matches the existing responsive architecture more cleanly.
+
+My preferred layout:
+
+ROW 4:
+Tuvalet Eğitimi spans the full width.
+
+Maintain the same card height language and spacing.
+
+==================================================
+15. CENTRALIZED DISPLAY MAPPINGS
+==================================================
+
+Create or extend ONE centralized mapping/helper system.
+
+Do not duplicate translation switch statements across:
+
+- create listing
+- edit listing
+- listing detail
+- listing cards
+
+Example conceptual configuration:
+
+PET_DETAIL_OPTIONS = {
+  healthStatus: [
+    { value: 'good', label: 'İyi' },
+    { value: 'under_treatment', label: 'Tedavi Görüyor' },
+    { value: 'special_care', label: 'Özel Bakım Gerekiyor' },
+    { value: 'unknown', label: 'Bilinmiyor' }
+  ],
+
+  vaccinationStatus: [
+    { value: 'vaccinated', label: 'Var' },
+    { value: 'not_vaccinated', label: 'Yok' },
+    { value: 'unknown', label: 'Bilinmiyor' }
+  ],
+
+  environmentType: [
+    { value: 'indoor', label: 'İç Mekan' },
+    { value: 'outdoor', label: 'Dış Mekan' },
+    { value: 'both', label: 'İç ve Dış Mekan' }
+  ],
+
+  childCompatibility: [
+    { value: 'compatible', label: 'Uyumlu' },
+    { value: 'not_compatible', label: 'Uyumlu Değil' },
+    { value: 'unknown', label: 'Bilinmiyor' }
+  ],
+
+  catCompatibility: [
+    { value: 'compatible', label: 'Uyumlu' },
+    { value: 'not_compatible', label: 'Uyumlu Değil' },
+    { value: 'unknown', label: 'Bilinmiyor' }
+  ],
+
+  dogCompatibility: [
+    { value: 'compatible', label: 'Uyumlu' },
+    { value: 'not_compatible', label: 'Uyumlu Değil' },
+    { value: 'unknown', label: 'Bilinmiyor' }
+  ],
+
+  toiletTraining: [
+    { value: 'trained', label: 'Var' },
+    { value: 'not_trained', label: 'Yok' },
+    { value: 'in_training', label: 'Eğitim Aşamasında' },
+    { value: 'unknown', label: 'Bilinmiyor' }
+  ]
+};
+
+Adapt naming to the existing project architecture.
+
+Do not create a duplicate constants system if an existing pet/listing options configuration already exists.
+
+==================================================
+16. EDIT LISTING SUPPORT
+==================================================
+
+Update:
+
+Sahiplendirme
+→ İlanlarım
+→ Düzenle
+
+The listing owner must be able to edit all seven detail fields.
+
+When the edit page opens:
+
+Load the existing values.
+
+Example:
+
+cat_compatibility = compatible
+
+Then:
+
+Kedi Uyumu
+→ Uyumlu
+
+must already appear selected.
+
+Example:
+
+toilet_training = in_training
+
+Then:
+
+Tuvalet Eğitimi
+→ Eğitim Aşamasında
+
+must already appear selected.
+
+Do not reset existing values when editing unrelated listing information.
+
+When saving:
+
+Update all changed detail fields.
+
+Then refresh/invalidate:
+
+- listing detail
+- İlanlarım
+- Tüm İlanlar
+- relevant listing cache
+
+Use the REAL existing query keys.
+
+Do not create duplicate cache systems.
+
+==================================================
+17. LEGACY LISTING COMPATIBILITY
+==================================================
+
+Existing adoption listings may have null values because these fields did not previously exist.
+
+The UI must not crash.
+
+For null, undefined, empty or unsupported legacy values:
+
+Display:
+
+"Bilinmiyor"
+
+Do not display:
+
+undefined
+null
+N/A
+-
+empty text
+
+Examples:
+
+getCatCompatibilityLabel(null)
+→ Bilinmiyor
+
+getDogCompatibilityLabel(undefined)
+→ Bilinmiyor
+
+getToiletTrainingLabel('')
+→ Bilinmiyor
+
+Existing listings must remain visible.
+
+Do not delete old listings.
+
+==================================================
+18. OPTIONAL DETAIL DATA IN LISTING CARDS
+==================================================
+
+Do NOT display all seven details directly on the main "Tüm İlanlar" cards.
+
+This would make the cards visually crowded.
+
+Keep the existing listing cards clean.
+
+The seven detail values should primarily appear on the listing detail page.
+
+If the current listing card already displays metadata chips, do not automatically add seven new chips.
+
+==================================================
+19. DO NOT CHANGE
+==================================================
+
+Do not change:
+
+- Sahiplendirme / Evcilim tab order
+- default Sahiplendirme tab behavior
+- İlan Oluştur sub-tab
+- İlanlarım sub-tab
+- Tüm İlanlar sub-tab
+- notification bell
+- adoption request system
+- adoption notifications
+- DM system
+- search system
+- listing category filters
+- image upload flow
+- bottom navigation
+- current listing card design
+
+Only extend the adoption listing detail data system.
+
+==================================================
+20. COMPLETE TEST FLOW
+==================================================
+
+Create a REAL test adoption listing.
+
+Select:
+
+Sağlık Durumu:
+Tedavi Görüyor
+
+Aşı:
+Yok
+
+İç/Dış Mekan:
+Dış Mekan
+
+Çocuk Uyumu:
+Uyumlu
+
+Kedi Uyumu:
+Uyumlu Değil
+
+Köpek Uyumu:
+Uyumlu
+
+Tuvalet Eğitimi:
+Eğitim Aşamasında
+
+Publish the listing.
+
+VERIFY DATABASE:
+
+health_status = under_treatment
+
+vaccination_status = not_vaccinated
+
+environment_type = outdoor
+
+child_compatibility = compatible
+
+cat_compatibility = not_compatible
+
+dog_compatibility = compatible
+
+toilet_training = in_training
+
+OPEN LISTING DETAIL.
+
+EXPECTED "DETAY BİLGİLER":
+
+Sağlık Durumu
+Tedavi Görüyor
+
+Aşı
+Yok
+
+İç/Dış Mekan
+Dış Mekan
+
+Çocuk Uyumu
+Uyumlu
+
+Kedi Uyumu
+Uyumlu Değil
+
+Köpek Uyumu
+Uyumlu
+
+Tuvalet Eğitimi
+Eğitim Aşamasında
+
+Then:
+
+Open:
+İlanlarım
+→ Düzenle
+
+Verify all seven existing values are preselected.
+
+Change:
+
+Kedi Uyumu:
+Uyumlu
+
+Tuvalet Eğitimi:
+Var
+
+Save.
+
+Verify:
+
+- database updates
+- listing detail updates immediately
+- values survive app restart
+- no duplicate listing is created
+- no existing listing data is lost
+
+Test on:
+
+- iOS
+- Android
+- Web
+
+==================================================
+FINAL REPORT REQUIRED
+==================================================
+
+After implementation, report:
+
+1. Real Supabase adoption listing table used
+2. Existing detail columns reused
+3. New columns added
+4. Database constraints added
+5. Listing creation form component changed
+6. Listing edit component changed
+7. Listing detail component changed
+8. Centralized detail options/mapping file used
+9. Legacy listing fallback behavior
+10. Cache/query invalidation performed
+11. iOS test result
+12. Android test result
+13. Web test result
+
+Do not report "completed" until the complete data lifecycle works:
+
+user selection
+→ form state
+→ validation
+→ Supabase save
+→ listing fetch
+→ data mapping
+→ Detay Bilgiler cards
+→ edit preselection
+→ update
+→ app restart persistence

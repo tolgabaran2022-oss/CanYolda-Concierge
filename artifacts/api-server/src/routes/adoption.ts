@@ -140,6 +140,8 @@ router.post("/adoption", async (req, res) => {
       petName, petType, petAge, breed, gender, vaccinated,
       photoUrl, location, description, userName, contactInfo,
       allowPhoneContact, allowMessages, status,
+      healthStatus, vaccinationStatus, environmentType,
+      childCompatibility, catCompatibility, dogCompatibility, toiletTraining,
     } = req.body as Record<string, string | boolean>;
 
     if (!petName || !String(petName).trim()) {
@@ -148,21 +150,28 @@ router.post("/adoption", async (req, res) => {
     }
 
     const [listing] = await db.insert(adoptionListings).values({
-      petName:           String(petName),
-      petType:           String(petType ?? ""),
-      petAge:            String(petAge ?? ""),
-      breed:             String(breed ?? ""),
-      gender:            String(gender ?? ""),
-      vaccinated:        vaccinated === true || vaccinated === "true",
-      photoUrl:          String(photoUrl ?? ""),
-      location:          String(location ?? ""),
-      description:       String(description ?? ""),
+      petName:            String(petName),
+      petType:            String(petType ?? ""),
+      petAge:             String(petAge ?? ""),
+      breed:              String(breed ?? ""),
+      gender:             String(gender ?? ""),
+      vaccinated:         vaccinated === true || vaccinated === "true",
+      photoUrl:           String(photoUrl ?? ""),
+      location:           String(location ?? ""),
+      description:        String(description ?? ""),
       userId,
-      userName:          String(userName ?? ""),
-      contactInfo:       String(contactInfo ?? ""),
-      allowPhoneContact: allowPhoneContact === true || allowPhoneContact === "true",
-      allowMessages:     allowMessages !== false && allowMessages !== "false",
-      status:            String(status ?? "Aktif"),
+      userName:           String(userName ?? ""),
+      contactInfo:        String(contactInfo ?? ""),
+      allowPhoneContact:  allowPhoneContact === true || allowPhoneContact === "true",
+      allowMessages:      allowMessages !== false && allowMessages !== "false",
+      status:             String(status ?? "Aktif"),
+      healthStatus:       healthStatus ? String(healthStatus) : null,
+      vaccinationStatus:  vaccinationStatus ? String(vaccinationStatus) : null,
+      environmentType:    environmentType ? String(environmentType) : null,
+      childCompatibility: childCompatibility ? String(childCompatibility) : null,
+      catCompatibility:   catCompatibility ? String(catCompatibility) : null,
+      dogCompatibility:   dogCompatibility ? String(dogCompatibility) : null,
+      toiletTraining:     toiletTraining ? String(toiletTraining) : null,
     }).returning();
 
     res.status(201).json(listing);
@@ -186,22 +195,31 @@ router.patch("/adoption/:id", async (req, res) => {
       petName, petType, petAge, breed, gender, vaccinated,
       photoUrl, location, description, contactInfo,
       allowPhoneContact, allowMessages, status,
+      healthStatus, vaccinationStatus, environmentType,
+      childCompatibility, catCompatibility, dogCompatibility, toiletTraining,
     } = req.body as Record<string, string | boolean | undefined>;
 
     const updates: Partial<typeof adoptionListings.$inferInsert> = { updatedAt: new Date() };
-    if (petName           !== undefined) updates.petName           = String(petName);
-    if (petType           !== undefined) updates.petType           = String(petType);
-    if (petAge            !== undefined) updates.petAge            = String(petAge);
-    if (breed             !== undefined) updates.breed             = String(breed);
-    if (gender            !== undefined) updates.gender            = String(gender);
-    if (vaccinated        !== undefined) updates.vaccinated        = vaccinated === true || vaccinated === "true";
-    if (photoUrl          !== undefined) updates.photoUrl          = String(photoUrl);
-    if (location          !== undefined) updates.location          = String(location);
-    if (description       !== undefined) updates.description       = String(description);
-    if (contactInfo       !== undefined) updates.contactInfo       = String(contactInfo);
-    if (allowPhoneContact !== undefined) updates.allowPhoneContact = allowPhoneContact === true || allowPhoneContact === "true";
-    if (allowMessages     !== undefined) updates.allowMessages     = allowMessages !== false && allowMessages !== "false";
-    if (status            !== undefined) updates.status            = String(status);
+    if (petName             !== undefined) updates.petName            = String(petName);
+    if (petType             !== undefined) updates.petType            = String(petType);
+    if (petAge              !== undefined) updates.petAge             = String(petAge);
+    if (breed               !== undefined) updates.breed              = String(breed);
+    if (gender              !== undefined) updates.gender             = String(gender);
+    if (vaccinated          !== undefined) updates.vaccinated         = vaccinated === true || vaccinated === "true";
+    if (photoUrl            !== undefined) updates.photoUrl           = String(photoUrl);
+    if (location            !== undefined) updates.location           = String(location);
+    if (description         !== undefined) updates.description        = String(description);
+    if (contactInfo         !== undefined) updates.contactInfo        = String(contactInfo);
+    if (allowPhoneContact   !== undefined) updates.allowPhoneContact  = allowPhoneContact === true || allowPhoneContact === "true";
+    if (allowMessages       !== undefined) updates.allowMessages      = allowMessages !== false && allowMessages !== "false";
+    if (status              !== undefined) updates.status             = String(status);
+    if (healthStatus        !== undefined) updates.healthStatus       = healthStatus ? String(healthStatus) : null;
+    if (vaccinationStatus   !== undefined) updates.vaccinationStatus  = vaccinationStatus ? String(vaccinationStatus) : null;
+    if (environmentType     !== undefined) updates.environmentType    = environmentType ? String(environmentType) : null;
+    if (childCompatibility  !== undefined) updates.childCompatibility = childCompatibility ? String(childCompatibility) : null;
+    if (catCompatibility    !== undefined) updates.catCompatibility   = catCompatibility ? String(catCompatibility) : null;
+    if (dogCompatibility    !== undefined) updates.dogCompatibility   = dogCompatibility ? String(dogCompatibility) : null;
+    if (toiletTraining      !== undefined) updates.toiletTraining     = toiletTraining ? String(toiletTraining) : null;
 
     const [updated] = await db.update(adoptionListings).set(updates).where(eq(adoptionListings.id, req.params.id)).returning();
     res.json(updated);
