@@ -1,0 +1,1531 @@
+CANYOLDAŞI — PRODUCTION IN-APP PURCHASE SYSTEM
+APPLE IN-APP PURCHASE + GOOGLE PLAY BILLING + LISTING PROMOTION / BOOST
+
+Mevcut CanYoldaşı uygulamasında bulunan:
+
+“İlanı Öne Çıkar”
+“Paket Seç”
+“Öne Çıkar”
+
+akışını incele.
+
+Şu anda öne çıkarma alanı UI seviyesinde veya fake/mock ödeme mantığıyla çalışıyor olabilir.
+
+BU SİSTEMİ GERÇEK PRODUCTION-READY MAĞAZA ÖDEME SİSTEMİNE ÇEVİR.
+
+AMAÇ:
+
+Kullanıcı sahiplendirme ilanı için bir öne çıkarma paketi seçtiğinde:
+
+iOS:
+Apple In-App Purchase / StoreKit satın alma akışı açılsın.
+
+Android:
+Google Play Billing satın alma akışı açılsın.
+
+Ödeme mağaza tarafından başarılı şekilde tamamlanmadan ilan ASLA öne çıkarılmasın.
+
+Client tarafından gönderilen:
+
+is_promoted = true
+
+veya:
+
+payment_success = true
+
+gibi değerlere güvenme.
+
+Satın alma backend/server tarafında doğrulanmadan promotion entitlement verme.
+
+==================================================
+1. FIRST: FULL PROJECT AUDIT
+==================================================
+
+Önce mevcut proje mimarisini recursive olarak incele.
+
+Şunları ara:
+
+promote
+promotion
+boost
+featured
+featured_listing
+is_promoted
+promoted_until
+boost_package
+package
+payment
+purchase
+transaction
+receipt
+billing
+StoreKit
+IAP
+in-app-purchase
+react-native-iap
+expo-iap
+RevenueCat
+Stripe
+Apple Pay
+Google Pay
+
+Aşağıdaki ekranları ve data flow'u takip et:
+
+- Sahiplendirme ilan kartı
+- İlan detay ekranı
+- İlanlarım
+- İlan düzenleme
+- Öne çıkar modal/page
+- Paket seçme ekranı
+- Öne Çıkar butonu
+- Supabase tables
+- Supabase Edge Functions
+- API routes
+- server services
+- environment configuration
+
+Önce mevcut implementation'ın root cause ve mimarisini belirle.
+
+Existing working architecture'ı gereksiz şekilde yeniden yazma.
+
+==================================================
+2. IMPORTANT PAYMENT CLASSIFICATION
+==================================================
+
+Bu özellik fiziksel ürün satışı değildir.
+
+Kullanıcı uygulama içerisindeki bir sahiplendirme ilanına geçici dijital görünürlük / boost satın alıyor.
+
+Bu nedenle native mobile store purchase flow oluştur.
+
+iOS:
+
+Apple In-App Purchase
+
+Android:
+
+Google Play Billing
+
+Bu ödeme sistemini:
+
+Stripe Checkout
+iyzico
+PayTR
+manual credit card form
+Apple Pay web checkout
+Google Pay web checkout
+
+ile native uygulama içindeki boost satın alma akışında değiştirme.
+
+Özellikle sahte kredi kartı formu oluşturma.
+
+Apple Pay logosuna basınca custom payment modal açma.
+
+Google Play logosuna basınca fake success oluşturma.
+
+==================================================
+3. BOOST PRODUCTS
+==================================================
+
+CanYoldaşı için üç adet tekrar satın alınabilir promotion product tanımla.
+
+Canonical product IDs:
+
+canyoldasi_boost_1_day
+canyoldasi_boost_3_days
+canyoldasi_boost_7_days
+
+Product mapping:
+
+canyoldasi_boost_1_day
+durationDays: 1
+
+canyoldasi_boost_3_days
+durationDays: 3
+
+canyoldasi_boost_7_days
+durationDays: 7
+
+Bu ürünleri subscription olarak modelleme.
+
+Otomatik yenilenen abonelik değildir.
+
+Kullanıcı belirli bir ilan için tek seferlik geçici boost satın alıyor.
+
+Platform ve mevcut billing SDK'sının desteklediği doğru consumable / one-time product modelini kullan.
+
+Hardcoded fake transaction oluşturma.
+
+==================================================
+4. STORE PRICES ARE SOURCE OF TRUTH
+==================================================
+
+UI içerisinde fiyatları production source of truth olarak hardcode etme.
+
+Örneğin:
+
+29.99 TL
+59.99 TL
+99.99 TL
+
+değerlerini ödeme sırasında custom amount olarak mağazaya gönderme.
+
+App Store ve Google Play ürün kataloglarından:
+
+localized price
+currency
+product title
+product description
+
+çek.
+
+UI'da mağazanın döndürdüğü formatted/localized price göster.
+
+Örnek:
+
+₺29,99
+
+veya kullanıcının mağaza bölgesine göre ilgili fiyat.
+
+Package card product metadata ile bağlanmalı.
+
+Product fetch başarısızsa kullanıcı satın alma işlemini başlatamamalı.
+
+Türkçe hata göster:
+
+“Öne çıkarma paketleri şu anda yüklenemiyor. Lütfen tekrar deneyin.”
+
+==================================================
+5. PRODUCT CONFIGURATION DOCUMENTATION
+==================================================
+
+Kod içerisinde canonical product ID listesi tek source of truth olsun.
+
+Örneğin mevcut architecture'a uygun:
+
+BOOST_PRODUCTS
+
+veya:
+
+promotionProducts.ts
+
+oluştur.
+
+Aşağıdaki platform mapping'i destekle:
+
+type BoostProduct = {
+  productId: string;
+  durationDays: number;
+};
+
+iOS ve Android ürün ID'leri aynı ise ortak kullan.
+
+Farklı ise explicit platform mapping oluştur.
+
+Magic string'leri component'lere dağıtma.
+
+==================================================
+6. PLATFORM-SPECIFIC PURCHASE FLOW
+==================================================
+
+Platform.OS kontrolü ile doğru billing provider kullan.
+
+iOS:
+
+Apple StoreKit compatible purchase flow.
+
+Android:
+
+Google Play Billing compatible purchase flow.
+
+Mevcut proje Expo / React Native ise önce:
+
+Expo SDK version
+React Native version
+New Architecture status
+development build setup
+EAS configuration
+native module support
+
+incele.
+
+Expo Go içerisinde native IAP çalışmıyorsa fake fallback oluşturma.
+
+Bunun yerine Development Build / EAS Build gereksinimini düzgün uygula ve raporla.
+
+Mevcut Expo sürümüyle gerçekten uyumlu, actively maintained billing solution seç.
+
+Projede zaten billing library varsa onu kullan.
+
+Yeni library eklemeden önce compatibility kontrol et.
+
+Do not blindly install outdated packages.
+
+==================================================
+7. PURCHASE BUTTON FLOW
+==================================================
+
+Expected flow:
+
+User opens listing promotion screen.
+
+↓
+
+Store products load.
+
+↓
+
+User selects package.
+
+↓
+
+Selected card gets active state.
+
+↓
+
+User taps “Öne Çıkar”.
+
+↓
+
+Validate authenticated user.
+
+↓
+
+Validate listing ownership.
+
+↓
+
+Validate listing exists.
+
+↓
+
+Validate listing is active and eligible.
+
+↓
+
+Create secure pending purchase intent / context if architecture requires.
+
+↓
+
+Launch Apple or Google native purchase UI.
+
+↓
+
+Purchase completes.
+
+↓
+
+Obtain transaction/purchase data.
+
+↓
+
+Send purchase proof to secure backend.
+
+↓
+
+Backend verifies purchase with correct store.
+
+↓
+
+Backend checks transaction idempotency.
+
+↓
+
+Backend creates promotion transaction.
+
+↓
+
+Backend activates promotion.
+
+↓
+
+Client receives verified success.
+
+↓
+
+UI shows success.
+
+↓
+
+Listing queries are refreshed.
+
+Do not activate promotion before backend verification.
+
+==================================================
+8. USER MUST OWN THE LISTING
+==================================================
+
+Only listing owner can purchase promotion for that listing.
+
+Backend must validate:
+
+authenticated_user.id === listing.user_id
+
+Do not rely only on UI.
+
+Even if client manually modifies listingId:
+
+server must reject unauthorized listing promotion.
+
+Return safe error.
+
+Example:
+
+“Bu ilan için öne çıkarma işlemi yapma yetkiniz yok.”
+
+==================================================
+9. PURCHASE CONTEXT
+==================================================
+
+The purchase needs to be associated with a specific listing.
+
+A store transaction alone does not automatically know which CanYoldaşı listing should be promoted.
+
+Create a secure purchase context.
+
+Possible production-safe structure:
+
+promotion_purchase_intents
+
+id
+user_id
+listing_id
+product_id
+platform
+status
+created_at
+expires_at
+
+Before opening purchase flow, create a pending intent if this architecture is appropriate.
+
+After verified store purchase:
+
+transaction maps to:
+
+user
+listing
+product
+purchase intent
+
+Never trust an arbitrary listing_id submitted after a purchase without checking the authenticated purchase context.
+
+Prevent a user from purchasing one boost and replaying the same transaction against multiple listings.
+
+==================================================
+10. DATABASE MODEL
+==================================================
+
+Audit existing database first.
+
+Do not reset production database.
+
+Do not drop existing listing data.
+
+Create a migration if necessary.
+
+Recommended production model:
+
+TABLE: listing_promotions
+
+id uuid primary key
+listing_id uuid not null
+user_id uuid not null
+product_id text not null
+platform text not null
+store_transaction_id text not null
+store_original_transaction_id text nullable
+purchase_token text nullable
+purchase_status text not null
+duration_days integer not null
+starts_at timestamptz nullable
+expires_at timestamptz nullable
+verified_at timestamptz nullable
+created_at timestamptz default now()
+updated_at timestamptz default now()
+
+Store raw sensitive store response only if absolutely required and securely.
+
+Do not expose purchase tokens to other users.
+
+Add unique constraint/index on a safe transaction identity.
+
+For example:
+
+platform + store_transaction_id
+
+must not be processed twice.
+
+For Google purchase token uniqueness, apply appropriate unique handling.
+
+==================================================
+11. LISTING PROMOTION STATE
+==================================================
+
+Audit listings table.
+
+If existing architecture uses:
+
+is_promoted
+promoted_until
+
+keep them only if they can be safely synchronized.
+
+Recommended:
+
+promoted_until timestamptz nullable
+
+A listing is active promoted when:
+
+promoted_until IS NOT NULL
+AND
+promoted_until > now()
+
+Do not rely on a permanently stored:
+
+is_promoted = true
+
+without expiry validation.
+
+If is_promoted exists for UI/query performance, ensure it cannot become stale.
+
+Prefer deriving promotion state from promoted_until or an active promotion record.
+
+==================================================
+12. PROMOTION DURATION
+==================================================
+
+Product duration mapping must be server-controlled.
+
+Never accept:
+
+durationDays: 999
+
+from the client.
+
+Client sends product ID/purchase proof.
+
+Server determines:
+
+canyoldasi_boost_1_day => 1 day
+canyoldasi_boost_3_days => 3 days
+canyoldasi_boost_7_days => 7 days
+
+Do not trust client-defined duration.
+
+==================================================
+13. ACTIVE PROMOTION STACKING RULE
+==================================================
+
+Use the following CanYoldaşı promotion extension logic:
+
+If listing is NOT currently promoted:
+
+starts_at = now()
+expires_at = now() + packageDuration
+
+If listing is already promoted and promoted_until > now():
+
+new expiration should EXTEND the current promotion.
+
+Example:
+
+Current promoted_until:
+20 July 2026
+
+User buys 3-day boost:
+
+New promoted_until:
+23 July 2026
+
+Do not silently replace the remaining active boost.
+
+Server-side logic:
+
+baseTime = max(now(), currentPromotedUntil)
+
+newPromotedUntil = baseTime + productDuration
+
+Perform this update transactionally to prevent race conditions.
+
+==================================================
+14. APPLE IN-APP PURCHASE
+==================================================
+
+Implement Apple's native in-app purchase flow according to the current project architecture and current supported StoreKit integration.
+
+Use App Store configured products:
+
+canyoldasi_boost_1_day
+canyoldasi_boost_3_days
+canyoldasi_boost_7_days
+
+Fetch real Store product metadata.
+
+Start the native Apple purchase sheet.
+
+Handle purchase states correctly:
+
+success
+user cancelled
+pending
+failed
+unverified
+
+A user cancellation is NOT a generic error.
+
+If cancelled:
+
+close loading state
+do not activate promotion
+do not show scary failure alert
+
+A friendly/no-op cancellation UX is acceptable.
+
+For a successful transaction:
+
+obtain the signed transaction/purchase information supported by the chosen integration.
+
+Send required purchase proof to backend.
+
+Verify purchase on server using Apple's current supported server verification architecture.
+
+Do not implement new production verification around deprecated verifyReceipt if current project does not require legacy compatibility.
+
+Prefer current App Store Server API / signed transaction verification architecture.
+
+Validate at minimum:
+
+bundle/app identity where applicable
+product ID
+transaction identity
+transaction validity
+signed transaction authenticity
+purchase status
+environment
+revocation/refund state when available
+
+Do not accept a transaction just because productId matches.
+
+==================================================
+15. APPLE SERVER NOTIFICATIONS
+==================================================
+
+Prepare production architecture for App Store Server Notifications.
+
+Create a secure server endpoint / Edge Function suitable for App Store Server Notifications if the backend architecture supports it.
+
+Verify signed notification data.
+
+Store transaction lifecycle updates safely.
+
+For promotion purchases, handle relevant reversal/refund/revocation scenarios based on actual store information.
+
+Do not expose Apple credentials in the client.
+
+Document which App Store Connect notification URL must be configured.
+
+Do not fake App Store notification testing.
+
+==================================================
+16. GOOGLE PLAY BILLING
+==================================================
+
+Implement Google Play Billing purchase flow using the currently compatible billing integration for this project.
+
+Products:
+
+canyoldasi_boost_1_day
+canyoldasi_boost_3_days
+canyoldasi_boost_7_days
+
+They are repeatable one-time boost products.
+
+Fetch real Google Play product details.
+
+Display store-formatted price.
+
+Launch native Google Play purchase sheet.
+
+Handle:
+
+PURCHASED
+PENDING
+cancelled
+failed
+
+PENDING purchase must NOT activate promotion.
+
+Only verified completed purchase can activate promotion.
+
+Send purchase token and required product/order data to backend.
+
+==================================================
+17. GOOGLE SERVER-SIDE VERIFICATION
+==================================================
+
+Backend must verify Google purchase with the Google Play Developer API / current supported Google server verification flow.
+
+Validate:
+
+package name
+product ID
+purchase token
+purchase state
+quantity where relevant
+acknowledgement/consumption state
+transaction uniqueness
+
+Do not trust:
+
+client purchaseState
+client success boolean
+client formatted receipt
+
+After verified entitlement is granted for a consumable boost product, correctly consume the purchase according to Google Play Billing requirements so the product can be purchased again.
+
+Ensure processing is idempotent.
+
+Do not consume an invalid purchase.
+
+Do not grant promotion twice.
+
+Do not leave successfully delivered consumable purchases permanently unprocessed.
+
+==================================================
+18. SERVER CREDENTIAL SECURITY
+==================================================
+
+All Apple and Google server credentials must stay server-side.
+
+Never place:
+
+Apple private key
+App Store Server API private key
+Google service account JSON
+Google API private credentials
+
+inside:
+
+EXPO_PUBLIC_*
+React Native source
+frontend constants
+client bundle
+
+Use Supabase secrets / secure backend environment variables.
+
+Audit .env files.
+
+Ensure private credentials are not committed to git.
+
+If secrets were previously exposed, report this explicitly and recommend credential rotation.
+
+==================================================
+19. SUPABASE EDGE FUNCTIONS / BACKEND
+==================================================
+
+Use the existing backend architecture.
+
+If the project uses Supabase Edge Functions, create production-safe functions such as:
+
+create-promotion-purchase-intent
+
+verify-apple-promotion-purchase
+
+verify-google-promotion-purchase
+
+apple-store-notifications
+
+google-play-notifications
+
+Names can follow the project's current conventions.
+
+Do not create unnecessary duplicate APIs.
+
+All verification functions must:
+
+require authentication where appropriate
+validate request schema
+validate listing ownership
+validate product ID
+verify store transaction
+check idempotency
+update database transactionally
+return typed/safe response
+log safely
+
+Never log full private credentials.
+
+Never expose purchase tokens in public logs.
+
+==================================================
+20. IDEMPOTENCY — CRITICAL
+==================================================
+
+The same store transaction must NEVER activate the promotion twice.
+
+Example:
+
+Transaction ABC
+
+First verify request:
+success
++3 days
+
+Client retries request:
+must return already processed result
+
+Expected:
+still +3 days total
+
+NOT:
++6 days
+
+Use database unique constraints and transactional server logic.
+
+Handle concurrent requests.
+
+Do not implement only:
+
+if (exists) return
+
+without considering race conditions.
+
+Use a real database uniqueness/transaction-safe solution.
+
+==================================================
+21. PURCHASE RECONCILIATION
+==================================================
+
+A user may:
+
+complete payment
+lose internet
+close the app
+backend response may timeout
+
+The payment must not be permanently lost.
+
+On app start / billing initialization:
+
+listen for unfinished/unprocessed purchases using the supported billing library.
+
+Reconcile pending verified transactions with backend.
+
+If purchase was already processed:
+
+return idempotent success.
+
+If purchase is valid but promotion was not granted:
+
+complete server verification and grant promotion.
+
+Do not require the user to pay again because the app closed after payment.
+
+==================================================
+22. PURCHASE LISTENER LIFECYCLE
+==================================================
+
+Audit purchase listeners.
+
+Prevent:
+
+duplicate listener registration
+listeners remaining after unmount
+same transaction handler running multiple times
+Fast Refresh duplicate processing
+multiple purchase callbacks
+
+Use proper subscription cleanup.
+
+There must be one predictable purchase processing pipeline.
+
+==================================================
+23. LOADING STATES
+==================================================
+
+Use explicit states.
+
+Example:
+
+idle
+loading_products
+ready
+starting_purchase
+purchase_pending
+verifying
+activating
+success
+error
+
+Do not use one global boolean that can become stuck.
+
+“Öne Çıkar” button must be disabled while purchase is already being initiated.
+
+Fast double taps must not launch two purchase flows.
+
+All error/cancel paths must correctly reset UI state.
+
+==================================================
+24. PACKAGE UI
+==================================================
+
+Keep the existing CanYoldaşı premium purple/lilac design system.
+
+Do not redesign the entire application.
+
+Promotion package UI should show:
+
+1 Gün
+store localized price
+
+3 Gün
+store localized price
+“En Popüler”
+
+7 Gün
+store localized price
+
+Selected package:
+
+purple border
+soft purple background
+clear selected indicator
+
+The primary button:
+
+“Öne Çıkar”
+
+Use existing CanYoldaşı button system.
+
+Do not manually create Apple payment UI.
+
+Do not draw a fake Face ID popup.
+
+Do not create fake Google Play purchase dialog.
+
+The actual store/native payment sheet must be launched by the billing SDK.
+
+==================================================
+25. PLATFORM LABELING
+==================================================
+
+Do not put two payment buttons on the same native screen like:
+
+[Apple ile Öde]
+[Google Play ile Öde]
+
+The user should not manually choose the store.
+
+Platform determines payment provider.
+
+iOS:
+
+single “Öne Çıkar” CTA
+→ Apple native IAP flow
+
+Android:
+
+single “Öne Çıkar” CTA
+→ Google Play native billing flow
+
+Do not show “Apple ile Öde” as if this were Sign in with Apple.
+
+Do not confuse Apple Pay with In-App Purchase.
+
+==================================================
+26. WEB PLATFORM
+==================================================
+
+Audit the existing web version.
+
+Do not try to open StoreKit or Google Play Billing on web.
+
+Implement an explicit platform strategy.
+
+For the current CanYoldaşı release:
+
+Native iOS and Android promotion purchases are supported.
+
+For web:
+
+do not create fake successful payment
+do not activate promotion without verified payment
+
+If no compliant web payment architecture is currently approved/configured, show a clear Turkish message:
+
+“İlan öne çıkarma satın alma işlemi şu anda iOS ve Android uygulamalarında kullanılabilir.”
+
+Do not silently fail.
+
+Do not automatically introduce Stripe into the web app without explicit architecture approval.
+
+==================================================
+27. DISPLAY PROMOTED LISTINGS
+==================================================
+
+After verified purchase:
+
+listing promoted_until must be updated.
+
+Audit all relevant adoption listing queries:
+
+- Tüm İlanlar
+- Sahiplendirme
+- search results
+- filtered results
+- map/list areas if listing promotions apply there
+
+Promotion ranking must be server/data-query driven.
+
+Example ranking:
+
+active promoted listings first
+
+then regular listing sorting.
+
+Suggested logic:
+
+activePromotion =
+promoted_until IS NOT NULL
+AND promoted_until > now()
+
+Order:
+
+active promoted DESC
+promotion relevance/order
+normal listing created_at DESC
+
+Do not permanently pin expired promotions.
+
+Expired boost listings automatically return to normal ranking.
+
+==================================================
+28. PROMOTED BADGE
+==================================================
+
+Only a successfully promoted, currently active listing can show:
+
+“Öne Çıkan”
+
+or existing CanYoldaşı promoted badge.
+
+Do not show badge based only on old:
+
+is_promoted = true
+
+if promoted_until has expired.
+
+The listing owner should see remaining promotion time in “İlanlarım”.
+
+Example:
+
+“2 gün 4 saat öne çıkarılıyor”
+
+Use actual promoted_until.
+
+Do not hardcode remaining duration.
+
+==================================================
+29. REFUNDS / REVERSALS
+==================================================
+
+Design transaction records so store reversal/refund status can be recorded.
+
+Do not delete transaction history.
+
+Update purchase_status.
+
+For a fully reversed/revoked transaction, handle promotion entitlement according to the actual verified store lifecycle and current business rules.
+
+At minimum:
+
+do not allow a revoked transaction to be replayed.
+
+Preserve audit history.
+
+==================================================
+30. RLS AND DATABASE SECURITY
+==================================================
+
+Audit Supabase RLS.
+
+A normal authenticated client must NOT be able to directly:
+
+insert a verified listing promotion
+set purchase_status = verified
+set arbitrary promoted_until
+mark transaction completed
+
+Promotion activation must be controlled through secure server-side verification.
+
+Users may read only the promotion data required for their own UI or public listing promotion status.
+
+Sensitive purchase fields must not be publicly readable.
+
+Audit existing UPDATE policy on listings.
+
+Critical:
+
+If users can currently execute:
+
+supabase
+.from('listings')
+.update({
+  promoted_until: '2099-01-01'
+})
+
+directly from client:
+
+THIS IS A SECURITY BUG.
+
+Fix it.
+
+Prevent client-controlled promotion fields from being arbitrarily modified.
+
+Use appropriate database permissions / secure server function architecture.
+
+==================================================
+31. TYPESCRIPT AND DATA TYPES
+==================================================
+
+Create typed purchase models.
+
+Avoid:
+
+any
+unknown as Purchase
+@ts-ignore
+
+unless absolutely unavoidable and documented.
+
+Create platform-neutral app purchase types where possible.
+
+Example:
+
+type PromotionPurchaseStatus =
+  | 'pending'
+  | 'verified'
+  | 'processed'
+  | 'failed'
+  | 'revoked'
+  | 'refunded';
+
+Use the project's current type conventions.
+
+==================================================
+32. ERROR HANDLING — TURKISH UX
+==================================================
+
+Provide user-friendly Turkish feedback.
+
+Product load failure:
+
+“Öne çıkarma paketleri şu anda yüklenemiyor. Lütfen tekrar deneyin.”
+
+Purchase pending:
+
+“Ödemeniz mağaza tarafından işleniyor. Tamamlandığında ilanınız otomatik olarak öne çıkarılacak.”
+
+Verification error:
+
+“Ödemeniz doğrulanamadı. Ücret alındıysa işleminiz otomatik olarak tekrar kontrol edilecektir.”
+
+Listing ownership error:
+
+“Bu ilan için öne çıkarma işlemi yapma yetkiniz yok.”
+
+Success:
+
+“İlanın öne çıkarıldı 🎉”
+
+Optionally include:
+
+“İlanın 3 gün boyunca daha görünür olacak.”
+
+Do not show raw:
+
+BillingResponseCode
+JWS error
+purchase token
+SQL error
+Edge Function stack trace
+
+to user.
+
+==================================================
+33. ANALYTICS / AUDIT EVENTS
+==================================================
+
+If the project has an analytics system, instrument:
+
+promotion_screen_viewed
+promotion_product_selected
+promotion_purchase_started
+promotion_purchase_cancelled
+promotion_purchase_pending
+promotion_purchase_verified
+promotion_purchase_failed
+promotion_activated
+
+Never send full purchase token or private transaction credentials to third-party analytics.
+
+==================================================
+34. APP STORE CONNECT CONFIGURATION REPORT
+==================================================
+
+At the end, provide exact manual configuration steps I must perform in App Store Connect.
+
+Include:
+
+where to create In-App Purchases
+product type required
+the exact 3 product IDs
+which products need localization
+pricing configuration
+review screenshot/metadata requirement if applicable
+sandbox tester setup
+App Store Server Notifications configuration
+required keys/issuer information for backend verification
+which server secrets must be configured
+
+Do not say “configure Apple”.
+
+Give exact CanYoldaşı-specific checklist.
+
+==================================================
+35. GOOGLE PLAY CONSOLE CONFIGURATION REPORT
+==================================================
+
+At the end, provide exact manual configuration steps I must perform in Google Play Console.
+
+Include:
+
+where to create one-time products
+the exact 3 product IDs
+consumable/repeatable processing expectation
+price configuration
+activation/publishing requirements
+license tester setup
+internal testing track requirements
+Play Console/API access requirements
+service account/server verification requirements
+Real-time Developer Notifications setup if implemented
+which server secrets must be configured
+
+Give an exact CanYoldaşı-specific checklist.
+
+==================================================
+36. TEST MODE
+==================================================
+
+Implement and document proper sandbox/test flow.
+
+iOS:
+
+StoreKit / Sandbox testing as appropriate for the actual architecture.
+
+Android:
+
+Play Billing license testers and supported test environment.
+
+Do not create:
+
+if (__DEV__) paymentSuccess = true
+
+Do not grant real promotion entitlement from a fake frontend success button.
+
+If a local developer mock is absolutely needed for pure UI preview, isolate it clearly and ensure it cannot invoke production promotion activation.
+
+Production backend must reject fake proof.
+
+==================================================
+37. FULL SECURITY ATTACK AUDIT
+==================================================
+
+After implementation, actively test these attack cases:
+
+ATTACK 1:
+Client sends productId = canyoldasi_boost_7_days without purchasing.
+
+Expected:
+REJECT.
+
+ATTACK 2:
+Client sends isPromoted = true.
+
+Expected:
+No effect.
+
+ATTACK 3:
+Client modifies durationDays to 999.
+
+Expected:
+Server ignores client duration.
+
+ATTACK 4:
+One real transaction is submitted twice.
+
+Expected:
+Promotion granted once.
+
+ATTACK 5:
+One real transaction is submitted for Listing A, then Listing B.
+
+Expected:
+Second replay rejected.
+
+ATTACK 6:
+User tries to promote another user's listing.
+
+Expected:
+Rejected.
+
+ATTACK 7:
+Fake Apple transaction string.
+
+Expected:
+Rejected.
+
+ATTACK 8:
+Fake Google purchase token.
+
+Expected:
+Rejected.
+
+ATTACK 9:
+Google PENDING purchase.
+
+Expected:
+No promotion yet.
+
+ATTACK 10:
+Network disconnect after payment.
+
+Expected:
+Purchase is reconciled later without another charge.
+
+ATTACK 11:
+Two verify requests arrive simultaneously.
+
+Expected:
+Single promotion activation.
+
+ATTACK 12:
+Client directly updates promoted_until in Supabase.
+
+Expected:
+Blocked.
+
+Fix every confirmed security flaw discovered during this audit.
+
+==================================================
+38. FUNCTIONAL TEST MATRIX
+==================================================
+
+Run/check:
+
+IOS TEST 1:
+Open promotion screen.
+Products load from store.
+
+IOS TEST 2:
+Select 1-day package.
+Purchase through Apple sandbox.
+Verification succeeds.
+Listing promoted for 1 day.
+
+IOS TEST 3:
+Cancel Apple purchase.
+No promotion.
+
+IOS TEST 4:
+Purchase 3-day boost while 1-day boost is active.
+Expiration extends by 3 days.
+
+ANDROID TEST 1:
+Products load from Google Play.
+
+ANDROID TEST 2:
+Buy 1-day product with license tester.
+Backend verifies.
+Product processed/consumed correctly.
+Promotion activates.
+
+ANDROID TEST 3:
+Buy the same consumable product again.
+Expected:
+Allowed.
+
+ANDROID TEST 4:
+PENDING transaction.
+Expected:
+No promotion until completed.
+
+DATABASE TEST:
+Same transaction verification twice.
+Expected:
+One promotion grant.
+
+CACHE TEST:
+After success, return to listing.
+Promoted badge appears.
+
+RESTART TEST:
+Restart app.
+Promotion still active from database.
+
+EXPIRATION TEST:
+Expired promoted_until.
+Listing no longer treated as promoted.
+
+WEB TEST:
+No native billing crash.
+Clear native-app-only message if web purchases are unsupported.
+
+==================================================
+39. DO NOT DO THESE
+==================================================
+
+DO NOT:
+
+- add a fake Apple payment screen
+- add a fake Google Play payment screen
+- use Apple Pay instead of In-App Purchase
+- use Google Pay instead of Play Billing
+- trust client payment success
+- activate promotion before verification
+- hardcode fake purchase tokens
+- put private keys in Expo public env
+- create a credit card form
+- add Stripe to native boost purchases
+- add iyzico to native boost purchases
+- make boost an auto-renewing subscription
+- grant promotion from UI state
+- use is_promoted as permanent true
+- ignore expiry
+- process the same transaction twice
+- let users edit promoted_until directly
+- reset the production database
+- delete existing listings
+- leave TODO payment implementations
+- report untested platforms as tested
+- claim App Store/Play Store test success without an actual store test environment
+
+==================================================
+40. FINAL PRODUCTION AUDIT
+==================================================
+
+After implementation, recursively audit the complete promotion and payment data flow again.
+
+Trace:
+
+Package card
+↓
+Product ID
+↓
+Store product
+↓
+Native purchase
+↓
+Purchase listener
+↓
+Backend request
+↓
+Apple/Google verification
+↓
+Transaction uniqueness
+↓
+Purchase intent
+↓
+Listing ownership
+↓
+Promotion calculation
+↓
+Database update
+↓
+Query refresh
+↓
+Promotion ranking
+↓
+Expiration
+
+Search again for:
+
+is_promoted = true
+promoted_until update
+paymentSuccess
+mockPurchase
+fakePurchase
+testPayment
+Stripe
+ApplePay
+GooglePay
+purchaseToken
+transactionId
+verifyReceipt
+StoreKit
+BillingClient
+
+Remove or fix conflicting legacy logic.
+
+==================================================
+41. FINAL REPORT
+==================================================
+
+At the end, give me a clear report in Turkish.
+
+Use exactly these headings:
+
+1. MEVCUT SİSTEMDE BULUNAN SORUNLAR
+
+2. IMPLEMENTE EDİLEN ÖDEME MİMARİSİ
+
+3. IOS / APPLE IN-APP PURCHASE DURUMU
+
+4. ANDROID / GOOGLE PLAY BILLING DURUMU
+
+5. SUPABASE / BACKEND DEĞİŞİKLİKLERİ
+
+6. DATABASE MIGRATIONS
+
+7. SECURITY / RLS FIXES
+
+8. DEĞİŞTİRİLEN DOSYALAR
+
+9. APP STORE CONNECT'TE BENİM YAPMAM GEREKENLER
+
+10. GOOGLE PLAY CONSOLE'DA BENİM YAPMAM GEREKENLER
+
+11. EKLENMESİ GEREKEN SERVER SECRETS
+
+12. GERÇEKTEN TEST EDİLEN AKIŞLAR
+
+13. TEST EDİLEMEYEN VE MANUEL TEST GEREKTİREN AKIŞLAR
+
+14. KALAN PRODUCTION RİSKLERİ
+
+IMPORTANT:
+
+Do not only give architectural advice.
+
+Inspect the existing CanYoldaşı codebase.
+
+Implement all code changes that are actually possible in the current repository.
+
+Create safe database migrations where needed.
+
+Run TypeScript checks.
+
+Run lint/build checks.
+
+Fix connected bugs.
+
+Do not claim native store payment tests passed unless the application was actually run through an Apple Sandbox or Google Play test environment.
+
+Where external App Store Connect or Google Play Console configuration is required, clearly separate:
+
+IMPLEMENTED IN CODE
+
+from:
+
+MANUAL CONSOLE CONFIGURATION REQUIRED
