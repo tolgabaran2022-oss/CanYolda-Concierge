@@ -1,6 +1,7 @@
 import { db } from "@workspace/db";
 import { featuredListings } from "@workspace/db/schema";
 import { getStripeSync } from "./stripeClient.js";
+import { storage } from "./storage.js";
 import { logger } from "./lib/logger.js";
 
 export class WebhookHandlers {
@@ -32,26 +33,32 @@ export class WebhookHandlers {
         const meta = session.metadata ?? {};
         const listingId = meta.listing_id;
         const userEmail = meta.user_email;
-        const packageHours = parseInt(meta.package_hours ?? "24", 10);
 
         if (listingId && userEmail) {
-          const expiresAt = new Date(Date.now() + packageHours * 60 * 60 * 1000);
+          const packageHoursNum = parseInt(meta.package_hours ?? "72", 10);
+          const durationDays = parseInt(meta.duration_days ?? String(Math.ceil(packageHoursNum / 24)), 10);
+          const expiresAt = new Date(Date.now() + packageHoursNum * 60 * 60 * 1000);
 
+          /* 1. Insert into featured_listings (backward compat) */
           try {
             await db.insert(featuredListings).values({
               listingId,
               userEmail,
               stripeSessionId: session.id,
-              packageHours,
+              packageHours: packageHoursNum,
               expiresAt,
             });
-
-            logger.info(
-              { listingId, userEmail, packageHours, expiresAt },
-              "Boost activated via webhook"
-            );
+            logger.info({ listingId, userEmail, packageHoursNum, expiresAt }, "Boost activated via webhook (featured_listings)");
           } catch (err: unknown) {
             logger.error({ err, sessionId: session.id }, "Failed to insert featured listing");
+          }
+
+          /* 2. Activate listing_promotions record */
+          try {
+            await storage.activateListingPromotion(session.id, durationDays);
+            logger.info({ listingId, sessionId: session.id, durationDays }, "Listing promotion activated");
+          } catch (err: unknown) {
+            logger.warn({ err, sessionId: session.id }, "Failed to activate listing promotion (non-critical)");
           }
         } else {
           logger.warn({ sessionId: session.id }, "Boost webhook: missing listing_id or user_email in metadata");

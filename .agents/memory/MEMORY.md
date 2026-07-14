@@ -2,7 +2,7 @@
 - [Feed backend architecture](feed-backend.md) — feed DB tables (feed_posts/comments/likes/bookmarks) in lib/db; API routes at /api/feed/*; mobile falls back to FEED_POSTS if API unreachable
 - [Stripe connector field names](stripe-connector-fields.md) — Replit Stripe connector settings uses `secret` and `publishable`, NOT `secret_key`/`webhook_secret`
 - [stripe-replit-sync esbuild external](stripe-replit-sync-external.md) — must be in esbuild external list or `__dirname` resolves wrong and migration SQL files are not found
-- [Stripe boost packages direct query](stripe-boost-packages-query.md) — syncBackfill unreliable in dev; query packages directly via Stripe API in storage layer
+- [Featured adoption listing system](featured-adoption-listing.md) — promotion_packages + listing_promotions tables; /api/boost/* routes use packageCode (not priceId); webhook activates both tables; adoption GET enriches isFeatured/featuredPackageName and sorts featured-first
 - [Animals & Adoption backend migration](animals-adoption-backend.md) — stray_animals/animal_interactions/animal_comments/adoption_listings tables added; /api/animals and /api/adoption routes; drizzle-kit push needs TTY so use executeSql directly
 - [Evcilim dual-tab architecture](evcilim-tab-arch.md) — pets.tsx has outer Evcilim/Sahiplendirme switcher; 5 new DB tables (pet_vaccinations/appointments/identification/notes/nutrition); lib/db must be rebuilt with typecheck:libs after new schema exports before api-server typecheck passes
 - [Android icon rendering — SVG migration](android-icon-svg.md) — @expo/vector-icons font rendering broken on Android in pnpm workspace; migrated ALL icons to lucide-react-native + react-native-svg

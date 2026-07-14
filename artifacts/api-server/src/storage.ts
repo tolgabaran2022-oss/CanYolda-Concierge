@@ -1,55 +1,59 @@
 import { db } from "@workspace/db";
-import { featuredListings } from "@workspace/db/schema";
-import { and, eq, gt, inArray, sql } from "drizzle-orm";
-import { getUncachableStripeClient } from "./stripeClient.js";
+import { featuredListings, listingPromotions, promotionPackages } from "@workspace/db/schema";
+import { and, asc, desc, eq, gt, inArray, sql } from "drizzle-orm";
+import { logger } from "./lib/logger.js";
 
-export interface BoostPackage {
+export interface PromoPackage {
   id: string;
-  packageHours: number;
-  priceId: string;
-  unitAmount: number;
+  code: string;
+  name: string;
+  durationDays: number;
+  priceAmount: number;
   currency: string;
-  label: string;
-  description: string;
+  badgeText: string | null;
+  shortDescription: string;
+  isPopular: boolean;
+  displayOrder: number;
 }
 
 export interface BoostStatus {
   isFeatured: boolean;
   expiresAt: string | null;
   packageHours: number | null;
+  packageName: string | null;
 }
 
-export class Storage {
-  async getBoostPackages(): Promise<BoostPackage[]> {
-    try {
-      const stripe = await getUncachableStripeClient();
-      const products = await stripe.products.search({
-        query: "metadata['boost_type']:'featured_listing' AND active:'true'",
-      });
+const FALLBACK_PACKAGES: PromoPackage[] = [
+  { id: "fallback-1", code: "quick_3_days",    name: "Hızlı Öne Çıkar",      durationDays: 3,  priceAmount: 4990,  currency: "try", badgeText: null,                  shortDescription: "3 gün daha fazla kişiye ulaş.",      isPopular: false, displayOrder: 1 },
+  { id: "fallback-2", code: "popular_7_days",  name: "Popüler",               durationDays: 7,  priceAmount: 9990,  currency: "try", badgeText: "EN ÇOK TERCİH EDİLEN", shortDescription: "7 gün güçlü görünürlük kazan.",     isPopular: true,  displayOrder: 2 },
+  { id: "fallback-3", code: "maximum_15_days", name: "Maksimum Görünürlük",   durationDays: 15, priceAmount: 17990, currency: "try", badgeText: null,                  shortDescription: "15 gün boyunca ilanını öne taşı.",  isPopular: false, displayOrder: 3 },
+];
 
-      const packages: BoostPackage[] = [];
-      for (const product of products.data) {
-        const prices = await stripe.prices.list({
-          product: product.id,
-          active: true,
-          limit: 1,
-        });
-        if (!prices.data.length) continue;
-        const price = prices.data[0]!;
-        const hours = parseInt(product.metadata.package_hours ?? "24", 10);
-        packages.push({
-          id: product.id,
-          packageHours: hours,
-          priceId: price.id,
-          unitAmount: price.unit_amount ?? 0,
-          currency: price.currency,
-          label: hours === 24 ? "24 Saatlik" : hours === 72 ? "72 Saatlik" : `${hours} Saatlik`,
-          description: hours === 24 ? "1 gün öne çıkarma" : "3 gün öne çıkarma",
-        });
-      }
-      return packages.sort((a, b) => a.unitAmount - b.unitAmount);
+export class Storage {
+  async getBoostPackages(): Promise<PromoPackage[]> {
+    try {
+      const rows = await db
+        .select()
+        .from(promotionPackages)
+        .where(eq(promotionPackages.isActive, true))
+        .orderBy(asc(promotionPackages.displayOrder));
+
+      if (!rows.length) return FALLBACK_PACKAGES;
+
+      return rows.map((r) => ({
+        id:               r.id,
+        code:             r.code,
+        name:             r.name,
+        durationDays:     r.durationDays,
+        priceAmount:      r.priceAmount,
+        currency:         r.currency,
+        badgeText:        r.badgeText ?? null,
+        shortDescription: r.shortDescription,
+        isPopular:        r.isPopular,
+        displayOrder:     r.displayOrder,
+      }));
     } catch {
-      return [];
+      return FALLBACK_PACKAGES;
     }
   }
 
@@ -57,28 +61,114 @@ export class Storage {
     if (!listingIds.length) return {};
 
     const now = new Date();
-    const rows = await db
-      .select()
-      .from(featuredListings)
-      .where(
-        and(
-          inArray(featuredListings.listingId, listingIds),
-          gt(featuredListings.expiresAt, now)
-        )
-      );
-
     const result: Record<string, BoostStatus> = {};
     for (const id of listingIds) {
-      result[id] = { isFeatured: false, expiresAt: null, packageHours: null };
+      result[id] = { isFeatured: false, expiresAt: null, packageHours: null, packageName: null };
     }
-    for (const row of rows) {
-      result[row.listingId] = {
-        isFeatured: true,
-        expiresAt: row.expiresAt.toISOString(),
-        packageHours: row.packageHours,
-      };
+
+    try {
+      const rows = await db
+        .select({
+          listingId:   listingPromotions.listingId,
+          expiresAt:   listingPromotions.expiresAt,
+          durationDays: listingPromotions.durationDays,
+          packageName: listingPromotions.packageName,
+        })
+        .from(listingPromotions)
+        .where(
+          and(
+            inArray(listingPromotions.listingId, listingIds),
+            eq(listingPromotions.status, "active"),
+            gt(listingPromotions.expiresAt, now)
+          )
+        )
+        .orderBy(desc(listingPromotions.createdAt));
+
+      const seen = new Set<string>();
+      for (const row of rows) {
+        if (seen.has(row.listingId)) continue;
+        seen.add(row.listingId);
+        if (row.expiresAt) {
+          result[row.listingId] = {
+            isFeatured:  true,
+            expiresAt:   row.expiresAt.toISOString(),
+            packageHours: row.durationDays * 24,
+            packageName: row.packageName,
+          };
+        }
+      }
+      return result;
+    } catch {
+      try {
+        const rows = await db
+          .select()
+          .from(featuredListings)
+          .where(and(inArray(featuredListings.listingId, listingIds), gt(featuredListings.expiresAt, now)));
+
+        for (const row of rows) {
+          result[row.listingId] = {
+            isFeatured:  true,
+            expiresAt:   row.expiresAt.toISOString(),
+            packageHours: row.packageHours,
+            packageName: null,
+          };
+        }
+        return result;
+      } catch {
+        return result;
+      }
     }
-    return result;
+  }
+
+  async createPendingPromotion(params: {
+    listingId: string;
+    ownerId: string;
+    packageId: string;
+    packageName: string;
+    durationDays: number;
+    stripeSessionId: string;
+  }): Promise<void> {
+    await db.insert(listingPromotions).values({
+      listingId:       params.listingId,
+      ownerId:         params.ownerId,
+      packageId:       params.packageId,
+      packageName:     params.packageName,
+      durationDays:    params.durationDays,
+      stripeSessionId: params.stripeSessionId,
+      status:          "pending",
+    });
+  }
+
+  async activateListingPromotion(stripeSessionId: string, durationDays: number): Promise<void> {
+    const now      = new Date();
+    const expiresAt = new Date(now.getTime() + durationDays * 24 * 60 * 60 * 1000);
+    await db
+      .update(listingPromotions)
+      .set({ status: "active", startsAt: now, expiresAt, updatedAt: now })
+      .where(eq(listingPromotions.stripeSessionId, stripeSessionId));
+  }
+
+  async getActivePromotion(listingId: string): Promise<{ packageName: string; expiresAt: string; durationDays: number } | null> {
+    const now = new Date();
+    const rows = await db
+      .select()
+      .from(listingPromotions)
+      .where(
+        and(
+          eq(listingPromotions.listingId, listingId),
+          eq(listingPromotions.status, "active"),
+          gt(listingPromotions.expiresAt, now)
+        )
+      )
+      .orderBy(desc(listingPromotions.createdAt))
+      .limit(1);
+
+    if (!rows.length || !rows[0].expiresAt) return null;
+    return {
+      packageName:  rows[0].packageName,
+      expiresAt:    rows[0].expiresAt.toISOString(),
+      durationDays: rows[0].durationDays,
+    };
   }
 
   async activateBoost(params: {
@@ -86,25 +176,12 @@ export class Storage {
     userEmail: string;
     packageId: string;
   }): Promise<{ expiresAt: string; packageHours: number }> {
-    const HOURS: Record<string, number> = {
-      standart: 24,
-      premium:  24 * 7,
-      vip:      24 * 30,
-    };
+    const HOURS: Record<string, number> = { standart: 24, premium: 24 * 7, vip: 24 * 30 };
     const packageHours = HOURS[params.packageId];
     if (!packageHours) throw new Error(`Invalid packageId: ${params.packageId}`);
-
     const expiresAt = new Date(Date.now() + packageHours * 3_600_000);
-
-    await db.delete(featuredListings).where(
-      eq(featuredListings.listingId, params.listingId)
-    );
-    await db.insert(featuredListings).values({
-      listingId:   params.listingId,
-      userEmail:   params.userEmail,
-      packageHours,
-      expiresAt,
-    });
+    await db.delete(featuredListings).where(eq(featuredListings.listingId, params.listingId));
+    await db.insert(featuredListings).values({ listingId: params.listingId, userEmail: params.userEmail, packageHours, expiresAt });
     return { expiresAt: expiresAt.toISOString(), packageHours };
   }
 
@@ -113,12 +190,7 @@ export class Storage {
     return await db
       .select()
       .from(featuredListings)
-      .where(
-        and(
-          sql`${featuredListings.userEmail} = ${userEmail}`,
-          gt(featuredListings.expiresAt, now)
-        )
-      )
+      .where(and(sql`${featuredListings.userEmail} = ${userEmail}`, gt(featuredListings.expiresAt, now)))
       .orderBy(featuredListings.expiresAt);
   }
 
@@ -134,14 +206,60 @@ export class Storage {
         created_at TIMESTAMPTZ DEFAULT NOW()
       )
     `);
+    await db.execute(sql`CREATE INDEX IF NOT EXISTS featured_listings_listing_id_idx ON featured_listings(listing_id)`);
+    await db.execute(sql`CREATE INDEX IF NOT EXISTS featured_listings_expires_at_idx ON featured_listings(expires_at)`);
+
     await db.execute(sql`
-      CREATE INDEX IF NOT EXISTS featured_listings_listing_id_idx ON featured_listings(listing_id)
+      CREATE TABLE IF NOT EXISTS promotion_packages (
+        id TEXT PRIMARY KEY DEFAULT gen_random_uuid()::text,
+        code TEXT NOT NULL,
+        name TEXT NOT NULL,
+        duration_days INTEGER NOT NULL,
+        price_amount INTEGER NOT NULL,
+        currency TEXT NOT NULL DEFAULT 'try',
+        badge_text TEXT,
+        short_description TEXT NOT NULL DEFAULT '',
+        is_popular BOOLEAN NOT NULL DEFAULT false,
+        is_active BOOLEAN NOT NULL DEFAULT true,
+        display_order INTEGER NOT NULL DEFAULT 0,
+        created_at TIMESTAMPTZ DEFAULT NOW()
+      )
+    `);
+    await db.execute(sql`CREATE UNIQUE INDEX IF NOT EXISTS promotion_packages_code_idx ON promotion_packages(code)`);
+
+    await db.execute(sql`
+      INSERT INTO promotion_packages (code, name, duration_days, price_amount, currency, short_description, is_popular, display_order)
+      VALUES
+        ('quick_3_days',    'Hızlı Öne Çıkar',    3,  4990,  'try', '3 gün daha fazla kişiye ulaş.',      false, 1),
+        ('popular_7_days',  'Popüler',             7,  9990,  'try', '7 gün güçlü görünürlük kazan.',     true,  2),
+        ('maximum_15_days', 'Maksimum Görünürlük', 15, 17990, 'try', '15 gün boyunca ilanını öne taşı.', false, 3)
+      ON CONFLICT (code) DO NOTHING
     `);
     await db.execute(sql`
-      CREATE INDEX IF NOT EXISTS featured_listings_expires_at_idx ON featured_listings(expires_at)
+      UPDATE promotion_packages SET badge_text = 'EN ÇOK TERCİH EDİLEN'
+      WHERE code = 'popular_7_days' AND badge_text IS NULL
     `);
 
-    // Stories tables
+    await db.execute(sql`
+      CREATE TABLE IF NOT EXISTS listing_promotions (
+        id TEXT PRIMARY KEY DEFAULT gen_random_uuid()::text,
+        listing_id TEXT NOT NULL REFERENCES adoption_listings(id) ON DELETE CASCADE,
+        owner_id TEXT NOT NULL,
+        package_id TEXT NOT NULL,
+        stripe_session_id TEXT,
+        package_name TEXT NOT NULL DEFAULT '',
+        duration_days INTEGER NOT NULL,
+        starts_at TIMESTAMPTZ,
+        expires_at TIMESTAMPTZ,
+        status TEXT NOT NULL DEFAULT 'pending',
+        created_at TIMESTAMPTZ DEFAULT NOW(),
+        updated_at TIMESTAMPTZ DEFAULT NOW()
+      )
+    `);
+    await db.execute(sql`CREATE INDEX IF NOT EXISTS listing_promotions_listing_id_idx ON listing_promotions(listing_id)`);
+    await db.execute(sql`CREATE INDEX IF NOT EXISTS listing_promotions_session_id_idx ON listing_promotions(stripe_session_id)`);
+    await db.execute(sql`CREATE INDEX IF NOT EXISTS listing_promotions_status_expires_idx ON listing_promotions(status, expires_at)`);
+
     await db.execute(sql`
       CREATE TABLE IF NOT EXISTS stories (
         id TEXT PRIMARY KEY DEFAULT gen_random_uuid()::text,
@@ -154,12 +272,8 @@ export class Storage {
         expires_at TIMESTAMPTZ NOT NULL
       )
     `);
-    await db.execute(sql`
-      CREATE INDEX IF NOT EXISTS stories_user_id_idx ON stories(user_id)
-    `);
-    await db.execute(sql`
-      CREATE INDEX IF NOT EXISTS stories_expires_at_idx ON stories(expires_at)
-    `);
+    await db.execute(sql`CREATE INDEX IF NOT EXISTS stories_user_id_idx ON stories(user_id)`);
+    await db.execute(sql`CREATE INDEX IF NOT EXISTS stories_expires_at_idx ON stories(expires_at)`);
 
     await db.execute(sql`
       CREATE TABLE IF NOT EXISTS story_views (
@@ -170,9 +284,7 @@ export class Storage {
         UNIQUE(story_id, viewer_id)
       )
     `);
-    await db.execute(sql`
-      CREATE INDEX IF NOT EXISTS story_views_story_id_idx ON story_views(story_id)
-    `);
+    await db.execute(sql`CREATE INDEX IF NOT EXISTS story_views_story_id_idx ON story_views(story_id)`);
   }
 }
 

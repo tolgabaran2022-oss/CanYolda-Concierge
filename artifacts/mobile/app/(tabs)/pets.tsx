@@ -994,6 +994,7 @@ function MyListingCard({
   onBoost,
   isFeatured,
   featuredUntil,
+  packageName,
 }: {
   card: MyCard;
   packages: BoostPackage[];
@@ -1005,6 +1006,7 @@ function MyListingCard({
   onBoost: (pkg: BoostPackage) => Promise<void>;
   isFeatured?: boolean;
   featuredUntil?: string | null;
+  packageName?: string | null;
 }) {
   const T = useTheme();
   const { listing, status, views, favs, msgs } = card;
@@ -1091,7 +1093,9 @@ function MyListingCard({
           {isFeatured && (
             <View style={ml.featuredBannerInner}>
               <Icon name="star" size={12} color={P} />
-              <Text style={ml.featuredBannerTxt}>ÖNE ÇIKAN · Aktif</Text>
+              <Text style={ml.featuredBannerTxt}>
+                {packageName ? `${packageName} · ÖNE ÇIKAN` : "ÖNE ÇIKAN · Aktif"}
+              </Text>
               {featuredUntil && (
                 <View style={ml.featuredTimeChip}>
                   <Icon name="time-outline" size={10} color={P} />
@@ -1210,11 +1214,11 @@ function MyListingCard({
               ) : (
                 <View style={ml.pkgRow}>
                   {packages.map((pkg, idx) => {
-                    const isSel = selectedPkg?.priceId === pkg.priceId;
-                    const isPopular = pkgIsPopular(pkg.packageHours) || (packages.length === 3 && idx === 1);
+                    const isSel = selectedPkg?.id === pkg.id;
+                    const isPopular = pkg.isPopular;
                     return (
                       <Pressable
-                        key={pkg.priceId}
+                        key={pkg.id}
                         onPress={() => {
                           if (boosting) return;
                           Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
@@ -1228,10 +1232,10 @@ function MyListingCard({
                               <Text style={ml.popBadgeTxt}>En Popüler</Text>
                             </View>
                           )}
-                          <Text style={[ml.pkgName, isSel && ml.pkgNameSel]}>{pkg.label}</Text>
-                          <Text style={[ml.pkgPrice, isSel && ml.pkgPriceSel]}>₺{pkgFormatPrice(pkg.unitAmount)}</Text>
-                          <Text style={[ml.pkgDays, isSel && ml.pkgDaysSel]}>{pkgHoursLabel(pkg.packageHours)}</Text>
-                          <Text style={[ml.pkgMult, isSel && ml.pkgMultSel]}>{pkgMultiplierLabel(pkg.packageHours)}</Text>
+                          <Text style={[ml.pkgName, isSel && ml.pkgNameSel]}>{pkg.name}</Text>
+                          <Text style={[ml.pkgPrice, isSel && ml.pkgPriceSel]}>₺{pkgFormatPrice(pkg.priceAmount)}</Text>
+                          <Text style={[ml.pkgDays, isSel && ml.pkgDaysSel]}>{pkg.durationDays} Gün</Text>
+                          <Text style={[ml.pkgMult, isSel && ml.pkgMultSel]}>{pkg.durationDays >= 15 ? "≈10× görünürlük" : pkg.durationDays >= 7 ? "≈5× görünürlük" : "≈2× görünürlük"}</Text>
                           {isSel && <Icon name="checkmark-circle" size={16} color={WHITE} style={{ marginTop: 4 }} />}
                         </View>
                       </Pressable>
@@ -1242,8 +1246,8 @@ function MyListingCard({
 
               {selectedPkg && (
                 <View style={ml.boostSummary}>
-                  <Text style={ml.boostSummaryPkg}>{selectedPkg.label} · {pkgHoursLabel(selectedPkg.packageHours)}</Text>
-                  <Text style={ml.boostSummaryPrice}>Toplam: ₺{pkgFormatPrice(selectedPkg.unitAmount)}</Text>
+                  <Text style={ml.boostSummaryPkg}>{selectedPkg.name} · {selectedPkg.durationDays} Gün</Text>
+                  <Text style={ml.boostSummaryPrice}>Toplam: ₺{pkgFormatPrice(selectedPkg.priceAmount)}</Text>
                 </View>
               )}
 
@@ -1274,7 +1278,7 @@ function MyListingCard({
                   color={selectedPkg && !boosting ? WHITE : `${BODY}90`}
                 />
                 <Text style={[ml.boostCtaTxt, (!selectedPkg || boosting) && { color: `${BODY}90` }]}>
-                  {boosting ? "Ödeme Hazırlanıyor…" : selectedPkg ? `₺${pkgFormatPrice(selectedPkg.unitAmount)} · Ödemeye Geç` : "Bir Paket Seç"}
+                  {boosting ? "Ödeme Hazırlanıyor…" : selectedPkg ? `₺${pkgFormatPrice(selectedPkg.priceAmount)} · Ödemeye Geç` : "Bir Paket Seç"}
                 </Text>
               </Pressable>
               <Text style={ml.boostNote}>Stripe güvenli ödeme sayfasına yönlendirileceksiniz.</Text>
@@ -1344,7 +1348,7 @@ function MyListingsSection({
   userId: string;
   userEmail: string;
   listings: AdoptionListing[];
-  boostStatuses: Record<string, { isFeatured: boolean; expiresAt?: string | null }>;
+  boostStatuses: Record<string, { isFeatured: boolean; expiresAt?: string | null; packageName?: string | null }>;
   deleteListing: (id: string) => Promise<void>;
   botPad: number;
   onAdd: () => void;
@@ -1463,8 +1467,7 @@ function MyListingsSection({
     const url = await createCheckout({
       listingId,
       userEmail,
-      priceId: pkg.priceId,
-      packageHours: pkg.packageHours,
+      packageCode: pkg.code,
       petName,
     });
     await Linking.openURL(url);
@@ -1757,8 +1760,9 @@ function MyListingsSection({
         <MyListingCard
           key={c.listing.id}
           card={c}
-          isFeatured={boostStatuses[c.listing.id]?.isFeatured ?? false}
-          featuredUntil={boostStatuses[c.listing.id]?.expiresAt ?? null}
+          isFeatured={(c.listing.isFeatured || boostStatuses[c.listing.id]?.isFeatured) ?? false}
+          featuredUntil={boostStatuses[c.listing.id]?.expiresAt ?? c.listing.featuredUntil ?? null}
+          packageName={boostStatuses[c.listing.id]?.packageName ?? c.listing.featuredPackageName ?? null}
           packages={packages}
           onEdit={() => openEdit(c.listing)}
           onTogglePassive={() => togglePassive(c.listing.id)}
@@ -2107,8 +2111,8 @@ export default function PetsScreen() {
 
   const sorted = useMemo(() => {
     return [...listings].sort((a, b) => {
-      const af = boostStatuses[a.id]?.isFeatured ? 1 : 0;
-      const bf = boostStatuses[b.id]?.isFeatured ? 1 : 0;
+      const af = (a.isFeatured || boostStatuses[a.id]?.isFeatured) ? 1 : 0;
+      const bf = (b.isFeatured || boostStatuses[b.id]?.isFeatured) ? 1 : 0;
       if (bf !== af) return bf - af;
       return new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime();
     });

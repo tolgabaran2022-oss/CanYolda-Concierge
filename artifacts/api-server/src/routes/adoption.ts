@@ -1,6 +1,6 @@
 import { Router } from "express";
-import { and, desc, eq, inArray, sql } from "drizzle-orm";
-import { db, adoptionListings, adoptionListingFollows } from "@workspace/db";
+import { and, desc, eq, gt, inArray, sql } from "drizzle-orm";
+import { db, adoptionListings, adoptionListingFollows, listingPromotions } from "@workspace/db";
 import { logger } from "../lib/logger.js";
 import { extractUserId } from "../lib/jwtAuth.js";
 
@@ -90,7 +90,62 @@ router.get("/adoption", async (req, res) => {
   try {
     await seedIfEmpty();
     const listings = await db.select().from(adoptionListings).orderBy(desc(adoptionListings.createdAt));
-    res.json(listings);
+
+    if (!listings.length) {
+      res.json([]);
+      return;
+    }
+
+    const listingIds = listings.map((l) => l.id);
+    type PromoEntry = { expiresAt: Date; packageName: string; startsAt: Date | null };
+    const activePromos: Record<string, PromoEntry> = {};
+
+    try {
+      const now = new Date();
+      const promos = await db
+        .select({
+          listingId:   listingPromotions.listingId,
+          expiresAt:   listingPromotions.expiresAt,
+          packageName: listingPromotions.packageName,
+          startsAt:    listingPromotions.startsAt,
+        })
+        .from(listingPromotions)
+        .where(
+          and(
+            inArray(listingPromotions.listingId, listingIds),
+            eq(listingPromotions.status, "active"),
+            gt(listingPromotions.expiresAt, now)
+          )
+        );
+      for (const p of promos) {
+        if (p.expiresAt && !activePromos[p.listingId]) {
+          activePromos[p.listingId] = { expiresAt: p.expiresAt, packageName: p.packageName, startsAt: p.startsAt };
+        }
+      }
+    } catch {
+      /* listing_promotions may not exist yet on first boot — continue without featured data */
+    }
+
+    const enriched = listings.map((l) => ({
+      ...l,
+      isFeatured:          !!activePromos[l.id],
+      featuredUntil:       activePromos[l.id]?.expiresAt?.toISOString() ?? null,
+      featuredPackageName: activePromos[l.id]?.packageName ?? null,
+    }));
+
+    enriched.sort((a, b) => {
+      const af = a.isFeatured ? 0 : 1;
+      const bf = b.isFeatured ? 0 : 1;
+      if (af !== bf) return af - bf;
+      if (!af) {
+        const ast = activePromos[a.id]?.startsAt?.getTime() ?? 0;
+        const bst = activePromos[b.id]?.startsAt?.getTime() ?? 0;
+        if (bst !== ast) return bst - ast;
+      }
+      return (b.createdAt?.getTime() ?? 0) - (a.createdAt?.getTime() ?? 0);
+    });
+
+    res.json(enriched);
   } catch (err) {
     req.log.error({ err }, "GET /adoption failed");
     res.status(500).json({ error: "İlanlar alınamadı" });

@@ -10,18 +10,22 @@ import { Platform } from "react-native";
 
 export interface BoostPackage {
   id: string;
-  packageHours: number;
-  priceId: string;
-  unitAmount: number;
+  code: string;
+  name: string;
+  durationDays: number;
+  priceAmount: number;
   currency: string;
-  label: string;
-  description: string;
+  badgeText: string | null;
+  shortDescription: string;
+  isPopular: boolean;
+  displayOrder: number;
 }
 
 export interface BoostStatus {
   isFeatured: boolean;
   expiresAt: string | null;
   packageHours: number | null;
+  packageName: string | null;
 }
 
 interface BoostContextType {
@@ -35,8 +39,7 @@ interface BoostContextType {
   createCheckout: (params: {
     listingId: string;
     userEmail: string;
-    priceId: string;
-    packageHours: number;
+    packageCode: string;
     petName?: string;
   }) => Promise<string>;
   activateBoost: (params: {
@@ -119,8 +122,7 @@ export function BoostProvider({ children }: { children: React.ReactNode }) {
     async (params: {
       listingId: string;
       userEmail: string;
-      priceId: string;
-      packageHours: number;
+      packageCode: string;
       petName?: string;
     }): Promise<string> => {
       const data = await apiFetch("/boost/checkout", {

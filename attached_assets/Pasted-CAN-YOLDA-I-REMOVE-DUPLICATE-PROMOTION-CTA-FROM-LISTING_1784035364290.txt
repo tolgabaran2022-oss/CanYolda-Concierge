@@ -1,0 +1,136 @@
+CAN YOLDAŞI — REMOVE DUPLICATE PROMOTION CTA FROM LISTING DETAIL
+
+Remove the orange "İlanı Öne Çıkar" action from the owner's adoption listing detail / listing management detail screen.
+
+IMPORTANT:
+
+Do not remove or break the promotion system.
+
+The promotion feature must remain available in:
+
+Sahiplendirme
+→ İlanlarım
+→ user's listing card
+→ Öne Çıkar
+
+The current listing detail screen contains the "İlan Yönetimi" section with:
+
+- İlanı Düzenle
+- İlanı Öne Çıkar
+- İlanı Kaldır
+
+Change this section to:
+
+- İlanı Düzenle
+- İlanı Kaldır
+
+Completely remove the orange:
+
+"İlanı Öne Çıkar"
+"₺50'den başlayan fiyatlarla"
+
+action card from this screen.
+
+==================================================
+IMPORTANT BEHAVIOR
+==================================================
+
+Do NOT:
+
+- delete promotion database tables
+- delete promotion package logic
+- remove the Öne Çıkar button from İlanlarım
+- remove payment logic
+- remove active promotion state
+- remove featured listing ranking
+- remove promotion expiration logic
+- remove "Öne Çıkarılan" badges
+
+This is ONLY a UI/navigation cleanup.
+
+The single promotion entry point for listing owners must be:
+
+Sahiplendirme
+→ İlanlarım
+→ listing card
+→ Öne Çıkar
+
+Do not display a duplicate promotion CTA inside the listing detail management area.
+
+==================================================
+LAYOUT CLEANUP
+==================================================
+
+After removing the orange promotion card:
+
+Do not leave an empty gap.
+
+Recalculate vertical spacing inside the "İlan Yönetimi" section.
+
+Expected order:
+
+İlan Yönetimi
+
+[ İlanı Düzenle ]
+
+[ İlanı Kaldır ]
+
+Use the existing spacing system.
+
+Keep:
+
+- current card width
+- current border radius
+- current typography
+- current icons
+- current purple edit action
+- current red delete action
+
+Do not redesign the screen.
+
+==================================================
+OWNER AND PUBLIC DETAIL AUDIT
+==================================================
+
+Audit both:
+
+- owner listing detail screen
+- public adoption listing detail screen
+
+Ensure the promotion CTA is not accidentally rendered through a shared component.
+
+If listing management actions are conditionally rendered for:
+
+isOwner === true
+
+remove only the promotion action from the owner management actions.
+
+Do not affect public-user actions such as:
+
+- Sahiplenmek İstiyorum
+- Mesaj Gönder
+
+==================================================
+FINAL ACCEPTANCE TEST
+==================================================
+
+1. Open Sahiplendirme.
+2. Open İlanlarım.
+3. Verify "Öne Çıkar" still exists on the user's listing card.
+4. Open the user's listing detail.
+5. Scroll to "İlan Yönetimi".
+6. Verify only:
+   - İlanı Düzenle
+   - İlanı Kaldır
+   are visible.
+7. Verify the orange "İlanı Öne Çıkar" card is gone.
+8. Verify there is no empty spacing where the removed card existed.
+9. Return to İlanlarım.
+10. Tap Öne Çıkar.
+11. Verify promotion packages and payment flow still work.
+
+GOAL:
+
+Remove the duplicate "İlanı Öne Çıkar" button from the listing detail screen.
+
+Keep promotion management exclusively inside the İlanlarım section.

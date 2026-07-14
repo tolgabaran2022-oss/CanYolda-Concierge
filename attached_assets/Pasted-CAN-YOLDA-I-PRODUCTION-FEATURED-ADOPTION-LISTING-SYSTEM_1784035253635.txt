@@ -1,0 +1,1327 @@
+CAN YOLDAŞI — PRODUCTION FEATURED ADOPTION LISTING SYSTEM
+
+Implement a complete, production-ready, time-based paid promotion system for adoption listings.
+
+IMPORTANT:
+
+Preserve the current CanYoldaşı UI and visual design.
+
+Do not redesign the entire Sahiplendirme feature.
+
+This task includes:
+
+- promotion package selection
+- promotion pricing
+- payment preparation
+- promotion activation
+- time-based promotion duration
+- featured listing ranking
+- featured listing badge
+- automatic expiration
+- return to normal listing behavior
+- realtime synchronization
+- database integrity
+- secure server-side validation
+
+The system must behave like a real marketplace promoted listing system.
+
+==================================================
+PROMOTION PACKAGES
+==================================================
+
+Create the following three promotion packages.
+
+PACKAGE 1
+
+Name:
+Hızlı Öne Çıkar
+
+Duration:
+3 days
+
+Price:
+49.90 TRY
+
+Short description:
+
+"3 gün daha fazla kişiye ulaş."
+
+Benefits:
+
+- 3 gün boyunca öne çıkan ilanlarda gösterilir
+- Normal ilanların üzerinde yer alır
+- Öne çıkarılan ilan rozeti kazanır
+- İlan görünürlüğü artırılır
+
+==================================================
+
+PACKAGE 2
+
+Name:
+Popüler
+
+Duration:
+7 days
+
+Price:
+99.90 TRY
+
+Badge:
+
+"EN ÇOK TERCİH EDİLEN"
+
+Short description:
+
+"7 gün güçlü görünürlük kazan."
+
+Benefits:
+
+- 7 gün boyunca öne çıkan ilanlarda gösterilir
+- Normal ilanların üzerinde yer alır
+- Öne çıkarılan ilan rozeti kazanır
+- Liste sonuçlarında öncelikli gösterilir
+
+This package must be visually emphasized as the recommended package.
+
+Use the existing CanYoldaşı purple design system.
+
+Do not use aggressive colors.
+
+==================================================
+
+PACKAGE 3
+
+Name:
+Maksimum Görünürlük
+
+Duration:
+15 days
+
+Price:
+179.90 TRY
+
+Short description:
+
+"15 gün boyunca ilanını öne taşı."
+
+Benefits:
+
+- 15 gün boyunca öne çıkan ilanlarda gösterilir
+- Normal ilanların üzerinde yer alır
+- Premium görünürlük kazanır
+- Öne çıkarılan ilan rozeti kazanır
+- Liste sonuçlarında öncelikli gösterilir
+
+==================================================
+PACKAGE SELECTION UX
+==================================================
+
+The current "İlanlarım" listing card contains:
+
+"İlanını öne çıkar"
+
+and:
+
+"Öne Çıkar"
+
+When the user taps:
+
+"Öne Çıkar"
+
+open a premium bottom sheet.
+
+Do not display package cards permanently inside the listing card.
+
+Bottom sheet title:
+
+"İlanını Öne Çıkar"
+
+Description:
+
+"Daha fazla kişiye ulaş ve ilanının görünürlüğünü artır."
+
+Display the three package cards.
+
+Package order:
+
+1. Hızlı Öne Çıkar
+2. Popüler
+3. Maksimum Görünürlük
+
+The Popüler package must display:
+
+"EN ÇOK TERCİH EDİLEN"
+
+Allow only one package to be selected at a time.
+
+The selected package should use:
+
+- purple border
+- subtle purple background tint
+- selected/check icon
+- current CanYoldaşı visual language
+
+Bottom CTA:
+
+"Devam Et"
+
+The CTA must remain disabled until a package is selected.
+
+==================================================
+PACKAGE DATA SOURCE
+==================================================
+
+Do not hardcode package behavior in multiple UI components.
+
+Use one centralized package configuration or database-backed package source according to the existing architecture.
+
+Conceptual package model:
+
+promotion_packages
+
+- id
+- code
+- name
+- duration_days
+- price_amount
+- currency
+- is_active
+- display_order
+- created_at
+- updated_at
+
+Example:
+
+code:
+quick_3_days
+
+name:
+Hızlı Öne Çıkar
+
+duration_days:
+3
+
+price_amount:
+49.90
+
+currency:
+TRY
+
+Example:
+
+code:
+popular_7_days
+
+name:
+Popüler
+
+duration_days:
+7
+
+price_amount:
+99.90
+
+currency:
+TRY
+
+Example:
+
+code:
+maximum_15_days
+
+name:
+Maksimum Görünürlük
+
+duration_days:
+15
+
+price_amount:
+179.90
+
+currency:
+TRY
+
+If the project already has a package/pricing table, extend it.
+
+Do not create duplicate pricing systems.
+
+==================================================
+CRITICAL PAYMENT SECURITY
+==================================================
+
+The client must NEVER determine the trusted payment amount.
+
+WRONG:
+
+Client sends:
+
+price = 49.90
+
+and backend blindly charges 49.90.
+
+CORRECT:
+
+Client sends:
+
+package_code = quick_3_days
+
+The secure backend resolves:
+
+package_code
+→ package database/config
+→ trusted price
+→ trusted duration
+
+The backend must validate the package.
+
+The client must not be able to change:
+
+49.90
+
+to:
+
+0.01
+
+through request manipulation.
+
+The promotion duration must also come from the trusted backend package definition.
+
+==================================================
+PROMOTION DATABASE ARCHITECTURE
+==================================================
+
+Audit the existing adoption listing and payment architecture before creating migrations.
+
+Preferred production structure:
+
+listing_promotions
+
+- id
+- listing_id
+- owner_id
+- package_id
+- payment_id
+- starts_at
+- expires_at
+- status
+- created_at
+- updated_at
+
+Recommended status values:
+
+pending
+active
+expired
+cancelled
+payment_failed
+refunded
+
+Example active promotion:
+
+listing_id:
+listing_123
+
+package:
+popular_7_days
+
+starts_at:
+2026-07-14T14:00:00Z
+
+expires_at:
+2026-07-21T14:00:00Z
+
+status:
+active
+
+The listing itself may optionally contain denormalized fields for query performance:
+
+is_featured
+featured_until
+active_promotion_id
+
+Only use these fields if appropriate for the existing architecture.
+
+The listing promotion record must remain the source of promotion history.
+
+Do not store only:
+
+is_featured = true
+
+without an expiration timestamp.
+
+==================================================
+PAYMENT SUCCESS TO PROMOTION ACTIVATION
+==================================================
+
+Promotion must NEVER activate because the client says:
+
+paymentSuccess = true
+
+The expected secure flow is:
+
+User selects package
+↓
+Secure backend creates payment session
+↓
+User completes payment
+↓
+Payment provider confirms successful payment
+↓
+Backend/webhook verifies payment
+↓
+Backend activates listing promotion
+↓
+starts_at is set
+↓
+expires_at is calculated from trusted package duration
+↓
+promotion status becomes active
+↓
+listing becomes featured
+
+Do not activate promotion from a frontend success screen alone.
+
+If Stripe is currently used, audit the existing Stripe architecture.
+
+Use verified Stripe webhook events according to the project's current payment flow.
+
+Do not create a fake payment-success state.
+
+==================================================
+FEATURED LISTING RULE
+==================================================
+
+When a promotion is active:
+
+current_time < expires_at
+
+AND:
+
+promotion.status = active
+
+the listing is considered featured.
+
+The listing must appear above ALL normal listings in:
+
+"Tüm İlanlar"
+
+Expected list structure:
+
+ÖNE ÇIKARILAN İLANLAR
+↓
+Featured Listing A
+Featured Listing B
+Featured Listing C
+
+NORMAL İLANLAR
+↓
+Normal Listing D
+Normal Listing E
+Normal Listing F
+
+The user does not necessarily need to see separate section titles.
+
+The visual list may remain continuous.
+
+However, the ordering rule is mandatory:
+
+ALL ACTIVE FEATURED LISTINGS
+MUST APPEAR BEFORE
+ALL NORMAL LISTINGS.
+
+==================================================
+CRITICAL SORTING RULE
+==================================================
+
+Do not simply sort using:
+
+created_at DESC
+
+The query must prioritize active featured listings.
+
+Conceptual ranking:
+
+1. active featured status
+2. featured listing ranking rule
+3. normal listing ranking rule
+
+Recommended conceptual SQL logic:
+
+ORDER BY
+  CASE
+    WHEN featured_until > NOW()
+    THEN 0
+    ELSE 1
+  END ASC,
+  featured_until DESC,
+  created_at DESC
+
+However, audit the existing database structure and query architecture.
+
+Use the most efficient and maintainable implementation.
+
+The core requirement is:
+
+Active featured listings are always above normal listings.
+
+==================================================
+FEATURED LISTINGS ORDER
+==================================================
+
+If multiple listings are actively featured, order them using a deterministic rule.
+
+Recommended rule:
+
+Most recently activated featured promotion first.
+
+Conceptually:
+
+promotion.starts_at DESC
+
+Alternative:
+
+featured_until DESC
+
+Choose one rule and use it consistently.
+
+Recommended for CanYoldaşı:
+
+Most recently promoted listing first.
+
+This gives newly purchased promotions immediate visibility.
+
+Do not randomly shuffle featured listings.
+
+Do not change ordering on every render.
+
+==================================================
+FEATURED BADGE
+==================================================
+
+Every actively promoted listing card in:
+
+"Tüm İlanlar"
+
+must display a visible promotion badge.
+
+Turkish badge text:
+
+"Öne Çıkarılan"
+
+Use:
+
+- existing rocket icon
+- purple pill badge
+- subtle premium appearance
+- white or high-contrast text
+
+Recommended conceptual design:
+
+[rocket icon] Öne Çıkarılan
+
+Do not use a large banner.
+
+Do not cover the pet image.
+
+Recommended placement:
+
+Top area of the listing card.
+
+Possible positions:
+
+- above pet/listing title
+- top-left image overlay with safe padding
+- near listing status badges
+
+Choose the position that best fits the current card architecture.
+
+The badge must only display when the promotion is CURRENTLY ACTIVE.
+
+==================================================
+DO NOT TRUST is_featured ALONE
+==================================================
+
+This is critical.
+
+The UI must not display the featured badge only because:
+
+is_featured === true
+
+Always validate the expiration state.
+
+Conceptually:
+
+const isActivelyFeatured =
+  promotion.status === 'active' &&
+  new Date(promotion.expires_at).getTime() > Date.now();
+
+If denormalized listing fields are used:
+
+const isActivelyFeatured =
+  listing.is_featured === true &&
+  listing.featured_until &&
+  new Date(listing.featured_until).getTime() > Date.now();
+
+The backend/database query must also apply equivalent expiration logic.
+
+Do not allow an expired promotion to remain visually featured because of stale boolean state.
+
+==================================================
+AUTOMATIC EXPIRATION
+==================================================
+
+When the promotion duration expires:
+
+The listing must AUTOMATICALLY return to normal listing behavior.
+
+Example:
+
+Pamuk listing purchases:
+
+Popüler
+7 days
+
+Promotion:
+
+starts_at:
+14 July 2026 14:00
+
+expires_at:
+21 July 2026 14:00
+
+At:
+
+21 July 2026 14:00
+
+Expected:
+
+- promotion is no longer active
+- listing is no longer ranked as featured
+- "Öne Çıkarılan" badge disappears
+- listing returns to normal listing ordering
+- listing remains published
+- listing is NOT deleted
+- listing data is NOT lost
+- views are NOT reset
+- likes/favorites are NOT reset
+- messages are NOT deleted
+- performance history is NOT deleted
+
+The listing simply loses its paid featured priority.
+
+==================================================
+EXPIRATION ARCHITECTURE
+==================================================
+
+Do not rely only on:
+
+setTimeout()
+
+in the mobile application.
+
+Do not rely on the user keeping the app open.
+
+Do not rely on a client-side timer.
+
+Promotion expiration must be determined by server/database time.
+
+Use:
+
+expires_at > NOW()
+
+for active featured queries.
+
+Optionally, according to the existing backend architecture, use a scheduled backend job to update:
+
+status = expired
+
+and:
+
+is_featured = false
+
+But even if the scheduled job is delayed, the public listing query must treat:
+
+expires_at <= NOW()
+
+as NOT FEATURED.
+
+This guarantees correct ranking.
+
+==================================================
+APP OPEN / REFRESH BEHAVIOR
+==================================================
+
+When the user opens the app:
+
+The listing query must calculate active promotion state using current server/database time.
+
+Example:
+
+Promotion expired while the app was closed.
+
+User opens CanYoldaşı the next day.
+
+EXPECTED:
+
+The listing immediately appears as a normal listing.
+
+The featured badge must not briefly appear.
+
+Do not require the user to refresh manually.
+
+==================================================
+REALTIME EXPIRATION BEHAVIOR
+==================================================
+
+If the app remains open when a promotion expires:
+
+The listing should automatically return to normal position without requiring manual refresh.
+
+Implement a safe synchronization strategy compatible with the current architecture.
+
+Possible strategies:
+
+- Supabase realtime status update from scheduled backend expiration
+- query invalidation at the nearest known expiration
+- lightweight active promotion refresh
+- server-backed list refresh
+
+Do not create one uncontrolled interval per listing.
+
+Do not create memory leaks.
+
+Recommended:
+
+Determine the nearest active promotion expires_at.
+
+Schedule one client query invalidation for the nearest expiration.
+
+When it fires:
+
+refetch the listing query
+recalculate active featured listings
+determine the next nearest expiration
+
+The server/database remains the source of truth.
+
+==================================================
+ILANLARIM ACTIVE PROMOTION STATE
+==================================================
+
+When the user's own listing has an active promotion:
+
+Replace the normal:
+
+"İlanını öne çıkar"
+
+promotion CTA area with an active promotion state.
+
+Recommended UI:
+
+[rocket icon]
+
+İlanın Öne Çıkarılıyor
+
+Popüler Paket
+
+5 gün 12 saat kaldı
+
+Öne çıkarma bitiş:
+21 Temmuz 2026, 14:00
+
+Do not display the purchase CTA as if the listing is not promoted.
+
+The user must clearly understand:
+
+- promotion is active
+- selected package
+- expiration time
+- remaining time
+
+Use server-backed expires_at.
+
+==================================================
+PROMOTION REMAINING TIME
+==================================================
+
+Display a user-friendly remaining duration.
+
+Examples:
+
+2 gün 4 saat kaldı
+
+8 saat 12 dakika kaldı
+
+45 dakika kaldı
+
+Süresi doldu
+
+Do not use the remaining-time display as the source of promotion validity.
+
+It is only a visual representation.
+
+The actual validity comes from:
+
+expires_at
+and server/database time.
+
+==================================================
+RE-PROMOTION AFTER EXPIRATION
+==================================================
+
+After a promotion expires:
+
+The user's listing card in:
+
+"İlanlarım"
+
+must show the normal:
+
+"İlanını öne çıkar"
+
+CTA again.
+
+The user may purchase another promotion.
+
+Example:
+
+First promotion:
+3 days
+
+Expires.
+
+Later user purchases:
+7 days
+
+Create a NEW promotion history record.
+
+Do not overwrite the previous promotion history.
+
+==================================================
+ACTIVE PROMOTION REPURCHASE RULE
+==================================================
+
+For the first production version:
+
+Do NOT allow the user to purchase another promotion while the same listing already has an active promotion.
+
+If active promotion exists:
+
+Disable/hide:
+
+"Öne Çıkar"
+
+purchase action.
+
+Show the active promotion status instead.
+
+Do not stack durations.
+
+Do not extend active promotions automatically.
+
+This avoids billing and expiration ambiguity.
+
+The user may purchase again after the current promotion expires.
+
+==================================================
+PROMOTION OWNERSHIP SECURITY
+==================================================
+
+A user may promote only a listing they own.
+
+The secure backend must validate:
+
+listing.owner_id === authenticated user ID
+
+Do not trust listing owner ID sent from the client.
+
+User A must not be able to promote User B's listing by manually changing listing_id.
+
+==================================================
+RLS AND BACKEND SECURITY
+==================================================
+
+Audit Supabase RLS and secure backend operations.
+
+Users may view active public promotion state required for listing ranking.
+
+Users may view their own promotion/payment history as appropriate.
+
+Users must NOT be able to directly insert:
+
+status = active
+
+into listing_promotions from an untrusted client.
+
+Users must NOT be able to directly change:
+
+starts_at
+expires_at
+price
+package duration
+payment status
+
+to activate a free promotion.
+
+Promotion activation must occur through a trusted backend/service role after verified payment.
+
+Do not expose service role credentials to the client.
+
+==================================================
+PAYMENT FAILURE
+==================================================
+
+If payment fails:
+
+- do not activate promotion
+- do not show featured badge
+- do not change listing ranking
+
+Display the existing error/toast system.
+
+Turkish message:
+
+"Ödeme tamamlanamadı. Lütfen tekrar deneyin."
+
+If a pending promotion/payment record exists:
+
+Mark or retain it according to the current payment architecture.
+
+Do not treat it as active.
+
+==================================================
+PAYMENT CANCELLATION
+==================================================
+
+If the user cancels the payment:
+
+Return safely to the listing/promotion flow.
+
+Do not activate promotion.
+
+Do not display:
+
+"Öne Çıkarılan"
+
+Do not move the listing above normal listings.
+
+==================================================
+LISTING DELETION
+==================================================
+
+If a user deletes a listing with an active promotion:
+
+Audit the existing payment/product rules.
+
+For the current implementation:
+
+The listing may be deleted by its owner according to existing listing rules.
+
+The deleted listing must immediately disappear from:
+
+- Tüm İlanlar
+- featured ranking
+- public listing results
+
+The promotion history may remain for audit/payment records.
+
+Do not accidentally display a deleted listing because its promotion is still active.
+
+==================================================
+FEATURED LISTING FILTERS
+==================================================
+
+The "Tüm İlanlar" section may contain filters.
+
+Featured priority must apply WITHIN relevant filter results.
+
+Example:
+
+Filter:
+Kedi
+
+Results:
+
+Featured Cat A
+Featured Cat B
+Normal Cat C
+Normal Cat D
+
+Do not place a featured dog inside Cat results just because it is promoted.
+
+Promotion changes ranking.
+
+Promotion does NOT bypass semantic filters.
+
+The same applies to:
+
+- species
+- location
+- age
+- gender
+- other existing adoption filters
+
+==================================================
+SEARCH BEHAVIOR
+==================================================
+
+If listing search exists:
+
+Promotion should prioritize actively featured listings only among listings matching the search query.
+
+Example search:
+
+Pamuk
+
+Do not show an unrelated featured listing above the matching search results.
+
+First apply eligibility/search/filter logic.
+
+Then apply featured ranking.
+
+==================================================
+PROMOTION ANALYTICS
+==================================================
+
+Preserve existing listing performance metrics.
+
+Recommended future-compatible promotion analytics:
+
+- promotion impressions
+- listing views during promotion
+- favorites during promotion
+- messages during promotion
+
+Do not fabricate analytics.
+
+If the current system does not track these metrics correctly, do not show fake numbers.
+
+Keep the data architecture compatible with future promotion performance reporting.
+
+==================================================
+PRODUCTION AUDIT
+==================================================
+
+Before implementation recursively inspect:
+
+- Sahiplendirme screen
+- İlanlarım section
+- Tüm İlanlar section
+- adoption listing cards
+- listing query hooks
+- listing sorting logic
+- filter logic
+- search logic
+- Supabase schema
+- promotion/package tables
+- payment tables
+- Stripe integration
+- Stripe webhook
+- realtime subscriptions
+- RLS policies
+- current listing performance logic
+
+Trace the complete flow:
+
+USER
+↓
+MY LISTING
+↓
+ÖNE ÇIKAR
+↓
+PACKAGE SELECTION
+↓
+TRUSTED PACKAGE LOOKUP
+↓
+PAYMENT SESSION
+↓
+VERIFIED PAYMENT
+↓
+PROMOTION ACTIVATION
+↓
+starts_at
+↓
+expires_at
+↓
+TÜM İLANLAR FEATURED RANKING
+↓
+ÖNE ÇIKARILAN BADGE
+↓
+EXPIRATION
+↓
+NORMAL LISTING RANKING
+
+Fix the current:
+
+"Paketler yükleniyor..."
+
+stuck loading state if it exists.
+
+Do not hide the error with permanent mock package data.
+
+Find whether the package query, database table, RLS, loading state, or Stripe configuration is failing.
+
+==================================================
+FINAL ACCEPTANCE TESTS
+==================================================
+
+TEST 1:
+
+Create a normal adoption listing.
+
+EXPECTED:
+
+Listing appears in Tüm İlanlar using normal ordering.
+
+No "Öne Çıkarılan" badge.
+
+TEST 2:
+
+Open İlanlarım.
+
+Tap:
+
+Öne Çıkar
+
+EXPECTED:
+
+Promotion package bottom sheet opens.
+
+Packages:
+
+Hızlı Öne Çıkar
+3 gün
+49,90 TL
+
+Popüler
+7 gün
+99,90 TL
+EN ÇOK TERCİH EDİLEN
+
+Maksimum Görünürlük
+15 gün
+179,90 TL
+
+TEST 3:
+
+Select Popüler.
+
+Complete verified payment.
+
+EXPECTED:
+
+Promotion becomes active.
+
+TEST 4:
+
+Open Tüm İlanlar.
+
+EXPECTED:
+
+Promoted listing appears above ALL normal eligible listings.
+
+TEST 5:
+
+Verify promoted listing card displays:
+
+"Öne Çıkarılan"
+
+with the existing rocket icon and purple badge.
+
+TEST 6:
+
+Open İlanlarım.
+
+EXPECTED:
+
+Listing displays active promotion state.
+
+Example:
+
+İlanın Öne Çıkarılıyor
+Popüler Paket
+7 gün kaldı
+
+TEST 7:
+
+Create newer normal listings.
+
+EXPECTED:
+
+The active promoted listing remains above them.
+
+Normal listing created_at must not outrank an active featured listing.
+
+TEST 8:
+
+Have multiple promoted listings.
+
+EXPECTED:
+
+All active promoted listings appear before normal listings.
+
+Verify deterministic featured ordering.
+
+TEST 9:
+
+Test listing filters.
+
+EXPECTED:
+
+Only eligible matching listings appear.
+
+Featured matching listings rank first.
+
+TEST 10:
+
+Simulate expires_at <= database NOW() in development/test environment.
+
+EXPECTED:
+
+Listing immediately stops being treated as featured.
+
+TEST 11:
+
+Verify:
+
+"Öne Çıkarılan"
+
+badge disappears.
+
+TEST 12:
+
+Verify listing returns to normal listing ordering.
+
+TEST 13:
+
+Verify listing is NOT deleted.
+
+TEST 14:
+
+Verify views, favorites, messages, and listing data remain intact.
+
+TEST 15:
+
+Open app after promotion expired while app was closed.
+
+EXPECTED:
+
+Listing loads directly as normal.
+
+No stale featured badge.
+
+TEST 16:
+
+Keep app open during expiration.
+
+EXPECTED:
+
+Listing returns to normal state through safe synchronization.
+
+TEST 17:
+
+After expiration, open İlanlarım.
+
+EXPECTED:
+
+"İlanını öne çıkar"
+
+CTA is available again.
+
+TEST 18:
+
+Purchase another promotion.
+
+EXPECTED:
+
+A new promotion history record is created.
+
+Previous promotion history remains.
+
+TEST 19:
+
+Attempt to promote another user's listing through manipulated listing ID.
+
+EXPECTED:
+
+Backend rejects the request.
+
+TEST 20:
+
+Manipulate client package price.
+
+EXPECTED:
+
+Trusted backend package price is used.
+
+TEST 21:
+
+Cancel payment.
+
+EXPECTED:
+
+No promotion activation.
+
+TEST 22:
+
+Fail payment.
+
+EXPECTED:
+
+No promotion activation.
+
+TEST 23:
+
+Test on iOS.
+
+TEST 24:
+
+Test on Android.
+
+TEST 25:
+
+Test on Web.
+
+Verify package selection, active promotion state, badge, ranking, and expiration behavior are consistent.
+
+==================================================
+IMPORTANT RESTRICTIONS
+==================================================
+
+DO NOT:
+
+- redesign the entire Sahiplendirme feature
+- permanently embed package cards inside listing cards
+- trust package price from the client
+- trust duration from the client
+- activate promotion from frontend payment success state
+- use only is_featured without expires_at
+- use client setTimeout as the source of expiration
+- delete the listing when promotion expires
+- reset listing statistics when promotion expires
+- allow normal listings above active featured listings
+- display featured listings that fail current filters
+- randomly reorder promoted listings
+- create fake promotion analytics
+- allow users to directly activate their own promotion in Supabase
+- expose Supabase service role credentials
+- create duplicate promotion/payment systems without auditing the existing architecture
+
+GOAL:
+
+When a user purchases a verified promotion package for their own adoption listing, the listing becomes actively featured for the exact paid duration.
+
+While the promotion is active:
+
+- the listing always appears above normal eligible listings in Tüm İlanlar
+- the listing displays an "Öne Çıkarılan" badge
+- the owner can see the active package and remaining duration
+
+When expires_at is reached:
+
+- featured priority automatically ends
+- the "Öne Çıkarılan" badge automatically disappears
+- the listing automatically returns to normal listing ordering
+- the listing and all existing listing data remain intact
+
+The promotion system must be based on secure backend payment verification and server/database time.

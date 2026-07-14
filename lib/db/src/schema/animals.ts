@@ -104,6 +104,41 @@ export const adoptionListingFollows = pgTable("adoption_listing_follows", {
   createdAt: timestamp("created_at", { withTimezone: true }).defaultNow(),
 }, (t) => [unique("adoption_listing_follows_unique").on(t.userId, t.listingId)]);
 
+export const promotionPackages = pgTable("promotion_packages", {
+  id:               text("id").primaryKey().default(sql`gen_random_uuid()::text`),
+  code:             text("code").notNull(),
+  name:             text("name").notNull(),
+  durationDays:     integer("duration_days").notNull(),
+  priceAmount:      integer("price_amount").notNull(),
+  currency:         text("currency").notNull().default("try"),
+  badgeText:        text("badge_text"),
+  shortDescription: text("short_description").notNull().default(""),
+  isPopular:        boolean("is_popular").notNull().default(false),
+  isActive:         boolean("is_active").notNull().default(true),
+  displayOrder:     integer("display_order").notNull().default(0),
+  createdAt:        timestamp("created_at", { withTimezone: true }).defaultNow(),
+});
+
+export const listingPromotions = pgTable("listing_promotions", {
+  id:              text("id").primaryKey().default(sql`gen_random_uuid()::text`),
+  listingId:       text("listing_id").notNull().references(() => adoptionListings.id, { onDelete: "cascade" }),
+  ownerId:         text("owner_id").notNull(),
+  packageId:       text("package_id").notNull(),
+  stripeSessionId: text("stripe_session_id"),
+  packageName:     text("package_name").notNull().default(""),
+  durationDays:    integer("duration_days").notNull(),
+  startsAt:        timestamp("starts_at", { withTimezone: true }),
+  expiresAt:       timestamp("expires_at", { withTimezone: true }),
+  status:          text("status").notNull().default("pending"),
+  createdAt:       timestamp("created_at", { withTimezone: true }).defaultNow(),
+  updatedAt:       timestamp("updated_at", { withTimezone: true }).defaultNow(),
+});
+
+export type PromotionPackage        = typeof promotionPackages.$inferSelect;
+export type InsertPromotionPackage  = typeof promotionPackages.$inferInsert;
+export type ListingPromotion        = typeof listingPromotions.$inferSelect;
+export type InsertListingPromotion  = typeof listingPromotions.$inferInsert;
+
 export type AdoptionListingFollow       = typeof adoptionListingFollows.$inferSelect;
 export type InsertAdoptionListingFollow = typeof adoptionListingFollows.$inferInsert;
 

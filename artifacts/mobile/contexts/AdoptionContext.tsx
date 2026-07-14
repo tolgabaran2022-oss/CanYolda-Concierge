@@ -39,6 +39,9 @@ export interface AdoptionListing {
   catCompatibility?: string;
   dogCompatibility?: string;
   toiletTraining?: string;
+  isFeatured?: boolean;
+  featuredUntil?: string | null;
+  featuredPackageName?: string | null;
 }
 
 interface AdoptionContextType {
@@ -116,6 +119,9 @@ function mapFromApi(raw: Record<string, unknown>): AdoptionListing {
     catCompatibility:   raw.catCompatibility ? String(raw.catCompatibility) : undefined,
     dogCompatibility:   raw.dogCompatibility ? String(raw.dogCompatibility) : undefined,
     toiletTraining:     raw.toiletTraining ? String(raw.toiletTraining) : undefined,
+    isFeatured:          Boolean(raw.isFeatured),
+    featuredUntil:       raw.featuredUntil ? String(raw.featuredUntil) : null,
+    featuredPackageName: raw.featuredPackageName ? String(raw.featuredPackageName) : null,
   };
 }
 
