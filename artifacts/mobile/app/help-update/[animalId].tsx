@@ -153,8 +153,14 @@ export default function HelpUpdateScreen() {
       });
 
       if (!res.ok) {
-        const errData = await res.json() as { error?: string };
-        throw new Error(errData.error ?? "Güncelleme kaydedilemedi");
+        let errMsg = "Güncelleme kaydedilemedi";
+        try {
+          const errData = await res.json() as { error?: string };
+          if (errData.error) errMsg = errData.error;
+        } catch {
+          if (res.status === 413) errMsg = "Fotoğraf çok büyük. Lütfen daha küçük bir fotoğraf seç.";
+        }
+        throw new Error(errMsg);
       }
 
       Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);

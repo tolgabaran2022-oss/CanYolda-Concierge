@@ -1,0 +1,345 @@
+CanYoldaşı uygulamasında "Hayvanın Güncel Durumunu Bildir" ekranında kritik bir API/JSON parsing hatası var.
+
+MEVCUT HATA:
+
+Kullanıcı bir durum seçiyor, "Güncel Durum Notu" alanına not yazıyor ve "Güncellemeyi Kaydet" butonuna bastığında şu hata gösteriliyor:
+
+JSON Parse error: Unexpected character: <
+
+Bu hata frontend'in JSON beklerken HTML response aldığını gösteriyor.
+
+Bu sorunu sadece alert mesajını gizleyerek veya try/catch ekleyerek geçici olarak kapatma.
+
+ROOT CAUSE ANALYSIS yap ve gerçek kaynağı düzelt.
+
+==================================================
+1. İLGİLİ AKIŞI BUL
+==================================================
+
+Kod tabanında recursive audit yap.
+
+Şunları ara:
+
+- "Güncellemeyi Kaydet"
+- "Hayvanın Güncel Durumunu Bildir"
+- "Güncel Durum Notu"
+- response.json()
+- JSON.parse()
+- fetch(
+- axios
+- updateAnimalStatus
+- updateStatus
+- currentStatus
+- animal status
+- status update
+
+Butona basıldığında çalışan gerçek fonksiyonu ve tüm request chain'i tespit et.
+
+Akışı şu şekilde takip et:
+
+UI button
+→ onPress
+→ handler
+→ service
+→ API client
+→ endpoint / Supabase query
+→ database
+→ response
+→ frontend response parser
+
+Her katmanı kontrol et.
+
+==================================================
+2. RAW RESPONSE DEBUG ET
+==================================================
+
+İlgili API isteğinde response.json() çağrısından önce geçici diagnostic logging ekle.
+
+Örnek mantık:
+
+const response = await fetch(...);
+
+const contentType = response.headers.get("content-type");
+const rawResponse = await response.text();
+
+console.log("[ANIMAL STATUS UPDATE]");
+console.log("URL:", requestUrl);
+console.log("STATUS:", response.status);
+console.log("CONTENT TYPE:", contentType);
+console.log("RAW RESPONSE:", rawResponse);
+
+Gerçek response'un neden "<" karakteriyle başladığını tespit et.
+
+Şunları özellikle kontrol et:
+
+- HTML 404 page
+- HTML 500 page
+- Replit fallback page
+- Expo web HTML
+- authentication redirect
+- incorrect API URL
+- missing API route
+- wrong HTTP method
+- reverse proxy error
+
+Root cause bulunmadan işi tamamlanmış kabul etme.
+
+==================================================
+3. API URL AUDIT
+==================================================
+
+iOS, Android ve Web platformlarında kullanılan API base URL yapılandırmasını kontrol et.
+
+Şunları ara:
+
+- localhost
+- 127.0.0.1
+- EXPO_PUBLIC_API_URL
+- API_URL
+- BASE_URL
+- REPLIT
+- process.env
+- Constants.expoConfig
+- Platform.OS
+
+Native uygulamanın yanlışlıkla web development server veya HTML route'una istek göndermediğinden emin ol.
+
+iOS Simulator, Android ve Web için endpoint resolution mantığını doğrula.
+
+Aynı API işlemi üç platformda da gerçek backend endpoint'ine gitmeli.
+
+Platform-specific hardcoded endpoint kullanma.
+
+Tek bir merkezi API configuration oluştur.
+
+==================================================
+4. RESPONSE PARSING MANTIĞINI DÜZELT
+==================================================
+
+Frontend'de hiçbir API response'unu kör şekilde response.json() ile parse etme.
+
+Güvenli response parser kullan.
+
+Mantık:
+
+const contentType = response.headers.get("content-type") || "";
+const rawText = await response.text();
+
+if (!response.ok) {
+  console.error("API ERROR", {
+    status: response.status,
+    contentType,
+    rawText,
+  });
+
+  throw new Error(
+    `API request failed with status ${response.status}`
+  );
+}
+
+if (!contentType.includes("application/json")) {
+  console.error("INVALID API RESPONSE", {
+    contentType,
+    rawText,
+  });
+
+  throw new Error("Server returned a non-JSON response");
+}
+
+let data;
+
+try {
+  data = JSON.parse(rawText);
+} catch (error) {
+  console.error("JSON PARSE ERROR", {
+    rawText,
+    error,
+  });
+
+  throw new Error("Invalid JSON response received from server");
+}
+
+Ancak sadece parser eklemek yeterli değildir.
+
+HTML response üreten backend/API problemi mutlaka düzeltilmeli.
+
+==================================================
+5. BACKEND ENDPOINT'İ KONTROL ET
+==================================================
+
+Hayvan durum güncelleme endpoint'ini bul.
+
+Endpoint şu alanları doğru şekilde işlemeli:
+
+- animal/help card id
+- selected current status
+- current status note
+- updater user id
+- updater display name
+- updated_at
+- optional photo data if applicable
+
+Backend her durumda JSON dönmeli.
+
+Başarılı response örneği:
+
+{
+  "success": true,
+  "data": {
+    "status": "treated",
+    "note": "Hayvanın tedavisi yapıldı",
+    "updatedAt": "..."
+  }
+}
+
+Validation error:
+
+{
+  "success": false,
+  "error": {
+    "code": "VALIDATION_ERROR",
+    "message": "Geçersiz durum seçimi"
+  }
+}
+
+Server error:
+
+{
+  "success": false,
+  "error": {
+    "code": "INTERNAL_SERVER_ERROR",
+    "message": "Durum güncellenemedi"
+  }
+}
+
+API endpoint hiçbir durumda HTML error page döndürmemeli.
+
+==================================================
+6. SUPABASE KULLANIMINI KONTROL ET
+==================================================
+
+Eğer bu işlem doğrudan Supabase üzerinden yapılması gereken bir işlemse eski REST/Express/API route kullanımını kontrol et.
+
+Duplicate backend architecture oluşturma.
+
+Şunları kontrol et:
+
+- Supabase client
+- current authenticated user
+- status update table
+- help card relation
+- foreign keys
+- RLS policies
+- INSERT/UPDATE permission
+- SELECT permission
+
+Supabase error varsa bunu JSON parse hatasına dönüştürme.
+
+Gerçek Supabase error code ve message değerini development console'da göster.
+
+Production UI'da kullanıcıya teknik hata gösterme.
+
+==================================================
+7. DOUBLE SUBMIT KONTROLÜ
+==================================================
+
+"Güncellemeyi Kaydet" butonunun tek tıklamada yalnızca 1 request gönderdiğini doğrula.
+
+Kontrol et:
+
+- duplicate onPress
+- useEffect side effect
+- mutation double execution
+- form submit + button onPress conflict
+- React StrictMode side effects
+
+Saving state ekle:
+
+if (isSaving) return;
+
+Request başlarken:
+
+setIsSaving(true);
+
+finally:
+
+setIsSaving(false);
+
+İşlem sırasında butonu disabled yap.
+
+Tek kullanıcı aksiyonu = tek database write olmalı.
+
+==================================================
+8. KULLANICI HATA MESAJINI DÜZELT
+==================================================
+
+Kullanıcıya şu teknik hata ASLA gösterilmemeli:
+
+"JSON Parse error: Unexpected character: <"
+
+Development console'da teknik detay korunabilir.
+
+Production kullanıcı mesajı:
+
+"Güncelleme kaydedilemedi. Lütfen tekrar deneyin."
+
+Network problemi:
+
+"Bağlantı kurulamadı. İnternet bağlantınızı kontrol edin."
+
+Session problemi:
+
+"Oturumunuzun süresi doldu. Lütfen tekrar giriş yapın."
+
+Validation problemi:
+
+"Lütfen hayvanın mevcut durumunu seçin."
+
+==================================================
+9. PLATFORM TESTİ
+==================================================
+
+Düzeltmeden sonra aynı akışı gerçekten test et:
+
+iOS Simulator:
+durum seç
+→ not yaz
+→ Güncellemeyi Kaydet
+→ database write
+→ success response
+→ UI refresh
+
+Android:
+aynı testi yap
+
+Web:
+aynı testi yap
+
+Üç platformda da aynı verinin kaydedildiğini doğrula.
+
+Uygulamayı restart et.
+
+Aynı yardım kartını tekrar aç.
+
+Kaydedilen durum ve notun database'den tekrar yüklendiğini doğrula.
+
+==================================================
+10. TAMAMLAMA RAPORU
+==================================================
+
+İşlem sonunda bana şunları açıkça raporla:
+
+1. Hatanın gerçek root cause'u neydi?
+2. Hangi endpoint HTML response dönüyordu?
+3. HTTP status code neydi?
+4. Request hangi URL'ye gidiyordu?
+5. Hangi dosyalar değiştirildi?
+6. API URL yapılandırmasında hata var mıydı?
+7. Supabase tarafında hata var mıydı?
+8. iOS testi başarılı mı?
+9. Android testi başarılı mı?
+10. Web testi başarılı mı?
+
+Sadece kodu değiştirme.
+
+Gerçek request/response chain'i analiz et, HTML response'un kaynağını bul ve root cause'u düzelt.
