@@ -83,3 +83,9 @@ id = "otQklW0YaHuYl8PvXGlWQ"
 uri = "file://components.zip"
 type = "unspecified"
 title = "PostCard + Tab Bar bileşenleri (zip)"
+
+[[outputs]]
+id = "sZazP8-X2LM4AQ2m95lBU"
+uri = "file://mobile_components.zip"
+type = "unspecified"
+title = "PostCard, TabBar, StoryBar, CommentSheet, useTheme (zip)"
