@@ -1,4 +1,4 @@
-import { boolean, pgTable, text, timestamp, unique } from "drizzle-orm/pg-core";
+import { boolean, pgTable, text, timestamp } from "drizzle-orm/pg-core";
 import { sql } from "drizzle-orm";
 
 export const conversations = pgTable("conversations", {
@@ -11,7 +11,11 @@ export const conversations = pgTable("conversations", {
   lastMessage:   text("last_message").notNull().default(""),
   lastMessageAt: timestamp("last_message_at", { withTimezone: true }).defaultNow(),
   createdAt:     timestamp("created_at", { withTimezone: true }).defaultNow(),
-}, (t) => [unique("conversations_users_unique").on(t.userOne, t.userTwo)]);
+  /* Uniqueness is enforced via partial DB indexes (managed via executeSql):
+     - conversations_dm_unique:       (user_one, user_two) WHERE listing_id IS NULL
+     - conversations_adoption_unique: (user_one, user_two, listing_id) WHERE listing_id IS NOT NULL
+  */
+});
 
 export const messages = pgTable("messages", {
   id:             text("id").primaryKey().default(sql`gen_random_uuid()::text`),

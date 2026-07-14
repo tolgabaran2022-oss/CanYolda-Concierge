@@ -1,5 +1,5 @@
 import { Router } from "express";
-import { and, desc, eq, gt, or, sql } from "drizzle-orm";
+import { and, desc, eq, gt, isNull, or, sql } from "drizzle-orm";
 import { db, pool, conversations, messages } from "@workspace/db";
 
 import { extractUserId } from "../lib/jwtAuth.js";
@@ -98,43 +98,70 @@ router.post("/messages/conversations", async (req, res) => {
   if (otherId === myId) { res.status(400).json({ error: "Cannot message yourself" }); return; }
 
   /* canonical ordering to guarantee unique constraint works */
-  const userOne = myId < otherId ? myId : otherId;
-  const userTwo = myId < otherId ? otherId : myId;
+  const userOne     = myId < otherId ? myId : otherId;
+  const userTwo     = myId < otherId ? otherId : myId;
+  const listingIdVal = listing?.id ?? null;
 
   try {
-    /* Try to find existing */
-    const existing = await db
-      .select()
-      .from(conversations)
-      .where(and(eq(conversations.userOne, userOne), eq(conversations.userTwo, userTwo)))
-      .limit(1);
-
-    let conv = existing[0];
-
-    if (!conv) {
-      const [inserted] = await db
-        .insert(conversations)
-        .values({
-          userOne,
-          userTwo,
-          listingId:    listing?.id,
-          listingTitle: listing?.title,
-          listingImage: listing?.imageUrl,
-          lastMessage:  "",
-        })
-        .onConflictDoNothing()
-        .returning();
-
-      if (!inserted) {
-        /* race condition — re-fetch */
-        const retry = await db
+    /* Try to find existing conversation — listing-aware lookup */
+    const existingRows = listingIdVal
+      ? await db
           .select()
           .from(conversations)
-          .where(and(eq(conversations.userOne, userOne), eq(conversations.userTwo, userTwo)))
+          .where(and(
+            eq(conversations.userOne, userOne),
+            eq(conversations.userTwo, userTwo),
+            eq(conversations.listingId, listingIdVal),
+          ))
+          .limit(1)
+      : await db
+          .select()
+          .from(conversations)
+          .where(and(
+            eq(conversations.userOne, userOne),
+            eq(conversations.userTwo, userTwo),
+            isNull(conversations.listingId),
+          ))
           .limit(1);
-        conv = retry[0];
-      } else {
+
+    let conv = existingRows[0];
+
+    if (!conv) {
+      try {
+        const [inserted] = await db
+          .insert(conversations)
+          .values({
+            userOne,
+            userTwo,
+            listingId:    listing?.id ?? null,
+            listingTitle: listing?.title ?? null,
+            listingImage: listing?.imageUrl ?? null,
+            lastMessage:  "",
+          })
+          .returning();
         conv = inserted;
+      } catch {
+        /* unique constraint race condition — re-fetch with same listing-aware query */
+        const retryRows = listingIdVal
+          ? await db
+              .select()
+              .from(conversations)
+              .where(and(
+                eq(conversations.userOne, userOne),
+                eq(conversations.userTwo, userTwo),
+                eq(conversations.listingId, listingIdVal),
+              ))
+              .limit(1)
+          : await db
+              .select()
+              .from(conversations)
+              .where(and(
+                eq(conversations.userOne, userOne),
+                eq(conversations.userTwo, userTwo),
+                isNull(conversations.listingId),
+              ))
+              .limit(1);
+        conv = retryRows[0];
       }
     }
 

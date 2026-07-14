@@ -1,0 +1,747 @@
+CAN YOLDAŞI — ADOPTION MESSAGES / CONVERSATION SYSTEM
+
+Implement a complete production-ready messaging system for adoption listings.
+
+IMPORTANT:
+Preserve the existing visual design language.
+Do not redesign the entire adoption screen.
+Extend the current architecture and connect the existing "Mesaj Gönder" button to a real conversation system.
+
+==================================================
+MAIN NAVIGATION CHANGE
+==================================================
+
+The adoption screen currently contains navigation items similar to:
+
+- İlan Oluştur
+- İlanlarım
+- Tüm İlanlar
+
+Add a new navigation item:
+
+- Mesajlarım
+
+Recommended final navigation:
+
+İlan Oluştur
+İlanlarım
+Mesajlarım
+Tüm İlanlar
+
+Use a chat/message bubble icon for "Mesajlarım".
+
+Keep the current rounded segmented navigation design.
+
+The navigation must remain responsive on:
+- iOS
+- Android
+- Web
+
+Do not allow text overlap or clipping.
+
+If the horizontal space is insufficient, optimize item padding and label sizes without breaking the existing premium visual design.
+
+==================================================
+CORE MESSAGE FLOW
+==================================================
+
+Expected flow:
+
+User A opens User B's adoption listing.
+
+Example listing:
+
+Pet:
+Pamuk
+
+Listing ID:
+listing_123
+
+Owner:
+user_b
+
+User A taps:
+
+"Mesaj Gönder"
+
+↓
+
+Check whether a conversation already exists between:
+
+participant_1 = user_a
+participant_2 = user_b
+listing_id = listing_123
+
+↓
+
+If a conversation already exists:
+Open the existing conversation.
+
+↓
+
+If no conversation exists:
+Create a new conversation linked to the adoption listing.
+
+↓
+
+Open the chat screen.
+
+↓
+
+When User A sends the first message:
+The conversation must appear in the "Mesajlarım" section for BOTH users.
+
+Do not create fake conversations.
+Do not use random users.
+Do not use local-only state as the source of truth.
+
+==================================================
+IMPORTANT CONVERSATION RULE
+==================================================
+
+Adoption conversations must be linked to the adoption listing.
+
+A conversation must know:
+
+- conversation ID
+- adoption listing ID
+- pet ID if the project uses a separate pet record
+- listing owner ID
+- interested user ID
+- created_at
+- updated_at
+- last_message_at
+
+Example:
+
+conversation:
+id = conversation_123
+listing_id = listing_123
+owner_id = user_b
+interested_user_id = user_a
+
+The listing relationship is REQUIRED.
+
+Do not create a conversation based only on two user IDs.
+
+Reason:
+
+The same two users may communicate about multiple different animals.
+
+Example:
+
+User A and User B can have:
+
+Conversation 1:
+Pamuk
+
+Conversation 2:
+Boncuk
+
+These must remain separate adoption conversations.
+
+==================================================
+DATABASE AUDIT
+==================================================
+
+Before implementation recursively inspect:
+
+- adoption listing tables
+- user/profile tables
+- current message tables
+- existing DM/message implementation
+- Supabase migrations
+- RLS policies
+- realtime subscriptions
+- chat hooks
+- navigation/router architecture
+
+IMPORTANT:
+
+If the application already has an existing messaging system, do NOT create a second unrelated messaging architecture.
+
+Extend the existing conversation/message system to support adoption listing context.
+
+Prefer adding:
+
+context_type
+context_id
+
+or:
+
+listing_id
+
+depending on the existing database architecture.
+
+Example generalized architecture:
+
+conversations
+- id
+- context_type
+- context_id
+- created_at
+- updated_at
+- last_message_at
+
+conversation_participants
+- conversation_id
+- user_id
+- last_read_at
+
+messages
+- id
+- conversation_id
+- sender_id
+- content
+- created_at
+- read_at
+
+For an adoption conversation:
+
+context_type = 'adoption_listing'
+context_id = listing.id
+
+If the existing system architecture is simpler and stable, adapt to it.
+
+Do not blindly replace working database tables.
+
+==================================================
+MESSAGE BUTTON BEHAVIOR
+==================================================
+
+Connect the existing:
+
+"Mesaj Gönder"
+
+button.
+
+Create one centralized function similar to:
+
+handleMessageListingOwner()
+
+Expected logic:
+
+1. Verify authenticated user exists.
+2. Get current listing ID.
+3. Get listing owner ID.
+4. Prevent the listing owner from messaging themselves.
+5. Search for an existing conversation for:
+   current user
+   listing owner
+   current listing
+6. Reuse existing conversation if found.
+7. Otherwise securely create conversation.
+8. Navigate to the conversation screen.
+
+Do not create a new conversation every time the button is tapped.
+
+Rapid multiple taps must not create duplicate conversations.
+
+Disable the button temporarily while conversation creation is processing.
+
+==================================================
+SELF MESSAGE PROTECTION
+==================================================
+
+If the authenticated user owns the listing:
+
+Do not display:
+
+"Mesaj Gönder"
+
+for their own listing.
+
+The owner should not be able to start a conversation with themselves.
+
+For the listing owner, display appropriate owner controls instead.
+
+Use the existing listing management behavior.
+
+==================================================
+MESAJLARIM SCREEN
+==================================================
+
+Create a proper "Mesajlarım" screen/section inside the adoption feature.
+
+Display conversation cards.
+
+Each conversation card must contain:
+
+- other user's profile image
+- other user's name
+- pet/listing image
+- pet name
+- last message preview
+- last message time
+- unread message count
+- unread state
+- listing context
+
+Recommended layout:
+
+[USER AVATAR]  USER NAME                     TIME
+               PET NAME • Sahiplendirme
+               Last message preview...      [2]
+
+Alternatively use the pet image as the primary thumbnail and show the user avatar as a small overlay.
+
+Use the current CanYoldaşı design system.
+
+Recommended card design:
+
+- white background
+- 18–22 px border radius
+- subtle shadow
+- very soft purple border for unread conversations
+- bold unread message preview
+- purple unread badge
+- generous horizontal spacing
+
+Do not make the design look like an admin table.
+
+This is a mobile consumer application.
+
+==================================================
+LISTING CONTEXT INSIDE CHAT
+==================================================
+
+At the top of the chat screen display a compact adoption listing context card.
+
+Example:
+
+[Pamuk photo]
+
+Pamuk
+Kedi • Sahip Arıyor
+Kadıköy
+
+"İlanı Gör"
+
+The user must always understand which animal the conversation is about.
+
+When "İlanı Gör" is tapped:
+
+Open the exact adoption listing detail screen using listing ID.
+
+Do not search by pet name.
+
+Use the unique listing ID.
+
+==================================================
+CONVERSATION CARD TAP
+==================================================
+
+When a conversation card is tapped:
+
+Navigate to:
+
+conversation/:conversationId
+
+Adapt to the project's current router.
+
+The conversation screen must fetch/resolve the conversation using its unique ID.
+
+Do not pass only:
+
+userId
+username
+petName
+
+as the conversation identity.
+
+The conversation ID is the primary conversation identity.
+
+==================================================
+MESSAGE DATA
+==================================================
+
+Every message must contain at minimum:
+
+- id
+- conversation_id
+- sender_id
+- content
+- created_at
+
+If the project supports attachments:
+
+- attachment_url
+- attachment_type
+
+For read states:
+
+- read_at
+
+or participant-based last_read_at.
+
+Use the architecture that best fits the existing project.
+
+==================================================
+MESAJLARIM QUERY
+==================================================
+
+The "Mesajlarım" screen must return conversations where the current authenticated user is a participant.
+
+Do not fetch all conversations and filter them only on the client.
+
+Use a secure database query and RLS.
+
+The user must only be able to access conversations they participate in.
+
+Order conversations by:
+
+last_message_at DESC
+
+The newest active conversation must appear first.
+
+==================================================
+CONVERSATION PREVIEW
+==================================================
+
+Each conversation card must display the actual latest message.
+
+Do not load hundreds of messages for every conversation just to find the latest message.
+
+Use the existing architecture or optimize using:
+
+- last_message_id
+- last_message_at
+- efficient joined query
+- database view/RPC if required
+
+Avoid N+1 queries.
+
+The conversation list must remain fast.
+
+==================================================
+UNREAD MESSAGE COUNT
+==================================================
+
+Implement real unread states.
+
+When User A sends a message to User B:
+
+User A:
+No unread badge for their own sent message.
+
+User B:
+Unread count increases.
+
+Example:
+
+Mesajlarım [3]
+
+Conversation card:
+[3]
+
+When User B opens the conversation:
+
+Mark relevant incoming messages as read.
+
+Unread count must update immediately.
+
+When returning to "Mesajlarım":
+
+The badge must display the correct count.
+
+Do not permanently store unread counts as random client state.
+
+Use message read state or participant last_read_at as the source of truth.
+
+==================================================
+NAVIGATION BADGE
+==================================================
+
+If there are unread adoption messages, show a small badge on:
+
+Mesajlarım
+
+Example:
+
+Mesajlarım  3
+
+Badge design:
+
+- small
+- circular or pill
+- purple or existing urgent accent
+- white text
+
+If unread count = 0:
+Do not show the badge.
+
+For 99+ messages:
+
+Display:
+
+99+
+
+==================================================
+REALTIME MESSAGING
+==================================================
+
+If Supabase Realtime is used, implement realtime message synchronization.
+
+When a new message is inserted:
+
+- show it in the open chat
+- update the last message preview
+- move the conversation to the top
+- update last_message_at
+- increase unread state for the receiver
+- update the Mesajlarım badge
+
+The user must not need to manually refresh.
+
+Prevent duplicate realtime messages.
+
+Deduplicate by message ID.
+
+Do not create duplicate message bubbles due to optimistic UI + realtime events.
+
+==================================================
+OPTIMISTIC MESSAGE SENDING
+==================================================
+
+Use safe optimistic UI if compatible with the current architecture.
+
+Expected behavior:
+
+User sends message.
+
+↓
+
+Message immediately appears with sending state.
+
+↓
+
+Database insert succeeds.
+
+↓
+
+Replace/confirm the optimistic message.
+
+If sending fails:
+
+Show failed state.
+
+Allow retry.
+
+Do not silently remove the user's message.
+
+Do not permanently display an unsaved message as successfully sent.
+
+==================================================
+EMPTY STATE
+==================================================
+
+If there are no conversations:
+
+Display a premium empty state.
+
+Turkish copy:
+
+Title:
+"Henüz mesajın yok"
+
+Description:
+"Bir sahiplendirme ilanındaki Mesaj Gönder butonunu kullanarak ilan sahibiyle iletişime geçebilirsin."
+
+Optional CTA:
+
+"İlanları Keşfet"
+
+The CTA should navigate to:
+
+Tüm İlanlar
+
+Do not show an empty blank screen.
+
+==================================================
+DELETED LISTING BEHAVIOR
+==================================================
+
+If an adoption listing is deleted after a conversation has started:
+
+Do not delete the conversation automatically.
+
+The message history should remain available unless product requirements explicitly say otherwise.
+
+Display:
+
+"Bu ilan artık yayında değil"
+
+Disable:
+
+"İlanı Gör"
+
+The chat must not crash.
+
+==================================================
+BLOCKED / DELETED USER SAFETY
+==================================================
+
+Audit existing user blocking/deletion behavior.
+
+If an account is deleted:
+
+Do not crash the conversation list.
+
+Use the existing deleted user representation.
+
+Example:
+
+"Silinmiş kullanıcı"
+
+If user blocking exists:
+
+Respect the project's current blocking rules for messaging.
+
+Do not bypass them.
+
+==================================================
+RLS AND SECURITY
+==================================================
+
+Audit and fix Supabase Row Level Security.
+
+Conversation rules:
+
+A user can SELECT a conversation only if they are a participant.
+
+A user can SELECT messages only from conversations they participate in.
+
+A user can INSERT a message only if:
+
+auth.uid() is a participant of the conversation
+
+AND:
+
+sender_id = auth.uid()
+
+The client must never be able to send a message as another user.
+
+A user must not be able to change:
+
+sender_id
+conversation ownership
+another participant's identity
+
+through client manipulation.
+
+Do not solve authorization with UI-only checks.
+
+==================================================
+DUPLICATE CONVERSATION PREVENTION
+==================================================
+
+Prevent duplicate conversations at database level where possible.
+
+For an adoption listing, there should only be one active conversation for the same:
+
+listing ID
+listing owner
+interested user
+
+Use a database unique constraint or secure database function/RPC where appropriate.
+
+Do not rely only on:
+
+"check then insert"
+
+from the client because rapid taps or race conditions may create duplicates.
+
+==================================================
+FINAL ACCEPTANCE TESTS
+==================================================
+
+Test all of the following:
+
+1. User A opens Pamuk listing.
+
+2. User A taps "Mesaj Gönder".
+
+3. Chat opens.
+
+4. User A sends:
+"Merhaba, Pamuk hâlâ sahiplendiriliyor mu?"
+
+5. Conversation appears in User A's Mesajlarım.
+
+6. Conversation appears in User B's Mesajlarım.
+
+7. User B sees unread badge = 1.
+
+8. User A does not see unread badge for their own sent message.
+
+9. User B opens the conversation.
+
+10. Unread count becomes 0.
+
+11. User B replies.
+
+12. User A receives the reply without manual refresh.
+
+13. User A's unread count becomes 1.
+
+14. Conversation moves to the top of Mesajlarım.
+
+15. Conversation card displays:
+- correct user
+- Pamuk
+- correct listing image
+- actual latest message
+- correct time
+
+16. User taps the conversation card.
+
+17. Exact conversation opens.
+
+18. User taps "İlanı Gör".
+
+19. Exact Pamuk listing opens.
+
+20. Tap "Mesaj Gönder" repeatedly on the same listing.
+
+21. Verify only ONE conversation exists.
+
+22. Same two users communicate about another animal.
+
+23. Verify a separate conversation is created for the other listing.
+
+24. Delete the Pamuk listing.
+
+25. Existing conversation remains accessible.
+
+26. Chat displays:
+"Bu ilan artık yayında değil"
+
+27. Verify User C cannot access User A/User B conversation by manually changing conversation ID.
+
+==================================================
+IMPORTANT RESTRICTIONS
+==================================================
+
+DO NOT:
+
+- create fake conversations
+- create random message data
+- create a separate incompatible DM system
+- identify conversations only by user ID
+- identify conversations by pet name
+- create duplicate conversations on repeated button taps
+- fetch every user's conversations
+- rely on client-side authorization
+- show stale unread badges
+- redesign the entire adoption feature
+- break existing listing flows
+
+GOAL:
+
+The existing "Mesaj Gönder" button on an adoption listing must open or create a real listing-linked conversation.
+
+After a message is sent, the conversation must appear in the "Mesajlarım" section for both participating users.
+
+The conversation must remain linked to the exact adoption listing and pet using unique database IDs.
+
+The entire experience must work like a modern marketplace messaging system while preserving the CanYoldaşı visual language.

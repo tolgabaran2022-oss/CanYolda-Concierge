@@ -12,14 +12,16 @@ import * as Haptics from "expo-haptics";
 import { Image } from "expo-image";
 import { LinearGradient } from "expo-linear-gradient";
 import { useRouter } from "expo-router";
-import React, { useCallback, useMemo, useRef, useState } from "react";
+import React, { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import {
+  ActivityIndicator,
   Alert,
   FlatList,
   KeyboardAvoidingView,
   Linking,
   Modal,
   Platform,
+  RefreshControl,
   useWindowDimensions,
   Pressable,
   ScrollView,
@@ -37,6 +39,7 @@ import { useTheme } from "@/hooks/useTheme";
 import { formatTimeAgo } from "@/utils/formatters";
 import { EvcilimTab } from "@/components/EvcilimTab";
 import { apiFetchNotifications } from "@/lib/socialApi";
+import { apiGetConversations, type ApiConversation } from "@/lib/messagesApi";
 import { PET_DETAIL_OPTIONS, type DetailOption } from "@/lib/petDetailOptions";
 
 // ── Palette ───────────────────────────────────────────────────────────────────
@@ -63,7 +66,7 @@ const CARD_SHADOW = Platform.select({
 const DOG_IMG = require("../../assets/hero-puppy.png");
 
 type MainTab    = "evcilim" | "adoption";
-type Tab        = "create" | "mylistings" | "listings";
+type Tab        = "create" | "mylistings" | "messages" | "listings";
 type Filter     = "all" | "cat" | "dog" | "bird" | "rabbit" | "new" | "other";
 type MyFilter   = "all" | "active" | "passive" | "pending" | "adopted";
 type ListStatus = "Aktif" | "Onay Bekliyor" | "Pasif" | "Sahiplendirildi" | "Süresi Doldu";
@@ -176,34 +179,54 @@ const ots = StyleSheet.create({
   divider: { height: 1, backgroundColor: BORDER, marginBottom: 0 },
 });
 
-// ── Tab switcher (3-segment) ──────────────────────────────────────────────────
+// ── Tab switcher (4-segment) ──────────────────────────────────────────────────
 const TAB_DEFS: { key: Tab; label: string; icon: string }[] = [
-  { key: "create",     label: "İlan Oluştur", icon: "add-circle-outline" },
-  { key: "mylistings", label: "İlanlarım",    icon: "list-outline"       },
-  { key: "listings",   label: "Tüm İlanlar",  icon: "heart-outline"      },
+  { key: "create",     label: "İlan Oluştur", icon: "add-circle-outline"  },
+  { key: "mylistings", label: "İlanlarım",    icon: "list-outline"        },
+  { key: "messages",   label: "Mesajlarım",   icon: "chatbubbles-outline" },
+  { key: "listings",   label: "Tüm İlanlar",  icon: "heart-outline"       },
 ];
 
-function TabSwitcher({ active, onChange }: { active: Tab; onChange: (t: Tab) => void }) {
+function TabSwitcher({
+  active,
+  onChange,
+  unreadMessages = 0,
+}: {
+  active: Tab;
+  onChange: (t: Tab) => void;
+  unreadMessages?: number;
+}) {
   const T = useTheme();
   return (
     <View style={[tsw.wrap, { backgroundColor: T.card, borderColor: T.border }]}>
       {TAB_DEFS.map((t) => {
-        const isActive = active === t.key;
+        const isActive   = active === t.key;
+        const showBadge  = t.key === "messages" && unreadMessages > 0;
         return (
           <Pressable
             key={t.key}
-            style={[tsw.item]}
+            style={tsw.item}
             onPress={() => { Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light); onChange(t.key); }}
           >
             {isActive ? (
               <LinearGradient colors={[P2, P]} start={{ x: 0, y: 0 }} end={{ x: 1, y: 0 }} style={tsw.grad}>
-                <Icon name={t.icon} size={13} color={WHITE} />
+                <Icon name={t.icon} size={12} color={WHITE} />
                 <Text style={tsw.lblActive} numberOfLines={1}>{t.label}</Text>
+                {showBadge && (
+                  <View style={tsw.badge}>
+                    <Text style={tsw.badgeTxt}>{unreadMessages > 9 ? "9+" : String(unreadMessages)}</Text>
+                  </View>
+                )}
               </LinearGradient>
             ) : (
               <View style={tsw.inactiveRow}>
-                <Icon name={t.icon} size={13} color={T.purple} />
+                <Icon name={t.icon} size={12} color={T.purple} />
                 <Text style={[tsw.lblInactive, { color: T.textMuted }]} numberOfLines={1}>{t.label}</Text>
+                {showBadge && (
+                  <View style={tsw.badge}>
+                    <Text style={tsw.badgeTxt}>{unreadMessages > 9 ? "9+" : String(unreadMessages)}</Text>
+                  </View>
+                )}
               </View>
             )}
           </Pressable>
@@ -215,10 +238,12 @@ function TabSwitcher({ active, onChange }: { active: Tab; onChange: (t: Tab) => 
 const tsw = StyleSheet.create({
   wrap:        { flexDirection: "row", marginHorizontal: 20, marginBottom: 16, backgroundColor: WHITE, borderRadius: 16, padding: 4, borderWidth: 1, borderColor: BORDER, ...IOS_SHADOW },
   item:        { flex: 1, borderRadius: 12, overflow: "hidden" },
-  grad:        { flexDirection: "row", alignItems: "center", justifyContent: "center", gap: 4, paddingVertical: 10 },
-  inactiveRow: { flexDirection: "row", alignItems: "center", justifyContent: "center", gap: 4, paddingVertical: 10 },
-  lblActive:   { fontSize: 11, fontFamily: "Inter_700Bold", color: WHITE },
-  lblInactive: { fontSize: 11, fontFamily: "Inter_500Medium", color: P },
+  grad:        { flexDirection: "row", alignItems: "center", justifyContent: "center", gap: 3, paddingVertical: 8 },
+  inactiveRow: { flexDirection: "row", alignItems: "center", justifyContent: "center", gap: 3, paddingVertical: 8 },
+  lblActive:   { fontSize: 10, fontFamily: "Inter_700Bold",   color: WHITE, flexShrink: 1 },
+  lblInactive: { fontSize: 10, fontFamily: "Inter_500Medium", color: P,     flexShrink: 1 },
+  badge:       { minWidth: 14, height: 14, borderRadius: 7, backgroundColor: "#FF3B30", alignItems: "center", justifyContent: "center", paddingHorizontal: 3 },
+  badgeTxt:    { fontSize: 8, fontFamily: "Inter_700Bold", color: WHITE, lineHeight: 10 },
 });
 
 // ── Search bar ────────────────────────────────────────────────────────────────
@@ -657,6 +682,215 @@ const cr = StyleSheet.create({
   bannerIconWrap: { width: 44, height: 44, borderRadius: 22, backgroundColor: "rgba(255,255,255,0.2)", alignItems: "center", justifyContent: "center", flexShrink: 0 },
   bannerTitle:    { fontSize: 14, fontFamily: "Inter_700Bold", color: WHITE, marginBottom: 4 },
   bannerSub:      { fontSize: 11, fontFamily: "Inter_400Regular", color: "rgba(255,255,255,0.88)", lineHeight: 16 },
+});
+
+// ── Adoption messaging helpers ────────────────────────────────────────────────
+function msgTimeLabel(iso: string): string {
+  const diff = Date.now() - new Date(iso).getTime();
+  const m = Math.floor(diff / 60_000);
+  if (m < 1)  return "şimdi";
+  if (m < 60) return `${m} dk`;
+  const h = Math.floor(m / 60);
+  if (h < 24) return `${h} sa`;
+  const d = Math.floor(h / 24);
+  if (d < 7)  return `${d} g`;
+  return new Date(iso).toLocaleDateString("tr-TR", { day: "numeric", month: "short" });
+}
+
+function AdoptionConvCard({
+  conv,
+  onPress,
+}: {
+  conv: ApiConversation;
+  onPress: () => void;
+}) {
+  const T         = useTheme();
+  const hasUnread = conv.unreadCount > 0;
+  const initial   = (conv.otherUsername ?? "?").slice(0, 1).toUpperCase();
+
+  return (
+    <Pressable
+      style={({ pressed }) => [
+        acc.card,
+        { backgroundColor: pressed ? `${P}08` : T.card, borderColor: hasUnread ? `${P}30` : T.border },
+      ]}
+      onPress={onPress}
+    >
+      {/* Pet photo + user avatar overlay */}
+      <View style={acc.imgBox}>
+        <View style={acc.thumb}>
+          {conv.listingImage ? (
+            <Image source={{ uri: conv.listingImage }} style={acc.thumbImg} contentFit="cover" />
+          ) : (
+            <LinearGradient colors={[`${P2}50`, `${P}30`]} style={[acc.thumbImg, acc.thumbFallback]}>
+              <Icon name="paw" size={22} color={`${P}80`} />
+            </LinearGradient>
+          )}
+        </View>
+        <View style={acc.avatarBadge}>
+          {conv.otherAvatarUrl ? (
+            <Image source={{ uri: conv.otherAvatarUrl }} style={acc.avatarImg} contentFit="cover" />
+          ) : (
+            <View style={[acc.avatarImg, acc.avatarFallback]}>
+              <Text style={acc.avatarInitial}>{initial}</Text>
+            </View>
+          )}
+        </View>
+      </View>
+
+      {/* Text content */}
+      <View style={acc.content}>
+        <View style={acc.row1}>
+          <Text
+            style={[acc.username, { color: T.text }, hasUnread && acc.usernameBold]}
+            numberOfLines={1}
+          >
+            {conv.otherUsername}
+          </Text>
+          <Text style={[acc.time, { color: T.textMuted }]}>
+            {msgTimeLabel(conv.lastMessageAt)}
+          </Text>
+        </View>
+        <Text style={[acc.context, { color: T.purple }]} numberOfLines={1}>
+          {conv.listingTitle ? `${conv.listingTitle} · ` : ""}Sahiplendirme
+        </Text>
+        <View style={acc.row3}>
+          <Text
+            style={[
+              acc.preview,
+              { color: hasUnread ? T.text : T.textMuted },
+              hasUnread && acc.previewBold,
+            ]}
+            numberOfLines={1}
+          >
+            {conv.lastMessage || "Sohbet başladı"}
+          </Text>
+          {hasUnread && (
+            <View style={acc.badge}>
+              <Text style={acc.badgeTxt}>
+                {conv.unreadCount > 99 ? "99+" : String(conv.unreadCount)}
+              </Text>
+            </View>
+          )}
+        </View>
+      </View>
+    </Pressable>
+  );
+}
+const acc = StyleSheet.create({
+  card: {
+    flexDirection: "row", gap: 12, padding: 14,
+    borderRadius: 20, borderWidth: 1.5,
+    ...Platform.select({
+      ios:     { shadowColor: DARK, shadowOffset: { width: 0, height: 4 }, shadowOpacity: 0.08, shadowRadius: 14 },
+      android: { elevation: 3 },
+      default: {},
+    }),
+  },
+  imgBox:        { width: 68, height: 62, position: "relative", flexShrink: 0 },
+  thumb:         { width: 60, height: 60, borderRadius: 14, overflow: "hidden" },
+  thumbImg:      { width: 60, height: 60 },
+  thumbFallback: { alignItems: "center", justifyContent: "center" },
+  avatarBadge:   { position: "absolute", bottom: 0, right: 0, width: 24, height: 24, borderRadius: 12, borderWidth: 2, borderColor: WHITE, overflow: "hidden" },
+  avatarImg:     { width: 24, height: 24 },
+  avatarFallback:{ backgroundColor: P, alignItems: "center", justifyContent: "center" },
+  avatarInitial: { fontSize: 10, fontFamily: "Inter_700Bold", color: WHITE },
+  content:       { flex: 1, gap: 4, justifyContent: "center" },
+  row1:          { flexDirection: "row", alignItems: "center", justifyContent: "space-between" },
+  username:      { fontSize: 14, fontFamily: "Inter_500Medium", flex: 1 },
+  usernameBold:  { fontFamily: "Inter_700Bold" },
+  time:          { fontSize: 11, fontFamily: "Inter_400Regular", marginLeft: 6 },
+  context:       { fontSize: 11, fontFamily: "Inter_500Medium" },
+  row3:          { flexDirection: "row", alignItems: "center", justifyContent: "space-between" },
+  preview:       { fontSize: 13, fontFamily: "Inter_400Regular", flex: 1 },
+  previewBold:   { fontFamily: "Inter_600SemiBold" },
+  badge:         { minWidth: 20, height: 20, borderRadius: 10, backgroundColor: P, alignItems: "center", justifyContent: "center", paddingHorizontal: 5, marginLeft: 6 },
+  badgeTxt:      { fontSize: 11, fontFamily: "Inter_700Bold", color: WHITE },
+});
+
+function MessagesSection({ botPad }: { botPad: number }) {
+  const T                        = useTheme();
+  const router                   = useRouter();
+  const { user }                 = useAuth();
+  const [convs,      setConvs]   = useState<ApiConversation[]>([]);
+  const [loading,    setLoading] = useState(true);
+  const [refreshing, setRef]     = useState(false);
+
+  const load = useCallback(async () => {
+    if (!user) { setLoading(false); return; }
+    try {
+      const all = await apiGetConversations(user.id);
+      setConvs(all.filter((c) => !!c.listingId));
+    } catch { /* ignore */ }
+    finally { setLoading(false); setRef(false); }
+  }, [user]);
+
+  useEffect(() => { load(); }, [load]);
+
+  useEffect(() => {
+    const t = setInterval(load, 30_000);
+    return () => clearInterval(t);
+  }, [load]);
+
+  if (!user) {
+    return (
+      <View style={ms.center}>
+        <Icon name="lock-closed-outline" size={34} color={`${P}60`} />
+        <Text style={ms.loginTxt}>Mesajları görmek için giriş yapın</Text>
+      </View>
+    );
+  }
+
+  if (loading) {
+    return <View style={ms.center}><ActivityIndicator size="large" color={P} /></View>;
+  }
+
+  return (
+    <FlatList
+      data={convs}
+      keyExtractor={(c) => c.id}
+      refreshControl={
+        <RefreshControl
+          refreshing={refreshing}
+          onRefresh={() => { setRef(true); load(); }}
+          tintColor={P}
+        />
+      }
+      showsVerticalScrollIndicator={false}
+      contentContainerStyle={{
+        paddingHorizontal: 20, paddingTop: 8,
+        paddingBottom: botPad + 24, flexGrow: 1,
+      }}
+      ItemSeparatorComponent={() => <View style={{ height: 10 }} />}
+      ListEmptyComponent={
+        <View style={ms.empty}>
+          <View style={ms.emptyIllo}>
+            <Icon name="chatbubbles-outline" size={38} color={`${P}70`} />
+          </View>
+          <Text style={ms.emptyTitle}>Henüz mesaj yok</Text>
+          <Text style={ms.emptySub}>
+            Bir sahiplendirme ilanında "Mesaj Gönder" butonuna basarak konuşma başlatın
+          </Text>
+        </View>
+      }
+      renderItem={({ item: conv }) => (
+        <AdoptionConvCard
+          conv={conv}
+          onPress={() =>
+            router.push(`/messages/${encodeURIComponent(conv.id)}` as any)
+          }
+        />
+      )}
+    />
+  );
+}
+const ms = StyleSheet.create({
+  center:    { flex: 1, alignItems: "center", justifyContent: "center", gap: 12, paddingTop: 60 },
+  loginTxt:  { fontSize: 14, fontFamily: "Inter_400Regular", color: BODY, textAlign: "center" },
+  empty:     { flex: 1, alignItems: "center", paddingTop: 52, paddingHorizontal: 40, gap: 8 },
+  emptyIllo: { width: 74, height: 74, borderRadius: 37, backgroundColor: `${P}12`, alignItems: "center", justifyContent: "center", marginBottom: 6 },
+  emptyTitle:{ fontSize: 17, fontFamily: "Inter_700Bold", color: DARK },
+  emptySub:  { fontSize: 13, fontFamily: "Inter_400Regular", color: BODY, textAlign: "center", lineHeight: 20 },
 });
 
 // ── Success modal styles (must be above MyListingsSection) ───────────────────
@@ -1825,12 +2059,31 @@ export default function PetsScreen() {
   const { listings, deleteListing } = useAdoption();
   const { boostStatuses }           = useBoost();
   const { user }                    = useAuth();
-  const [mainTab, setMainTab]       = useState<MainTab>("adoption");
-  const [activeTab, setActiveTab]   = useState<Tab>("create");
-  const [filter, setFilter]         = useState<Filter>("all");
-  const [query, setQuery]           = useState("");
-  const [advFilters, setAdvFilters] = useState<AdoptionFilters>(DEFAULT_FILTERS);
+  const [mainTab, setMainTab]              = useState<MainTab>("adoption");
+  const [activeTab, setActiveTab]          = useState<Tab>("create");
+  const [filter, setFilter]                = useState<Filter>("all");
+  const [query, setQuery]                  = useState("");
+  const [advFilters, setAdvFilters]        = useState<AdoptionFilters>(DEFAULT_FILTERS);
   const [filterSheetOpen, setFilterSheetOpen] = useState(false);
+  const [unreadAdoptionCount, setUnreadAdoptionCount] = useState(0);
+
+  /* Poll unread adoption message count for tab badge */
+  useEffect(() => {
+    if (!user) return;
+    let cancelled = false;
+    const poll = async () => {
+      try {
+        const all = await apiGetConversations(user.id);
+        const count = all
+          .filter((c) => !!c.listingId && c.unreadCount > 0)
+          .reduce((sum, c) => sum + c.unreadCount, 0);
+        if (!cancelled) setUnreadAdoptionCount(count);
+      } catch { /* ignore */ }
+    };
+    poll();
+    const t = setInterval(poll, 30_000);
+    return () => { cancelled = true; clearInterval(t); };
+  }, [user]);
 
   const topPad = Platform.OS === "web" ? (SW < 1024 ? 54 : 16) : insets.top;
   const botPad = Platform.OS === "web" ? (SW < 1024 ? 100 : 24) : (insets.bottom + TAB_H);
@@ -1955,7 +2208,7 @@ export default function PetsScreen() {
         />
         <OuterTabSwitcher active={mainTab} onChange={() => {}} />
         {mainTab === "adoption" && (
-          <TabSwitcher active={activeTab} onChange={setActiveTab} />
+          <TabSwitcher active={activeTab} onChange={setActiveTab} unreadMessages={unreadAdoptionCount} />
         )}
       </View>
 
@@ -1963,6 +2216,10 @@ export default function PetsScreen() {
 
       {mainTab === "adoption" && activeTab === "create" && (
         <CreateSection onPress={() => router.push("/add-adoption")} botPad={botPad} />
+      )}
+
+      {mainTab === "adoption" && activeTab === "messages" && (
+        <MessagesSection botPad={botPad} />
       )}
 
       {mainTab === "adoption" && activeTab === "mylistings" && (
