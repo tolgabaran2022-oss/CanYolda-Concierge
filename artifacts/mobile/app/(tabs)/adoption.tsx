@@ -218,14 +218,14 @@ function TabSwitcher({
   );
 }
 const tsw = StyleSheet.create({
-  wrap:        { flexDirection: "row", marginHorizontal: 20, marginBottom: 16, backgroundColor: WHITE, borderRadius: 16, padding: 4, borderWidth: 1, borderColor: BORDER, ...IOS_SHADOW },
-  item:        { flex: 1, borderRadius: 12, overflow: "hidden" },
-  grad:        { flexDirection: "row", alignItems: "center", justifyContent: "center", gap: 3, paddingVertical: 8 },
-  inactiveRow: { flexDirection: "row", alignItems: "center", justifyContent: "center", gap: 3, paddingVertical: 8 },
-  lblActive:   { fontSize: 10, fontFamily: "Inter_700Bold",   color: WHITE, flexShrink: 1 },
-  lblInactive: { fontSize: 10, fontFamily: "Inter_500Medium", color: P,     flexShrink: 1 },
-  badge:       { minWidth: 14, height: 14, borderRadius: 7, backgroundColor: "#FF3B30", alignItems: "center", justifyContent: "center", paddingHorizontal: 3 },
-  badgeTxt:    { fontSize: 8, fontFamily: "Inter_700Bold", color: WHITE, lineHeight: 10 },
+  wrap:        { flexDirection: "row", marginHorizontal: 16, marginBottom: 16, backgroundColor: WHITE, borderRadius: 18, padding: 5, borderWidth: 1, borderColor: BORDER, ...IOS_SHADOW },
+  item:        { flex: 1, borderRadius: 14, overflow: "hidden" },
+  grad:        { flexDirection: "row", alignItems: "center", justifyContent: "center", gap: 4, paddingVertical: 13, paddingHorizontal: 2 },
+  inactiveRow: { flexDirection: "row", alignItems: "center", justifyContent: "center", gap: 4, paddingVertical: 13, paddingHorizontal: 2 },
+  lblActive:   { fontSize: 12, fontFamily: "Inter_700Bold",   color: WHITE, flexShrink: 1 },
+  lblInactive: { fontSize: 12, fontFamily: "Inter_500Medium", color: P,     flexShrink: 1 },
+  badge:       { minWidth: 16, height: 16, borderRadius: 8, backgroundColor: "#FF3B30", alignItems: "center", justifyContent: "center", paddingHorizontal: 4 },
+  badgeTxt:    { fontSize: 9, fontFamily: "Inter_700Bold", color: WHITE, lineHeight: 11 },
 });
 
 // ── Search bar ────────────────────────────────────────────────────────────────
