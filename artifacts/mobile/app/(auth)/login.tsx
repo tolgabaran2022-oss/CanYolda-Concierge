@@ -64,6 +64,12 @@ export default function WelcomeScreen() {
           accessible
           accessibilityLabel="canyoldaşı — köpek ve kedi ile karşılama görseli"
         />
+        {/* Üstten yumuşak beyaz geçiş */}
+        <LinearGradient
+          colors={[C.cream, "rgba(251,242,234,0)"]}
+          style={styles.heroTopFade}
+          pointerEvents="none"
+        />
         {/* Görselden krem zemine yumuşak geçiş */}
         <LinearGradient
           colors={["rgba(251,242,234,0)", C.cream]}
@@ -156,6 +162,13 @@ const styles = StyleSheet.create({
   heroImage: {
     width: "100%",
     height: "100%",
+  },
+  heroTopFade: {
+    position: "absolute",
+    left:     0,
+    right:    0,
+    top:      0,
+    height:   80,
   },
   heroFade: {
     position: "absolute",
