@@ -13,6 +13,21 @@ import {
 } from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 
+// ── Türkiye'nin 81 ili ───────────────────────────────────────────────────────
+export const TURKEY_PROVINCES: string[] = [
+  "Adana","Adıyaman","Afyonkarahisar","Ağrı","Amasya","Ankara","Antalya",
+  "Artvin","Aydın","Balıkesir","Bilecik","Bingöl","Bitlis","Bolu","Burdur",
+  "Bursa","Çanakkale","Çankırı","Çorum","Denizli","Diyarbakır","Edirne",
+  "Elazığ","Erzincan","Erzurum","Eskişehir","Gaziantep","Giresun","Gümüşhane",
+  "Hakkari","Hatay","Isparta","Mersin","İstanbul","İzmir","Kars","Kastamonu",
+  "Kayseri","Kırklareli","Kırşehir","Kocaeli","Konya","Kütahya","Malatya",
+  "Manisa","Kahramanmaraş","Mardin","Muğla","Muş","Nevşehir","Niğde","Ordu",
+  "Rize","Sakarya","Samsun","Siirt","Sinop","Sivas","Tekirdağ","Tokat",
+  "Trabzon","Tunceli","Şanlıurfa","Uşak","Van","Yozgat","Zonguldak","Aksaray",
+  "Bayburt","Karaman","Kırıkkale","Batman","Şırnak","Bartın","Ardahan","Iğdır",
+  "Yalova","Karabük","Kilis","Osmaniye","Düzce",
+];
+
 // ── Palette (matches app) ────────────────────────────────────────────────────
 const P    = "#7C4DCC";
 const P2   = "#A480D8";
@@ -186,36 +201,70 @@ function CityChips({
   value: string | null;
   onSelect: (c: string | null) => void;
 }) {
-  const all = [{ key: null as string | null, label: "Tümü" }, ...cities.map((c) => ({ key: c, label: c }))];
+  const [expanded, setExpanded] = useState(false);
+
+  /* Merge listing cities with full province list when expanded */
+  const provinceList = expanded ? TURKEY_PROVINCES : cities;
+
+  /* Always ensure the currently selected city is visible */
+  const visibleSet = new Set(provinceList);
+  if (value && !visibleSet.has(value)) visibleSet.add(value);
+  const visibleCities = Array.from(visibleSet).sort();
+
+  const options: { key: string | null; label: string }[] = [
+    { key: null, label: "Tümü" },
+    ...visibleCities.map((c) => ({ key: c, label: c })),
+  ];
+
   return (
-    <View style={fs.chipRow}>
-      {all.map((o) => {
-        const active = value === o.key;
-        return active ? (
-          <LinearGradient
-            key={String(o.key)}
-            colors={[P2, P]}
-            start={{ x: 0, y: 0 }}
-            end={{ x: 1, y: 0 }}
-            style={fs.chipActive}
-          >
-            <Pressable
-              onPress={() => { Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light); onSelect(o.key); }}
-              style={{ alignItems: "center", justifyContent: "center" }}
+    <View style={{ gap: 10 }}>
+      <View style={fs.chipRow}>
+        {options.map((o) => {
+          const active = value === o.key;
+          return active ? (
+            <LinearGradient
+              key={String(o.key)}
+              colors={[P2, P]}
+              start={{ x: 0, y: 0 }}
+              end={{ x: 1, y: 0 }}
+              style={fs.chipActive}
             >
-              <Text style={fs.chipLblActive}>{o.label}</Text>
+              <Pressable
+                onPress={() => { Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light); onSelect(o.key); }}
+                style={{ alignItems: "center", justifyContent: "center" }}
+              >
+                <Text style={fs.chipLblActive}>{o.label}</Text>
+              </Pressable>
+            </LinearGradient>
+          ) : (
+            <Pressable
+              key={String(o.key)}
+              style={fs.chipInactive}
+              onPress={() => { Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light); onSelect(o.key); }}
+            >
+              <Text style={fs.chipLbl}>{o.label}</Text>
             </Pressable>
-          </LinearGradient>
-        ) : (
-          <Pressable
-            key={String(o.key)}
-            style={fs.chipInactive}
-            onPress={() => { Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light); onSelect(o.key); }}
-          >
-            <Text style={fs.chipLbl}>{o.label}</Text>
-          </Pressable>
-        );
-      })}
+          );
+        })}
+      </View>
+
+      {/* Expand / collapse toggle */}
+      <Pressable
+        style={fs.expandBtn}
+        onPress={() => {
+          Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+          setExpanded((v) => !v);
+        }}
+      >
+        <Icon
+          name={expanded ? "chevron-up-outline" : "chevron-down-outline"}
+          size={13}
+          color={P}
+        />
+        <Text style={fs.expandTxt}>
+          {expanded ? "Daha Az Göster" : "Tüm Şehirleri Göster (81 İl)"}
+        </Text>
+      </Pressable>
     </View>
   );
 }
@@ -490,6 +539,15 @@ const fs = StyleSheet.create({
   },
   chipLbl:       { fontSize: 13, fontFamily: "Inter_500Medium", color: BODY },
   chipLblActive: { fontSize: 13, fontFamily: "Inter_700Bold",   color: WHITE },
+
+  expandBtn: {
+    flexDirection: "row", alignItems: "center", gap: 6,
+    alignSelf: "flex-start",
+    backgroundColor: `${P}10`, borderRadius: 20,
+    paddingVertical: 7, paddingHorizontal: 14,
+    borderWidth: 1, borderColor: `${P}25`,
+  },
+  expandTxt: { fontSize: 12, fontFamily: "Inter_600SemiBold", color: P },
 
   cta:     { borderTopWidth: 1, paddingHorizontal: 20, paddingTop: 14 },
   applyBtn:{ borderRadius: 16, overflow: "hidden" },
