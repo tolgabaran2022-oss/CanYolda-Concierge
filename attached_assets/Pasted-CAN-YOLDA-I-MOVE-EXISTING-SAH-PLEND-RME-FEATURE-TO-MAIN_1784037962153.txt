@@ -1,0 +1,1286 @@
+CAN YOLDAŞI — MOVE EXISTING SAHİPLENDİRME FEATURE TO MAIN BOTTOM NAVIGATION
+PRODUCTION-SAFE NAVIGATION REFACTOR + ZERO FEATURE LOSS AUDIT
+
+TASK TYPE:
+
+Navigation architecture refactor.
+
+THIS IS NOT A NEW FEATURE IMPLEMENTATION.
+
+THIS IS NOT A SAHİPLENDİRME REDESIGN.
+
+The existing Sahiplendirme feature already exists and contains real application logic.
+
+The goal is to MOVE / REWIRE the EXISTING Sahiplendirme feature into the main bottom navigation without losing, duplicating, resetting, mocking, or breaking any existing Sahiplendirme functionality.
+
+==================================================
+FINAL MAIN BOTTOM NAVIGATION
+==================================================
+
+Change the main bottom navigation order to:
+
+1. Harita
+2. Hayvanlar
+3. Sahiplendirme
+4. Evcilim
+5. Hesap
+
+Final visible labels:
+
+Harita
+Hayvanlar
+Sahiplendirme
+Evcilim
+Hesap
+
+==================================================
+SAHİPLENDİRME ICON
+==================================================
+
+For:
+
+Sahiplendirme
+
+use a HOME / HOUSE outline vector icon.
+
+The home icon represents finding a new home for an animal.
+
+Use the existing icon library already installed in the project.
+
+Do not install another icon package unless technically required.
+
+DO NOT use:
+
+- heart icon
+- paw icon
+- chat icon
+- emoji
+- Unicode house character
+
+Use a real vector icon from the current icon system.
+
+Selected state:
+
+- CanYoldaşı purple
+- existing selected navigation visual treatment
+- existing active indicator behavior
+
+Unselected state:
+
+- existing muted bottom navigation color
+
+The icon must render consistently on:
+
+- iOS
+- Android
+- Web
+
+==================================================
+CRITICAL ARCHITECTURE RULE
+==================================================
+
+DO NOT CREATE A NEW EMPTY SAHİPLENDİRME SCREEN.
+
+DO NOT COPY THE CURRENT SAHİPLENDİRME FEATURE INTO A SECOND SCREEN.
+
+DO NOT CREATE:
+
+SahiplendirmeScreenV2
+
+NewAdoptionScreen
+
+AdoptionHomeNew
+
+SahiplendirmeNew
+
+or another duplicate feature tree.
+
+Find the EXISTING Sahiplendirme route, screen, navigator, component tree, hooks, and data dependencies.
+
+Reuse the existing Sahiplendirme implementation.
+
+The task is:
+
+EXISTING SAHİPLENDİRME FEATURE
+↓
+REWIRE ROUTE/NAVIGATION
+↓
+MAIN BOTTOM NAVIGATION
+
+The feature itself must remain connected to its current backend and application logic.
+
+==================================================
+REMOVE OLD TOP-LEVEL TAB RELATIONSHIP
+==================================================
+
+The current Evcilim area contains a top-level switch/tab similar to:
+
+Sahiplendirme | Evcilim
+
+Remove this top-level relationship.
+
+After the refactor:
+
+Sahiplendirme is an independent MAIN bottom navigation destination.
+
+Evcilim is an independent MAIN bottom navigation destination.
+
+Do not keep the old:
+
+Sahiplendirme | Evcilim
+
+top tab selector.
+
+Expected:
+
+Tap Sahiplendirme in bottom navigation
+↓
+Open Sahiplendirme
+
+Tap Evcilim in bottom navigation
+↓
+Open Evcilim
+
+There must be no requirement to enter Evcilim first to reach Sahiplendirme.
+
+==================================================
+PRESERVE THE COMPLETE EXISTING SAHİPLENDİRME FEATURE
+==================================================
+
+This is critical.
+
+The new bottom-navigation Sahiplendirme destination must contain and preserve ALL current Sahiplendirme features.
+
+Preserve:
+
+1. İlan Oluştur
+2. İlanlarım
+3. Mesajlarım
+4. Tüm İlanlar
+5. Sahiplendirme notification icon and related behavior, if currently implemented
+6. Adoption listing creation
+7. Listing image upload
+8. Multiple listing images, if currently supported
+9. Listing form validation
+10. Pet name
+11. Animal type
+12. Breed
+13. Age
+14. Gender
+15. Health information
+16. Location
+17. Description
+18. Cat compatibility
+19. Dog compatibility
+20. Toilet training
+21. Existing supported listing fields
+22. Listing detail
+23. Owner listing detail state
+24. Public listing detail state
+25. İlanı Düzenle
+26. İlanı Kaldır
+27. Favorites
+28. Search
+29. Animal category filters
+30. Advanced filter button
+31. Filter state
+32. Real listing count
+33. Tüm İlanlar compact public listing cards
+34. Exact listing ID navigation
+35. Sahiplenmek İstiyorum
+36. Adoption request flow
+37. Mesaj Gönder
+38. Conversation creation
+39. Existing conversation reuse
+40. Mesajlarım conversation list
+41. Message unread state, if implemented
+42. Realtime messaging, if implemented
+43. İlanlarım owner listing cards
+44. Listing performance data
+45. Listing views
+46. Favorites metrics
+47. Message metrics, if currently implemented
+48. Öne Çıkar
+49. Promotion package bottom sheet
+50. Hızlı Öne Çıkar package
+51. Popüler package
+52. Maksimum Görünürlük package
+53. Trusted promotion package pricing
+54. Payment session flow
+55. Verified payment activation
+56. Active listing promotion
+57. Öne Çıkarılan badge
+58. Featured listing ranking
+59. Promotion starts_at
+60. Promotion expires_at
+61. Automatic promotion expiration
+62. Return to normal listing ranking after expiration
+63. Active promotion remaining-time state
+64. Promotion history
+65. Existing Supabase queries
+66. Existing RLS policies
+67. Existing Realtime subscriptions
+68. Existing query cache/invalidation logic
+69. Existing loading states
+70. Existing error states
+71. Existing empty states
+
+Do not remove a feature because it is not visible in the initial Sahiplendirme landing screen.
+
+Recursively inspect the entire Sahiplendirme feature tree.
+
+==================================================
+PRESERVE CURRENT SAHİPLENDİRME INTERNAL NAVIGATION
+==================================================
+
+Inside Sahiplendirme preserve the current segmented navigation:
+
+İlan Oluştur
+İlanlarım
+Mesajlarım
+Tüm İlanlar
+
+The Sahiplendirme bottom navigation item opens the existing Sahiplendirme feature.
+
+Default internal destination:
+
+Preserve the current intended default section.
+
+If the current product default is:
+
+İlan Oluştur
+
+keep:
+
+İlan Oluştur
+
+Do not arbitrarily change the default section.
+
+The internal navigation must continue to work.
+
+Expected:
+
+Sahiplendirme
+↓
+İlan Oluştur
+
+Tap İlanlarım
+↓
+existing owner listing management
+
+Tap Mesajlarım
+↓
+existing conversations
+
+Tap Tüm İlanlar
+↓
+existing public adoption discovery
+
+==================================================
+PRESERVE THE NEW TÜM İLANLAR DESIGN
+==================================================
+
+Do not revert the recently implemented/refactored Tüm İlanlar design.
+
+Preserve the current compact horizontal public adoption listing card architecture.
+
+Expected card structure:
+
+LEFT:
+animal image
+
+RIGHT:
+pet name
+age
+breed
+gender
+location
+adoption status
+Detayı Gör
+
+Preserve:
+
+- compact horizontal cards
+- animal-only image rules
+- controlled animal image fallback
+- favorite icon
+- Detayı Gör
+- active Öne Çıkarılan badge
+- promoted listing priority
+
+Do not restore the previous large full-width waterfall/landscape listing cards.
+
+==================================================
+PRESERVE LISTING ID NAVIGATION
+==================================================
+
+All listing navigation must remain ID-based.
+
+Expected:
+
+LISTING CARD
+listing.id
+↓
+LISTING DETAIL
+listing.id
+
+Preserve exact listing identity.
+
+Do not navigate using:
+
+- pet name
+- array index
+- image URL
+- card position
+
+Test navigation after moving Sahiplendirme to the bottom bar.
+
+==================================================
+PRESERVE İLAN OLUŞTUR
+==================================================
+
+The current listing creation flow must continue working from the new Sahiplendirme destination.
+
+Test:
+
+Sahiplendirme
+↓
+İlan Oluştur
+↓
+complete form
+↓
+upload animal image
+↓
+submit listing
+↓
+database insert
+↓
+listing appears in İlanlarım
+↓
+listing appears in eligible Tüm İlanlar results
+
+Do not create a second listing mutation.
+
+Do not create local-only listing state.
+
+Do not create mock listings.
+
+Use the current backend flow.
+
+==================================================
+PRESERVE İLANLARIM
+==================================================
+
+The current İlanlarım feature must remain unchanged functionally.
+
+Preserve:
+
+- user's own listings
+- listing performance
+- Düzenle
+- Önizle
+- Sil / İlanı Kaldır
+- Öne Çıkar
+- active promotion state
+- remaining promotion time
+
+Remember:
+
+The duplicate orange "İlanı Öne Çıkar" CTA was removed from the listing detail management screen.
+
+Do not restore it.
+
+Promotion management must remain primarily in:
+
+Sahiplendirme
+→ İlanlarım
+
+Do not re-add the orange promotion CTA to listing detail.
+
+==================================================
+PRESERVE MESAJLARIM
+==================================================
+
+The Mesajlarım section must remain connected to the current conversation/message architecture.
+
+Expected flow:
+
+User A
+↓
+opens User B's adoption listing
+↓
+Mesaj Gönder
+↓
+conversation created or existing conversation reused
+↓
+message sent
+↓
+User A sees conversation in Mesajlarım
+↓
+User B sees conversation in Mesajlarım
+
+Moving Sahiplendirme to bottom navigation must not break this flow.
+
+Do not create a separate message system for the new navigation route.
+
+Preserve existing:
+
+conversation IDs
+listing relationships
+sender IDs
+receiver IDs
+message records
+realtime subscriptions
+
+If a conversation already exists for the same valid context, preserve current deduplication/reuse behavior.
+
+==================================================
+PRESERVE SAHİPLENME REQUEST FLOW
+==================================================
+
+Preserve:
+
+Sahiplenmek İstiyorum
+
+Expected:
+
+public listing detail
+↓
+Sahiplenmek İstiyorum
+↓
+existing adoption request flow
+
+Do not replace this with a fake success alert.
+
+Do not remove the existing owner/listing relationship.
+
+Preserve current request status logic if implemented.
+
+==================================================
+PRESERVE PROMOTION SYSTEM
+==================================================
+
+The entire promotion system must remain functional.
+
+Packages:
+
+Hızlı Öne Çıkar
+3 days
+49.90 TRY
+
+Popüler
+7 days
+99.90 TRY
+
+Maksimum Görünürlük
+15 days
+179.90 TRY
+
+Preserve the current trusted package configuration/database architecture.
+
+Do not move trusted prices into the client.
+
+Preserve:
+
+package_code
+↓
+trusted backend package lookup
+↓
+trusted price
+↓
+trusted duration
+↓
+payment session
+↓
+verified payment
+↓
+promotion activation
+
+Do not activate promotion from frontend success state alone.
+
+==================================================
+PRESERVE FEATURED LISTING RANKING
+==================================================
+
+In:
+
+Sahiplendirme
+→ Tüm İlanlar
+
+all CURRENTLY ACTIVE promoted listings must remain above normal eligible listings.
+
+The ranking rule must continue working after the navigation refactor.
+
+Conceptually:
+
+FILTER / SEARCH ELIGIBILITY
+↓
+ACTIVE FEATURED LISTINGS
+↓
+NORMAL LISTINGS
+
+Promotion must not bypass filters.
+
+Example:
+
+Kedi filter
+
+Expected:
+
+Featured Cat A
+Featured Cat B
+Normal Cat C
+
+Do not display a promoted dog inside Kedi results.
+
+==================================================
+PRESERVE PROMOTION EXPIRATION
+==================================================
+
+Promotion validity must remain based on trusted expiration time.
+
+Active promotion:
+
+status = active
+AND
+expires_at > trusted current server/database time
+
+When expires_at is reached:
+
+- promotion priority ends
+- Öne Çıkarılan badge disappears
+- listing returns to normal ordering
+- listing remains published
+- listing data remains intact
+- favorites remain intact
+- messages remain intact
+- listing statistics remain intact
+
+Do not break expiration behavior while changing navigation.
+
+==================================================
+EVCİLİM MUST REMAIN INDEPENDENT
+==================================================
+
+Evcilim remains a main bottom navigation destination.
+
+Tap:
+
+Evcilim
+
+Expected:
+
+Open the current Evcilim pet management screen directly.
+
+Preserve:
+
+- multiple pets
+- pet selection
+- separate pet identity
+- separate vaccine data per pet
+- separate health data per pet
+- separate appointment data per pet
+- separate nutrition data per pet
+- separate documents per pet
+- separate medication data per pet
+- separate notes per pet
+- reminders
+
+Do not merge Sahiplendirme data into Evcilim.
+
+Do not delete the first pet when a second pet is created.
+
+The existing multi-pet architecture must remain intact.
+
+==================================================
+BOTTOM NAVIGATION VISUAL RULES
+==================================================
+
+The bottom navigation now contains five items.
+
+Order:
+
+Harita
+Hayvanlar
+Sahiplendirme
+Evcilim
+Hesap
+
+Audit available horizontal width carefully.
+
+Prevent:
+
+- icon overlap
+- label overlap
+- clipped text
+- labels touching each other
+- navigation width overflow
+
+Because "Sahiplendirme" is longer than the other labels, adapt typography and spacing carefully.
+
+Preferred approach:
+
+- preserve readable label
+- use compact navigation typography
+- distribute five items evenly
+- keep touch targets accessible
+
+Do not rename:
+
+Sahiplendirme
+
+to an unclear abbreviation solely to fit the navigation.
+
+Do not reduce text to an unreadably small size.
+
+If the current bottom navigation architecture cannot visually support the long label, refactor item spacing responsively.
+
+==================================================
+ACTIVE NAVIGATION STATE
+==================================================
+
+When Sahiplendirme is selected:
+
+- home icon uses active purple state
+- Sahiplendirme label uses active purple state
+- existing active navigation indicator appears in the correct position
+
+When another tab is selected:
+
+Sahiplendirme returns to the existing muted inactive state.
+
+Do not accidentally show:
+
+Evcilim active
+
+while Sahiplendirme is open.
+
+Navigation route and visual active state must match.
+
+==================================================
+BACK NAVIGATION
+==================================================
+
+Audit navigation history after the refactor.
+
+Expected examples:
+
+Harita
+↓
+Sahiplendirme
+↓
+Tüm İlanlar
+↓
+Listing Detail
+↓
+Back
+
+Expected:
+
+Return to Tüm İlanlar.
+
+Another example:
+
+Sahiplendirme
+↓
+Mesajlarım
+↓
+Conversation
+↓
+Back
+
+Expected:
+
+Return to Mesajlarım.
+
+Do not send the user to Evcilim because Sahiplendirme previously lived inside the Evcilim route hierarchy.
+
+Remove stale parent-route assumptions.
+
+==================================================
+DEEP LINK / ROUTE AUDIT
+==================================================
+
+Audit current internal links that navigate to Sahiplendirme content.
+
+Examples:
+
+- notification opens adoption listing
+- message opens conversation
+- listing preview opens listing detail
+- favorite opens saved adoption listing
+- promotion flow returns to İlanlarım
+- payment flow returns to listing/promotion state
+
+Update route references if required.
+
+Do not leave links pointing to the removed old:
+
+Evcilim
+→ Sahiplendirme
+
+route relationship.
+
+Preserve the same listing IDs and conversation IDs.
+
+==================================================
+STATE PRESERVATION
+==================================================
+
+Audit whether the current Sahiplendirme screen uses local state for the selected internal section.
+
+Example:
+
+activeTab
+
+When switching:
+
+Sahiplendirme
+→ Harita
+→ Sahiplendirme
+
+preserve or intentionally restore the current product-approved internal state.
+
+Do not create unpredictable resets.
+
+Recommended:
+
+Preserve the current selected Sahiplendirme internal section during the current app session if compatible with existing navigation architecture.
+
+Example:
+
+User is in Tüm İlanlar.
+User opens Harita.
+User returns to Sahiplendirme.
+
+Expected preferred behavior:
+
+Return to Tüm İlanlar.
+
+However, after a full app restart, use the existing intended default Sahiplendirme section.
+
+Use the current navigation architecture correctly.
+
+==================================================
+NO DATA MIGRATION UNLESS ACTUALLY REQUIRED
+==================================================
+
+Moving Sahiplendirme into bottom navigation should primarily be a navigation/UI architecture change.
+
+Do not create database migrations unless the existing architecture genuinely requires one.
+
+Do not:
+
+- rename listing tables
+- duplicate listing tables
+- move adoption records
+- recreate conversations
+- recreate favorites
+- reset promotions
+- reset package data
+
+The existing database records must remain intact.
+
+==================================================
+RECURSIVE PRE-IMPLEMENTATION AUDIT
+==================================================
+
+Before making changes recursively inspect:
+
+- root navigation
+- bottom tab navigator
+- current Evcilim route
+- current Sahiplendirme route
+- Sahiplendirme screen
+- Sahiplendirme internal tab state
+- İlan Oluştur
+- İlanlarım
+- Mesajlarım
+- Tüm İlanlar
+- listing detail route
+- owner detail route
+- public detail route
+- message conversation route
+- adoption request route
+- promotion package flow
+- payment return route
+- notification navigation
+- favorite navigation
+- deep links
+- Supabase query hooks
+- realtime subscriptions
+
+Build a dependency map before refactoring.
+
+Do not start by deleting the current screen.
+
+==================================================
+IMPLEMENTATION STRATEGY
+==================================================
+
+STEP 1:
+
+Locate the existing Sahiplendirme feature entry component.
+
+STEP 2:
+
+Locate the current Sahiplendirme/Evcilim top-level tab relationship.
+
+STEP 3:
+
+Locate the root bottom navigation configuration.
+
+STEP 4:
+
+Add Sahiplendirme as a new main bottom navigation destination.
+
+STEP 5:
+
+Use a HOME/HOUSE vector icon.
+
+STEP 6:
+
+Point the new bottom navigation route to the EXISTING Sahiplendirme feature entry component.
+
+STEP 7:
+
+Remove the old top-level Sahiplendirme/Evcilim selector.
+
+STEP 8:
+
+Make Evcilim open its existing pet management content directly.
+
+STEP 9:
+
+Audit route params and parent navigation assumptions.
+
+STEP 10:
+
+Fix back navigation.
+
+STEP 11:
+
+Fix deep links and notification routes if required.
+
+STEP 12:
+
+Verify Sahiplendirme internal navigation.
+
+STEP 13:
+
+Verify listing creation.
+
+STEP 14:
+
+Verify İlanlarım.
+
+STEP 15:
+
+Verify Mesajlarım.
+
+STEP 16:
+
+Verify Tüm İlanlar.
+
+STEP 17:
+
+Verify listing detail.
+
+STEP 18:
+
+Verify favorites.
+
+STEP 19:
+
+Verify adoption request.
+
+STEP 20:
+
+Verify messaging.
+
+STEP 21:
+
+Verify promotion package/payment flow.
+
+STEP 22:
+
+Verify featured ranking and expiration.
+
+STEP 23:
+
+Verify Evcilim multi-pet data remains separate.
+
+STEP 24:
+
+Test iOS, Android, and Web.
+
+==================================================
+FINAL ACCEPTANCE TESTS
+==================================================
+
+TEST 1:
+
+Open app.
+
+EXPECTED bottom navigation:
+
+Harita
+Hayvanlar
+Sahiplendirme
+Evcilim
+Hesap
+
+TEST 2:
+
+Verify Sahiplendirme uses a house/home vector icon.
+
+TEST 3:
+
+Tap Sahiplendirme.
+
+EXPECTED:
+
+Existing Sahiplendirme feature opens.
+
+No empty replacement screen.
+
+TEST 4:
+
+Verify old:
+
+Sahiplendirme | Evcilim
+
+top selector is removed.
+
+TEST 5:
+
+Verify internal Sahiplendirme sections exist:
+
+İlan Oluştur
+İlanlarım
+Mesajlarım
+Tüm İlanlar
+
+TEST 6:
+
+Create an adoption listing.
+
+EXPECTED:
+
+Real backend insert succeeds.
+
+TEST 7:
+
+Open İlanlarım.
+
+EXPECTED:
+
+Created listing appears.
+
+TEST 8:
+
+Open Tüm İlanlar.
+
+EXPECTED:
+
+Eligible listing appears.
+
+TEST 9:
+
+Verify compact horizontal listing card design remains.
+
+TEST 10:
+
+Verify animal images remain animal-only.
+
+TEST 11:
+
+Favorite a listing.
+
+EXPECTED:
+
+Favorite persists.
+
+TEST 12:
+
+Open listing detail.
+
+EXPECTED:
+
+Exact listing opens using listing.id.
+
+TEST 13:
+
+Tap Sahiplenmek İstiyorum.
+
+EXPECTED:
+
+Existing adoption request flow works.
+
+TEST 14:
+
+Tap Mesaj Gönder.
+
+EXPECTED:
+
+Conversation flow works.
+
+TEST 15:
+
+Open Mesajlarım.
+
+EXPECTED:
+
+Conversation appears.
+
+TEST 16:
+
+Send a message between two test users.
+
+EXPECTED:
+
+Both sides see the correct conversation/messages according to current realtime architecture.
+
+TEST 17:
+
+Open own listing in İlanlarım.
+
+EXPECTED:
+
+Promotion CTA remains in İlanlarım.
+
+TEST 18:
+
+Verify duplicate orange promotion CTA is NOT restored in listing detail.
+
+TEST 19:
+
+Tap Öne Çıkar.
+
+EXPECTED:
+
+Package bottom sheet opens.
+
+TEST 20:
+
+Verify packages:
+
+Hızlı Öne Çıkar
+3 days
+49.90 TRY
+
+Popüler
+7 days
+99.90 TRY
+
+Maksimum Görünürlük
+15 days
+179.90 TRY
+
+TEST 21:
+
+Complete verified test payment in the current supported test environment.
+
+EXPECTED:
+
+Promotion activates through trusted backend verification.
+
+TEST 22:
+
+Open Tüm İlanlar.
+
+EXPECTED:
+
+Active promoted listing appears above normal eligible listings.
+
+TEST 23:
+
+Verify:
+
+Öne Çıkarılan
+
+badge appears.
+
+TEST 24:
+
+Simulate expiration in development/test environment.
+
+EXPECTED:
+
+Featured badge disappears.
+
+TEST 25:
+
+Verify listing returns to normal ordering.
+
+TEST 26:
+
+Tap Evcilim.
+
+EXPECTED:
+
+Current pet management screen opens directly.
+
+TEST 27:
+
+Add Pet A.
+
+Add Pet B.
+
+EXPECTED:
+
+Pet A remains.
+
+Pet B is added separately.
+
+TEST 28:
+
+Add vaccine data to Pet A.
+
+EXPECTED:
+
+Pet B does not display Pet A's vaccine data.
+
+TEST 29:
+
+Add health/appointment data to Pet B.
+
+EXPECTED:
+
+Pet A data remains unchanged.
+
+TEST 30:
+
+Test navigation:
+
+Sahiplendirme
+→ Tüm İlanlar
+→ Listing Detail
+→ Back
+
+EXPECTED:
+
+Return to Tüm İlanlar.
+
+TEST 31:
+
+Test navigation:
+
+Sahiplendirme
+→ Mesajlarım
+→ Conversation
+→ Back
+
+EXPECTED:
+
+Return to Mesajlarım.
+
+TEST 32:
+
+Switch:
+
+Sahiplendirme
+→ Harita
+→ Sahiplendirme
+
+Verify selected internal section state behaves consistently.
+
+TEST 33:
+
+Test iOS.
+
+TEST 34:
+
+Test Android.
+
+TEST 35:
+
+Test Web.
+
+Verify:
+
+- all five bottom navigation items render
+- no labels overlap
+- Sahiplendirme is readable
+- home icon renders correctly
+- active tab state is correct
+- no route crashes
+- no duplicate Sahiplendirme screen
+- no lost feature state
+
+==================================================
+IMPORTANT RESTRICTIONS
+==================================================
+
+DO NOT:
+
+- create a new empty Sahiplendirme screen
+- duplicate the Sahiplendirme feature
+- recreate the adoption backend
+- recreate listing tables
+- reset adoption listings
+- reset conversations
+- reset favorites
+- reset promotions
+- remove İlan Oluştur
+- remove İlanlarım
+- remove Mesajlarım
+- remove Tüm İlanlar
+- remove search
+- remove filters
+- remove favorites
+- remove listing detail
+- remove Sahiplenmek İstiyorum
+- remove Mesaj Gönder
+- remove promotion packages
+- remove payment logic
+- remove featured ranking
+- remove automatic promotion expiration
+- restore the duplicate orange promotion CTA
+- revert compact Tüm İlanlar cards
+- merge Evcilim pet data with Sahiplendirme listings
+- delete Pet A when Pet B is created
+- use emoji for the Sahiplendirme bottom navigation icon
+- leave stale routes pointing through Evcilim
+- use array indexes for listing navigation
+- replace real backend logic with mock data
+
+==================================================
+FINAL GOAL
+==================================================
+
+Move the EXISTING complete Sahiplendirme feature from its current top-level relationship with Evcilim into the MAIN bottom navigation.
+
+Final main bottom navigation:
+
+Harita
+Hayvanlar
+Sahiplendirme
+Evcilim
+Hesap
+
+Sahiplendirme must use a HOME/HOUSE vector icon.
+
+The existing Sahiplendirme feature must arrive intact with:
+
+İlan Oluştur
+İlanlarım
+Mesajlarım
+Tüm İlanlar
+search
+filters
+favorites
+listing detail
+adoption request
+messaging
+promotion packages
+verified payment flow
+featured ranking
+Öne Çıkarılan badge
+automatic promotion expiration
+
+Evcilim must remain an independent multi-pet management feature.
+
+This is a navigation refactor with ZERO FEATURE LOSS.
+
+Reuse the current feature architecture, preserve real backend data, repair route dependencies, run the complete acceptance tests, and do not report completion until all existing Sahiplendirme flows work from the new main bottom navigation destination.

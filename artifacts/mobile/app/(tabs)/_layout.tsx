@@ -3,6 +3,7 @@ import {
   Map,
   PawPrint,
   Heart,
+  Home,
   User,
 } from "lucide-react-native";
 import React from "react";
@@ -29,10 +30,11 @@ type TabItem = {
 };
 
 const TABS: TabItem[] = [
-  { name: "index",   path: "/",        title: "Harita",    Icon: Map      },
-  { name: "animals", path: "/animals", title: "Hayvanlar", Icon: PawPrint },
-  { name: "pets",    path: "/pets",    title: "Evcilim",   Icon: Heart    },
-  { name: "account", path: "/account", title: "Hesap",     Icon: User     },
+  { name: "index",    path: "/",          title: "Harita",        Icon: Map      },
+  { name: "animals",  path: "/animals",   title: "Hayvanlar",     Icon: PawPrint },
+  { name: "adoption", path: "/adoption",  title: "Sahiplendirme", Icon: Home     },
+  { name: "pets",     path: "/pets",      title: "Evcilim",       Icon: Heart    },
+  { name: "account",  path: "/account",   title: "Hesap",         Icon: User     },
 ];
 
 /* ── Desktop sidebar (web ≥ 1024 px) ────────────────────────── */
