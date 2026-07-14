@@ -24,26 +24,6 @@ import { ThemeProvider } from "@/contexts/ThemeContext";
 SplashScreen.preventAutoHideAsync();
 const queryClient = new QueryClient();
 
-/* ── RevenueCat initialization ────────────────────────────────── */
-if (Platform.OS !== "web") {
-  (async () => {
-    try {
-      const Purchases = (await import("react-native-purchases")).default;
-      const LOG_LEVEL = (await import("react-native-purchases")).LOG_LEVEL;
-      Purchases.setLogLevel(LOG_LEVEL.DEBUG);
-      const apiKey =
-        Platform.OS === "ios"
-          ? (process.env.EXPO_PUBLIC_REVENUECAT_IOS_API_KEY ?? "")
-          : (process.env.EXPO_PUBLIC_REVENUECAT_ANDROID_API_KEY ?? "");
-      if (apiKey) {
-        await Purchases.configure({ apiKey });
-      }
-    } catch (e) {
-      /* RevenueCat not available in web/Expo Go without native build */
-    }
-  })();
-}
-
 function RootLayoutNav() {
   const { user, isLoading } = useAuth();
   const segments = useSegments();

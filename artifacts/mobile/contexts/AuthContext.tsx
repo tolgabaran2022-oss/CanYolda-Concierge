@@ -7,6 +7,7 @@ import React, {
   useState,
 } from "react";
 import { apiSyncProfile, apiUpdateProfile } from "@/lib/socialApi";
+import { initializeRevenueCat, loginRevenueCat, logoutRevenueCat } from "@/services/revenueCat";
 
 const API_BASE = process.env.EXPO_PUBLIC_DOMAIN
   ? `https://${process.env.EXPO_PUBLIC_DOMAIN}/api`
@@ -108,8 +109,11 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       AsyncStorage.getItem(TOKEN_KEY),
     ])
       .then(([userData, tokenData]) => {
-        if (userData) setUser(JSON.parse(userData));
+        const restoredUser: User | null = userData ? JSON.parse(userData) : null;
+        if (restoredUser) setUser(restoredUser);
         if (tokenData) setToken(tokenData);
+        /* Initialize RC with the restored user UUID (non-blocking) */
+        initializeRevenueCat(restoredUser?.id ?? null).catch(() => {});
       })
       .finally(() => setIsLoading(false));
   }, []);
@@ -138,6 +142,8 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
 
       /* Sync social profile (non-blocking) */
       apiSyncProfile({ id: safe.id, email: safe.email, name: safe.name }).catch(() => {});
+      /* Associate RevenueCat identity with the new user UUID (non-blocking) */
+      loginRevenueCat(safe.id).catch(() => {});
     },
     []
   );
@@ -170,6 +176,8 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       name:      safe.name,
       avatarUrl: safe.avatar?.startsWith("http") ? safe.avatar : undefined,
     }).catch(() => {});
+    /* Associate RevenueCat identity with the authenticated user UUID (non-blocking) */
+    loginRevenueCat(safe.id).catch(() => {});
   }, []);
 
   /* ── Logout ───────────────────────────────────────────── */
@@ -178,6 +186,8 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       AsyncStorage.removeItem(AUTH_KEY),
       AsyncStorage.removeItem(TOKEN_KEY),
     ]);
+    /* Reset RevenueCat identity before clearing local state (non-blocking) */
+    logoutRevenueCat().catch(() => {});
     setUser(null);
     setToken(null);
   }, []);

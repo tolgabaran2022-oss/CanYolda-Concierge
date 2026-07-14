@@ -1,0 +1,379 @@
+CANYOLDAŞI — REVENUECAT STEP 4
+CONFIGURE REVENUECAT SDK WITH TEST STORE API KEY
+
+react-native-purchases@10.4.2 is already installed.
+
+Expo SDK: 54.0.27
+React Native: 0.81.5
+
+The following Replit Secret has already been added:
+
+EXPO_PUBLIC_REVENUECAT_API_KEY
+
+The value is the RevenueCat Test Store Public SDK API Key.
+
+At this stage ONLY configure RevenueCat SDK initialization.
+
+Do not implement packages yet.
+Do not implement promotion purchases yet.
+Do not create products yet.
+Do not redesign UI.
+Do not create fake purchase success.
+Do not modify database promotion state.
+
+==================================================
+1. AUDIT CURRENT REVENUECAT CODE
+==================================================
+
+Recursively search the existing project for:
+
+react-native-purchases
+Purchases.configure
+Purchases.logIn
+Purchases.logOut
+Purchases.getOfferings
+Purchases.purchasePackage
+RevenueCat
+revenuecat
+REVENUECAT_API_KEY
+
+Check whether RevenueCat SDK is already initialized.
+
+Do not create duplicate initialization logic.
+
+There must be one RevenueCat initialization source of truth.
+
+==================================================
+2. CREATE OR USE CENTRAL REVENUECAT SERVICE
+==================================================
+
+Use the existing project architecture.
+
+If no central RevenueCat service exists, create an appropriate service such as:
+
+services/revenueCat.ts
+
+or follow the current project's service directory conventions.
+
+Import:
+
+react-native-purchases
+
+Create a safe RevenueCat initialization function.
+
+Example architecture:
+
+initializeRevenueCat()
+
+The initialization function must be idempotent.
+
+Calling it more than once must not repeatedly configure the SDK.
+
+Prevent duplicate Purchases.configure() calls during:
+
+React Strict Mode
+Expo Fast Refresh
+component remount
+navigation changes
+
+Use a module-level initialization state or the safest approach supported by the current architecture.
+
+==================================================
+3. READ API KEY FROM ENVIRONMENT
+==================================================
+
+Read:
+
+process.env.EXPO_PUBLIC_REVENUECAT_API_KEY
+
+Do not hardcode the RevenueCat API key.
+
+Do not copy the API key into source files.
+
+Do not print the complete API key to console.
+
+Validate the environment variable.
+
+If missing:
+
+do not call Purchases.configure()
+
+Log a safe development error:
+
+[RevenueCat] API key is missing
+
+Never print secret/API key contents.
+
+==================================================
+4. NATIVE PLATFORM GUARD
+==================================================
+
+This project targets:
+
+iOS
+Android
+Web
+
+Do not initialize native RevenueCat purchasing incorrectly on unsupported runtime paths.
+
+Audit the actual react-native-purchases web support and current project configuration.
+
+For the current native purchase implementation:
+
+iOS and Android must initialize RevenueCat.
+
+Do not attempt to launch native StoreKit or Google Play purchase APIs from the web flow.
+
+Use Platform.OS safely.
+
+Do not cause web build failure because react-native-purchases native code is imported incorrectly.
+
+If lazy/dynamic loading is required by the current architecture, implement it safely.
+
+==================================================
+5. CONFIGURE REVENUECAT
+==================================================
+
+For the current Test Store development stage, configure RevenueCat using:
+
+EXPO_PUBLIC_REVENUECAT_API_KEY
+
+Use the correct React Native Purchases.configure API for installed SDK version 10.4.2.
+
+Do not invent SDK methods.
+
+Do not use old/deprecated initialization examples if they are incompatible with the installed SDK.
+
+At this stage initialize RevenueCat only once.
+
+==================================================
+6. DEVELOPMENT DEBUG LOGGING
+==================================================
+
+During development only, enable RevenueCat debug logs using the SDK-supported log level configuration.
+
+Debug logging must be configured before Purchases.configure when required by the SDK.
+
+Production builds must not unnecessarily use verbose debug logging.
+
+Use:
+
+__DEV__
+
+or the current project's environment system.
+
+Do not log:
+
+full API keys
+purchase tokens
+receipts
+signed transaction data
+
+RevenueCat recommends enabling SDK debug logging while testing. :contentReference[oaicite:1]{index=1}
+
+==================================================
+7. AUTH USER ID PREPARATION
+==================================================
+
+Audit the current Supabase authentication system.
+
+The application has authenticated users.
+
+RevenueCat supports custom App User IDs so purchases can be associated with an external user identifier. :contentReference[oaicite:2]{index=2}
+
+At this stage:
+
+Inspect how the current authenticated Supabase user ID is accessed.
+
+Prepare the RevenueCat initialization architecture to use the authenticated Supabase user UUID as the RevenueCat App User ID.
+
+Do not use:
+
+email
+name
+phone
+pet ID
+listing ID
+
+as RevenueCat App User ID.
+
+Use the stable Supabase auth user UUID.
+
+IMPORTANT:
+
+Do not break authentication flow.
+
+If the app starts before auth hydration completes, do not initialize RevenueCat with a fake user ID such as:
+
+"user"
+"anonymous-user"
+"test-user"
+
+Use a safe lifecycle.
+
+Recommended architecture:
+
+auth state resolved
+↓
+authenticated user exists
+↓
+initialize/configure RevenueCat
+↓
+associate RevenueCat with Supabase user UUID
+
+If the existing architecture requires initial anonymous SDK configuration followed by Purchases.logIn(user.id), use the SDK-supported pattern correctly.
+
+Choose the safest implementation based on the existing auth lifecycle.
+
+==================================================
+8. LOGIN / LOGOUT LIFECYCLE
+==================================================
+
+Audit Supabase:
+
+sign in
+sign up
+session restore
+sign out
+
+RevenueCat identity must remain synchronized.
+
+When authenticated user becomes available:
+
+RevenueCat should use the user's stable Supabase UUID.
+
+When a different user logs into the same device:
+
+RevenueCat identity must transition safely using the correct SDK API.
+
+When the user logs out:
+
+follow RevenueCat's supported logout/customer identity behavior.
+
+Do not manually mutate RevenueCat internal identifiers.
+
+Do not create duplicate customers on every application render.
+
+==================================================
+9. APP ROOT INITIALIZATION
+==================================================
+
+Find the correct application root / provider layer.
+
+Possible examples:
+
+app/_layout.tsx
+App.tsx
+root provider
+AuthProvider
+
+Use the actual project architecture.
+
+Do not initialize RevenueCat inside:
+
+promotion modal
+listing card
+pet screen
+every screen component
+
+Initialization belongs in a stable application lifecycle layer.
+
+Avoid circular dependencies.
+
+==================================================
+10. ERROR SAFETY
+==================================================
+
+RevenueCat initialization failure must not crash the entire CanYoldaşı app.
+
+Use safe error handling.
+
+Example development log:
+
+[RevenueCat] Initialization failed
+
+Log safe error code/message where appropriate.
+
+Do not display a purchase error modal during normal app startup.
+
+The rest of the application must continue working.
+
+==================================================
+11. TEST STORE SAFETY WARNING
+==================================================
+
+Add a clear source-code comment or environment documentation:
+
+EXPO_PUBLIC_REVENUECAT_API_KEY currently uses RevenueCat Test Store during development.
+
+Before App Store / Google Play production release, this must be replaced with platform-specific RevenueCat SDK API keys.
+
+Do not implement automatic production fallback to the Test Store key.
+
+Never ship production intentionally using Test Store.
+
+==================================================
+12. CHECKS
+==================================================
+
+After implementation:
+
+Run TypeScript checks.
+
+Run the project's relevant lint check.
+
+Run the relevant build/bundle validation that is possible in the current Replit environment.
+
+Search again for duplicate:
+
+Purchases.configure
+
+There should be one controlled initialization flow.
+
+Verify:
+
+- no API key hardcoded
+- no complete API key logged
+- no fake RevenueCat user ID
+- no duplicate configure
+- Supabase user UUID is the identity source
+- logout lifecycle is handled
+- web build does not crash
+- native IAP purchase flow has NOT been implemented yet
+
+==================================================
+13. FINAL REPORT
+==================================================
+
+At the end respond in Turkish using exactly these headings:
+
+1. REVENUECAT INITIALIZATION DURUMU
+
+2. KULLANILAN ENV VARIABLE
+
+3. SDK'NIN BAŞLATILDIĞI DOSYA
+
+4. SUPABASE USER ID ENTEGRASYONU
+
+5. LOGIN / LOGOUT IDENTITY AKIŞI
+
+6. DUPLICATE INITIALIZATION KORUMASI
+
+7. WEB PLATFORM KORUMASI
+
+8. TYPESCRIPT / LINT SONUCU
+
+9. DEĞİŞTİRİLEN DOSYALAR
+
+10. SONRAKİ AŞAMAYA HAZIRLIK DURUMU
+
+IMPORTANT:
+
+Only complete RevenueCat SDK initialization and customer identity integration at this stage.
+
+Do not configure Offerings.
+Do not configure packages.
+Do not implement purchasePackage.
+Do not activate listing promotion.
+Do not modify promoted_until.
+Do not create fake payment success.
