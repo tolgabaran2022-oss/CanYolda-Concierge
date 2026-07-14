@@ -409,8 +409,8 @@ const fc = StyleSheet.create({
   lblActive:{ fontSize: 12, fontFamily: "Inter_700Bold",    color: WHITE },
 });
 
-// ── Listing card (horizontal compact) ─────────────────────────────────────────
-const CARD_IMG_W = 122;
+// ── Listing card ──────────────────────────────────────────────────────────────
+const IMG_H = 148; // ~40% of card
 
 function ListingCard({ listing, isFeatured, featuredUntil }: { listing: AdoptionListing; isFeatured?: boolean; featuredUntil?: string | null }) {
   const T = useTheme();
@@ -439,8 +439,6 @@ function ListingCard({ listing, isFeatured, featuredUntil }: { listing: Adoption
     Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
   };
 
-  const breedGender = [listing.breed, listing.gender].filter(Boolean).join(" • ");
-
   return (
     <Pressable
       style={({ pressed }) => [lc.shadow, { opacity: pressed ? 0.94 : 1 }]}
@@ -448,84 +446,75 @@ function ListingCard({ listing, isFeatured, featuredUntil }: { listing: Adoption
     >
       <View style={[lc.card, { backgroundColor: T.card, borderColor: isFeatured ? P : T.border }, isFeatured && lc.featuredBorder]}>
 
-        {/* ── Image side ── */}
+        {/* ── Photo ── */}
         <View style={lc.imgWrap}>
           {listing.photo && !imgError ? (
             <Image
               source={{ uri: listing.photo }}
               style={lc.img}
               contentFit="cover"
+              contentPosition={{ top: 0.3 }}
               onError={() => setImgError(true)}
             />
           ) : (
             <LinearGradient colors={[`${P2}40`, `${P}28`]} style={lc.imgFallback}>
-              <Icon name="paw" size={30} color={`${P}60`} />
+              <Icon name="paw" size={34} color={`${P}60`} />
             </LinearGradient>
           )}
 
-          {/* Featured pill — top-left of image */}
+          <LinearGradient
+            colors={["transparent", "rgba(26,8,56,0.38)"]}
+            style={lc.imgScrim}
+            pointerEvents="none"
+          />
+
           {isFeatured && (
             <LinearGradient colors={[P2, DARK]} start={{ x: 0, y: 0 }} end={{ x: 1, y: 1 }} style={lc.featuredBadge}>
-              <Icon name="rocket" size={9} color={WHITE} />
-              <Text style={lc.featuredTxt}>Öne Çıkarılan</Text>
+              <Icon name="star" size={9} color={WHITE} />
+              <Text style={lc.featuredTxt}>ÖNE ÇIKAN</Text>
             </LinearGradient>
           )}
 
-          {/* Type label — bottom-left of image */}
           <View style={lc.typeTag}>
             <Text style={lc.typeTagTxt}>{listing.petType}</Text>
           </View>
+
+          <Pressable
+            style={[lc.heartBtn, followLoading && { opacity: 0.6 }]}
+            onPress={handleHeartPress}
+            hitSlop={8}
+          >
+            <Icon name={liked ? "heart" : "heart-outline"} size={16} color={liked ? "#FF4466" : WHITE} />
+          </Pressable>
         </View>
 
-        {/* ── Content side ── */}
+        {/* ── Content ── */}
         <View style={lc.body}>
-          {/* Top section: name/meta/location */}
-          <View style={lc.topSection}>
-            {/* Row 1: name + heart */}
-            <View style={lc.nameRow}>
-              <Text style={[lc.name, { color: T.text }]} numberOfLines={1}>{listing.petName}</Text>
-              <Pressable
-                style={[lc.heartBtn, followLoading && { opacity: 0.5 }]}
-                onPress={handleHeartPress}
-                hitSlop={10}
-              >
-                <Icon name={liked ? "heart" : "heart-outline"} size={18} color={liked ? "#FF4466" : T.textMuted} />
-              </Pressable>
-            </View>
-
-            {/* Row 2: breed•gender + age pill */}
-            <View style={lc.metaRow}>
-              {breedGender ? (
-                <Text style={[lc.meta, { color: T.textMuted }]} numberOfLines={1}>{breedGender}</Text>
-              ) : (
-                <Text style={[lc.meta, { color: T.textMuted }]} numberOfLines={1}>{listing.petAge ?? ""}</Text>
-              )}
-              {breedGender && listing.petAge ? (
-                <View style={lc.agePill}>
-                  <Text style={lc.ageTxt}>{listing.petAge}</Text>
-                </View>
-              ) : null}
-            </View>
-
-            {/* Row 3: location */}
-            <View style={lc.locRow}>
-              <Icon name="location-sharp" size={11} color={P} />
-              <Text style={[lc.loc, { color: T.textMuted }]} numberOfLines={1}>{listing.location}</Text>
-            </View>
+          <View style={lc.nameRow}>
+            <Text style={[lc.name, { color: T.text }]} numberOfLines={1}>{listing.petName}</Text>
+            {listing.petAge ? (
+              <View style={lc.agePill}>
+                <Text style={lc.ageTxt}>{listing.petAge}</Text>
+              </View>
+            ) : null}
           </View>
 
-          {/* Row 4: status badge + detayı gör */}
+          {listing.description ? (
+            <Text style={[lc.desc, { color: T.textMuted }]} numberOfLines={1}>{listing.description}</Text>
+          ) : null}
+
           <View style={lc.footer}>
-            <View style={lc.statusBadge}>
-              <Text style={lc.statusTxt}>Sahip Arıyor</Text>
-              <Icon name="heart" size={9} color={P} />
+            <View style={lc.locRow}>
+              <Icon name="location-sharp" size={11} color={T.purple} />
+              <Text style={[lc.loc, { color: T.textMuted }]} numberOfLines={1}>{listing.location}</Text>
             </View>
             <Pressable
-              style={lc.detailBtn}
+              style={lc.chatBtn}
               onPress={() => router.push(`/adoption/${listing.id}`)}
             >
-              <Text style={lc.detailTxt}>Detayı Gör</Text>
-              <Icon name="chevron-forward" size={12} color={P} />
+              <LinearGradient colors={[P2, P]} style={lc.chatGrad}>
+                <Text style={lc.chatTxt}>İletişim</Text>
+              </LinearGradient>
             </Pressable>
           </View>
         </View>
@@ -535,42 +524,36 @@ function ListingCard({ listing, isFeatured, featuredUntil }: { listing: Adoption
   );
 }
 const lc = StyleSheet.create({
-  shadow:         { marginHorizontal: 16, marginBottom: 10, borderRadius: 16, ...CARD_SHADOW },
-  card:           { borderRadius: 16, overflow: "hidden", borderWidth: 1, borderColor: BORDER, flexDirection: "row", minHeight: 132 },
-  featuredBorder: { borderColor: P, borderWidth: 2 },
+  shadow:        { marginHorizontal: 20, marginBottom: 14, borderRadius: 20, ...CARD_SHADOW },
+  card:          { backgroundColor: WHITE, borderRadius: 20, overflow: "hidden", borderWidth: 1, borderColor: BORDER },
+  featuredBorder:{ borderColor: P, borderWidth: 2 },
 
-  /* Image column */
-  imgWrap:     { width: CARD_IMG_W, position: "relative" },
-  img:         { width: CARD_IMG_W, height: "100%" },
-  imgFallback: { flex: 1, alignItems: "center", justifyContent: "center" },
+  imgWrap:      { width: "100%", height: IMG_H, position: "relative" },
+  img:          { width: "100%", height: "100%" },
+  imgFallback:  { flex: 1, alignItems: "center", justifyContent: "center" },
+  imgScrim:     { position: "absolute", bottom: 0, left: 0, right: 0, height: 56 },
 
-  featuredBadge: { position: "absolute", top: 8, left: 8, flexDirection: "row", alignItems: "center", gap: 3, borderRadius: 8, paddingHorizontal: 7, paddingVertical: 4, overflow: "hidden" },
-  featuredTxt:   { fontSize: 9, fontFamily: "Inter_700Bold", color: WHITE, letterSpacing: 0.2 },
+  featuredBadge:{ position: "absolute", top: 9, left: 9, flexDirection: "row", alignItems: "center", gap: 3, borderRadius: 7, paddingHorizontal: 8, paddingVertical: 4, overflow: "hidden" },
+  featuredTxt:  { fontSize: 10, fontFamily: "Inter_700Bold", color: WHITE },
 
-  typeTag:    { position: "absolute", bottom: 8, left: 8, backgroundColor: "rgba(0,0,0,0.48)", borderRadius: 6, paddingHorizontal: 7, paddingVertical: 3 },
+  typeTag:    { position: "absolute", bottom: 8, left: 9, backgroundColor: "rgba(255,255,255,0.2)", borderRadius: 7, paddingHorizontal: 8, paddingVertical: 3, borderWidth: 1, borderColor: "rgba(255,255,255,0.32)" },
   typeTagTxt: { fontSize: 10, fontFamily: "Inter_700Bold", color: WHITE },
 
-  /* Content column */
-  body:       { flex: 1, padding: 11, justifyContent: "space-between" },
-  topSection: { gap: 3 },
+  heartBtn:   { position: "absolute", top: 9, right: 9, width: 32, height: 32, borderRadius: 16, backgroundColor: "rgba(0,0,0,0.26)", alignItems: "center", justifyContent: "center", borderWidth: 1, borderColor: "rgba(255,255,255,0.22)" },
 
-  nameRow:  { flexDirection: "row", alignItems: "center", justifyContent: "space-between" },
-  name:     { flex: 1, fontSize: 15, fontFamily: "Inter_700Bold", color: DARK, marginRight: 4 },
-  heartBtn: { width: 28, height: 28, alignItems: "center", justifyContent: "center" },
+  body:    { padding: 12, gap: 5 },
+  nameRow: { flexDirection: "row", alignItems: "center", justifyContent: "space-between", gap: 8 },
+  name:    { flex: 1, fontSize: 16, fontFamily: "Inter_700Bold", color: DARK },
+  agePill: { backgroundColor: `${P}14`, borderRadius: 7, paddingHorizontal: 7, paddingVertical: 3 },
+  ageTxt:  { fontSize: 10, fontFamily: "Inter_600SemiBold", color: P },
+  desc:    { fontSize: 12, fontFamily: "Inter_400Regular", color: BODY, lineHeight: 17 },
 
-  metaRow:  { flexDirection: "row", alignItems: "center", justifyContent: "space-between", gap: 6 },
-  meta:     { flex: 1, fontSize: 12, fontFamily: "Inter_500Medium", color: BODY },
-  agePill:  { backgroundColor: `${P}14`, borderRadius: 7, paddingHorizontal: 7, paddingVertical: 2 },
-  ageTxt:   { fontSize: 10, fontFamily: "Inter_600SemiBold", color: P },
-
-  locRow:   { flexDirection: "row", alignItems: "center", gap: 3 },
-  loc:      { flex: 1, fontSize: 11, fontFamily: "Inter_400Regular", color: BODY },
-
-  footer:       { flexDirection: "row", alignItems: "center", justifyContent: "space-between", paddingTop: 6 },
-  statusBadge:  { flexDirection: "row", alignItems: "center", gap: 4, backgroundColor: `${P}12`, borderRadius: 8, paddingHorizontal: 9, paddingVertical: 5 },
-  statusTxt:    { fontSize: 10, fontFamily: "Inter_600SemiBold", color: P },
-  detailBtn:    { flexDirection: "row", alignItems: "center", gap: 1 },
-  detailTxt:    { fontSize: 11, fontFamily: "Inter_700Bold", color: P },
+  footer:  { flexDirection: "row", alignItems: "center", justifyContent: "space-between", marginTop: 2 },
+  locRow:  { flexDirection: "row", alignItems: "center", gap: 3, flex: 1 },
+  loc:     { fontSize: 11, fontFamily: "Inter_500Medium", color: BODY, flex: 1 },
+  chatBtn: { borderRadius: 9, overflow: "hidden" },
+  chatGrad:{ flexDirection: "row", alignItems: "center", gap: 4, paddingVertical: 7, paddingHorizontal: 12 },
+  chatTxt: { fontSize: 11, fontFamily: "Inter_700Bold", color: WHITE },
 });
 
 // ── Listings header ───────────────────────────────────────────────────────────
