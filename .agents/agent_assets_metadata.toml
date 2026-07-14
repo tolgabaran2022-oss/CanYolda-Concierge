@@ -77,3 +77,9 @@ id = "ubLnQ3v_eVAyhKH33aldp"
 uri = "file://feed.zip"
 type = "unspecified"
 title = "feed.tsx (zip)"
+
+[[outputs]]
+id = "otQklW0YaHuYl8PvXGlWQ"
+uri = "file://components.zip"
+type = "unspecified"
+title = "PostCard + Tab Bar bileşenleri (zip)"
