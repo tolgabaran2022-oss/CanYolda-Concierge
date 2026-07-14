@@ -1,0 +1,101 @@
+CRITICAL VISUAL REFERENCE REQUIREMENT
+
+Use the attached reference image as the primary visual target for the Sahiplendirme > Tüm İlanlar screen.
+
+Reproduce the LEFT MOBILE APP SCREEN from the reference image as closely as possible.
+
+IMPORTANT:
+
+The numbered explanation/annotation panel shown on the right side of the reference image is NOT part of the application UI.
+
+Do NOT implement:
+
+- numbered circles
+- explanation text
+- design annotations
+- right-side reference panel
+
+Only reproduce the actual mobile application screen shown on the LEFT side.
+
+The result must visually match the reference in:
+
+- overall layout
+- component positioning
+- card proportions
+- compact listing card height
+- horizontal pet image placement
+- image-to-content width ratio
+- typography hierarchy
+- pet name size and weight
+- age pill placement
+- breed and gender row
+- location row
+- Sahip Arıyor status badge
+- Detayı Gör action placement
+- favorite icon placement
+- Öne Çıkarılan badge placement
+- card border radius
+- card spacing
+- search bar proportions
+- filter button proportions
+- category chip dimensions
+- section title and listing count placement
+- purple/lilac CanYoldaşı visual language
+- bottom navigation spacing
+
+Do not create a different card design based on personal interpretation.
+
+Do not convert the cards back into large full-width image cards.
+
+The listing cards must use the compact horizontal structure shown in the reference:
+
+LEFT:
+animal image
+
+RIGHT:
+pet information and actions
+
+Target conceptual proportion:
+
+image area approximately 36–40% of card width
+
+content area approximately 60–64% of card width
+
+Each card must remain compact enough to display multiple listings within one mobile viewport.
+
+REFERENCE CARD STRUCTURE:
+
+[ ANIMAL IMAGE ] [ Pet Name              Heart ]
+[ ANIMAL IMAGE ] [ Breed • Gender     Age Pill ]
+[ ANIMAL IMAGE ] [ Location                    ]
+[ Type Badge   ] [ Sahip Arıyor   Detayı Gör > ]
+
+For active featured listings:
+
+Display:
+
+[rocket icon] Öne Çıkarılan
+
+as a purple pill overlay near the top-left area of the animal image.
+
+Use the exact existing CanYoldaşı color system and existing real application data.
+
+Do not use fake or hardcoded listing content merely to copy the screenshot.
+
+The visual layout must match the reference while all data continues to come from the existing backend.
+
+Before coding:
+
+1. Inspect the attached visual reference.
+2. Inspect the existing Tüm İlanlar implementation.
+3. Map each visible reference component to the existing component/data architecture.
+4. Refactor the current listing card instead of creating an unrelated duplicate screen.
+5. Compare the final UI against the reference at standard iPhone viewport size.
+
+FINAL VISUAL ACCEPTANCE:
+
+The finished Tüm İlanlar screen should be immediately recognizable as the same mobile UI design shown on the LEFT side of the attached reference image.
+
+A user comparing the reference and implementation side-by-side should see the same card structure, same hierarchy, and very similar spacing/proportions.
+
+Do not stop after implementing only a generally similar design.

@@ -1,0 +1,745 @@
+CAN YOLDAŞI — REDESIGN "TÜM İLANLAR" ADOPTION LISTING CARDS
+
+Redesign only the visual presentation and responsive layout of:
+
+Sahiplendirme
+→ Tüm İlanlar
+
+IMPORTANT:
+
+Do not change the existing adoption listing backend logic.
+
+Do not change:
+
+- listing creation
+- listing ownership
+- favorites
+- filters
+- search
+- promoted listing ranking
+- promotion expiration
+- messaging
+- adoption request flow
+- listing detail data
+
+This task is a focused UX/UI redesign of the public adoption listing discovery screen.
+
+Preserve the existing CanYoldaşı purple/lilac premium design system.
+
+==================================================
+CURRENT DESIGN PROBLEMS
+==================================================
+
+The current listing cards are visually too tall and inefficient.
+
+Current problems include:
+
+- listing images consume excessive vertical space
+- only a very small number of listings fit on one screen
+- long descriptions are displayed directly on the listing card
+- long text can visually break card hierarchy
+- the current "İletişim" button is redundant with the listing detail messaging/adoption flow
+- listing metadata is not clearly grouped
+- cards do not clearly emphasize pet name, age, breed, gender, and location
+- promoted listing state needs a more premium but subtle visual treatment
+- unrelated/missing images can make the screen look broken
+- vertical spacing is inconsistent
+- the current design feels less premium than the rest of the CanYoldaşı application
+
+Redesign this screen without changing the complete Sahiplendirme feature architecture.
+
+==================================================
+MAIN CARD DESIGN
+==================================================
+
+Create a modern, compact, premium adoption listing card.
+
+Each card should contain:
+
+IMAGE AREA
+
+- animal listing image
+- favorite button
+- animal type badge
+- optional active promotion badge
+
+CONTENT AREA
+
+- pet name
+- age
+- breed
+- gender
+- location
+- adoption status
+- detail navigation action
+
+Do not display the full listing description on the public listing card.
+
+The full description belongs on the listing detail screen.
+
+==================================================
+CARD IMAGE AREA
+==================================================
+
+Reduce the current image height.
+
+The current listing image consumes too much vertical screen space.
+
+Use a compact but visually strong image ratio.
+
+Recommended approximate ratio:
+
+16:9
+
+or another responsive mobile card ratio compatible with the current component.
+
+The image must:
+
+- fill the width of the card
+- use cover behavior
+- preserve rounded top corners
+- not stretch
+- not distort
+
+Use the current app's border radius system.
+
+Do not create extremely tall portrait listing cards.
+
+The user should be able to see approximately 1.5–2 listing cards on a standard mobile viewport depending on device size.
+
+==================================================
+ANIMAL IMAGE RULE
+==================================================
+
+The listing card image must show the animal belonging to the listing.
+
+Do not display:
+
+- waterfalls
+- landscapes
+- furniture
+- products
+- buildings
+- unrelated remote images
+
+Audit the current listing image fallback.
+
+If the listing image is unavailable:
+
+Use a controlled CanYoldaşı animal placeholder based on animal type.
+
+Cat:
+local cat placeholder
+
+Dog:
+local dog placeholder
+
+Do not use random Unsplash images or random remote image endpoints.
+
+==================================================
+IMAGE OVERLAY BADGES
+==================================================
+
+Place the animal type badge near the bottom-left area of the image.
+
+Examples:
+
+Kedi
+Köpek
+Kuş
+
+Use a subtle dark/translucent or CanYoldaşı-compatible pill.
+
+Keep text readable.
+
+Place the favorite button in the top-right image area.
+
+Use the existing favorite logic.
+
+Do not create duplicate favorite state.
+
+==================================================
+FEATURED LISTING BADGE
+==================================================
+
+For an actively promoted listing display:
+
+[rocket icon] Öne Çıkarılan
+
+Use the existing active promotion state.
+
+The badge must only appear when:
+
+promotion is active
+AND
+expires_at is greater than current server/database time
+
+Recommended visual style:
+
+- purple pill
+- rocket vector icon
+- white/high-contrast label
+- subtle premium appearance
+
+Possible placement:
+
+top-left of the image
+
+If both the animal type and promotion badge exist:
+
+Promotion badge:
+top-left
+
+Animal type:
+bottom-left
+
+Do not overlap badges.
+
+An active featured listing may use a subtle purple border around the card.
+
+Do not use a full purple card background.
+
+Do not use aggressive glow effects.
+
+==================================================
+CONTENT HIERARCHY
+==================================================
+
+The first content row must contain:
+
+LEFT:
+Pet name
+
+RIGHT:
+Age
+
+Example:
+
+Pamuk                              2 yaş
+
+Pet name:
+
+- bold
+- high visual priority
+- dark CanYoldaşı text color
+
+Age:
+
+Use a soft purple/lilac badge.
+
+Examples:
+
+8 aylık
+1 yaş
+2 yaş
+3 yaş+
+
+Use actual listing age data.
+
+Do not hardcode age labels.
+
+==================================================
+SECONDARY PET INFORMATION
+==================================================
+
+Below the pet name display a concise information line.
+
+Recommended format:
+
+British Shorthair • Dişi
+
+or:
+
+Golden Retriever • Erkek
+
+or:
+
+Tekir • Dişi
+
+Use:
+
+breed
+gender
+
+Do not show the full listing description here.
+
+If breed is unavailable:
+
+Display the current product-approved fallback such as:
+
+Melez
+
+or omit the breed segment safely.
+
+Do not display:
+
+undefined
+null
+-
+
+unless the existing design system intentionally uses a missing-state label.
+
+==================================================
+LOCATION ROW
+==================================================
+
+Display location using the existing location icon.
+
+Example:
+
+Kadıköy, İstanbul
+
+Use muted secondary text.
+
+Clamp the location to one line where appropriate.
+
+Do not allow long location text to destroy card width.
+
+==================================================
+BOTTOM CARD ACTION ROW
+==================================================
+
+Create a clean bottom action row.
+
+LEFT:
+
+Adoption status badge.
+
+Example:
+
+Sahip Arıyor
+
+Use a soft green state if compatible with the current listing state design.
+
+RIGHT:
+
+"Detayı Gör"
+
+or a subtle arrow/detail action.
+
+Recommended:
+
+Detayı Gör   >
+
+Do not show:
+
+"İletişim"
+
+on the public listing card.
+
+Reason:
+
+The actual listing detail screen already contains the correct interaction actions:
+
+- Sahiplenmek İstiyorum
+- Mesaj Gönder
+
+The public card is for discovery and detail navigation.
+
+Tapping:
+
+- the card
+- the pet image
+- the "Detayı Gör" action
+
+must open the exact listing detail using listing ID.
+
+==================================================
+REMOVE DESCRIPTION FROM CARD
+==================================================
+
+Remove the long public listing description from the card layout.
+
+Current examples of long or invalid text must no longer visually expand the card.
+
+Do not render:
+
+listing.description
+
+as a full paragraph in the listing card.
+
+The complete description remains available in:
+
+listing detail
+
+If a short summary is absolutely required by the current product architecture:
+
+Clamp to a maximum of 1 line.
+
+But the preferred CanYoldaşı design is:
+
+name
+age
+breed
+gender
+location
+status
+
+without description.
+
+==================================================
+SEARCH BAR
+==================================================
+
+Keep the existing search functionality.
+
+Visually optimize the search row.
+
+Structure:
+
+[ Search Input ] [ Filter Button ]
+
+Search placeholder:
+
+"Kedi, köpek, kuş ara..."
+
+Keep the filter button purple.
+
+Reduce unnecessary vertical spacing around the search controls.
+
+The search area must remain:
+
+- touch friendly
+- readable
+- responsive
+
+==================================================
+ANIMAL TYPE FILTER CHIPS
+==================================================
+
+Keep:
+
+Tümü
+Kedi
+Köpek
+Kuş
+
+and any other currently supported valid animal types.
+
+Use a compact horizontal chip row.
+
+If the chip collection exceeds device width:
+
+Use horizontal scrolling.
+
+Do not compress all chips until labels clip.
+
+Selected state:
+
+purple gradient or existing active purple style
+
+Unselected state:
+
+white/light surface
+subtle border
+purple or dark text
+
+Reduce excessive chip padding.
+
+==================================================
+LIST HEADER
+==================================================
+
+Keep:
+
+"Tüm İlanlar"
+
+and the current real listing count.
+
+Example:
+
+Tüm İlanlar                       10 ilan
+
+The count must be derived from the actual filtered result where appropriate.
+
+Do not hardcode:
+
+7 ilan
+
+Use the actual listing dataset.
+
+==================================================
+CARD SPACING
+==================================================
+
+Reduce excessive card height and vertical whitespace.
+
+Recommended visual hierarchy:
+
+image
+12–16 px spacing
+name/age
+6–8 px spacing
+breed/gender
+8–10 px spacing
+location
+12–16 px spacing
+bottom status/action
+
+Use the project's current spacing tokens where available.
+
+Do not hardcode inconsistent margins across multiple card components.
+
+==================================================
+CARD SHADOW AND BORDER
+==================================================
+
+Use a very subtle shadow.
+
+Card background:
+
+white / existing light surface
+
+Border:
+
+optional 1 px very soft lilac/neutral border
+
+Border radius:
+
+approximately 20–24 px according to the current CanYoldaşı design language.
+
+Do not use heavy grey shadows.
+
+Do not use thick borders.
+
+==================================================
+RESPONSIVE BEHAVIOR
+==================================================
+
+Audit the screen on:
+
+- iOS
+- Android
+- Web
+
+Mobile:
+
+single-column list
+
+Web/tablet:
+
+Keep the existing mobile-first architecture unless a current responsive grid system already exists.
+
+If a grid already exists for wide web layouts:
+
+Cards may use a 2-column layout.
+
+Do not force a desktop grid into the mobile screen.
+
+Prevent:
+
+- text overlap
+- horizontal overflow
+- clipped filter chips
+- card width overflow
+- bottom navigation overlap
+
+==================================================
+BOTTOM NAVIGATION SAFE AREA
+==================================================
+
+The current bottom navigation overlaps part of the listing content.
+
+Audit the list content container.
+
+Add the correct bottom safe-area/list padding so the last listing card can scroll fully above the bottom navigation.
+
+Do not solve this using a huge fixed spacer.
+
+Calculate padding according to:
+
+bottom navigation height
++
+safe area inset
++
+normal content spacing
+
+The final card must be completely visible and tappable.
+
+==================================================
+LIST PERFORMANCE
+==================================================
+
+Use the current optimized list architecture.
+
+If FlatList or FlashList is already used:
+
+Keep it.
+
+Use:
+
+keyExtractor = listing.id
+
+Do not use array index.
+
+Memoize listing card components where appropriate.
+
+Do not refetch listing data because of a purely visual card interaction.
+
+Preserve existing pagination/infinite loading if present.
+
+==================================================
+EXACT RECOMMENDED CARD EXAMPLE
+==================================================
+
+Visual hierarchy:
+
+┌──────────────────────────────────┐
+│ 🚀 Öne Çıkarılan              ♡ │
+│                                  │
+│          ANIMAL PHOTO            │
+│                                  │
+│ [Kedi]                           │
+├──────────────────────────────────┤
+│ Pamuk                       2 yaş │
+│ British Shorthair • Dişi         │
+│                                  │
+│ 📍 Kadıköy, İstanbul             │
+│                                  │
+│ [Sahip Arıyor]       Detayı Gör >│
+└──────────────────────────────────┘
+
+For a normal listing:
+
+Do not display the:
+
+Öne Çıkarılan
+
+badge.
+
+==================================================
+DATA INTEGRITY
+==================================================
+
+The redesign must not change listing identity.
+
+All card data must come from the exact listing record.
+
+Use:
+
+listing.id
+
+for navigation.
+
+Do not navigate by:
+
+pet name
+array index
+image URL
+
+Verify:
+
+CARD
+listing.id
+
+DETAIL
+listing.id
+
+match exactly.
+
+Do not display data from another listing because of cached card state.
+
+==================================================
+FINAL ACCEPTANCE TESTS
+==================================================
+
+1. Open Sahiplendirme.
+
+2. Open Tüm İlanlar.
+
+3. Verify search bar remains functional.
+
+4. Verify filters remain functional.
+
+5. Verify listing count uses real results.
+
+6. Verify every card uses a compact animal image.
+
+7. Verify no landscape/waterfall fallback is used.
+
+8. Verify pet name is the primary card title.
+
+9. Verify age is visible.
+
+10. Verify breed and gender are displayed concisely.
+
+11. Verify location is visible.
+
+12. Verify full description is NOT rendered on the card.
+
+13. Verify "İletişim" is removed from the public card.
+
+14. Verify "Detayı Gör" opens the exact listing.
+
+15. Tap the image.
+
+16. Verify the exact listing opens.
+
+17. Tap the card.
+
+18. Verify the exact listing opens.
+
+19. Favorite a listing.
+
+20. Verify existing favorite state continues to work.
+
+21. Verify active promoted listings display:
+
+"Öne Çıkarılan"
+
+22. Verify expired promotions do not display the badge.
+
+23. Verify promoted listings remain above normal eligible listings.
+
+24. Verify cards do not overlap the bottom navigation.
+
+25. Scroll to the final card.
+
+26. Verify the final card is fully visible and tappable.
+
+27. Test iOS.
+
+28. Test Android.
+
+29. Test Web.
+
+30. Verify no horizontal overflow or clipped labels.
+
+==================================================
+IMPORTANT RESTRICTIONS
+==================================================
+
+DO NOT:
+
+- redesign the entire Sahiplendirme feature
+- change listing backend logic
+- remove favorite functionality
+- break promoted listing ranking
+- break search
+- break filters
+- use random animal images
+- show waterfall/landscape fallbacks
+- render full descriptions on listing cards
+- keep the redundant "İletişim" action
+- use array index for card identity
+- create mock listing data
+- hardcode listing count
+- allow bottom navigation to cover listing content
+
+GOAL:
+
+Transform the Tüm İlanlar screen into a compact, modern, premium adoption discovery experience.
+
+Cards must prioritize:
+
+ANIMAL PHOTO
+PET NAME
+AGE
+BREED
+GENDER
+LOCATION
+ADOPTION STATUS
+
+The listing detail screen must contain the full description and communication/adoption actions.
+
+The Tüm İlanlar screen should feel visually consistent with the premium CanYoldaşı design system while allowing users to browse more listings efficiently.
