@@ -71,3 +71,9 @@ id = "xn75W6jUgzsc-mfiYshi5"
 uri = "file://canyoldasi.zip"
 type = "unspecified"
 title = "CanYoldaşı — Kaynak Kod (31 MB)"
+
+[[outputs]]
+id = "ubLnQ3v_eVAyhKH33aldp"
+uri = "file://feed.zip"
+type = "unspecified"
+title = "feed.tsx (zip)"
