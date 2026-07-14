@@ -1,4 +1,7 @@
-import BottomSheet, { BottomSheetFlatList } from "@gorhom/bottom-sheet";
+import BottomSheet, {
+  BottomSheetFlatList,
+  type BottomSheetFlatListMethods,
+} from "@gorhom/bottom-sheet";
 import { Icon } from "@/components/Icon";
 import * as Haptics from "expo-haptics";
 import * as Location from "expo-location";
@@ -77,7 +80,11 @@ export default function MapScreen() {
 
   const mapRef = useRef<MapView>(null);
   const bottomSheetRef = useRef<BottomSheet>(null);
+  const listRef = useRef<BottomSheetFlatListMethods>(null);
   const pulseAnim = useRef(new Animated.Value(1)).current;
+
+  /* scrollTarget: animal ID we want to scroll the card list to */
+  const [scrollTarget, setScrollTarget] = useState<string | null>(null);
 
   const snapPoints = useMemo(() => ["30%", "55%", "88%"], []);
   const tabClearance = insets.bottom + TAB_BOTTOM_GAP + TAB_FLOAT_H;
@@ -199,6 +206,22 @@ export default function MapScreen() {
   };
 
   /* ── Data ─────────────────────────────────────────────── */
+
+  /* Only render markers for records with valid coordinates */
+  const validAnimals = useMemo(
+    () =>
+      animals.filter((a) => {
+        const lat = a.latitude;
+        const lng = a.longitude;
+        if (typeof lat !== "number" || typeof lng !== "number") return false;
+        if (!isFinite(lat) || !isFinite(lng)) return false;
+        if (lat < -90 || lat > 90 || lng < -180 || lng > 180) return false;
+        if (lat === 0 && lng === 0) return false; /* sentinel — never set */
+        return true;
+      }),
+    [animals]
+  );
+
   const filtered = useMemo(
     () =>
       filter === "all"
@@ -206,6 +229,18 @@ export default function MapScreen() {
         : animals.filter((a) => a.status === (filter as AnimalStatus)),
     [animals, filter]
   );
+
+  /* ── Scroll to card when scrollTarget is set ──────────── */
+  useEffect(() => {
+    if (!scrollTarget) return;
+    const index = filtered.findIndex((a) => a.id === scrollTarget);
+    if (index === -1) return; /* animal not yet in filtered — wait for next render */
+    setScrollTarget(null);
+    const t = setTimeout(() => {
+      listRef.current?.scrollToIndex({ index, animated: true, viewPosition: 0.5 });
+    }, 280);
+    return () => clearTimeout(t);
+  }, [scrollTarget, filtered]);
 
   const countPerFilter = useMemo(
     () =>
@@ -218,6 +253,58 @@ export default function MapScreen() {
       }, {}),
     [animals]
   );
+
+  /* ── Centralized handlers ─────────────────────────────── */
+
+  /* Filter change — also clears any stale pending scroll */
+  const handleFilterChange = useCallback((key: string) => {
+    setFilter(key);
+    setScrollTarget(null);
+    Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+  }, []);
+
+  /* Marker tap: expand sheet + sync filter + scroll to card */
+  const handleMarkerPress = useCallback((animalId: string) => {
+    const animal = animals.find((a) => a.id === animalId);
+    if (!animal) {
+      if (__DEV__) console.warn("[MAP] Marker tapped but animal not found:", animalId);
+      return;
+    }
+
+    Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+    setSelectedId(animalId);
+
+    /* Ensure the sheet is expanded enough to show the card */
+    bottomSheetRef.current?.snapToIndex(1);
+
+    /* If the animal is hidden by the current filter, reset to "all" */
+    const isVisible = filtered.some((a) => a.id === animalId);
+    if (!isVisible) {
+      setFilter("all");
+    }
+
+    /* Set the scroll target — the useEffect will perform the scroll
+       once filtered settles (whether filter changed or not). */
+    setScrollTarget(animalId);
+  }, [animals, filtered]);
+
+  /* Card tap: sync camera to pin + navigate to detail */
+  const handleCardPress = useCallback((animal: StrayAnimal) => {
+    setSelectedId(animal.id);
+    /* Soft pan to the animal's location without aggressive zoom */
+    if (typeof animal.latitude === "number" && typeof animal.longitude === "number") {
+      mapRef.current?.animateToRegion(
+        {
+          latitude:      animal.latitude,
+          longitude:     animal.longitude,
+          latitudeDelta:  0.012,
+          longitudeDelta: 0.012,
+        },
+        600
+      );
+    }
+    router.push(`/animal/${animal.id}` as const);
+  }, [router]);
 
   /* ── Sheet list header ────────────────────────────────── */
   const ListHeader = useMemo(
@@ -275,10 +362,7 @@ export default function MapScreen() {
                     borderColor: active ? activeBg : `${accentColor}30`,
                   },
                 ]}
-                onPress={() => {
-                  setFilter(f.key);
-                  Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
-                }}
+                onPress={() => handleFilterChange(f.key)}
               >
                 <Icon
                   name={f.icon}
@@ -318,63 +402,63 @@ export default function MapScreen() {
         </ScrollView>
       </>
     ),
-    [filter, countPerFilter, animals.length, colors]
+    [filter, countPerFilter, animals.length, colors, handleFilterChange]
   );
 
   /* ── Animal row renderer ──────────────────────────────── */
   const renderAnimalRow = useCallback(
-    ({ item: animal }: { item: StrayAnimal }) => (
-      <Pressable
-        style={({ pressed }) => [
-          styles.animalRow,
-          {
-            backgroundColor:
-              selectedId === animal.id
-                ? `${colors.primary}10`
+    ({ item: animal }: { item: StrayAnimal }) => {
+      const isSelected = selectedId === animal.id;
+      return (
+        <Pressable
+          style={({ pressed }) => [
+            styles.animalRow,
+            isSelected && styles.animalRowSelected,
+            {
+              backgroundColor: isSelected
+                ? `${colors.primary}0D`
                 : pressed
                 ? `${colors.primary}07`
                 : "transparent",
-            borderBottomColor: colors.border,
-          },
-        ]}
-        onPress={() => {
-          setSelectedId(animal.id);
-          router.push(`/animal/${animal.id}` as const);
-        }}
-      >
-        <View
-          style={[
-            styles.animalIcon,
-            { backgroundColor: STATUS_COLORS[animal.status] },
+              borderLeftColor: isSelected ? colors.primary : "transparent",
+            },
           ]}
+          onPress={() => handleCardPress(animal)}
         >
-          <Icon name="paw" size={16} color="white" />
-        </View>
-        <View style={{ flex: 1 }}>
-          <View style={styles.rowTop}>
-            <StatusBadge status={animal.status} size="sm" />
-            {animal.needsHelpByUsers.length > 0 && (
-              <View style={styles.urgentBadge}>
-                <Text style={styles.urgentBadgeText}>Acil</Text>
-              </View>
-            )}
+          <View
+            style={[
+              styles.animalIcon,
+              { backgroundColor: STATUS_COLORS[animal.status] },
+            ]}
+          >
+            <Icon name="paw" size={16} color="white" />
           </View>
-          <Text
-            style={[styles.animalNote, { color: colors.foreground }]}
-            numberOfLines={1}
-          >
-            {animal.notes || "Not eklenmemiş"}
-          </Text>
-          <Text
-            style={[styles.animalMeta, { color: colors.mutedForeground }]}
-          >
-            {animal.userName} · {formatTimeAgo(animal.timestamp)}
-          </Text>
-        </View>
-        <Icon name="chevron-forward" size={16} color={colors.mutedForeground} />
-      </Pressable>
-    ),
-    [selectedId, colors, router]
+          <View style={{ flex: 1 }}>
+            <View style={styles.rowTop}>
+              <StatusBadge status={animal.status} size="sm" />
+              {animal.needsHelpByUsers.length > 0 && (
+                <View style={styles.urgentBadge}>
+                  <Text style={styles.urgentBadgeText}>Acil</Text>
+                </View>
+              )}
+            </View>
+            <Text
+              style={[styles.animalNote, { color: colors.foreground }]}
+              numberOfLines={1}
+            >
+              {animal.notes || "Not eklenmemiş"}
+            </Text>
+            <Text
+              style={[styles.animalMeta, { color: colors.mutedForeground }]}
+            >
+              {animal.userName} · {formatTimeAgo(animal.timestamp)}
+            </Text>
+          </View>
+          <Icon name="chevron-forward" size={16} color={colors.mutedForeground} />
+        </Pressable>
+      );
+    },
+    [selectedId, colors, handleCardPress]
   );
 
   const EmptyList = useMemo(
@@ -403,17 +487,15 @@ export default function MapScreen() {
         showsMyLocationButton={false}
         onPress={() => setSelectedId(null)}
       >
-        {animals.map((animal) => (
+        {validAnimals.map((animal) => (
           <Marker
             key={animal.id}
             coordinate={{
               latitude: animal.latitude,
               longitude: animal.longitude,
             }}
-            onPress={() => {
-              setSelectedId(animal.id);
-              Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
-            }}
+            tracksViewChanges={false}
+            onPress={() => handleMarkerPress(animal.id)}
           >
             <View
               style={[
@@ -421,8 +503,10 @@ export default function MapScreen() {
                 {
                   backgroundColor: STATUS_COLORS[animal.status],
                   transform: [
-                    { scale: selectedId === animal.id ? 1.25 : 1 },
+                    { scale: selectedId === animal.id ? 1.3 : 1 },
                   ],
+                  borderColor: selectedId === animal.id ? "white" : "white",
+                  shadowOpacity: selectedId === animal.id ? 0.45 : 0.28,
                 },
               ]}
             >
@@ -536,6 +620,7 @@ export default function MapScreen() {
         style={styles.sheetShadow}
       >
         <BottomSheetFlatList
+          ref={listRef}
           data={filtered}
           keyExtractor={(item) => item.id}
           renderItem={renderAnimalRow}
@@ -545,6 +630,16 @@ export default function MapScreen() {
           showsVerticalScrollIndicator={false}
           contentContainerStyle={{ paddingBottom: tabClearance + 16 }}
           ItemSeparatorComponent={() => <View style={{ height: StyleSheet.hairlineWidth, backgroundColor: colors.border }} />}
+          onScrollToIndexFailed={(info) => {
+            /* FlatList hasn't measured the item yet — retry after layout */
+            setTimeout(() => {
+              listRef.current?.scrollToIndex({
+                index: info.index,
+                animated: true,
+                viewPosition: 0.5,
+              });
+            }, 350);
+          }}
         />
       </BottomSheet>
     </View>
@@ -780,6 +875,10 @@ const styles = StyleSheet.create({
     gap: 12,
     paddingHorizontal: 20,
     paddingVertical: 13,
+    borderLeftWidth: 3,
+  },
+  animalRowSelected: {
+    paddingLeft: 17, /* compensate for 3px border so content doesn't shift */
   },
   animalIcon: {
     width: 42,

@@ -1,0 +1,590 @@
+CAN YOLDAŞI — MAP MARKER TO ANIMAL REPORT CARD SYNCHRONIZATION
+
+Implement a production-ready synchronization flow between map markers, the "Yakındaki Hayvanlar" bottom sheet, animal report cards, and the animal report detail screen.
+
+IMPORTANT:
+Do not redesign the existing UI.
+Preserve the current map, marker, bottom sheet, card, filter, and report detail visual design.
+
+The task is about navigation, data relationships, state synchronization, and interaction behavior.
+
+==================================================
+CORE EXPECTED BEHAVIOR
+==================================================
+
+Each animal report shown on the map must represent exactly one real animal report record from the database.
+
+When the user taps a paw/status marker on the map:
+
+1. Detect the exact animal report associated with the tapped marker.
+2. Read the marker's report ID.
+3. Find the matching animal card inside the "Yakındaki Hayvanlar" bottom sheet.
+4. Automatically expand/open the bottom sheet if necessary.
+5. Automatically scroll the animal card list to the matching report.
+6. Bring the matching card into a clearly visible position.
+7. Temporarily highlight/select the matching card.
+8. Keep the map marker and card selection synchronized.
+
+Example:
+
+Marker:
+report_id = "report_123"
+
+Animal card:
+report_id = "report_123"
+
+Animal detail screen:
+report_id = "report_123"
+
+These must all represent the SAME database record.
+
+Never match reports by:
+- title
+- animal name
+- coordinates only
+- array index
+- visual order
+- status label
+
+Always use the unique report ID / primary key.
+
+==================================================
+MARKER TAP FLOW
+==================================================
+
+Expected interaction:
+
+User opens Harita screen.
+
+↓
+Animal reports are loaded from the database.
+
+↓
+Map markers are generated from those report records.
+
+↓
+User taps a marker.
+
+↓
+Get marker.reportId.
+
+↓
+Set:
+
+selectedReportId = marker.reportId
+
+↓
+Find the matching report in the same report dataset.
+
+↓
+Expand the "Yakındaki Hayvanlar" bottom sheet.
+
+↓
+Scroll the card list to the matching report.
+
+↓
+Display the matching animal card prominently.
+
+The selected card should receive a subtle temporary visual state.
+
+Use the existing CanYoldaşı purple design system.
+
+Possible selected state:
+
+- subtle purple border
+- very soft purple background tint
+- short scale animation
+- maximum 600–1000 ms
+
+Do not use aggressive animations.
+
+==================================================
+CARD NAVIGATION
+==================================================
+
+When the user taps the selected animal card:
+
+Navigate to the animal report detail screen using the report ID.
+
+Example:
+
+router.push({
+  pathname: "/animal-report/[id]",
+  params: {
+    id: selectedReport.id
+  }
+});
+
+Adapt this example to the project's current navigation architecture.
+
+Do not blindly replace the current router if the project already uses:
+- Expo Router
+- React Navigation
+- another existing navigation system
+
+Inspect the project and use the current navigation architecture.
+
+The report detail screen must receive or resolve the unique report ID.
+
+==================================================
+DETAIL SCREEN DATA RULE
+==================================================
+
+The detail screen must display the exact report selected from the map.
+
+Example database record:
+
+id: report_123
+title: "bacağında şişlik var"
+description: "bacağında şişlik var"
+status: "hungry"
+latitude: 38.6403
+longitude: 27.3629
+created_by: user_id
+created_at: timestamp
+animal_type: cat
+image_url: ...
+urgency: ...
+health_status: ...
+
+If the user taps the marker belonging to report_123, the detail/card flow must never show report_456.
+
+The following information must remain consistent:
+
+- animal image
+- report title
+- animal status
+- health/status category
+- coordinates
+- report date
+- report creator
+- description
+- urgency information
+- help count
+- location data
+
+Do not use random data.
+Do not use placeholder report data.
+Do not use hardcoded report details.
+
+==================================================
+SINGLE SOURCE OF TRUTH
+==================================================
+
+Audit the current implementation.
+
+The map markers and "Yakındaki Hayvanlar" cards should preferably be created from the same normalized animal report dataset.
+
+Example:
+
+const reports = useAnimalReports();
+
+Map:
+reports.map(report => renderMarker(report))
+
+Bottom sheet:
+reports.map(report => renderAnimalCard(report))
+
+Do not separately fetch unrelated marker data and card data if both represent the same animal reports.
+
+The database animal report record must be the single source of truth.
+
+Recommended state structure:
+
+reports
+selectedReportId
+selectedReport
+isBottomSheetExpanded
+
+Example:
+
+const [selectedReportId, setSelectedReportId] = useState<string | null>(null);
+
+const selectedReport = reports.find(
+  report => report.id === selectedReportId
+);
+
+Do not duplicate the entire selected report object in multiple independent states unless required by the current architecture.
+
+==================================================
+MARKER IMPLEMENTATION
+==================================================
+
+Every marker must explicitly carry the report ID.
+
+Conceptual example:
+
+<Marker
+  key={report.id}
+  coordinate={{
+    latitude: report.latitude,
+    longitude: report.longitude
+  }}
+  onPress={() => handleMarkerPress(report.id)}
+>
+  <AnimalStatusMarker
+    status={report.status}
+    selected={selectedReportId === report.id}
+  />
+</Marker>
+
+Implement according to the current map library used by the project.
+
+Do not replace the map provider unnecessarily.
+
+==================================================
+HANDLE MARKER PRESS
+==================================================
+
+Create one centralized marker press handler.
+
+Conceptual logic:
+
+const handleMarkerPress = (reportId: string) => {
+  const reportIndex = reports.findIndex(
+    report => report.id === reportId
+  );
+
+  if (reportIndex === -1) {
+    console.warn("Animal report not found for marker:", reportId);
+    return;
+  }
+
+  setSelectedReportId(reportId);
+
+  expandNearbyAnimalsBottomSheet();
+
+  requestAnimationFrame(() => {
+    scrollToReport(reportId);
+  });
+};
+
+The exact implementation must respect the current project structure.
+
+Do not copy this blindly if the project uses another list or bottom sheet library.
+
+==================================================
+SCROLL TO MATCHING CARD
+==================================================
+
+Inspect whether the card list uses:
+
+- FlatList
+- FlashList
+- ScrollView
+- horizontal FlatList
+- another virtualized list
+
+Use the correct scroll method.
+
+If FlatList:
+
+Use scrollToIndex.
+
+Example logic:
+
+const reportIndex = reports.findIndex(
+  report => report.id === selectedReportId
+);
+
+nearbyAnimalsListRef.current?.scrollToIndex({
+  index: reportIndex,
+  animated: true,
+  viewPosition: 0.5
+});
+
+Implement onScrollToIndexFailed correctly.
+
+Do not allow the app to crash when a card has not been measured yet.
+
+Example fallback logic:
+
+onScrollToIndexFailed={(info) => {
+  setTimeout(() => {
+    nearbyAnimalsListRef.current?.scrollToIndex({
+      index: info.index,
+      animated: true,
+      viewPosition: 0.5
+    });
+  }, 250);
+}}
+
+Adapt this safely to the existing code.
+
+==================================================
+BOTTOM SHEET BEHAVIOR
+==================================================
+
+When a marker is tapped:
+
+If the "Yakındaki Hayvanlar" bottom sheet is collapsed:
+→ expand it enough to show the selected animal card.
+
+If it is already open:
+→ do not close and reopen it.
+→ only scroll to the selected card.
+
+Do not create flickering.
+
+Do not reset the bottom sheet position unnecessarily.
+
+Do not block map interaction permanently.
+
+==================================================
+FILTER SYNCHRONIZATION
+==================================================
+
+The screen currently contains filters such as:
+
+- Hepsi
+- Aç
+- Yaralı
+- Sağlıklı
+- other existing statuses
+
+Handle this edge case:
+
+Example:
+
+Current filter = "Yaralı"
+
+User taps an "Aç" animal marker.
+
+The marker belongs to a real report but its card is hidden by the current filter.
+
+Expected behavior:
+
+Temporarily switch the card filter to "Hepsi" OR use the project's most logical UX behavior to make the selected report visible.
+
+Recommended behavior:
+
+1. Detect that the selected report is not present in filteredReports.
+2. Change active filter to "Hepsi".
+3. Wait for list render.
+4. Scroll to the selected report card.
+5. Highlight the card.
+
+The marker must never appear clickable and then lead to no visible card.
+
+==================================================
+MAP AND CARD TWO-WAY SYNCHRONIZATION
+==================================================
+
+Implement two-way synchronization.
+
+Marker → Card:
+Tapping a marker selects and scrolls to the matching card.
+
+Card → Marker:
+When a user taps/selects an animal card, update:
+
+selectedReportId = card.reportId
+
+Optionally animate the map camera to that animal's coordinates using the existing map library.
+
+Use a smooth camera animation.
+
+Do not aggressively zoom.
+
+Keep the user's map context.
+
+==================================================
+REALTIME DATABASE UPDATES
+==================================================
+
+If Supabase Realtime is currently used for animal reports, keep map markers and cards synchronized with realtime changes.
+
+When a new animal report is created:
+
+- add its marker
+- add its card
+
+When a report is updated:
+
+- update the marker state
+- update the card
+- update the detail data
+
+When a report is deleted:
+
+- remove the marker
+- remove the card
+
+If the deleted report was selected:
+
+setSelectedReportId(null)
+
+Do not leave a ghost marker or stale card.
+
+Prevent duplicate realtime insert events.
+
+Deduplicate reports by unique report ID.
+
+==================================================
+DATA VALIDATION
+==================================================
+
+Before rendering a map marker, validate:
+
+- report.id exists
+- latitude is a valid number
+- longitude is a valid number
+- latitude is between -90 and 90
+- longitude is between -180 and 180
+
+Invalid coordinate records must not crash the map.
+
+Log them in development mode.
+
+Do not silently create marker coordinates at 0,0.
+
+==================================================
+PERFORMANCE
+==================================================
+
+Avoid unnecessary database requests on every marker tap.
+
+Marker tap should not refetch the entire animal report list.
+
+Use the already loaded report dataset.
+
+Only fetch the report detail by ID if the detail screen requires fresh data.
+
+Memoize normalized and filtered report datasets where appropriate.
+
+Use stable keys:
+
+keyExtractor={(item) => item.id}
+
+Never use array index as the report card or marker key.
+
+==================================================
+LOADING AND ERROR STATES
+==================================================
+
+If the report no longer exists when a marker is tapped:
+
+- do not crash
+- clear the selection
+- show the existing app toast system
+
+Turkish message:
+
+"Bu hayvan bildirimi artık mevcut değil."
+
+If the detail screen cannot load the report:
+
+Show a proper error state.
+
+Do not show another animal's cached data.
+
+Do not use the previous report as fallback.
+
+==================================================
+PRODUCTION AUDIT
+==================================================
+
+Before implementation, recursively inspect:
+
+- Harita screen
+- map component
+- marker component
+- Yakındaki Hayvanlar bottom sheet
+- animal report card component
+- animal report detail screen
+- animal report hooks
+- Supabase report queries
+- realtime subscriptions
+- navigation/router implementation
+- report types/interfaces
+
+Find the current animal report primary key.
+
+Trace the complete data flow:
+
+DATABASE
+→ REPORT QUERY
+→ REPORT NORMALIZATION
+→ MAP MARKER
+→ MARKER PRESS
+→ SELECTED REPORT ID
+→ BOTTOM SHEET
+→ MATCHING CARD
+→ DETAIL SCREEN
+
+Fix all broken ID mappings discovered during this audit.
+
+Do not create a parallel duplicate system.
+
+Use the existing architecture and refactor the current flow.
+
+==================================================
+FINAL ACCEPTANCE TESTS
+==================================================
+
+Test all of the following:
+
+1. Tap first marker
+→ first marker's exact animal card becomes visible.
+
+2. Tap second marker
+→ second marker's exact animal card becomes visible.
+
+3. Tap third marker
+→ third marker's exact animal card becomes visible.
+
+4. Tap a marker while bottom sheet is collapsed
+→ sheet expands and matching card is visible.
+
+5. Tap a marker while bottom sheet is already open
+→ matching card scrolls into view without flicker.
+
+6. Select "Yaralı" filter and tap an "Aç" marker
+→ matching animal card still becomes visible using the defined filter behavior.
+
+7. Tap matching card
+→ exact animal report detail screen opens.
+
+8. Verify:
+marker report ID === card report ID === detail report ID
+
+9. Update the animal report
+→ marker/card/detail display the updated data.
+
+10. Delete the animal report
+→ marker and card disappear.
+
+11. Rapidly tap multiple markers
+→ latest tapped marker wins.
+→ no wrong card opens.
+→ no race condition.
+
+12. Reload the app
+→ marker/card relationships remain correct.
+
+==================================================
+IMPORTANT RESTRICTIONS
+==================================================
+
+DO NOT:
+- redesign the Harita screen
+- redesign the report detail screen
+- create mock animal reports
+- use random data
+- match marker and card by array index
+- match by coordinates only
+- duplicate report datasets
+- create a second animal report system
+- break existing filters
+- break Supabase realtime
+- replace the existing navigation architecture unnecessarily
+
+GOAL:
+
+A map marker must act as the geographic representation of one exact animal report.
+
+Tapping a marker must locate and focus the matching animal report card inside "Yakındaki Hayvanlar".
+
+Tapping that card must open the exact same animal report detail screen.
+
+The entire flow must be connected using the unique animal report ID as the single source of identity.
