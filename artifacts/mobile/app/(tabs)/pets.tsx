@@ -1,4 +1,13 @@
 import { Icon } from "@/components/Icon";
+import {
+  AdoptionFilterSheet,
+  countActiveFilters,
+  DEFAULT_FILTERS,
+  extractCity,
+  normalizeGender,
+  parseAgeMonths,
+  type AdoptionFilters,
+} from "@/components/AdoptionFilterSheet";
 import * as Haptics from "expo-haptics";
 import { Image } from "expo-image";
 import { LinearGradient } from "expo-linear-gradient";
@@ -213,7 +222,17 @@ const tsw = StyleSheet.create({
 });
 
 // ── Search bar ────────────────────────────────────────────────────────────────
-function SearchBar({ query, onQuery, onFilter }: { query: string; onQuery: (q: string) => void; onFilter: () => void }) {
+function SearchBar({
+  query,
+  onQuery,
+  onFilter,
+  activeFilterCount = 0,
+}: {
+  query: string;
+  onQuery: (q: string) => void;
+  onFilter: () => void;
+  activeFilterCount?: number;
+}) {
   const T = useTheme();
   return (
     <View style={sb.wrap}>
@@ -233,23 +252,38 @@ function SearchBar({ query, onQuery, onFilter }: { query: string; onQuery: (q: s
           </Pressable>
         )}
       </View>
-      <Pressable
-        style={sb.filterBtn}
-        onPress={() => { Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light); onFilter(); }}
-      >
-        <LinearGradient colors={[P2, P]} style={sb.filterGrad}>
-          <Icon name="options-outline" size={17} color={WHITE} />
-        </LinearGradient>
-      </Pressable>
+      <View style={sb.filterWrap}>
+        <Pressable
+          style={sb.filterBtn}
+          onPress={() => { Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light); onFilter(); }}
+        >
+          <LinearGradient colors={[P2, P]} style={sb.filterGrad}>
+            <Icon name="options-outline" size={17} color={WHITE} />
+          </LinearGradient>
+        </Pressable>
+        {activeFilterCount > 0 && (
+          <View style={sb.badge}>
+            <Text style={sb.badgeTxt}>{activeFilterCount > 9 ? "9+" : String(activeFilterCount)}</Text>
+          </View>
+        )}
+      </View>
     </View>
   );
 }
 const sb = StyleSheet.create({
-  wrap:      { flexDirection: "row", alignItems: "center", gap: 10, paddingHorizontal: 20, marginBottom: 12 },
-  inputWrap: { flex: 1, flexDirection: "row", alignItems: "center", backgroundColor: WHITE, borderRadius: 14, paddingHorizontal: 12, height: 44, borderWidth: 1, borderColor: BORDER, gap: 8, ...IOS_SHADOW },
-  input:     { flex: 1, fontSize: 14, fontFamily: "Inter_400Regular", color: DARK, height: 44 },
-  filterBtn: { borderRadius: 12, overflow: "hidden" },
-  filterGrad:{ width: 44, height: 44, alignItems: "center", justifyContent: "center" },
+  wrap:       { flexDirection: "row", alignItems: "center", gap: 10, paddingHorizontal: 20, marginBottom: 12 },
+  inputWrap:  { flex: 1, flexDirection: "row", alignItems: "center", backgroundColor: WHITE, borderRadius: 14, paddingHorizontal: 12, height: 44, borderWidth: 1, borderColor: BORDER, gap: 8, ...IOS_SHADOW },
+  input:      { flex: 1, fontSize: 14, fontFamily: "Inter_400Regular", color: DARK, height: 44 },
+  filterWrap: { position: "relative" },
+  filterBtn:  { borderRadius: 12, overflow: "hidden" },
+  filterGrad: { width: 44, height: 44, alignItems: "center", justifyContent: "center" },
+  badge: {
+    position: "absolute", top: -5, right: -5,
+    minWidth: 18, height: 18, borderRadius: 9,
+    backgroundColor: "#FF3B30", borderWidth: 2, borderColor: WHITE,
+    alignItems: "center", justifyContent: "center", paddingHorizontal: 3,
+  },
+  badgeTxt: { fontSize: 9, fontFamily: "Inter_700Bold", color: WHITE, lineHeight: 11 },
 });
 
 // ── Filter chips (horizontal FlatList, fixed-width, Instagram style) ──────────
@@ -356,8 +390,29 @@ const IMG_H = 148; // ~40% of card
 function ListingCard({ listing, isFeatured, featuredUntil }: { listing: AdoptionListing; isFeatured?: boolean; featuredUntil?: string | null }) {
   const T = useTheme();
   const router = useRouter();
-  const [liked, setLiked] = useState(false);
+  const { isFollowed, followListing, unfollowListing } = useAdoption();
+  const { user } = useAuth();
   const [imgError, setImgError] = useState(false);
+  const [followLoading, setFollowLoading] = useState(false);
+
+  const liked = isFollowed(listing.id);
+
+  const handleHeartPress = async (e: { stopPropagation?: () => void }) => {
+    e.stopPropagation?.();
+    if (!user) {
+      Alert.alert("Giriş Yapın", "Takip etmek için giriş yapmanız gerekiyor.");
+      return;
+    }
+    if (followLoading) return;
+    setFollowLoading(true);
+    try {
+      if (liked) await unfollowListing(listing.id);
+      else await followListing(listing.id);
+    } finally {
+      setFollowLoading(false);
+    }
+    Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+  };
 
   return (
     <Pressable
@@ -400,12 +455,8 @@ function ListingCard({ listing, isFeatured, featuredUntil }: { listing: Adoption
           </View>
 
           <Pressable
-            style={lc.heartBtn}
-            onPress={(e) => {
-              e.stopPropagation?.();
-              setLiked((v) => !v);
-              Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
-            }}
+            style={[lc.heartBtn, followLoading && { opacity: 0.6 }]}
+            onPress={handleHeartPress}
             hitSlop={8}
           >
             <Icon name={liked ? "heart" : "heart-outline"} size={16} color={liked ? "#FF4466" : WHITE} />
@@ -1778,11 +1829,28 @@ export default function PetsScreen() {
   const [activeTab, setActiveTab]   = useState<Tab>("create");
   const [filter, setFilter]         = useState<Filter>("all");
   const [query, setQuery]           = useState("");
+  const [advFilters, setAdvFilters] = useState<AdoptionFilters>(DEFAULT_FILTERS);
+  const [filterSheetOpen, setFilterSheetOpen] = useState(false);
 
   const topPad = Platform.OS === "web" ? (SW < 1024 ? 54 : 16) : insets.top;
   const botPad = Platform.OS === "web" ? (SW < 1024 ? 100 : 24) : (insets.bottom + TAB_H);
 
   const NOW_THRESHOLD = Date.now() - 24 * 3_600_000;
+
+  /* Unique breeds & cities extracted from listings for the filter sheet */
+  const { availableBreeds, availableCities } = useMemo(() => {
+    const breedSet = new Set<string>();
+    const citySet  = new Set<string>();
+    for (const l of listings) {
+      if (l.breed?.trim()) breedSet.add(l.breed.trim());
+      const city = extractCity(l.location);
+      if (city) citySet.add(city);
+    }
+    return {
+      availableBreeds: Array.from(breedSet).sort(),
+      availableCities: Array.from(citySet).sort(),
+    };
+  }, [listings]);
 
   const sorted = useMemo(() => {
     return [...listings].sort((a, b) => {
@@ -1795,9 +1863,13 @@ export default function PetsScreen() {
 
   const filtered = useMemo(() => {
     let list = sorted;
+
+    /* ── Quick type chips ── */
     if (filter === "new")      list = list.filter((l) => new Date(l.createdAt).getTime() > NOW_THRESHOLD);
     else if (filter !== "all") list = list.filter((l) => (TYPE_NORMALIZE[l.petType] ?? "other") === filter);
     if (filter === "other")    list = sorted.filter((l) => (TYPE_NORMALIZE[l.petType] ?? "other") === "other");
+
+    /* ── Search query ── */
     if (query.trim()) {
       const q = query.toLowerCase();
       list = list.filter((l) =>
@@ -1807,8 +1879,66 @@ export default function PetsScreen() {
         l.location.toLowerCase().includes(q)
       );
     }
+
+    /* ── Advanced filters ── */
+    const af = advFilters;
+
+    if (af.ageRange !== "all") {
+      list = list.filter((l) => {
+        const months = parseAgeMonths(l.petAge ?? "");
+        if (months === null) return false;
+        if (af.ageRange === "0_6m")    return months < 6;
+        if (af.ageRange === "6_12m")   return months >= 6  && months < 12;
+        if (af.ageRange === "1_3y")    return months >= 12 && months < 36;
+        if (af.ageRange === "3y_plus") return months >= 36;
+        return true;
+      });
+    }
+
+    if (af.gender !== "all") {
+      list = list.filter((l) => normalizeGender(l.gender ?? "") === af.gender);
+    }
+
+    if (af.breed !== null) {
+      const targetBreed = af.breed.toLowerCase();
+      list = list.filter((l) => (l.breed ?? "").toLowerCase() === targetBreed);
+    }
+
+    if (af.status !== "all") {
+      list = list.filter((l) => {
+        const s = (l.status ?? "").toLowerCase();
+        if (af.status === "active")  return s === "aktif"          || s === "active";
+        if (af.status === "adopted") return s === "sahiplendirildi" || s === "adopted";
+        return true;
+      });
+    }
+
+    if (af.locationCity !== null) {
+      const targetCity = af.locationCity.toLowerCase();
+      list = list.filter((l) => (extractCity(l.location) ?? "").toLowerCase() === targetCity);
+    }
+
+    /* ── Sort ── */
+    if (af.sortBy === "oldest") {
+      list = [...list].sort((a, b) => new Date(a.createdAt).getTime() - new Date(b.createdAt).getTime());
+    } else if (af.sortBy === "age_asc") {
+      list = [...list].sort((a, b) => {
+        const am = parseAgeMonths(a.petAge ?? "") ?? 999;
+        const bm = parseAgeMonths(b.petAge ?? "") ?? 999;
+        return am - bm;
+      });
+    } else if (af.sortBy === "age_desc") {
+      list = [...list].sort((a, b) => {
+        const am = parseAgeMonths(a.petAge ?? "") ?? -1;
+        const bm = parseAgeMonths(b.petAge ?? "") ?? -1;
+        return bm - am;
+      });
+    }
+
     return list;
-  }, [sorted, filter, query]);
+  }, [sorted, filter, query, advFilters]);
+
+  const activeBadgeCount = countActiveFilters(advFilters);
 
   return (
     <View style={[s.root, { backgroundColor: T.bg }]}>
@@ -1849,8 +1979,13 @@ export default function PetsScreen() {
 
       {mainTab === "adoption" && activeTab === "listings" && (
         <View style={s.listingShell}>
-          <SearchBar query={query} onQuery={setQuery} onFilter={() => {}} />
-          <FilterRow active={filter} onChange={setFilter} />
+          <SearchBar
+            query={query}
+            onQuery={setQuery}
+            onFilter={() => setFilterSheetOpen(true)}
+            activeFilterCount={activeBadgeCount}
+          />
+          <FilterRow active={filter} onChange={(f) => { setFilter(f); }} />
           <ListingsHeader count={filtered.length} filter={filter} />
           <FlatList
             data={filtered}
@@ -1895,6 +2030,16 @@ export default function PetsScreen() {
           />
         </View>
       )}
+
+      {/* ── Advanced filter sheet ── */}
+      <AdoptionFilterSheet
+        visible={filterSheetOpen}
+        activeFilters={advFilters}
+        breeds={availableBreeds}
+        cities={availableCities}
+        onApply={(f) => setAdvFilters(f)}
+        onClose={() => setFilterSheetOpen(false)}
+      />
     </View>
   );
 }
