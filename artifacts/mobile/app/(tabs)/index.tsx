@@ -324,7 +324,7 @@ export default function MapScreen() {
             </View>
           </View>
           <Pressable
-            onPress={() => bottomSheetRef.current?.snapToIndex(2)}
+            onPress={() => router.navigate("/animals")}
             hitSlop={8}
           >
             <Text style={[styles.seeAll, { color: colors.primary }]}>
