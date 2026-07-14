@@ -1,8 +1,8 @@
 import { Icon } from "@/components/Icon";
 import * as Haptics from "expo-haptics";
 import { LinearGradient } from "expo-linear-gradient";
-import { useRouter } from "expo-router";
-import React, { useCallback, useMemo, useRef, useState } from "react";
+import { useLocalSearchParams, useRouter } from "expo-router";
+import React, { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import {
   ActivityIndicator,
   Animated,
@@ -111,6 +111,31 @@ export default function AnimalsScreen() {
   const router        = useRouter();
   const { animals, isLoading } = useAnimals();
   const [filter, setFilter] = useState<FilterKey>("all");
+
+  // ── Map marker deep-link: open the exact report by ID ──────────────────────
+  // When the Harita screen navigates here with a reportId param, find the
+  // matching report in the FULL (unfiltered) dataset and push its detail screen.
+  // The ref prevents re-triggering on every re-render after the first handling.
+  const { reportId } = useLocalSearchParams<{ reportId?: string }>();
+  const handledReportIdRef = useRef<string | null>(null);
+
+  useEffect(() => {
+    if (!reportId) return;
+    // Guard: don't re-open the same report on every render
+    if (handledReportIdRef.current === reportId) return;
+    // Wait until the animals array is populated
+    if (!animals.length) return;
+
+    const target = animals.find((a) => a.id === reportId);
+    if (target) {
+      handledReportIdRef.current = reportId;
+      // Reset any active filter so the card is visible if the user navigates back
+      setFilter("all");
+      // Navigate to the exact report detail using its unique ID
+      router.push(`/animal/${reportId}`);
+    }
+    // If the report is not found (deleted), gracefully do nothing
+  }, [reportId, animals, router]);
 
   const filtered   = useMemo(() => filterAnimals(animals, filter), [animals, filter]);
   const topPad     = Platform.OS === "web" ? (SW < 1024 ? 54 : 16) : insets.top;

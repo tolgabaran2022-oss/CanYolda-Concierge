@@ -263,7 +263,7 @@ export default function MapScreen() {
     Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
   }, []);
 
-  /* Marker tap: expand sheet + sync filter + scroll to card */
+  /* Marker tap: navigate to Hayvanlar tab and auto-open the exact report detail */
   const handleMarkerPress = useCallback((animalId: string) => {
     const animal = animals.find((a) => a.id === animalId);
     if (!animal) {
@@ -274,19 +274,13 @@ export default function MapScreen() {
     Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
     setSelectedId(animalId);
 
-    /* Ensure the sheet is expanded enough to show the card */
-    bottomSheetRef.current?.snapToIndex(1);
-
-    /* If the animal is hidden by the current filter, reset to "all" */
-    const isVisible = filtered.some((a) => a.id === animalId);
-    if (!isVisible) {
-      setFilter("all");
-    }
-
-    /* Set the scroll target — the useEffect will perform the scroll
-       once filtered settles (whether filter changed or not). */
-    setScrollTarget(animalId);
-  }, [animals, filtered]);
+    // Navigate to the Hayvanlar tab; animals.tsx reads the reportId param
+    // and auto-opens the matching detail screen using the unique report ID.
+    router.navigate({
+      pathname: "/(tabs)/animals",
+      params: { reportId: animalId },
+    });
+  }, [animals, router]);
 
   /* Card tap: sync camera to pin + navigate to detail */
   const handleCardPress = useCallback((animal: StrayAnimal) => {

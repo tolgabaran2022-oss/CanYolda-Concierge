@@ -1,0 +1,608 @@
+CAN YOLDAŞI — MAP MARKER TO EXACT REPORTED ANIMAL DETAIL FLOW
+
+Implement a production-ready navigation flow between the Harita screen and the Sokak Hayvanları / Hayvanlar screen.
+
+IMPORTANT:
+
+Do not redesign the current UI.
+
+Preserve:
+
+- Harita screen design
+- map markers
+- Yakındaki Hayvanlar bottom sheet
+- Hayvanlar screen
+- Sokak Hayvanları cards
+- animal report detail screen
+
+This task is specifically about exact report identity and navigation behavior.
+
+==================================================
+EXPECTED USER FLOW
+==================================================
+
+The required behavior is:
+
+HARİTA
+↓
+User taps a paw/status marker
+↓
+Determine the exact animal report represented by that marker
+↓
+Navigate to the Hayvanlar / Sokak Hayvanları screen
+↓
+Find the card belonging to the exact same animal report
+↓
+Automatically open that report card/detail screen
+
+Example:
+
+Map marker represents:
+
+report_id = "report_123"
+
+Report:
+
+title = "bacağında şişlik var"
+
+Expected result:
+
+User taps marker
+↓
+Hayvanlar screen resolves report_123
+↓
+The card for report_123 is identified
+↓
+The exact report_123 detail screen automatically opens
+
+The user must NOT need to manually search for the card.
+
+==================================================
+CRITICAL ID RELATIONSHIP
+==================================================
+
+The map marker, Sokak Hayvanları card, and detail screen must all use the SAME unique animal report ID.
+
+Example:
+
+MAP MARKER
+report_id = report_123
+
+HAYVANLAR CARD
+report_id = report_123
+
+DETAIL SCREEN
+report_id = report_123
+
+These are three representations of ONE database record.
+
+Never match using:
+
+- report title
+- description
+- status
+- animal image
+- coordinates only
+- creator name
+- array index
+- card position
+
+Always use the unique animal report primary key.
+
+==================================================
+MARKER PRESS BEHAVIOR
+==================================================
+
+Audit the current marker press handler.
+
+Every map marker must carry the exact report ID.
+
+Conceptual example:
+
+<Marker
+  key={report.id}
+  coordinate={{
+    latitude: report.latitude,
+    longitude: report.longitude
+  }}
+  onPress={() => handleReportMarkerPress(report.id)}
+>
+  <ReportMarker
+    status={report.status}
+  />
+</Marker>
+
+Adapt this to the existing map library.
+
+Do not replace the current map provider unnecessarily.
+
+Create one centralized marker press handler.
+
+Conceptual logic:
+
+const handleReportMarkerPress = (reportId: string) => {
+  if (!reportId) {
+    return;
+  }
+
+  navigateToAnimalReport(reportId);
+};
+
+==================================================
+NAVIGATION FLOW
+==================================================
+
+When a marker is tapped:
+
+Navigate through the existing application navigation architecture.
+
+The target is the Hayvanlar / Sokak Hayvanları feature.
+
+Pass:
+
+reportId
+
+Example conceptual route:
+
+router.push({
+  pathname: '/animals',
+  params: {
+    reportId
+  }
+});
+
+OR, if the architecture supports direct detail navigation:
+
+router.push({
+  pathname: '/animal-report/[id]',
+  params: {
+    id: reportId
+  }
+});
+
+IMPORTANT:
+
+Inspect the current project navigation.
+
+If the app uses:
+
+- Expo Router
+- React Navigation
+- nested tab navigation
+- stack navigation
+
+use the existing architecture.
+
+Do not create a second navigation system.
+
+==================================================
+RECOMMENDED UX FOR THIS PROJECT
+==================================================
+
+For the current CanYoldaşı structure, use this behavior:
+
+Marker tap
+↓
+Navigate to "Hayvanlar" tab
+↓
+Resolve the exact report ID
+↓
+Automatically open that report's detail screen
+
+The bottom navigation should correctly reflect:
+
+Hayvanlar
+
+as the active feature when navigating through this flow.
+
+Do not leave Harita visually selected while the user is on the animal report detail flow.
+
+==================================================
+HAYVANLAR SCREEN DEEP LINK STATE
+==================================================
+
+The Hayvanlar screen must be able to receive an optional:
+
+reportId
+
+Example:
+
+reportId = report_123
+
+When Hayvanlar screen opens:
+
+1. Load the animal reports.
+2. Check whether reportId exists.
+3. Find the exact report by ID.
+4. Open the matching report detail.
+5. Consume/clear the pending navigation intent when appropriate.
+
+Conceptual logic:
+
+const targetReport = reports.find(
+  report => report.id === reportId
+);
+
+if (targetReport) {
+  openReportDetail(targetReport.id);
+}
+
+Do not repeatedly reopen the detail screen on every rerender.
+
+Use a handled navigation state/ref where appropriate.
+
+Example conceptual protection:
+
+const handledReportIdRef = useRef<string | null>(null);
+
+if (
+  reportId &&
+  handledReportIdRef.current !== reportId &&
+  reports.some(report => report.id === reportId)
+) {
+  handledReportIdRef.current = reportId;
+  openReportDetail(reportId);
+}
+
+Adapt safely to the current architecture.
+
+==================================================
+FILTER HANDLING
+==================================================
+
+The Hayvanlar screen contains filters such as:
+
+- Hepsi
+- Acil
+- Yardım Bekleyen
+- Sağlıklı
+- other current statuses
+
+Handle this case:
+
+Current filter:
+Sağlıklı
+
+Tapped map marker:
+Aç / Yardım Bekleyen report
+
+The report card may not be visible under the current filter.
+
+EXPECTED:
+
+The marker navigation must still open the exact report.
+
+Recommended behavior:
+
+When navigation contains reportId:
+
+Do not depend on the current filtered list to resolve the report.
+
+Resolve the report from the complete animal reports dataset.
+
+Optionally switch the visible filter to:
+
+Hepsi
+
+before opening the matching report.
+
+The selected report must never fail to open because of a UI filter.
+
+==================================================
+EXACT EXAMPLE FROM CURRENT UI
+==================================================
+
+Current Harita screen contains a yellow/orange paw marker.
+
+That marker belongs to:
+
+Title:
+"bacağında şişlik var"
+
+Creator:
+tolga
+
+Status:
+Aç
+
+Coordinates:
+38.6403, 27.3629
+
+When the yellow/orange paw marker for this report is tapped:
+
+EXPECTED:
+
+1. Navigate to Hayvanlar.
+2. Resolve the exact report ID.
+3. Find the card whose report ID matches.
+4. Automatically open the detail for:
+
+"bacağında şişlik var"
+
+Do NOT open:
+
+"Park girişinde yaşıyor, mahalle sakinleri besliyor"
+
+Do NOT open:
+
+"Ön bacağında yara var..."
+
+Only the exact marker's report must open.
+
+==================================================
+SINGLE SOURCE OF TRUTH
+==================================================
+
+Audit the current report data flow.
+
+Preferred structure:
+
+animalReports: AnimalReport[]
+
+Map markers:
+
+animalReports.map(report => ...)
+
+Hayvanlar cards:
+
+animalReports.map(report => ...)
+
+Detail:
+
+animalReports.find(report => report.id === reportId)
+
+The map and animal cards should represent the same backend report records.
+
+Do not maintain unrelated fake marker data.
+
+Do not manually map marker indexes to card indexes.
+
+WRONG:
+
+marker 0 → card 0
+marker 1 → card 1
+
+This will break when filtering or sorting changes.
+
+CORRECT:
+
+marker report_123
+↓
+card report_123
+↓
+detail report_123
+
+==================================================
+DETAIL SCREEN
+==================================================
+
+The opened detail screen must use the exact report ID.
+
+Fetch or resolve the report using:
+
+.eq('id', reportId)
+
+If Supabase is used.
+
+Do not fetch using:
+
+.eq('title', title)
+
+Do not fetch the first report matching a status.
+
+Do not reuse the previously opened report object.
+
+If the requested report cannot be found:
+
+Do not show another report.
+
+Display the existing toast/error system with Turkish text:
+
+"Bu hayvan bildirimi artık mevcut değil."
+
+Then safely return to the Hayvanlar screen.
+
+==================================================
+STALE DETAIL PROTECTION
+==================================================
+
+Audit the current detail state.
+
+A common bug may occur like:
+
+currentReport remains from previous navigation.
+
+Example:
+
+User previously opened:
+Park girişinde yaşıyor...
+
+Then taps map marker:
+bacağında şişlik var
+
+WRONG:
+
+Detail initially or permanently shows the previous report.
+
+Fix this.
+
+Whenever reportId changes:
+
+The detail query/state must be keyed by reportId.
+
+Example query key:
+
+['animal-report', reportId]
+
+Do not use only:
+
+['animal-report']
+
+Clear or replace stale report state correctly.
+
+Never show the previous animal report as fallback for a different report ID.
+
+==================================================
+RAPID MARKER TAP PROTECTION
+==================================================
+
+Test rapid marker taps.
+
+Example:
+
+User taps:
+
+marker A
+then marker B quickly
+
+The latest marker tap must win.
+
+If marker B was tapped last:
+
+Open report B.
+
+Do not open report A after an asynchronous delay.
+
+Prevent navigation race conditions.
+
+Use report ID identity and appropriate cancellation/stale request protection.
+
+==================================================
+REALTIME AND DELETED REPORTS
+==================================================
+
+If a report is deleted between map load and marker tap:
+
+The navigation flow must not crash.
+
+If report ID no longer exists:
+
+Show:
+
+"Bu hayvan bildirimi artık mevcut değil."
+
+Remove stale marker through the existing realtime/report refresh architecture.
+
+Do not open another card as fallback.
+
+==================================================
+FINAL ACCEPTANCE TESTS
+==================================================
+
+TEST 1:
+
+Tap the orange marker belonging to:
+
+"bacağında şişlik var"
+
+EXPECTED:
+
+Exact "bacağında şişlik var" report detail opens.
+
+TEST 2:
+
+Return to map.
+
+Tap green marker belonging to:
+
+"Park girişinde yaşıyor, mahalle sakinleri besliyor"
+
+EXPECTED:
+
+Exact green report detail opens.
+
+TEST 3:
+
+Return to map.
+
+Tap red marker belonging to:
+
+"Ön bacağında yara var..."
+
+EXPECTED:
+
+Exact red report detail opens.
+
+TEST 4:
+
+Change Hayvanlar filter to Sağlıklı.
+
+Return to map.
+
+Tap an Aç report marker.
+
+EXPECTED:
+
+The exact Aç report still opens.
+
+TEST 5:
+
+Rapidly tap two markers.
+
+EXPECTED:
+
+The last tapped marker's report opens.
+
+TEST 6:
+
+Verify:
+
+mapMarker.reportId
+===
+animalCard.reportId
+===
+detail.reportId
+
+TEST 7:
+
+Reload app.
+
+Repeat marker navigation.
+
+EXPECTED:
+
+Mappings remain correct.
+
+TEST 8:
+
+Delete a report.
+
+Attempt stale navigation.
+
+EXPECTED:
+
+No crash.
+
+Show:
+
+"Bu hayvan bildirimi artık mevcut değil."
+
+==================================================
+IMPORTANT RESTRICTIONS
+==================================================
+
+DO NOT:
+
+- redesign the current screens
+- open a report by title
+- open a report by coordinates only
+- match marker index to card index
+- use random data
+- create mock reports
+- automatically open the first card
+- reuse the previously opened animal report
+- break current filters
+- create a second animal reports system
+- replace the existing navigation architecture unnecessarily
+
+GOAL:
+
+When a user taps a paw/status marker on the Harita screen, the app must navigate to the Hayvanlar feature and automatically open the exact Sokak Hayvanları report represented by that marker.
+
+The unique animal report ID must connect:
+
+MAP MARKER
+→ HAYVANLAR CARD
+→ REPORT DETAIL
+
+The user must never be required to manually search for the corresponding report card.
