@@ -1,0 +1,1073 @@
+CAN YOLDAŞI UYGULAMASI — İLAN DÜZENLE FOTOĞRAF EKLEME SİSTEMİNİ KÖKTEN DÜZELT
+
+Uygulamadaki mevcut tasarımı ve görsel düzeni BOZMA.
+
+Özellikle şu akışta bulunan fotoğraf ekleme sistemini production seviyesinde tamamen denetle ve düzelt:
+
+İlanlarım
+→ mevcut ilana gir
+→ İlanı Düzenle / İlan Düzenle
+→ Fotoğraflar
+→ Fotoğraf Ekle
+→ Fotoğraf Ekle bottom sheet
+
+Mevcut durumda bottom sheet doğru şekilde açılıyor ve kullanıcıya şu seçenekler gösteriliyor:
+
+- Kameradan Çek
+- Galeriden Seç
+- Vazgeç
+
+ANCAK:
+
+"Kameradan Çek" seçeneğine basıldığında kamera açılmıyor.
+
+"Galeriden Seç" seçeneğine basıldığında galeri / fotoğraf seçici açılmıyor.
+
+Bu problemi sadece görsel olarak düzeltme.
+
+Gerçek native fotoğraf seçme sistemini uçtan uca çalışır hale getir.
+
+==================================================
+1. ÖNCE ROOT CAUSE AUDIT YAP
+==================================================
+
+Fotoğraf ekleme sistemiyle ilişkili bütün dosyaları recursive olarak tara.
+
+Şunları kontrol et:
+
+- Edit listing screen
+- İlan Düzenle ekranı
+- Photo section component
+- Photo upload component
+- BottomSheet component
+- Modal component
+- ImagePicker helper
+- Media picker service
+- Upload service
+- Listing form state
+- Listing update mutation
+- Storage upload logic
+- Supabase Storage entegrasyonu
+- Expo config
+- app.json
+- app.config.js
+- app.config.ts
+- Android permission configuration
+- iOS permission configuration
+
+Özellikle aşağıdaki hataları ara:
+
+- onPress tanımlı değil
+- yanlış callback bağlanmış
+- boş arrow function kullanılmış
+- placeholder fonksiyon kullanılmış
+- TODO fonksiyon kullanılmış
+- fonksiyon çağrılmadan sadece referansı verilmiş
+- yanlış scope
+- stale closure
+- disabled prop yanlış
+- pointerEvents sorunu
+- overlay touch event'i engelliyor
+- BottomSheet gesture touch event'i yutuyor
+- Pressable çalışmıyor
+- TouchableOpacity event'i tetiklenmiyor
+- parent component touch event'i intercept ediyor
+- async function await edilmiyor
+- unhandled promise rejection
+- permission request eksik
+- ImagePicker import yanlış
+- deprecated ImagePicker API kullanılıyor
+- API response formatı yanlış okunuyor
+- result.cancelled / result.canceled farkı
+- assets array okunmuyor
+- URI state'e eklenmiyor
+- bottom sheet kapanmadan picker çağrıldığı için native modal açılmıyor
+- modal presentation conflict
+- iOS native presentation conflict
+- Android activity conflict
+- web implementation eksik
+
+Önce gerçek root cause'u bul.
+
+Tahmin ederek sadece yeni buton ekleme.
+
+Mevcut çalışan yapıyı analiz ederek problemi kökten düzelt.
+
+==================================================
+2. EXPO / REACT NATIVE TEKNOLOJİSİNİ TESPİT ET
+==================================================
+
+Projede Expo kullanılıyorsa:
+
+expo-image-picker
+
+kullan.
+
+Gerekirse mevcut dependency durumunu kontrol et ve proje Expo ise doğru Expo SDK sürümüyle uyumlu paketi kullan.
+
+Örnek olarak körü körüne farklı bir major sürüm yükleme.
+
+Mevcut Expo SDK ile uyumlu dependency kullan.
+
+Bare React Native kullanılıyorsa:
+
+react-native-image-picker
+
+ve mevcut native proje yapısına uygun implementasyon kullan.
+
+AYNI PROJEDE iki farklı image picker library kullanma.
+
+Önce stack'i tespit et.
+
+Sonra tek doğru çözümü uygula.
+
+==================================================
+3. BOTTOM SHEET BUTTON HANDLER'LARINI GERÇEK FONKSİYONLARA BAĞLA
+==================================================
+
+"Kameradan Çek" butonunun onPress işlemi gerçek kamera açma fonksiyonuna bağlı olmalı.
+
+Örnek mantık:
+
+handleTakePhoto
+
+"Galeriden Seç" butonunun onPress işlemi gerçek galeri seçme fonksiyonuna bağlı olmalı.
+
+Örnek mantık:
+
+handlePickFromGallery
+
+"Vazgeç" sadece bottom sheet'i kapatmalı.
+
+Dummy handler kullanma.
+
+Şu tarz boş kod bırakma:
+
+onPress={() => {}}
+
+veya:
+
+const handleTakePhoto = () => {
+  console.log("camera")
+}
+
+veya:
+
+TODO
+
+veya:
+
+mock implementation
+
+yasaktır.
+
+==================================================
+4. BOTTOM SHEET VE NATIVE PICKER ÇAKIŞMASINI DÜZELT
+==================================================
+
+Önemli:
+
+Native kamera veya galeri picker'ı açılmadan önce mevcut bottom sheet / modal güvenli şekilde kapatılmalı.
+
+Şu akışı uygula:
+
+1. Kullanıcı seçeneğe basar.
+2. Bottom sheet kapanır.
+3. Bottom sheet dismiss işlemi tamamlanır.
+4. Native picker çağrılır.
+
+Gerekirse:
+
+- onDismiss
+- requestAnimationFrame
+- InteractionManager.runAfterInteractions
+- kısa UI transition synchronization
+
+gibi projeye uygun güvenli yöntemlerden birini kullan.
+
+Ancak gereksiz random timeout hack'i kullanma.
+
+Bottom sheet açıkken native picker çağırarak iOS'ta presentation conflict oluşturma.
+
+==================================================
+5. KAMERADAN ÇEK AKIŞI
+==================================================
+
+Kullanıcı "Kameradan Çek" butonuna bastığında şu akış eksiksiz çalışmalı:
+
+1. Bottom sheet kapanır.
+2. Kamera permission durumu kontrol edilir.
+3. Permission daha önce verilmemişse sistem permission dialog açılır.
+4. Kullanıcı izin verirse gerçek cihaz kamerası açılır.
+5. Kullanıcı fotoğraf çeker.
+6. Kullanıcı fotoğrafı onaylarsa sonuç alınır.
+7. Fotoğraf ilan fotoğrafları state'ine eklenir.
+8. UI anında güncellenir.
+9. Sayaç güncellenir.
+10. Kaydet butonuna basıldığında fotoğraf backend/storage sistemine yüklenir.
+11. İlan kaydı yeni fotoğraf URL'siyle güncellenir.
+
+Expo ImagePicker kullanılıyorsa güncel API mantığına uygun şekilde:
+
+requestCameraPermissionsAsync
+
+ve:
+
+launchCameraAsync
+
+kullan.
+
+Result kontrolünde güncel API response yapısını kullan.
+
+Örneğin:
+
+result.canceled
+
+kontrol et.
+
+Başarılı sonuçta:
+
+result.assets
+
+içerisindeki asset'leri işle.
+
+Eski ve deprecated:
+
+result.cancelled
+
+mantığını körü körüne kullanma.
+
+Projede kullanılan Expo SDK/API sürümüne göre doğru field'ı doğrula.
+
+==================================================
+6. GALERİDEN SEÇ AKIŞI
+==================================================
+
+Kullanıcı "Galeriden Seç" dediğinde:
+
+1. Bottom sheet kapanır.
+2. Gerekli media library permission kontrol edilir.
+3. İzin gerekiyorsa native sistem izin ekranı açılır.
+4. Galeri / photo library açılır.
+5. Kullanıcı fotoğraf seçer.
+6. Seçilen fotoğraf sonucu alınır.
+7. Fotoğraf ilan fotoğraf listesine eklenir.
+8. UI anında güncellenir.
+9. Sayaç güncellenir.
+10. Kaydet işleminde upload edilir.
+
+Expo kullanılıyorsa:
+
+requestMediaLibraryPermissionsAsync
+
+ve:
+
+launchImageLibraryAsync
+
+kullan.
+
+Sadece fotoğraf seçilebilsin.
+
+Video seçimi kapalı olsun.
+
+Media type sadece image olacak şekilde ayarla.
+
+==================================================
+7. MULTIPLE PHOTO SİSTEMİ GERÇEKTEN ÇALIŞSIN
+==================================================
+
+İlan başına maksimum 10 fotoğraf destekleniyor.
+
+Mevcut UI:
+
+1/10
+
+şeklinde sayaç gösteriyor.
+
+Bu gerçek state verisine bağlı olmalı.
+
+Örneğin:
+
+photos.length / 10
+
+mantığında hesaplanmalı.
+
+Hardcoded "1/10" bırakma.
+
+Kullanıcı galeriden fotoğraf eklediğinde:
+
+1/10
+→
+2/10
+
+sonra:
+
+3/10
+
+şeklinde gerçek zamanlı güncellenmeli.
+
+Kullanıcı maksimum 10 fotoğrafa ulaşırsa:
+
+Fotoğraf Ekle alanını disable et veya gizle.
+
+Kullanıcı yeni fotoğraf eklemeye çalışırsa uygun Türkçe uyarı göster:
+
+"En fazla 10 fotoğraf ekleyebilirsiniz."
+
+10 fotoğraf limitini hem UI hem handler seviyesinde kontrol et.
+
+Sadece UI kontrolüne güvenme.
+
+==================================================
+8. GALERİDEN ÇOKLU FOTOĞRAF SEÇİMİNİ DESTEKLE
+==================================================
+
+Platform ve mevcut picker API destekliyorsa galeriden multiple selection aktif olsun.
+
+Kullanıcı aynı anda birden fazla fotoğraf seçebilsin.
+
+Ancak:
+
+mevcut fotoğraf sayısı + yeni seçilen fotoğraf sayısı
+
+10'u geçemez.
+
+Örnek:
+
+Mevcut 8 fotoğraf varsa ve kullanıcı 5 fotoğraf seçerse yalnızca izin verilen maksimum sınırı doğru yönet.
+
+Tercihen kullanıcıya:
+
+"En fazla 2 fotoğraf daha ekleyebilirsiniz."
+
+uyarısı göster.
+
+Veri state'ini 10'dan fazla fotoğrafla doldurma.
+
+==================================================
+9. FOTOĞRAF STATE YÖNETİMİNİ DÜZELT
+==================================================
+
+Mevcut ve yeni eklenen fotoğrafları doğru şekilde yönet.
+
+Sadece string URI array kullanmak mevcut backend yapısı için yetersizse typed photo model oluştur.
+
+Örneğin proje mimarisine uygun bir yapı:
+
+type ListingPhoto = {
+  id?: string;
+  uri: string;
+  remoteUrl?: string;
+  isLocal: boolean;
+  isCover?: boolean;
+  sortOrder: number;
+};
+
+Ancak mevcut type sistemini gereksiz yere kırma.
+
+Mevcut veri modelini incele.
+
+Fotoğrafları şu şekilde ayırt edebil:
+
+- Backend'den gelen mevcut remote fotoğraf
+- Yeni seçilen local fotoğraf
+- Silinmek için işaretlenen mevcut fotoğraf
+
+Edit ekranında mevcut remote fotoğrafları yeniden upload etme.
+
+Sadece yeni local fotoğrafları upload et.
+
+==================================================
+10. KAPAK FOTOĞRAFI MANTIĞI
+==================================================
+
+Mevcut UI'da ilk fotoğraf üzerinde:
+
+KAPAK
+
+etiketi bulunuyor.
+
+Bu mantığı gerçek veri sırasına bağla.
+
+Fotoğraf listesindeki index 0:
+
+kapak fotoğrafı olacak.
+
+İlk fotoğraf:
+
+isCover = true
+
+diğer fotoğraflar:
+
+isCover = false
+
+mantığında backend model destekliyorsa güncellensin.
+
+Backend ayrı cover field kullanıyorsa mevcut veri şemasına göre doğru alanı güncelle.
+
+Hardcoded ilk görsele "KAPAK" etiketi koyup backend'de farklı fotoğrafı kapak bırakma.
+
+UI ve database aynı source of truth kullanmalı.
+
+==================================================
+11. FOTOĞRAF SİLME
+==================================================
+
+Fotoğraf üzerindeki X butonu gerçek şekilde çalışmalı.
+
+X butonuna basıldığında:
+
+- doğru fotoğraf kaldırılmalı
+- yanlış index silinmemeli
+- photos state güncellenmeli
+- sayaç güncellenmeli
+- UI re-render edilmeli
+
+Kapak fotoğrafı silinirse:
+
+kalan fotoğraf listesinin ilk fotoğrafı otomatik kapak olmalı.
+
+Örnek:
+
+Fotoğraflar:
+
+A [KAPAK]
+B
+C
+
+A silinirse:
+
+B [KAPAK]
+C
+
+olmalı.
+
+Mevcut remote fotoğraf siliniyorsa database/storage cleanup mantığını kontrol et.
+
+Storage'dan hemen silmek mevcut save/cancel davranışını bozuyorsa önce pendingDelete listesine ekle.
+
+Kullanıcı Kaydet dediğinde gerçek silme işlemini tamamla.
+
+Kullanıcı düzenleme ekranını kaydetmeden kapatırsa mevcut ilan fotoğraflarını yanlışlıkla storage'dan silme.
+
+==================================================
+12. FOTOĞRAF SIRALAMA / LONG PRESS
+==================================================
+
+Ekranda şu açıklama var:
+
+"İlk fotoğraf kapak olarak gösterilir. Uzun basarak sırayı değiştirebilirsiniz."
+
+Bu özellik sadece yazı olarak kalmamalı.
+
+Gerçekten çalışmalı.
+
+Mevcut projede sortable / draggable list altyapısı varsa bunu kullan.
+
+Fotoğraf kartına uzun basıldığında kullanıcı fotoğraf sırasını değiştirebilsin.
+
+Drag tamamlandığında:
+
+photos array sırası güncellensin.
+
+sortOrder alanları yeniden hesaplansın.
+
+Yeni index 0 fotoğraf:
+
+kapak fotoğrafı olsun.
+
+Eğer mevcut drag sistemi bozuksa root cause'u düzelt.
+
+Sırf görünüm için fake drag animasyonu yapma.
+
+==================================================
+13. PHOTO GRID UI'Yİ KORU
+==================================================
+
+Referans ekrandaki tasarımı değiştirme.
+
+Şu düzen korunmalı:
+
+- Beyaz Photos card
+- Mor Fotoğraflar başlığı
+- Sağ üstte gerçek sayaç
+- Açıklama
+- Mevcut fotoğraf kartları
+- İlk fotoğrafta KAPAK badge
+- Sağ üst X remove button
+- Kesikli mor border'lı Fotoğraf Ekle alanı
+- Ortada + ikonu
+- Fotoğraf Ekle metni
+
+Bottom sheet tasarımını da bozma.
+
+Şu seçenekler aynen kalmalı:
+
+Fotoğraf Ekle
+
+Kameradan Çek
+
+Galeriden Seç
+
+Vazgeç
+
+Mevcut font, radius, spacing ve CanYoldaşı mor/lila tasarım sistemini koru.
+
+Bu task UI redesign değildir.
+
+Bu task mevcut UI'ın işlevini production seviyesinde düzeltme task'ıdır.
+
+==================================================
+14. PERMISSION HANDLING
+==================================================
+
+Permission işlemlerini production seviyesinde ele al.
+
+CAMERA:
+
+İzin verilirse kamera aç.
+
+İzin reddedilirse Türkçe uyarı göster:
+
+"Fotoğraf çekebilmek için kamera izni vermeniz gerekiyor."
+
+MEDIA LIBRARY / PHOTO LIBRARY:
+
+İzin reddedilirse Türkçe uyarı göster:
+
+"Galeriden fotoğraf seçebilmek için fotoğraf erişim izni vermeniz gerekiyor."
+
+Permission permanently denied / canAskAgain false durumunu destekle.
+
+Bu durumda kullanıcıya:
+
+"İzin Ayarları"
+
+ve:
+
+"Vazgeç"
+
+seçenekli uyarı göster.
+
+"İzin Ayarları" seçilirse cihaz uygulama ayarlarını aç.
+
+React Native Linking.openSettings veya mevcut projeye uygun API kullan.
+
+==================================================
+15. IOS CONFIG AUDIT
+==================================================
+
+iOS native permission yapılandırmasını kontrol et.
+
+Projeye göre Info.plist veya Expo app config plugin alanlarını kontrol et.
+
+Gerekli açıklamalar eksikse Türkçe permission description kullan.
+
+Kamera için anlamlı açıklama:
+
+"CanYoldaşı, ilanınıza fotoğraf ekleyebilmeniz için kamera erişimini kullanır."
+
+Fotoğraf galerisi için:
+
+"CanYoldaşı, ilanınıza fotoğraf ekleyebilmeniz için fotoğraflarınıza erişir."
+
+Gerekli yapılandırmayı Expo managed workflow kurallarına uygun şekilde yap.
+
+Managed Expo projesinde yanlış yere manuel native config yazma.
+
+app.json / app.config üzerinden yapılması gerekiyorsa doğru yöntem kullan.
+
+==================================================
+16. ANDROID CONFIG AUDIT
+==================================================
+
+Android permission sistemini kontrol et.
+
+Android API seviyelerine göre doğru permission mantığını kullan.
+
+Gerekirse:
+
+CAMERA
+
+Android 13+ media/photo permission davranışı
+
+legacy Android sürümleri
+
+için mevcut Expo / React Native library'nin önerilen permission sistemini uygula.
+
+Körü körüne tüm eski permissions'ları manifest'e ekleme.
+
+Target SDK ve kullanılan library davranışını kontrol et.
+
+Android 13+
+
+Android 14+
+
+ve eski desteklenen Android sürümlerinde regression oluşturma.
+
+==================================================
+17. WEB DAVRANIŞI
+==================================================
+
+Uygulamanın web simulate desteği bulunduğu için web'i de kontrol et.
+
+Web'de "Galeriden Seç":
+
+browser file picker açmalı.
+
+Fotoğraf seçilebilmeli.
+
+Seçilen fotoğraf preview'da görünmeli.
+
+Web kamera akışı mevcut browser ve library tarafından destekleniyorsa kullan.
+
+Desteklenmeyen ortamda "Kameradan Çek" butonuna basıldığında hiçbir şey olmaması kabul edilemez.
+
+Desteklenmeyen durumda uygun fallback uygula.
+
+Örneğin:
+
+web file picker
+
+veya kullanıcıya açık Türkçe hata mesajı.
+
+Silent failure olmasın.
+
+==================================================
+18. IMAGE VALIDATION
+==================================================
+
+Seçilen dosyanın gerçekten image olduğunu kontrol et.
+
+Desteklenen formatlar mevcut storage/image pipeline ile uyumlu olsun.
+
+En azından proje destekliyorsa:
+
+JPEG
+JPG
+PNG
+HEIC/HEIF
+
+davranışlarını kontrol et.
+
+Backend/storage HEIC desteklemiyorsa hata vermek yerine mevcut image processing sistemine göre normalize/convert mantığını incele.
+
+Gereksiz conversion library ekleme.
+
+Önce mevcut upload pipeline'ını kontrol et.
+
+Bozuk dosya veya geçersiz mime type durumunda Türkçe hata göster:
+
+"Seçilen fotoğraf kullanılamıyor. Lütfen başka bir fotoğraf seçin."
+
+==================================================
+19. UPLOAD VE SAVE FLOW
+==================================================
+
+En kritik bölüm:
+
+Fotoğraf UI'da görünmesine rağmen Kaydet sonrası kaybolmamalı.
+
+Kaydet butonuna basıldığında:
+
+1. Form validation çalışır.
+2. Yeni local fotoğraflar belirlenir.
+3. Yeni fotoğraflar storage'a upload edilir.
+4. Upload URL/path sonuçları alınır.
+5. Mevcut remote fotoğraflarla birleştirilir.
+6. Silinen fotoğraflar sonuç listesinden çıkarılır.
+7. Fotoğraf sırası korunur.
+8. Kapak fotoğrafı doğru belirlenir.
+9. Listing database row / related photo table güncellenir.
+10. UI success state'e geçer.
+11. Cache invalidate / refetch edilir.
+12. İlan detay ekranı güncel fotoğrafları gösterir.
+13. İlanlarım kartı yeni kapak fotoğrafını gösterir.
+14. Düzenleme ekranına tekrar girildiğinde fotoğraflar doğru sırada gelir.
+
+Upload tamamlanmadan ilan update mutation'ı çalıştırıp local file URI'lerini database'e yazma.
+
+Database'e:
+
+file://
+blob:
+content://
+
+gibi local temporary URI kaydetme.
+
+Database/storage sisteminde sadece kalıcı URL veya mevcut proje modeline uygun storage path sakla.
+
+==================================================
+20. SUPABASE STORAGE KULLANILIYORSA
+==================================================
+
+Projede Supabase Storage kullanılıyorsa mevcut bucket yapısını tespit et.
+
+Yeni rastgele bucket oluşturma.
+
+Mevcut listing/adoption/listing-images bucket veya storage helper yapısını kullan.
+
+Upload path collision oluşturma.
+
+Unique path kullan.
+
+Örnek mantık:
+
+userId/listingId/uuid.extension
+
+Ancak mevcut proje storage convention'ına uy.
+
+Authentication user id doğrulamasını kullan.
+
+Storage policy / RLS problemi varsa tespit et.
+
+Upload sırasında 401 / 403 varsa UI handler'ı bypass etmek yerine gerçek auth/storage policy problemini raporla ve proje kapsamında güvenli şekilde düzelt.
+
+Public bucket veya signed URL kullanım kararını mevcut mimariye göre koru.
+
+Güvenliği düşürmek için tüm storage policy'leri public write yapma.
+
+==================================================
+21. LOADING STATE VE DOUBLE TAP
+==================================================
+
+Kullanıcı kamera / galeri açılırken butona art arda basarsa iki picker açılmamalı.
+
+Picker işlem state'i oluştur.
+
+Örneğin:
+
+isPickingImage
+
+Picker açıkken ilgili butonları geçici disable et.
+
+İşlem tamamlandığında veya kullanıcı iptal ettiğinde state resetlenmeli.
+
+Try/catch/finally kullan.
+
+Aynı fotoğrafın double callback sonucu iki kere eklenmesini önle.
+
+==================================================
+22. ERROR HANDLING
+==================================================
+
+Bütün native picker çağrılarını try/catch ile koru.
+
+Error durumunda sadece console.error ile bırakma.
+
+Kullanıcıya Türkçe anlaşılır hata göster:
+
+"Fotoğraf seçilirken bir sorun oluştu. Lütfen tekrar deneyin."
+
+Development log'larında error context gösterilebilir.
+
+Ancak kullanıcıya raw:
+
+TypeError
+undefined
+permission denied error code
+stack trace
+
+gösterme.
+
+Unhandled promise rejection bırakma.
+
+Application crash oluşturma.
+
+==================================================
+23. CANCEL DAVRANIŞI
+==================================================
+
+Kullanıcı:
+
+- kamerayı açıp geri dönerse
+- galeriyi açıp iptal ederse
+- permission dialog'u kapatırsa
+
+uygulama crash olmamalı.
+
+Mevcut fotoğraf state'i değişmemeli.
+
+Boş asset eklenmemeli.
+
+undefined URI eklenmemeli.
+
+Sayaç değişmemeli.
+
+Picker loading state resetlenmeli.
+
+==================================================
+24. EDIT SCREEN FORM STATE REGRESSION AUDIT
+==================================================
+
+Fotoğraf sistemi düzeltildikten sonra İlan Düzenle formunun diğer alanlarını bozma.
+
+Şunları regression test et:
+
+- Hayvanın adı
+- Tür
+- Cins
+- Yaş
+- Cinsiyet
+- Konum
+- Açıklama
+- Sağlık bilgileri
+- Uyum bilgileri
+- İletişim bilgileri
+- diğer mevcut form alanları
+
+Fotoğraf eklendiğinde formdaki diğer bilgiler sıfırlanmamalı.
+
+Native picker'dan geri dönünce edit screen yeniden mount olup draft state kaybetmemeli.
+
+Özellikle iOS'ta app state / activity lifecycle sonrası form reset problemini kontrol et.
+
+==================================================
+25. CACHE VE UI SYNCHRONIZATION
+==================================================
+
+Kaydet işleminden sonra aşağıdaki tüm ekranlarda aynı fotoğraf verisi görünmeli:
+
+- İlanlarım
+- İlan kartı
+- İlan detay
+- İlan önizleme
+- İlan düzenle
+- Sahiplendirme ilan listesi
+- varsa kullanıcı ilanları
+
+Aynı ilan için farklı ekranlarda farklı kapak fotoğrafı gösterilmemeli.
+
+Query cache kullanılıyorsa ilgili query key'leri invalidate et.
+
+Örneğin proje yapısına göre:
+
+listing detail
+my listings
+adoption listings
+user listings
+
+query/cache alanlarını kontrol et.
+
+Sadece edit screen local state'ini düzeltip diğer ekranları stale bırakma.
+
+==================================================
+26. IOS / ANDROID / WEB GERÇEK TEST MATRİSİ
+==================================================
+
+Düzeltme sonrası şu testleri sırayla yap:
+
+TEST 1 — iOS Gallery
+İlan Düzenle
+→ Fotoğraf Ekle
+→ Galeriden Seç
+→ fotoğraf seç
+→ grid'de görünür
+→ sayaç artar
+→ Kaydet
+→ ilan detayında görünür
+
+TEST 2 — iOS Camera
+Fotoğraf Ekle
+→ Kameradan Çek
+→ fotoğraf çek
+→ onayla
+→ grid'de görünür
+→ Kaydet
+→ kalıcı olur
+
+TEST 3 — Android Gallery
+Aynı akış Android simulate/device üzerinde çalışır.
+
+TEST 4 — Android Camera
+Kamera permission ve capture akışı çalışır.
+
+TEST 5 — Web Gallery
+Galeriden Seç
+→ browser file picker açılır
+→ image preview görünür.
+
+TEST 6 — Permission Denied
+Permission reddedilir
+→ kullanıcıya düzgün Türkçe mesaj görünür
+→ crash olmaz.
+
+TEST 7 — Cancel
+Picker açılır
+→ kullanıcı geri çıkar
+→ crash olmaz
+→ state değişmez.
+
+TEST 8 — Multiple Photos
+Arka arkaya 3 fotoğraf ekle
+→ 4/10 gibi gerçek sayaç görünür
+→ tüm fotoğraflar grid'de görünür.
+
+TEST 9 — Remove
+Ortadaki fotoğrafı sil
+→ doğru fotoğraf silinir
+→ sıra korunur.
+
+TEST 10 — Cover
+İlk fotoğrafı sil
+→ yeni ilk fotoğraf KAPAK olur.
+
+TEST 11 — Reorder
+Uzun bas
+→ fotoğrafı ilk sıraya taşı
+→ KAPAK etiketi yeni ilk fotoğrafa geçer
+→ Kaydet
+→ ilan kartında yeni kapak görünür.
+
+TEST 12 — Persistence
+Fotoğraf ekle
+→ Kaydet
+→ edit ekranını kapat
+→ tekrar aç
+→ fotoğraf hâlâ görünür.
+
+TEST 13 — App Restart
+Fotoğraf ekle ve kaydet
+→ uygulamayı yeniden başlat
+→ fotoğraf hâlâ database/storage üzerinden görünür.
+
+==================================================
+27. KOD KALİTESİ
+==================================================
+
+Mevcut proje architecture pattern'ına uy.
+
+Aynı image picker logic'i farklı ekranlara copy paste etme.
+
+Projede reusable image picker hook/service ihtiyacı varsa oluştur.
+
+Örnek:
+
+useImagePicker
+
+veya:
+
+imagePickerService
+
+Ancak gereksiz abstraction yapma.
+
+TypeScript any kullanımını minimumda tut.
+
+Fotoğraf asset type'larını doğru tanımla.
+
+Unused import bırakma.
+
+Dead code bırakma.
+
+Deprecated picker API bırakma.
+
+Console spam bırakma.
+
+Fake data bırakma.
+
+Mock bırakma.
+
+TODO bırakma.
+
+==================================================
+28. ÇOK ÖNEMLİ — TASARIMI DEĞİŞTİRME
+==================================================
+
+Referans ekrandaki mevcut tasarım korunacak.
+
+İlan Düzenle ekranını yeniden tasarlama.
+
+Fotoğraf Ekle bottom sheet tasarımını değiştirme.
+
+Renkleri değiştirme.
+
+Mor tema değiştirilmesin.
+
+Buton isimlerini değiştirme.
+
+"Kameradan Çek"
+
+"Galeriden Seç"
+
+"Vazgeç"
+
+metinlerini koru.
+
+Sadece gerekli loading/permission/error feedback UI'larını mevcut tasarım sistemine uygun şekilde ekle.
+
+==================================================
+29. ÇOK ÖNEMLİ — SADECE TEK EKRANA PATCH ATMA
+==================================================
+
+Sorunu sadece görünen component'te:
+
+onPress={() => pickImage()}
+
+ekleyerek kapatma.
+
+Fotoğrafın:
+
+seçilmesi
+→ preview
+→ local state
+→ upload
+→ storage
+→ database
+→ cache
+→ detail screen
+→ edit screen persistence
+
+zincirinin tamamını audit et.
+
+Production data flow doğru değilse tamamını düzelt.
+
+==================================================
+30. SONUÇ RAPORU
+==================================================
+
+İşlem tamamlandığında bana kısa ama teknik bir rapor ver.
+
+Şu formatta:
+
+ROOT CAUSE:
+- Asıl sorun neydi?
+
+FILES CHANGED:
+- Değiştirilen dosyalar
+
+CAMERA FIX:
+- Kamera akışında ne düzeltildi?
+
+GALLERY FIX:
+- Galeri akışında ne düzeltildi?
+
+PERMISSIONS:
+- iOS ve Android izinlerinde ne yapıldı?
+
+PHOTO STATE:
+- Multiple image / cover / delete / reorder state nasıl düzeltildi?
+
+UPLOAD:
+- Storage ve database persistence nasıl düzeltildi?
+
+CACHE:
+- İlan ekranlarının senkronizasyonu nasıl düzeltildi?
+
+PLATFORM TESTS:
+- iOS:
+- Android:
+- Web:
+
+REGRESSION CHECK:
+- İlan Düzenle formunun diğer alanlarının bozulmadığını doğrula.
+
+REMAINING ISSUES:
+- Varsa gerçek kalan sorunları dürüstçe belirt.
+
+Production doğrulaması yapmadan "fixed" veya "done" deme.
+
+Amaç:
+
+İlan Düzenle → Fotoğraf Ekle ekranındaki "Kameradan Çek" ve "Galeriden Seç" seçeneklerinin iOS, Android ve Web üzerinde gerçek şekilde çalışması; seçilen fotoğrafların UI'da anında görünmesi ve Kaydet işleminden sonra backend/storage üzerinde kalıcı olarak saklanmasıdır.
+
+ŞİMDİ ÖNCE ROOT CAUSE AUDIT YAP, SONRA KODU DÜZELT, SONRA TÜM TEST MATRİSİNİ ÇALIŞTIR.

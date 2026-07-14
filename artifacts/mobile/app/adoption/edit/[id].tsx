@@ -10,6 +10,7 @@ import {
   Alert,
   Dimensions,
   FlatList,
+  InteractionManager,
   KeyboardAvoidingView,
   Modal,
   Platform,
@@ -254,19 +255,46 @@ const AS = StyleSheet.create({
 function AddPhotoSheet({ visible, onCamera, onGallery, onClose }: {
   visible: boolean; onCamera: () => void; onGallery: () => void; onClose: () => void;
 }) {
-  const T      = useTheme();
-  const insets = useSafeAreaInsets();
+  const T          = useTheme();
+  const insets     = useSafeAreaInsets();
+  const pendingRef = useRef<null | (() => void)>(null);
+
+  /* Android / Web: visible true→false triggers runAfterInteractions */
+  const prevVisibleRef = useRef(visible);
+  useEffect(() => {
+    if (prevVisibleRef.current && !visible && pendingRef.current) {
+      const action = pendingRef.current;
+      pendingRef.current = null;
+      InteractionManager.runAfterInteractions(() => action());
+    }
+    prevVisibleRef.current = visible;
+  }, [visible]);
+
+  /* iOS: onDismiss fires after the native slide-out animation is fully done */
+  const handleDismiss = () => {
+    if (pendingRef.current) {
+      const action = pendingRef.current;
+      pendingRef.current = null;
+      action();
+    }
+  };
+
+  const scheduleAction = (action: () => void) => {
+    pendingRef.current = action;
+    onClose(); /* starts closing → triggers onDismiss (iOS) or useEffect (Android/Web) */
+  };
+
   return (
-    <Modal visible={visible} transparent animationType="slide" onRequestClose={onClose}>
+    <Modal visible={visible} transparent animationType="slide" onRequestClose={onClose} onDismiss={handleDismiss}>
       <Pressable style={AS.overlay} onPress={onClose} />
       <View style={[AS.sheet, { paddingBottom: insets.bottom + 8, backgroundColor: T.card }]}>
         <View style={[AS.handle, { backgroundColor: T.divider }]} />
         <Text style={{ fontSize: 16, fontFamily: "Inter_700Bold", color: C.label, paddingVertical: 10, textAlign: "center" }}>Fotoğraf Ekle</Text>
-        <Pressable style={({ pressed }) => [AS.row, { opacity: pressed ? 0.7 : 1 }]} onPress={onCamera}>
+        <Pressable style={({ pressed }) => [AS.row, { opacity: pressed ? 0.7 : 1 }]} onPress={() => scheduleAction(onCamera)}>
           <View style={AS.iconWrap}><Icon name="camera-outline" size={20} color={C.purpleDark} /></View>
           <Text style={AS.rowTxt}>Kameradan Çek</Text>
         </Pressable>
-        <Pressable style={({ pressed }) => [AS.row, { opacity: pressed ? 0.7 : 1 }]} onPress={onGallery}>
+        <Pressable style={({ pressed }) => [AS.row, { opacity: pressed ? 0.7 : 1 }]} onPress={() => scheduleAction(onGallery)}>
           <View style={AS.iconWrap}><Icon name="images-outline" size={20} color={C.purpleDark} /></View>
           <Text style={AS.rowTxt}>Galeriden Seç</Text>
         </Pressable>
@@ -352,9 +380,12 @@ export default function EditAdoptionScreen() {
 
   /* ── Photo actions ── */
   const openCamera = async () => {
-    setShowAddSheet(false);
+    if (images.length >= MAX_PHOTOS) {
+      Alert.alert("Limit Aşıldı", `En fazla ${MAX_PHOTOS} fotoğraf ekleyebilirsiniz.`);
+      return;
+    }
     const perm = await ImagePicker.requestCameraPermissionsAsync();
-    if (!perm.granted) { Alert.alert("Kamera izni gerekli"); return; }
+    if (!perm.granted) { Alert.alert("Kamera İzni Gerekli", "Ayarlar'dan kamera iznini etkinleştirin."); return; }
     const result = await ImagePicker.launchCameraAsync({ allowsEditing: true, aspect: [4, 3], quality: 0.8 });
     if (!result.canceled && result.assets[0]) {
       setImages((prev) => [...prev, result.assets[0].uri].slice(0, MAX_PHOTOS));
@@ -363,11 +394,18 @@ export default function EditAdoptionScreen() {
   };
 
   const openGallery = async () => {
-    setShowAddSheet(false);
+    if (images.length >= MAX_PHOTOS) {
+      Alert.alert("Limit Aşıldı", `En fazla ${MAX_PHOTOS} fotoğraf ekleyebilirsiniz.`);
+      return;
+    }
+    const remaining = MAX_PHOTOS - images.length;
     const result = await ImagePicker.launchImageLibraryAsync({
-      mediaTypes: ["images"], allowsMultipleSelection: true,
-      selectionLimit: MAX_PHOTOS - images.length,
-      allowsEditing: images.length === 0, aspect: [4, 3], quality: 0.8,
+      mediaTypes: ["images"],
+      allowsMultipleSelection: true,
+      selectionLimit: remaining,
+      allowsEditing: images.length === 0,
+      aspect: [4, 3],
+      quality: 0.8,
     });
     if (!result.canceled && result.assets.length > 0) {
       const uris = result.assets.map((a) => a.uri);
