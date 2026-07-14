@@ -62,7 +62,8 @@ const CARD_SHADOW = Platform.select({
 
 const DOG_IMG = require("../../assets/hero-puppy.png");
 
-type Tab        = "evcilim" | "create" | "mylistings" | "listings";
+type MainTab    = "evcilim" | "adoption";
+type Tab        = "create" | "mylistings" | "listings";
 type Filter     = "all" | "cat" | "dog" | "bird" | "rabbit" | "new" | "other";
 type MyFilter   = "all" | "active" | "passive" | "pending" | "adopted";
 type ListStatus = "Aktif" | "Onay Bekliyor" | "Pasif" | "Sahiplendirildi" | "Süresi Doldu";
@@ -100,11 +101,16 @@ const ADOPTION_NOTIF_TYPES = [
   "adoption_listing_reminder",
 ];
 
-function PetHeader({ topPad, activeTab }: { topPad: number; activeTab: Tab }) {
+function PetHeader({ topPad, mainTab, onChange }: { topPad: number; mainTab: MainTab; onChange: (t: MainTab) => void }) {
   const T = useTheme();
   const router = useRouter();
   const { user } = useAuth();
   const [unreadCount, setUnreadCount] = React.useState(0);
+
+  const TABS: { key: MainTab; label: string }[] = [
+    { key: "adoption", label: "Sahiplendirme" },
+    { key: "evcilim",  label: "Evcilim"      },
+  ];
 
   React.useEffect(() => {
     if (!user) return;
@@ -118,31 +124,47 @@ function PetHeader({ topPad, activeTab }: { topPad: number; activeTab: Tab }) {
   }, [user]);
 
   const badgeLabel = unreadCount <= 0 ? null : unreadCount > 9 ? "9+" : String(unreadCount);
-  const title = activeTab === "evcilim" ? "Evcilim" : "Sahiplendirme";
 
   return (
     <View style={[hdr.wrap, { paddingTop: topPad + 6, backgroundColor: T.bg }]}>
-      <Text style={[hdr.title, { color: DARK }]}>{title}</Text>
-      <Pressable
-        style={hdr.bellBtn}
-        onPress={() => { Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light); router.push("/adoption-notifications" as any); }}
-        hitSlop={10}
-      >
-        <Icon name="notifications-outline" size={22} color={badgeLabel ? P : BODY} />
-        {badgeLabel ? (
-          <View style={hdr.bellBadge}>
-            <Text style={hdr.bellBadgeTxt}>{badgeLabel}</Text>
-          </View>
-        ) : null}
-      </Pressable>
+      <View style={hdr.tabRow}>
+        {TABS.map((t) => {
+          const isActive = mainTab === t.key;
+          return (
+            <Pressable key={t.key} style={hdr.tabItem} onPress={() => onChange(t.key)}>
+              <Text style={[hdr.tabTxt, isActive ? { color: DARK, fontFamily: "Inter_700Bold" } : { color: BODY, fontFamily: "Inter_500Medium" }]}>
+                {t.label}
+              </Text>
+              {isActive && <View style={hdr.underline} />}
+            </Pressable>
+          );
+        })}
+      </View>
+      {mainTab === "adoption" && (
+        <Pressable
+          style={hdr.bellBtn}
+          onPress={() => { Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light); router.push("/adoption-notifications" as any); }}
+          hitSlop={10}
+        >
+          <Icon name="notifications-outline" size={22} color={badgeLabel ? P : BODY} />
+          {badgeLabel ? (
+            <View style={hdr.bellBadge}>
+              <Text style={hdr.bellBadgeTxt}>{badgeLabel}</Text>
+            </View>
+          ) : null}
+        </Pressable>
+      )}
     </View>
   );
 }
 const hdr = StyleSheet.create({
-  wrap:         { flexDirection: "row", alignItems: "center", justifyContent: "space-between", paddingHorizontal: 20, paddingBottom: 14, backgroundColor: WHITE },
-  title:        { fontSize: 22, fontFamily: "Inter_700Bold", letterSpacing: -0.4 },
-  bellBtn:      { position: "relative" },
-  bellBadge:    { position: "absolute", top: -3, right: -5, minWidth: 16, height: 16, borderRadius: 8, backgroundColor: "#FF3B30", borderWidth: 1.5, borderColor: WHITE, alignItems: "center", justifyContent: "center", paddingHorizontal: 3 },
+  wrap:         { flexDirection: "row", alignItems: "flex-end", justifyContent: "space-between", paddingHorizontal: 20, paddingBottom: 0, backgroundColor: WHITE },
+  tabRow:       { flexDirection: "row", alignItems: "flex-end", gap: 24 },
+  tabItem:      { alignItems: "center", paddingBottom: 12 },
+  tabTxt:       { fontSize: 17, letterSpacing: -0.3 },
+  underline:    { position: "absolute", bottom: 0, left: 0, right: 0, height: 3, backgroundColor: P, borderRadius: 2 },
+  bellBtn:      { paddingBottom: 12, position: "relative" },
+  bellBadge:    { position: "absolute", top: 0, right: -4, minWidth: 16, height: 16, borderRadius: 8, backgroundColor: "#FF3B30", borderWidth: 1.5, borderColor: WHITE, alignItems: "center", justifyContent: "center", paddingHorizontal: 3 },
   bellBadgeTxt: { fontSize: 9, fontFamily: "Inter_700Bold", color: WHITE, lineHeight: 11 },
 });
 
@@ -154,9 +176,8 @@ const ots = StyleSheet.create({
   divider: { height: 1, backgroundColor: BORDER, marginBottom: 0 },
 });
 
-// ── Tab switcher (4-segment) ──────────────────────────────────────────────────
+// ── Tab switcher (3-segment) ──────────────────────────────────────────────────
 const TAB_DEFS: { key: Tab; label: string; icon: string }[] = [
-  { key: "evcilim",    label: "Evcilim",      icon: "paw-outline"        },
   { key: "create",     label: "İlan Oluştur", icon: "add-circle-outline" },
   { key: "mylistings", label: "İlanlarım",    icon: "list-outline"       },
   { key: "listings",   label: "Tüm İlanlar",  icon: "heart-outline"      },
