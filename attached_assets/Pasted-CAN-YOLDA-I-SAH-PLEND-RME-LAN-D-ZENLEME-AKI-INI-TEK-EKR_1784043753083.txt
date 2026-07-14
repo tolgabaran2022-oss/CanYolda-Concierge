@@ -1,0 +1,831 @@
+CAN YOLDAŞI — SAHİPLENDİRME İLAN DÜZENLEME AKIŞINI TEK EKRANDA BİRLEŞTİR
+
+Bu görevde yeni bir tasarım üretme.
+
+Mevcut çalışan Sahiplendirme sistemini ve mevcut premium mor/lila UI tasarımını koru.
+
+Amaç:
+Sahiplendirme ilanı için uygulamada bulunan iki farklı "ilan düzenleme" akışını kaldır ve tüm uygulamada yalnızca TEK bir ortak ilan düzenleme ekranı kullan.
+
+ÖNEMLİ:
+Bu bir görsel redesign görevi değildir.
+Mevcut tasarımı bozma.
+Mevcut Sahiplendirme ilan düzenleme ekranını referans al.
+Sadece duplicate/farklı edit akışlarını tek source of truth altında birleştir.
+
+==================================================
+1. MEVCUT SORUN
+==================================================
+
+Şu anda aynı Sahiplendirme ilanı iki farklı noktadan düzenlenebiliyor:
+
+AKIŞ A:
+
+Sahiplendirme
+→ İlanlarım
+→ İlan kartı
+→ "Düzenle"
+→ İlanı Düzenle ekranı
+
+AKIŞ B:
+
+Sahiplendirme
+→ İlanlarım
+→ İlan kartı
+→ "Önizle"
+→ Önizleme Modu / ilan detay ekranı
+→ "İlanı Düzenle"
+→ Farklı bir düzenleme sayfası veya farklı edit flow
+
+Bu yanlış.
+
+Aynı ilan için iki ayrı edit ekranı, iki ayrı UI veya iki ayrı form mantığı bulunmamalı.
+
+==================================================
+2. İSTENEN SONUÇ
+==================================================
+
+Uygulamada Sahiplendirme ilanlarını düzenlemek için yalnızca TEK bir ortak ekran bulunacak.
+
+Örneğin mevcut proje mimarisine uygun isim kullan:
+
+EditAdoptionListingScreen
+
+veya mevcut projede kullanılan naming convention neyse onu koru.
+
+Yeni ve gereksiz bir ekran oluşturma.
+
+Mevcut çalışan ana düzenleme ekranını belirle ve bunu SINGLE SOURCE OF TRUTH yap.
+
+Aşağıdaki iki buton da AYNI ekranı açmalı:
+
+1. İlanlarım kartındaki "Düzenle" butonu
+
+2. Önizleme Modu ekranının altındaki "İlanı Düzenle" butonu
+
+Navigation sonucu birebir aynı olmalı:
+
+İlanlarım Kartı
+→ Düzenle
+→ Shared Edit Adoption Listing Screen
+
+Önizleme Modu
+→ İlanı Düzenle
+→ Shared Edit Adoption Listing Screen
+
+Her iki akış da aynı listingId / adoptionListingId değerini taşımalı.
+
+==================================================
+3. HANGİ DÜZENLEME EKRANI KORUNACAK?
+==================================================
+
+İlanlarım kartındaki "Düzenle" butonuna basıldığında açılan mevcut ilan düzenleme ekranını ana referans olarak kullan.
+
+Bu ekranın mevcut görünüm ve form yapısını koru.
+
+Referans düzenleme ekranında görülen yapı:
+
+Header:
+- Sol tarafta kapat / geri butonu
+- Ortada "İlanı Düzenle"
+- Sağ tarafta "Kaydet"
+
+Fotoğraflar kartı:
+- "Fotoğraflar"
+- mevcut fotoğraf sayısı / maksimum fotoğraf sayısı
+- kapak fotoğrafı etiketi
+- mevcut fotoğrafların gösterilmesi
+- fotoğraf ekleme kutusu
+- fotoğraf silme
+- fotoğraf sıralama mantığı
+- kapak fotoğrafı mantığı
+
+Hayvan Bilgileri:
+- Hayvanın Adı
+- Tür
+- Yaş
+- mevcut diğer ilan alanları
+
+Alt sticky save area:
+- "Değişiklikleri Kaydet"
+
+Bu ekranı koru.
+
+Önizleme ekranından gelen "İlanı Düzenle" butonunu da bu ekranın aynısına yönlendir.
+
+Önizleme ekranı için ayrı edit UI tutma.
+
+==================================================
+4. DUPLICATE EDIT SCREEN AUDIT
+==================================================
+
+Tüm codebase üzerinde recursive audit yap.
+
+Şunları ara:
+
+EditListing
+EditAdoption
+AdoptionEdit
+EditAdoptionListing
+ListingEdit
+AdoptionListingEdit
+editListing
+editAdoption
+editPetListing
+ilanDuzenle
+duzenle
+preview edit
+owner edit
+edit modal
+edit sheet
+edit form
+
+Aynı Sahiplendirme ilanını düzenleyen birden fazla:
+
+- screen
+- route
+- component
+- modal
+- bottom sheet
+- form
+- hook
+- service
+- mutation
+
+varsa tespit et.
+
+Kullanılmayan duplicate implementation'ları kaldır.
+
+DİKKAT:
+Çalışan ana edit ekranını silme.
+
+Önce hangi ekranın production edit ekranı olduğunu doğrula.
+
+Sonra duplicate olan yapıları güvenli şekilde kaldır veya shared component yapısına taşı.
+
+==================================================
+5. NAVIGATION REFACTOR
+==================================================
+
+İlanlarım kartındaki mevcut "Düzenle" butonunun navigation target'ını incele.
+
+Bu route'u canonical edit route olarak kabul et.
+
+Örneğin:
+
+/adoption/listings/:listingId/edit
+
+veya React Navigation kullanılıyorsa:
+
+EditAdoptionListing
+
+Mevcut proje hangi navigation mimarisini kullanıyorsa onu koru.
+
+Önizleme Modu ekranındaki "İlanı Düzenle" butonunda ayrı bir edit screen açma.
+
+Bu butonu canonical edit route'a yönlendir.
+
+Pseudo logic:
+
+const handleEditListing = () => {
+  navigateToSharedEditScreen({
+    listingId: currentListing.id
+  });
+};
+
+Hem karttaki Düzenle butonu hem de Preview içindeki İlanı Düzenle butonu aynı navigation helper / route mantığını kullanmalı.
+
+Mümkünse ortak navigation helper oluştur:
+
+openAdoptionListingEditor(listingId)
+
+Ama gereksiz abstraction üretme.
+
+==================================================
+6. LISTING ID DOĞRULAMA
+==================================================
+
+Her iki giriş noktasında doğru ilan ID'sinin gönderildiğini doğrula.
+
+Şunları kontrol et:
+
+listing.id
+listingId
+adoptionListing.id
+adoptionListingId
+postId
+
+Yanlış entity ID kullanılmasın.
+
+Sahiplendirme ilanı için backend ve database tarafında kullanılan gerçek primary key hangisiyse onu kullan.
+
+Örneğin:
+
+Preview Screen
+currentListing.id
+
+ve:
+
+My Listings Card
+listing.id
+
+aynı database kaydını temsil etmeli.
+
+Console log ile geçici doğrulama yapabilirsin fakat production sonucunda gereksiz debug log'larını kaldır.
+
+==================================================
+7. TEK FORM / TEK STATE MANTIĞI
+==================================================
+
+Edit form için yalnızca bir state mantığı kullan.
+
+Şunların duplicate versiyonlarını kaldır:
+
+formState
+editState
+listingDraft
+adoptionDraft
+selectedPhotos
+uploadedPhotos
+coverPhoto
+selectedSpecies
+selectedAge
+selectedHealthStatus
+
+Shared edit screen açıldığında ilan verisi listingId üzerinden yüklenmeli.
+
+Örneğin:
+
+loadAdoptionListing(listingId)
+
+Veri geldikten sonra form yalnızca bir kez hydrate edilmeli.
+
+Form alanlarının initial value'ları database verisinden gelmeli.
+
+Preview ekranından edit sayfasına geçerken ekrandaki UI text'lerini form state olarak kopyalama.
+
+Database/entity data source kullan.
+
+==================================================
+8. FOTOĞRAF SİSTEMİNİ KORU
+==================================================
+
+Mevcut fotoğraf edit sistemi kesinlikle bozulmamalı.
+
+Kontrol et:
+
+- mevcut fotoğraflar yükleniyor mu
+- kapak fotoğrafı doğru mu
+- ilk fotoğraf cover olarak kullanılıyor mu
+- maksimum fotoğraf limiti doğru mu
+- yeni fotoğraf ekleniyor mu
+- birden fazla fotoğraf eklenebiliyor mu
+- fotoğraf silinebiliyor mu
+- fotoğraf sırası değiştirilebiliyor mu
+- kapak etiketi doğru fotoğrafta mı
+- save işleminden sonra sıralama korunuyor mu
+
+Özellikle önceki fotoğraf ekleme sistemi düzeltmelerini bozma.
+
+Fotoğraf picker için duplicate implementation oluşturma.
+
+Canonical edit screen'deki mevcut fotoğraf uploader logic'ini kullan.
+
+==================================================
+9. SAVE LOGIC TEK OLSUN
+==================================================
+
+Her iki edit giriş noktası aynı save mutation/service'i kullanmalı.
+
+Örneğin:
+
+updateAdoptionListing(listingId, payload)
+
+Ayrı ayrı:
+
+updatePreviewListing
+saveEditedListing
+updateMyListing
+saveOwnerListing
+
+gibi aynı işi yapan duplicate servisler varsa audit et.
+
+Tek update flow kullan.
+
+Save payload database schema ile uyumlu olmalı.
+
+Alan eşlemelerini kontrol et.
+
+Örneğin mevcut schema'ya göre:
+
+name
+species
+age_range
+gender
+location
+health_status
+description
+compatibility
+toilet_training
+photos
+cover_photo
+updated_at
+
+Gerçek projedeki field isimlerini kullan.
+
+Schema'yı tahmin ederek değiştirme.
+
+Önce mevcut database types / schema / service layer'ı incele.
+
+==================================================
+10. SAVE SONRASI DATA SENKRONİZASYONU
+==================================================
+
+"Değişiklikleri Kaydet" veya header'daki "Kaydet" butonuna basıldığında:
+
+1. Form validation çalışsın.
+2. Loading state başlasın.
+3. Listing database'de update edilsin.
+4. Güncel ilan verisi alınsın veya cache doğru şekilde invalidate edilsin.
+5. İlanlarım kartı güncellensin.
+6. Önizleme ekranı güncellensin.
+7. Tüm İlanlar ekranında ilan varsa güncellensin.
+8. İlan detay ekranı güncellensin.
+9. Eski veri ekranda kalmasın.
+10. Kullanıcıya başarı feedback'i gösterilsin.
+
+Uygulama hangi data fetching sistemini kullanıyorsa onu koru.
+
+Örneğin:
+
+TanStack Query kullanılıyorsa:
+queryClient.invalidateQueries
+
+Supabase realtime/refetch kullanılıyorsa:
+mevcut doğru mimariyi kullan.
+
+Custom context/store kullanılıyorsa:
+store entity update et.
+
+Yeni state management library kurma.
+
+==================================================
+11. PREVIEW SCREEN DAVRANIŞI
+==================================================
+
+Önizleme Modu ekranının tasarımını bozma.
+
+Şu alanlar aynı kalsın:
+
+- Büyük ilan fotoğrafı
+- geri butonu
+- favori ikonu
+- Önizleme Modu bilgi kartı
+- ilan adı
+- hayvan türü
+- ilan durumu
+- yaş kartı
+- konum kartı
+- sağlık kartı
+- İlan Sahibi bölümü
+- alt "İlanı Düzenle" butonu
+- visibility / hide icon mevcut işlevi varsa
+
+Sadece "İlanı Düzenle" butonunun edit navigation mantığını değiştir.
+
+Butona basıldığında:
+
+AYRI edit UI açılmamalı.
+
+Doğrudan shared canonical Edit Adoption Listing Screen açılmalı.
+
+==================================================
+12. BACK NAVIGATION
+==================================================
+
+Edit ekranının nereden açıldığını düzgün yönet.
+
+Karttan açıldıysa:
+
+İlanlarım
+→ Edit
+→ Back
+→ İlanlarım
+
+Preview'dan açıldıysa:
+
+Preview
+→ İlanı Düzenle
+→ Back
+→ Preview
+
+Navigation stack mevcut sistem tarafından doğal şekilde korunabiliyorsa ekstra source param ekleme.
+
+Gerekiyorsa route param olarak:
+
+source: "my-listings"
+source: "preview"
+
+kullanılabilir.
+
+Ancak sırf navigation için duplicate edit screen oluşturma.
+
+Tek screen kullanılacak.
+
+Save sonrası mevcut uygulama UX'ine göre kullanıcı aynı edit ekranında kalabilir veya önceki ekrana dönebilir.
+
+Mevcut doğru çalışan davranışı koru.
+
+==================================================
+13. HEADER VE STICKY SAVE BUTTON
+==================================================
+
+Referans edit ekranındaki UI yapısını koru.
+
+Header:
+- close/back
+- İlanı Düzenle
+- Kaydet
+
+Alt:
+- sticky "Değişiklikleri Kaydet"
+
+Eğer hem üstteki "Kaydet" hem alttaki "Değişiklikleri Kaydet" aynı ekranda bulunuyorsa ikisi de aynı handleSave fonksiyonunu çağırmalı.
+
+Örneğin:
+
+onPress={handleSave}
+
+İki farklı save logic kullanılmasın.
+
+Double submission engelle.
+
+isSaving true iken butonları disable et.
+
+Kullanıcının iki butona hızlı basması iki ayrı update request oluşturmamalı.
+
+==================================================
+14. UNSAVED CHANGES KORUMASI
+==================================================
+
+Mevcut projede unsaved changes sistemi varsa koru.
+
+Yoksa güvenli ve sade şekilde ekle.
+
+Kullanıcı alanları değiştirdikten sonra geri çıkmak isterse:
+
+"Kaydedilmemiş değişiklikler var"
+
+uyarısı göster.
+
+Seçenekler:
+
+Vazgeç
+Değişiklikleri Sil
+
+Mevcut app design language'a uygun modal kullan.
+
+Ancak bu özellik duplicate edit flow üretmemeli.
+
+==================================================
+15. OWNER SECURITY
+==================================================
+
+Edit ekranı açılırken ilan sahipliğini doğrula.
+
+Authenticated user yalnızca kendi Sahiplendirme ilanını düzenleyebilmeli.
+
+Kontrol:
+
+listing.owner_id === currentUser.id
+
+veya projedeki gerçek owner field hangisiyse onu kullan.
+
+Client-side check tek güvenlik katmanı olmasın.
+
+Supabase kullanılıyorsa ilgili adoption listings table için UPDATE RLS policy'yi audit et.
+
+Authenticated user yalnızca kendi ilanını update edebilmeli.
+
+Örnek mantık:
+
+auth.uid() = owner_id
+
+Ancak mevcut table ve column isimlerini incelemeden migration yazma.
+
+Önce gerçek schema'yı doğrula.
+
+Mevcut güvenli RLS policy varsa gereksiz şekilde değiştirme.
+
+==================================================
+16. TYPE SAFETY
+==================================================
+
+TypeScript hatası bırakma.
+
+Route params typed olsun.
+
+Örneğin proje mimarisine uygun şekilde:
+
+type EditAdoptionListingParams = {
+  listingId: string;
+};
+
+listingId undefined olduğunda ekran crash olmamalı.
+
+Missing ID durumunda:
+
+- loading loop oluşturma
+- boş form açma
+- yanlış ilana fallback yapma
+
+Güvenli error state göster ve geri dönüş imkanı sun.
+
+No any abuse.
+
+Yeni @ts-ignore veya @ts-nocheck ekleme.
+
+==================================================
+17. PLATFORM UYUMLULUĞU
+==================================================
+
+Bu değişikliği:
+
+iOS Simulator
+Android Simulator
+Web
+
+üç platform için audit et.
+
+Navigation davranışı üçünde de aynı olmalı.
+
+Kontrol et:
+
+- Preview → İlanı Düzenle
+- İlanlarım → Düzenle
+- Back navigation
+- Form scroll
+- Keyboard handling
+- Sticky save button
+- Safe area
+- Android back button
+- Web browser back behavior
+- Image picker behavior
+
+iOS'ta çalışan ama Android/Web'de eski duplicate edit screen açılan bir platform branch kalmasın.
+
+Platform.OS ile gereksiz ayrı edit flow kullanma.
+
+==================================================
+18. REGRESSION TEST
+==================================================
+
+Aşağıdaki akışı gerçekten test et:
+
+TEST 1
+
+Sahiplendirme
+→ İlanlarım
+→ Pamuk ilanı
+→ Düzenle
+
+Beklenen:
+Canonical shared Edit Listing screen açılır.
+
+Hayvan adı:
+Pamuk
+
+Mevcut fotoğraflar:
+Doğru şekilde görünür.
+
+Bir alanı değiştir.
+Kaydet.
+
+Beklenen:
+Database update olur.
+İlan kartı yeni veriyi gösterir.
+
+------------------------------
+
+TEST 2
+
+Sahiplendirme
+→ İlanlarım
+→ Pamuk
+→ Önizle
+→ İlanı Düzenle
+
+Beklenen:
+
+TEST 1'DE AÇILAN EKRANIN BİREBİR AYNISI açılır.
+
+Sadece benzer UI değil.
+
+Aynı component.
+Aynı screen.
+Aynı route.
+Aynı form logic.
+
+------------------------------
+
+TEST 3
+
+Preview'dan edit aç.
+
+Hayvan adını değiştir.
+
+Değişiklikleri Kaydet.
+
+Geri dön.
+
+Preview ekranı yeni ismi anında göstermeli.
+
+------------------------------
+
+TEST 4
+
+İlanlarım kartından edit aç.
+
+Fotoğraf ekle.
+
+Kaydet.
+
+Preview aç.
+
+Yeni fotoğraf görünmeli.
+
+------------------------------
+
+TEST 5
+
+Preview'dan edit aç.
+
+Yeni fotoğraf ekle.
+
+Kaydet.
+
+İlanlarım ekranına dön.
+
+Kart cover image doğru şekilde güncellenmeli.
+
+------------------------------
+
+TEST 6
+
+Edit ekranında hızlı şekilde iki kez Kaydet butonuna bas.
+
+Beklenen:
+
+Tek update request.
+Duplicate database write yok.
+Duplicate toast yok.
+
+------------------------------
+
+TEST 7
+
+Başka kullanıcıya ait ilan için edit route manuel açılmaya çalışılsın.
+
+Beklenen:
+
+Edit işlemi engellenmeli.
+Yetkisiz update mümkün olmamalı.
+
+==================================================
+19. YAPILMAYACAKLAR
+==================================================
+
+- Yeni bir üçüncü edit ekranı oluşturma.
+- Preview ekranını yeniden tasarlama.
+- İlanlarım kartını yeniden tasarlama.
+- Sahiplendirme navigation yapısını komple değiştirme.
+- Database tablolarını gereksiz yeniden oluşturma.
+- Working photo uploader'ı değiştirme.
+- Mock data ekleme.
+- Fake listing üretme.
+- Hardcoded listing ID kullanma.
+- Pamuk ilanını özel case olarak kodlama.
+- Sadece görsel olarak ekranları benzetme.
+- Aynı kodu copy paste ederek iki ekrana koyma.
+- iOS için ayrı, Android için ayrı edit ekranı kullanma.
+- Mevcut ilan verilerini silme.
+- Mevcut production verilerini resetleme.
+
+==================================================
+20. ACCEPTANCE CRITERIA
+==================================================
+
+Görev yalnızca aşağıdakilerin TAMAMI sağlanırsa tamamlanmış kabul edilir:
+
+[ ] İlanlarım → Düzenle tek canonical edit screen açıyor.
+
+[ ] Preview → İlanı Düzenle aynı canonical edit screen açıyor.
+
+[ ] İki ayrı edit UI artık bulunmuyor.
+
+[ ] İki ayrı edit form state bulunmuyor.
+
+[ ] İki ayrı save logic bulunmuyor.
+
+[ ] Her iki flow aynı listingId ile çalışıyor.
+
+[ ] Mevcut ilan verileri doğru hydrate ediliyor.
+
+[ ] Fotoğraf sistemi çalışıyor.
+
+[ ] Birden fazla fotoğraf ekleme çalışıyor.
+
+[ ] Kapak fotoğrafı doğru.
+
+[ ] Save işlemi database'i güncelliyor.
+
+[ ] İlanlarım kartı güncel veriyi gösteriyor.
+
+[ ] Preview güncel veriyi gösteriyor.
+
+[ ] Duplicate update request oluşmuyor.
+
+[ ] Back navigation doğru.
+
+[ ] Owner authorization doğru.
+
+[ ] iOS çalışıyor.
+
+[ ] Android çalışıyor.
+
+[ ] Web çalışıyor.
+
+[ ] TypeScript error yok.
+
+[ ] Runtime crash yok.
+
+[ ] Console'da bu flow kaynaklı error yok.
+
+==================================================
+21. ÇALIŞMA ŞEKLİ
+==================================================
+
+Önce kodu incele.
+
+Tahmin ederek yeni screen oluşturma.
+
+İlk olarak bana kısa bir audit sonucu üret:
+
+1. İlanlarım kartındaki Düzenle butonu hangi dosyada?
+2. Hangi route/screen'i açıyor?
+3. Preview içindeki İlanı Düzenle butonu hangi dosyada?
+4. Şu anda hangi route/screen'i açıyor?
+5. Kaç farklı adoption listing edit implementation bulundu?
+6. Canonical olarak hangi mevcut ekran korunacak?
+7. Hangi duplicate dosyalar kaldırılacak veya refactor edilecek?
+
+Ardından düzeltmeleri uygula.
+
+İşlem sonunda şu formatta rapor ver:
+
+EDIT FLOW AUDIT
+- Canonical edit screen:
+- Canonical route:
+- My Listings edit entry:
+- Preview edit entry:
+- Duplicate implementations found:
+- Duplicate implementations removed/refactored:
+
+DATA FLOW
+- Listing ID source:
+- Listing fetch function:
+- Update function:
+- Cache/refetch synchronization:
+
+SECURITY
+- Owner authorization:
+- Database/RLS audit:
+
+PLATFORM TEST
+- iOS:
+- Android:
+- Web:
+
+REGRESSION TESTS
+- Test 1:
+- Test 2:
+- Test 3:
+- Test 4:
+- Test 5:
+- Test 6:
+- Test 7:
+
+FINAL RESULT
+Confirm explicitly:
+
+"İlanlarım ekranındaki Düzenle butonu ile Önizleme Modu ekranındaki İlanı Düzenle butonu artık aynı screen, aynı component, aynı form state, aynı listing ID data flow ve aynı save logic'i kullanıyor."
+
+ÖNEMLİ SON TALİMAT:
+
+Sadece buton navigation'ını yüzeysel olarak değiştirme.
+
+Codebase üzerinde recursive audit yap.
+
+Duplicate adoption listing editing architecture'ı kökten temizle.
+
+Mevcut çalışan ana düzenleme tasarımını koru ve uygulamanın her yerinde tek source of truth haline getir.

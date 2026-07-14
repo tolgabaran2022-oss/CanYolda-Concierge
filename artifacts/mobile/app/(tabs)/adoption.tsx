@@ -17,7 +17,6 @@ import {
   ActivityIndicator,
   Alert,
   FlatList,
-  KeyboardAvoidingView,
   Linking,
   Modal,
   Platform,
@@ -39,7 +38,6 @@ import { useTheme } from "@/hooks/useTheme";
 import { formatTimeAgo } from "@/utils/formatters";
 import { apiFetchNotifications } from "@/lib/socialApi";
 import { apiGetConversations, type ApiConversation } from "@/lib/messagesApi";
-import { PET_DETAIL_OPTIONS, type DetailOption } from "@/lib/petDetailOptions";
 
 // ── Palette ───────────────────────────────────────────────────────────────────
 const P      = "#7C4DCC";
@@ -1137,13 +1135,6 @@ function MyListingCard({
   );
 }
 
-interface EditForm {
-  petName: string; petType: string; petAge: string; location: string;
-  description: string; contactInfo: string; healthStatus: string;
-  vaccinationStatus: string; environmentType: string; childCompatibility: string;
-  catCompatibility: string; dogCompatibility: string; toiletTraining: string;
-}
-
 function MyListingsSection({
   userId, userEmail, listings, boostStatuses, deleteListing, botPad, onAdd,
 }: {
@@ -1153,49 +1144,9 @@ function MyListingsSection({
 }) {
   const T = useTheme();
   const { createCheckout, packages, fetchBoostStatus } = useBoost();
-  const { updateListing } = useAdoption();
   const router = useRouter();
 
   const [successModal, setSuccessModal] = useState<{ petName: string; pkgLabel: string; expiresAt: string } | null>(null);
-  const [editTarget, setEditTarget] = useState<AdoptionListing | null>(null);
-  const [editForm, setEditForm] = useState<EditForm>({ petName: "", petType: "", petAge: "", location: "", description: "", contactInfo: "", healthStatus: "", vaccinationStatus: "", environmentType: "", childCompatibility: "", catCompatibility: "", dogCompatibility: "", toiletTraining: "" });
-  const [saving, setSaving] = useState(false);
-
-  const openEdit = useCallback((listing: AdoptionListing) => {
-    setEditForm({
-      petName: listing.petName, petType: listing.petType, petAge: listing.petAge ?? "",
-      location: listing.location, description: listing.description, contactInfo: listing.contactInfo,
-      healthStatus: listing.healthStatus ?? "", vaccinationStatus: listing.vaccinationStatus ?? "",
-      environmentType: listing.environmentType ?? "", childCompatibility: listing.childCompatibility ?? "",
-      catCompatibility: listing.catCompatibility ?? "", dogCompatibility: listing.dogCompatibility ?? "",
-      toiletTraining: listing.toiletTraining ?? "",
-    });
-    setEditTarget(listing);
-  }, []);
-
-  const saveEdit = useCallback(async () => {
-    if (!editTarget || saving) return;
-    setSaving(true);
-    try {
-      await updateListing(editTarget.id, {
-        petName: editForm.petName.trim() || editTarget.petName,
-        petType: editForm.petType.trim() || editTarget.petType,
-        petAge: editForm.petAge.trim() || undefined,
-        location: editForm.location.trim() || editTarget.location,
-        description: editForm.description.trim() || editTarget.description,
-        contactInfo: editForm.contactInfo.trim() || editTarget.contactInfo,
-        healthStatus: editForm.healthStatus || undefined,
-        vaccinationStatus: editForm.vaccinationStatus || undefined,
-        environmentType: editForm.environmentType || undefined,
-        childCompatibility: editForm.childCompatibility || undefined,
-        catCompatibility: editForm.catCompatibility || undefined,
-        dogCompatibility: editForm.dogCompatibility || undefined,
-        toiletTraining: editForm.toiletTraining || undefined,
-      });
-      Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
-      setEditTarget(null);
-    } finally { setSaving(false); }
-  }, [editTarget, editForm, saving, updateListing]);
 
   const [statusMap, setStatusMap] = useState<Record<string, ListStatus>>({});
   const [myFilter, setMyFilter] = useState<MyFilter>("all");
@@ -1266,93 +1217,6 @@ function MyListingsSection({
       </Pressable>
     </Modal>
 
-    <Modal visible={editTarget !== null} transparent animationType="slide" onRequestClose={() => setEditTarget(null)}>
-      <KeyboardAvoidingView behavior={Platform.OS === "ios" ? "padding" : undefined} style={{ flex: 1 }}>
-        <Pressable style={ed.overlay} onPress={() => setEditTarget(null)}>
-          <Pressable style={ed.sheet} onPress={(e) => e.stopPropagation()}>
-            <View style={ed.sheetHeader}>
-              <View>
-                <Text style={ed.sheetTitle}>İlanı Düzenle</Text>
-                <Text style={ed.sheetSub}>{editTarget?.petName}</Text>
-              </View>
-              <Pressable onPress={() => setEditTarget(null)} style={ed.closeBtn}>
-                <Icon name="close" size={20} color={BODY} />
-              </Pressable>
-            </View>
-            <ScrollView showsVerticalScrollIndicator={false} contentContainerStyle={{ gap: 12 }}>
-              {editTarget?.photo && (
-                <View style={ed.photoRow}>
-                  <Image source={{ uri: editTarget.photo }} style={ed.photoThumb} contentFit="cover" />
-                  <View style={{ flex: 1 }}>
-                    <Text style={ed.fieldLabel}>Fotoğraf</Text>
-                    <Text style={ed.fieldHint}>Fotoğraf değiştirme yeni ilan oluşturarak yapılabilir</Text>
-                  </View>
-                </View>
-              )}
-              {([
-                { label: "Hayvan Adı", key: "petName"  as const, placeholder: "örn. Misket" },
-                { label: "Tür",        key: "petType"  as const, placeholder: "örn. Kedi, Köpek, Tavşan" },
-                { label: "Yaş / Cins", key: "petAge"   as const, placeholder: "örn. Tekir • 3 aylık" },
-                { label: "Konum",      key: "location" as const, placeholder: "örn. Kadıköy, İstanbul" },
-              ]).map((f) => (
-                <View key={f.key} style={ed.fieldWrap}>
-                  <Text style={ed.fieldLabel}>{f.label}</Text>
-                  <TextInput style={ed.input} value={editForm[f.key]} onChangeText={(t) => setEditForm((prev) => ({ ...prev, [f.key]: t }))} placeholder={f.placeholder} placeholderTextColor={`${BODY}60`} />
-                </View>
-              ))}
-              <View style={ed.fieldWrap}>
-                <Text style={ed.fieldLabel}>Açıklama</Text>
-                <TextInput style={[ed.input, ed.inputMulti]} value={editForm.description} onChangeText={(t) => setEditForm((prev) => ({ ...prev, description: t }))} placeholder="Hayvanınız hakkında bilgi verin..." placeholderTextColor={`${BODY}60`} multiline numberOfLines={4} />
-              </View>
-              <View style={ed.fieldWrap}>
-                <Text style={ed.fieldLabel}>İletişim Bilgisi</Text>
-                <TextInput style={ed.input} value={editForm.contactInfo} onChangeText={(t) => setEditForm((prev) => ({ ...prev, contactInfo: t }))} placeholder="Email veya telefon" placeholderTextColor={`${BODY}60`} keyboardType="email-address" />
-              </View>
-              <View style={[ed.fieldWrap, { marginTop: 4 }]}>
-                <Text style={[ed.fieldLabel, { fontSize: 14, marginBottom: 12 }]}>Detay Bilgiler</Text>
-                {([
-                  { key: "healthStatus"       as const, label: "Sağlık Durumu",   opts: PET_DETAIL_OPTIONS.healthStatus       },
-                  { key: "vaccinationStatus"  as const, label: "Aşı",             opts: PET_DETAIL_OPTIONS.vaccinationStatus  },
-                  { key: "environmentType"    as const, label: "İç/Dış Mekan",    opts: PET_DETAIL_OPTIONS.environmentType    },
-                  { key: "childCompatibility" as const, label: "Çocuk Uyumu",     opts: PET_DETAIL_OPTIONS.childCompatibility },
-                  { key: "catCompatibility"   as const, label: "Kedi Uyumu",      opts: PET_DETAIL_OPTIONS.catCompatibility   },
-                  { key: "dogCompatibility"   as const, label: "Köpek Uyumu",     opts: PET_DETAIL_OPTIONS.dogCompatibility   },
-                  { key: "toiletTraining"     as const, label: "Tuvalet Eğitimi", opts: PET_DETAIL_OPTIONS.toiletTraining     },
-                ]).map(({ key, label, opts }) => (
-                  <View key={key} style={{ marginBottom: 12 }}>
-                    <Text style={[ed.fieldLabel, { marginBottom: 7, fontSize: 12, color: BODY }]}>{label}</Text>
-                    <View style={{ flexDirection: "row", flexWrap: "wrap", gap: 6 }}>
-                      {(opts as readonly DetailOption[]).map((opt) => {
-                        const active = editForm[key] === opt.value;
-                        return (
-                          <Pressable key={opt.value} onPress={() => { Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light); setEditForm((prev) => ({ ...prev, [key]: opt.value })); }}
-                            style={({ pressed }) => [{ flexDirection: "row" as const, alignItems: "center" as const, gap: 4, borderWidth: 1.5, borderRadius: 50, paddingVertical: 6, paddingHorizontal: 11, borderColor: active ? P : `${BODY}30`, backgroundColor: active ? `${P}14` : "transparent", opacity: pressed ? 0.8 : 1 }]}>
-                            {active && <Icon name="checkmark" size={11} color={P} />}
-                            <Text style={{ fontSize: 12, fontFamily: active ? "Inter_700Bold" : "Inter_400Regular", color: active ? P : BODY }}>{opt.label}</Text>
-                          </Pressable>
-                        );
-                      })}
-                    </View>
-                  </View>
-                ))}
-              </View>
-            </ScrollView>
-            <View style={ed.footer}>
-              <Pressable style={({ pressed }) => [ed.cancelBtn, { opacity: pressed ? 0.8 : 1 }]} onPress={() => setEditTarget(null)}>
-                <Text style={ed.cancelTxt}>Vazgeç</Text>
-              </Pressable>
-              <Pressable style={[ed.saveBtn, { flex: 2, opacity: saving ? 0.7 : 1 }]} onPress={saveEdit} disabled={saving}>
-                <LinearGradient colors={[P2, P]} start={{ x: 0, y: 0 }} end={{ x: 1, y: 0 }} style={ed.saveGrad}>
-                  <Icon name={saving ? "sync-outline" : "checkmark-circle-outline"} size={16} color={WHITE} />
-                  <Text style={ed.saveTxt}>{saving ? "Kaydediliyor..." : "Kaydet"}</Text>
-                </LinearGradient>
-              </Pressable>
-            </View>
-          </Pressable>
-        </Pressable>
-      </KeyboardAvoidingView>
-    </Modal>
-
     <ScrollView showsVerticalScrollIndicator={false} contentContainerStyle={{ paddingBottom: botPad + 24 }}>
       <View style={ml.secHeader}>
         <Text style={[ml.secTitle, { color: T.text }]}>İlanlarım</Text>
@@ -1403,7 +1267,7 @@ function MyListingsSection({
           featuredUntil={boostStatuses[c.listing.id]?.expiresAt ?? c.listing.featuredUntil ?? null}
           packageName={boostStatuses[c.listing.id]?.packageName ?? c.listing.featuredPackageName ?? null}
           packages={packages}
-          onEdit={() => openEdit(c.listing)}
+          onEdit={() => { Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light); router.push(`/adoption/edit/${c.listing.id}` as any); }}
           onTogglePassive={() => togglePassive(c.listing.id)}
           onAdopted={() => handleAdopted(c.listing.id, c.listing.petName)}
           onPreview={() => { Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light); router.push({ pathname: "/adoption/[id]", params: { id: c.listing.id, preview: "true" } } as any); }}
@@ -1511,28 +1375,6 @@ const ml = StyleSheet.create({
   emptySub: { fontSize: 13, fontFamily: "Inter_400Regular", color: BODY, textAlign: "center", lineHeight: 20 },
   emptyFilter: { alignItems: "center", paddingTop: 40, gap: 10 },
   emptyFilterTxt: { fontSize: 14, fontFamily: "Inter_400Regular", color: BODY },
-});
-
-const ed = StyleSheet.create({
-  overlay: { flex: 1, backgroundColor: "rgba(20,8,46,0.55)", justifyContent: "flex-end" },
-  sheet: { backgroundColor: WHITE, borderTopLeftRadius: 28, borderTopRightRadius: 28, padding: 22, paddingBottom: 32, maxHeight: "92%", ...Platform.select({ ios: { shadowColor: DARK, shadowOffset: { width: 0, height: -8 }, shadowOpacity: 0.18, shadowRadius: 24 }, android: { elevation: 16 }, default: {} }) },
-  sheetHeader: { flexDirection: "row", alignItems: "center", justifyContent: "space-between", marginBottom: 18 },
-  sheetTitle: { fontSize: 18, fontFamily: "Inter_700Bold", color: DARK, letterSpacing: -0.3 },
-  sheetSub: { fontSize: 12, fontFamily: "Inter_400Regular", color: BODY, marginTop: 2 },
-  closeBtn: { width: 32, height: 32, borderRadius: 16, backgroundColor: `${BODY}12`, alignItems: "center", justifyContent: "center" },
-  photoRow: { flexDirection: "row", alignItems: "center", gap: 12, backgroundColor: `${P}07`, borderRadius: 14, padding: 12 },
-  photoThumb: { width: 52, height: 52, borderRadius: 10 },
-  fieldWrap: { gap: 5 },
-  fieldLabel: { fontSize: 12, fontFamily: "Inter_700Bold", color: DARK, letterSpacing: 0.3 },
-  fieldHint: { fontSize: 11, fontFamily: "Inter_400Regular", color: BODY, lineHeight: 16 },
-  input: { backgroundColor: BG, borderRadius: 12, paddingHorizontal: 14, paddingVertical: 12, fontSize: 14, fontFamily: "Inter_400Regular", color: DARK, borderWidth: 1.5, borderColor: `${P}18` },
-  inputMulti: { minHeight: 90, textAlignVertical: "top" },
-  footer: { flexDirection: "row", gap: 10, marginTop: 18 },
-  cancelBtn: { flex: 1, backgroundColor: `${BODY}10`, borderRadius: 16, alignItems: "center", justifyContent: "center", paddingVertical: 14 },
-  cancelTxt: { fontSize: 14, fontFamily: "Inter_600SemiBold", color: BODY },
-  saveBtn: { borderRadius: 16, overflow: "hidden" },
-  saveGrad: { flexDirection: "row", alignItems: "center", justifyContent: "center", gap: 7, paddingVertical: 14, paddingHorizontal: 20 },
-  saveTxt: { fontSize: 14, fontFamily: "Inter_700Bold", color: WHITE },
 });
 
 // ── Main Adoption Screen ──────────────────────────────────────────────────────
