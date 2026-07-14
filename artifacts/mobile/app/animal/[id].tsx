@@ -616,10 +616,12 @@ export default function AnimalDetailScreen() {
             </View>
 
             {/* Location row (separate, tappable) */}
-            {animal.locationName ? (
+            {(animal.locationName || (animal.latitude !== 0 && animal.longitude !== 0)) ? (
               <Pressable style={D.locRow} onPress={handleMapOpen} accessibilityRole="button">
                 <Icon name="location-outline" size={15} color={C.purple} />
-                <Text style={D.locText} numberOfLines={1}>{animal.locationName}</Text>
+                <Text style={D.locText} numberOfLines={1}>
+                  {animal.locationName ?? `${animal.latitude.toFixed(4)}, ${animal.longitude.toFixed(4)}`}
+                </Text>
               </Pressable>
             ) : null}
 
@@ -646,7 +648,13 @@ export default function AnimalDetailScreen() {
                   <InfoCard
                     icon="location-outline"
                     label="Konum"
-                    value={animal.locationName ?? "Belirtilmedi"}
+                    value={
+                      animal.locationName
+                        ? animal.locationName
+                        : (animal.latitude !== 0 && animal.longitude !== 0)
+                          ? `${animal.latitude.toFixed(4)}, ${animal.longitude.toFixed(4)}`
+                          : "Belirtilmedi"
+                    }
                   />
                 </View>
                 <View style={D.infoRow}>

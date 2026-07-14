@@ -1,0 +1,800 @@
+CanYoldaşı uygulamasında Sokak Hayvanı Durum Bildirimi akışında kritik bir LOCATION DATA PIPELINE hatası var.
+
+SORUN:
+
+Kullanıcı:
+
+Sokak Hayvanı Ekle
+→ Mevcut Konumumu Kullan
+→ konum seçiliyor / harita üzerinde konum oluşuyor
+→ Durumu Bildir
+
+akışını tamamlıyor.
+
+Ancak durum yayınlandıktan sonra detay ekranında:
+
+Konum
+Belirtilmedi
+
+yazıyor.
+
+Bu davranış yanlıştır.
+
+Kullanıcının seçtiği konum oluşturulan yardım kartına / durum bildirimi kaydına kalıcı olarak bağlanmalı ve detay ekranında doğru şekilde gösterilmelidir.
+
+SADECE UI'DAKİ "BELİRTİLMEDİ" YAZISINI DEĞİŞTİRME.
+
+Gerçek location data pipeline root cause'unu bul.
+
+==================================================
+1. TÜM KONUM AKIŞINI RECURSIVE AUDIT ET
+==================================================
+
+Kod tabanında recursive search yap.
+
+Şunları ara:
+
+"Mevcut Konumumu Kullan"
+"Henüz konum seçilmedi"
+"Konum"
+"Belirtilmedi"
+"Durumu Bildir"
+
+Location
+location
+latitude
+longitude
+lat
+lng
+lon
+coords
+coordinates
+address
+locationName
+location_name
+locationAddress
+location_address
+currentLocation
+selectedLocation
+animalLocation
+
+expo-location
+getCurrentPositionAsync
+requestForegroundPermissionsAsync
+reverseGeocodeAsync
+
+Sokak hayvanı durum bildirimiyle ilgili tüm dosyaları bul.
+
+Gerçek akışı takip et:
+
+Location permission
+→ getCurrentPosition
+→ coordinates
+→ local component state
+→ form state
+→ submit handler
+→ create payload
+→ service/API
+→ database insert
+→ database select
+→ data mapper
+→ detail screen props
+→ Konum field render
+
+Her katmanı ayrı ayrı incele.
+
+==================================================
+2. KONUM SEÇİLDİĞİNDE GERÇEK STATE'İ LOGla
+==================================================
+
+"Mevcut Konumumu Kullan" butonunun gerçek handler'ını bul.
+
+Konum alındıktan hemen sonra log ekle:
+
+console.log("[LOCATION SELECTED]", {
+  latitude: location?.coords?.latitude,
+  longitude: location?.coords?.longitude,
+  accuracy: location?.coords?.accuracy,
+});
+
+Eğer ayrıca form state kullanılıyorsa:
+
+console.log("[LOCATION FORM STATE]", {
+  selectedLocation,
+  latitude,
+  longitude,
+  address,
+});
+
+Şunu doğrula:
+
+- latitude number mı?
+- longitude number mı?
+- undefined mı?
+- null mı?
+- string mi?
+- coordinates gerçekten state'e yazılıyor mu?
+
+UI'da harita görünmesi işlemin başarılı olduğunu kanıtlamaz.
+
+Gerçek state değerlerini doğrula.
+
+==================================================
+3. ASYNC STATE STALENESS KONTROLÜ YAP
+==================================================
+
+Özellikle şu tür bug'ı kontrol et:
+
+const location = await Location.getCurrentPositionAsync();
+
+setLatitude(location.coords.latitude);
+setLongitude(location.coords.longitude);
+
+submitForm();
+
+React state async olduğu için submitForm eski state değerlerini kullanabilir.
+
+Yanlış örnek:
+
+setSelectedLocation(coords);
+
+await createReport({
+  latitude: selectedLocation?.latitude,
+  longitude: selectedLocation?.longitude,
+});
+
+Burada selectedLocation hala eski/null değer olabilir.
+
+Bunun yerine alınan koordinatları doğrudan kullan:
+
+const coords = {
+  latitude: location.coords.latitude,
+  longitude: location.coords.longitude,
+};
+
+setSelectedLocation(coords);
+
+Submit ayrı kullanıcı aksiyonunda çalışıyorsa form state'in güncel olduğunu doğrula.
+
+Submit sırasında kullanılan gerçek değerleri logla.
+
+==================================================
+4. SUBMIT PAYLOAD'U GERÇEK HALİYLE KONTROL ET
+==================================================
+
+"Durumu Bildir" butonunun handler'ını bul.
+
+Database/API çağrısından hemen önce payload'u logla:
+
+console.log(
+  "[CREATE ANIMAL REPORT PAYLOAD]",
+  JSON.stringify(payload, null, 2)
+);
+
+Şu alanların gerçek değerlerini incele:
+
+latitude
+longitude
+lat
+lng
+location
+coordinates
+address
+location_name
+
+Tahmin etme.
+
+Gerçek payload üzerinden root cause belirle.
+
+Örneğin UI state:
+
+{
+  latitude: 40.9841,
+  longitude: 29.0252
+}
+
+olmasına rağmen payload:
+
+{
+  title: "...",
+  notes: "...",
+  location: null
+}
+
+ise submit mapping bug'ını düzelt.
+
+==================================================
+5. FIELD NAME MISMATCH KONTROLÜ
+==================================================
+
+Tüm location field isimlerini karşılaştır.
+
+Örnek problem:
+
+Form:
+selectedLocation.latitude
+selectedLocation.longitude
+
+Create payload:
+lat
+lng
+
+Database:
+latitude
+longitude
+
+Detail model:
+locationLat
+locationLng
+
+Detail screen:
+report.location
+
+Bu yapı nedeniyle detay ekranı konumu bulamıyor olabilir.
+
+Şu katmanları karşılaştır:
+
+UI form state
+TypeScript types
+create DTO
+service
+Supabase insert
+database columns
+query select
+data mapper
+detail model
+detail component
+
+Tek bir canonical location model kullan.
+
+Önerilen frontend modeli:
+
+type GeoLocation = {
+  latitude: number;
+  longitude: number;
+  address?: string | null;
+};
+
+type AnimalHelpReport = {
+  id: string;
+  location: GeoLocation | null;
+};
+
+Database mevcut şemasına göre data layer'da normalize et.
+
+Örnek:
+
+function normalizeReportLocation(row: any): GeoLocation | null {
+  const latitude =
+    row.latitude ??
+    row.location_lat ??
+    row.lat ??
+    null;
+
+  const longitude =
+    row.longitude ??
+    row.location_lng ??
+    row.lng ??
+    row.lon ??
+    null;
+
+  if (
+    typeof Number(latitude) !== "number" ||
+    typeof Number(longitude) !== "number"
+  ) {
+    return null;
+  }
+
+  const parsedLatitude = Number(latitude);
+  const parsedLongitude = Number(longitude);
+
+  if (
+    !Number.isFinite(parsedLatitude) ||
+    !Number.isFinite(parsedLongitude)
+  ) {
+    return null;
+  }
+
+  return {
+    latitude: parsedLatitude,
+    longitude: parsedLongitude,
+    address:
+      row.location_address ??
+      row.address ??
+      null,
+  };
+}
+
+Daha doğru type guard uygula.
+
+Compatibility logic'i UI component'lerinin içine dağıtma.
+
+==================================================
+6. SUPABASE DATABASE KAYDINI KONTROL ET
+==================================================
+
+Ekran görüntüsündeki mevcut durum kaydının gerçek Supabase row'unu incele.
+
+Başlığı/notu:
+
+"bacağında şişlik var"
+
+olan kaydı bul.
+
+Gerçek row'u logla:
+
+console.log(
+  "[ANIMAL REPORT DATABASE ROW]",
+  JSON.stringify(row, null, 2)
+);
+
+Şu field'ları kontrol et:
+
+id
+latitude
+longitude
+lat
+lng
+location
+location_lat
+location_lng
+location_address
+address
+created_at
+user_id
+
+Şunu bana raporla:
+
+1. Database'de latitude değeri var mı?
+2. Database'de longitude değeri var mı?
+3. Değerler NULL mı?
+4. Submit payload'da koordinat var mıydı?
+5. Insert sırasında alan isimleri doğru muydu?
+
+Database row'u görmeden "düzeltildi" deme.
+
+==================================================
+7. DATABASE INSERT MANTIĞINI DÜZELT
+==================================================
+
+Kullanıcı konum seçtiyse create payload koordinatları kesinlikle database'e yazmalı.
+
+Örnek mantık:
+
+const selectedCoords = selectedLocation;
+
+if (!selectedCoords) {
+  throw new Error("LOCATION_REQUIRED");
+}
+
+const insertPayload = {
+  // existing report fields
+
+  latitude: selectedCoords.latitude,
+  longitude: selectedCoords.longitude,
+  location_address: selectedCoords.address ?? null,
+};
+
+const { data, error } = await supabase
+  .from(REPORT_TABLE)
+  .insert(insertPayload)
+  .select()
+  .single();
+
+if (error) {
+  console.error("[ANIMAL REPORT INSERT ERROR]", error);
+  throw error;
+}
+
+console.log("[ANIMAL REPORT INSERT RESULT]", data);
+
+GERÇEK DATABASE COLUMN İSİMLERİNİ kullan.
+
+Şema ile uyuşmayan örnek isimleri kör şekilde kopyalama.
+
+==================================================
+8. INSERT SELECT VE QUERY AUDIT
+==================================================
+
+Konum database'e yazılıyor ancak detay sorgusunda çekilmiyor olabilir.
+
+Örnek bug:
+
+.select(`
+  id,
+  title,
+  notes,
+  status,
+  animal_type
+`)
+
+latitude ve longitude select edilmemiş olabilir.
+
+Tüm report query'lerini kontrol et.
+
+Özellikle:
+
+help cards query
+nearby animals query
+map query
+report detail query
+my reports query
+
+Konum alanlarının gerekli sorgularda seçildiğinden emin ol.
+
+Supabase'de select("*") kullanılıyorsa mapper'ın alanları drop edip etmediğini kontrol et.
+
+==================================================
+9. DATA MAPPER KONUMU DROP EDİYOR MU KONTROL ET
+==================================================
+
+Örnek:
+
+return {
+  id: row.id,
+  title: row.title,
+  status: row.status,
+  type: row.animal_type,
+};
+
+Bu mapper latitude ve longitude alanlarını taşımıyorsa detail screen'e ulaşmaz.
+
+Mapper'ı düzelt:
+
+const mappedReport = {
+  id: row.id,
+  title: row.title,
+  status: row.status,
+  type: row.animal_type,
+  location: normalizeReportLocation(row),
+};
+
+console.log("[MAPPED ANIMAL REPORT]", mappedReport);
+
+Konumun mapper sonrasında mevcut olduğunu doğrula.
+
+==================================================
+10. DETAY EKRANINDAKİ "BELİRTİLMEDİ" MANTIĞINI KONTROL ET
+==================================================
+
+Detay ekranındaki mevcut kodu bul.
+
+Muhtemel yanlış kullanım:
+
+const locationText = report.location || "Belirtilmedi";
+
+Eğer report.location object ise yanlış render logic olabilir.
+
+Veya ekran şu alanı bekliyor olabilir:
+
+report.locationName
+
+ama database'de sadece latitude / longitude var.
+
+Konum gösterim mantığını düzelt.
+
+Koordinat varsa ASLA "Belirtilmedi" gösterme.
+
+Önerilen UI mantığı:
+
+const hasCoordinates =
+  report.location &&
+  Number.isFinite(report.location.latitude) &&
+  Number.isFinite(report.location.longitude);
+
+Gösterim:
+
+Konum
+
+if address exists:
+  address / district / city
+
+else if coordinates exist:
+  "Konum mevcut"
+
+else:
+  "Belirtilmedi"
+
+Ancak daha iyi kullanıcı deneyimi için koordinatlardan reverse geocoding ile kısa adres üret.
+
+==================================================
+11. REVERSE GEOCODING EKLE / KONTROL ET
+==================================================
+
+Kullanıcı konumu seçtiğinde koordinatlardan okunabilir adres üret.
+
+Expo Location kullanılıyorsa:
+
+const results = await Location.reverseGeocodeAsync({
+  latitude,
+  longitude,
+});
+
+İlk sonucu kullan.
+
+Örnek format:
+
+Kadıköy, İstanbul
+
+veya:
+
+Dinar, Afyonkarahisar
+
+Bir helper oluştur:
+
+function formatLocationLabel(result: Location.LocationGeocodedAddress) {
+  const parts = [
+    result.district,
+    result.subregion,
+    result.city,
+    result.region,
+  ]
+    .filter(Boolean)
+    .filter(
+      (value, index, array) =>
+        array.indexOf(value) === index
+    );
+
+  return parts.slice(0, 2).join(", ");
+}
+
+Eğer reverse geocoding başarısız olursa koordinatları kaybetme.
+
+Coordinates source of truth olmalı.
+
+Address optional metadata olmalı.
+
+==================================================
+12. KONUM ZORUNLUYSA VALIDATION EKLE
+==================================================
+
+Bu Sokak Hayvanı Durum Bildirimi akışında konum temel bir bilgidir.
+
+Kullanıcı konum seçmeden "Durumu Bildir" butonuna basarsa kaydı oluşturma.
+
+Mesaj:
+
+"Lütfen hayvanın görüldüğü konumu ekleyin."
+
+Kontrol:
+
+if (!selectedLocation) {
+  Alert.alert(
+    "Konum gerekli",
+    "Lütfen hayvanın görüldüğü konumu ekleyin."
+  );
+
+  return;
+}
+
+Ancak sadece UI validation'a güvenme.
+
+Service/data layer'da da latitude ve longitude validate et.
+
+==================================================
+13. 0 DEĞERİ İÇİN TRUTHY BUG KONTROLÜ
+==================================================
+
+Şu yanlış kontrolü ara:
+
+if (!latitude || !longitude) {
+  return null;
+}
+
+Latitude veya longitude teorik olarak 0 olabilir.
+
+Doğru kontrol:
+
+if (
+  latitude == null ||
+  longitude == null
+) {
+  return null;
+}
+
+Veya Number.isFinite kullan.
+
+Tüm coordinate validation kodlarını kontrol et.
+
+==================================================
+14. STRING / NUMBER TYPE MISMATCH KONTROLÜ
+==================================================
+
+Supabase numeric değerleri veya API verileri string gelebilir.
+
+Örnek:
+
+latitude: "40.9841"
+longitude: "29.0252"
+
+UI şu kontrolü yapıyorsa:
+
+typeof latitude === "number"
+
+konumu geçersiz sayabilir.
+
+Normalize et:
+
+const latitude = Number(rawLatitude);
+const longitude = Number(rawLongitude);
+
+if (
+  !Number.isFinite(latitude) ||
+  !Number.isFinite(longitude)
+) {
+  return null;
+}
+
+==================================================
+15. DETAIL SCREEN'E NAVIGATION PARAM İLE ESKİ DATA GÖNDERME
+==================================================
+
+Detay ekranının sadece navigation param'daki stale card object'i kullanıp kullanmadığını kontrol et.
+
+Örnek bug:
+
+router.push({
+  pathname: "/animal-detail",
+  params: {
+    report: JSON.stringify(report),
+  },
+});
+
+Report oluşturulduğu anda local card data location içermiyorsa detay ekranı:
+
+"Belirtilmedi"
+
+gösterebilir.
+
+Detay sayfası açıldığında report id üzerinden database'den fresh data fetch et.
+
+Önerilen:
+
+detail screen
+→ reportId al
+→ fetchReportById(reportId)
+→ database source of truth
+→ render
+
+Navigation param'dan tam database entity taşımayı source of truth olarak kullanma.
+
+==================================================
+16. CACHE VE QUERY INVALIDATION KONTROLÜ
+==================================================
+
+React Query / TanStack Query veya custom cache varsa create işleminden sonra invalidate et.
+
+Örnek:
+
+await createAnimalReport(payload);
+
+queryClient.invalidateQueries({
+  queryKey: ["animal-reports"],
+});
+
+queryClient.invalidateQueries({
+  queryKey: ["animal-report", createdReport.id],
+});
+
+Yeni oluşturulan kaydın eski local state ile görüntülenmesini engelle.
+
+==================================================
+17. HARİTA VE DETAY EKRANI AYNI KONUM MODELİNİ KULLANSIN
+==================================================
+
+Harita ekranı başka bir location field okuyup detay ekranı başka field okumamalı.
+
+Şunları karşılaştır:
+
+Map marker:
+report.latitude / report.longitude
+
+Detail:
+report.location
+
+Nearby:
+report.coordinates
+
+Bu parçalı sistemi kaldır.
+
+Tek normalized model:
+
+report.location.latitude
+report.location.longitude
+report.location.address
+
+Harita, detay ve liste aynı normalized data model'i kullansın.
+
+==================================================
+18. OTOMATİK FALLBACK İLE FAKE KONUM OLUŞTURMA
+==================================================
+
+Konum yoksa:
+
+İstanbul
+Kadıköy
+default coordinates
+mock coordinates
+
+gibi fake değerler ekleme.
+
+Gerçek konum yoksa null olmalı.
+
+Gerçek koordinat varsa "Belirtilmedi" gösterilmemeli.
+
+==================================================
+19. GERÇEK UÇTAN UCA TEST YAP
+==================================================
+
+Yeni bir test durum bildirimi oluştur.
+
+Akış:
+
+1. Sokak Hayvanı Ekle ekranını aç
+2. Fotoğraf ekle
+3. Durum seç
+4. Not yaz
+5. "Mevcut Konumumu Kullan" butonuna bas
+6. Latitude ve longitude state logunu doğrula
+7. Reverse geocode label oluşmasını doğrula
+8. "Durumu Bildir" butonuna bas
+9. Submit payload'u incele
+10. Database row'u incele
+11. latitude database'de mevcut olmalı
+12. longitude database'de mevcut olmalı
+13. Detay ekranını aç
+14. Konum "Belirtilmedi" olmamalı
+15. Haritada marker doğru noktada görünmeli
+16. Uygulamayı tamamen kapat
+17. Yeniden aç
+18. Aynı bildirimi aç
+19. Konum tekrar doğru görünmeli
+
+Sadece hot/local state ile test başarılı kabul edilmesin.
+
+Cold restart testi zorunlu.
+
+==================================================
+20. iOS / ANDROID / WEB TESTİ
+==================================================
+
+Aynı işlemi test et:
+
+iOS Simulator
+Android
+Web
+
+Üç platformda da aynı database kaydı aynı koordinatları göstermeli.
+
+Konum verisi platforma özel local state'te kalmamalı.
+
+==================================================
+21. ROOT CAUSE RAPORU
+==================================================
+
+İşlem sonunda bana şu bilgilerin tamamını raporla:
+
+1. Konum neden detay ekranında "Belirtilmedi" görünüyordu?
+2. Konum state'e gerçekten geliyor muydu?
+3. Latitude değeri neydi?
+4. Longitude değeri neydi?
+5. Submit payload'da koordinatlar var mıydı?
+6. Database row'da koordinatlar var mıydı?
+7. Gerçek database column isimleri ne?
+8. Field mismatch var mıydı?
+9. Query location alanlarını çekiyor muydu?
+10. Mapper location verisini drop ediyor muydu?
+11. Detail screen hangi field'ı okuyordu?
+12. Navigation stale data problemi var mıydı?
+13. Reverse geocoding çalışıyor mu?
+14. Oluşturulan kaydın detayında konum doğru görünüyor mu?
+15. Harita marker'ı doğru noktada mı?
+16. Cold restart sonrası konum korunuyor mu?
+17. iOS testi başarılı mı?
+18. Android testi başarılı mı?
+19. Web testi başarılı mı?
+20. Hangi dosyalar değiştirildi?
+
+"Konum alanı düzeltildi" şeklinde yüzeysel cevap verme.
+
+Gerçek location data pipeline root cause'unu tespit et ve kalıcı olarak düzelt.

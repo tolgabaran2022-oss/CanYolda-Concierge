@@ -120,6 +120,7 @@ export default function AddAnimalScreen() {
   const [notes, setNotes]                 = useState("");
   const [notesFocused, setNotesFocused]   = useState(false);
   const [location, setLocation]           = useState<{ latitude: number; longitude: number } | null>(null);
+  const [locationName, setLocationName]   = useState<string | undefined>();
   const [isLocating, setIsLocating]       = useState(false);
   const [isSaving, setIsSaving]           = useState(false);
   const [locPermission, requestLocPermission] = Location.useForegroundPermissions();
@@ -147,23 +148,41 @@ export default function AddAnimalScreen() {
       }
       if (Platform.OS === "web") {
         navigator.geolocation.getCurrentPosition(
-          (pos) => {
-            setLocation({ latitude: pos.coords.latitude, longitude: pos.coords.longitude });
+          async (pos) => {
+            const coords = { latitude: pos.coords.latitude, longitude: pos.coords.longitude };
+            setLocation(coords);
+            try {
+              const [geo] = await Location.reverseGeocodeAsync(coords);
+              const parts = [geo?.district ?? geo?.subregion, geo?.city ?? geo?.region].filter(Boolean);
+              setLocationName(parts.length > 0 ? parts.join(", ") : `${coords.latitude.toFixed(4)}, ${coords.longitude.toFixed(4)}`);
+            } catch {
+              setLocationName(`${coords.latitude.toFixed(4)}, ${coords.longitude.toFixed(4)}`);
+            }
             setIsLocating(false);
           },
           () => {
             setLocation(DEFAULT_REGION);
+            setLocationName(undefined);
             setIsLocating(false);
           }
         );
       } else {
         const loc = await Location.getCurrentPositionAsync({ accuracy: Location.Accuracy.Balanced });
-        setLocation({ latitude: loc.coords.latitude, longitude: loc.coords.longitude });
+        const coords = { latitude: loc.coords.latitude, longitude: loc.coords.longitude };
+        setLocation(coords);
+        try {
+          const [geo] = await Location.reverseGeocodeAsync(coords);
+          const parts = [geo?.district ?? geo?.subregion, geo?.city ?? geo?.region].filter(Boolean);
+          setLocationName(parts.length > 0 ? parts.join(", ") : `${coords.latitude.toFixed(4)}, ${coords.longitude.toFixed(4)}`);
+        } catch {
+          setLocationName(`${coords.latitude.toFixed(4)}, ${coords.longitude.toFixed(4)}`);
+        }
         Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
         setIsLocating(false);
       }
     } catch {
       setLocation(DEFAULT_REGION);
+      setLocationName(undefined);
       setIsLocating(false);
     }
   };
@@ -192,6 +211,7 @@ export default function AddAnimalScreen() {
         animalType,
         latitude: location.latitude,
         longitude: location.longitude,
+        locationName,
         status,
         notes: notes.trim(),
         userId: user.id,
