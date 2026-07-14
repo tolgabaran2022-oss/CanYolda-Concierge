@@ -27,6 +27,7 @@ import { useBoost, type BoostPackage } from "@/contexts/BoostContext";
 import { useTheme } from "@/hooks/useTheme";
 import { formatTimeAgo } from "@/utils/formatters";
 import { EvcilimTab } from "@/components/EvcilimTab";
+import { apiFetchNotifications } from "@/lib/socialApi";
 
 // ── Palette ───────────────────────────────────────────────────────────────────
 const P      = "#7C4DCC";
@@ -81,12 +82,39 @@ const TIPS = [
 ];
 
 // ── Combined header: tab underlines + notification bell ───────────────────────
+const ADOPTION_NOTIF_TYPES = [
+  "adoption_request_received",
+  "adoption_request_accepted",
+  "adoption_request_rejected",
+  "adoption_message_received",
+  "adoption_listing_updated",
+  "adoption_listing_reminder",
+];
+
 function PetHeader({ topPad, mainTab, onChange }: { topPad: number; mainTab: MainTab; onChange: (t: MainTab) => void }) {
   const T = useTheme();
+  const router = useRouter();
+  const { user } = useAuth();
+  const [unreadCount, setUnreadCount] = React.useState(0);
+
   const TABS: { key: MainTab; label: string }[] = [
     { key: "adoption", label: "Sahiplendirme" },
     { key: "evcilim",  label: "Evcilim"      },
   ];
+
+  React.useEffect(() => {
+    if (!user) return;
+    let cancelled = false;
+    apiFetchNotifications(user.id).then((notifs) => {
+      if (cancelled) return;
+      const count = notifs.filter((n) => !n.read && ADOPTION_NOTIF_TYPES.includes(n.type)).length;
+      setUnreadCount(count);
+    }).catch(() => {});
+    return () => { cancelled = true; };
+  }, [user]);
+
+  const badgeLabel = unreadCount <= 0 ? null : unreadCount > 9 ? "9+" : String(unreadCount);
+
   return (
     <View style={[hdr.wrap, { paddingTop: topPad + 6, backgroundColor: T.bg }]}>
       <View style={hdr.tabRow}>
@@ -102,21 +130,30 @@ function PetHeader({ topPad, mainTab, onChange }: { topPad: number; mainTab: Mai
           );
         })}
       </View>
-      <Pressable style={hdr.bellBtn} onPress={() => {}}>
-        <Icon name="notifications-outline" size={22} color={BODY} />
-        <View style={hdr.bellDot} />
+      <Pressable
+        style={hdr.bellBtn}
+        onPress={() => { Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light); router.push("/adoption-notifications" as any); }}
+        hitSlop={10}
+      >
+        <Icon name="notifications-outline" size={22} color={badgeLabel ? P : BODY} />
+        {badgeLabel ? (
+          <View style={hdr.bellBadge}>
+            <Text style={hdr.bellBadgeTxt}>{badgeLabel}</Text>
+          </View>
+        ) : null}
       </Pressable>
     </View>
   );
 }
 const hdr = StyleSheet.create({
-  wrap:      { flexDirection: "row", alignItems: "flex-end", justifyContent: "space-between", paddingHorizontal: 20, paddingBottom: 0, backgroundColor: WHITE },
-  tabRow:    { flexDirection: "row", alignItems: "flex-end", gap: 24 },
-  tabItem:   { alignItems: "center", paddingBottom: 12 },
-  tabTxt:    { fontSize: 17, letterSpacing: -0.3 },
-  underline: { position: "absolute", bottom: 0, left: 0, right: 0, height: 3, backgroundColor: P, borderRadius: 2 },
-  bellBtn:   { paddingBottom: 12, position: "relative" },
-  bellDot:   { position: "absolute", top: 2, right: 0, width: 8, height: 8, borderRadius: 4, backgroundColor: "#FF3B30", borderWidth: 1.5, borderColor: WHITE },
+  wrap:         { flexDirection: "row", alignItems: "flex-end", justifyContent: "space-between", paddingHorizontal: 20, paddingBottom: 0, backgroundColor: WHITE },
+  tabRow:       { flexDirection: "row", alignItems: "flex-end", gap: 24 },
+  tabItem:      { alignItems: "center", paddingBottom: 12 },
+  tabTxt:       { fontSize: 17, letterSpacing: -0.3 },
+  underline:    { position: "absolute", bottom: 0, left: 0, right: 0, height: 3, backgroundColor: P, borderRadius: 2 },
+  bellBtn:      { paddingBottom: 12, position: "relative" },
+  bellBadge:    { position: "absolute", top: 0, right: -4, minWidth: 16, height: 16, borderRadius: 8, backgroundColor: "#FF3B30", borderWidth: 1.5, borderColor: WHITE, alignItems: "center", justifyContent: "center", paddingHorizontal: 3 },
+  bellBadgeTxt: { fontSize: 9, fontFamily: "Inter_700Bold", color: WHITE, lineHeight: 11 },
 });
 
 // ── Outer tab switcher (kept as thin divider below header) ────────────────────

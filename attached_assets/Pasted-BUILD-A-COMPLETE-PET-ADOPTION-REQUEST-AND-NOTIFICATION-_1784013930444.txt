@@ -1,0 +1,958 @@
+BUILD A COMPLETE PET ADOPTION REQUEST AND NOTIFICATION SYSTEM
+
+Implement a complete production-ready "Sahiplendirme Talebi" system for the existing Sahiplendirme section.
+
+IMPORTANT:
+Do not redesign the existing Sahiplendirme page.
+Preserve the current premium purple UI.
+Use the existing authentication, user profile, listing, notification and messaging infrastructure where possible.
+
+The notification bell in the top-right of the Sahiplendirme screen must now have a real purpose.
+
+==================================================
+CORE FEATURE
+==================================================
+
+Create this complete adoption flow:
+
+User opens an adoption listing
+→ taps "İletişim" or "Sahiplenmek İstiyorum"
+→ adoption request form opens
+→ user completes a short application
+→ request is sent to the listing owner
+→ listing owner receives a Sahiplendirme notification
+→ owner reviews the request
+→ owner can accept, reject or start messaging
+→ both users can communicate
+→ adoption process status is tracked
+
+This must use real authenticated users and real database records.
+
+Do not use fake notifications.
+Do not use random users.
+Do not hardcode adoption requests.
+
+==================================================
+1. CHANGE LISTING CTA FLOW
+==================================================
+
+Audit all adoption listing cards and listing detail screens.
+
+The existing "İletişim" button must start the adoption contact flow.
+
+Recommended behavior:
+
+When user taps:
+
+"İletişim"
+
+Open a premium bottom sheet or modal.
+
+Title:
+
+"Bu patili dostla ilgileniyor musun?"
+
+Subtitle:
+
+"İlan sahibine sahiplendirme talebi gönderebilir veya mesajlaşabilirsin."
+
+Actions:
+
+Primary:
+"Sahiplenmek İstiyorum"
+
+Secondary:
+"Mesaj Gönder"
+
+Tertiary:
+"Vazgeç"
+
+If the current app already has a listing detail page, this flow can also exist on the detail page.
+
+Do not immediately send an empty request.
+
+==================================================
+2. ADOPTION REQUEST FORM
+==================================================
+
+When "Sahiplenmek İstiyorum" is tapped, open an adoption request form.
+
+Design must match the existing CanYoldaşı UI.
+
+FORM TITLE:
+
+"Sahiplendirme Talebi"
+
+Show the animal/listing summary at the top:
+
+- animal photo
+- animal name
+- breed
+- age
+- listing city/district
+
+FORM FIELDS:
+
+1. "Neden sahiplenmek istiyorsun?"
+
+Multiline textarea.
+
+Required.
+Minimum 20 characters.
+Maximum 500 characters.
+
+2. "Daha önce evcil hayvan baktın mı?"
+
+Options:
+
+- Evet
+- Hayır
+
+Required.
+
+3. "Yaşam alanın"
+
+Options:
+
+- Apartman dairesi
+- Müstakil ev
+- Bahçeli ev
+- Diğer
+
+Required.
+
+4. "Evde başka hayvan var mı?"
+
+Options:
+
+- Evet
+- Hayır
+
+Required.
+
+5. "Gün içinde hayvan yalnız kalacak mı?"
+
+Options:
+
+- Hayır
+- 1–3 saat
+- 3–6 saat
+- 6 saatten fazla
+
+Required.
+
+6. "İlan sahibine not"
+
+Optional multiline field.
+
+Maximum 300 characters.
+
+At the bottom:
+
+Primary CTA:
+
+"Talebi Gönder"
+
+Secondary:
+
+"Vazgeç"
+
+Before sending:
+validate all required fields.
+
+Do not allow empty or invalid submission.
+
+==================================================
+3. DATABASE MODEL
+==================================================
+
+Audit the existing Supabase schema first.
+
+Reuse existing tables if equivalent functionality exists.
+
+Do not create duplicate request tables.
+
+If no adoption request system exists, create a new table:
+
+adoption_requests
+
+Suggested fields:
+
+id uuid primary key default gen_random_uuid()
+
+listing_id uuid not null
+requester_id uuid not null
+owner_id uuid not null
+
+reason text not null
+had_pet_before boolean not null
+living_space text not null
+has_other_pets boolean not null
+alone_duration text not null
+note text
+
+status text not null default 'pending'
+
+created_at timestamptz default now()
+updated_at timestamptz default now()
+
+accepted_at timestamptz nullable
+rejected_at timestamptz nullable
+
+message_thread_id uuid nullable
+
+Status values:
+
+pending
+reviewing
+accepted
+rejected
+cancelled
+completed
+
+IMPORTANT:
+
+Add safe database constraints.
+
+Prevent the same authenticated user from sending repeated pending requests for the same listing.
+
+Recommended unique/validation logic:
+
+One active request per requester + listing.
+
+The listing owner must never be able to send an adoption request to their own listing.
+
+==================================================
+4. ROW LEVEL SECURITY
+==================================================
+
+Enable RLS.
+
+REQUESTER:
+- can create their own adoption request
+- can read their own requests
+- can cancel their own pending request
+
+OWNER:
+- can read requests where owner_id = auth.uid()
+- can update status for requests related to their listing
+
+OTHER USERS:
+- cannot read adoption request data
+
+Do not expose private application answers publicly.
+
+Never use service role credentials in the frontend.
+
+==================================================
+5. REQUEST SUBMISSION
+==================================================
+
+When the user taps "Talebi Gönder":
+
+1. Confirm authenticated user.
+2. Confirm listing exists.
+3. Confirm listing is still active.
+4. Confirm requester is not listing owner.
+5. Check for existing active request.
+6. Insert adoption request.
+7. Create an adoption notification for listing owner.
+8. Refresh request state.
+9. Show success feedback.
+
+Success UI:
+
+Large purple check icon.
+
+Title:
+
+"Talebin gönderildi 🐾"
+
+Text:
+
+"İlan sahibi talebini inceleyebilir ve seninle iletişime geçebilir."
+
+Buttons:
+
+"Talebimi Gör"
+"Tüm İlanlara Dön"
+
+Do not create duplicate requests on double tap.
+
+Disable submit button while request is being created.
+
+==================================================
+6. SAHİPLENDİRME NOTIFICATION BELL
+==================================================
+
+The notification bell in the top-right of Sahiplendirme must open:
+
+"Sahiplendirme Bildirimleri"
+
+This notification center is specific to adoption activity.
+
+Add a red unread indicator dot/count.
+
+Bell behavior:
+
+No unread notifications:
+→ no red dot
+
+Unread notifications:
+→ show red dot or numeric badge
+
+Example:
+
+1–9:
+show exact count
+
+10+:
+show "9+"
+
+The badge must update from real notification data.
+
+==================================================
+7. SAHİPLENDİRME BİLDİRİMLERİ SCREEN
+==================================================
+
+Create a premium notification screen.
+
+HEADER:
+
+Back button
+"Sahiplendirme Bildirimleri"
+
+Optional action:
+"Tümünü okundu işaretle"
+
+FILTER TABS:
+
+- Tümü
+- Talepler
+- İlanlarım
+- Takip Ettiklerim
+
+Default:
+Tümü
+
+NOTIFICATION TYPES:
+
+A. NEW ADOPTION REQUEST
+
+Title:
+"Yeni sahiplendirme talebi"
+
+Text example:
+
+"Samet Esnek, Atlas için sahiplendirme talebi gönderdi."
+
+Show:
+- requester avatar
+- animal thumbnail
+- relative time
+
+CTA:
+
+"Talebi Gör"
+
+B. REQUEST ACCEPTED
+
+Title:
+
+"Talebin kabul edildi 🎉"
+
+Text:
+
+"Atlas için gönderdiğin sahiplendirme talebi kabul edildi."
+
+CTA:
+
+"Mesajlaş"
+
+C. REQUEST REJECTED
+
+Title:
+
+"Talep durumu güncellendi"
+
+Text:
+
+"Atlas için gönderdiğin talep bu kez olumlu sonuçlanmadı."
+
+CTA:
+
+"İlanı Gör"
+
+Use respectful language.
+
+Do not show aggressive rejection language.
+
+D. NEW MESSAGE
+
+Title:
+
+"Yeni mesaj"
+
+Text:
+
+"Atlas sahiplendirme süreci hakkında yeni bir mesajın var."
+
+CTA:
+
+"Mesajı Aç"
+
+E. LISTING STATUS CHANGE
+
+Title:
+
+"İlan durumu güncellendi"
+
+Examples:
+
+"Favorine eklediğin Limon ilanı sahiplendirildi."
+
+"Takip ettiğin ilan yayından kaldırıldı."
+
+CTA:
+
+"İlanı Gör"
+
+F. ADOPTION REMINDER
+
+Title:
+
+"İlan durumunu güncelle"
+
+Text:
+
+"Atlas ilanınız bir süredir yayında. Sahiplendirildi mi?"
+
+CTA:
+
+"Durumu Güncelle"
+
+==================================================
+8. NOTIFICATION DATABASE
+==================================================
+
+Audit the existing notification infrastructure.
+
+If a global notifications table already exists:
+reuse it.
+
+Add adoption-specific notification types.
+
+Recommended types:
+
+adoption_request_received
+adoption_request_accepted
+adoption_request_rejected
+adoption_message_received
+adoption_listing_updated
+adoption_listing_reminder
+
+Recommended metadata:
+
+listing_id
+request_id
+sender_id
+animal_name
+thread_id
+
+Do not create a second notification system if a working notification table already exists.
+
+If no notification system exists, create one safely.
+
+Suggested schema:
+
+notifications
+
+id uuid
+user_id uuid
+type text
+title text
+body text
+metadata jsonb
+is_read boolean default false
+created_at timestamptz default now()
+
+Enable RLS.
+
+Users can only read/update their own notifications.
+
+==================================================
+9. ADOPTION REQUEST DETAIL SCREEN
+==================================================
+
+When the listing owner taps "Talebi Gör", open:
+
+"Sahiplendirme Talebi"
+
+Show:
+
+Animal summary:
+- animal image
+- animal name
+- breed
+- age
+
+Requester:
+- profile photo
+- full name
+
+Application answers:
+
+"Neden sahiplenmek istiyor?"
+"Daha önce evcil hayvan baktı mı?"
+"Yaşam alanı"
+"Evde başka hayvan var mı?"
+"Hayvan yalnız kalacak mı?"
+"Ek not"
+
+Use clean information cards.
+
+Do not show private data such as email or phone automatically.
+
+OWNER ACTIONS:
+
+Primary:
+"Mesaj Gönder"
+
+Secondary positive:
+"Talebi Kabul Et"
+
+Secondary negative:
+"Talebi Reddet"
+
+If status = accepted:
+show:
+
+"Kabul Edildi"
+
+If rejected:
+show:
+
+"Talep Sonuçlandı"
+
+==================================================
+10. ACCEPT REQUEST FLOW
+==================================================
+
+When owner taps:
+
+"Talebi Kabul Et"
+
+Show confirmation modal:
+
+Title:
+
+"Talebi kabul etmek istiyor musun?"
+
+Text:
+
+"Talep sahibi bilgilendirilecek ve sahiplendirme süreci için mesajlaşmaya devam edebileceksiniz."
+
+Buttons:
+
+"Talebi Kabul Et"
+"Vazgeç"
+
+On confirm:
+
+1. update request status to accepted
+2. set accepted_at
+3. create requester notification
+4. create or resolve DM thread
+5. allow messaging
+6. update UI immediately
+
+Requester notification:
+
+Title:
+"Talebin kabul edildi 🎉"
+
+Body:
+"{animalName} için sahiplendirme talebin kabul edildi."
+
+Do not automatically mark the animal as adopted.
+
+Acceptance means:
+the adoption process has started.
+
+==================================================
+11. REJECT REQUEST FLOW
+==================================================
+
+When owner taps:
+
+"Talebi Reddet"
+
+Show modal:
+
+Title:
+
+"Talebi reddet"
+
+Optional reason selector:
+
+- Yaşam koşulları uygun değil
+- Başka bir adayla ilerleniyor
+- İlan artık aktif değil
+- Diğer
+
+Do not share the internal rejection reason with the requester unless explicitly intended by the UX.
+
+On confirm:
+
+1. status = rejected
+2. rejected_at = current timestamp
+3. create respectful requester notification
+4. update UI
+
+Requester message:
+
+"Bu sahiplendirme talebi bu kez olumlu sonuçlanmadı."
+
+Do not use:
+
+"Reddedildin"
+"Başvurun başarısız"
+
+==================================================
+12. MESSAGING INTEGRATION
+==================================================
+
+"Mesaj Gönder" must use the existing real DM system.
+
+Do not create a separate fake chat UI.
+
+If a DM thread between these users already exists:
+open existing thread.
+
+Otherwise:
+create one safely using the existing messaging architecture.
+
+Associate the adoption request/listing context.
+
+At the top of the conversation, optionally show a compact context card:
+
+"Atlas • Sahiplendirme"
+
+Tapping the card:
+open listing/request detail.
+
+When a message is sent in adoption context:
+create a notification for the receiving user if needed.
+
+Avoid duplicate DM threads.
+
+==================================================
+13. MY REQUESTS
+==================================================
+
+For users who submit requests, add a way to view their own adoption requests.
+
+Preferred placement:
+
+Inside Sahiplendirme notification screen
+or profile activity section.
+
+Section:
+
+"Taleplerim"
+
+Cards show:
+
+Animal image
+Animal name
+Request date
+Status
+
+Status chips:
+
+İnceleniyor
+Kabul Edildi
+Sonuçlandı
+İptal Edildi
+Tamamlandı
+
+Status mapping:
+
+pending → İnceleniyor
+reviewing → İnceleniyor
+accepted → Kabul Edildi
+rejected → Sonuçlandı
+cancelled → İptal Edildi
+completed → Tamamlandı
+
+==================================================
+14. OWNER REQUEST MANAGEMENT
+==================================================
+
+Inside:
+
+Sahiplendirme
+→ İlanlarım
+
+For each owned listing, show a request count when requests exist.
+
+Example:
+
+"3 Talep"
+
+Tapping request count opens:
+
+"Atlas için Talepler"
+
+List requester cards:
+
+avatar
+name
+request date
+short reason preview
+status
+
+CTA:
+
+"Talebi İncele"
+
+Sort:
+
+pending first
+reviewing second
+accepted
+rejected
+
+Newest requests first inside each status.
+
+==================================================
+15. LISTING STATUS AND COMPLETION
+==================================================
+
+When a real adoption is completed, the listing owner must manually mark:
+
+"Sahiplendirildi"
+
+Show confirmation:
+
+"{animalName} sahiplendirildi olarak işaretlensin mi?"
+
+On confirm:
+
+1. listing status becomes adopted/completed
+2. listing is no longer active for new adoption requests
+3. existing request records remain for history
+4. notify users who favorited/followed the listing
+5. accepted request may be marked completed
+6. show "Sahiplendirildi" badge on listing history
+
+Do not delete the listing.
+
+Do not delete adoption request history.
+
+==================================================
+16. EMPTY STATES
+==================================================
+
+Notification empty state:
+
+Icon:
+bell / paw
+
+Title:
+
+"Henüz sahiplendirme bildirimin yok"
+
+Text:
+
+"İlanların ve sahiplendirme taleplerinle ilgili gelişmeler burada görünecek."
+
+Request owner empty state:
+
+"Henüz talep yok"
+
+"İlanınla ilgilenen hayvan dostlarının talepleri burada görünecek."
+
+My requests empty state:
+
+"Henüz sahiplendirme talebi göndermedin"
+
+"Yeni bir dostla tanışmak için ilanları keşfet."
+
+CTA:
+
+"Tüm İlanları Keşfet"
+
+==================================================
+17. REAL-TIME OR CACHE REFRESH
+==================================================
+
+Use the project's existing data architecture.
+
+If Supabase Realtime is already used:
+subscribe safely to adoption notifications and request changes.
+
+Otherwise:
+use proper React Query / TanStack Query invalidation.
+
+After request creation:
+refresh requests
+refresh owner notifications
+
+After accept/reject:
+refresh request detail
+refresh request lists
+refresh notification count
+
+After read notification:
+refresh unread badge
+
+Do not require app restart.
+
+Do not require logout/login.
+
+Use the real existing query keys.
+
+Do not invent duplicate caches.
+
+==================================================
+18. SECURITY AND PRIVACY
+==================================================
+
+Do not expose:
+
+- user email
+- phone number
+- home address
+- precise private location
+
+unless the user explicitly shares it through an intended feature.
+
+A requester cannot read other users' requests.
+
+A listing owner can only manage requests for their own listings.
+
+A requester cannot accept their own request.
+
+A user cannot create an adoption request for their own listing.
+
+Validate these rules both frontend and backend/RLS.
+
+==================================================
+19. DO NOT CHANGE
+==================================================
+
+Do not redesign:
+
+- Sahiplendirme header
+- Sahiplendirme / Evcilim tabs
+- İlan Oluştur / İlanlarım / Tüm İlanlar sub-tabs
+- search bar
+- animal filters
+- bottom navigation
+- current listing card style
+
+Only extend the existing Sahiplendirme system with:
+
+- adoption request flow
+- adoption notifications
+- request management
+- messaging integration
+- request statuses
+
+==================================================
+20. COMPLETE TEST FLOW
+==================================================
+
+Test with TWO REAL TEST USERS.
+
+USER A:
+Listing owner
+
+USER B:
+Adoption requester
+
+TEST 1:
+User B opens User A listing
+→ taps İletişim
+→ taps Sahiplenmek İstiyorum
+→ completes form
+→ sends request
+
+EXPECTED:
+request saved once
+
+TEST 2:
+User A opens Sahiplendirme
+→ notification bell shows unread badge
+
+TEST 3:
+User A taps bell
+→ sees new adoption request notification
+
+TEST 4:
+User A opens request
+→ all application answers display correctly
+
+TEST 5:
+User A taps Mesaj Gönder
+→ real DM thread opens
+
+TEST 6:
+User A accepts request
+→ User B receives notification
+
+TEST 7:
+User B taps notification
+→ request status displays Kabul Edildi
+
+TEST 8:
+Attempt duplicate active request
+→ blocked safely
+
+TEST 9:
+Listing owner tries to request own listing
+→ blocked
+
+TEST 10:
+Unauthorized user attempts to read request
+→ blocked by RLS
+
+TEST 11:
+User A marks listing Sahiplendirildi
+→ new requests are disabled
+
+TEST 12:
+iOS, Android and Web all show matching request and notification state
+
+==================================================
+FINAL REPORT REQUIRED
+==================================================
+
+After implementation, report:
+
+1. Existing tables reused
+2. New tables created
+3. RLS policies added
+4. Notification types implemented
+5. Adoption request status values
+6. Files/screens/components changed
+7. Existing DM system integration method
+8. Duplicate request prevention method
+9. Bell unread badge logic
+10. Owner request management flow
+11. iOS test result
+12. Android test result
+13. Web test result
+
+Do not report "completed" until the complete flow works:
+
+listing
+→ adoption application
+→ database
+→ owner notification
+→ request review
+→ message
+→ accept/reject
+→ requester notification
+→ status update

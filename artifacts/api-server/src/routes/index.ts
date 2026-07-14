@@ -13,6 +13,7 @@ import messagesRouter from "./messages.js";
 import listingsRouter from "./listings.js";
 import animalsRouter from "./animals.js";
 import adoptionRouter from "./adoption.js";
+import adoptionRequestsRouter from "./adoptionRequests.js";
 import uploadRouter from "./upload.js";
 
 const router: IRouter = Router();
@@ -31,6 +32,7 @@ router.use(messagesRouter);
 router.use(listingsRouter);
 router.use(animalsRouter);
 router.use(adoptionRouter);
+router.use(adoptionRequestsRouter);
 router.use(uploadRouter);
 
 export default router;

@@ -1,0 +1,358 @@
+import { Icon } from "@/components/Icon";
+import * as Haptics from "expo-haptics";
+import { Image } from "expo-image";
+import { useRouter } from "expo-router";
+import React, { useCallback, useEffect, useRef, useState } from "react";
+import {
+  Animated,
+  FlatList,
+  Platform,
+  Pressable,
+  RefreshControl,
+  StyleSheet,
+  Text,
+  View,
+} from "react-native";
+import { useSafeAreaInsets } from "react-native-safe-area-context";
+import { useAuth } from "@/contexts/AuthContext";
+import {
+  apiFetchNotifications,
+  apiMarkAllNotificationsRead,
+  apiMarkNotificationRead,
+  type AppNotification,
+} from "@/lib/socialApi";
+import { apiGetOrCreateConversation } from "@/lib/messagesApi";
+
+const P    = "#7C4DCC";
+const DARK = "#4B267D";
+const BODY = "#6E6290";
+const BG   = "#F8F4FF";
+const WHITE = "#FFFFFF";
+const BORDER = "rgba(124,77,204,0.12)";
+
+const ADOPTION_TYPES = [
+  "adoption_request_received",
+  "adoption_request_accepted",
+  "adoption_request_rejected",
+  "adoption_message_received",
+  "adoption_listing_updated",
+  "adoption_listing_reminder",
+];
+
+type FilterTab = "all" | "requests" | "mylistings" | "following";
+const FILTERS: { key: FilterTab; label: string }[] = [
+  { key: "all",       label: "Tümü" },
+  { key: "requests",  label: "Talepler" },
+  { key: "mylistings",label: "İlanlarım" },
+  { key: "following", label: "Takip Ettiklerim" },
+];
+
+function formatAgo(iso: string): string {
+  const diff = Date.now() - new Date(iso).getTime();
+  const m = Math.floor(diff / 60000);
+  if (m < 1)  return "Az önce";
+  if (m < 60) return `${m} dk`;
+  const h = Math.floor(m / 60);
+  if (h < 24) return `${h} sa`;
+  return `${Math.floor(h / 24)} gün`;
+}
+
+interface NotifConfig {
+  icon: string;
+  iconColor: string;
+  iconBg: string;
+  title: string;
+  ctaLabel: string;
+}
+
+function getNotifConfig(type: string): NotifConfig {
+  switch (type) {
+    case "adoption_request_received":
+      return { icon: "paw", iconColor: P, iconBg: `${P}18`, title: "Yeni sahiplendirme talebi", ctaLabel: "Talebi Gör" };
+    case "adoption_request_accepted":
+      return { icon: "checkmark-circle", iconColor: "#34C759", iconBg: "#E8F8EE", title: "Talebin kabul edildi 🎉", ctaLabel: "Mesajlaş" };
+    case "adoption_request_rejected":
+      return { icon: "close-circle", iconColor: "#FF6B6B", iconBg: "#FFF0F0", title: "Talep durumu güncellendi", ctaLabel: "İlanı Gör" };
+    case "adoption_message_received":
+      return { icon: "chatbubble", iconColor: "#5B9BD5", iconBg: "#EBF4FF", title: "Yeni mesaj", ctaLabel: "Mesajı Aç" };
+    case "adoption_listing_updated":
+      return { icon: "refresh-circle", iconColor: "#FF9500", iconBg: "#FFF5E6", title: "İlan durumu güncellendi", ctaLabel: "İlanı Gör" };
+    case "adoption_listing_reminder":
+      return { icon: "time", iconColor: "#FF9500", iconBg: "#FFF5E6", title: "İlan durumunu güncelle", ctaLabel: "Durumu Güncelle" };
+    default:
+      return { icon: "notifications", iconColor: P, iconBg: `${P}18`, title: "Bildirim", ctaLabel: "Gör" };
+  }
+}
+
+function filterNotifs(notifs: AppNotification[], filter: FilterTab): AppNotification[] {
+  const adoptionOnly = notifs.filter((n) => ADOPTION_TYPES.includes(n.type));
+  switch (filter) {
+    case "requests":
+      return adoptionOnly.filter((n) =>
+        n.type === "adoption_request_received" ||
+        n.type === "adoption_request_accepted" ||
+        n.type === "adoption_request_rejected"
+      );
+    case "mylistings":
+      return adoptionOnly.filter((n) =>
+        n.type === "adoption_listing_updated" ||
+        n.type === "adoption_listing_reminder"
+      );
+    case "following":
+      return adoptionOnly.filter((n) =>
+        n.type === "adoption_listing_updated"
+      );
+    case "all":
+    default:
+      return adoptionOnly;
+  }
+}
+
+function NotifCard({
+  notif,
+  onPress,
+  onRead,
+}: {
+  notif: AppNotification;
+  onPress: () => void;
+  onRead: () => void;
+}) {
+  const cfg = getNotifConfig(notif.type);
+  const fadeAnim = useRef(new Animated.Value(notif.read ? 1 : 0)).current;
+
+  useEffect(() => {
+    if (notif.read) Animated.timing(fadeAnim, { toValue: 1, duration: 400, useNativeDriver: false }).start();
+  }, [notif.read]);
+
+  const bgColor = fadeAnim.interpolate({ inputRange: [0, 1], outputRange: [`${P}08`, WHITE] });
+
+  return (
+    <Animated.View style={[S.notifCard, { backgroundColor: bgColor }]}>
+      {!notif.read && <View style={S.unreadDot} />}
+      <Pressable
+        style={S.notifInner}
+        onPress={() => { onRead(); onPress(); Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light); }}
+      >
+        <View style={[S.notifIconWrap, { backgroundColor: cfg.iconBg }]}>
+          <Icon name={cfg.icon} size={20} color={cfg.iconColor} />
+        </View>
+
+        <View style={S.notifBody}>
+          <Text style={S.notifTitle}>{cfg.title}</Text>
+          <Text style={S.notifMsg} numberOfLines={2}>{notif.message}</Text>
+          <Text style={S.notifTime}>{formatAgo(notif.createdAt)}</Text>
+        </View>
+
+        {notif.postImage ? (
+          <Image source={{ uri: notif.postImage }} style={S.notifThumb} contentFit="cover" />
+        ) : notif.senderAvatar ? (
+          <Image source={{ uri: notif.senderAvatar }} style={S.notifThumb} contentFit="cover" />
+        ) : (
+          <View style={[S.notifThumb, { backgroundColor: `${P}18`, alignItems: "center", justifyContent: "center" }]}>
+            <Icon name="paw" size={18} color={`${P}80`} />
+          </View>
+        )}
+      </Pressable>
+
+      <View style={S.notifCta}>
+        <Pressable
+          style={({ pressed }) => [S.ctaBtn, { opacity: pressed ? 0.7 : 1 }]}
+          onPress={() => { onRead(); onPress(); Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light); }}
+        >
+          <Text style={S.ctaBtnTxt}>{cfg.ctaLabel}</Text>
+          <Icon name="chevron-forward" size={12} color={P} />
+        </Pressable>
+      </View>
+    </Animated.View>
+  );
+}
+
+export default function AdoptionNotificationsScreen() {
+  const insets = useSafeAreaInsets();
+  const router = useRouter();
+  const { user } = useAuth();
+
+  const [notifs,     setNotifs]     = useState<AppNotification[]>([]);
+  const [loading,    setLoading]    = useState(true);
+  const [refreshing, setRefreshing] = useState(false);
+  const [filter,     setFilter]     = useState<FilterTab>("all");
+
+  const topPad = Platform.OS === "web" ? 20 : insets.top + 4;
+  const botPad = Platform.OS === "web" ? 24 : insets.bottom + 16;
+
+  const adoptionNotifs = notifs.filter((n) => ADOPTION_TYPES.includes(n.type));
+  const unreadCount    = adoptionNotifs.filter((n) => !n.read).length;
+  const displayed      = filterNotifs(notifs, filter);
+
+  const load = useCallback(async (refresh = false) => {
+    if (!user) return;
+    if (refresh) setRefreshing(true);
+    try {
+      const data = await apiFetchNotifications(user.id);
+      setNotifs(data);
+    } catch {
+      setNotifs([]);
+    } finally {
+      setLoading(false);
+      setRefreshing(false);
+    }
+  }, [user]);
+
+  useEffect(() => { load(); }, [load]);
+
+  const handleMarkAll = async () => {
+    if (!user || unreadCount === 0) return;
+    Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+    await apiMarkAllNotificationsRead(user.id).catch(() => {});
+    setNotifs((prev) => prev.map((n) => ({ ...n, read: true })));
+  };
+
+  const handleMarkOne = async (id: string) => {
+    const notif = notifs.find((n) => n.id === id);
+    if (!notif || notif.read || !user) return;
+    await apiMarkNotificationRead(id, user.id).catch(() => {});
+    setNotifs((prev) => prev.map((n) => n.id === id ? { ...n, read: true } : n));
+  };
+
+  const handleCta = async (notif: AppNotification) => {
+    if (notif.type === "adoption_request_received" && notif.postId) {
+      router.push(`/adoption/${notif.postId}` as any);
+    } else if (notif.type === "adoption_request_accepted" && user && notif.senderId) {
+      try {
+        const conv = await apiGetOrCreateConversation(user.id, notif.senderId, notif.postId ? { id: notif.postId, title: "", imageUrl: notif.postImage ?? "" } : undefined);
+        router.push(`/messages/${encodeURIComponent(conv.id)}` as any);
+      } catch {
+        if (notif.postId) router.push(`/adoption/${notif.postId}` as any);
+      }
+    } else if (notif.postId) {
+      router.push(`/adoption/${notif.postId}` as any);
+    }
+  };
+
+  return (
+    <View style={[S.root, { paddingTop: topPad }]}>
+      {/* Header */}
+      <View style={S.header}>
+        <Pressable style={S.backBtn} onPress={() => router.back()} hitSlop={12}>
+          <Icon name="chevron-back" size={22} color={DARK} />
+        </Pressable>
+        <View style={S.headerCenter}>
+          <Text style={S.headerTitle}>Sahiplendirme Bildirimleri</Text>
+          {unreadCount > 0 && (
+            <View style={S.unreadBadgeHeader}>
+              <Text style={S.unreadBadgeHeaderTxt}>{unreadCount > 99 ? "99+" : unreadCount} okunmamış</Text>
+            </View>
+          )}
+        </View>
+        {unreadCount > 0 && (
+          <Pressable style={S.markAllBtn} onPress={handleMarkAll} hitSlop={8}>
+            <Text style={S.markAllTxt}>Tümünü oku</Text>
+          </Pressable>
+        )}
+      </View>
+
+      {/* Filter tabs */}
+      <View style={S.filterRow}>
+        {FILTERS.map((f) => (
+          <Pressable
+            key={f.key}
+            style={({ pressed }) => [S.filterTab, filter === f.key && S.filterTabActive, { opacity: pressed ? 0.75 : 1 }]}
+            onPress={() => { setFilter(f.key); Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light); }}
+          >
+            <Text style={[S.filterTabTxt, filter === f.key && S.filterTabTxtActive]}>{f.label}</Text>
+          </Pressable>
+        ))}
+      </View>
+
+      {/* List */}
+      <FlatList
+        data={displayed}
+        keyExtractor={(item) => item.id}
+        contentContainerStyle={{ paddingHorizontal: 16, paddingBottom: botPad, gap: 10, paddingTop: 8 }}
+        showsVerticalScrollIndicator={false}
+        refreshControl={
+          <RefreshControl
+            refreshing={refreshing}
+            onRefresh={() => load(true)}
+            tintColor={P}
+            colors={[P]}
+          />
+        }
+        renderItem={({ item }) => (
+          <NotifCard
+            notif={item}
+            onRead={() => handleMarkOne(item.id)}
+            onPress={() => handleCta(item)}
+          />
+        )}
+        ListEmptyComponent={
+          loading ? null : (
+            <View style={S.empty}>
+              <View style={S.emptyIllo}>
+                <Icon name="notifications-outline" size={36} color={`${P}60`} />
+              </View>
+              <Text style={S.emptyTitle}>Bildirim yok</Text>
+              <Text style={S.emptySub}>
+                {filter === "all"
+                  ? "Sahiplendirme bildirimlerin burada görünecek."
+                  : "Bu kategoride henüz bildirim yok."}
+              </Text>
+            </View>
+          )
+        }
+      />
+    </View>
+  );
+}
+
+const S = StyleSheet.create({
+  root: { flex: 1, backgroundColor: BG },
+
+  header:       { flexDirection: "row", alignItems: "center", paddingHorizontal: 16, paddingBottom: 12, gap: 8 },
+  backBtn:      { width: 36, height: 36, borderRadius: 18, backgroundColor: `${P}10`, alignItems: "center", justifyContent: "center" },
+  headerCenter: { flex: 1, gap: 3 },
+  headerTitle:  { fontSize: 18, fontFamily: "Inter_700Bold", color: DARK, letterSpacing: -0.3 },
+  unreadBadgeHeader:    { alignSelf: "flex-start", backgroundColor: "#FF3B6B", borderRadius: 8, paddingHorizontal: 7, paddingVertical: 2 },
+  unreadBadgeHeaderTxt: { fontSize: 11, fontFamily: "Inter_700Bold", color: WHITE },
+  markAllBtn:   { paddingHorizontal: 10, paddingVertical: 6, borderRadius: 10, backgroundColor: `${P}12` },
+  markAllTxt:   { fontSize: 12, fontFamily: "Inter_600SemiBold", color: P },
+
+  filterRow: {
+    flexDirection: "row", paddingHorizontal: 16, gap: 8, paddingBottom: 10,
+    borderBottomWidth: 1, borderBottomColor: BORDER,
+  },
+  filterTab:       { paddingHorizontal: 13, paddingVertical: 7, borderRadius: 20, backgroundColor: "transparent" },
+  filterTabActive: { backgroundColor: `${P}14` },
+  filterTabTxt:    { fontSize: 13, fontFamily: "Inter_500Medium", color: BODY },
+  filterTabTxtActive: { color: P, fontFamily: "Inter_700Bold" },
+
+  notifCard: {
+    borderRadius: 18, borderWidth: 1, borderColor: BORDER,
+    backgroundColor: WHITE, overflow: "hidden",
+    ...Platform.select({
+      ios:     { shadowColor: "#4B267D", shadowOffset: { width: 0, height: 2 }, shadowOpacity: 0.06, shadowRadius: 8 },
+      android: { elevation: 2 },
+      default: {},
+    }),
+  },
+  notifInner:   { flexDirection: "row", alignItems: "flex-start", padding: 14, gap: 12 },
+  notifIconWrap:{ width: 44, height: 44, borderRadius: 22, alignItems: "center", justifyContent: "center", flexShrink: 0 },
+  notifBody:    { flex: 1, gap: 3 },
+  notifTitle:   { fontSize: 13, fontFamily: "Inter_700Bold", color: DARK },
+  notifMsg:     { fontSize: 13, fontFamily: "Inter_400Regular", color: BODY, lineHeight: 19 },
+  notifTime:    { fontSize: 11, fontFamily: "Inter_400Regular", color: `${BODY}80`, marginTop: 2 },
+  notifThumb:   { width: 52, height: 52, borderRadius: 12, flexShrink: 0 },
+  unreadDot:    { position: "absolute", top: 12, right: 12, width: 8, height: 8, borderRadius: 4, backgroundColor: "#FF3B6B", zIndex: 1 },
+
+  notifCta: {
+    borderTopWidth: 1, borderTopColor: BORDER,
+    paddingHorizontal: 14, paddingVertical: 10, alignItems: "flex-end",
+  },
+  ctaBtn:    { flexDirection: "row", alignItems: "center", gap: 4, backgroundColor: `${P}10`, borderRadius: 10, paddingHorizontal: 12, paddingVertical: 6 },
+  ctaBtnTxt: { fontSize: 12, fontFamily: "Inter_700Bold", color: P },
+
+  empty:      { flex: 1, alignItems: "center", justifyContent: "center", paddingTop: 80, gap: 12 },
+  emptyIllo:  { width: 80, height: 80, borderRadius: 40, backgroundColor: `${P}10`, alignItems: "center", justifyContent: "center", marginBottom: 4 },
+  emptyTitle: { fontSize: 18, fontFamily: "Inter_700Bold", color: DARK },
+  emptySub:   { fontSize: 14, fontFamily: "Inter_400Regular", color: BODY, textAlign: "center", paddingHorizontal: 40, lineHeight: 22 },
+});

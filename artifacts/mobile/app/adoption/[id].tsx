@@ -21,6 +21,7 @@ import {
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { useAdoption } from "@/contexts/AdoptionContext";
 import { useAuth } from "@/contexts/AuthContext";
+import { apiCheckAdoptionRequest } from "@/lib/adoptionRequestsApi";
 import { useBoost } from "@/contexts/BoostContext";
 import { useTheme } from "@/hooks/useTheme";
 import { formatTimeAgo } from "@/utils/formatters";
@@ -108,6 +109,9 @@ export default function AdoptionDetailScreen() {
   const [revealLoading,    setRevealLoading]    = useState(false);
   const [revealError,      setRevealError]      = useState<string | null>(null);
   const [msgSending,       setMsgSending]       = useState(false);
+  /* Contact intent sheet */
+  const [intentSheet,      setIntentSheet]      = useState(false);
+  const [existingRequest,  setExistingRequest]  = useState<{ hasRequest: boolean; status?: string } | null>(null);
 
   const listing = getListing(id ?? "");
   const isOwner = listing?.userId === user?.id;
@@ -119,6 +123,12 @@ export default function AdoptionDetailScreen() {
   const onPressOut = () => Animated.spring(pressScale, { toValue: 1,    useNativeDriver: true, speed: 20 }).start();
 
   useEffect(() => { if (id) fetchBoostStatus([id]); }, [id]);
+
+  /* Check if requester already has a pending/reviewing request */
+  useEffect(() => {
+    if (!id || !user || isOwner) return;
+    apiCheckAdoptionRequest(id, user.id).then(setExistingRequest).catch(() => {});
+  }, [id, user, isOwner]);
 
   /* Fetch public contact prefs when listing loads */
   useEffect(() => {
@@ -416,7 +426,7 @@ export default function AdoptionDetailScreen() {
             {/* Adoption note */}
             <View style={S.adoptionNote}>
               <LinearGradient colors={[`${P2}20`, `${P}12`]} style={S.adoptionNoteGrad}>
-                <Icon name="heart-circle-outline" size={20} color={P} />
+                <Icon name="heart-circle" size={20} color={P} />
                 <Text style={S.adoptionNoteTxt}>
                   Sahiplenmeden önce lütfen yaşam koşullarınızı ve hayvanın ihtiyaçlarını değerlendirin. Yüz yüze tanışma önerilir.
                 </Text>
@@ -508,44 +518,105 @@ export default function AdoptionDetailScreen() {
           </View>
         ) : !isOwner ? (
           <View style={[S.stickyBottom, { paddingBottom: botPad + 12 }]}>
-            {contactPrefs.allowMessages && (
-              <Animated.View style={[{ flex: 1 }, { transform: [{ scale: pressScale }] }]}>
-                <Pressable
-                  onPress={handleSendMessage}
-                  onPressIn={onPressIn}
-                  onPressOut={onPressOut}
-                  disabled={msgSending}
-                  style={S.msgBtnOuter}
-                >
-                  <LinearGradient
-                    colors={msgSending ? ["#C5BAE8", "#C5BAE8", "#C5BAE8"] : [P2, P, DARK]}
-                    start={{ x: 0, y: 0 }} end={{ x: 1, y: 0 }}
-                    style={S.msgBtn}
-                  >
-                    {msgSending ? (
-                      <ActivityIndicator size="small" color={WHITE} />
-                    ) : (
-                      <Icon name="chatbubble-ellipses" size={18} color={WHITE} />
-                    )}
-                    <Text style={S.msgBtnTxt}>
-                      {msgSending ? "Açılıyor…" : "Mesaj Gönder"}
-                    </Text>
-                  </LinearGradient>
-                </Pressable>
-              </Animated.View>
-            )}
+            <Animated.View style={[{ flex: 1 }, { transform: [{ scale: pressScale }] }]}>
+              <Pressable
+                onPress={() => {
+                  Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
+                  setIntentSheet(true);
+                }}
+                onPressIn={onPressIn}
+                onPressOut={onPressOut}
+                style={S.msgBtnOuter}
+              >
+                <LinearGradient colors={[P2, P, DARK]} start={{ x: 0, y: 0 }} end={{ x: 1, y: 0 }} style={S.msgBtn}>
+                  <Icon name="paw" size={18} color={WHITE} />
+                  <Text style={S.msgBtnTxt}>İletişim</Text>
+                </LinearGradient>
+              </Pressable>
+            </Animated.View>
 
             {contactPrefs.allowPhoneContact && (
               <Pressable
                 style={({ pressed }) => [S.callBtn, { opacity: pressed ? 0.85 : 1 }]}
                 onPress={handleRevealPhone}
               >
-                <Icon name="call" size={20} color={P} />
+                <Icon name="call-outline" size={20} color={P} />
               </Pressable>
             )}
           </View>
         ) : null}
       </View>
+
+      {/* ── Contact Intent Sheet ── */}
+      <Modal
+        visible={intentSheet}
+        transparent
+        animationType="slide"
+        onRequestClose={() => setIntentSheet(false)}
+      >
+        <Pressable style={S.modalOverlay} onPress={() => setIntentSheet(false)} />
+        <View style={[S.intentModal, { paddingBottom: botPad + 16 }]}>
+          <View style={S.phoneModalHandle} />
+
+          {/* Animal summary */}
+          <View style={S.intentHeader}>
+            <Icon name="heart-circle" size={26} color={P} />
+            <View style={{ flex: 1 }}>
+              <Text style={S.intentTitle}>Bu patili dostla ilgileniyor musun?</Text>
+              <Text style={S.intentSub}>
+                İlan sahibine sahiplendirme talebi gönderebilir veya mesajlaşabilirsin.
+              </Text>
+            </View>
+          </View>
+
+          <View style={S.intentDivider} />
+
+          {/* Primary: adoption request */}
+          {existingRequest?.hasRequest && (existingRequest.status === "pending" || existingRequest.status === "reviewing") ? (
+            <View style={S.existingRequestBanner}>
+              <Icon name="time" size={16} color="#FF9500" />
+              <Text style={S.existingRequestTxt}>Bu ilan için zaten bir talebin var ({existingRequest.status === "pending" ? "Beklemede" : "İnceleniyor"})</Text>
+            </View>
+          ) : (
+            <Pressable
+              style={({ pressed }) => [S.intentPrimaryBtn, { opacity: pressed ? 0.85 : 1 }]}
+              onPress={() => {
+                if (!user) { Alert.alert("Giriş Gerekli", "Talep göndermek için lütfen giriş yapın."); return; }
+                setIntentSheet(false);
+                router.push(`/adoption-request/${listing!.id}` as any);
+              }}
+            >
+              <LinearGradient colors={[P2, P, DARK]} start={{ x: 0, y: 0 }} end={{ x: 1, y: 0 }} style={S.intentPrimaryInner}>
+                <Icon name="paw" size={18} color={WHITE} />
+                <Text style={S.intentPrimaryTxt}>Sahiplenmek İstiyorum</Text>
+              </LinearGradient>
+            </Pressable>
+          )}
+
+          {/* Secondary: message */}
+          {contactPrefs.allowMessages && (
+            <Pressable
+              style={({ pressed }) => [S.intentSecondaryBtn, { opacity: pressed ? 0.85 : 1 }]}
+              disabled={msgSending}
+              onPress={async () => {
+                setIntentSheet(false);
+                await handleSendMessage();
+              }}
+            >
+              <Icon name="chatbubble-ellipses-outline" size={18} color={P} />
+              <Text style={S.intentSecondaryTxt}>{msgSending ? "Açılıyor…" : "Mesaj Gönder"}</Text>
+            </Pressable>
+          )}
+
+          {/* Tertiary: dismiss */}
+          <Pressable
+            style={({ pressed }) => [S.intentDismissBtn, { opacity: pressed ? 0.7 : 1 }]}
+            onPress={() => setIntentSheet(false)}
+          >
+            <Text style={S.intentDismissTxt}>Vazgeç</Text>
+          </Pressable>
+        </View>
+      </Modal>
 
       {/* ── Phone Reveal Modal ── */}
       <Modal
@@ -572,7 +643,7 @@ export default function AdoptionDetailScreen() {
           ) : revealedPhone ? (
             <View style={{ alignItems: "center", gap: 18, paddingVertical: 12 }}>
               <View style={S.phoneDisplay}>
-                <Icon name="call" size={20} color={P} />
+                <Icon name="call-outline" size={20} color={P} />
                 <Text style={S.phoneDisplayTxt} selectable>{revealedPhone}</Text>
               </View>
               <Pressable
@@ -583,7 +654,7 @@ export default function AdoptionDetailScreen() {
                 }}
               >
                 <LinearGradient colors={[P2, P, DARK]} start={{ x: 0, y: 0 }} end={{ x: 1, y: 0 }} style={S.callNowBtnInner}>
-                  <Icon name="call" size={18} color={WHITE} />
+                  <Icon name="call-outline" size={18} color={WHITE} />
                   <Text style={S.callNowBtnTxt}>Şimdi Ara</Text>
                 </LinearGradient>
               </Pressable>
@@ -733,6 +804,31 @@ const S = StyleSheet.create({
   msgBtn:      { flexDirection: "row", alignItems: "center", justifyContent: "center", gap: 8, height: 56, borderRadius: 18 },
   msgBtnTxt:   { fontSize: 16, fontFamily: "Inter_700Bold", color: WHITE },
   callBtn:     { width: 56, height: 56, borderRadius: 18, backgroundColor: WHITE, borderWidth: 1.5, borderColor: BORDER, alignItems: "center", justifyContent: "center", ...IOS_SHADOW },
+
+  // Contact intent sheet
+  intentModal: {
+    backgroundColor: BG,
+    borderTopLeftRadius: 32, borderTopRightRadius: 32,
+    paddingTop: 8, paddingHorizontal: 22, gap: 12,
+    ...Platform.select({
+      ios:     { shadowColor: "#000", shadowOffset: { width: 0, height: -4 }, shadowOpacity: 0.12, shadowRadius: 20 },
+      android: { elevation: 20 },
+      default: {},
+    }),
+  },
+  intentHeader:   { flexDirection: "row", alignItems: "flex-start", gap: 12, paddingTop: 6, paddingBottom: 4 },
+  intentTitle:    { fontSize: 17, fontFamily: "Inter_700Bold", color: DARK, letterSpacing: -0.3, lineHeight: 24 },
+  intentSub:      { fontSize: 13, fontFamily: "Inter_400Regular", color: BODY, lineHeight: 20, marginTop: 4 },
+  intentDivider:  { height: 1, backgroundColor: BORDER },
+  intentPrimaryBtn:   { borderRadius: 18, overflow: "hidden" },
+  intentPrimaryInner: { flexDirection: "row", alignItems: "center", justifyContent: "center", gap: 8, height: 56, borderRadius: 18 },
+  intentPrimaryTxt:   { fontSize: 16, fontFamily: "Inter_700Bold", color: WHITE },
+  intentSecondaryBtn: { flexDirection: "row", alignItems: "center", justifyContent: "center", gap: 8, height: 52, borderRadius: 16, borderWidth: 1.5, borderColor: BORDER, backgroundColor: WHITE },
+  intentSecondaryTxt: { fontSize: 15, fontFamily: "Inter_600SemiBold", color: P },
+  intentDismissBtn:   { alignItems: "center", paddingVertical: 14 },
+  intentDismissTxt:   { fontSize: 14, fontFamily: "Inter_500Medium", color: BODY },
+  existingRequestBanner: { flexDirection: "row", alignItems: "center", gap: 10, backgroundColor: "#FFF5E6", borderRadius: 14, padding: 14, borderWidth: 1, borderColor: "#FFD5A0" },
+  existingRequestTxt:    { fontSize: 13, fontFamily: "Inter_500Medium", color: "#8B6300", flex: 1 },
 
   // Phone modal
   modalOverlay:      { flex: 1, backgroundColor: "rgba(0,0,0,0.45)" },

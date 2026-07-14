@@ -25,7 +25,7 @@ export type AppNotification = {
   senderId:     string;
   senderName:   string;
   senderAvatar: string;
-  type:         "follow" | "like" | "comment" | "story_view";
+  type:         string;
   postId?:      string;
   postImage?:   string;
   message:      string;

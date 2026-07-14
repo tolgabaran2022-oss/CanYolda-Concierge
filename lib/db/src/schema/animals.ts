@@ -71,6 +71,28 @@ export const adoptionListings = pgTable("adoption_listings", {
   updatedAt:          timestamp("updated_at", { withTimezone: true }).defaultNow(),
 });
 
+export const adoptionRequests = pgTable("adoption_requests", {
+  id:             text("id").primaryKey().default(sql`gen_random_uuid()::text`),
+  listingId:      text("listing_id").notNull().references(() => adoptionListings.id, { onDelete: "cascade" }),
+  requesterId:    text("requester_id").notNull(),
+  requesterName:  text("requester_name").notNull().default(""),
+  ownerId:        text("owner_id").notNull(),
+  reason:         text("reason").notNull(),
+  hadPetBefore:   boolean("had_pet_before").notNull(),
+  livingSpace:    text("living_space").notNull(),
+  hasOtherPets:   boolean("has_other_pets").notNull(),
+  aloneDuration:  text("alone_duration").notNull(),
+  note:           text("note").notNull().default(""),
+  status:         text("status").notNull().default("pending"),
+  createdAt:      timestamp("created_at", { withTimezone: true }).defaultNow(),
+  updatedAt:      timestamp("updated_at", { withTimezone: true }).defaultNow(),
+  acceptedAt:     timestamp("accepted_at", { withTimezone: true }),
+  rejectedAt:     timestamp("rejected_at", { withTimezone: true }),
+}, (t) => [unique("adoption_requests_unique").on(t.listingId, t.requesterId)]);
+
+export type AdoptionRequest       = typeof adoptionRequests.$inferSelect;
+export type InsertAdoptionRequest = typeof adoptionRequests.$inferInsert;
+
 export type StrayAnimal           = typeof strayAnimals.$inferSelect;
 export type InsertStrayAnimal     = typeof strayAnimals.$inferInsert;
 export type AnimalInteraction     = typeof animalInteractions.$inferSelect;
