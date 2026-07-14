@@ -1,6 +1,7 @@
 import { Router } from "express";
 import { eq, or, sql } from "drizzle-orm";
 import { db, socialProfiles, follows, feedPosts } from "@workspace/db";
+import { extractUserId } from "../lib/jwtAuth.js";
 
 const router = Router();
 
@@ -112,7 +113,7 @@ router.get("/users/:id", async (req, res) => {
 /* ── PATCH /api/users/:id ─ update profile ───────────────── */
 router.patch("/users/:id", async (req, res) => {
   try {
-    const callerId = req.headers["x-user-id"] as string;
+    const callerId = extractUserId(req);
     const { id }   = req.params;
     if (!callerId || callerId !== id) {
       res.status(403).json({ error: "Forbidden" }); return;

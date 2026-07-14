@@ -252,7 +252,9 @@ export default function AnimalDetailScreen() {
   const [uniqueHelperCount,  setUniqueHelperCount]  = useState(0);
   const [helpUpdatesLoading, setHelpUpdatesLoading] = useState(false);
 
-  const helpScale = useRef(new Animated.Value(1)).current;
+  const helpScale    = useRef(new Animated.Value(1)).current;
+  const scrollRef    = useRef<ScrollView>(null);
+  const commentsYRef = useRef(0);
 
   /* Fetch reporter profile for avatar */
   useEffect(() => {
@@ -503,6 +505,7 @@ export default function AnimalDetailScreen() {
         keyboardVerticalOffset={insets.bottom + 80}
       >
         <ScrollView
+          ref={scrollRef}
           showsVerticalScrollIndicator={false}
           contentContainerStyle={{ paddingBottom: insets.bottom + 140 }}
         >
@@ -699,7 +702,10 @@ export default function AnimalDetailScreen() {
                   iconColor={C.purple}
                   value={animal.comments.length}
                   label="Yorum"
-                  onPress={() => {}}
+                  onPress={() => {
+                    Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+                    scrollRef.current?.scrollTo({ y: commentsYRef.current, animated: true });
+                  }}
                 />
                 <StatCard
                   icon="location-outline"
@@ -796,7 +802,10 @@ export default function AnimalDetailScreen() {
             </View>
 
             {/* Comments */}
-            <View style={D.section}>
+            <View
+              style={D.section}
+              onLayout={(e) => { commentsYRef.current = e.nativeEvent.layout.y; }}
+            >
               <Text style={D.sectionTitle}>
                 Yorumlar{animal.comments.length > 0 ? ` (${animal.comments.length})` : ""}
               </Text>

@@ -10,10 +10,12 @@ import {
   petProfiles,
 } from "@workspace/db";
 
+import { extractUserId } from "../lib/jwtAuth.js";
+
 const router = Router();
 
 function uid(req: Parameters<Parameters<typeof router.get>[1]>[0]): string {
-  return (req.headers["x-user-id"] as string | undefined) ?? "";
+  return extractUserId(req);
 }
 
 /* ═══════════════════════════════════════════

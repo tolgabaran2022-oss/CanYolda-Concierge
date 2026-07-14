@@ -2,13 +2,15 @@ import { Router } from "express";
 import { desc, eq } from "drizzle-orm";
 import { db, notifications } from "@workspace/db";
 
+import { extractUserId } from "../lib/jwtAuth.js";
+
 const router = Router();
 
 /* ── GET /api/notifications ────────────────────────────── */
 router.get("/notifications", async (req, res) => {
   try {
-    const userId = req.headers["x-user-id"] as string;
-    if (!userId) { res.status(400).json({ error: "x-user-id required" }); return; }
+    const userId = extractUserId(req);
+    if (!userId) { res.status(401).json({ error: "Giriş yapılmamış" }); return; }
 
     const rows = await db
       .select()
@@ -39,8 +41,8 @@ router.post("/notifications/:id/read", async (req, res) => {
 /* ── POST /api/notifications/read-all ─────────────────── */
 router.post("/notifications/read-all", async (req, res) => {
   try {
-    const userId = req.headers["x-user-id"] as string;
-    if (!userId) { res.status(400).json({ error: "x-user-id required" }); return; }
+    const userId = extractUserId(req);
+    if (!userId) { res.status(401).json({ error: "Giriş yapılmamış" }); return; }
     await db.update(notifications).set({ read: true }).where(eq(notifications.receiverId, userId));
     res.json({ ok: true });
   } catch (err) {

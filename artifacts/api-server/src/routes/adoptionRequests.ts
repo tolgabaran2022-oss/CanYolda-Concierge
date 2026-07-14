@@ -2,11 +2,12 @@ import { Router } from "express";
 import { and, desc, eq, ne } from "drizzle-orm";
 import { db, adoptionRequests, adoptionListings, notifications } from "@workspace/db";
 import { logger } from "../lib/logger.js";
+import { extractUserId } from "../lib/jwtAuth.js";
 
 const router = Router();
 
 function uid(req: Parameters<Parameters<typeof router.get>[1]>[0]): string {
-  return (req.headers["x-user-id"] as string | undefined) ?? "";
+  return extractUserId(req);
 }
 
 /* ── POST /api/adoption-requests ─────────────────────────────── */

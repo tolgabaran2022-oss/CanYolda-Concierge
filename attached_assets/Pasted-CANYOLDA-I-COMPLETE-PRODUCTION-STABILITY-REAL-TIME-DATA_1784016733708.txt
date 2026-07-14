@@ -1,0 +1,2078 @@
+CANYOLDAŞI — COMPLETE PRODUCTION STABILITY, REAL-TIME, DATA INTEGRITY, SECURITY AND APP STORE / GOOGLE PLAY RELEASE AUDIT
+
+Perform a COMPLETE END-TO-END PRODUCTION AUDIT of the entire existing CanYoldaşı application.
+
+This is NOT a UI redesign task.
+
+This is NOT a superficial lint-only task.
+
+This is NOT a task where you should only inspect files and say "looks good".
+
+The goal is to make the existing CanYoldaşı application stable, predictable, secure, synchronized, production-ready and suitable for real App Store and Google Play release preparation.
+
+CURRENT APPLICATION CONTEXT:
+
+- React Native / Expo
+- TypeScript
+- Supabase
+- Supabase Auth
+- PostgreSQL
+- Supabase Storage
+- User-generated content
+- User profiles
+- Direct messages
+- Photo messages
+- Street animal reports
+- Map/location flows
+- Adoption listings
+- Adoption requests
+- Adoption notifications
+- Pet management / Evcilim
+- Vaccines
+- Health records
+- Appointments
+- Feeding information
+- Documents
+- Medicines
+- Notes
+- Push notification architecture or planned notification infrastructure
+
+IMPORTANT CURRENT PRODUCT ARCHITECTURE:
+
+The CanYoldaşı application NO LONGER contains a Feed / Akış social post system.
+
+The following features were intentionally removed from the product:
+
+- Feed / Akış
+- social post creation
+- post likes
+- post comments
+- saved posts
+- following-post feed
+- feed post realtime synchronization
+
+Do NOT recreate these features.
+
+Do NOT audit the application as if a Feed system still exists.
+
+Do NOT create missing post tables, post services, post screens or feed subscriptions.
+
+If old/dead Feed or Akış code still exists in the repository:
+
+- identify it
+- verify that it is no longer referenced by active product flows
+- safely remove dead code where appropriate
+- remove abandoned realtime subscriptions
+- remove unused query keys
+- remove unused navigation routes
+- remove unused components, hooks and services
+- remove unused post-related types and imports
+
+Do not delete shared code still used by DM, Sahiplendirme, Sokak Hayvanları, Evcilim, notifications or other active features.
+
+The active production audit must focus on:
+
+- Authentication and account lifecycle
+- Harita / Map
+- Sokak Hayvanları reports
+- Street animal realtime synchronization
+- Street animal images and locations
+- Sahiplendirme listings
+- Adoption search and filters
+- Adoption listing create/edit/delete flows
+- Adoption requests
+- Adoption notifications
+- Push notifications
+- DM / messaging
+- Evcilim pet management
+- Pet identity information
+- Health records
+- Vaccines
+- Appointments
+- Feeding information
+- Documents
+- Medicines
+- Notes
+- User/account/profile controls
+- Supabase security and RLS
+- Storage and image uploads
+- iOS / Android / Web stability
+- App Store release blockers
+- Google Play release blockers
+
+IMPORTANT:
+
+Do not rewrite the entire application from scratch.
+
+Do not replace Supabase.
+
+Do not create duplicate feature systems.
+
+Do not redesign working screens unless a layout bug prevents correct operation.
+
+Audit the REAL current source code, database access, components, services, hooks, navigation and Supabase schema.
+
+Fix root causes.
+
+Do not use fake data to hide bugs.
+
+Do not hardcode values to make tests appear successful.
+
+Do not report a feature as working unless its complete lifecycle has been verified.
+
+==================================================
+PHASE 0 — CREATE A REAL APPLICATION INVENTORY
+==================================================
+
+Before editing code, recursively audit the entire repository.
+
+Inspect:
+
+- package.json
+- Expo config
+- TypeScript config
+- navigation structure
+- routes
+- screens
+- components
+- hooks
+- contexts
+- stores
+- services
+- API routes
+- Supabase client configuration
+- Supabase queries
+- Supabase mutations
+- Edge Functions
+- migrations
+- SQL files
+- storage helpers
+- notification helpers
+- image upload helpers
+- location helpers
+- authentication flows
+- realtime subscriptions
+- query cache architecture
+- platform-specific code
+
+Create an internal feature inventory.
+
+For EVERY major feature identify:
+
+1. screen/component
+2. data source
+3. database table
+4. storage bucket if applicable
+5. query/read function
+6. create mutation
+7. update mutation
+8. delete mutation
+9. realtime behavior
+10. cache/query key
+11. navigation route
+12. ownership/security rules
+
+Do not start random fixes before understanding the architecture.
+
+Find duplicate implementations.
+
+Examples:
+
+two post services
+multiple profile mappers
+multiple notification systems
+duplicate Supabase clients
+duplicate message subscriptions
+different image URL resolvers
+parallel adoption listing tables
+inconsistent user profile types
+
+Where safe, consolidate duplicate logic.
+
+Do not perform dangerous large-scale refactoring without need.
+
+==================================================
+PHASE 1 — BUILD / TYPE / RUNTIME HEALTH
+==================================================
+
+Run all applicable project checks.
+
+Audit package.json scripts first.
+
+Run the REAL supported equivalents of:
+
+TypeScript type checking
+lint
+Expo doctor
+dependency compatibility checks
+production web build
+native Expo prebuild validation if applicable
+
+Examples conceptually:
+
+npx tsc --noEmit
+npm run lint
+npx expo-doctor
+npx expo export --platform web
+
+Use the actual project scripts and Expo SDK requirements.
+
+Fix:
+
+- TypeScript errors
+- unsafe any where it hides real bugs
+- incorrect imports
+- circular dependency problems
+- duplicate module instances
+- outdated/deprecated API usage where it currently breaks functionality
+- missing dependencies
+- incompatible Expo package versions
+- unhandled Promise rejections
+- undefined property access
+- React key warnings
+- state update after unmount issues
+- hook dependency errors that cause stale state
+- invalid navigation route usage
+
+Do not silence errors using:
+
+@ts-ignore
+@ts-nocheck
+eslint-disable
+
+unless there is a documented unavoidable reason.
+
+Do not convert types to any just to make TypeScript pass.
+
+==================================================
+PHASE 2 — REMOVE SILENT FAILURES
+==================================================
+
+Search the complete project recursively for failure patterns such as:
+
+catch {}
+catch (e) {}
+.catch(() => {})
+console.log('error')
+return null
+return []
+return false
+
+where an actual operation may have failed.
+
+Audit every important asynchronous user action:
+
+- login
+- registration
+- logout
+- password reset
+- account deletion
+- DM sending
+- image sending
+- animal report creation
+- report update
+- adoption listing creation
+- listing edit
+- listing delete
+- adoption request
+- request acceptance
+- request rejection
+- pet creation
+- pet edit
+- vaccine creation
+- appointment creation
+- document creation
+- medicine creation
+- note creation
+
+A failed network/database/storage operation must not silently display success.
+
+Success UI must only appear AFTER confirmed successful mutation.
+
+Implement consistent error handling.
+
+User-facing messages must be understandable Turkish.
+
+Technical database errors must not be dumped directly to normal users.
+
+In development mode:
+log sufficient technical context.
+
+In production:
+avoid leaking sensitive details.
+
+==================================================
+PHASE 3 — AUTHENTICATION COMPLETE AUDIT
+==================================================
+
+Test the REAL complete authentication lifecycle.
+
+FLOW 1:
+
+Register
+→ session created/restored
+→ profile created
+→ app opens
+
+FLOW 2:
+
+Login
+→ correct account data loads
+
+FLOW 3:
+
+Logout
+→ local sensitive state cleared
+→ realtime channels removed
+→ cached private data removed
+→ login screen shown
+
+FLOW 4:
+
+Forgot password
+→ real reset email flow
+→ deep link returns to app
+→ new password can be saved
+
+FLOW 5:
+
+Change password
+→ authentication remains logically correct
+
+FLOW 6:
+
+App completely closes
+→ app reopens
+→ session restores correctly
+
+FLOW 7:
+
+Expired session
+→ refresh session if valid
+→ otherwise return safely to login
+
+FLOW 8:
+
+Delete account
+→ confirmation
+→ account deletion process
+→ applicable user data removal/anonymization according to actual retention rules
+→ auth session removed
+
+Audit race conditions between:
+
+onAuthStateChange
+initial getSession
+profile fetching
+navigation redirects
+
+Prevent:
+
+- login screen flashing after authenticated startup
+- duplicate profile creation
+- old user's data appearing after account switching
+- infinite auth loading
+- repeated navigation redirects
+
+IMPORTANT:
+
+If Sign in with Google or Apple is displayed:
+it must either genuinely work in the target release build or must not be presented as a working login method.
+
+Do not leave dead authentication buttons.
+
+==================================================
+PHASE 4 — DATABASE SCHEMA AND FRONTEND MODEL AUDIT
+==================================================
+
+Audit every Supabase table actually used by the application.
+
+Compare:
+
+DATABASE COLUMN
+↕
+QUERY RESULT
+↕
+MAPPER
+↕
+TYPESCRIPT TYPE
+↕
+COMPONENT PROP
+↕
+DISPLAYED VALUE
+
+Find naming mismatches such as:
+
+image_url vs imageUrl
+user_id vs userId
+created_at vs createdAt
+avatar_url vs avatarUrl
+photo_url vs photoUrl
+owner_id vs ownerId
+
+There must be clear mapping.
+
+Do not allow different screens to guess multiple unrelated field names independently.
+
+Create or reuse centralized mapping functions where needed.
+
+Find fields that are:
+
+- selected in UI but never saved
+- saved but never fetched
+- fetched but removed by mapper
+- displayed as hardcoded values
+- updated locally but never persisted
+- persisted but cache never refreshes
+
+Create a data lifecycle audit for every form field.
+
+The lifecycle must be:
+
+user input
+→ form state
+→ validation
+→ mutation payload
+→ database
+→ fetch query
+→ mapper
+→ UI
+
+Fix every broken lifecycle.
+
+==================================================
+PHASE 5 — COMPLETE FORM AND INPUT AUDIT
+==================================================
+
+Audit EVERY user input field in the application.
+
+Create an inventory of:
+
+- text inputs
+- multiline inputs
+- numeric inputs
+- phone inputs
+- email inputs
+- passwords
+- date fields
+- time fields
+- age fields
+- weight fields
+- vaccine fields
+- medicine fields
+- pet information
+- adoption listing fields
+- location fields
+- search inputs
+- messages
+
+For every input validate:
+
+1. correct keyboard/input mode
+2. required/optional status
+3. minimum length
+4. maximum length
+5. whitespace trimming
+6. invalid characters where relevant
+7. numeric limits
+8. correct date handling
+9. empty state
+10. error message
+11. submit button behavior
+
+Examples:
+
+PHONE NUMBER:
+Do not accept random letters.
+
+EMAIL:
+Normalize and validate format appropriately.
+
+AGE:
+Do not accept impossible negative values.
+
+WEIGHT:
+Do not accept negative values.
+
+VACCINE DATE:
+Validate date logic.
+
+PET NAME:
+Trim whitespace.
+Do not accept a whitespace-only value.
+
+MESSAGES:
+Do not send an empty text message.
+
+LISTING TITLE:
+Do not allow empty or whitespace-only titles.
+
+IMAGE REQUIRED FLOWS:
+Do not publish if the feature requires an image and none exists.
+
+Do not use random default values to pass validation.
+
+Do not silently mutate invalid user input.
+
+==================================================
+PHASE 6 — ENUM / OPTION / SELECTABLE FIELD AUDIT
+==================================================
+
+Audit EVERY option selector, chip, radio group, toggle and dropdown.
+
+Examples:
+
+- animal species
+- gender
+- age range
+- health status
+- vaccination status
+- indoor/outdoor
+- child compatibility
+- cat compatibility
+- dog compatibility
+- toilet training
+- adoption request options
+- listing status
+- animal report status
+- filter options
+- notification preferences
+
+Verify:
+
+UI label
+→ internal value
+→ database value
+→ database constraint
+→ display mapper
+
+Example:
+
+UI:
+Uyumlu
+
+Internal/database:
+compatible
+
+The app must not randomly mix:
+
+Uyumlu
+compatible
+yes
+true
+1
+
+for the same logical field without an explicit normalized mapping.
+
+Create or reuse centralized option configuration.
+
+Do not duplicate enum translation logic across screens.
+
+Legacy unknown values must fail safely.
+
+Display:
+
+Bilinmiyor
+
+when appropriate.
+
+Never display:
+
+undefined
+null
+[object Object]
+
+==================================================
+PHASE 7 — REAL-TIME ARCHITECTURE AUDIT
+==================================================
+
+Perform a complete audit of all realtime functionality.
+
+Identify EVERY realtime channel/subscription.
+
+Search for:
+
+supabase.channel
+postgres_changes
+broadcast
+presence
+subscribe
+
+Create a list of:
+
+- channel name
+- table/topic
+- events
+- filters
+- subscription owner component/service
+- cleanup method
+- UI/cache updated
+
+Critical real-time features include:
+
+1. direct messages
+2. message read state
+3. street animal reports
+4. street animal status updates
+5. adoption listings
+6. adoption requests
+7. adoption notifications
+8. notification unread count
+9. pet-related synced information where multi-device updates matter
+
+IMPORTANT:
+
+Do not automatically add Postgres Changes subscriptions to every table.
+
+Choose the correct architecture based on the current use case.
+
+For high-frequency or multi-subscriber features, audit whether Supabase Broadcast from database / Broadcast architecture is more suitable.
+
+For simpler low-frequency database updates, existing Postgres Changes may remain if appropriate.
+
+Do not unnecessarily migrate working realtime architecture.
+
+The final result must prioritize:
+
+- low perceived latency
+- correct ordering
+- no duplicate events
+- no missing events
+- subscription cleanup
+- security
+- scalability
+
+==================================================
+PHASE 8 — REAL-TIME NO-DELAY USER EXPERIENCE
+==================================================
+
+For user-created content, implement the correct mutation strategy.
+
+Example:
+
+User creates a street animal report or adoption listing.
+
+EXPECTED:
+
+Tap submit/publish
+→ mutation starts
+→ disable duplicate submit
+→ upload completes when media exists
+→ database insert completes
+→ local/query state updates immediately
+→ created record becomes visible
+→ realtime propagates to other connected users
+
+The original creator must NOT have to wait for its own realtime event before seeing the successful content.
+
+Use:
+
+confirmed mutation response
++ targeted cache update/invalidation
+
+Realtime is for synchronizing OTHER sessions/devices and external database changes.
+
+Do not use realtime as the only success mechanism for the creator's own mutation.
+
+Apply this principle to:
+
+- - - messages
+- street animal reports
+- adoption listings
+- adoption requests
+
+Where safe, use optimistic updates for reversible low-risk actions such as:
+
+- like/unlike
+- save/unsave
+- follow/unfollow
+
+But implement rollback on mutation failure.
+
+For important creations such as:
+
+- adoption request
+- listing
+- animal report
+
+do not show a permanently successful item before the server confirms creation.
+
+==================================================
+PHASE 9 — DUPLICATE EVENT PREVENTION
+==================================================
+
+Audit the complete application for double-count and duplicate record bugs.
+
+Known risk pattern:
+
+local state increment
++
+realtime INSERT/UPDATE event
+=
+count increases twice
+
+Find this across:
+
+- location open count
+- notifications
+- messages
+- adoption request counts
+- listing view count
+
+Use record IDs and event IDs as the source of identity.
+
+Do not deduplicate using text alone.
+
+A single server mutation must result in one logical UI event.
+
+Audit React StrictMode behavior and effect mounting.
+
+Ensure development double effect behavior does not create duplicate subscriptions or duplicate inserts.
+
+All realtime subscriptions must have deterministic cleanup.
+
+==================================================
+PHASE 13 — DIRECT MESSAGE SYSTEM AUDIT
+==================================================
+
+Test with TWO REAL USERS.
+
+User A sends text
+→ stored once
+→ User B sees message without manual refresh
+
+User B replies
+→ User A sees message
+
+Photo message
+→ upload
+→ stored
+→ rendered on both devices
+
+Conversation uniqueness:
+avoid duplicate DM threads for same pair where the architecture expects one thread.
+
+Test:
+
+foreground
+background return
+app restart
+network temporarily disconnected
+network restored
+
+Messages must remain in the correct order.
+
+Use stable server timestamps.
+
+Do not use local client time as the authoritative message order if server timestamps exist.
+
+Audit read state.
+
+Do not increment unread count twice.
+
+A user must not receive their own incoming-message notification.
+
+Do not expose private conversations to unrelated users.
+
+Verify RLS.
+
+==================================================
+PHASE 14 — STREET ANIMAL REPORT SYSTEM
+==================================================
+
+Complete lifecycle:
+
+authenticated user
+→ Durum Bildir
+→ take/select animal photo
+→ location
+→ status
+→ notes
+→ validation
+→ upload image
+→ database insert
+→ new report immediately appears
+→ other connected user receives update
+→ map updates
+→ filters update
+
+Audit:
+
+image URL persistence
+location persistence
+reporter profile mapping
+reporter display name
+status mapping
+
+Test:
+
+Acil
+Bekleyen
+Sağlıklı
+
+Verify statistics counts match actual data.
+
+Do not hardcode statistics.
+
+Test location open tracking.
+
+A single location open action must not count twice.
+
+Test helper count.
+
+A single user action must not count twice.
+
+Determine whether unique-user semantics are required.
+
+If yes:
+enforce them in the database.
+
+Do not rely only on disabled frontend buttons.
+
+==================================================
+PHASE 15 — MAP AND LOCATION AUDIT
+==================================================
+
+Audit permission flow.
+
+Do not request location permission before the feature actually requires it unless current onboarding intentionally explains the need.
+
+When permission denied:
+
+show usable fallback.
+
+Do not crash.
+
+Audit location coordinates:
+
+latitude
+longitude
+
+Validate numeric range.
+
+latitude:
+-90 to 90
+
+longitude:
+-180 to 180
+
+Map markers must represent real records.
+
+"Konumu Aç" must open the location in a platform-appropriate map application or supported map URL flow.
+
+Do not use localhost URLs.
+
+Do not expose a private home address unintentionally.
+
+For street animal reports:
+use location only for the intended public report context.
+
+==================================================
+PHASE 16 — ADOPTION LISTING SYSTEM COMPLETE AUDIT
+==================================================
+
+Test:
+
+İlan Oluştur
+→ select photos
+→ enter required data
+→ select detail information
+→ publish
+
+All form fields must persist.
+
+Verify current detail fields:
+
+- Sağlık Durumu
+- Aşı
+- İç/Dış Mekan
+- Çocuk Uyumu
+- Kedi Uyumu
+- Köpek Uyumu
+- Tuvalet Eğitimi
+
+For every field verify:
+
+selection
+→ state
+→ database
+→ fetch
+→ mapper
+→ detail card
+
+Test:
+
+İlanlarım
+Tüm İlanlar
+search
+species filter
+favorite
+listing detail
+listing owner
+listing edit
+listing preview
+listing delete
+
+A deleted listing must not reappear due to stale cache.
+
+Listing edit must update the existing listing.
+
+Do not create a second listing when editing.
+
+Images:
+existing images must remain unless removed.
+
+New images:
+upload correctly.
+
+Removed images:
+database/storage cleanup behavior must be intentional.
+
+==================================================
+PHASE 17 — ADOPTION REQUEST SYSTEM
+==================================================
+
+Test using:
+
+USER A = listing owner
+USER B = requester
+
+User B:
+opens listing
+→ İletişim
+→ Sahiplenmek İstiyorum
+→ completes application
+→ Talebi Gönder
+
+Verify:
+
+request stored once
+owner_id correct
+requester_id correct
+listing_id correct
+
+User A:
+notification badge updates
+→ bell
+→ notification center
+→ request detail
+
+Verify every application answer.
+
+User A:
+message requester
+→ real DM works
+
+Accept request
+→ status updates
+→ requester notification created
+→ realtime updates
+
+Reject request
+→ respectful notification
+
+Prevent:
+
+- request on own listing
+- duplicate active request
+- unrelated user reading request
+- requester accepting own request
+
+Verify RLS.
+
+==================================================
+PHASE 18 — EVCİLİM COMPLETE AUDIT
+==================================================
+
+Test multiple pet support.
+
+Create pet
+→ real profile stored
+
+Select pet
+→ all Evcilim data switches to selected pet
+
+Audit:
+
+Kimlik
+Sağlık
+Aşılar
+Randevular
+Beslenme
+Belgeler
+İlaçlar
+Notlar
+
+EVERY record must use the correct:
+
+pet_id
+owner_id/user_id
+
+Do not mix records between pets.
+
+Example:
+
+Pamuk vaccine records must not appear for Boncuk.
+
+Test:
+
+create
+read
+edit
+delete
+
+for every management section where functionality exists.
+
+Audit Hızlı Durum.
+
+"Sonraki Aşı"
+must derive from actual upcoming vaccine data.
+
+"Yaklaşan Randevu"
+must derive from actual future appointment data.
+
+"Mama Durumu"
+must derive from actual feeding data if feature architecture supports it.
+
+Do not show fake values.
+
+If no data exists:
+show intentional empty state such as:
+
+"Kayıt yok"
+
+==================================================
+PHASE 19 — IMAGE UPLOAD SYSTEM AUDIT
+==================================================
+
+Audit every image upload feature:
+
+- avatar
+- DM photo
+- street animal report
+- adoption listing
+- pet profile
+- documents if image upload exists
+
+Create/reuse ONE shared robust upload architecture where reasonable.
+
+Audit:
+
+file://
+content://
+blob:
+ph://
+
+Do not permanently save local device URIs in Supabase records.
+
+Lifecycle:
+
+local asset
+→ upload
+→ storage object
+→ public/signed URL strategy
+→ database
+
+Ensure image uploads:
+
+- wait for success
+- handle error
+- use unique safe paths
+- preserve extension/content type correctly
+- do not overwrite unrelated users' files
+- respect storage RLS/policies
+
+Audit old broken image records.
+
+Do not delete records automatically.
+
+Use safe fallback.
+
+==================================================
+PHASE 20 — CACHE / QUERY STATE AUDIT
+==================================================
+
+Identify the current data architecture.
+
+Examples:
+
+TanStack Query
+React Query
+custom Context
+Zustand
+local state
+
+Do not add a second state management library.
+
+Create a complete query-key inventory if TanStack Query is used.
+
+Prevent parallel keys for the same resource.
+
+Audit query key consistency.
+
+Prevent parallel query keys for the same logical resource unless they intentionally represent different query scopes.
+
+Audit mutation invalidation.
+
+Every mutation must update/invalidate its affected queries.
+
+Examples:
+
+new street animal report:
+street reports
+map report markers
+street report statistics
+
+new listing:
+my listings
+all listings
+
+edit listing:
+listing detail
+my listings
+all listings
+
+adoption request:
+my requests
+owner requests
+notifications
+
+pet update:
+selected pet
+pet list
+
+Do not invalidate the entire application after every mutation.
+
+Use targeted invalidation.
+
+==================================================
+PHASE 21 — NETWORK FAILURE AND SLOW CONNECTION TEST
+==================================================
+
+Simulate slow and interrupted network behavior.
+
+Test:
+
+- request timeout
+- upload failure
+- realtime disconnect
+- session refresh delay
+- mutation failure
+
+The app must not:
+
+- freeze permanently
+- show infinite spinner
+- display fake success
+- double-submit after retry
+- lose navigation control
+
+Implement appropriate:
+
+loading
+error
+retry
+disabled states
+
+All primary submit buttons must prevent rapid double submission.
+
+Use mutation-level guards, not only button color changes.
+
+==================================================
+PHASE 22 — REALTIME RECONNECT AND RECOVERY
+==================================================
+
+Test:
+
+App online
+→ realtime connected
+
+Network disconnects
+→ user remains in app
+
+Network returns
+→ subscriptions recover
+
+After reconnect:
+perform targeted source-of-truth reconciliation/refetch where required.
+
+Do not assume every missed realtime event will be replayed automatically to rebuild UI state.
+
+Critical collections should reconcile with database state after reconnect or app foreground as appropriate.
+
+Audit AppState handling.
+
+Avoid unnecessary full refresh on every foreground event.
+
+==================================================
+PHASE 23 — NAVIGATION COMPLETE AUDIT
+==================================================
+
+Test every visible button and actionable UI element.
+
+Create an interaction inventory.
+
+For each:
+
+button label/icon
+→ onPress
+→ expected action
+→ real result
+
+Find:
+
+- dead buttons
+- placeholder handlers
+- TODO handlers
+- console-only actions
+- duplicate presses
+- wrong routes
+- navigation to missing screen
+- back button loops
+
+Search for:
+
+TODO
+FIXME
+onPress={() => {}}
+onPress={undefined}
+console.log
+alert('Coming soon')
+Coming Soon
+Yakında
+
+For a production feature:
+implement correctly or intentionally remove/disable the action.
+
+Do not leave a button that visually appears functional but does nothing.
+
+==================================================
+PHASE 24 — CROSS-PLATFORM UI STABILITY
+==================================================
+
+Audit:
+
+iOS
+Android
+Web
+
+Do not assume iOS layout means Android/Web are correct.
+
+Test common widths and heights.
+
+Audit:
+
+- SafeArea
+- status bar
+- Dynamic Island spacing
+- Android status bar
+- keyboard
+- keyboard avoiding
+- bottom navigation
+- scroll content inset
+- bottom padding
+- modal height
+- bottom sheets
+- absolute positioning
+- text overflow
+- horizontal filter lists
+- cards
+- long Turkish labels
+
+Fix:
+
+- overlapping
+- clipped text
+- elements under bottom navigation
+- invisible buttons
+- off-screen content
+- web overflow
+- fixed widths that break responsiveness
+
+Do not randomly shrink all text to solve layout problems.
+
+Use responsive constraints.
+
+==================================================
+PHASE 25 — ACCESSIBILITY AUDIT
+==================================================
+
+Audit interactive controls.
+
+Add appropriate accessibility semantics according to the existing React Native architecture.
+
+Check:
+
+- buttons
+- icon-only buttons
+- tab states
+- switches
+- form errors
+- images where meaningful
+
+Icon-only controls such as:
+
+bell
+back
+favorite
+delete
+more
+
+must have meaningful accessible labels.
+
+Touch targets must be reasonably usable.
+
+Do not use color as the only communication method for critical status.
+
+==================================================
+PHASE 26 — USER-GENERATED CONTENT SAFETY
+==================================================
+
+CanYoldaşı contains user-generated content.
+
+Audit the existing moderation and safety architecture for:
+
+- street animal reports
+- adoption listings
+- profile content
+- direct user interaction
+- direct messages where reporting/blocking applies
+
+Ensure users have appropriate mechanisms to:
+
+- report inappropriate content
+- block users where user-to-user interaction requires it
+- prevent blocked-user interaction/content exposure according to product rules
+
+Audit existing reporting/blocking features first.
+
+Reuse them.
+
+Do not create duplicate safety tables if functionality already exists.
+
+Reported content must persist as a real moderation record.
+
+Do not implement a fake "Bildirildi" toast without server persistence.
+
+Audit abuse cases:
+
+spam
+duplicate report/listing abuse
+harassment
+inappropriate listing content
+inappropriate street animal report content
+
+Implement practical rate-limit or server/database-level safeguards where existing architecture supports them.
+
+Do not rely only on frontend delays for abuse prevention.
+
+==================================================
+PHASE 27 — PRIVACY AND ACCOUNT CONTROL AUDIT
+==================================================
+
+Audit:
+
+- Privacy Policy access
+- Terms access
+- account deletion
+- notification permissions
+- camera permissions
+- photo permissions
+- location permissions
+
+Permission prompts must be connected to actual features.
+
+Do not request unnecessary permissions.
+
+Ensure permission purpose messages accurately describe real usage.
+
+Audit all personal data collected.
+
+Create an internal data inventory:
+
+data type
+purpose
+storage location
+sharing/third party
+retention behavior
+deletion behavior
+
+Use this inventory to identify the information needed for:
+
+Apple App Privacy disclosures
+Google Play Data Safety declarations
+
+IMPORTANT:
+
+Do not automatically claim compliance.
+
+Report exact missing disclosure/configuration items.
+
+==================================================
+PHASE 28 — SUPABASE SECURITY AUDIT
+==================================================
+
+Audit EVERY public table used by the client.
+
+Check RLS enabled status.
+
+For each table verify:
+
+SELECT
+INSERT
+UPDATE
+DELETE
+
+policies.
+
+Examples:
+
+profiles:
+safe public fields readable according to product design
+private fields protected
+
+messages:
+conversation members only
+
+adoption requests:
+requester and listing owner only
+
+pet records:
+pet owner only
+
+vaccines:
+pet owner only
+
+appointments:
+pet owner only
+
+documents:
+pet owner only
+
+medicines:
+pet owner only
+
+notes:
+pet owner only
+
+push tokens:
+token owner/server-controlled access
+
+Do not trust frontend ownership checks.
+
+Security must be enforced at database/RLS level.
+
+Audit Supabase Storage policies.
+
+No user should be able to overwrite another user's file because they know the object path.
+
+Search the frontend for:
+
+service role key
+
+There must be NO Supabase service role credential in the client.
+
+No secret should use:
+
+EXPO_PUBLIC_
+
+unless it is explicitly safe to be public.
+
+==================================================
+PHASE 29 — APP STORE RELEASE REQUIREMENT AUDIT
+==================================================
+
+Audit against the CURRENT Apple App Review requirements relevant to this actual application's features.
+
+At minimum inspect:
+
+- user-generated content safety
+- reporting/blocking controls
+- account deletion
+- privacy policy
+- App Privacy data declarations
+- permission usage descriptions
+- Sign in with Apple applicability based on actual third-party login architecture
+- misleading/dead functionality
+- incomplete features
+- crashes
+- broken links
+- review account needs
+- backend accessibility during review
+
+Do not write:
+
+"App Store compliant"
+
+without evidence.
+
+Create:
+
+APPLE RELEASE BLOCKERS
+
+with exact issues.
+
+Classify:
+
+CRITICAL
+HIGH
+MEDIUM
+LOW
+
+==================================================
+PHASE 30 — GOOGLE PLAY RELEASE REQUIREMENT AUDIT
+==================================================
+
+Audit against CURRENT Google Play requirements relevant to this application's actual features.
+
+At minimum inspect:
+
+- User Data policy
+- account deletion path
+- web account deletion resource requirement where applicable
+- Data Safety disclosure inputs
+- privacy policy
+- user-generated content safety
+- permissions
+- target Android/API configuration according to current release requirements
+- notification permission handling
+- location usage
+- photo/media access
+- Play Console declarations that must be completed manually
+
+Do not write:
+
+"Google Play compliant"
+
+without evidence.
+
+Create:
+
+GOOGLE PLAY RELEASE BLOCKERS
+
+with exact issues.
+
+Classify:
+
+CRITICAL
+HIGH
+MEDIUM
+LOW
+
+==================================================
+PHASE 31 — PRODUCTION SUPABASE AUDIT
+==================================================
+
+Perform a production-readiness review of the current Supabase setup.
+
+Review:
+
+- RLS
+- indexes
+- foreign keys
+- unique constraints
+- cascading deletes
+- database functions
+- realtime architecture
+- storage policies
+- backup/recovery configuration items that require dashboard verification
+- database size/load assumptions
+- auth configuration
+- email delivery configuration
+- rate-limit assumptions
+
+Identify common high-frequency query fields.
+
+Examples:
+
+user_id
+owner_id
+listing_id
+conversation_id
+pet_id
+created_at
+status
+
+Check whether required indexes exist.
+
+Do not create indexes blindly.
+
+Use query patterns and schema relationships.
+
+Report Supabase dashboard settings that cannot be verified from source code.
+
+Do not falsely mark them as tested.
+
+==================================================
+PHASE 32 — PERFORMANCE AUDIT
+==================================================
+
+Profile major screens conceptually and through available tools.
+
+Audit:
+
+Sokak Hayvanları
+Tüm İlanlar
+İlanlarım
+DM conversation
+Evcilim
+
+Look for:
+
+- N+1 queries
+- fetching entire tables
+- no pagination
+- huge image payloads
+- repeated profile query per card
+- rerender loops
+- expensive inline array transformations
+- subscription per card
+- storage URL regeneration on every render
+
+Implement pagination/infinite loading where the existing product needs it.
+
+Do not load thousands of listings/reports/messages at startup.
+
+Message history:
+must use reasonable pagination.
+
+Images:
+review compression/resizing architecture.
+
+Do not destroy original media quality unnecessarily.
+
+==================================================
+PHASE 33 — MEMORY AND SUBSCRIPTION LEAK AUDIT
+==================================================
+
+Every:
+
+channel
+listener
+AppState listener
+notification listener
+navigation listener
+timer
+interval
+
+must be cleaned up correctly.
+
+Find duplicated subscriptions caused by screen focus/mount cycles.
+
+Example problem:
+
+open DM
+close DM
+open DM
+→ now two subscriptions
+
+Prevent this.
+
+Channel naming must be deterministic where appropriate.
+
+Do not leave abandoned Supabase Realtime channels.
+
+==================================================
+PHASE 34 — EMPTY, LOADING AND ERROR STATES
+==================================================
+
+Audit every major screen.
+
+Every asynchronous screen must intentionally support:
+
+loading
+data
+empty
+error
+
+Do not display:
+
+blank white page
+
+for a real error.
+
+Do not display:
+
+"No data"
+
+while query is still loading.
+
+Examples:
+
+Street reports empty
+My adoption listings empty
+Adoption notifications empty
+My requests empty
+Pet records empty
+Vaccines empty
+Appointments empty
+
+Use existing CanYoldaşı design language.
+
+Do not perform broad redesign.
+
+==================================================
+PHASE 35 — TWO-USER REAL END-TO-END TEST
+==================================================
+
+Create/use TWO AUTHENTICATED TEST USERS.
+
+USER A
+USER B
+
+Do not use mock arrays to pass these tests.
+
+
+TEST DM:
+
+A messages B
+B sees without manual refresh
+
+B replies
+A sees
+
+
+TEST STREET ANIMAL:
+
+A creates urgent report
+B's live screen updates
+
+B taps location once
+correct count logic
+
+TEST ADOPTION:
+
+A creates listing
+B sees listing
+
+B sends adoption request
+A notification appears
+
+A reviews
+A messages B
+A accepts request
+
+B receives correct update
+
+TEST EVCİLİM:
+
+A has Pet 1 and Pet 2
+
+Create vaccine for Pet 1
+
+Pet 2 must not display it.
+
+Restart app.
+
+All persistent data remains correct.
+
+==================================================
+PHASE 36 — MULTI-DEVICE CONSISTENCY TEST
+==================================================
+
+Use the same account on two supported test clients where practical.
+
+Device/client 1:
+change applicable persisted data
+
+Device/client 2:
+verify appropriate realtime or refetch synchronization
+
+Test:
+
+profile update
+pet update
+notification read state
+relevant listing state
+
+Do not expect every private low-frequency form to require continuous realtime.
+
+Use the correct product logic.
+
+But stale state must reconcile on:
+
+screen focus
+app foreground
+or explicit data refresh
+
+according to the current data architecture.
+
+==================================================
+PHASE 37 — APP RESTART PERSISTENCE TEST
+==================================================
+
+For every important feature:
+
+create/update data
+→ completely close application
+→ reopen
+→ restore session
+→ revisit feature
+
+Verify:
+
+saved messages
+street reports
+adoption listings
+adoption requests
+pet profiles
+vaccines
+appointments
+
+No feature should only exist in local React state.
+
+==================================================
+PHASE 38 — DELETE AND OWNERSHIP TEST
+==================================================
+
+For every destructive action:
+
+- listing delete
+- pet delete if supported
+- vaccine delete
+- appointment delete
+- note delete
+
+Test:
+
+owner can delete permitted resource
+unrelated user cannot delete it
+
+Frontend button visibility is NOT security.
+
+Attempt must also fail at Supabase/RLS level.
+
+Confirmation modals must clearly identify destructive actions.
+
+Avoid accidental one-tap irreversible deletion where inappropriate.
+
+==================================================
+PHASE 39 — FINAL RELEASE BUILD VALIDATION
+==================================================
+
+Do not base the final result only on Expo development preview.
+
+Create or validate production configuration for release builds.
+
+Review:
+
+iOS bundle identifier
+Android package
+version
+build number/versionCode
+icons
+splash configuration
+permissions
+notification config
+deep links
+environment variables
+production Supabase URL/project
+EAS production profile
+
+Generate the real production build using the current Expo/EAS architecture where credentials and project permissions allow.
+
+If credentials or external dashboard access prevent build/submission:
+
+report that clearly.
+
+Do not invent a successful test result.
+
+==================================================
+PHASE 40 — NO FALSE SUCCESS REPORTING
+==================================================
+
+This is critical.
+
+For every test use one of these statuses:
+
+PASS
+FIXED AND PASS
+BLOCKED
+FAIL
+
+Never use vague statuses:
+
+looks good
+should work
+probably fixed
+appears correct
+
+PASS means the behavior was actually executed and verified.
+
+FIXED AND PASS means a real bug was found, fixed and retested.
+
+BLOCKED means external credentials, physical devices, dashboard access or another dependency prevented real verification.
+
+FAIL means the test still does not work.
+
+Simulator test is not equal to physical device test.
+
+Source-code inspection is not equal to runtime verification.
+
+Do not claim:
+
+App Store ready
+Google Play ready
+push notifications tested
+iOS tested
+Android tested
+
+unless the exact relevant test was performed.
+
+==================================================
+REQUIRED FINAL REPORT FORMAT
+==================================================
+
+Return a detailed report with these sections.
+
+A. APPLICATION ARCHITECTURE FOUND
+
+- Expo SDK
+- React Native version
+- navigation
+- state/cache architecture
+- Supabase architecture
+- realtime architecture
+
+B. CRITICAL BUGS FOUND
+
+For each:
+
+BUG:
+ROOT CAUSE:
+FILES:
+FIX:
+RETEST RESULT:
+
+C. REALTIME AUDIT
+
+For every realtime feature:
+
+FEATURE
+ARCHITECTURE
+CHANNEL/TOPIC
+MUTATION UI UPDATE METHOD
+REMOTE SYNC METHOD
+DEDUPLICATION METHOD
+RECONNECT METHOD
+RESULT
+
+D. FORM AND INPUT AUDIT
+
+List every form audited.
+
+For every form:
+
+required validation
+type validation
+range validation
+submit guard
+database persistence
+result
+
+E. DATABASE DATA LIFECYCLE AUDIT
+
+List fields that were previously:
+
+not saved
+not fetched
+incorrectly mapped
+hardcoded
+
+Show fixes.
+
+F. SUPABASE SECURITY REPORT
+
+- tables audited
+- RLS findings
+- policies added/fixed
+- storage policy findings
+- exposed secret findings
+
+G. APPLE RELEASE BLOCKERS
+
+CRITICAL
+HIGH
+MEDIUM
+LOW
+
+H. GOOGLE PLAY RELEASE BLOCKERS
+
+CRITICAL
+HIGH
+MEDIUM
+LOW
+
+I. PERFORMANCE FINDINGS
+
+- pagination
+- N+1 queries
+- image handling
+- realtime subscription count
+- unnecessary renders
+
+J. COMPLETE TEST MATRIX
+
+Use:
+
+PASS
+FIXED AND PASS
+BLOCKED
+FAIL
+
+for:
+
+Authentication
+DM text
+DM photo
+Street reports
+Map
+Location open
+Adoption create
+Adoption edit
+Adoption request
+Adoption notifications
+Evcilim pet switching
+Vaccines
+Appointments
+iOS
+Android
+Web
+Production build
+
+K. FILES CHANGED
+
+Exact files.
+
+L. DATABASE CHANGES
+
+Exact migrations/tables/columns/indexes/policies.
+
+M. REMAINING BLOCKERS
+
+List everything that still prevents a confident production release.
+
+FINAL RULE:
+
+Do not stop after finding the first bug.
+
+Complete all phases.
+
+Do not change the visual identity unnecessarily.
+
+The goal is:
+
+CORRECT DATA
+CORRECT FEATURE LOGIC
+FAST PERCEIVED UPDATES
+RELIABLE REALTIME SYNC
+NO DUPLICATE EVENTS
+NO SILENT FAILURES
+SECURE OWNERSHIP
+STABLE iOS
+STABLE ANDROID
+STABLE WEB
+CLEAR APP STORE BLOCKER REPORT
+CLEAR GOOGLE PLAY BLOCKER REPORT
+
+Do not claim the application is fully release-ready until the full test matrix contains no unresolved CRITICAL failures.

@@ -2,12 +2,14 @@ import { Router } from "express";
 import { and, desc, eq, gt, or, sql } from "drizzle-orm";
 import { db, pool, conversations, messages } from "@workspace/db";
 
+import { extractUserId } from "../lib/jwtAuth.js";
+
 const router = Router();
 
 /* ── Auth guard helper ──────────────────────────────────────── */
 function requireUser(req: any, res: any): string | null {
-  const id = req.headers["x-user-id"] as string;
-  if (!id) { res.status(401).json({ error: "x-user-id required" }); return null; }
+  const id = extractUserId(req);
+  if (!id) { res.status(401).json({ error: "Giriş yapılmamış" }); return null; }
   return id;
 }
 

@@ -2,6 +2,7 @@ import { Router } from "express";
 import { and, desc, eq, ilike, inArray, ne, or, sql } from "drizzle-orm";
 import { db, pool, feedPosts, follows, notifications, socialProfiles } from "@workspace/db";
 import { logger } from "../lib/logger.js";
+import { extractUserId } from "../lib/jwtAuth.js";
 
 const router = Router();
 
@@ -18,14 +19,14 @@ pool.query(`
 /* ── POST /api/social/follow/:targetId ─ toggle follow ── */
 router.post("/social/follow/:targetId", async (req, res) => {
   try {
-    const followerId  = req.headers["x-user-id"] as string;
+    const followerId  = extractUserId(req);
     /* Normalize: seed posts are returned with userId="seed-<username>"; strip the prefix
        so follows always store the plain username (or real UUID). */
     const rawTarget   = req.params.targetId;
     const followingId = rawTarget.startsWith("seed-") ? rawTarget.slice("seed-".length) : rawTarget;
 
     if (!followerId) {
-      res.status(400).json({ error: "x-user-id header required" });
+      res.status(401).json({ error: "Giriş yapılmamış" });
       return;
     }
     if (followerId === followingId) {
@@ -344,8 +345,8 @@ router.get("/social/follow/following/:userId", async (req, res) => {
 /* ── GET /api/social/settings ─────────────────────────────── */
 router.get("/social/settings", async (req, res) => {
   try {
-    const userId = req.headers["x-user-id"] as string;
-    if (!userId) { res.status(401).json({ error: "x-user-id required" }); return; }
+    const userId = extractUserId(req);
+    if (!userId) { res.status(401).json({ error: "Giriş yapılmamış" }); return; }
 
     const [profile] = await db
       .select({
@@ -375,8 +376,8 @@ router.get("/social/settings", async (req, res) => {
 /* ── PATCH /api/social/settings ───────────────────────────── */
 router.patch("/social/settings", async (req, res) => {
   try {
-    const userId = req.headers["x-user-id"] as string;
-    if (!userId) { res.status(401).json({ error: "x-user-id required" }); return; }
+    const userId = extractUserId(req);
+    if (!userId) { res.status(401).json({ error: "Giriş yapılmamış" }); return; }
 
     const {
       isProfilePublic,
