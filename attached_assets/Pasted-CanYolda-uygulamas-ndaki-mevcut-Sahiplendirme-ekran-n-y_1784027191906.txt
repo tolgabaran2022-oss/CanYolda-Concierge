@@ -1,0 +1,909 @@
+CanYoldaşı uygulamasındaki mevcut Sahiplendirme ekranını yeniden tasarla.
+
+SANA VERDİĞİM REFERANS GÖRSEL BU GÖREVİN TEK UI SOURCE OF TRUTH'UDUR.
+
+BU GÖREVDE:
+
+- referanstan ilham alma
+- benzer tasarım yapma
+- kendi UI yorumunu katma
+- mevcut ekranı biraz modernleştirme
+
+YAPMA.
+
+REFERANS GÖRSELDEKİ SOL TELEFON EKRANINI PIXEL-ACCURATE ŞEKİLDE UYGULA.
+
+Amaç:
+
+Referans görseldeki Sahiplendirme ana ekranının:
+
+- layout
+- visual hierarchy
+- spacing
+- card proportions
+- border radius
+- typography hierarchy
+- search layout
+- filter button
+- category chips
+- featured listing section
+- horizontal cards
+- recent listings
+- bottom create listing CTA
+- bottom navigation spacing
+
+yapısını CanYoldaşı uygulamasında mümkün olduğunca birebir uygulamak.
+
+==================================================
+1. KRİTİK REFERANS KURALI
+==================================================
+
+Referans görseli dikkatlice multimodal olarak analiz et.
+
+Önce referans görseldeki sol mobil ekranın görsel ölçülerini ve hiyerarşisini çıkar.
+
+UI değiştirmeye başlamadan önce şu bölümleri tanımla:
+
+1. Page background
+2. Top safe area
+3. Header
+4. Search row
+5. Category chips
+6. Featured listings section
+7. Featured horizontal card rail
+8. Recent listings section
+9. Recent vertical cards
+10. Create listing CTA
+11. Bottom navigation
+
+Referans ekranın genel kompozisyonunu koru.
+
+Mevcut CanYoldaşı Sahiplendirme ana sayfasındaki:
+
+- büyük hero kart
+- "Evcil hayvanını sahiplendirme ilanına ekle" banner
+- "İlan verirken dikkat et" kartı
+- 2.4K+ / 800+ / 12K+ statistic cards
+- "Güvenli Sahiplendirme" büyük mor banner
+
+ana ekran yapısından kaldır.
+
+Bu elementleri referans ana ekranda olmadığı için ana Sahiplendirme ekranında gösterme.
+
+Ancak ilgili business logic veya data source'u gereksiz şekilde silme.
+
+Sadece bu sayfanın UI hierarchy'sinden çıkar.
+
+==================================================
+2. HEADER'I BİREBİR YENİDEN OLUŞTUR
+==================================================
+
+Referanstaki header düzenini uygula.
+
+Sol tarafta mor pati/app sembolü.
+
+Yanında:
+
+Sahiplendirme
+
+Altında küçük açıklama:
+
+Bir cana yuva, bir hayata dokun.
+
+Sağ tarafta notification bell.
+
+Bell üzerinde unread notification varsa küçük kırmızı badge göster.
+
+Örnek:
+
+3
+
+Badge gerçek notification unread count'a bağlı olsun.
+
+Fake hardcoded sayı kullanma.
+
+Header spacing referansa çok yakın olsun.
+
+Başlık çok büyük olmasın.
+
+Typography hierarchy:
+
+Title:
+bold / semibold
+dark navy-purple
+
+Subtitle:
+small
+muted gray-purple
+
+Header'da mevcut:
+
+Sahiplendirme / Evcilim
+
+top tab sistemini gösterme.
+
+Bu ekran sadece Sahiplendirme landing/listing screen olacak.
+
+Evcilim ayrı bottom navigation / route mantığını korusun.
+
+==================================================
+3. ARAMA SATIRINI REFERANSLA AYNI YAP
+==================================================
+
+Header altında tek satır oluştur.
+
+Sol:
+
+büyük search input
+
+Placeholder:
+
+Kedi, köpek, kuş ara...
+
+Sol içinde search icon.
+
+Input:
+
+white background
+very subtle border
+large rounded corners
+soft shadow optional
+clean premium style
+
+Sağ:
+
+mor kare filter button
+
+Referanstaki oranı koru.
+
+Button:
+
+purple gradient veya mevcut CanYoldaşı primary purple
+rounded 16-18px
+approximately square
+white sliders/filter icon
+
+Aktif advanced filter varsa sağ üst badge göster.
+
+Örnek:
+
+3
+
+Bu badge gerçek active filter count'tan gelsin.
+
+Search input ve filter button aynı vertical alignment'ta olmalı.
+
+==================================================
+4. CATEGORY CHIP ROW
+==================================================
+
+Search row altında horizontal category chips oluştur.
+
+Sıra:
+
+Tümü
+Kedi
+Köpek
+Kuş
+
+Referanstaki yapı:
+
+selected chip:
+purple background
+white icon
+white text
+
+unselected:
+white background
+dark text
+light border/shadow
+
+Chip iconları:
+
+Tümü → grid/categories
+Kedi → cat
+Köpek → dog
+Kuş → bird
+
+Native icon library içinde mevcut uygun icon kullan.
+
+Emoji kullanma.
+
+Broken Android emoji problemi üretme.
+
+Chip boyutları referansa yakın olsun.
+
+Horizontal padding ve gap dengeli olsun.
+
+Horizontal scroll gerekiyorsa temiz scroll behavior kullan.
+
+==================================================
+5. "ÖNE ÇIKAN İLANLAR" BÖLÜMÜ
+==================================================
+
+Category row altında section header oluştur.
+
+Sol:
+
+Öne Çıkan İlanlar
+
+Sağ:
+
+Tümünü Gör >
+
+Tümünü Gör aksiyonu gerçek öne çıkan ilan listesine veya uygun filtered listing ekranına yönlendirsin.
+
+Section title:
+
+dark navy
+semibold/bold
+
+Right action:
+
+purple
+small
+medium weight
+
+==================================================
+6. ÖNE ÇIKAN İLAN KARTLARINI BİREBİR UYGULA
+==================================================
+
+Referanstaki horizontal listing rail'i oluştur.
+
+FlatList horizontal kullan.
+
+Kartlar yaklaşık referans oranında:
+
+narrow portrait card
+white background
+rounded 16-20px
+subtle border/shadow
+
+Kart üst kısmı:
+
+large pet image
+
+Image card width'in tamamını doldursun.
+
+Aspect ratio referansa yakın olsun.
+
+Image:
+
+resizeMode cover
+
+Üst sol:
+
+ÖNE ÇIKAN
+
+mor küçük pill badge.
+
+Sadece gerçekten promoted/featured ilanlarda göster.
+
+Fake badge üretme.
+
+Üst sağ:
+
+circular heart button.
+
+Follow/favorite relation ile gerçek çalışsın.
+
+Empty heart:
+not followed
+
+Filled heart:
+followed
+
+Cold start sonrası database relation'dan restore edilmeli.
+
+Image altındaki content:
+
+Pet name
+Breed
+Age • Gender
+Location
+
+Örnek visual hierarchy:
+
+Luna
+Golden Retriever
+2 yaş • Dişi
+📍 Kadıköy, İstanbul
+
+Location için emoji kullanma.
+
+Native map pin icon kullan.
+
+Card üzerindeki tüm data gerçek adoption listing model'dan gelsin.
+
+Hardcoded Luna, Pamuk veya Milo kullanma.
+
+Reference content sadece layout örneğidir.
+
+Card'a basınca:
+
+listingId
+→ adoption detail screen
+→ fresh fetch
+
+yap.
+
+==================================================
+7. FEATURED CARD DIMENSIONS
+==================================================
+
+Referansın card density'sini koru.
+
+Telefon genişliğinde yaklaşık 2.1 - 2.4 kart görünür hissi olsun.
+
+Tam ekran genişliğinde tek dev kart yapma.
+
+Örnek yaklaşım:
+
+const CARD_WIDTH = screenWidth * 0.39;
+
+Ancak final width'i gerçek screen container padding'e göre ayarla.
+
+Responsive design kullan.
+
+Hardcoded tek cihaz width kullanma.
+
+Horizontal list content padding referanstaki section alignment ile aynı olsun.
+
+==================================================
+8. "SON EKLENEN İLANLAR" BÖLÜMÜ
+==================================================
+
+Featured rail altında ikinci section oluştur.
+
+Sol:
+
+Son Eklenen İlanlar
+
+Sağ:
+
+Tümünü Gör >
+
+Aynı typography ve section spacing kullan.
+
+Bu bölüm gerçek ilanları:
+
+created_at descending
+
+mantığıyla göstermeli.
+
+==================================================
+9. SON EKLENEN İLAN KARTINI REFERANSTAKİ GİBİ YAP
+==================================================
+
+Vertical listing cards oluştur.
+
+Card structure:
+
+LEFT:
+pet image
+
+RIGHT:
+listing content
+
+TOP RIGHT:
+heart button
+
+Image yaklaşık card yüksekliğinin tamamını doldursun.
+
+Rounded left side/image clipping düzgün olsun.
+
+Content:
+
+Pet name
+Breed / animal category
+Age • Gender
+Location
+Relative created time
+
+Örnek hierarchy:
+
+Tekir
+Tekir Kedi
+6 ay • Dişi
+Ataşehir, İstanbul                     1 saat önce
+
+Kalp butonu sağ üstte.
+
+Card:
+
+white background
+rounded approximately 16px
+subtle border
+minimal shadow
+
+Height compact olsun.
+
+Mevcut büyük ilan kartları gibi çok yüksek yapma.
+
+Reference'daki dense layout'u koru.
+
+Kartlar arasında yaklaşık 12-16px gap bırak.
+
+==================================================
+10. DATA SOURCE'U KORU
+==================================================
+
+Bu tasarım değişikliği sırasında mock listing oluşturma.
+
+Mevcut real adoption listing service/query kullan.
+
+Featured section:
+
+gerçek promoted / boosted / featured field hangisiyse onu kullan.
+
+Örnek:
+
+is_featured
+is_promoted
+boosted_until
+
+Gerçek schema'yı audit et.
+
+Field yoksa fake featured data oluşturma.
+
+Mevcut "Öne Çıkar" satın alma/visibility sistemi hangi real field'ı kullanıyorsa featured section onunla bağlı olsun.
+
+Recent section:
+
+active/public adoption listings
+order by created_at descending
+
+kullansın.
+
+==================================================
+11. BOTTOM CREATE LISTING CTA
+==================================================
+
+Referansta Son Eklenen İlanlar bölümünün altında büyük mor CTA card/button bulunuyor.
+
+Bunu uygula.
+
+Structure:
+
+left small pet/paw illustration or appropriate CanYoldaşı icon
+
+text:
+
+İlan Oluştur
+
+subtitle:
+
+Evcil hayvan sahiplendirme ilanı ekle
+
+right:
+subtle decorative sparkle/icon
+
+Purple gradient background.
+
+Rounded approximately 18-22px.
+
+White text.
+
+Card çok yüksek olmasın.
+
+Tap:
+
+İlan Oluştur ekranına yönlendirsin.
+
+Referanstaki gibi bottom navigation'dan hemen önce konumlansın.
+
+==================================================
+12. PAGE BACKGROUND
+==================================================
+
+Ana background:
+
+white / very subtle lavender tinted white.
+
+Pure saturated lavender background yapma.
+
+Referanstaki temiz, bright, premium hissi koru.
+
+Section'ların arasında gereksiz container/card background oluşturma.
+
+Sayfa tek temiz canvas hissi vermeli.
+
+Current screen'deki çok fazla bağımsız büyük white card hierarchy'sini azalt.
+
+==================================================
+13. TYPOGRAPHY
+==================================================
+
+Mevcut app font system'i varsa onu kullan.
+
+Yeni random font ekleme.
+
+Hierarchy reference'a yakın olsun.
+
+Suggested visual scale:
+
+Page title:
+22-26
+
+Subtitle:
+12-14
+
+Section title:
+16-18
+
+Featured pet name:
+16-18
+
+Breed:
+12-14
+
+Metadata:
+11-13
+
+Recent pet name:
+16-18
+
+Button title:
+15-17
+
+Platform text scaling ve accessibility davranışını bozma.
+
+Text clipping test et.
+
+==================================================
+14. COLOR SYSTEM
+==================================================
+
+Referanstaki purple family'i mevcut CanYoldaşı theme tokens'a adapte et.
+
+Random farklı mor tonlarını component içine hardcode etme.
+
+Central theme tokens kullan.
+
+Need:
+
+primary purple
+primary purple dark
+soft lavender
+soft lavender background
+dark navy text
+muted secondary text
+border neutral
+danger red badge
+
+Existing theme'de eşdeğer token varsa onu kullan.
+
+==================================================
+15. SHADOW VE BORDER
+==================================================
+
+Tasarımda ağır gölge kullanma.
+
+Referanstaki clean UI gibi:
+
+thin border
+very soft elevation
+subtle shadow
+
+kullan.
+
+iOS shadow ile Android elevation davranışını ayrı kontrol et.
+
+Web boxShadow gerekiyorsa platform-aware style/helper kullan.
+
+Cards birbirine yapışmamalı.
+
+Ama her component havada yüzüyormuş gibi ağır gölgeli de görünmemeli.
+
+==================================================
+16. BOTTOM NAVIGATION
+==================================================
+
+Mevcut CanYoldaşı bottom navigation business/navigation mantığını koru.
+
+Ancak visual spacing referanstaki temiz yapıya yakın olsun.
+
+Current product navigation structure source of truth'tur.
+
+Feed/Akış ekleme.
+
+Referans görselde farklı navigation items görünse bile CanYoldaşı'nda kaldırılmış Feed/Akış sistemini geri getirme.
+
+Current real tabs kullanılmalı.
+
+Active Sahiplendirme/Evcilim route architecture'a göre doğru item selected göster.
+
+Bu görev sırasında navigation architecture'ı sebepsiz değiştirme.
+
+==================================================
+17. DETAIL SCREEN'E DOKUNMA
+==================================================
+
+Referans görselin sağ telefonunda adoption detail screen de bulunuyor.
+
+BU İLK GÖREVDE sadece sol telefon ekranındaki Sahiplendirme ana ekranını birebir uygula.
+
+Adoption detail screen'i bu görevde redesign etme.
+
+Ancak kart navigation'ları mevcut gerçek detail screen'e çalışmaya devam etmeli.
+
+Sonraki ayrı task'te right-side detail design uygulanabilir.
+
+==================================================
+18. RESPONSIVE IMPLEMENTATION
+==================================================
+
+Bu tasarımı yalnızca iPhone simulator screenshot'una göre hardcode etme.
+
+Test:
+
+iPhone small width
+iPhone Pro
+iPhone Pro Max
+Android phone
+Web mobile viewport
+
+Page horizontal overflow yapmamalı.
+
+Dimensions useWindowDimensions ile gerektiğinde hesaplanabilir.
+
+Tablet/desktop'ta content max width uygula.
+
+Mobile-first composition korunmalı.
+
+Web desktop'ta bütün kartlar devasa genişlememeli.
+
+==================================================
+19. IMAGE PIPELINE'I BOZMA
+==================================================
+
+Bu redesign sırasında image data model'i değiştirme.
+
+Mevcut centralized image URL resolver/normalizer varsa kullan.
+
+Image source:
+
+normalized coverImageUrl
+
+üzerinden gelsin.
+
+UI component içinde:
+
+image ??
+photo ??
+image_url ??
+photos?.[0]
+
+gibi field guessing yapma.
+
+Image load error durumunda mevcut safe fallback kullan.
+
+Ama gerçek görselleri placeholder ile maskeleme.
+
+==================================================
+20. FILTER VE SEARCH BUSINESS LOGIC'İ KORU
+==================================================
+
+Search field gerçek mevcut search logic'e bağlı olsun.
+
+Category chips gerçek animal type filter'a bağlı olsun.
+
+Filter button mevcut advanced filter bottom sheet logic'ini açsın.
+
+Redesign sırasında business logic'i sıfırlama.
+
+UI'yi real state'e bağla.
+
+==================================================
+21. FOLLOW/HEART BUSINESS LOGIC'İ KORU
+==================================================
+
+Her listing heart button:
+
+adoption listing follow relation
+
+mantığını kullanmalı.
+
+Featured ve Recent card'larda aynı canonical follow hook/service kullan.
+
+İki ayrı favorite state sistemi oluşturma.
+
+Kalp:
+
+tap
+→ persist relation
+→ UI update
+→ Takip Ettiklerim query invalidation
+
+akışı çalışmalı.
+
+==================================================
+22. PERFORMANCE
+==================================================
+
+Featured list:
+horizontal FlatList
+
+Recent list:
+main screen architecture'a göre tek scroll strategy kullan.
+
+Nested vertical FlatList + ScrollView warning oluşturma.
+
+Tercihen SectionList veya optimized FlatList header structure değerlendir.
+
+Örneğin:
+
+FlatList recent listings
+
+ListHeaderComponent:
+header
+search
+categories
+featured section
+recent title
+
+ListFooterComponent:
+create listing CTA
+
+Bu sayede tek vertical scroll container kullan.
+
+Featured horizontal FlatList nested horizontal olabilir.
+
+Stable keyExtractor kullan.
+
+Image rendering optimized olsun.
+
+==================================================
+23. REFERANS KARŞILAŞTIRMA TURU YAP
+==================================================
+
+İlk implementasyondan sonra referans görsel ile simulator screenshot'u yan yana karşılaştır.
+
+Şu konuları tek tek kontrol et:
+
+- header vertical position
+- header icon size
+- title hierarchy
+- subtitle spacing
+- search height
+- filter button size
+- chip height
+- chip gaps
+- section header margins
+- featured card width
+- featured image height
+- card radius
+- recent card height
+- image/content ratio
+- text hierarchy
+- bottom CTA height
+- page horizontal padding
+
+Gözle görülür farkları düzelt.
+
+"Benzer oldu" ile görevi bitirme.
+
+Reference-lock visual QA yap.
+
+==================================================
+24. PIXEL ACCURACY ÖNCELİKLERİ
+==================================================
+
+Şu özellikler referansa maksimum yakın olmalı:
+
+1. Overall page hierarchy
+2. Header
+3. Search/filter row
+4. Category chips
+5. Section spacing
+6. Featured card proportions
+7. Recent card proportions
+8. Typography hierarchy
+9. Purple/white visual balance
+10. Bottom create listing CTA
+
+Sadece renkleri benzetip mevcut layout'u koruma.
+
+LAYOUT REBUILD yap.
+
+==================================================
+25. YASAKLAR
+==================================================
+
+YAPMA:
+
+- Mevcut hero banner'ı koruma
+- Statistic card'ları koruma
+- Güvenli Sahiplendirme banner'ını ana ekranda koruma
+- Referansta olmayan büyük onboarding card'ları ekleme
+- Emoji icon kullanma
+- Fake ilan oluşturma
+- Hardcoded badge count kullanma
+- Hardcoded city/pet data kullanma
+- Feed/Akış sistemi ekleme
+- Existing database schema'yı UI için gereksiz değiştirme
+- Card component içinde field guessing yapma
+- Platform-specific completely different layouts yapma
+
+==================================================
+26. ACCEPTANCE TEST
+==================================================
+
+Final screen açıldığında görsel hiyerarşi şu şekilde olmalı:
+
+HEADER
+Sahiplendirme
+Bir cana yuva, bir hayata dokun.
+notification bell
+
+SEARCH + FILTER
+
+CATEGORY CHIPS
+Tümü / Kedi / Köpek / Kuş
+
+ÖNE ÇIKAN İLANLAR
+horizontal compact cards
+
+SON EKLENEN İLANLAR
+compact horizontal-layout vertical cards
+
+İLAN OLUŞTUR
+purple CTA
+
+BOTTOM NAVIGATION
+
+Referans görsele ilk bakışta aynı UI family ve aynı layout composition hissini vermeli.
+
+==================================================
+27. TEST
+==================================================
+
+Test et:
+
+iOS
+Android
+Web mobile viewport
+
+Check:
+
+- no overflow
+- no clipped text
+- no broken image ratio
+- horizontal rail scroll works
+- search works
+- category chips work
+- filter opens
+- heart works
+- listing opens
+- create CTA opens create screen
+- notification bell works
+- bottom navigation works
+- cold start images still load
+
+==================================================
+28. FINAL REPORT
+==================================================
+
+İşlem sonunda raporla:
+
+1. Ana Sahiplendirme ekranında hangi component değiştirildi?
+2. Hangi eski UI sections kaldırıldı?
+3. Header referansa göre nasıl yeniden yapıldı?
+4. Featured listing source hangi real field/query?
+5. Recent listing query nedir?
+6. Heart hangi canonical service'i kullanıyor?
+7. Filter button hangi component'i açıyor?
+8. Search real data üzerinde çalışıyor mu?
+9. Featured card width nasıl hesaplanıyor?
+10. Main vertical scroll architecture nedir?
+11. iOS visual comparison sonucu nedir?
+12. Android sonucu nedir?
+13. Web mobile sonucu nedir?
+14. Referansla kalan gözle görülür farklar var mı?
+15. Hangi dosyalar değiştirildi?
+
+REFERANS GÖRSELİ SOURCE OF TRUTH OLARAK KULLAN.
+
+KENDİ TASARIM YORUMUNU EKLEME.
+
+SOL TELEFON EKRANINDAKİ SAHİPLENDİRME ANA SAYFASINI MÜMKÜN OLDUĞUNCA PIXEL-ACCURATE UYGULA.
