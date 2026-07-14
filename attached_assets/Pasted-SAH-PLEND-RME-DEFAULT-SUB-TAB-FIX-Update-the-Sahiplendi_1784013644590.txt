@@ -1,0 +1,140 @@
+SAHİPLENDİRME DEFAULT SUB-TAB FIX
+
+Update the Sahiplendirme navigation behavior.
+
+CURRENT TOP-LEVEL TABS:
+- Sahiplendirme
+- Evcilim
+
+CURRENT SAHİPLENDİRME SUB-TABS:
+- İlan Oluştur
+- İlanlarım
+- Tüm İlanlar
+
+REQUIRED BEHAVIOR:
+
+Whenever the user taps the top-level "Sahiplendirme" tab, the default active Sahiplendirme sub-tab must be:
+
+"İlan Oluştur"
+
+EXPECTED FLOW:
+
+User taps:
+Sahiplendirme
+
+Then immediately show:
+İlan Oluştur page
+
+The active sub-tab must be:
+
+[ İlan Oluştur ] — ACTIVE
+[ İlanlarım ] — INACTIVE
+[ Tüm İlanlar ] — INACTIVE
+
+The purple active background/indicator must appear on "İlan Oluştur".
+
+IMPORTANT NAVIGATION LOGIC:
+
+1. When opening the Evcilim bottom navigation section:
+   → Sahiplendirme opens
+   → İlan Oluştur is selected by default
+
+2. When switching from Evcilim top tab back to Sahiplendirme:
+   → reset Sahiplendirme sub-tab to İlan Oluştur
+
+3. When the user taps the already visible "Sahiplendirme" top tab:
+   → reset the Sahiplendirme sub-tab to İlan Oluştur
+
+4. Do not keep the previously selected Sahiplendirme sub-tab when entering Sahiplendirme again.
+
+Example:
+
+User opens:
+Sahiplendirme → Tüm İlanlar
+
+Then taps:
+Evcilim
+
+Then taps:
+Sahiplendirme
+
+EXPECTED:
+Sahiplendirme → İlan Oluştur
+
+NOT:
+Sahiplendirme → Tüm İlanlar
+
+==================================================
+STATE LOGIC
+==================================================
+
+Find the existing state controlling Sahiplendirme sub-tabs.
+
+It may be named:
+
+activeSubTab
+selectedSubTab
+adoptionTab
+activeAdoptionTab
+selectedAdoptionTab
+currentAdoptionTab
+activeSection
+
+Do not create duplicate tab state if one already exists.
+
+Use the existing state.
+
+On Sahiplendirme tab press, explicitly reset the sub-tab:
+
+setActiveAdoptionTab('create');
+
+Use the REAL existing state setter and REAL existing tab key.
+
+If the app uses numeric indexes:
+
+0 = İlan Oluştur
+1 = İlanlarım
+2 = Tüm İlanlar
+
+then reset to:
+
+setActiveAdoptionTab(0);
+
+Do not assume these names or indexes.
+Inspect the existing implementation first.
+
+==================================================
+IMPORTANT
+==================================================
+
+Do NOT redesign the UI.
+
+Do NOT change:
+- card design
+- page spacing
+- header
+- notification bell
+- bottom navigation
+- colors
+- typography
+- İlanlarım functionality
+- Tüm İlanlar functionality
+- Supabase logic
+- existing listings
+
+Only update the default navigation state.
+
+FINAL EXPECTED RESULT:
+
+Every time the user enters or taps "Sahiplendirme":
+
+Sahiplendirme
+↓
+İlan Oluştur
+
+must be the first visible page and active sub-tab.
+
+Test on:
+- iOS
+- Android
+- Web

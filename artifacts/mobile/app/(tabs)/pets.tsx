@@ -1676,7 +1676,7 @@ export default function PetsScreen() {
   const { boostStatuses }           = useBoost();
   const { user }                    = useAuth();
   const [mainTab, setMainTab]       = useState<MainTab>("adoption");
-  const [activeTab, setActiveTab]   = useState<Tab>("listings");
+  const [activeTab, setActiveTab]   = useState<Tab>("create");
   const [filter, setFilter]         = useState<Filter>("all");
   const [query, setQuery]           = useState("");
 
@@ -1721,6 +1721,7 @@ export default function PetsScreen() {
           onChange={(t) => {
             Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
             setMainTab(t);
+            if (t === "adoption") setActiveTab("create");
           }}
         />
         <OuterTabSwitcher active={mainTab} onChange={() => {}} />
