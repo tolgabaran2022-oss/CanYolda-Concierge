@@ -1,0 +1,1258 @@
+CAN YOLDAŞI — MULTI-PET OWNERSHIP AND PET-SPECIFIC DATA ARCHITECTURE FIX
+
+Perform a production-critical audit and refactor of the "Evcilim" feature.
+
+CURRENT CRITICAL BUG:
+
+When a user adds a second pet, the previously added pet is replaced, overwritten, deleted from the UI, or otherwise disappears.
+
+Example:
+
+User adds:
+Pamuk
+
+Then user taps:
+"Evcil Hayvan Ekle"
+
+and adds:
+Boncuk
+
+CURRENT WRONG BEHAVIOR:
+
+Pamuk disappears or Pamuk's record is overwritten by Boncuk.
+
+THIS IS A CRITICAL DATA MODEL BUG.
+
+EXPECTED BEHAVIOR:
+
+Pamuk must remain.
+
+Boncuk must be added as a completely separate pet record.
+
+The user must be able to own and manage multiple pets.
+
+Example:
+
+User:
+Baran
+
+Pets:
+- Pamuk
+- Boncuk
+- Karabaş
+
+Each pet must have its own unique pet ID and fully independent records.
+
+Do not redesign the entire Evcilim UI.
+
+Preserve the existing CanYoldaşı visual design.
+
+Fix the data architecture, relationships, selection state, queries, mutations, realtime synchronization, and pet-specific module behavior.
+
+==================================================
+CORE MULTI-PET RULE
+==================================================
+
+A user can own ZERO, ONE, OR MANY pets.
+
+Database relationship:
+
+USER
+1
+↓
+MANY PETS
+
+Conceptually:
+
+profiles/users
+    id
+
+pets
+    id
+    owner_id
+    name
+    species
+    breed
+    birth_date
+    gender
+    photo_url
+    created_at
+    updated_at
+
+Example:
+
+pets:
+
+id: pet_pamuk_123
+owner_id: user_baran
+name: Pamuk
+
+id: pet_boncuk_456
+owner_id: user_baran
+name: Boncuk
+
+These are TWO separate database rows.
+
+Never store a user's pet as a single field on the profile record.
+
+Never overwrite the existing pet when adding another pet.
+
+Never assume:
+
+one user = one pet
+
+The application must use:
+
+one user = many pets
+
+==================================================
+AUDIT THE CURRENT BUG
+==================================================
+
+Before changing code, recursively inspect:
+
+- Evcilim screen
+- Add Pet screen/modal
+- pet hooks
+- pet context/provider
+- pet state
+- selected pet state
+- Supabase pet queries
+- Supabase pet insert/update functions
+- upsert usage
+- local storage / AsyncStorage pet cache
+- realtime subscriptions
+- pet cards
+- pet dropdown/selector
+- Quick Status section
+- Management section
+- reminders
+- vaccinations
+- appointments
+- health records
+- nutrition records
+- medications
+- documents
+- notes
+
+Find the exact reason the second pet replaces the first pet.
+
+Specifically search for dangerous patterns such as:
+
+.single()
+
+.maybeSingle()
+
+limit(1)
+
+pets[0]
+
+currentPet = fetchedPet
+
+setPet(newPet)
+
+upsert({
+  owner_id: user.id,
+  ...
+})
+
+onConflict: 'owner_id'
+
+update pet where owner_id = current user
+
+DELETE previous pet before INSERT
+
+unique(owner_id)
+
+UNIQUE constraint on pets.owner_id
+
+profile.pet_id
+
+user.pet
+
+selectedPet being incorrectly used as the entire pets dataset
+
+Do not hide the bug with frontend state changes.
+
+Fix the real database/data-flow cause.
+
+==================================================
+DATABASE CONSTRAINT AUDIT
+==================================================
+
+Inspect the pets table schema.
+
+pets.owner_id MUST NOT have a unique constraint.
+
+WRONG:
+
+UNIQUE(owner_id)
+
+This architecture means one user can only have one pet.
+
+Remove this constraint safely if it exists.
+
+Correct relationship:
+
+pets.id = PRIMARY KEY
+
+pets.owner_id = FOREIGN KEY to authenticated user/profile
+
+Multiple rows may share the same owner_id.
+
+Example:
+
+owner_id = user_123
+pet = Pamuk
+
+owner_id = user_123
+pet = Boncuk
+
+owner_id = user_123
+pet = Karabaş
+
+All three records are valid.
+
+Do not remove primary key uniqueness from pets.id.
+
+==================================================
+ADD PET BEHAVIOR
+==================================================
+
+When the user taps:
+
+"Evcil Hayvan Ekle"
+
+and completes the pet form:
+
+CREATE A NEW PET RECORD.
+
+Use INSERT behavior.
+
+Conceptual example:
+
+const { data, error } = await supabase
+  .from('pets')
+  .insert({
+    owner_id: user.id,
+    name,
+    species,
+    breed,
+    birth_date,
+    gender,
+    photo_url
+  })
+  .select()
+  .single();
+
+Do not update the currently selected pet.
+
+Do not upsert based only on owner_id.
+
+Do not delete the old pet.
+
+Do not replace the pets array.
+
+WRONG:
+
+setPets([newPet]);
+
+CORRECT:
+
+setPets(previousPets => {
+  if (previousPets.some(pet => pet.id === newPet.id)) {
+    return previousPets;
+  }
+
+  return [...previousPets, newPet];
+});
+
+Adapt this to the project's existing state management architecture.
+
+==================================================
+PET QUERY
+==================================================
+
+The Evcilim screen must fetch ALL pets belonging to the current user.
+
+Conceptual query:
+
+supabase
+  .from('pets')
+  .select('*')
+  .eq('owner_id', user.id)
+  .order('created_at', { ascending: true });
+
+Do not use:
+
+.single()
+
+Do not use:
+
+.maybeSingle()
+
+Do not use:
+
+.limit(1)
+
+Do not only load the first pet.
+
+Expected result:
+
+pets: Pet[]
+
+Example:
+
+[
+  Pamuk,
+  Boncuk,
+  Karabaş
+]
+
+==================================================
+SELECTED PET STATE
+==================================================
+
+Implement a clear selected pet architecture.
+
+Recommended state:
+
+pets: Pet[]
+selectedPetId: string | null
+
+Derive:
+
+selectedPet = pets.find(
+  pet => pet.id === selectedPetId
+);
+
+Do not store only:
+
+currentPet
+
+without maintaining the complete pets collection.
+
+The complete pets array and selected pet identity are different concepts.
+
+Recommended conceptual structure:
+
+const [pets, setPets] = useState<Pet[]>([]);
+const [selectedPetId, setSelectedPetId] = useState<string | null>(null);
+
+const selectedPet = useMemo(
+  () => pets.find(pet => pet.id === selectedPetId) ?? null,
+  [pets, selectedPetId]
+);
+
+==================================================
+INITIAL PET SELECTION
+==================================================
+
+When pets load:
+
+If the currently selected pet still exists:
+Keep it selected.
+
+Otherwise:
+
+Select a valid pet.
+
+Recommended priority:
+
+1. persisted selected pet ID, if valid
+2. previously selected pet ID
+3. first pet in the list
+4. null if no pet exists
+
+Do not reset selectedPetId to pets[0].id on every render.
+
+Do not cause the screen to jump back to Pamuk whenever data refreshes.
+
+==================================================
+PET SELECTOR UI
+==================================================
+
+The current UI already contains a pet card at the top.
+
+Example:
+
+Pamuk
+Kedi
+[dropdown chevron]
+
+Use the existing card as a PET SELECTOR.
+
+Do not redesign the whole screen.
+
+When the user taps the pet card or chevron:
+
+Open a pet selection bottom sheet/menu.
+
+Example:
+
+Evcil Dostlarım
+
+[Pamuk photo]
+Pamuk
+Kedi
+✓ Seçili
+
+[Boncuk photo]
+Boncuk
+Köpek
+
+[Karabaş photo]
+Karabaş
+Köpek
+
++ Evcil Hayvan Ekle
+
+When Boncuk is tapped:
+
+setSelectedPetId(boncuk.id)
+
+Close the selector.
+
+Immediately update the screen to show Boncuk's information.
+
+Do not reload the entire application.
+
+==================================================
+MULTIPLE PET CARDS
+==================================================
+
+The user must be able to see and switch between all pets.
+
+The existing top pet card may remain the active pet display.
+
+Recommended UX:
+
+Tap the arrow/chevron on the Pamuk card.
+
+Open a bottom sheet containing all pets.
+
+Do not place every pet's entire dashboard vertically on the same Evcilim page.
+
+The main Evcilim dashboard should display ONE SELECTED PET at a time.
+
+However, all pets must remain stored and selectable.
+
+Example:
+
+Selected:
+Pamuk
+
+Evcilim dashboard shows:
+Pamuk's quick status
+Pamuk's vaccinations
+Pamuk's appointments
+Pamuk's health information
+
+User selects:
+Boncuk
+
+Evcilim dashboard now shows:
+Boncuk's quick status
+Boncuk's vaccinations
+Boncuk's appointments
+Boncuk's health information
+
+Pamuk is NOT deleted.
+
+Pamuk remains in the pet selector.
+
+==================================================
+CRITICAL PET-SPECIFIC DATA RELATIONSHIPS
+==================================================
+
+Every pet-related record must belong to a specific pet using pet_id.
+
+This is mandatory.
+
+The following features must be audited:
+
+- Kimlik
+- Sağlık
+- Aşılar
+- Randevular
+- Beslenme
+- Belgeler
+- İlaçlar
+- Notlar
+- Hatırlatmalar
+
+Every relevant table must contain:
+
+pet_id
+
+Example:
+
+pet_vaccinations
+- id
+- pet_id
+- vaccine_name
+- vaccination_date
+- next_due_date
+- created_at
+
+pet_health_records
+- id
+- pet_id
+- title
+- description
+- record_date
+
+pet_appointments
+- id
+- pet_id
+- appointment_type
+- appointment_date
+
+pet_nutrition
+- id
+- pet_id
+- food_name
+- feeding_schedule
+
+pet_documents
+- id
+- pet_id
+- document_url
+- document_type
+
+pet_medications
+- id
+- pet_id
+- medication_name
+- dosage
+- schedule
+
+pet_notes
+- id
+- pet_id
+- content
+
+pet_reminders
+- id
+- pet_id
+- reminder_type
+- reminder_date
+
+Adapt table names to the current database.
+
+Do not blindly create duplicate tables if equivalent tables already exist.
+
+==================================================
+PET DATA ISOLATION
+==================================================
+
+This is CRITICAL.
+
+Pamuk's information must never appear under Boncuk.
+
+Example:
+
+Pamuk vaccination:
+
+Rabies Vaccine
+01 July 2026
+
+When selectedPetId = Pamuk:
+
+Show:
+Rabies Vaccine
+
+When selectedPetId = Boncuk:
+
+Do NOT show Pamuk's Rabies Vaccine.
+
+All queries must filter using:
+
+.eq('pet_id', selectedPetId)
+
+Do not query pet modules only using:
+
+owner_id
+
+Owner ID alone is insufficient for pet-specific records.
+
+WRONG:
+
+SELECT vaccinations
+WHERE owner_id = currentUser
+
+CORRECT:
+
+SELECT vaccinations
+WHERE pet_id = selectedPetId
+
+Authorization may additionally validate the pet owner.
+
+==================================================
+QUICK STATUS SECTION
+==================================================
+
+The current Evcilim screen contains:
+
+- Sonraki Aşı
+- Yaklaşan Randevu
+- Mama Durumu
+
+These cards must use the currently selected pet.
+
+Example:
+
+selectedPetId = Pamuk
+
+Sonraki Aşı:
+Pamuk's next vaccination
+
+Yaklaşan Randevu:
+Pamuk's next appointment
+
+Mama Durumu:
+Pamuk's nutrition information
+
+When the user selects Boncuk:
+
+All three cards must immediately show Boncuk's data.
+
+Never combine multiple pets' data into the selected pet's Quick Status cards.
+
+==================================================
+MANAGEMENT BUTTONS
+==================================================
+
+The existing buttons:
+
+Kimlik
+Sağlık
+Aşılar
+Randevular
+Beslenme
+Belgeler
+İlaçlar
+Notlar
+
+must operate on selectedPetId.
+
+Example:
+
+User selects Pamuk.
+
+Taps:
+Aşılar
+
+Open:
+
+Pamuk vaccination records.
+
+User returns.
+
+Selects Boncuk.
+
+Taps:
+Aşılar
+
+Open:
+
+Boncuk vaccination records.
+
+Navigation must carry the pet ID.
+
+Conceptual example:
+
+router.push({
+  pathname: '/pets/[petId]/vaccinations',
+  params: {
+    petId: selectedPet.id
+  }
+});
+
+Adapt to the project's existing navigation system.
+
+Do not depend only on the pet name.
+
+Use unique pet ID.
+
+==================================================
+CREATE RECORD BEHAVIOR
+==================================================
+
+When adding a vaccination, appointment, medication, note, etc.:
+
+The new record must use the selected pet ID.
+
+Example:
+
+await supabase
+  .from('pet_vaccinations')
+  .insert({
+    pet_id: selectedPetId,
+    vaccine_name,
+    vaccination_date
+  });
+
+Never infer the pet from:
+
+pets[0]
+
+Never use the last created pet automatically.
+
+Never use only current user ID.
+
+Verify selectedPetId exists before insert.
+
+If no pet is selected:
+
+Do not create an orphan record.
+
+Show an appropriate Turkish error.
+
+Example:
+
+"Önce bir evcil hayvan seçmelisin."
+
+==================================================
+EDIT PET BEHAVIOR
+==================================================
+
+Editing Pamuk must update ONLY Pamuk.
+
+Use:
+
+.eq('id', pamukPetId)
+
+AND validate ownership through RLS.
+
+Do not update pets using:
+
+.eq('owner_id', user.id)
+
+because this may update multiple pets.
+
+WRONG:
+
+UPDATE pets
+SET name = ...
+WHERE owner_id = currentUser
+
+CORRECT:
+
+UPDATE pets
+SET name = ...
+WHERE id = selectedPetId
+
+==================================================
+DELETE PET BEHAVIOR
+==================================================
+
+Deleting Boncuk must not delete Pamuk.
+
+Deletion must target the exact pet ID.
+
+Use:
+
+.eq('id', petId)
+
+Do not delete by owner_id.
+
+After deletion:
+
+1. Remove only the deleted pet from pets state.
+2. If deleted pet was selected:
+   select another valid pet.
+3. If no pets remain:
+   selectedPetId = null
+4. Display the empty pet state.
+
+Example:
+
+Pets:
+Pamuk
+Boncuk
+
+Selected:
+Boncuk
+
+Delete Boncuk.
+
+Expected:
+
+Pets:
+Pamuk
+
+Selected:
+Pamuk
+
+Pamuk and Pamuk's information remain intact.
+
+==================================================
+CASCADE DELETE AUDIT
+==================================================
+
+Review foreign key behavior for pet-specific records.
+
+If a pet is intentionally deleted, decide how associated records are handled according to the current product architecture.
+
+Recommended:
+
+pet-specific records reference pets.id.
+
+For records that have no meaning without the pet, ON DELETE CASCADE may be appropriate.
+
+Examples:
+
+vaccinations
+appointments
+pet notes
+
+However, do not blindly change foreign keys.
+
+Audit existing data and migrations first.
+
+Never cause one pet deletion to delete another pet's records.
+
+==================================================
+REALTIME SYNCHRONIZATION
+==================================================
+
+If Supabase Realtime is used:
+
+INSERT pet:
+Add the new pet to the pets array.
+
+UPDATE pet:
+Update only the matching pet by ID.
+
+DELETE pet:
+Remove only the matching pet by ID.
+
+Conceptual logic:
+
+INSERT:
+
+setPets(previous =>
+  previous.some(pet => pet.id === newPet.id)
+    ? previous
+    : [...previous, newPet]
+);
+
+UPDATE:
+
+setPets(previous =>
+  previous.map(pet =>
+    pet.id === updatedPet.id
+      ? updatedPet
+      : pet
+  )
+);
+
+DELETE:
+
+setPets(previous =>
+  previous.filter(pet => pet.id !== deletedPet.id)
+);
+
+Never use:
+
+setPets([payload.new])
+
+because this removes all other pets.
+
+Deduplicate realtime events using pet ID.
+
+==================================================
+CACHE / ASYNC STORAGE AUDIT
+==================================================
+
+Inspect local caching.
+
+Dangerous architecture:
+
+AsyncStorage key:
+
+'user_pet'
+
+containing one Pet object.
+
+Replace with architecture appropriate to the project.
+
+Example:
+
+pets data:
+loaded from database / query cache
+
+selected pet preference:
+
+selected_pet_id
+
+Store only the selected pet ID as a preference when appropriate.
+
+Do not use one cached pet object as the user's entire pet dataset.
+
+Validate persisted selected_pet_id against the pets loaded from the database.
+
+==================================================
+RLS SECURITY
+==================================================
+
+Audit Supabase Row Level Security.
+
+A user may SELECT pets they own.
+
+Example conceptual rule:
+
+owner_id = auth.uid()
+
+A user may INSERT a pet only when:
+
+owner_id = auth.uid()
+
+A user may UPDATE or DELETE a pet only when:
+
+owner_id = auth.uid()
+
+For pet-specific child records:
+
+The user can access a record only when the associated pet belongs to them.
+
+Conceptually:
+
+EXISTS (
+  SELECT 1
+  FROM pets
+  WHERE pets.id = child_table.pet_id
+  AND pets.owner_id = auth.uid()
+)
+
+Do not trust a client-provided owner_id alone.
+
+Do not allow User A to manually change pet_id and access User B's pet records.
+
+==================================================
+LOADING STATES
+==================================================
+
+When changing from Pamuk to Boncuk:
+
+Do not temporarily show Pamuk's vaccination data under Boncuk.
+
+This is critical.
+
+Clear or correctly key pet-specific query states during pet switch.
+
+Use pet ID in query cache keys.
+
+Examples:
+
+['pet-vaccinations', petId]
+
+['pet-health', petId]
+
+['pet-appointments', petId]
+
+['pet-nutrition', petId]
+
+Never use only:
+
+['vaccinations']
+
+for all pets if the query is pet-specific.
+
+During loading show:
+
+- skeleton state
+or
+- existing loading design
+
+Do not show the previous pet's data as fallback.
+
+==================================================
+EMPTY PET-SPECIFIC STATES
+==================================================
+
+Example:
+
+Pamuk has vaccinations.
+
+Boncuk has no vaccination records.
+
+When Boncuk is selected:
+
+Do not display Pamuk's vaccination.
+
+Display:
+
+"Kayıt yok"
+
+or the current module-specific empty state.
+
+Example Quick Status:
+
+Sonraki Aşı
+Kayıt yok
+
+This behavior already visually exists in the current Evcilim design and should be preserved.
+
+==================================================
+PET PHOTO HANDLING
+==================================================
+
+Each pet must have its own photo.
+
+Example:
+
+Pamuk:
+pamuk.jpg
+
+Boncuk:
+boncuk.jpg
+
+When changing selected pet:
+
+The top card image must change to the selected pet's photo.
+
+Do not share one profile pet image across every pet.
+
+Storage paths should be unique per pet where appropriate.
+
+Recommended conceptual path:
+
+pets/{ownerId}/{petId}/profile.jpg
+
+Adapt to the current storage implementation.
+
+==================================================
+FINAL DATA FLOW
+==================================================
+
+The correct architecture must be:
+
+AUTH USER
+↓
+FETCH ALL USER PETS
+↓
+pets[]
+↓
+selectedPetId
+↓
+selectedPet
+↓
+PET-SPECIFIC QUERIES USING selectedPetId
+↓
+Quick Status
+Health
+Vaccinations
+Appointments
+Nutrition
+Documents
+Medications
+Notes
+Reminders
+
+Adding another pet:
+
+INSERT NEW PET
+↓
+ADD TO pets[]
+↓
+OPTIONALLY SELECT NEW PET
+↓
+DO NOT MODIFY EXISTING PETS
+
+==================================================
+FINAL ACCEPTANCE TESTS
+==================================================
+
+Perform all tests using real application data and the current backend.
+
+TEST 1:
+
+Create Pamuk.
+
+Verify:
+
+pets count = 1
+
+Pamuk is visible.
+
+TEST 2:
+
+Add vaccination to Pamuk:
+
+"Kuduz Aşısı"
+
+Verify Pamuk shows the vaccination.
+
+TEST 3:
+
+Add Boncuk.
+
+EXPECTED:
+
+pets count = 2
+
+Pamuk still exists.
+
+Boncuk exists.
+
+Pamuk is not overwritten.
+
+TEST 4:
+
+Open pet selector.
+
+Verify:
+
+Pamuk
+Boncuk
+
+both appear.
+
+TEST 5:
+
+Select Pamuk.
+
+Verify:
+
+Pamuk photo
+Pamuk information
+Pamuk Kuduz Aşısı
+
+TEST 6:
+
+Select Boncuk.
+
+Verify:
+
+Boncuk photo
+Boncuk information
+
+Verify:
+
+Pamuk Kuduz Aşısı DOES NOT appear.
+
+TEST 7:
+
+Add vaccination to Boncuk:
+
+"Karma Aşı"
+
+Verify:
+
+Boncuk shows Karma Aşı.
+
+TEST 8:
+
+Switch to Pamuk.
+
+Verify:
+
+Pamuk shows Kuduz Aşısı.
+
+Verify:
+
+Boncuk Karma Aşı DOES NOT appear.
+
+TEST 9:
+
+Add a third pet.
+
+Verify:
+
+pets count = 3
+
+First and second pets remain.
+
+TEST 10:
+
+Edit second pet.
+
+Verify:
+
+Only second pet changes.
+
+TEST 11:
+
+Delete second pet.
+
+Verify:
+
+First and third pet remain.
+
+TEST 12:
+
+Reload app.
+
+Verify:
+
+All remaining pets load from the database.
+
+TEST 13:
+
+Log out and log back in.
+
+Verify:
+
+All pets remain.
+
+TEST 14:
+
+Test iOS.
+
+TEST 15:
+
+Test Android.
+
+TEST 16:
+
+Test Web.
+
+Verify multi-pet state and pet-specific records are consistent on all platforms.
+
+==================================================
+IMPORTANT RESTRICTIONS
+==================================================
+
+DO NOT:
+
+- redesign the whole Evcilim screen
+- assume one user has one pet
+- overwrite the current pet when adding a new pet
+- use upsert based only on owner_id
+- use owner_id as a unique pet identifier
+- replace pets array with [newPet]
+- load only pets[0]
+- query vaccinations only by user ID
+- mix records from multiple pets
+- edit pets by owner_id
+- delete pets by owner_id
+- create mock pets
+- create random pet data
+- create duplicate pet tables without auditing existing tables
+- break existing Evcilim features
+
+GOAL:
+
+The Evcilim feature must support multiple pets per authenticated user.
+
+Every pet must be an independent database entity with a unique pet ID.
+
+Adding Boncuk must never replace Pamuk.
+
+Pamuk and Boncuk must each have completely independent:
+
+identity
+health
+vaccinations
+appointments
+nutrition
+documents
+medications
+notes
+reminders
+
+The currently selected pet controls which pet-specific data is shown on the Evcilim dashboard.
+
+Fix the underlying database and data-flow architecture permanently.

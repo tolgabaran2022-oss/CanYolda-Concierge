@@ -6,6 +6,7 @@ import { useRouter } from "expo-router";
 import React, { useCallback, useEffect, useState } from "react";
 import {
   ActivityIndicator,
+  Modal,
   Platform,
   Pressable,
   RefreshControl,
@@ -125,12 +126,14 @@ function PetProfileCard({
   onSelectIndex,
   onAdd,
   onEdit,
+  onOpenSelector,
 }: {
   pets: Pet[];
   selectedIndex: number;
   onSelectIndex: (i: number) => void;
   onAdd: () => void;
   onEdit: () => void;
+  onOpenSelector: () => void;
 }) {
   const pet = pets[selectedIndex]!;
   const subtitle = buildPetSubtitle(pet.type, pet.breed, pet.gender);
@@ -188,6 +191,7 @@ function PetProfileCard({
             onPress={(e) => {
               e.stopPropagation?.();
               Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+              onOpenSelector();
             }}
           >
             <Icon name="chevron-down" size={20} color={C.textSec} />
@@ -265,7 +269,139 @@ const pc = StyleSheet.create({
 });
 
 /* ══════════════════════════════════════════════════════════════════════════════
-   3. QUICK STATUS CARDS
+   3. PET SELECTOR SHEET (bottom modal)
+══════════════════════════════════════════════════════════════════════════════ */
+function PetSelectorSheet({
+  visible,
+  pets,
+  selectedPetId,
+  onSelect,
+  onAdd,
+  onClose,
+}: {
+  visible: boolean;
+  pets: Pet[];
+  selectedPetId: string | null;
+  onSelect: (id: string) => void;
+  onAdd: () => void;
+  onClose: () => void;
+}) {
+  return (
+    <Modal
+      visible={visible}
+      transparent
+      animationType="slide"
+      statusBarTranslucent
+      onRequestClose={onClose}
+    >
+      <View style={ss.container}>
+        <Pressable style={ss.backdrop} onPress={onClose} />
+        <View style={ss.sheet}>
+          <View style={ss.handle} />
+          <Text style={ss.title}>Evcil Dostlarım</Text>
+          <ScrollView
+            showsVerticalScrollIndicator={false}
+            style={ss.list}
+            contentContainerStyle={ss.listContent}
+          >
+            {pets.map((pet) => {
+              const isSelected = pet.id === selectedPetId;
+              const subtitle = buildPetSubtitle(pet.type, pet.breed, pet.gender);
+              return (
+                <Pressable
+                  key={pet.id}
+                  style={({ pressed }) => [
+                    ss.row,
+                    isSelected && ss.rowSelected,
+                    pressed && { opacity: 0.82 },
+                  ]}
+                  onPress={() => {
+                    Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
+                    onSelect(pet.id);
+                    onClose();
+                  }}
+                >
+                  <View style={ss.avatarWrap}>
+                    {pet.image ? (
+                      <Image
+                        source={{ uri: pet.image }}
+                        style={ss.avatar}
+                        contentFit="cover"
+                      />
+                    ) : (
+                      <LinearGradient
+                        colors={["#A07FE0", C.purple]}
+                        style={ss.avatarFallback}
+                      >
+                        <Icon name="paw" size={20} color="rgba(255,255,255,0.9)" />
+                      </LinearGradient>
+                    )}
+                  </View>
+                  <View style={ss.rowInfo}>
+                    <Text
+                      style={[ss.petName, isSelected && ss.petNameSelected]}
+                      numberOfLines={1}
+                    >
+                      {pet.name}
+                    </Text>
+                    {subtitle ? (
+                      <Text style={ss.petSub} numberOfLines={1}>{subtitle}</Text>
+                    ) : null}
+                  </View>
+                  {isSelected && (
+                    <Icon name="checkmark-circle" size={22} color={C.purple} />
+                  )}
+                </Pressable>
+              );
+            })}
+          </ScrollView>
+          <Pressable
+            style={({ pressed }) => [ss.addBtn, { opacity: pressed ? 0.82 : 1 }]}
+            onPress={() => { onClose(); onAdd(); }}
+          >
+            <Icon name="add-circle-outline" size={20} color={C.purple} />
+            <Text style={ss.addBtnTxt}>Evcil Hayvan Ekle</Text>
+          </Pressable>
+        </View>
+      </View>
+    </Modal>
+  );
+}
+const ss = StyleSheet.create({
+  container:       { flex: 1, justifyContent: "flex-end" },
+  backdrop:        { ...StyleSheet.absoluteFillObject, backgroundColor: "rgba(0,0,0,0.45)" },
+  sheet:           {
+    backgroundColor: "#fff",
+    borderTopLeftRadius: 28,
+    borderTopRightRadius: 28,
+    paddingBottom: Platform.OS === "ios" ? 36 : 24,
+    maxHeight: "72%",
+  },
+  handle:          { width: 40, height: 5, borderRadius: 3, backgroundColor: "#D8D0E8", alignSelf: "center", marginTop: 12, marginBottom: 2 },
+  title:           { fontSize: 20, fontFamily: "Inter_700Bold", color: C.text, letterSpacing: -0.4, paddingHorizontal: 24, paddingTop: 14, paddingBottom: 14, borderBottomWidth: 1, borderBottomColor: C.border },
+  list:            { flexGrow: 0 },
+  listContent:     { paddingVertical: 8 },
+  row:             { flexDirection: "row", alignItems: "center", paddingHorizontal: 24, paddingVertical: 14, gap: 14 },
+  rowSelected:     { backgroundColor: `${C.purple}0A` },
+  avatarWrap:      { width: 52, height: 52, borderRadius: 26, overflow: "hidden", flexShrink: 0 },
+  avatar:          { width: 52, height: 52 },
+  avatarFallback:  { width: 52, height: 52, borderRadius: 26, alignItems: "center", justifyContent: "center" },
+  rowInfo:         { flex: 1 },
+  petName:         { fontSize: 16, fontFamily: "Inter_600SemiBold", color: C.text },
+  petNameSelected: { color: C.purple, fontFamily: "Inter_700Bold" },
+  petSub:          { fontSize: 13, fontFamily: "Inter_400Regular", color: C.textSec, marginTop: 2 },
+  addBtn:          {
+    flexDirection: "row", alignItems: "center", justifyContent: "center", gap: 10,
+    marginHorizontal: 24, marginTop: 12,
+    height: 52, borderRadius: 18,
+    borderWidth: 1.5, borderColor: C.purpleBorder, borderStyle: "dashed",
+    backgroundColor: "#F7F2FF",
+  },
+  addBtnTxt:       { fontSize: 14, fontFamily: "Inter_600SemiBold", color: C.purple },
+});
+
+/* ══════════════════════════════════════════════════════════════════════════════
+   4. QUICK STATUS CARDS
 ══════════════════════════════════════════════════════════════════════════════ */
 function QuickStatusCards({
   vaccinations,
@@ -627,15 +763,27 @@ export function EvcilimTab({ botPad }: { botPad: number }) {
   const router   = useRouter();
 
   const [selectedPetId, setSelectedPetId] = useState<string | null>(null);
+  const [petSelectorOpen, setPetSelectorOpen] = useState(false);
   const [vaccinations, setVaccinations]   = useState<ApiVaccination[]>([]);
   const [appointments, setAppointments]   = useState<ApiAppointment[]>([]);
   const [nutrition, setNutrition]         = useState<ApiNutrition | null>(null);
   const [dataLoading, setDataLoading]     = useState(false);
   const [refreshing, setRefreshing]       = useState(false);
 
-  const effectivePetId = selectedPetId ?? pets[0]?.id ?? null;
-  const selectedPet    = pets.find((p) => p.id === effectivePetId) ?? pets[0] ?? null;
-  const selectedIndex  = Math.max(0, pets.findIndex((p) => p.id === effectivePetId));
+  // Validate/initialize selectedPetId whenever pets list changes.
+  // If the current selection still exists → keep it (this prevents
+  // the dashboard jumping to a newly-added pet that gets prepended).
+  // Otherwise fall back to the first pet in the list.
+  useEffect(() => {
+    if (pets.length === 0) { setSelectedPetId(null); return; }
+    setSelectedPetId((prev) => {
+      if (prev && pets.some((p) => p.id === prev)) return prev;
+      return pets[0]!.id;
+    });
+  }, [pets]);
+
+  const selectedPet  = pets.find((p) => p.id === selectedPetId) ?? null;
+  const selectedIndex = Math.max(0, pets.findIndex((p) => p.id === selectedPetId));
 
   const nav = useCallback(
     (route: string) => router.push(route as Parameters<typeof router.push>[0]),
@@ -701,21 +849,23 @@ export function EvcilimTab({ botPad }: { botPad: number }) {
   const reminders = selectedPet ? buildReminders(vaccinations, appointments, nutrition) : [];
 
   return (
-    <ScrollView
-      showsVerticalScrollIndicator={false}
-      contentContainerStyle={{ paddingTop: 4, paddingBottom: botPad + 28 }}
-      refreshControl={
-        <RefreshControl refreshing={refreshing} onRefresh={handleRefresh} tintColor={C.purple} />
-      }
-    >
-      {/* Pet profile card */}
-      <PetProfileCard
-        pets={pets}
-        selectedIndex={selectedIndex}
-        onSelectIndex={(i) => setSelectedPetId(pets[i]!.id)}
-        onAdd={() => nav("/evcilim/add")}
-        onEdit={() => selectedPet && nav(`/evcilim/${selectedPet.id}`)}
-      />
+    <>
+      <ScrollView
+        showsVerticalScrollIndicator={false}
+        contentContainerStyle={{ paddingTop: 4, paddingBottom: botPad + 28 }}
+        refreshControl={
+          <RefreshControl refreshing={refreshing} onRefresh={handleRefresh} tintColor={C.purple} />
+        }
+      >
+        {/* Pet profile card */}
+        <PetProfileCard
+          pets={pets}
+          selectedIndex={selectedIndex}
+          onSelectIndex={(i) => setSelectedPetId(pets[i]!.id)}
+          onAdd={() => nav("/evcilim/add")}
+          onEdit={() => selectedPet && nav(`/evcilim/${selectedPet.id}`)}
+          onOpenSelector={() => setPetSelectorOpen(true)}
+        />
 
       {dataLoading ? (
         <View style={{ alignItems: "center", paddingTop: 48 }}>
@@ -743,6 +893,15 @@ export function EvcilimTab({ botPad }: { botPad: number }) {
           />
         </>
       ) : null}
-    </ScrollView>
+      </ScrollView>
+      <PetSelectorSheet
+        visible={petSelectorOpen}
+        pets={pets}
+        selectedPetId={selectedPetId}
+        onSelect={(id) => setSelectedPetId(id)}
+        onAdd={() => nav("/evcilim/add")}
+        onClose={() => setPetSelectorOpen(false)}
+      />
+    </>
   );
 }
