@@ -18,12 +18,17 @@ import { logger } from "../lib/logger.js";
 import { extractUserId } from "../lib/jwtAuth.js";
 import { validateBody } from "../lib/validate.js";
 import { createLimiter } from "../lib/rateLimiter.js";
-import { calculatePriorityScore, imageValidationService } from "../lib/priorityScore.js";
+import {
+  calculatePriorityScore,
+  imageValidationService,
+  ANIMAL_CONFIDENCE_ACCEPT_THRESHOLD,
+  ANIMAL_CONFIDENCE_REVIEW_THRESHOLD,
+} from "../lib/priorityScore.js";
 import { generateReportCode } from "../lib/reportCode.js";
 
 /* ── Zod schemas ─────────────────────────────────────────────── */
 const CreateAnimalSchema = z.object({
-  imageUrl:        z.string().max(1000).optional().default(""),
+  imageUrl:        z.string().min(1, "Fotoğraf URL'si gerekli").max(1000),
   animalType:      z.string().trim().max(50).optional().default(""),
   locationName:    z.string().trim().max(255).optional().default(""),
   latitude:        z.coerce.number().min(-90).max(90),
@@ -497,6 +502,26 @@ router.get("/animals/:id", async (req, res) => {
   }
 });
 
+/* ── POST /api/animals/validate-image ─────────────────────────── */
+router.post("/animals/validate-image", async (req, res) => {
+  const userId = uid(req);
+  if (!userId) { res.status(401).json({ error: "Giriş yapılmamış" }); return; }
+
+  const { imageUrl } = req.body as { imageUrl?: string };
+  if (!imageUrl || typeof imageUrl !== "string" || !imageUrl.trim()) {
+    res.status(400).json({ error: "imageUrl gerekli" });
+    return;
+  }
+
+  try {
+    const result = await imageValidationService.validate(imageUrl);
+    res.json(result);
+  } catch (err) {
+    req.log.error({ err }, "POST /animals/validate-image failed");
+    res.status(500).json({ error: "Doğrulama gerçekleştirilemedi" });
+  }
+});
+
 /* ── POST /api/animals ────────────────────────────────────────── */
 router.post("/animals", createLimiter, validateBody(CreateAnimalSchema), async (req, res) => {
   const userId = uid(req);
@@ -509,13 +534,18 @@ router.post("/animals", createLimiter, validateBody(CreateAnimalSchema), async (
     req.body as z.infer<typeof CreateAnimalSchema>;
 
   try {
-    // AI image validation (abstraction layer — stub approves all)
-    if (imageUrl) {
-      const validation = await imageValidationService.validate(imageUrl);
-      if (!validation.isAnimalDetected && validation.confidence > 0.9) {
-        res.status(422).json({ error: "Fotoğrafta hayvan tespit edilemedi. Lütfen net bir hayvan fotoğrafı yükleyin." });
-        return;
-      }
+    // AI image validation (abstraction layer)
+    const validation = await imageValidationService.validate(imageUrl);
+
+    if (!validation.qualityPassed) {
+      res.status(422).json({ error: validation.rejectionReason ?? "Fotoğraf kalitesi yetersiz. Lütfen daha net bir fotoğraf çekin." });
+      return;
+    }
+
+    // Confident rejection: real provider says no animal and confidence is above accept threshold
+    if (!validation.requiresReview && !validation.isAnimalDetected && validation.confidence >= ANIMAL_CONFIDENCE_ACCEPT_THRESHOLD) {
+      res.status(422).json({ error: "Bu fotoğrafta bir hayvan tespit edilemedi. Lütfen hayvanın net göründüğü yeni bir fotoğraf çekin." });
+      return;
     }
 
     // Priority score — server-only
@@ -555,12 +585,19 @@ router.post("/animals", createLimiter, validateBody(CreateAnimalSchema), async (
       reason: "Rapor oluşturuldu",
     });
 
-    // Queue in moderation based on priority
-    if (priority.level === "critical" || priority.level === "high") {
+    // Queue in moderation: always when requiresReview, or when priority is high/critical
+    const needsQueue = validation.requiresReview || priority.level === "critical" || priority.level === "high";
+    if (needsQueue) {
+      const queueType = priority.level === "critical"
+        ? "high_priority"
+        : validation.requiresReview ? "pending_review" : "pending_review";
+      const reason = validation.requiresReview
+        ? `Fotoğraf doğrulama bekleniyor (AI sağlayıcı yapılandırılmamış)`
+        : `Otomatik: priority=${priority.level} score=${priority.score}`;
       await db.insert(moderationQueue).values({
         animalId: animal.id,
-        queueType: priority.level === "critical" ? "high_priority" : "pending_review",
-        reason: `Otomatik: priority=${priority.level} score=${priority.score}`,
+        queueType,
+        reason,
         reportedBy: userId,
       }).catch(() => {});
     }

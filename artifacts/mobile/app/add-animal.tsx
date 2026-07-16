@@ -98,14 +98,14 @@ async function checkNearbyAnimals(lat: number, lng: number): Promise<NearbyAnima
       { headers: { "Content-Type": "application/json" } }
     );
     if (!res.ok) return [];
-    const data = await res.json() as { animals: NearbyAnimal[] };
-    return data.animals ?? [];
+    const data = await res.json() as { nearby: NearbyAnimal[] };
+    return data.nearby ?? [];
   } catch {
     return [];
   }
 }
 
-async function uploadImage(localUri: string): Promise<string> {
+async function uploadImage(localUri: string, token: string | null): Promise<string> {
   const filename = localUri.split("/").pop() ?? "photo.jpg";
   const match = /\.(\w+)$/.exec(filename);
   const type = match ? `image/${match[1].toLowerCase().replace("jpg", "jpeg")}` : "image/jpeg";
@@ -119,22 +119,38 @@ async function uploadImage(localUri: string): Promise<string> {
     formData.append("image", { uri: localUri, name: filename, type } as unknown as Blob);
   }
 
-  const res = await fetch(`${API_BASE}/upload`, { method: "POST", body: formData });
+  const headers: Record<string, string> = {};
+  if (token) headers["Authorization"] = `Bearer ${token}`;
+
+  const res = await fetch(`${API_BASE}/upload`, { method: "POST", body: formData, headers });
   if (!res.ok) throw new Error("Fotoğraf yüklenemedi");
   const data = await res.json() as { url: string };
   return data.url;
 }
+
+type PhotoStatus = "idle" | "uploading" | "validating" | "approved" | "pending_review" | "rejected" | "upload_failed";
+
+type ValidationResult = {
+  isAnimalDetected: boolean;
+  confidence: number;
+  qualityPassed: boolean;
+  requiresReview: boolean;
+  rejectionReason?: string;
+};
 
 export default function AddAnimalScreen() {
   const C      = useColors();
   const insets = useSafeAreaInsets();
   const router = useRouter();
   const { addAnimal } = useAnimals();
-  const { user } = useAuth();
+  const { user, token } = useAuth();
 
-  const [image, setImage]                 = useState<string | undefined>();
-  const [pendingImage, setPendingImage]   = useState<string | undefined>();
-  const [animalType, setAnimalType]       = useState<AnimalType>("diger");
+  const [image, setImage]                   = useState<string | undefined>(); // confirmed local URI
+  const [pendingImage, setPendingImage]     = useState<string | undefined>(); // captured, awaiting confirm
+  const [confirmedImageUrl, setConfirmedImageUrl] = useState<string | undefined>(); // uploaded remote URL
+  const [photoStatus, setPhotoStatus]       = useState<PhotoStatus>("idle");
+  const [photoStatusReason, setPhotoStatusReason] = useState<string | undefined>();
+  const [animalType, setAnimalType]         = useState<AnimalType>("diger");
   const [status, setStatus]               = useState<AnimalStatus>("unknown");
   const [notes, setNotes]                 = useState("");
   const [notesFocused, setNotesFocused]   = useState(false);
@@ -182,19 +198,71 @@ export default function AddAnimalScreen() {
     }
   };
 
-  const confirmImage = () => {
-    setImage(pendingImage);
+  const confirmImage = async () => {
+    if (!pendingImage) return;
+    const localUri = pendingImage;
+    setImage(localUri);
     setPendingImage(undefined);
+    setConfirmedImageUrl(undefined);
+    setPhotoStatusReason(undefined);
+    setPhotoStatus("uploading");
+
+    let uploadedUrl: string;
+    try {
+      uploadedUrl = await uploadImage(localUri, token ?? null);
+    } catch {
+      setPhotoStatus("upload_failed");
+      setPhotoStatusReason("Fotoğraf yüklenemedi. Lütfen internet bağlantınızı kontrol edin.");
+      return;
+    }
+
+    setPhotoStatus("validating");
+    try {
+      const headers: Record<string, string> = { "Content-Type": "application/json" };
+      if (token) headers["Authorization"] = `Bearer ${token}`;
+      const res = await fetch(`${API_BASE}/animals/validate-image`, {
+        method: "POST",
+        headers,
+        body: JSON.stringify({ imageUrl: uploadedUrl }),
+      });
+      if (!res.ok) {
+        setConfirmedImageUrl(uploadedUrl);
+        setPhotoStatus("pending_review");
+        return;
+      }
+      const result = await res.json() as ValidationResult;
+      setConfirmedImageUrl(uploadedUrl);
+      if (result.requiresReview) {
+        setPhotoStatus("pending_review");
+      } else if (!result.qualityPassed) {
+        setPhotoStatus("rejected");
+        setPhotoStatusReason(result.rejectionReason ?? "Fotoğraf kalitesi yetersiz.");
+      } else if (result.isAnimalDetected) {
+        setPhotoStatus("approved");
+      } else {
+        setPhotoStatus("pending_review");
+      }
+    } catch {
+      setConfirmedImageUrl(uploadedUrl);
+      setPhotoStatus("pending_review");
+    }
   };
 
   const retakePhoto = () => {
     setPendingImage(undefined);
+    setImage(undefined);
+    setConfirmedImageUrl(undefined);
+    setPhotoStatus("idle");
+    setPhotoStatusReason(undefined);
     void openCamera();
   };
 
   const removeImage = () => {
     setImage(undefined);
     setPendingImage(undefined);
+    setConfirmedImageUrl(undefined);
+    setPhotoStatus("idle");
+    setPhotoStatusReason(undefined);
   };
 
   const showDuplicateAlert = (nearby: NearbyAnimal[], onContinue: () => void) => {
@@ -285,21 +353,25 @@ export default function AddAnimalScreen() {
       return;
     }
     if (!user) return;
+
+    if (!confirmedImageUrl || (photoStatus !== "approved" && photoStatus !== "pending_review")) {
+      Alert.alert(
+        "Fotoğraf Gerekli",
+        photoStatus === "uploading" || photoStatus === "validating"
+          ? "Fotoğraf işleniyor, lütfen bekleyin."
+          : photoStatus === "rejected"
+            ? (photoStatusReason ?? "Fotoğraf kabul edilmedi. Lütfen yeni bir fotoğraf çekin.")
+            : photoStatus === "upload_failed"
+              ? (photoStatusReason ?? "Fotoğraf yüklenemedi. Lütfen tekrar deneyin.")
+              : "Lütfen önce hayvanın fotoğrafını çekin.",
+      );
+      return;
+    }
+
     setIsSaving(true);
     try {
-      let uploadedImageUrl: string | undefined;
-      if (image) {
-        try {
-          uploadedImageUrl = await uploadImage(image);
-        } catch {
-          Alert.alert("Fotoğraf Yüklenemedi", "Fotoğraf sunucuya yüklenirken hata oluştu. Bildirimi fotoğrafsız kaydedebilirsiniz.");
-          setIsSaving(false);
-          return;
-        }
-      }
-
       await addAnimal({
-        image: uploadedImageUrl,
+        image: confirmedImageUrl,
         animalType,
         latitude: location.latitude,
         longitude: location.longitude,
@@ -351,7 +423,13 @@ export default function AddAnimalScreen() {
 
         {/* ── 1. Photo card ───────────────────────────────────────── */}
         <View style={S.section}>
-          <SectionLabel label="Fotoğraf" />
+          <SectionLabel
+            label="Fotoğraf"
+            note="Zorunlu — Yalnızca kamera ile çekilebilir"
+          />
+          <Text style={[S.photoRequiredSub, { color: C.textMuted }]}>
+            Hayvanın olay yerindeki güncel ve net fotoğrafını çekin.
+          </Text>
 
           {/* Pending preview — captured but not yet confirmed */}
           {pendingImage ? (
@@ -362,43 +440,76 @@ export default function AddAnimalScreen() {
                   <Icon name="camera-reverse-outline" size={16} color="#FFFFFF" />
                   <Text style={S.photoPreviewBtnText}>Tekrar Çek</Text>
                 </Pressable>
-                <Pressable style={[S.photoPreviewBtn, { backgroundColor: C.purple }]} onPress={confirmImage}>
+                <Pressable style={[S.photoPreviewBtn, { backgroundColor: C.purple }]} onPress={() => { void confirmImage(); }}>
                   <Icon name="checkmark-circle-outline" size={16} color="#FFFFFF" />
                   <Text style={S.photoPreviewBtnText}>Fotoğrafı Kullan</Text>
                 </Pressable>
               </View>
             </View>
           ) : (
-            <Pressable onPress={openCamera} style={[
-              S.photoCard,
-              { backgroundColor: C.bgSecondary, borderColor: C.borderStrong },
-            ]}>
+            <Pressable
+              onPress={photoStatus === "uploading" || photoStatus === "validating" ? undefined : openCamera}
+              style={[S.photoCard, { backgroundColor: C.bgSecondary, borderColor: C.borderStrong }]}
+            >
               {image ? (
                 <>
                   <Image source={{ uri: image }} style={S.photoImage} contentFit="cover" />
-                  {/* Top-right remove button */}
-                  <Pressable style={S.photoRemoveBtn} onPress={removeImage} hitSlop={8}>
-                    <Icon name="close-circle" size={26} color="#FFFFFF" />
-                  </Pressable>
-                  {/* Bottom overlay */}
-                  <View style={S.photoOverlay}>
-                    <Icon name="camera-reverse-outline" size={16} color="#FFFFFF" />
-                    <Text style={S.photoOverlayText}>Fotoğrafı Değiştir</Text>
-                  </View>
+                  {/* Top-right remove button — only when not processing */}
+                  {(photoStatus !== "uploading" && photoStatus !== "validating") && (
+                    <Pressable style={S.photoRemoveBtn} onPress={removeImage} hitSlop={8}>
+                      <Icon name="close-circle" size={26} color="#FFFFFF" />
+                    </Pressable>
+                  )}
+                  {/* Status overlay */}
+                  {(photoStatus === "uploading" || photoStatus === "validating") ? (
+                    <View style={[S.photoStatusOverlay, { backgroundColor: "rgba(0,0,0,0.60)" }]}>
+                      <ActivityIndicator color="#FFFFFF" />
+                      <Text style={S.photoStatusOverlayText}>
+                        {photoStatus === "uploading" ? "Fotoğraf yükleniyor…" : "Fotoğraf doğrulanıyor…"}
+                      </Text>
+                    </View>
+                  ) : photoStatus === "approved" ? (
+                    <View style={[S.photoStatusOverlay, { backgroundColor: "rgba(34,197,94,0.75)" }]}>
+                      <Icon name="checkmark-circle" size={20} color="#FFFFFF" />
+                      <Text style={S.photoStatusOverlayText}>Fotoğraf onaylandı</Text>
+                    </View>
+                  ) : photoStatus === "pending_review" ? (
+                    <View style={[S.photoStatusOverlay, { backgroundColor: "rgba(234,179,8,0.75)" }]}>
+                      <Icon name="time-outline" size={20} color="#FFFFFF" />
+                      <Text style={S.photoStatusOverlayText}>İnceleme bekliyor</Text>
+                    </View>
+                  ) : photoStatus === "rejected" ? (
+                    <View style={[S.photoStatusOverlay, { backgroundColor: "rgba(239,68,68,0.80)" }]}>
+                      <Icon name="close-circle-outline" size={20} color="#FFFFFF" />
+                      <Text style={S.photoStatusOverlayText}>
+                        {photoStatusReason ?? "Fotoğraf reddedildi — yeniden çekin"}
+                      </Text>
+                    </View>
+                  ) : photoStatus === "upload_failed" ? (
+                    <View style={[S.photoStatusOverlay, { backgroundColor: "rgba(239,68,68,0.80)" }]}>
+                      <Icon name="cloud-offline-outline" size={20} color="#FFFFFF" />
+                      <Text style={S.photoStatusOverlayText}>Yükleme başarısız — tekrar çek</Text>
+                    </View>
+                  ) : (
+                    <View style={S.photoOverlay}>
+                      <Icon name="camera-reverse-outline" size={16} color="#FFFFFF" />
+                      <Text style={S.photoOverlayText}>Fotoğrafı Değiştir</Text>
+                    </View>
+                  )}
                 </>
               ) : (
                 <View style={S.photoPlaceholderInner}>
                   <View style={[S.photoCameraCircle, { backgroundColor: C.purpleFaint }]}>
                     <Icon name="camera-outline" size={28} color={C.purple} />
                   </View>
-                  <Text style={[S.photoAddTitle, { color: C.text }]}>Fotoğraf Ekle</Text>
+                  <Text style={[S.photoAddTitle, { color: C.text }]}>Fotoğraf Çek</Text>
                   <Text style={[S.photoAddSub, { color: C.textMuted }]}>
                     {Platform.OS === "web"
                       ? "iOS veya Android uygulamasını kullanın"
-                      : "Kamera ile yeni fotoğraf çekin"}
+                      : "Kamera ile olay yerinde fotoğraf çekin"}
                   </Text>
-                  <View style={[S.optionalPill, { backgroundColor: C.purpleFaint }]}>
-                    <Text style={[S.optionalPillText, { color: C.purple }]}>İsteğe bağlı</Text>
+                  <View style={[S.requiredPill, { backgroundColor: "#FEE2E2" }]}>
+                    <Text style={[S.requiredPillText, { color: "#DC2626" }]}>Zorunlu</Text>
                   </View>
                 </View>
               )}
@@ -587,23 +698,39 @@ export default function AddAnimalScreen() {
         </View>
 
         {/* ── Submit ──────────────────────────────────────────────── */}
-        <Pressable
-          style={({ pressed }) => [
-            S.submitBtn,
-            { backgroundColor: C.purple, opacity: pressed || isSaving ? 0.88 : 1 },
-          ]}
-          onPress={handleSave}
-          disabled={isSaving}
-        >
-          {isSaving ? (
-            <ActivityIndicator color="white" size="small" />
-          ) : (
-            <>
-              <Icon name="send" size={20} color="white" strokeWidth={2.2} />
-              <Text style={S.submitBtnText}>Durumu Bildir</Text>
-            </>
-          )}
-        </Pressable>
+        {(() => {
+          const photoProcessing = photoStatus === "uploading" || photoStatus === "validating";
+          const canSubmit = !isSaving && !photoProcessing && (photoStatus === "approved" || photoStatus === "pending_review");
+          return (
+            <Pressable
+              style={({ pressed }) => [
+                S.submitBtn,
+                {
+                  backgroundColor: C.purple,
+                  opacity: pressed || isSaving || photoProcessing || !canSubmit ? 0.55 : 1,
+                },
+              ]}
+              onPress={handleSave}
+              disabled={isSaving || photoProcessing}
+            >
+              {isSaving ? (
+                <ActivityIndicator color="white" size="small" />
+              ) : photoProcessing ? (
+                <>
+                  <ActivityIndicator color="white" size="small" />
+                  <Text style={S.submitBtnText}>
+                    {photoStatus === "uploading" ? "Fotoğraf yükleniyor…" : "Doğrulanıyor…"}
+                  </Text>
+                </>
+              ) : (
+                <>
+                  <Icon name="send" size={20} color="white" strokeWidth={2.2} />
+                  <Text style={S.submitBtnText}>Durumu Bildir</Text>
+                </>
+              )}
+            </Pressable>
+          );
+        })()}
 
       </ScrollView>
     </View>
@@ -611,11 +738,16 @@ export default function AddAnimalScreen() {
 }
 
 /* ── Helper ───────────────────────────────────────────────────── */
-function SectionLabel({ label, sub }: { label: string; sub?: string }) {
+function SectionLabel({ label, sub, note }: { label: string; sub?: string; note?: string }) {
   const C = useColors();
   return (
     <View style={{ gap: 2 }}>
-      <Text style={[S.sectionLabel, { color: C.text }]}>{label}</Text>
+      <View style={{ flexDirection: "row", alignItems: "center", gap: 8 }}>
+        <Text style={[S.sectionLabel, { color: C.text }]}>{label}</Text>
+        {note && (
+          <Text style={[S.sectionNote, { color: "#DC2626" }]}>{note}</Text>
+        )}
+      </View>
       {sub && <Text style={[S.sectionSub, { color: C.textMuted }]}>{sub}</Text>}
     </View>
   );
@@ -721,6 +853,44 @@ const S = StyleSheet.create({
     marginTop: 2,
   },
   optionalPillText: { fontSize: 12, fontFamily: "Inter_600SemiBold" },
+  requiredPill: {
+    borderRadius: 20,
+    paddingHorizontal: 14,
+    paddingVertical: 5,
+    marginTop: 2,
+  },
+  requiredPillText: { fontSize: 12, fontFamily: "Inter_600SemiBold" },
+  photoRequiredSub: {
+    fontSize: 12,
+    fontFamily: "Inter_400Regular",
+    marginBottom: 8,
+    marginTop: -4,
+  },
+  photoStatusOverlay: {
+    position: "absolute",
+    bottom: 0,
+    left: 0,
+    right: 0,
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "center",
+    gap: 8,
+    paddingVertical: 10,
+    paddingHorizontal: 12,
+    borderBottomLeftRadius: 16,
+    borderBottomRightRadius: 16,
+  },
+  photoStatusOverlayText: {
+    fontSize: 13,
+    fontFamily: "Inter_600SemiBold",
+    color: "#FFFFFF",
+    flexShrink: 1,
+  },
+  sectionNote: {
+    fontSize: 11,
+    fontFamily: "Inter_600SemiBold",
+    flexShrink: 1,
+  },
 
   /* Animal type chips */
   typeRow: { flexDirection: "row", flexWrap: "wrap", gap: 10 },

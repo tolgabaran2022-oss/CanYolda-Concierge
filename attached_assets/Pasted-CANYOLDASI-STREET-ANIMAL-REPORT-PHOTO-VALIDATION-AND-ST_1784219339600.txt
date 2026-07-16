@@ -1,0 +1,942 @@
+CANYOLDASI — STREET ANIMAL REPORT PHOTO VALIDATION
+AND STATUS CARD IMAGE PREVIEW FIX
+
+Scope:
+
+Apply this only to the:
+
+“Sokak Hayvanı Ekle”
+“Sokak Hayvanı Durum Bildir”
+
+flow and the cards created from these reports.
+
+Do not change adoption listing photos, pet profile photos, or user profile photos.
+
+Current requirements:
+
+- Street animal report photo must be captured from the camera only.
+- Gallery/file upload is disabled in this flow.
+- A valid animal photo is mandatory.
+- After the report is published, the captured photo must appear correctly in the report/status card preview.
+
+==================================================
+1. FULL DATA-FLOW AUDIT
+==================================================
+
+Recursively inspect the complete street animal report photo flow:
+
+Camera capture
+↓
+Local preview
+↓
+Image validation
+↓
+Image compression/normalization
+↓
+Upload endpoint
+↓
+Storage response
+↓
+Database insert
+↓
+API response
+↓
+Mobile mapping
+↓
+Status card rendering
+
+Search for:
+
+Sokak Hayvanı Ekle
+Durum Bildir
+Fotoğraf Ekle
+street report
+animal report
+status report
+report image
+photoUrl
+photo_url
+imageUrl
+image_url
+imageUrls
+images
+media
+attachment
+thumbnail
+preview
+launchCameraAsync
+upload
+status card
+mapFromApi
+
+Find the real root cause of why the uploaded image does not appear in the status card.
+
+Do not fix only the visual component without tracing the upload and API mapping.
+
+==================================================
+2. PHOTO IS REQUIRED
+==================================================
+
+At least one valid animal photo is mandatory.
+
+Remove any label such as:
+
+“İsteğe bağlı”
+
+Replace it with:
+
+“Zorunlu — Fotoğraf yalnızca kamerayla çekilebilir.”
+
+Supporting text:
+
+“Hayvanın olay yerindeki güncel ve net fotoğrafını çekin.”
+
+The submit button must remain disabled until:
+
+- a camera photo exists
+- the photo passes file validation
+- the photo passes animal-image validation
+- upload is completed successfully
+- a valid stored image URL/path exists
+
+Do not allow report creation with only a temporary local URI.
+
+==================================================
+3. ANIMAL-ONLY IMAGE VALIDATION
+==================================================
+
+The photo must contain a real animal.
+
+Reject photos containing only:
+
+- people
+- selfies
+- furniture
+- food
+- vehicles
+- buildings
+- documents
+- screenshots
+- phone/computer screens
+- advertisements
+- memes
+- landscapes without an animal
+- random objects
+
+Allow real animals such as:
+
+- cats
+- dogs
+- birds
+- rabbits
+- turtles
+- horses
+- cows
+- goats
+- sheep
+- wildlife
+- injured or abandoned animals
+
+Use a provider-independent validation layer:
+
+AnimalImageValidationService
+
+The mobile UI must not call an AI provider directly.
+
+The backend or secure service must be the authority.
+
+Expected result model:
+
+type AnimalImageValidationResult = {
+  isAnimalDetected: boolean;
+  confidence: number;
+  detectedAnimalTypes: string[];
+  isLikelyScreenshot?: boolean;
+  isLikelyScreenPhoto?: boolean;
+  qualityPassed: boolean;
+  rejectionReason?: string;
+};
+
+Do not hardcode fake success such as:
+
+return { isAnimalDetected: true };
+
+==================================================
+4. CURRENT AI PROVIDER REALITY
+==================================================
+
+Audit whether a real image-analysis provider is already configured.
+
+Possible providers:
+
+- OpenAI Vision
+- Google Cloud Vision
+- AWS Rekognition
+- Azure AI Vision
+- another existing project service
+
+If a real provider is configured:
+
+implement actual animal validation through the existing secure backend architecture.
+
+If no real provider/API credential exists:
+
+do not claim that reliable AI animal detection is active.
+
+Implement:
+
+- the service abstraction
+- typed provider interface
+- secure backend endpoint
+- pending_review fallback
+- clear configuration documentation
+
+Until a real provider is configured, uncertain images must not be automatically approved as verified animal photos.
+
+Use one of these safe behaviors:
+
+Preferred:
+Mark the report as pending_review and hide it from the public feed.
+
+Or:
+Block submission with:
+
+“Fotoğraf doğrulanamadı. Lütfen hayvanın daha net göründüğü bir fotoğraf çekin.”
+
+Do not silently approve every image.
+
+==================================================
+5. VALIDATION DECISION RULES
+==================================================
+
+Use configurable thresholds.
+
+Example architecture:
+
+ANIMAL_CONFIDENCE_ACCEPT_THRESHOLD
+ANIMAL_CONFIDENCE_REVIEW_THRESHOLD
+
+Suggested behavior:
+
+confidence >= accept threshold
+→ approved
+
+confidence between review and accept
+→ pending_review
+
+confidence below review threshold
+→ rejected
+
+The exact thresholds must be environment/config controlled, not scattered across UI components.
+
+The backend makes the final decision.
+
+Do not trust a client field such as:
+
+animalDetected: true
+
+==================================================
+6. ANIMAL TYPE CONSISTENCY
+==================================================
+
+Compare the user-selected animal type with the detected animal type.
+
+Examples:
+
+User selects:
+Kedi
+
+Detected:
+dog
+
+Expected:
+Show a warning or reject submission:
+
+“Seçtiğiniz hayvan türü ile fotoğraftaki hayvan eşleşmiyor.”
+
+For “Diğer”:
+
+allow supported detected animal types not listed in the primary UI.
+
+Do not require perfect breed detection.
+
+Only compare broad types:
+
+cat
+dog
+bird
+rabbit
+other
+
+Use server-side normalized enums.
+
+==================================================
+7. IMAGE QUALITY VALIDATION
+==================================================
+
+Reject:
+
+- corrupted image
+- missing image dimensions
+- very low resolution
+- completely black image
+- completely white image
+- excessively blurred image
+- unsupported MIME type
+- oversized file
+- empty file
+
+Allowed MIME types:
+
+image/jpeg
+image/png
+image/webp
+image/heic
+image/heif
+
+Maximum size:
+
+10 MB before compression.
+
+Use existing image compression/normalization.
+
+After camera capture, normalize orientation correctly.
+
+Do not upload a rotated or unreadable photo.
+
+==================================================
+8. CAMERA-ONLY SOURCE
+==================================================
+
+Keep the camera-only rule.
+
+This specific flow must use:
+
+launchCameraAsync
+
+or the actual SDK-compatible camera capture method.
+
+Do not use:
+
+launchImageLibraryAsync
+DocumentPicker
+file input
+gallery picker
+
+Street animal report images must come from the camera capture flow.
+
+Do not break gallery features elsewhere in the application.
+
+==================================================
+9. LOCAL PREVIEW
+==================================================
+
+Immediately after successful camera capture, display the local image preview in the report form.
+
+Provide:
+
+“Tekrar Çek”
+“Fotoğrafı Kullan”
+“Sil”
+
+The preview must use the actual local URI.
+
+Do not clear the local preview while validation/upload is running.
+
+Show explicit states:
+
+- validating
+- uploading
+- approved
+- pending review
+- rejected
+- upload failed
+
+If rejected:
+
+remove the invalid photo from the accepted form state.
+
+Show:
+
+“Bu fotoğrafta bir hayvan tespit edilemedi. Lütfen hayvanın net göründüğü yeni bir fotoğraf çekin.”
+
+==================================================
+10. UPLOAD RESPONSE — SINGLE SOURCE OF TRUTH
+==================================================
+
+Audit the upload endpoint response.
+
+It must return a stable stored image reference.
+
+Recommended response:
+
+{
+  "success": true,
+  "image": {
+    "id": "...",
+    "url": "https://...",
+    "thumbnailUrl": "https://...",
+    "storageKey": "...",
+    "mimeType": "image/jpeg",
+    "width": 1200,
+    "height": 1600
+  }
+}
+
+Use the actual project architecture and naming conventions.
+
+Do not save only:
+
+file name
+
+or:
+
+temporary local URI
+
+into the report database.
+
+The report must reference a persistent server/storage URL or media record.
+
+==================================================
+11. DATABASE IMAGE FIELD AUDIT
+==================================================
+
+Inspect the real street report database table.
+
+Determine which field should hold the image:
+
+image_url
+photo_url
+media_url
+images
+attachments
+report_media relation
+
+Do not create a duplicate image field if one already exists.
+
+Ensure the report insert stores the uploaded persistent image reference.
+
+Common bug patterns to fix:
+
+- upload succeeds but database insert omits image URL
+- database uses photo_url while API mapper reads image_url
+- API returns imageUrl while mobile expects photoUrl
+- report create response contains image but list endpoint does not select it
+- list endpoint joins no media relation
+- empty string overwrites valid URL
+- local file URI is saved instead of remote URL
+- camelCase/snake_case mapping mismatch
+
+==================================================
+12. API CREATE RESPONSE
+==================================================
+
+After report creation, return the complete created report including image data.
+
+The response should include the field consumed by the status card.
+
+Example normalized API model:
+
+{
+  "id": "...",
+  "animalType": "cat",
+  "condition": "injured",
+  "notes": "...",
+  "latitude": ...,
+  "longitude": ...,
+  "imageUrl": "https://...",
+  "thumbnailUrl": "https://...",
+  "createdAt": "...",
+  ...
+}
+
+Use the actual existing API contract.
+
+Do not return one field name during create and another during list fetch.
+
+==================================================
+13. LIST / DETAIL API SELECT AUDIT
+==================================================
+
+Audit every endpoint that returns street animal reports:
+
+- nearby reports
+- all reports
+- map reports
+- user reports
+- report detail
+- report create response
+- report refresh endpoint
+
+Ensure all required image fields are selected and mapped.
+
+If media is stored in a separate table:
+
+join or fetch the primary media correctly.
+
+The first valid report image should be used as card preview.
+
+==================================================
+14. MOBILE MODEL MAPPING
+==================================================
+
+Audit the mobile mapper.
+
+Possible issue:
+
+API:
+image_url
+
+Mobile:
+imageUrl
+
+or:
+
+API:
+photoUrl
+
+Card:
+report.image
+
+Normalize once in a shared mapper.
+
+Example:
+
+mapStreetReportFromApi()
+
+The normalized mobile model should have one consistent field:
+
+imageUrl: string | null
+
+and optionally:
+
+thumbnailUrl: string | null
+
+Do not make card components inspect five possible field names.
+
+However, support legacy records safely during migration if necessary.
+
+Example fallback only in the central mapper:
+
+imageUrl =
+  api.thumbnail_url ??
+  api.image_url ??
+  api.photo_url ??
+  first media URL ??
+  null
+
+Do not duplicate these fallbacks across screens.
+
+==================================================
+15. STATUS CARD IMAGE PREVIEW FIX
+==================================================
+
+Fix the report/status card so the image appears after publication.
+
+Expected card behavior:
+
+If thumbnailUrl exists:
+use thumbnailUrl.
+
+Else if imageUrl exists:
+use imageUrl.
+
+Else:
+show the existing neutral animal placeholder.
+
+The card must not render a blank white area.
+
+Use correct React Native Image props:
+
+- source={{ uri: validUrl }}
+- stable dimensions
+- border radius
+- resizeMode="cover"
+
+If using expo-image:
+
+use the actual installed API correctly.
+
+Add:
+
+- loading placeholder
+- error fallback
+- retry/cache-safe behavior if supported
+
+Do not crash on invalid URLs.
+
+==================================================
+16. IMMEDIATE UI UPDATE AFTER CREATE
+==================================================
+
+After the report is successfully created:
+
+- insert the returned complete report into the current context/store
+or
+- refresh the report query
+
+The newly created status card must immediately display the image.
+
+Do not create a temporary card using incomplete form data that lacks the remote image URL.
+
+If optimistic insertion is used:
+
+replace the optimistic report with the server response after creation.
+
+Do not keep the local URI as the long-term public card source.
+
+==================================================
+17. CACHE AND REFRESH
+==================================================
+
+Audit:
+
+- report context
+- React Query cache
+- Zustand
+- custom reducer
+- AsyncStorage
+- list refresh
+
+After successful creation:
+
+- invalidate/refetch nearby reports
+- invalidate/refetch user reports
+- refresh map markers/cards if they show report previews
+
+Do not require an app restart.
+
+Do not leave stale image-less cached reports.
+
+==================================================
+18. URL AND STORAGE ACCESS
+==================================================
+
+Validate that stored image URLs are accessible to the mobile app.
+
+Audit:
+
+- public vs signed URL
+- URL expiration
+- CDN/storage domain
+- CORS where relevant
+- authentication requirements
+- malformed relative paths
+
+If signed URLs are used:
+
+do not persist an already expired signed URL as permanent data.
+
+Persist storage key and generate a fresh signed URL when reading.
+
+If public URLs are used:
+
+ensure the correct full URL is returned.
+
+Do not expose private storage credentials.
+
+==================================================
+19. MODERATION VISIBILITY
+==================================================
+
+If animal validation result is:
+
+approved
+→ report can be public.
+
+pending_review
+→ report must not appear in the public feed/map until approved.
+
+rejected
+→ report must not be created as a public report.
+
+The user should see:
+
+“Fotoğraf inceleniyor. Bildirimin onaylandıktan sonra yayınlanacak.”
+
+Do not show an image-less public card for pending/rejected uploads.
+
+==================================================
+20. BACKEND VALIDATION
+==================================================
+
+Never rely only on client validation.
+
+The report creation endpoint must verify:
+
+- authenticated user
+- camera capture session where implemented
+- persistent uploaded image exists
+- image belongs to authenticated user/draft
+- image validation status is approved or allowed pending_review
+- animal type selected
+- condition selected
+- valid location present
+- file type and size valid
+
+Reject attempts to submit:
+
+- arbitrary external image URL
+- another user’s uploaded media
+- missing image
+- unvalidated image
+- rejected image
+- temporary local URI
+
+==================================================
+21. CLEANUP
+==================================================
+
+If image validation or report creation fails:
+
+clean up unused temporary uploads according to the existing storage architecture.
+
+Do not delete shared/default assets.
+
+Avoid orphan files.
+
+If report creation succeeds:
+
+bind the media record to the report.
+
+==================================================
+22. USER-FACING ERROR MESSAGES
+==================================================
+
+Missing photo:
+
+“Lütfen hayvanın fotoğrafını çekin.”
+
+No animal detected:
+
+“Bu fotoğrafta bir hayvan tespit edilemedi. Lütfen hayvanın net göründüğü yeni bir fotoğraf çekin.”
+
+Type mismatch:
+
+“Seçtiğiniz hayvan türü ile fotoğraftaki hayvan eşleşmiyor.”
+
+Low quality:
+
+“Fotoğraf yeterince net değil. Lütfen tekrar çekin.”
+
+Upload error:
+
+“Fotoğraf yüklenemedi. Lütfen tekrar deneyin.”
+
+Preview load error:
+
+“Fotoğraf önizlemesi yüklenemedi.”
+
+Do not display raw server/AI/storage errors.
+
+==================================================
+23. TEST MATRIX
+==================================================
+
+TEST 1:
+Capture a clear cat photo.
+Select Kedi.
+
+Expected:
+Accepted.
+Report created.
+Photo appears immediately on status card.
+
+TEST 2:
+Capture a clear dog photo.
+Select Köpek.
+
+Expected:
+Accepted.
+Card preview appears.
+
+TEST 3:
+Capture a person/selfie.
+
+Expected:
+Rejected.
+Report cannot be submitted.
+
+TEST 4:
+Capture furniture or a building.
+
+Expected:
+Rejected.
+
+TEST 5:
+Capture a screenshot displayed on another screen.
+
+Expected:
+Reject or pending_review based on anti-spoofing confidence.
+
+TEST 6:
+Capture a cat but select Köpek.
+
+Expected:
+Mismatch warning/rejection.
+
+TEST 7:
+Capture a blurry animal photo.
+
+Expected:
+Low-quality rejection.
+
+TEST 8:
+Upload succeeds but report creation fails.
+
+Expected:
+No public card.
+Temporary/orphan cleanup handled.
+
+TEST 9:
+Create report successfully.
+
+Expected:
+Create response includes remote image URL.
+Context refresh shows same image.
+
+TEST 10:
+Restart application.
+
+Expected:
+Image still appears from persistent backend data.
+
+TEST 11:
+Open map/nearby report list.
+
+Expected:
+Report image appears wherever a preview is supported.
+
+TEST 12:
+Image URL returns an error.
+
+Expected:
+Placeholder shown, no crash.
+
+TEST 13:
+Legacy report has photo_url only.
+
+Expected:
+Central mapper displays it correctly.
+
+TEST 14:
+Try submitting arbitrary external URL through a modified client.
+
+Expected:
+Backend rejects it.
+
+TEST 15:
+No real AI provider configured.
+
+Expected:
+System does not falsely claim AI approval.
+Uses pending_review or blocks based on configured safe mode.
+
+==================================================
+24. DO NOT DO THESE
+==================================================
+
+DO NOT:
+
+- approve every image automatically
+- trust client animalDetected
+- validate only by file extension
+- save local camera URI to database
+- create the report before upload finishes
+- omit image field from list endpoints
+- fix only the card CSS/layout
+- allow arbitrary external image URLs
+- break gallery uploads in unrelated screens
+- expose AI keys to mobile
+- leave image mapping duplicated across components
+- hide the lack of a real AI provider
+- create fake moderation success
+- reset production data
+
+==================================================
+25. FINAL RECURSIVE AUDIT
+==================================================
+
+Search again for:
+
+street report image
+photo_url
+image_url
+imageUrl
+photoUrl
+thumbnailUrl
+launchCameraAsync
+launchImageLibraryAsync
+AnimalImageValidationService
+animalDetected
+pending_review
+mapFromApi
+status card
+Image source
+upload response
+
+Confirm:
+
+- street report uses camera only
+- image is mandatory
+- backend validates ownership/status
+- non-animal images are rejected or reviewed
+- selected animal type is checked
+- persistent image URL is saved
+- all list/detail APIs return image data
+- central mobile mapper is consistent
+- status card preview uses remote URL
+- new report shows image immediately
+- app restart still shows image
+- TypeScript passes
+- build passes
+
+==================================================
+26. FINAL REPORT
+==================================================
+
+Return the report in Turkish using exactly these headings:
+
+1. ROOT CAUSE — KARTTA FOTOĞRAFIN GÖRÜNMEMESİ
+
+2. KAMERA-ONLY FOTOĞRAF AKIŞI
+
+3. ANIMAL IMAGE VALIDATION
+
+4. GERÇEK AI PROVIDER DURUMU
+
+5. HAYVAN TÜRÜ EŞLEŞTİRME
+
+6. UPLOAD RESPONSE VE DATABASE KAYDI
+
+7. API IMAGE FIELD MAPPING
+
+8. MOBILE MODEL MAPPING
+
+9. DURUM KARTI FOTOĞRAF ÖNİZLEMESİ
+
+10. CREATE SONRASI ANLIK REFRESH
+
+11. MODERATION / PENDING REVIEW DAVRANIŞI
+
+12. STORAGE URL VE ERİŞİM DURUMU
+
+13. DEĞİŞTİRİLEN DOSYALAR
+
+14. TYPESCRIPT / LINT / BUILD SONUCU
+
+15. GERÇEKTEN TEST EDİLEN SENARYOLAR
+
+16. TEST EDİLEMEYEN SENARYOLAR
+
+17. KALAN PRODUCTION RİSKLERİ
+
+IMPORTANT:
+
+Do not only describe the expected behavior.
+
+Inspect the actual street animal report flow end-to-end.
+
+Implement the real fixes in the Express + PostgreSQL + Drizzle backend and React Native client.
+
+Do not claim animal AI validation is active unless a real configured provider was used and tested.

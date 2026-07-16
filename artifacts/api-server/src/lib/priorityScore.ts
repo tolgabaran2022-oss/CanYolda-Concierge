@@ -135,24 +135,62 @@ export function calculatePriorityScore(input: ScoringInput): PriorityResult {
 }
 
 /**
- * AnimalImageValidationService — abstraction layer for future AI vision providers.
- * Currently returns a stub that approves all images.
- * Replace the provider implementation to plug in OpenAI / Google Vision / Rekognition.
+ * AnimalImageValidationService — abstraction layer for AI vision providers.
+ *
+ * CONFIGURATION (optional env vars):
+ *   ANIMAL_CONFIDENCE_ACCEPT_THRESHOLD  (default 0.70)  >= → approved
+ *   ANIMAL_CONFIDENCE_REVIEW_THRESHOLD  (default 0.30)  between → pending_review
+ *                                                        <  → rejected
+ *
+ * REAL PROVIDER INTEGRATION:
+ *   When a real provider is configured (e.g. OpenAI Vision, Google Cloud Vision,
+ *   AWS Rekognition), instantiate it in the AnimalImageValidationService constructor
+ *   by checking the relevant env var (e.g. OPENAI_API_KEY, GOOGLE_VISION_KEY).
+ *   The provider must implement ImageValidationProvider and return a real
+ *   AnimalImageValidationResult with meaningful confidence values.
+ *
+ * CURRENT STATE: no real provider configured.
+ *   → StubValidationProvider returns requiresReview=true for all uploads.
+ *   → All reports are added to the moderation queue until a provider is wired up.
  */
-export interface ImageValidationResult {
+
+export const ANIMAL_CONFIDENCE_ACCEPT_THRESHOLD =
+  parseFloat(process.env["ANIMAL_CONFIDENCE_ACCEPT_THRESHOLD"] ?? "0.70");
+export const ANIMAL_CONFIDENCE_REVIEW_THRESHOLD =
+  parseFloat(process.env["ANIMAL_CONFIDENCE_REVIEW_THRESHOLD"] ?? "0.30");
+
+export type AnimalImageValidationResult = {
   isAnimalDetected: boolean;
-  confidence: number;
-  reason?: string;
-}
+  confidence: number;              // 0.0 – 1.0
+  detectedAnimalTypes: string[];   // normalised: "cat" | "dog" | "bird" | "other" | …
+  isLikelyScreenshot?: boolean;
+  isLikelyScreenPhoto?: boolean;
+  qualityPassed: boolean;
+  rejectionReason?: string;
+  requiresReview: boolean;         // true → pending_review; false + high confidence → approved/rejected
+};
+
+/** Legacy alias — kept for backward compat with existing animals.ts usage */
+export type ImageValidationResult = AnimalImageValidationResult;
 
 export interface ImageValidationProvider {
-  validate(imageUrl: string): Promise<ImageValidationResult>;
+  validate(imageUrl: string): Promise<AnimalImageValidationResult>;
 }
 
+/**
+ * StubValidationProvider — no real AI configured.
+ * Returns requiresReview=true so every uploaded photo goes to pending_review.
+ * Does NOT silently approve images.
+ */
 class StubValidationProvider implements ImageValidationProvider {
-  async validate(_imageUrl: string): Promise<ImageValidationResult> {
-    // Stub: always approve. Replace with AI provider when API keys are available.
-    return { isAnimalDetected: true, confidence: 1.0 };
+  async validate(_imageUrl: string): Promise<AnimalImageValidationResult> {
+    return {
+      isAnimalDetected: false,
+      confidence: 0,
+      detectedAnimalTypes: [],
+      qualityPassed: true,
+      requiresReview: true,
+    };
   }
 }
 
@@ -163,8 +201,17 @@ export class AnimalImageValidationService {
     this.provider = provider ?? new StubValidationProvider();
   }
 
-  async validate(imageUrl: string): Promise<ImageValidationResult> {
-    if (!imageUrl) return { isAnimalDetected: true, confidence: 1.0 };
+  async validate(imageUrl: string): Promise<AnimalImageValidationResult> {
+    if (!imageUrl) {
+      return {
+        isAnimalDetected: false,
+        confidence: 0,
+        detectedAnimalTypes: [],
+        qualityPassed: false,
+        rejectionReason: "Fotoğraf URL'si boş",
+        requiresReview: false,
+      };
+    }
     return this.provider.validate(imageUrl);
   }
 }
