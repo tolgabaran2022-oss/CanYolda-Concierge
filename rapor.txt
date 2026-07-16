@@ -1,0 +1,105 @@
+CanYoldasI - RevenueCat IAP Entegrasyon Raporu
+Adim 10-12 Tamamlandi
+===============================================
+
+
+SISTEM MIMARISI
+---------------
+
+[Kullanici]
+    | "One Cikar" butonu
+[boost-packages.tsx]
+    | RevenueCat Test Store
+[react-native-purchases]
+    | satin alma onayi + transactionIdentifier
+POST /api/promotions/verify-purchase
+    | JWT dogrulama
+    | listing sahipligi kontrolu
+    | PACKAGE_MAP -> server-side durationDays
+    | Drizzle atomik transaction
+        - listing_promotion_purchases -> "processed"
+        - adoption_listings.promoted_until guncellendi
+    | promotedUntil doner
+[boost-packages.tsx]
+    | AdoptionContext.refresh()
+    | "Ilanin One Cikarildi" + bitis tarihi
+
+
+VERITABANI DEGISIKLIKLERI
+--------------------------
+
+Tablo                          Degisiklik
+adoption_listings              promoted_until TIMESTAMPTZ kolonu eklendi (tek kaynak)
+listing_promotion_purchases    YENI - IAP satin alma denetim tablosu
+listing_promotions             Mevcut (Stripe legacy) - backward compat korundu
+
+
+GUVENLIK GARANTILERI
+---------------------
+
+Saldiri                                Koruma
+durationDays=999 gonder                Sunucu PACKAGE_MAP'ten okur, client degeri gorulemez
+promotedUntil=2099 gonder              Sunucu hesaplar, client'tan timestamp kabul edilmez
+Ayni islemi 2 kez gonder               UNIQUE index lpp_transaction_id_unique + idempotent 200
+2 es zamanli ayni istek                DB UNIQUE concurrent duplicate'i durdurur
+A ilani icin paketi B'ye uygula        purchase.listingId === listingId TX ici kontrol -> 403
+Baskasinini ilanini one cikar          listing.userId === authUserId -> 403
+Suresi dolmus/iptal satin alma          Sadece verified->processed gecisi; digerleri -> 409
+
+
+PROMOTION STACKING (UST USTE PAKET)
+-------------------------------------
+
+Aktif promosyon yok  + 3 gun  =  simdi + 3 gun
+2 gun kalan          + 3 gun  =  5 gun kalan
+Suresi dolmus        + 1 gun  =  simdi + 1 gun
+
+Aktif sure asla ezilmez.
+
+
+AG HATASI / RETRY KORUMASI
+---------------------------
+
+RevenueCat onayladi ama ag koptu -> kullanici yeniden satin almaz.
+"Tekrar Dene" butonu ayni transactionIdentifier ile tekrar backend'e gonder.
+Idempotent aktivasyon. Musteri bir kez faturalandirilir.
+
+
+QUERY INVALIDATION
+-------------------
+
+Aktivasyon sonrasi AdoptionContext.refresh() cagirilir.
+Tum listing ekranlari (/adoption, "benim ilanlarim", detay) otomatik guncellenir.
+One cikarilan ilanlar listenin basina siralanir.
+
+
+DEGISTIRILEN DOSYALAR
+----------------------
+
+Dosya                                              Ne Yapildi
+lib/db/src/schema/animals.ts                       promotedUntil + listingPromotionPurchases semasi
+artifacts/api-server/src/routes/promotions.ts      Atomik verify+activate endpoint + /status/:id
+artifacts/api-server/src/routes/adoption.ts        promoted_until primary kaynak; liste siralama
+artifacts/mobile/contexts/AdoptionContext.tsx       promotedUntil tip + mapFromApi
+artifacts/mobile/app/boost-packages.tsx            Tam IAP akisi - RC -> backend -> UX -> refresh
+artifacts/api-server/src/routes/boost.ts           Adim 10: server-side paket dogrulama
+
+
+TYPESCRIPT DURUMU
+------------------
+
+libs:         0 hata
+api-server:   0 hata
+mobile:       0 hata
+
+
+HENUZ YAPILMAYAN (KASITLI)
+---------------------------
+
+- Promoted ilan rozeti (badge) UI tasarimi
+- Geri sayim sayaci (countdown timer)
+- App Store / Google Play production urun ID'leri
+- RevenueCat webhook (refund / revoke lifecycle)
+- Promosyon analitigi
+
+Bunlar sonraki adimlar icin hazir altyapi uzerinde insaa edilebilir.

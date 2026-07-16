@@ -101,3 +101,9 @@ id = "iT_5MldPY9mO7rUYTYCVd"
 uri = "file://adim10_rapor.zip"
 type = "unspecified"
 title = "Adım 10 Raporu (.tex)"
+
+[[outputs]]
+id = "WQej5QSZSYmU1oIoZXuEF"
+uri = "file://rapor.txt"
+type = "text"
+title = "RevenueCat IAP Entegrasyon Raporu"
