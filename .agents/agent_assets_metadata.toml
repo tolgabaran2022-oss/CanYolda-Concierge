@@ -89,3 +89,9 @@ id = "sZazP8-X2LM4AQ2m95lBU"
 uri = "file://mobile_components.zip"
 type = "unspecified"
 title = "PostCard, TabBar, StoryBar, CommentSheet, useTheme (zip)"
+
+[[outputs]]
+id = "BoJ4xcgnrEX0hcI-6E4yo"
+uri = "file://revenuecat_entegrasyon_raporu.zip"
+type = "unspecified"
+title = "RevenueCat Entegrasyon Raporu (.tex)"

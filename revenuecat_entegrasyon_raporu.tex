@@ -1,0 +1,481 @@
+\documentclass[12pt,a4paper]{article}
+\usepackage[utf8]{inputenc}
+\usepackage[T1]{fontenc}
+\usepackage[turkish]{babel}
+\usepackage{geometry}
+\usepackage{booktabs}
+\usepackage{longtable}
+\usepackage{array}
+\usepackage{xcolor}
+\usepackage{listings}
+\usepackage{hyperref}
+\usepackage{titlesec}
+\usepackage{enumitem}
+\usepackage{fancyhdr}
+\usepackage{graphicx}
+
+\geometry{margin=2.5cm}
+
+\definecolor{primary}{RGB}{224,122,53}
+\definecolor{codeblue}{RGB}{0,80,160}
+\definecolor{codegray}{RGB}{100,100,100}
+\definecolor{codebg}{RGB}{248,248,248}
+\definecolor{successgreen}{RGB}{34,139,34}
+\definecolor{errorred}{RGB}{180,0,0}
+
+\lstset{
+  backgroundcolor=\color{codebg},
+  basicstyle=\ttfamily\small,
+  keywordstyle=\color{codeblue}\bfseries,
+  commentstyle=\color{codegray}\itshape,
+  stringstyle=\color{primary},
+  breaklines=true,
+  frame=single,
+  rulecolor=\color{primary!40},
+  xleftmargin=8pt,
+  xrightmargin=8pt,
+  aboveskip=6pt,
+  belowskip=6pt,
+}
+
+\titleformat{\section}{\large\bfseries\color{primary}}{}{0em}{}[\titlerule]
+\titleformat{\subsection}{\normalsize\bfseries\color{codeblue}}{}{0em}{}
+
+\pagestyle{fancy}
+\fancyhf{}
+\rhead{\textcolor{primary}{\textbf{CanYoldaşı}}}
+\lhead{RevenueCat Entegrasyon Raporu}
+\rfoot{\thepage}
+\lfoot{\textcolor{codegray}{\small 16 Temmuz 2026}}
+
+\hypersetup{
+  colorlinks=true,
+  linkcolor=primary,
+  urlcolor=codeblue,
+}
+
+% ────────────────────────────────────────────
+\begin{document}
+
+\begin{titlepage}
+  \centering
+  \vspace*{3cm}
+  {\Huge\bfseries\color{primary} CanYoldaşı\par}
+  \vspace{0.5cm}
+  {\Large RevenueCat Entegrasyon Raporu\par}
+  \vspace{0.3cm}
+  {\large Adım 4 · Adım 8 · Adım 9\par}
+  \vspace{1.5cm}
+  \hrule height 1pt
+  \vspace{0.4cm}
+  {\normalsize
+    \textbf{Proje:} CanYoldaşı — Sokak Hayvanı Mobil Uygulaması\\[4pt]
+    \textbf{Paket:} \texttt{react-native-purchases@10.4.2}\\[4pt]
+    \textbf{Expo SDK:} 54.0.27 \quad \textbf{React Native:} 0.81.5\\[4pt]
+    \textbf{Tarih:} 16 Temmuz 2026
+  }
+  \vspace{0.4cm}
+  \hrule height 1pt
+  \vfill
+  {\small\color{codegray}
+    Bu belge CanYoldaşı mobil uygulamasına yapılan RevenueCat\\
+    in-app purchase entegrasyonunu üç aşamalı olarak belgelemektedir.
+  }
+\end{titlepage}
+
+% ────────────────────────────────────────────
+\tableofcontents
+\newpage
+
+% ════════════════════════════════════════════
+\section{Genel Bakış}
+
+Bu rapor, CanYoldaşı mobil uygulamasına RevenueCat Test Store entegrasyonunu
+kapsayan üç uygulama adımını belgelemektedir.
+Her adım bağımsız olarak planlanmış, uygulanmış ve TypeScript denetimiyle doğrulanmıştır.
+
+\begin{center}
+\begin{tabular}{lll}
+  \toprule
+  \textbf{Adım} & \textbf{Konu} & \textbf{Durum}\\
+  \midrule
+  4  & SDK Başlatma ve Kullanıcı Kimliği & \textcolor{successgreen}{\bfseries PASS}\\
+  8  & Offerings Yükleme ve Paket Gösterimi & \textcolor{successgreen}{\bfseries PASS}\\
+  9  & Test Store Satın Alma Akışı & \textcolor{successgreen}{\bfseries PASS}\\
+  \bottomrule
+\end{tabular}
+\end{center}
+
+\medskip
+\noindent\textbf{TypeScript sonucu tüm adımlarda:} 0 hata, \texttt{any} / \texttt{@ts-ignore} / \texttt{@ts-expect-error} yok.
+
+% ════════════════════════════════════════════
+\section{Adım 4 — SDK Başlatma ve Kullanıcı Kimliği}
+
+\subsection{Hedef}
+
+RevenueCat SDK'sını uygulamanın tek bir merkezi noktasından idempotent biçimde başlatmak;
+kullanıcı kimliğini JWT auth lifecycle'ına bağlamak.
+
+\subsection{Oluşturulan ve değiştirilen dosyalar}
+
+\begin{itemize}[leftmargin=1.5em]
+  \item \texttt{artifacts/mobile/services/revenueCat.ts} — \textbf{yeni dosya}
+  \item \texttt{artifacts/mobile/contexts/AuthContext.tsx}
+  \item \texttt{artifacts/mobile/app/\_layout.tsx}
+\end{itemize}
+
+\subsection{Merkezi Servis: \texttt{revenueCat.ts}}
+
+\begin{lstlisting}[language={}]
+// Idempotency guard — Purchases.configure() en fazla bir kez çağrılır
+let _initialized = false;
+let _currentRcUserId: string | null = null;
+
+export async function initializeRevenueCat(userId?: string | null): Promise<void>
+export async function loginRevenueCat(userId: string): Promise<void>
+export async function logoutRevenueCat(): Promise<void>
+export function isRevenueCatInitialized(): boolean
+\end{lstlisting}
+
+\subsubsection{İdempotency Garantisi}
+
+\texttt{Purchases.configure()} yalnızca \texttt{\_initialized === false} iken çağrılır.
+React Strict Mode, Expo Fast Refresh ve bileşen remount durumlarında güvenlidir.
+
+\subsubsection{Ortam Değişkeni}
+
+\begin{lstlisting}[language={}]
+const apiKey = process.env.EXPO_PUBLIC_REVENUECAT_API_KEY;
+if (!apiKey) {
+  console.warn("[RevenueCat] API key is missing");
+  return; // configure() çağrılmaz
+}
+\end{lstlisting}
+
+API anahtarı kaynak koda gömülmez; eksikse uygulama çökmez, sadece uyarı verilir.
+
+\subsubsection{Debug Loglama}
+
+\begin{lstlisting}[language={}]
+if (__DEV__) {
+  Purchases.setLogLevel(LOG_LEVEL.DEBUG); // configure()'dan ÖNCE
+}
+\end{lstlisting}
+
+\subsubsection{Web Platform Koruması}
+
+Her fonksiyonun başında \texttt{Platform.OS === "web"} kontrolü yapılır ve erken dönülür.
+SDK \texttt{await import("react-native-purchases")} ile lazy yüklenir, web build çökmez.
+
+\subsection{AuthContext Entegrasyonu}
+
+\begin{center}
+\begin{tabular}{ll}
+  \toprule
+  \textbf{Auth Olayı} & \textbf{RevenueCat Çağrısı}\\
+  \midrule
+  Uygulama başlangıcı — oturum var & \texttt{initializeRevenueCat(user.id)}\\
+  Uygulama başlangıcı — oturum yok & \texttt{initializeRevenueCat(null)} (anonim)\\
+  Kayıt ol (\texttt{register}) & \texttt{loginRevenueCat(user.id)}\\
+  Giriş yap (\texttt{login}) & \texttt{loginRevenueCat(user.id)}\\
+  Çıkış yap (\texttt{logout}) & \texttt{logoutRevenueCat()} → anonim sıfırlama\\
+  \bottomrule
+\end{tabular}
+\end{center}
+
+Tüm çağrılar \texttt{.catch(() => \{\})} ile non-blocking; RC hatası auth akışını bozmaz.
+
+\subsection{\_layout.tsx Temizliği}
+
+Eski IIFE başlatma bloğu kaldırıldı:
+\begin{lstlisting}[language={}]
+// KALDIRILDI — artık services/revenueCat.ts tek kaynak
+if (Platform.OS !== "web") {
+  (async () => { ... Purchases.configure(...) ... })();
+}
+\end{lstlisting}
+
+\subsection{Uyarı: Test Store Anahtarı}
+
+\begin{lstlisting}[language={}]
+// ⚠️ EXPO_PUBLIC_REVENUECAT_API_KEY şu an TEST STORE anahtarıdır.
+// App Store / Google Play üretimine geçmeden önce
+// platform-specific üretim anahtarlarıyla değiştirilmelidir.
+// Test Store anahtarıyla üretim yapılmaz.
+\end{lstlisting}
+
+% ════════════════════════════════════════════
+\section{Adım 8 — RevenueCat Offerings Yükleme}
+
+\subsection{Hedef}
+
+\texttt{canyoldasi\_boost} offering'ini RC'den yüklemek;
+üç paketi lokalize başlık ve fiyatla göstermek;
+yükleme, hata ve boş durum UI'larını uygulamak.
+
+\subsection{Değiştirilen dosyalar}
+
+\begin{itemize}[leftmargin=1.5em]
+  \item \texttt{artifacts/mobile/services/revenueCat.ts} — \texttt{fetchOfferings()} eklendi
+  \item \texttt{artifacts/mobile/app/boost-packages.tsx} — RC offerings entegrasyonu
+\end{itemize}
+
+\subsection{fetchOfferings() Fonksiyonu}
+
+\begin{lstlisting}[language={}]
+export async function fetchOfferings(): Promise<PurchasesPackage[]> {
+  // Önce current offering, sonra canyoldasi_boost fallback
+  const offering = allOfferings.current
+    ?? allOfferings.all["canyoldasi_boost"]
+    ?? null;
+
+  // Beklenmedik identifier uyarısı
+  if (__DEV__ && offering.identifier !== "canyoldasi_boost") {
+    console.warn(`[RevenueCat] Unexpected offering: "${offering.identifier}"`);
+  }
+
+  return offering.availablePackages as PurchasesPackage[];
+}
+\end{lstlisting}
+
+\subsection{BOOST\_PACKAGE\_CONFIG — Merkezi Yapılandırma}
+
+\begin{lstlisting}[language={}]
+const BOOST_PACKAGE_CONFIG: Record<string, BoostPackageMeta> = {
+  boost_1_day:  { durationDays: 1, isPopular: false, sortOrder: 0 },
+  boost_3_days: { durationDays: 3, isPopular: true,  sortOrder: 1 },
+  boost_7_days: { durationDays: 7, isPopular: false, sortOrder: 2 },
+};
+\end{lstlisting}
+
+Magic string'ler tek kaynakta toplanır.
+Sıralama \texttt{sortOrder}'a göre — RC'nin döndürdüğü sıra önemsizdir.
+Bilinmeyen identifier'lar uygulamayı çökertmez.
+
+\subsection{Gösterilen Paket Bilgileri}
+
+\begin{center}
+\begin{tabular}{lll}
+  \toprule
+  \textbf{Identifier} & \textbf{Süre} & \textbf{Fiyat Kaynağı}\\
+  \midrule
+  \texttt{boost\_1\_day}  & 1 gün & \texttt{pkg.product.priceString}\\
+  \texttt{boost\_3\_days} & 3 gün (Popüler) & \texttt{pkg.product.priceString}\\
+  \texttt{boost\_7\_days} & 7 gün & \texttt{pkg.product.priceString}\\
+  \bottomrule
+\end{tabular}
+\end{center}
+
+Fiyat kesinlikle hardcode değildir. Başlık \texttt{pkg.product.title} (RC lokalize).
+
+\subsection{Durum Yönetimi}
+
+\begin{center}
+\begin{tabular}{ll}
+  \toprule
+  \textbf{Durum} & \textbf{UI}\\
+  \midrule
+  Yükleniyor & \texttt{ActivityIndicator} + "Paketler yükleniyor\ldots"\\
+  Hata & "Öne çıkarma paketleri yüklenemedi." + Tekrar Dene\\
+  Boş liste & "Şu an aktif öne çıkarma paketi bulunmuyor."\\
+  Web & Uyarı banner + buton pasif\\
+  \bottomrule
+\end{tabular}
+\end{center}
+
+Duplike fetch koruması: \texttt{useRef(false)} ile React Strict Mode'da çift istek engellenir.
+
+\subsection{Seçili Paket}
+
+\begin{lstlisting}[language={}]
+const [selectedPackage, setSelectedPackage] =
+  useState<PurchasesPackage | null>(null);
+
+// Varsayılan: boost_3_days; yoksa ilk paket; hiç yoksa null
+const preferred =
+  sorted.find(p => p.identifier === "boost_3_days")
+  ?? sorted[0]
+  ?? null;
+\end{lstlisting}
+
+% ════════════════════════════════════════════
+\section{Adım 9 — Test Store Satın Alma Akışı}
+
+\subsection{Hedef}
+
+RevenueCat Test Store üzerinden gerçek satın alma akışını başlatmak;
+durum makinesini uygulamak; DB aktivasyonunu henüz yapmamak.
+
+\subsection{Değiştirilen dosyalar}
+
+\begin{itemize}[leftmargin=1.5em]
+  \item \texttt{artifacts/mobile/app/boost-packages.tsx}
+\end{itemize}
+
+\subsection{Purchase State Machine}
+
+\begin{lstlisting}[language={}]
+type PurchaseState =
+  | "idle"       // Başlangıç / iptal / hata sonrası
+  | "starting"   // Buton tıklandı, kontroller geçti
+  | "processing" // purchasePackage() çalışıyor
+  | "success"    // RC başarı döndürdü
+  | "cancelled"  // Kullanıcı iptal etti
+  | "pending"    // Mağaza işliyor
+  | "error";     // RC hatası
+\end{lstlisting}
+
+\subsection{CompletedBoostPurchase — Tip Güvenli Sonuç Modeli}
+
+\begin{lstlisting}[language={}]
+type CompletedBoostPurchase = {
+  packageIdentifier: string;
+  productIdentifier: string;
+  customerInfo: CustomerInfo; // react-native-purchases tipi
+};
+\end{lstlisting}
+
+\subsection{Tip Güvenli Purchase Executor}
+
+\begin{lstlisting}[language={}]
+async function executePurchase(
+  pkg: PurchasesPackage
+): Promise<MakePurchaseResult> {
+  const { default: Purchases } = await import("react-native-purchases");
+  return Purchases.purchasePackage(pkg);
+}
+\end{lstlisting}
+
+\texttt{any}, \texttt{@ts-ignore}, \texttt{@ts-expect-error} kullanılmamıştır.
+
+\subsection{handleVerifiedPurchaseResult — Adım 10 Placeholder}
+
+\begin{lstlisting}[language={}]
+function handleVerifiedPurchaseResult(
+  result: CompletedBoostPurchase
+): void {
+  if (__DEV__) {
+    console.log("[Boost] Test Store purchase completed.",
+      result.packageIdentifier, result.productIdentifier);
+  }
+  // TODO Adım 10: POST /api/boost/verify-iap → listing promosyon aktivasyonu
+}
+\end{lstlisting}
+
+\subsection{Hata Sınıflandırma}
+
+\begin{center}
+\begin{tabular}{lll}
+  \toprule
+  \textbf{RC Hata Durumu} & \textbf{Tespit} & \textbf{Türkçe Mesaj}\\
+  \midrule
+  Kullanıcı iptali & \texttt{userCancelled === true} veya \texttt{code === 1} & "İptal edildi."\\
+  Beklemede & \texttt{code === 6} & "Mağaza işliyor."\\
+  Ürün yok & \texttt{code === 3} & "Satın alınamıyor."\\
+  Ağ hatası & \texttt{code === 23} & "Bağlantı sorunu."\\
+  Expo Go & Hata mesajı analizi & "Development Build gerekli."\\
+  Diğer & — & "Lütfen tekrar deneyin."\\
+  \bottomrule
+\end{tabular}
+\end{center}
+
+Stack trace, receipt, token veya API key kullanıcıya gösterilmez.
+
+\subsection{Güvenlik Kontrolleri}
+
+\begin{center}
+\begin{tabular}{ll}
+  \toprule
+  \textbf{Kontrol} & \textbf{Sonuç}\\
+  \midrule
+  \texttt{Platform.OS === "web"} & "iOS/Android uygulaması gerekli."\\
+  \texttt{user === null} & "Giriş yapmanız gerekiyor."\\
+  \texttt{selectedPackage === null} & "Paket seçin."\\
+  \texttt{purchasingRef.current === true} & İkinci satın alma başlatılmaz\\
+  \bottomrule
+\end{tabular}
+\end{center}
+
+\subsection{Başarı UX (Bu Aşama İçin)}
+
+\begin{lstlisting}[language={}]
+Alert.alert(
+  "Test Satın Alma Tamamlandı",
+  "Test satın alma işlemi RevenueCat tarafından tamamlandı.\n\n"
+  + "İlan aktivasyonu bir sonraki aşamada bağlanacak."
+);
+\end{lstlisting}
+
+"İlan öne çıkarıldı" mesajı gösterilmez çünkü DB aktivasyonu henüz yapılmamıştır.
+
+\subsection{Buton Durumu}
+
+\begin{lstlisting}[language={}]
+const isPurchasing = purchaseState === "starting"
+                  || purchaseState === "processing";
+const ctaDisabled  = isPurchasing || offeringsLoading
+                  || !!offeringsError || !selectedPackage;
+\end{lstlisting}
+
+\begin{center}
+\begin{tabular}{ll}
+  \toprule
+  \textbf{Durum} & \textbf{Buton Etiketi}\\
+  \midrule
+  Normal & "Öne Çıkarmayı Satın Al"\\
+  Başlatılıyor & "Başlatılıyor\ldots"\\
+  İşleniyor & "İşleniyor\ldots" + ActivityIndicator\\
+  Web & "Uygulama Gerekli" (pasif)\\
+  \bottomrule
+\end{tabular}
+\end{center}
+
+% ════════════════════════════════════════════
+\section{Test Senaryoları}
+
+\begin{longtable}{p{4cm} p{5.5cm} l}
+  \toprule
+  \textbf{Senaryo} & \textbf{Beklenen Davranış} & \textbf{DB}\\
+  \midrule
+  \endhead
+  Paket seç, satın al & RC Test Store akışı başlar & Değişmez\\
+  Satın almayı iptal et & Yükleme sıfırlanır, ekran açık kalır & Değişmez\\
+  Test Store başarısı & Dev-aşaması mesajı gösterilir & Değişmez\\
+  Butona çift tıkla & Yalnızca 1 satın alma akışı başlar & Değişmez\\
+  selectedPackage null & Satın alma başlamaz & Değişmez\\
+  Giriş yapılmamış kullanıcı & Satın alma başlamaz & Değişmez\\
+  Ürün erişilemiyor & Türkçe hata mesajı & Değişmez\\
+  Ağ hatası & Türkçe hata, yükleme sıfırlanır & Değişmez\\
+  Expo Go & Fake başarı yok, Build uyarısı & Değişmez\\
+  Web & Native akış başlamaz, çökme yok & Değişmez\\
+  \bottomrule
+\end{longtable}
+
+% ════════════════════════════════════════════
+\section{Genel Durum}
+
+\begin{center}
+\begin{tabular}{ll}
+  \toprule
+  \textbf{Kontrol} & \textbf{Sonuç}\\
+  \midrule
+  TypeScript (tüm adımlar) & \textcolor{successgreen}{\bfseries PASS — 0 hata}\\
+  \texttt{Purchases.configure} tekli kaynak & \textcolor{successgreen}{\bfseries Evet}\ (\texttt{services/revenueCat.ts})\\
+  \texttt{any} kullanımı & \textcolor{successgreen}{\bfseries Yok}\\
+  \texttt{@ts-ignore} / \texttt{@ts-expect-error} & \textcolor{successgreen}{\bfseries Yok}\\
+  Hardcode fiyat & \textcolor{successgreen}{\bfseries Yok}\\
+  Hardcode API key & \textcolor{successgreen}{\bfseries Yok}\\
+  DB aktivasyonu (\texttt{promoted\_until}) & \textcolor{successgreen}{\bfseries Yok}\\
+  Web build çökmesi & \textcolor{successgreen}{\bfseries Yok}\\
+  \bottomrule
+\end{tabular}
+\end{center}
+
+\subsection{Sonraki Adım (Adım 10)}
+
+\texttt{handleVerifiedPurchaseResult()} fonksiyonu içinde \texttt{/api/boost/verify-iap}
+endpoint'ine POST isteği gönderilecek; \texttt{listing\_promotions} tablosu güncellenecek;
+ilan promosyon aktivasyonu gerçekleştirilecek.
+
+\end{document}
