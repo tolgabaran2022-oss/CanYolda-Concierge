@@ -2,6 +2,7 @@ import { Router } from "express";
 import { and, desc, eq, gt, inArray, sql } from "drizzle-orm";
 import { db, pool, stories, storyViews, storyLikes, storyReplies, socialProfiles, follows, notifications, conversations, messages } from "@workspace/db";
 import { logger } from "../lib/logger.js";
+import { extractUserId } from "../lib/jwtAuth.js";
 
 const router = Router();
 const STORY_LIFETIME_HOURS = 24;
@@ -239,11 +240,19 @@ router.get("/stories", async (req, res) => {
 /* ── POST /api/stories — create story ── */
 router.post("/stories", async (req, res) => {
   try {
-    const { userId, username, avatarUrl, imageUrl, caption } = req.body as Record<string, string>;
-    if (!userId || !imageUrl) {
-      res.status(400).json({ error: "userId and imageUrl required" });
+    /* userId MUST come from the verified JWT token, never from req.body */
+    const userId = extractUserId(req);
+    if (!userId) {
+      res.status(401).json({ error: "Giriş yapılmamış" });
       return;
     }
+
+    const { username, avatarUrl, imageUrl, caption } = req.body as Record<string, string>;
+    if (!imageUrl) {
+      res.status(400).json({ error: "imageUrl required" });
+      return;
+    }
+
     const [story] = await db
       .insert(stories)
       .values({ userId, username: username ?? "Kullanici", avatarUrl: avatarUrl ?? "", imageUrl, caption: caption ?? "", expiresAt: expiry() })

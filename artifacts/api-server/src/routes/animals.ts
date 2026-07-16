@@ -1,4 +1,5 @@
 import { Router } from "express";
+import { z } from "zod";
 import { and, desc, eq, sql } from "drizzle-orm";
 import {
   db,
@@ -9,6 +10,41 @@ import {
 } from "@workspace/db";
 import { logger } from "../lib/logger.js";
 import { extractUserId } from "../lib/jwtAuth.js";
+import { validateBody } from "../lib/validate.js";
+import { createLimiter } from "../lib/rateLimiter.js";
+
+/* ── Zod schemas ─────────────────────────────────────────────── */
+const CreateAnimalSchema = z.object({
+  imageUrl:     z.string().max(1000).optional().default(""),
+  animalType:   z.string().trim().max(50).optional().default(""),
+  locationName: z.string().trim().max(255).optional().default(""),
+  latitude:     z.coerce.number().min(-90).max(90),
+  longitude:    z.coerce.number().min(-180).max(180),
+  status:       z.string().trim().max(50).optional().default("unknown"),
+  notes:        z.string().trim().max(2000).optional().default(""),
+  userName:     z.string().trim().max(200).optional().default(""),
+});
+
+const UpdateAnimalSchema = z.object({
+  imageUrl:     z.string().max(1000).optional(),
+  animalType:   z.string().trim().max(50).optional(),
+  locationName: z.string().trim().max(255).optional(),
+  latitude:     z.coerce.number().min(-90).max(90).optional(),
+  longitude:    z.coerce.number().min(-180).max(180).optional(),
+  status:       z.string().trim().max(50).optional(),
+  notes:        z.string().trim().max(2000).optional(),
+});
+
+const CommentSchema = z.object({
+  text:     z.string().trim().min(1, "Yorum boş olamaz").max(1000),
+  userName: z.string().trim().max(200).optional().default(""),
+});
+
+const HelpUpdateSchema = z.object({
+  status:   z.string().trim().min(1).max(100),
+  note:     z.string().trim().max(2000).optional().default(""),
+  photoUrl: z.string().max(1000).optional().default(""),
+});
 
 const router = Router();
 
@@ -264,29 +300,16 @@ router.get("/animals/:id", async (req, res) => {
 });
 
 /* ── POST /api/animals ────────────────────────────────────── */
-router.post("/animals", async (req, res) => {
+router.post("/animals", createLimiter, validateBody(CreateAnimalSchema), async (req, res) => {
   const userId = uid(req);
   if (!userId) { res.status(401).json({ error: "Giriş yapılmamış" }); return; }
 
+  const { imageUrl, animalType, locationName, latitude, longitude, status, notes, userName } =
+    req.body as z.infer<typeof CreateAnimalSchema>;
+
   try {
-    const { imageUrl, animalType, locationName, latitude, longitude, status, notes, userName } =
-      req.body as Record<string, string>;
-
-    if (!latitude || !longitude) {
-      res.status(400).json({ error: "Konum bilgisi zorunlu" });
-      return;
-    }
-
     const [animal] = await db.insert(strayAnimals).values({
-      imageUrl:     imageUrl ?? "",
-      animalType:   animalType ?? "",
-      locationName: locationName ?? "",
-      latitude:     parseFloat(latitude),
-      longitude:    parseFloat(longitude),
-      status:       status ?? "unknown",
-      notes:        notes ?? "",
-      userId,
-      userName:     userName ?? "",
+      imageUrl, animalType, locationName, latitude, longitude, status, notes, userId, userName,
     }).returning();
 
     res.status(201).json({ ...animal, comments: [], isFedByMe: false, isNeedsHelpByMe: false });
@@ -297,28 +320,27 @@ router.post("/animals", async (req, res) => {
 });
 
 /* ── PATCH /api/animals/:id ───────────────────────────────── */
-router.patch("/animals/:id", async (req, res) => {
+router.patch("/animals/:id", validateBody(UpdateAnimalSchema), async (req, res) => {
+  const id = req.params["id"] as string;
   const userId = uid(req);
   if (!userId) { res.status(401).json({ error: "Giriş yapılmamış" }); return; }
 
   try {
-    const [existing] = await db.select().from(strayAnimals).where(eq(strayAnimals.id, req.params.id));
+    const [existing] = await db.select().from(strayAnimals).where(eq(strayAnimals.id, id));
     if (!existing) { res.status(404).json({ error: "Hayvan bulunamadı" }); return; }
     if (existing.userId !== userId) { res.status(403).json({ error: "Yetki yok" }); return; }
 
-    const { imageUrl, animalType, locationName, latitude, longitude, status, notes } =
-      req.body as Record<string, string>;
-
+    const body = req.body as z.infer<typeof UpdateAnimalSchema>;
     const updates: Partial<typeof strayAnimals.$inferInsert> = { updatedAt: new Date() };
-    if (imageUrl     !== undefined) updates.imageUrl     = imageUrl;
-    if (animalType   !== undefined) updates.animalType   = animalType;
-    if (locationName !== undefined) updates.locationName = locationName;
-    if (latitude     !== undefined) updates.latitude     = parseFloat(latitude);
-    if (longitude    !== undefined) updates.longitude    = parseFloat(longitude);
-    if (status       !== undefined) updates.status       = status;
-    if (notes        !== undefined) updates.notes        = notes;
+    if (body.imageUrl     !== undefined) updates.imageUrl     = body.imageUrl;
+    if (body.animalType   !== undefined) updates.animalType   = body.animalType;
+    if (body.locationName !== undefined) updates.locationName = body.locationName;
+    if (body.latitude     !== undefined) updates.latitude     = body.latitude;
+    if (body.longitude    !== undefined) updates.longitude    = body.longitude;
+    if (body.status       !== undefined) updates.status       = body.status;
+    if (body.notes        !== undefined) updates.notes        = body.notes;
 
-    const [updated] = await db.update(strayAnimals).set(updates).where(eq(strayAnimals.id, req.params.id)).returning();
+    const [updated] = await db.update(strayAnimals).set(updates).where(eq(strayAnimals.id, id)).returning();
     res.json(updated);
   } catch (err) {
     req.log.error({ err }, "PATCH /animals/:id failed");
@@ -431,16 +453,15 @@ router.post("/animals/:id/needs-help", async (req, res) => {
 });
 
 /* ── POST /api/animals/:id/comments ──────────────────────── */
-router.post("/animals/:id/comments", async (req, res) => {
+router.post("/animals/:id/comments", validateBody(CommentSchema), async (req, res) => {
+  const id = req.params["id"] as string;
   const userId = uid(req);
   if (!userId) { res.status(401).json({ error: "Giriş yapılmamış" }); return; }
 
+  const { text, userName } = req.body as z.infer<typeof CommentSchema>;
   try {
-    const { text, userName } = req.body as Record<string, string>;
-    if (!text?.trim()) { res.status(400).json({ error: "Yorum metni boş olamaz" }); return; }
-
     const [comment] = await db.insert(animalComments).values({
-      animalId: req.params.id,
+      animalId: id,
       userId,
       userName: userName ?? "",
       text: text.trim(),
@@ -448,7 +469,7 @@ router.post("/animals/:id/comments", async (req, res) => {
 
     await db.update(strayAnimals)
       .set({ commentsCount: sql`comments_count + 1`, updatedAt: new Date() })
-      .where(eq(strayAnimals.id, req.params.id));
+      .where(eq(strayAnimals.id, id));
 
     res.status(201).json(comment);
   } catch (err) {
@@ -520,25 +541,20 @@ router.get("/animals/:id/help-updates", async (req, res) => {
 });
 
 /* ── POST /api/animals/:id/help-updates ──────────────────── */
-router.post("/animals/:id/help-updates", async (req, res) => {
+router.post("/animals/:id/help-updates", validateBody(HelpUpdateSchema), async (req, res) => {
+  const id = req.params["id"] as string;
   const userId = uid(req);
   if (!userId) { res.status(401).json({ error: "Giriş yapılmamış" }); return; }
 
   try {
-    const [animal] = await db.select().from(strayAnimals).where(eq(strayAnimals.id, req.params.id));
+    const [animal] = await db.select().from(strayAnimals).where(eq(strayAnimals.id, id));
     if (!animal) { res.status(404).json({ error: "Hayvan bulunamadı" }); return; }
 
-    const { status, note = "", photoUrl = "", userName = "Anonim" } = req.body as {
-      status: string;
-      note?: string;
-      photoUrl?: string;
-      userName?: string;
-    };
-
-    if (!status) { res.status(400).json({ error: "Durum gerekli" }); return; }
+    const { status, note = "", photoUrl = "" } = req.body as z.infer<typeof HelpUpdateSchema>;
+    const userName = "Anonim";
 
     const [inserted] = await db.insert(animalHelpUpdates).values({
-      animalId: req.params.id,
+      animalId: id,
       userId,
       userName,
       status,
@@ -548,7 +564,7 @@ router.post("/animals/:id/help-updates", async (req, res) => {
 
     const [countRow] = await db.select({
       count: sql<number>`COUNT(DISTINCT ${animalHelpUpdates.userId})::int`,
-    }).from(animalHelpUpdates).where(eq(animalHelpUpdates.animalId, req.params.id));
+    }).from(animalHelpUpdates).where(eq(animalHelpUpdates.animalId, id));
 
     res.status(201).json({ update: inserted, uniqueHelperCount: countRow?.count ?? 1 });
   } catch (err) {

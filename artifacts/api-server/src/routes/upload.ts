@@ -4,6 +4,7 @@ import path from "node:path";
 import { fileURLToPath } from "node:url";
 import { mkdirSync } from "node:fs";
 import { randomUUID } from "node:crypto";
+import { extractUserId } from "../lib/jwtAuth.js";
 
 const router = Router();
 
@@ -32,7 +33,15 @@ const upload = multer({
   },
 });
 
-router.post("/upload", upload.single("image"), (req, res) => {
+router.post("/upload", (req, res, next) => {
+  /* Require JWT auth before accepting the file */
+  const userId = extractUserId(req);
+  if (!userId) {
+    res.status(401).json({ error: "Giriş yapılmamış" });
+    return;
+  }
+  next();
+}, upload.single("image"), (req, res) => {
   if (!req.file) {
     res.status(400).json({ error: "No image provided" });
     return;

@@ -29,7 +29,21 @@ router.get("/notifications", async (req, res) => {
 /* ── POST /api/notifications/:id/read ─────────────────── */
 router.post("/notifications/:id/read", async (req, res) => {
   try {
+    const userId = extractUserId(req);
+    if (!userId) { res.status(401).json({ error: "Giriş yapılmamış" }); return; }
+
     const { id } = req.params;
+
+    /* Ownership check — only the notification receiver may mark it as read */
+    const [notif] = await db
+      .select({ receiverId: notifications.receiverId })
+      .from(notifications)
+      .where(eq(notifications.id, id))
+      .limit(1);
+
+    if (!notif) { res.status(404).json({ error: "Bildirim bulunamadı" }); return; }
+    if (notif.receiverId !== userId) { res.status(403).json({ error: "Bu bildirimi okuma yetkiniz yok" }); return; }
+
     await db.update(notifications).set({ read: true }).where(eq(notifications.id, id));
     res.json({ ok: true });
   } catch (err) {

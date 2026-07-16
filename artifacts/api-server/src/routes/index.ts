@@ -16,13 +16,21 @@ import animalsRouter from "./animals.js";
 import adoptionRouter from "./adoption.js";
 import adoptionRequestsRouter from "./adoptionRequests.js";
 import uploadRouter from "./upload.js";
+import {
+  uploadLimiter,
+  chatLimiter,
+  promotionLimiter,
+} from "../lib/rateLimiter.js";
 
 const router: IRouter = Router();
 
 router.use(healthRouter);
 router.use(authRouter);
-router.use(boostRouter);
-router.use(promotionsRouter);
+
+/* Promotion / RevenueCat verification endpoints */
+router.use("/boost",       promotionLimiter, boostRouter);
+router.use("/promotions",  promotionLimiter, promotionsRouter);
+
 router.use(feedRouter);
 router.use(storiesRouter);
 router.use(socialRouter);
@@ -30,11 +38,16 @@ router.use(notificationsRouter);
 router.use(usersRouter);
 router.use(petsRouter);
 router.use(petManagementRouter);
-router.use(messagesRouter);
+
+/* Chat / messaging endpoints */
+router.use("/messages",    chatLimiter, messagesRouter);
+
 router.use(listingsRouter);
 router.use(animalsRouter);
 router.use(adoptionRouter);
 router.use(adoptionRequestsRouter);
-router.use(uploadRouter);
+
+/* Image upload endpoint */
+router.use("/upload",      uploadLimiter, uploadRouter);
 
 export default router;

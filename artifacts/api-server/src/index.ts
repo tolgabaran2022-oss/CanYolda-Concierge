@@ -1,8 +1,27 @@
+import { validateEnv } from "./lib/env.js";
+
+/* ── Fail-fast: validate required environment variables FIRST ─────────────
+   Imports below pull in route modules that read JWT_SECRET / DATABASE_URL.
+   We validate before the server handles any requests so a mis-configured
+   deployment fails loudly at boot rather than silently at runtime.
+──────────────────────────────────────────────────────────────────────────── */
+validateEnv();
+
 import app from "./app.js";
 import { logger } from "./lib/logger.js";
 import { storage } from "./storage.js";
 import { runMigrations } from "stripe-replit-sync";
 import { getStripeSync } from "./stripeClient.js";
+
+/* ── Global unhandled rejection handler ──────────────────────────────────── */
+process.on("unhandledRejection", (reason: unknown) => {
+  logger.error({ reason }, "Unhandled Promise rejection — this is a bug, fix it");
+});
+
+process.on("uncaughtException", (err: Error) => {
+  logger.fatal({ err }, "Uncaught exception — shutting down");
+  process.exit(1);
+});
 
 async function initDatabase() {
   await storage.ensureTable();

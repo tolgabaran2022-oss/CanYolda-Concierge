@@ -1,8 +1,38 @@
 import { Router } from "express";
+import { z } from "zod";
 import { and, desc, eq, gt, inArray, sql } from "drizzle-orm";
 import { db, adoptionListings, adoptionListingFollows, listingPromotions } from "@workspace/db";
 import { logger } from "../lib/logger.js";
 import { extractUserId } from "../lib/jwtAuth.js";
+import { validateBody } from "../lib/validate.js";
+
+/* ── Zod schemas ─────────────────────────────────────────────── */
+const CreateListingSchema = z.object({
+  petName:            z.string().trim().min(1, "Hayvan adı zorunlu").max(100),
+  petType:            z.string().trim().max(100).optional().default(""),
+  petAge:             z.string().trim().max(50).optional().default(""),
+  breed:              z.string().trim().max(100).optional().default(""),
+  gender:             z.string().trim().max(20).optional().default(""),
+  vaccinated:         z.union([z.boolean(), z.enum(["true","false"])]).transform(v => v === true || v === "true").optional().default(false),
+  photoUrl:           z.string().max(1000).optional().default(""),
+  images:             z.union([z.array(z.string().max(1000)), z.string().max(1000)]).optional(),
+  location:           z.string().trim().max(200).optional().default(""),
+  description:        z.string().trim().max(5000).optional().default(""),
+  userName:           z.string().trim().max(200).optional().default(""),
+  contactInfo:        z.string().trim().max(200).optional().default(""),
+  allowPhoneContact:  z.union([z.boolean(), z.enum(["true","false"])]).transform(v => v === true || v === "true").optional().default(false),
+  allowMessages:      z.union([z.boolean(), z.enum(["true","false"])]).transform(v => v !== false && v !== "false").optional().default(true),
+  status:             z.string().trim().max(50).optional().default("Aktif"),
+  healthStatus:       z.string().trim().max(50).optional().nullable(),
+  vaccinationStatus:  z.string().trim().max(50).optional().nullable(),
+  environmentType:    z.string().trim().max(50).optional().nullable(),
+  childCompatibility: z.string().trim().max(50).optional().nullable(),
+  catCompatibility:   z.string().trim().max(50).optional().nullable(),
+  dogCompatibility:   z.string().trim().max(50).optional().nullable(),
+  toiletTraining:     z.string().trim().max(50).optional().nullable(),
+});
+
+const UpdateListingSchema = CreateListingSchema.partial();
 
 const router = Router();
 
@@ -311,53 +341,42 @@ router.delete("/adoption/:id/follow", async (req, res) => {
 });
 
 /* ── POST /api/adoption ─────────────────────────────────────── */
-router.post("/adoption", async (req, res) => {
+router.post("/adoption", validateBody(CreateListingSchema), async (req, res) => {
   const userId = uid(req);
   if (!userId) { res.status(401).json({ error: "Giriş yapılmamış" }); return; }
 
   try {
-    const {
-      petName, petType, petAge, breed, gender, vaccinated,
-      photoUrl, images: imagesRaw, location, description, userName, contactInfo,
-      allowPhoneContact, allowMessages, status,
-      healthStatus, vaccinationStatus, environmentType,
-      childCompatibility, catCompatibility, dogCompatibility, toiletTraining,
-    } = req.body as Record<string, string | boolean | string[]>;
-
-    if (!petName || !String(petName).trim()) {
-      res.status(400).json({ error: "Hayvan adı zorunlu" });
-      return;
-    }
-
+    const body = req.body as z.infer<typeof CreateListingSchema>;
+    const imagesRaw = body.images;
     const imagesArr: string[] = Array.isArray(imagesRaw)
-      ? (imagesRaw as string[]).filter(Boolean)
-      : imagesRaw ? [String(imagesRaw)] : photoUrl ? [String(photoUrl)] : [];
-    const coverUrl = imagesArr[0] ?? String(photoUrl ?? "");
+      ? imagesRaw.filter(Boolean)
+      : imagesRaw ? [String(imagesRaw)] : body.photoUrl ? [body.photoUrl] : [];
+    const coverUrl = imagesArr[0] ?? body.photoUrl ?? "";
 
     const [listing] = await db.insert(adoptionListings).values({
-      petName:            String(petName),
-      petType:            String(petType ?? ""),
-      petAge:             String(petAge ?? ""),
-      breed:              String(breed ?? ""),
-      gender:             String(gender ?? ""),
-      vaccinated:         vaccinated === true || vaccinated === "true",
+      petName:            body.petName,
+      petType:            body.petType ?? "",
+      petAge:             body.petAge ?? "",
+      breed:              body.breed ?? "",
+      gender:             body.gender ?? "",
+      vaccinated:         body.vaccinated ?? false,
       photoUrl:           coverUrl,
       images:             imagesArr,
-      location:           String(location ?? ""),
-      description:        String(description ?? ""),
+      location:           body.location ?? "",
+      description:        body.description ?? "",
       userId,
-      userName:           String(userName ?? ""),
-      contactInfo:        String(contactInfo ?? ""),
-      allowPhoneContact:  allowPhoneContact === true || allowPhoneContact === "true",
-      allowMessages:      allowMessages !== false && allowMessages !== "false",
-      status:             String(status ?? "Aktif"),
-      healthStatus:       healthStatus ? String(healthStatus) : null,
-      vaccinationStatus:  vaccinationStatus ? String(vaccinationStatus) : null,
-      environmentType:    environmentType ? String(environmentType) : null,
-      childCompatibility: childCompatibility ? String(childCompatibility) : null,
-      catCompatibility:   catCompatibility ? String(catCompatibility) : null,
-      dogCompatibility:   dogCompatibility ? String(dogCompatibility) : null,
-      toiletTraining:     toiletTraining ? String(toiletTraining) : null,
+      userName:           body.userName ?? "",
+      contactInfo:        body.contactInfo ?? "",
+      allowPhoneContact:  body.allowPhoneContact ?? false,
+      allowMessages:      body.allowMessages ?? true,
+      status:             body.status ?? "Aktif",
+      healthStatus:       body.healthStatus ?? null,
+      vaccinationStatus:  body.vaccinationStatus ?? null,
+      environmentType:    body.environmentType ?? null,
+      childCompatibility: body.childCompatibility ?? null,
+      catCompatibility:   body.catCompatibility ?? null,
+      dogCompatibility:   body.dogCompatibility ?? null,
+      toiletTraining:     body.toiletTraining ?? null,
     }).returning();
 
     res.status(201).json(listing);
@@ -368,54 +387,50 @@ router.post("/adoption", async (req, res) => {
 });
 
 /* ── PATCH /api/adoption/:id ────────────────────────────────── */
-router.patch("/adoption/:id", async (req, res) => {
+router.patch("/adoption/:id", validateBody(UpdateListingSchema), async (req, res) => {
+  const id = req.params["id"] as string;
   const userId = uid(req);
   if (!userId) { res.status(401).json({ error: "Giriş yapılmamış" }); return; }
 
   try {
-    const [existing] = await db.select().from(adoptionListings).where(eq(adoptionListings.id, req.params.id));
+    const [existing] = await db.select().from(adoptionListings).where(eq(adoptionListings.id, id));
     if (!existing) { res.status(404).json({ error: "İlan bulunamadı" }); return; }
     if (existing.userId !== userId) { res.status(403).json({ error: "Yetki yok" }); return; }
 
-    const {
-      petName, petType, petAge, breed, gender, vaccinated,
-      photoUrl, images: imagesRaw, location, description, contactInfo,
-      allowPhoneContact, allowMessages, status,
-      healthStatus, vaccinationStatus, environmentType,
-      childCompatibility, catCompatibility, dogCompatibility, toiletTraining,
-    } = req.body as Record<string, string | boolean | string[] | undefined>;
-
+    const body = req.body as z.infer<typeof UpdateListingSchema>;
     const updates: Partial<typeof adoptionListings.$inferInsert> = { updatedAt: new Date() };
-    if (petName             !== undefined) updates.petName            = String(petName);
-    if (petType             !== undefined) updates.petType            = String(petType);
-    if (petAge              !== undefined) updates.petAge             = String(petAge);
-    if (breed               !== undefined) updates.breed              = String(breed);
-    if (gender              !== undefined) updates.gender             = String(gender);
-    if (vaccinated          !== undefined) updates.vaccinated         = vaccinated === true || vaccinated === "true";
-    if (imagesRaw !== undefined) {
+
+    if (body.petName            !== undefined) updates.petName            = body.petName;
+    if (body.petType            !== undefined) updates.petType            = body.petType;
+    if (body.petAge             !== undefined) updates.petAge             = body.petAge;
+    if (body.breed              !== undefined) updates.breed              = body.breed;
+    if (body.gender             !== undefined) updates.gender             = body.gender;
+    if (body.vaccinated         !== undefined) updates.vaccinated         = body.vaccinated;
+    if (body.images !== undefined) {
+      const imagesRaw = body.images;
       const imagesArr: string[] = Array.isArray(imagesRaw)
-        ? (imagesRaw as string[]).filter(Boolean)
+        ? imagesRaw.filter(Boolean)
         : imagesRaw ? [String(imagesRaw)] : [];
       updates.images   = imagesArr;
-      updates.photoUrl = imagesArr[0] ?? String(photoUrl ?? existing.photoUrl ?? "");
-    } else if (photoUrl !== undefined) {
-      updates.photoUrl = String(photoUrl);
+      updates.photoUrl = imagesArr[0] ?? body.photoUrl ?? existing.photoUrl ?? "";
+    } else if (body.photoUrl    !== undefined) {
+      updates.photoUrl = body.photoUrl;
     }
-    if (location            !== undefined) updates.location           = String(location);
-    if (description         !== undefined) updates.description        = String(description);
-    if (contactInfo         !== undefined) updates.contactInfo        = String(contactInfo);
-    if (allowPhoneContact   !== undefined) updates.allowPhoneContact  = allowPhoneContact === true || allowPhoneContact === "true";
-    if (allowMessages       !== undefined) updates.allowMessages      = allowMessages !== false && allowMessages !== "false";
-    if (status              !== undefined) updates.status             = String(status);
-    if (healthStatus        !== undefined) updates.healthStatus       = healthStatus ? String(healthStatus) : null;
-    if (vaccinationStatus   !== undefined) updates.vaccinationStatus  = vaccinationStatus ? String(vaccinationStatus) : null;
-    if (environmentType     !== undefined) updates.environmentType    = environmentType ? String(environmentType) : null;
-    if (childCompatibility  !== undefined) updates.childCompatibility = childCompatibility ? String(childCompatibility) : null;
-    if (catCompatibility    !== undefined) updates.catCompatibility   = catCompatibility ? String(catCompatibility) : null;
-    if (dogCompatibility    !== undefined) updates.dogCompatibility   = dogCompatibility ? String(dogCompatibility) : null;
-    if (toiletTraining      !== undefined) updates.toiletTraining     = toiletTraining ? String(toiletTraining) : null;
+    if (body.location           !== undefined) updates.location           = body.location;
+    if (body.description        !== undefined) updates.description        = body.description;
+    if (body.contactInfo        !== undefined) updates.contactInfo        = body.contactInfo;
+    if (body.allowPhoneContact  !== undefined) updates.allowPhoneContact  = body.allowPhoneContact;
+    if (body.allowMessages      !== undefined) updates.allowMessages      = body.allowMessages;
+    if (body.status             !== undefined) updates.status             = body.status;
+    if (body.healthStatus       !== undefined) updates.healthStatus       = body.healthStatus ?? null;
+    if (body.vaccinationStatus  !== undefined) updates.vaccinationStatus  = body.vaccinationStatus ?? null;
+    if (body.environmentType    !== undefined) updates.environmentType    = body.environmentType ?? null;
+    if (body.childCompatibility !== undefined) updates.childCompatibility = body.childCompatibility ?? null;
+    if (body.catCompatibility   !== undefined) updates.catCompatibility   = body.catCompatibility ?? null;
+    if (body.dogCompatibility   !== undefined) updates.dogCompatibility   = body.dogCompatibility ?? null;
+    if (body.toiletTraining     !== undefined) updates.toiletTraining     = body.toiletTraining ?? null;
 
-    const [updated] = await db.update(adoptionListings).set(updates).where(eq(adoptionListings.id, req.params.id)).returning();
+    const [updated] = await db.update(adoptionListings).set(updates).where(eq(adoptionListings.id, id)).returning();
     res.json(updated);
   } catch (err) {
     req.log.error({ err }, "PATCH /adoption/:id failed");

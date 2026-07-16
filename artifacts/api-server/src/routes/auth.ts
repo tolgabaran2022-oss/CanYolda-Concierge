@@ -2,17 +2,57 @@ import { Router } from "express";
 import jwt from "jsonwebtoken";
 import bcrypt from "bcryptjs";
 import { createHash, randomInt } from "crypto";
+import { z } from "zod";
 import { db, pool, oauthUsers, localUsers } from "@workspace/db";
 import { and, eq } from "drizzle-orm";
 import { logger } from "../lib/logger.js";
+import { getJwtSecret } from "../lib/jwtAuth.js";
+import { authLimiter, passwordResetLimiter } from "../lib/rateLimiter.js";
+import { validateBody } from "../lib/validate.js";
 
 const router = Router();
 
-/* ── Secrets & constants ─────────────────────────────────────── */
-const JWT_SECRET =
-  process.env.JWT_SECRET ?? process.env.SESSION_SECRET ?? "dev-secret-change-me";
-const JWT_EXPIRES         = "30d";
-const RESET_TOKEN_SECRET  = JWT_SECRET + "_reset_v1";
+/* ── Constants ───────────────────────────────────────────────── */
+const JWT_EXPIRES = "30d";
+
+/* ── Zod schemas ─────────────────────────────────────────────── */
+const RegisterSchema = z.object({
+  name:     z.string().trim().min(1, "Ad gerekli").max(100),
+  email:    z.string().trim().email("Geçerli bir e-posta girin").max(255),
+  password: z.string().min(6, "Şifre en az 6 karakter olmalı").max(128),
+});
+
+const LoginSchema = z.object({
+  email:    z.string().trim().email("Geçerli bir e-posta girin").max(255),
+  password: z.string().min(1, "Şifre gerekli").max(128),
+});
+
+const ForgotPasswordSchema = z.object({
+  email: z.string().trim().email("Geçerli bir e-posta girin").max(255),
+});
+
+const VerifyResetCodeSchema = z.object({
+  email: z.string().trim().email("Geçerli bir e-posta girin").max(255),
+  code:  z.string().regex(/^\d{6}$/, "Kod 6 haneli olmalıdır"),
+});
+
+const ResetPasswordSchema = z.object({
+  resetToken: z.string().min(1, "Sıfırlama token'ı gerekli").max(1000),
+  password:   z.string().min(8, "Şifre en az 8 karakter olmalı").max(128),
+});
+
+const ChangePasswordSchema = z.object({
+  currentPassword: z.string().min(1, "Mevcut şifre gerekli").max(128),
+  newPassword:     z.string().min(6, "Yeni şifre en az 6 karakter olmalı").max(128),
+});
+
+const OAuthSchema = z.object({
+  provider:   z.string().min(1).max(50),
+  providerId: z.string().min(1).max(255),
+  email:      z.string().trim().email().max(255).nullable().optional(),
+  name:       z.string().trim().max(200).nullable().optional(),
+  avatarUrl:  z.string().url().max(1000).nullable().optional(),
+});
 const RESET_TOKEN_TTL     = "15m";
 const BCRYPT_ROUNDS       = 10;
 const RESET_CODE_TTL_MS   = 10 * 60 * 1000;   // 10 minutes
@@ -41,7 +81,7 @@ pool.query(`
 function makeToken(user: { id: string; email: string | null; name: string | null }) {
   return jwt.sign(
     { sub: user.id, email: user.email, name: user.name },
-    JWT_SECRET,
+    getJwtSecret(),
     { expiresIn: JWT_EXPIRES }
   );
 }
@@ -182,19 +222,8 @@ async function upsertOAuthUser(
    ═══════════════════════════════════════════════════════════════ */
 
 /* ── POST /api/auth/register ─────────────────────────────────── */
-router.post("/auth/register", async (req, res): Promise<void> => {
-  const { name, email, password } = req.body as {
-    name?: string; email?: string; password?: string;
-  };
-
-  if (!name || !email || !password) {
-    res.status(400).json({ error: "Ad, e-posta ve şifre gerekli" });
-    return;
-  }
-  if (password.length < 6) {
-    res.status(400).json({ error: "Şifre en az 6 karakter olmalı" });
-    return;
-  }
+router.post("/auth/register", authLimiter, validateBody(RegisterSchema), async (req, res): Promise<void> => {
+  const { name, email, password } = req.body as z.infer<typeof RegisterSchema>;
 
   try {
     const normalizedEmail = email.toLowerCase().trim();
@@ -228,13 +257,8 @@ router.post("/auth/register", async (req, res): Promise<void> => {
 });
 
 /* ── POST /api/auth/login ────────────────────────────────────── */
-router.post("/auth/login", async (req, res): Promise<void> => {
-  const { email, password } = req.body as { email?: string; password?: string };
-
-  if (!email || !password) {
-    res.status(400).json({ error: "E-posta ve şifre gerekli" });
-    return;
-  }
+router.post("/auth/login", authLimiter, validateBody(LoginSchema), async (req, res): Promise<void> => {
+  const { email, password } = req.body as z.infer<typeof LoginSchema>;
 
   try {
     const normalizedEmail = email.toLowerCase().trim();
@@ -277,24 +301,19 @@ router.post("/auth/change-password", async (req, res): Promise<void> => {
 
   let userId: string;
   try {
-    const payload = jwt.verify(header.slice(7), JWT_SECRET) as jwt.JwtPayload;
+    const payload = jwt.verify(header.slice(7), getJwtSecret()) as jwt.JwtPayload;
     userId = payload.sub as string;
   } catch {
     res.status(401).json({ error: "Geçersiz token" });
     return;
   }
 
-  const { currentPassword, newPassword } = req.body as {
-    currentPassword?: string; newPassword?: string;
-  };
-  if (!currentPassword || !newPassword) {
-    res.status(400).json({ error: "Mevcut ve yeni şifre gerekli" });
+  const parsed = ChangePasswordSchema.safeParse(req.body);
+  if (!parsed.success) {
+    res.status(400).json({ error: "Geçersiz istek", details: parsed.error.issues.map(i => i.message) });
     return;
   }
-  if (newPassword.length < 6) {
-    res.status(400).json({ error: "Yeni şifre en az 6 karakter olmalı" });
-    return;
-  }
+  const { currentPassword, newPassword } = parsed.data;
 
   try {
     const rows = await db.select().from(localUsers).where(eq(localUsers.id, userId)).limit(1);
@@ -333,21 +352,16 @@ const GENERIC_RESPONSE = {
 };
 
 /* ── POST /api/auth/forgot-password ─────────────────────────── */
-router.post("/auth/forgot-password", async (req, res): Promise<void> => {
+router.post("/auth/forgot-password", passwordResetLimiter, validateBody(ForgotPasswordSchema), async (req, res): Promise<void> => {
   const ip = getClientIp(req);
 
-  // IP rate limit: 5 requests per 15 minutes
+  // Secondary IP rate limit guard (express-rate-limit is the primary)
   if (!checkIpRateLimit(ipResetMap, ip, 5, 15 * 60 * 1000)) {
     res.status(429).json({ error: "Çok fazla istek. Lütfen daha sonra tekrar deneyin." });
     return;
   }
 
-  const { email } = req.body as { email?: string };
-  if (!email || typeof email !== "string") {
-    res.status(400).json({ error: "E-posta adresi gerekli" });
-    return;
-  }
-
+  const { email } = req.body as z.infer<typeof ForgotPasswordSchema>;
   const normalizedEmail = email.toLowerCase().trim();
 
   try {
@@ -421,27 +435,18 @@ router.post("/auth/forgot-password", async (req, res): Promise<void> => {
 });
 
 /* ── POST /api/auth/verify-reset-code ───────────────────────── */
-router.post("/auth/verify-reset-code", async (req, res): Promise<void> => {
+router.post("/auth/verify-reset-code", passwordResetLimiter, validateBody(VerifyResetCodeSchema), async (req, res): Promise<void> => {
   const ip = getClientIp(req);
 
-  // IP rate limit: 20 verify attempts per 15 minutes
+  // Secondary IP rate limit guard
   if (!checkIpRateLimit(ipVerifyMap, ip, 20, 15 * 60 * 1000)) {
     res.status(429).json({ error: "Çok fazla istek. Lütfen daha sonra tekrar deneyin." });
     return;
   }
 
-  const { email, code } = req.body as { email?: string; code?: string };
-  if (!email || !code) {
-    res.status(400).json({ error: "E-posta ve kod gerekli" });
-    return;
-  }
-
+  const { email, code } = req.body as z.infer<typeof VerifyResetCodeSchema>;
   const normalizedEmail = email.toLowerCase().trim();
-  const trimmedCode = String(code).replace(/\D/g, "").slice(0, 6);
-  if (trimmedCode.length !== 6) {
-    res.status(400).json({ error: "Kod 6 haneli olmalıdır." });
-    return;
-  }
+  const trimmedCode = code.replace(/\D/g, "").slice(0, 6);
 
   try {
     // Get most recent active code for this email
@@ -506,7 +511,7 @@ router.post("/auth/verify-reset-code", async (req, res): Promise<void> => {
     // jti = code record ID so we can invalidate it on use
     const resetToken = jwt.sign(
       { sub: row.user_id, type: "password_reset", jti: row.id },
-      RESET_TOKEN_SECRET,
+      getJwtSecret() + "_reset_v1",
       { expiresIn: RESET_TOKEN_TTL }
     );
 
@@ -519,20 +524,13 @@ router.post("/auth/verify-reset-code", async (req, res): Promise<void> => {
 });
 
 /* ── POST /api/auth/reset-password ──────────────────────────── */
-router.post("/auth/reset-password", async (req, res): Promise<void> => {
-  const { resetToken, password } = req.body as {
-    resetToken?: string; password?: string;
-  };
-
-  if (!resetToken || !password) {
-    res.status(400).json({ error: "Reset token ve yeni şifre gerekli" });
-    return;
-  }
+router.post("/auth/reset-password", passwordResetLimiter, validateBody(ResetPasswordSchema), async (req, res): Promise<void> => {
+  const { resetToken, password } = req.body as z.infer<typeof ResetPasswordSchema>;
 
   // Verify reset token
   let payload: jwt.JwtPayload;
   try {
-    payload = jwt.verify(resetToken, RESET_TOKEN_SECRET) as jwt.JwtPayload;
+    payload = jwt.verify(resetToken, getJwtSecret() + "_reset_v1") as jwt.JwtPayload;
   } catch {
     res.status(401).json({
       error: "Sıfırlama oturumunun süresi dolmuş. Lütfen tekrar başlayın.",
@@ -659,7 +657,7 @@ router.get("/auth/me", (req, res): void => {
     return;
   }
   try {
-    const payload = jwt.verify(header.slice(7), JWT_SECRET) as jwt.JwtPayload;
+    const payload = jwt.verify(header.slice(7), getJwtSecret()) as jwt.JwtPayload;
     res.json({ id: payload.sub, email: payload.email, name: payload.name });
   } catch {
     res.status(401).json({ error: "Geçersiz token" });

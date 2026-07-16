@@ -1,0 +1,148 @@
+CANYOLDASI — STEP 16
+
+PRODUCTION SECURITY HARDENING
+
+The production audit identified several critical blockers.
+
+Implement ALL critical security improvements without changing existing business logic.
+
+Current stack:
+
+- Express
+- PostgreSQL
+- Drizzle ORM
+- RevenueCat
+- React Native Expo
+
+==================================================
+
+Implement:
+
+1. Helmet
+
+Install and configure Helmet.
+
+Enable appropriate production security headers.
+
+Do not break Expo or API functionality.
+
+==================================================
+
+2. CORS
+
+Replace permissive CORS.
+
+Support:
+
+Development
+
+Production
+
+Allow only configured origins.
+
+Reject unknown origins.
+
+Move allowed origins into environment variables.
+
+==================================================
+
+3. Rate Limiting
+
+Add Express rate limiting.
+
+Protect:
+
+authentication
+
+promotion endpoints
+
+RevenueCat verification endpoints
+
+chat endpoints
+
+password reset
+
+listing creation
+
+image upload
+
+Use different limits for different endpoint groups.
+
+==================================================
+
+4. Zod Validation
+
+Audit every API endpoint.
+
+Every request body, params and query must be validated.
+
+Remove unsafe request parsing.
+
+==================================================
+
+5. Security Headers
+
+Enable:
+
+X-Content-Type-Options
+
+X-Frame-Options
+
+Referrer-Policy
+
+Permissions-Policy
+
+HSTS (production only)
+
+==================================================
+
+6. Logging
+
+Remove sensitive logs.
+
+Never log:
+
+JWT
+
+Authorization headers
+
+RevenueCat secrets
+
+Webhook secrets
+
+Passwords
+
+==================================================
+
+7. Environment Validation
+
+Validate required env variables on startup.
+
+Fail fast if critical secrets are missing.
+
+==================================================
+
+8. Build Verification
+
+Run:
+
+TypeScript
+
+Lint
+
+Backend build
+
+Return a report with:
+
+- files changed
+- critical issues fixed
+- remaining production blockers
+- production readiness score after changes
+
+Do not redesign the application.
+
+Do not modify RevenueCat logic.
+
+Do not modify payment behavior.
+
+Only harden production security.
