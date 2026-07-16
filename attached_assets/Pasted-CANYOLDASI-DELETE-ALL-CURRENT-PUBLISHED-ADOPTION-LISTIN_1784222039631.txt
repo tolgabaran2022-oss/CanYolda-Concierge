@@ -1,0 +1,349 @@
+CANYOLDASI — DELETE ALL CURRENT PUBLISHED ADOPTION LISTINGS
+SAFE TEST DATA CLEANUP
+
+The user wants to remove all currently existing published adoption listings shown on the:
+
+“Sahiplendirme → Tüm İlanlar”
+
+screen.
+
+This is NOT a UI label removal task.
+
+Delete the existing listing records currently populating the All Listings page, including test/fake/security-test records such as:
+
+- <script>alert(1)</script>
+- Test
+- other seeded/demo/fake adoption listings currently visible
+
+==================================================
+1. AUDIT THE REAL DATA SOURCE
+==================================================
+
+Inspect the complete data flow for:
+
+Sahiplendirme
+→ Tüm İlanlar
+→ adoption listings API
+→ PostgreSQL / Drizzle database
+
+Find the actual table and query supplying these cards.
+
+Search for:
+
+adoption_listings
+listings
+seed
+fixture
+mock
+fake
+demo
+test listing
+<script>alert(1)</script>
+Test
+
+Determine whether these records come from:
+
+- real database rows
+- seed files
+- hardcoded frontend arrays
+- test fixtures
+- cached local state
+- development-only API fallback
+
+Do not assume all visible cards come from the same source.
+
+==================================================
+2. REMOVE CURRENT TEST / FAKE LISTINGS
+==================================================
+
+Remove all currently existing test/demo/fake adoption listings that populate the “Tüm İlanlar” page.
+
+Do not merely hide them in the UI.
+
+If they are database records:
+
+delete the relevant test/fake records safely.
+
+If they are generated from seed files:
+
+remove or disable the seed logic so they do not return after restart or redeploy.
+
+If they are hardcoded client data:
+
+remove the hardcoded data.
+
+If they are cached:
+
+clear or invalidate the cache after the source records are removed.
+
+==================================================
+3. DO NOT BREAK REAL LISTING CREATION
+==================================================
+
+After cleanup:
+
+- “Tüm İlanlar” may correctly show an empty state
+- newly created real adoption listings must still appear normally
+- listing creation must continue working
+- listing editing must continue working
+- listing deletion must continue working
+- promoted listing logic must remain intact
+- filters/search must remain intact
+- My Listings must remain intact
+
+Do not remove the listing feature itself.
+
+Do not remove the All Listings tab.
+
+Do not disable the backend listing endpoint.
+
+==================================================
+4. DELETE ASSOCIATED TEST DATA SAFELY
+==================================================
+
+For each removed fake/test listing, audit related records:
+
+- listing images/media
+- favorites/saved listings
+- messages/conversations linked to the listing
+- promotion records
+- listing promotion purchases
+- legacy Stripe promotion records
+- reports/flags
+- cached search/index records
+
+Use the real foreign-key behavior.
+
+Do not leave broken orphan records.
+
+Do not delete unrelated real user data.
+
+Do not delete users unless the user account is explicitly confirmed as a disposable test account and deletion is necessary.
+
+==================================================
+5. IMAGE STORAGE CLEANUP
+==================================================
+
+If deleted test listings have uploaded images:
+
+remove only listing-specific orphan media that is no longer referenced.
+
+Do not delete:
+
+- shared placeholders
+- default images
+- images belonging to other listings
+- pet profile images
+- user profile images
+- street report images
+
+Verify media ownership/reference before deletion.
+
+==================================================
+6. SECURITY TEST RECORD
+==================================================
+
+The record with title/content:
+
+<script>alert(1)</script>
+
+appears to be a security test record.
+
+Delete this test listing from the real source.
+
+Also verify that output rendering remains escaped and that creating a title containing HTML/script text cannot execute JavaScript.
+
+Do not solve the issue only by deleting the record.
+
+Confirm React rendering does not use unsafe HTML methods such as:
+
+dangerouslySetInnerHTML
+
+for listing titles/descriptions.
+
+Do not weaken existing Zod/security validation.
+
+==================================================
+7. EMPTY STATE
+==================================================
+
+If there are no remaining real listings after cleanup, the “Tüm İlanlar” screen should show the existing or appropriate empty state.
+
+Suggested Turkish copy:
+
+“Henüz yayınlanmış ilan bulunmuyor.”
+
+Secondary text:
+
+“Yeni sahiplendirme ilanları burada görüntülenecek.”
+
+Do not show:
+
+- broken skeletons
+- blank cards
+- incorrect “12 ilan” counter
+- stale pagination controls
+
+The listing count must become:
+
+0 ilan
+
+or the existing grammatically correct equivalent.
+
+==================================================
+8. CACHE / STATE REFRESH
+==================================================
+
+After cleanup:
+
+- invalidate AdoptionContext data
+- invalidate any React Query cache
+- clear development fallback state
+- refresh All Listings
+- refresh My Listings if affected
+- refresh saved/favorite lists
+- refresh promoted listing queries
+
+App restart must not bring the removed records back.
+
+==================================================
+9. FUTURE SEED SAFETY
+==================================================
+
+Audit startup and migration scripts.
+
+Ensure fake/demo listings are not automatically inserted again on:
+
+- backend restart
+- app restart
+- deployment
+- database migration
+- development bootstrap
+
+If seed data is required for automated tests:
+
+keep it isolated in test-only fixtures.
+
+Do not run it in development/production app data automatically.
+
+==================================================
+10. SAFETY CONSTRAINTS
+==================================================
+
+DO NOT:
+
+- truncate the entire database
+- reset PostgreSQL
+- drop the adoption listing table
+- delete real user accounts
+- delete real pet data
+- delete street animal reports
+- remove listing functionality
+- hide listings only with CSS
+- hardcode an empty array in production
+- remove promoted listing logic
+- remove image upload support
+
+Only remove the current existing adoption listing records that are test/fake/demo data.
+
+If the system cannot reliably distinguish fake records from real records, STOP before destructive deletion and report the exact ambiguity with IDs/titles/owners so the user can approve the target set.
+
+==================================================
+11. VALIDATION TESTS
+==================================================
+
+TEST 1:
+
+Open Tüm İlanlar after cleanup.
+
+Expected:
+The old visible test listings are gone.
+
+TEST 2:
+
+Restart backend and app.
+
+Expected:
+Deleted listings do not return.
+
+TEST 3:
+
+Create a new real adoption listing.
+
+Expected:
+It appears in Tüm İlanlar.
+
+TEST 4:
+
+Edit the new listing.
+
+Expected:
+Changes persist.
+
+TEST 5:
+
+Delete the new listing through normal owner flow.
+
+Expected:
+It is removed correctly.
+
+TEST 6:
+
+No listings remain.
+
+Expected:
+Correct empty state and 0 count.
+
+TEST 7:
+
+Search/filter with zero listings.
+
+Expected:
+No crash.
+
+TEST 8:
+
+Security string listing title is rendered as text if tested again.
+
+Expected:
+No script execution.
+
+==================================================
+12. FINAL REPORT
+==================================================
+
+Return the report in Turkish using exactly these headings:
+
+1. TÜM İLANLARIN GERÇEK VERİ KAYNAĞI
+
+2. SİLİNEN TEST / FAKE İLAN SAYISI
+
+3. SİLİNEN İLANLARIN ID VE BAŞLIKLARI
+
+4. DATABASE TEMİZLİĞİ
+
+5. BAĞLANTILI MEDYA / FAVORİ / MESAJ KAYITLARI
+
+6. SEED / MOCK VERİ KAYNAĞI
+
+7. CACHE VE CONTEXT REFRESH
+
+8. EMPTY STATE SONUCU
+
+9. XSS TEST KAYDI VE GÜVENLİ RENDER KONTROLÜ
+
+10. DEĞİŞTİRİLEN DOSYALAR
+
+11. TYPESCRIPT / LINT / BUILD SONUCU
+
+12. YENİ GERÇEK İLAN OLUŞTURMA TESTİ
+
+13. KALAN RİSKLER
+
+IMPORTANT:
+
+Do not only hide the cards.
+
+Find and remove the actual current test/fake listing data safely.
+
+Do not delete records if their test/fake status cannot be verified with confidence.
