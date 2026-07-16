@@ -1,0 +1,369 @@
+CANYOLDASI — STREET REPORT IMAGE REVIEW DELAY AUDIT
+IDENTIFY AND OPTIMIZE ANIMAL PHOTO VALIDATION
+
+Current issue:
+
+On the “Sokak Hayvanı Ekle” screen, after the user captures a photo, the application displays an “İnceleniyor...” state for too long.
+
+This photo review was previously added to prevent users from submitting non-animal images.
+
+First identify the EXACT implementation currently responsible for this review state.
+
+Do not guess.
+
+==================================================
+1. TRACE THE COMPLETE REVIEW FLOW
+==================================================
+
+Recursively inspect:
+
+AnimalImageValidationService
+animal image validation
+image review
+pending_review
+approved
+rejected
+validating
+İnceleniyor
+Fotoğraf inceleniyor
+animalDetected
+confidence
+vision
+OpenAI
+Google Vision
+AWS Rekognition
+Azure Vision
+setTimeout
+polling
+retry
+timeout
+upload
+camera capture
+street report
+
+Trace the exact flow:
+
+camera capture
+→ local preview
+→ image upload
+→ validation request
+→ backend/service
+→ provider response
+→ mobile state update
+
+Report which file and function produce the “İnceleniyor...” state.
+
+==================================================
+2. IDENTIFY THE ACTUAL VALIDATION METHOD
+==================================================
+
+Determine whether the system currently uses:
+
+A. A real AI provider
+B. Local/rule-based image checks
+C. Manual moderation only
+D. A fake/mock timeout
+E. A pending_review fallback because no provider is configured
+
+Explicitly report:
+
+- provider name
+- endpoint
+- service class
+- environment variables
+- timeout duration
+- retry count
+- polling interval
+- whether the result is automatic or manual
+- whether the review can remain pending forever
+
+Do not claim AI is active unless a real provider call exists.
+
+==================================================
+3. REMOVE ARTIFICIAL DELAYS
+==================================================
+
+Search for:
+
+setTimeout
+sleep
+delay
+artificial loading
+mock validation
+demo validation
+
+Remove unnecessary artificial delays.
+
+Do not wait several seconds only to simulate review.
+
+==================================================
+4. PERFORMANCE TARGET
+==================================================
+
+Target review times:
+
+Rule-based checks:
+under 1 second
+
+Real AI validation:
+normally under 3–5 seconds
+
+Hard timeout:
+8 seconds maximum
+
+Do not leave the user waiting indefinitely.
+
+==================================================
+5. FAST LOCAL CHECKS FIRST
+==================================================
+
+Before calling any AI provider, immediately validate:
+
+- file exists
+- supported MIME type
+- file size
+- dimensions
+- corrupted file
+- completely black/white image
+- very low resolution
+
+These checks should fail fast without waiting for AI.
+
+==================================================
+6. REAL AI PROVIDER TIMEOUT
+==================================================
+
+If a real AI provider is used:
+
+- add an AbortController or provider-compatible timeout
+- maximum validation timeout: 8 seconds
+- prevent duplicate validation requests
+- do not resend the same image repeatedly
+- use an image hash to deduplicate validation
+- resize/compress the image before sending to the provider
+- do not send unnecessarily large original files
+
+If the provider times out, do not leave state as “validating” forever.
+
+==================================================
+7. SAFE TIMEOUT BEHAVIOR
+==================================================
+
+If validation cannot finish within 8 seconds:
+
+Preferred behavior:
+
+Show:
+
+“Fotoğraf doğrulaması şu anda tamamlanamadı.”
+
+Buttons:
+
+“Tekrar Dene”
+“Yeni Fotoğraf Çek”
+
+Do not silently keep the loading state.
+
+Do not automatically approve the image after timeout.
+
+If the application already has a real moderator workflow, pending_review may be used, but the user must receive a clear message:
+
+“Fotoğraf manuel incelemeye gönderildi. Onaylandıktan sonra bildirimin yayınlanacak.”
+
+Do not show only “İnceleniyor...” indefinitely.
+
+==================================================
+8. STATE MACHINE FIX
+==================================================
+
+Use explicit states:
+
+idle
+captured
+validating
+approved
+pending_review
+rejected
+timeout
+error
+
+Every async path must finish in one of these states.
+
+Use try/catch/finally safely.
+
+The UI must never remain permanently in:
+
+validating
+
+after:
+
+- API failure
+- network loss
+- timeout
+- component unmount
+- provider error
+- malformed response
+
+==================================================
+9. USER EXPERIENCE
+==================================================
+
+During validation show:
+
+“Fotoğraf kontrol ediliyor…”
+
+Supporting text:
+
+“Fotoğrafta hayvan bulunduğu doğrulanıyor.”
+
+If approved:
+
+“Fotoğraf doğrulandı.”
+
+If rejected:
+
+“Bu fotoğrafta bir hayvan tespit edilemedi. Lütfen yeni bir fotoğraf çekin.”
+
+If timeout:
+
+“Fotoğraf doğrulaması tamamlanamadı. Lütfen tekrar deneyin.”
+
+Show a visible progress/loading indicator, but do not block the entire screen unnecessarily.
+
+==================================================
+10. CACHE VALIDATION RESULT
+==================================================
+
+Do not validate the same unchanged captured photo multiple times.
+
+Create an image checksum/hash or stable local identifier.
+
+If the same image already has an approved result in the current report draft, reuse it.
+
+If the user retakes the photo, run validation again.
+
+==================================================
+11. PREVENT MULTIPLE REQUESTS
+==================================================
+
+Rapid taps or React re-renders must not create multiple simultaneous validation calls.
+
+Use one active validation request per photo.
+
+Cancel the old request if the user retakes or removes the photo.
+
+==================================================
+12. NO REAL PROVIDER CONFIGURED
+==================================================
+
+If no real AI provider is configured:
+
+Do not keep a fake endless “İnceleniyor” state.
+
+Do not claim automatic animal detection is active.
+
+Choose and clearly implement one safe behavior:
+
+Option A:
+Block submission and show:
+
+“Hayvan fotoğrafı doğrulama servisi henüz yapılandırılmamış.”
+
+Option B:
+Send the report to real pending_review moderation and clearly explain that it will not be public until approved.
+
+Do not leave records permanently pending without a moderation processing path.
+
+==================================================
+13. TESTS
+==================================================
+
+TEST 1:
+Valid animal photo with successful provider response.
+
+Expected:
+Approved within normal provider response time.
+
+TEST 2:
+Non-animal photo.
+
+Expected:
+Rejected with clear message.
+
+TEST 3:
+Provider timeout.
+
+Expected:
+Timeout state after maximum 8 seconds.
+No endless loading.
+
+TEST 4:
+Network loss.
+
+Expected:
+Error/Retry state.
+No endless loading.
+
+TEST 5:
+Same photo validated twice.
+
+Expected:
+No duplicate provider request.
+
+TEST 6:
+User retakes photo during validation.
+
+Expected:
+Old request cancelled.
+New photo validated.
+
+TEST 7:
+No provider configured.
+
+Expected:
+Clear configuration/pending-review behavior.
+No fake AI success.
+
+TEST 8:
+Component unmount during validation.
+
+Expected:
+No state-update warning or memory leak.
+
+==================================================
+14. FINAL REPORT
+==================================================
+
+Return the report in Turkish using exactly these headings:
+
+1. İNCELEMEYİ YAPAN GERÇEK YAPI
+
+2. KULLANILAN AI / KURAL TABANLI SERVİS
+
+3. İNCELEMENİN UZUN SÜRMESİNİN ROOT CAUSE’U
+
+4. MEVCUT TIMEOUT VE RETRY DEĞERLERİ
+
+5. YAPILAN HIZ OPTİMİZASYONLARI
+
+6. YENİ MAKSİMUM BEKLEME SÜRESİ
+
+7. PENDING_REVIEW DAVRANIŞI
+
+8. DEĞİŞTİRİLEN DOSYALAR
+
+9. TYPESCRIPT / LINT / BUILD SONUCU
+
+10. GERÇEKTEN TEST EDİLEN SENARYOLAR
+
+11. KALAN RİSKLER
+
+IMPORTANT:
+
+First identify the actual implementation.
+
+Do not only shorten a timer.
+
+Fix the real validation flow, timeout handling and endless loading bug.
+
+Do not claim that a real AI provider is active unless it is genuinely configured and called.
