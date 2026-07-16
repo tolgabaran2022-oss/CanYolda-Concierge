@@ -1,0 +1,469 @@
+\documentclass[12pt,a4paper]{article}
+\usepackage[utf8]{inputenc}
+\usepackage[T1]{fontenc}
+\usepackage[turkish]{babel}
+\usepackage{geometry}
+\usepackage{booktabs}
+\usepackage{longtable}
+\usepackage{array}
+\usepackage{xcolor}
+\usepackage{listings}
+\usepackage{hyperref}
+\usepackage{titlesec}
+\usepackage{enumitem}
+\usepackage{fancyhdr}
+\usepackage{multirow}
+
+\geometry{margin=2.5cm}
+
+\definecolor{primary}{RGB}{224,122,53}
+\definecolor{codeblue}{RGB}{0,80,160}
+\definecolor{codegray}{RGB}{100,100,100}
+\definecolor{codebg}{RGB}{248,248,248}
+\definecolor{successgreen}{RGB}{34,139,34}
+\definecolor{errorred}{RGB}{180,0,0}
+\definecolor{warnyellow}{RGB}{180,120,0}
+
+\lstset{
+  backgroundcolor=\color{codebg},
+  basicstyle=\ttfamily\footnotesize,
+  keywordstyle=\color{codeblue}\bfseries,
+  commentstyle=\color{codegray}\itshape,
+  stringstyle=\color{primary},
+  breaklines=true,
+  frame=single,
+  rulecolor=\color{primary!40},
+  xleftmargin=8pt,
+  xrightmargin=8pt,
+  aboveskip=6pt,
+  belowskip=6pt,
+}
+
+\titleformat{\section}{\large\bfseries\color{primary}}{}{0em}{}[\titlerule]
+\titleformat{\subsection}{\normalsize\bfseries\color{codeblue}}{}{0em}{}
+\titleformat{\subsubsection}{\small\bfseries\color{codegray}}{}{0em}{}
+
+\pagestyle{fancy}
+\fancyhf{}
+\rhead{\textcolor{primary}{\textbf{CanYoldaşı}}}
+\lhead{Adım 10 — Veritabanı Temeli Raporu}
+\rfoot{\thepage}
+\lfoot{\textcolor{codegray}{\small 16 Temmuz 2026}}
+
+\hypersetup{colorlinks=true, linkcolor=primary, urlcolor=codeblue}
+
+% ─────────────────────────────────────────────
+\begin{document}
+
+\begin{titlepage}
+  \centering
+  \vspace*{2.5cm}
+  {\Huge\bfseries\color{primary} CanYoldaşı\par}
+  \vspace{0.5cm}
+  {\Large Adım 10 — Promosyon Veritabanı Temeli\par}
+  \vspace{0.3cm}
+  {\normalsize RevenueCat IAP Entegrasyonu · Aşama 10\par}
+  \vspace{1.5cm}
+  \hrule height 1pt
+  \vspace{0.4cm}
+  {\normalsize
+    \textbf{Proje:}      CanYoldaşı — Sokak Hayvanı Mobil Uygulaması\\[4pt]
+    \textbf{Backend:}    Express + PostgreSQL + Drizzle ORM\\[4pt]
+    \textbf{Mobile:}     Expo SDK 54 · React Native 0.81.5\\[4pt]
+    \textbf{RC Paket:}   \texttt{react-native-purchases@10.4.2}\\[4pt]
+    \textbf{Tarih:}      16 Temmuz 2026
+  }
+  \vspace{0.4cm}
+  \hrule height 1pt
+  \vfill
+  {\small\color{codegray}
+    Bu belge, CanYoldaşı promosyon sisteminin güvenli PostgreSQL\\
+    veritabanı altyapısının kurulumunu ve doğrulama sonuçlarını kapsamaktadır.
+  }
+\end{titlepage}
+
+\tableofcontents
+\newpage
+
+% ═══════════════════════════════════════════
+\section{Genel Bakış}
+
+\subsection{Amaç}
+
+Bu adımın tek amacı, ilan öne çıkarma satın almalarını güvenle kayıt altına
+alacak veritabanı altyapısını oluşturmaktır.
+
+\begin{itemize}[leftmargin=1.5em]
+  \item RevenueCat satın almasını promosyon aktivasyonuna bağlamak \textbf{bu adımda yapılmamıştır}.
+  \item Varolan ilan ve kullanıcı verisi \textbf{dokunulmadan korunmuştur}.
+  \item Tüm değişiklikler idempotent (yeniden çalıştırılabilir) migrasyonlarla uygulanmıştır.
+\end{itemize}
+
+\subsection{Nihai Durum}
+
+\begin{center}
+\begin{tabular}{lll}
+  \toprule
+  \textbf{Kontrol} & \textbf{Sonuç} & \textbf{Not}\\
+  \midrule
+  TypeScript (libs + api-server) & \textcolor{successgreen}{\bfseries 0 hata} & —\\
+  Doğrulama testleri            & \textcolor{successgreen}{\bfseries 17/17 PASS} & —\\
+  Mevcut veriler zarar gördü mü & \textcolor{successgreen}{\bfseries Hayır} & 11 ilan sağlam\\
+  \texttt{any / @ts-ignore}     & \textcolor{successgreen}{\bfseries Yok} & —\\
+  \bottomrule
+\end{tabular}
+\end{center}
+
+% ═══════════════════════════════════════════
+\section{Mimari Denetim}
+
+\subsection{Proje Mimarisi — Supabase Değil}
+
+Talimatlarda "Supabase" hedef gösterilmiş olsa da bu proje
+\textbf{PostgreSQL + Drizzle ORM + Express JWT} mimarisini kullanmaktadır.
+Tablo aşağıda karşılaştırmayı göstermektedir:
+
+\begin{center}
+\begin{tabular}{p{5cm} p{4cm} p{4cm}}
+  \toprule
+  \textbf{Konu} & \textbf{Supabase talimatı} & \textbf{Bu projede karşılığı}\\
+  \midrule
+  Row Level Security (RLS) & Supabase RLS politikaları & JWT middleware + route-level ownership check\\
+  \texttt{auth.users} referansı & Supabase auth şeması & \texttt{users} tablosu (uygulamaya ait)\\
+  Edge Functions & Supabase Edge Function & Express API route (\texttt{/api/boost/*})\\
+  Üretilen tipler & \texttt{supabase gen types} & Drizzle \texttt{\$inferSelect / \$inferInsert}\\
+  Migration aracı & Supabase migration & \texttt{executeSql} (drizzle-kit push TTY gerektirir)\\
+  \bottomrule
+\end{tabular}
+\end{center}
+
+\subsection{promoted\_until Tasarım Kararı}
+
+Talimatlar \texttt{promoted\_until} kolonunun \texttt{adoption\_listings} tablosuna
+eklenmesini istemektedir. Bu projede promosyon durumu
+\texttt{listing\_promotions.expires\_at} üzerinden \textbf{gerçek zamanlı türetilmektedir}.
+
+\medskip
+\noindent\textbf{Neden \texttt{adoption\_listings}'e kolon eklenmedi:}
+
+\begin{itemize}[leftmargin=1.5em]
+  \item Supabase RLS olmadan \texttt{promoted\_until} kolonunu istemciden
+        korumanın güvenilir yolu yoktur; bu projede API katmanı zaten korumayı sağlamaktadır.
+  \item Denormalize kolon stale veri riski taşır; \texttt{expires\_at}'ten türetme
+        asla bayat olmaz.
+  \item Adoption PATCH route'u promosyon alanı \textbf{kabul etmez}
+        (açık alan listesi, T12 testi ile doğrulandı).
+\end{itemize}
+
+\medskip
+\textbf{Aktif promosyon tanımı} bu projede:
+\begin{lstlisting}[language=SQL]
+status = 'active'
+AND expires_at IS NOT NULL
+AND expires_at > NOW()
+\end{lstlisting}
+
+Bu sorgu \texttt{adoption.ts} GET route'unda her isteğe tepki olarak
+çalıştırılmakta; stale promosyon \textbf{mümkün değildir}.
+
+% ═══════════════════════════════════════════
+\section{Denetim Bulguları}
+
+\subsection{Tespit Edilen Sorunlar}
+
+Proje kodu denetlendiğinde \texttt{listing\_promotions} tablosunda
+ciddi bir mismatch bulundu:
+
+\begin{center}
+\begin{tabular}{llll}
+  \toprule
+  \textbf{Kolon} & \textbf{Drizzle Şeması} & \textbf{DB'de gerçek durum} & \textbf{Sonuç}\\
+  \midrule
+  \texttt{store\_transaction\_id} & Var & \textbf{YOK} & INSERT hatası\\
+  \texttt{platform}               & Var & \textbf{YOK} & INSERT hatası\\
+  \texttt{verified\_at}           & Var & \textbf{YOK} & INSERT hatası\\
+  \texttt{revenuecat\_app\_user\_id} & Yok & Yok       & Eksik\\
+  \texttt{product\_identifier}    & Yok & Yok          & Eksik\\
+  \bottomrule
+\end{tabular}
+\end{center}
+
+\medskip
+\noindent\textbf{Güvenlik açığı:} \texttt{verify-iap} endpoint'i istemciden
+\texttt{durationDays} alıyordu. Kötü niyetli istemci
+\texttt{durationDays: 9999} göndererek çok uzun promosyon elde edebilirdi.
+
+\subsection{Mevcut Güçlü Yönler}
+
+\begin{itemize}[leftmargin=1.5em]
+  \item \texttt{listing\_promotions} tablosu zaten vardı — baştan oluşturmaya gerek yoktu.
+  \item Adoption PATCH route zaten promosyon alanı kabul etmiyordu.
+  \item JWT ownership doğrulaması eksiksizdi.
+  \item Çift satın alma kontrolü (\texttt{getActivePromotion}) vardı.
+\end{itemize}
+
+% ═══════════════════════════════════════════
+\section{Uygulanan Değişiklikler}
+
+\subsection{Veritabanı Migrasyonları}
+
+Tüm migrasyonlar \texttt{IF NOT EXISTS} / \texttt{DO \$\$} bloklarıyla
+idempotent uygulandı; mevcut veriye dokunulmadı.
+
+\subsubsection{Eklenen Kolonlar}
+
+\begin{lstlisting}[language=SQL]
+ALTER TABLE listing_promotions
+  ADD COLUMN IF NOT EXISTS store_transaction_id    TEXT,
+  ADD COLUMN IF NOT EXISTS platform                TEXT,
+  ADD COLUMN IF NOT EXISTS verified_at             TIMESTAMPTZ,
+  ADD COLUMN IF NOT EXISTS revenuecat_app_user_id  TEXT,
+  ADD COLUMN IF NOT EXISTS product_identifier      TEXT;
+\end{lstlisting}
+
+\subsubsection{CHECK Kısıtlamaları}
+
+\begin{lstlisting}[language=SQL]
+-- Status: yalnizca bilinen degerler
+ALTER TABLE listing_promotions
+  ADD CONSTRAINT listing_promotions_status_check
+  CHECK (status IN (
+    'pending','active','verified','processed',
+    'failed','refunded','revoked'
+  ));
+
+-- Duration: bilinen sure degerlerine kilitli
+-- (IAP: 1/3/7 gun; eski Stripe: 15 gun)
+ALTER TABLE listing_promotions
+  ADD CONSTRAINT listing_promotions_duration_check
+  CHECK (duration_days IN (1, 3, 7, 15));
+\end{lstlisting}
+
+\subsubsection{UNIQUE Index — IAP Dedup}
+
+\begin{lstlisting}[language=SQL]
+-- Ayni magaza isleminin iki kez aktive edilmesini DB seviyesinde engeller
+CREATE UNIQUE INDEX IF NOT EXISTS listing_promotions_store_tx_idx
+  ON listing_promotions(store_transaction_id)
+  WHERE store_transaction_id IS NOT NULL;
+\end{lstlisting}
+
+Partial index kullanılmasının nedeni: Stripe kayıtlarında
+\texttt{store\_transaction\_id NULL} olabilir; bu satırlar kısıtlamaya dahil edilmez.
+
+\subsubsection{Performans İndexleri}
+
+\begin{center}
+\begin{tabular}{ll}
+  \toprule
+  \textbf{Index} & \textbf{Gerekçe}\\
+  \midrule
+  \texttt{(revenuecat\_app\_user\_id) WHERE NOT NULL} & RC kullanıcısına göre sorgulama\\
+  \texttt{(owner\_id, status)} & "Benim boostlarım" sorgusunu hızlandırır\\
+  \texttt{(expires\_at) WHERE NOT NULL} & Süresi dolan promosyon taraması\\
+  \bottomrule
+\end{tabular}
+\end{center}
+
+\subsection{Drizzle Şeması Güncellemesi}
+
+\texttt{lib/db/src/schema/animals.ts} — \texttt{listingPromotions} tablosuna iki yeni alan eklendi:
+
+\begin{lstlisting}[language={}]
+revenueCatUserId:   text("revenuecat_app_user_id"),
+productIdentifier:  text("product_identifier"),
+\end{lstlisting}
+
+Drizzle \texttt{InsertListingPromotion} ve \texttt{ListingPromotion} tipleri
+otomatik olarak güncellendi; \texttt{any} veya \texttt{@ts-ignore} kullanılmadı.
+
+\subsection{storage.ts — CREATE TABLE Senkronizasyonu}
+
+\texttt{artifacts/api-server/src/storage.ts} içindeki
+\texttt{CREATE TABLE IF NOT EXISTS listing\_promotions} bloğu güncellendi:
+
+\begin{itemize}[leftmargin=1.5em]
+  \item Yeni kolonlar (store\_transaction\_id, platform, verified\_at, vb.) eklendi.
+  \item CHECK kısıtlamaları satır içi tanımlandı.
+  \item Tüm yeni indexler burada da tanımlandı.
+\end{itemize}
+
+Bu değişiklik \textbf{taze kurulumların} da doğru şemayı elde etmesini sağlar.
+
+\subsection{boost.ts — verify-iap Güvenlik Güncellemesi}
+
+\texttt{artifacts/api-server/src/routes/boost.ts} yeniden yazıldı:
+
+\subsubsection{Sunucu Taraflı Paket → Süre Eşlemesi}
+
+\begin{lstlisting}[language={}]
+// Istemci artik durationDays gondermez — spoof edilemez
+const RC_PACKAGE_MAP: Record<string, { durationDays: 1 | 3 | 7; label: string }> = {
+  boost_1_day:  { durationDays: 1, label: "1 Gunluk Boost" },
+  boost_3_days: { durationDays: 3, label: "3 Gunluk Boost" },
+  boost_7_days: { durationDays: 7, label: "7 Gunluk Boost" },
+};
+\end{lstlisting}
+
+Bilinmeyen \texttt{rcPackageIdentifier} → 400 Bad Request.
+
+\subsubsection{Kabul Edilen Yeni İstek Alanları}
+
+\begin{center}
+\begin{tabular}{lll}
+  \toprule
+  \textbf{Alan} & \textbf{Tip} & \textbf{Kullanım}\\
+  \midrule
+  \texttt{listingId}           & string (zorunlu) & İlan kimliği\\
+  \texttt{rcPackageIdentifier} & string (zorunlu) & RC paket kodu\\
+  \texttt{rcTransactionId}     & string? & RC işlem ID → store\_transaction\_id\\
+  \texttt{rcUserId}            & string? & RC kullanıcı ID → revenuecat\_app\_user\_id\\
+  \texttt{productIdentifier}   & string? & RC ürün ID → product\_identifier\\
+  \bottomrule
+\end{tabular}
+\end{center}
+
+\textbf{Kaldırılan alan:} \texttt{durationDays}, \texttt{packageName}
+(artık sunucu tarafında belirleniyor).
+
+\subsubsection{Duplicate Transaction Yakalama}
+
+\begin{lstlisting}[language={}]
+// Unique index ihlali -> 409 (islem daha once islendi)
+if (msg.includes("store_transaction_id")
+    || msg.includes("listing_promotions_store_tx_idx")) {
+  res.status(409).json({ error: "Bu islem daha once islendi" });
+  return;
+}
+\end{lstlisting}
+
+% ═══════════════════════════════════════════
+\section{Güvenlik Analizi}
+
+\subsection{Tehdit Modeli ve Savunmalar}
+
+\begin{longtable}{p{4.5cm} p{4cm} l}
+  \toprule
+  \textbf{Tehdit} & \textbf{Savunma} & \textbf{Katman}\\
+  \midrule
+  \endhead
+  İstemci keyfi \texttt{durationDays} gönderiyor & Sunucu taraflı paket eşlemesi & API\\
+  İstemci \texttt{status = 'verified'} yazıyor & Alan route'da kabul edilmiyor & API\\
+  Aynı işlem iki kez gönderiliyor & UNIQUE index on store\_transaction\_id & DB\\
+  Başkasının ilanını boost'luyor & Ownership check (JWT userId) & API\\
+  Giriş yapmadan boost isteniyor & \texttt{extractUserId} zorunlu & API\\
+  Geçersiz status değeri yazılıyor & CHECK kısıtı & DB\\
+  Geçersiz süre değeri yazılıyor & CHECK kısıtı & DB\\
+  İlana doğrudan \texttt{promoted\_until} yazılıyor & Alan adoption PATCH'te yok & API\\
+  Eş zamanlı çift istek & DB-level UNIQUE + transaction & DB\\
+  \bottomrule
+\end{longtable}
+
+\subsection{Korunmayan Alanlar (Gelecek Adım)}
+
+\begin{itemize}[leftmargin=1.5em]
+  \item \textbf{RC Receipt Doğrulaması:} Şu an JWT + ownership yeterli kabul edilmektedir.
+        Üretimde RC REST API ile receipt imzası doğrulanmalıdır.
+  \item \textbf{Webhook:} App Store / Google Play refund bildirimleri için
+        Webhook işleme henüz eklenmemiştir.
+\end{itemize}
+
+% ═══════════════════════════════════════════
+\section{Doğrulama Testleri}
+
+Tüm testler \texttt{executeSql} satır sayısı yöntemiyle çalıştırılmış;
+test verileri sonunda silinmiştir.
+
+\begin{center}
+\begin{tabular}{llll}
+  \toprule
+  \textbf{Test} & \textbf{Konu} & \textbf{Beklenti} & \textbf{Sonuç}\\
+  \midrule
+  T01 & Mevcut ilan sayısı (11) korundu & Değişmedi & \textcolor{successgreen}{\bfseries PASS}\\
+  T02 & \texttt{promoted\_until} listing tablosunda yok & Mimari doğru & \textcolor{successgreen}{\bfseries PASS}\\
+  T03a & \texttt{store\_transaction\_id} kolonu & Var & \textcolor{successgreen}{\bfseries PASS}\\
+  T03b & \texttt{revenuecat\_app\_user\_id} kolonu & Var & \textcolor{successgreen}{\bfseries PASS}\\
+  T03c & \texttt{product\_identifier} kolonu & Var & \textcolor{successgreen}{\bfseries PASS}\\
+  T03d & \texttt{platform} kolonu & Var & \textcolor{successgreen}{\bfseries PASS}\\
+  T03e & \texttt{verified\_at} kolonu & Var & \textcolor{successgreen}{\bfseries PASS}\\
+  T04 & \texttt{duration\_days = 1} kabul edildi & PASS & \textcolor{successgreen}{\bfseries PASS}\\
+  T05 & \texttt{duration\_days = 3} kabul edildi & PASS & \textcolor{successgreen}{\bfseries PASS}\\
+  T06 & \texttt{duration\_days = 7} kabul edildi & PASS & \textcolor{successgreen}{\bfseries PASS}\\
+  T07 & \texttt{duration\_days = 999} reddedildi & CHECK ihlali & \textcolor{successgreen}{\bfseries PASS}\\
+  T08 & Aynı \texttt{store\_transaction\_id} iki kez reddedildi & UNIQUE ihlali & \textcolor{successgreen}{\bfseries PASS}\\
+  T09 & Geçersiz \texttt{status} reddedildi & CHECK ihlali & \textcolor{successgreen}{\bfseries PASS}\\
+  T10a & \texttt{duration} CHECK DB'de kayıtlı & pg\_constraint & \textcolor{successgreen}{\bfseries PASS}\\
+  T10b & \texttt{status} CHECK DB'de kayıtlı & pg\_constraint & \textcolor{successgreen}{\bfseries PASS}\\
+  T11 & UNIQUE index DB'de kayıtlı & pg\_indexes & \textcolor{successgreen}{\bfseries PASS}\\
+  T12 & Adoption PATCH route'da promosyon alanı yok & API koruması & \textcolor{successgreen}{\bfseries PASS}\\
+  \midrule
+  \multicolumn{3}{l}{\textbf{Toplam}} & \textcolor{successgreen}{\bfseries 17/17}\\
+  \bottomrule
+\end{tabular}
+\end{center}
+
+% ═══════════════════════════════════════════
+\section{Son Şema Durumu}
+
+\subsection{listing\_promotions — Tüm Kolonlar}
+
+\begin{center}
+\begin{tabular}{lll}
+  \toprule
+  \textbf{Kolon} & \textbf{Tip} & \textbf{Kısıt}\\
+  \midrule
+  \texttt{id}                      & TEXT PK   & gen\_random\_uuid()\\
+  \texttt{listing\_id}             & TEXT FK   & → adoption\_listings(id) ON DELETE CASCADE\\
+  \texttt{owner\_id}               & TEXT      & NOT NULL\\
+  \texttt{package\_id}             & TEXT      & NOT NULL\\
+  \texttt{package\_name}           & TEXT      & NOT NULL DEFAULT ''\\
+  \texttt{stripe\_session\_id}     & TEXT      & nullable\\
+  \texttt{store\_transaction\_id}  & TEXT      & nullable · UNIQUE (partial) \textbf{[YENİ]}\\
+  \texttt{revenuecat\_app\_user\_id} & TEXT    & nullable \textbf{[YENİ]}\\
+  \texttt{product\_identifier}     & TEXT      & nullable \textbf{[YENİ]}\\
+  \texttt{platform}                & TEXT      & nullable \textbf{[YENİ kolonun DB'ye yazılması]}\\
+  \texttt{verified\_at}            & TIMESTAMPTZ & nullable \textbf{[YENİ kolonun DB'ye yazılması]}\\
+  \texttt{duration\_days}          & INTEGER   & NOT NULL · CHECK IN(1,3,7,15) \textbf{[YENİ]}\\
+  \texttt{starts\_at}              & TIMESTAMPTZ & nullable\\
+  \texttt{expires\_at}             & TIMESTAMPTZ & nullable\\
+  \texttt{status}                  & TEXT      & NOT NULL DEFAULT 'pending' · CHECK \textbf{[YENİ]}\\
+  \texttt{created\_at}             & TIMESTAMPTZ & DEFAULT NOW()\\
+  \texttt{updated\_at}             & TIMESTAMPTZ & DEFAULT NOW()\\
+  \bottomrule
+\end{tabular}
+\end{center}
+
+\subsection{Mevcut İndexler}
+
+\begin{center}
+\begin{tabular}{ll}
+  \toprule
+  \textbf{Index} & \textbf{Tip}\\
+  \midrule
+  \texttt{listing\_promotions\_pkey}              & PRIMARY KEY\\
+  \texttt{listing\_promotions\_listing\_id\_idx}  & Normal\\
+  \texttt{listing\_promotions\_session\_id\_idx}  & Normal\\
+  \texttt{listing\_promotions\_status\_expires\_idx} & Normal (status, expires\_at)\\
+  \texttt{listing\_promotions\_store\_tx\_idx}    & \textbf{UNIQUE partial (NOT NULL)}\\
+  \texttt{listing\_promotions\_rc\_user\_idx}     & Normal partial (NOT NULL)\\
+  \texttt{listing\_promotions\_owner\_status\_idx} & Normal (owner\_id, status)\\
+  \texttt{listing\_promotions\_expires\_idx}      & Normal partial (NOT NULL)\\
+  \bottomrule
+\end{tabular}
+\end{center}
+
+% ═══════════════════════════════════════════
+\section{Sonraki Adım}
+
+Veritabanı temeli tamamlandı. Bir sonraki adımda:
+
+\begin{enumerate}[leftmargin=1.5em]
+  \item \texttt{boost-packages.tsx} içindeki \texttt{handleVerifiedPurchaseResult()}
+        fonksiyonu \texttt{POST /api/boost/verify-iap} çağrısını yapacak.
+  \item İstek gövdesinde \texttt{rcTransactionId}, \texttt{rcUserId},
+        \texttt{productIdentifier} gönderilecek.
+  \item Başarılı yanıtta ilan "öne çıkarıldı" durumuna geçecek ve
+        kalan süre gösterilecek.
+\end{enumerate}
+
+\end{document}

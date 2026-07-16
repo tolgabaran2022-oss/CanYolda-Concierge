@@ -95,3 +95,9 @@ id = "BoJ4xcgnrEX0hcI-6E4yo"
 uri = "file://revenuecat_entegrasyon_raporu.zip"
 type = "unspecified"
 title = "RevenueCat Entegrasyon Raporu (.tex)"
+
+[[outputs]]
+id = "iT_5MldPY9mO7rUYTYCVd"
+uri = "file://adim10_rapor.zip"
+type = "unspecified"
+title = "Adım 10 Raporu (.tex)"
