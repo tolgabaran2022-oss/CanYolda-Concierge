@@ -1,0 +1,560 @@
+CANYOLDASI — STEP 10
+SUPABASE PROMOTION DATABASE FOUNDATION
+
+Current project state:
+
+- RevenueCat SDK is configured
+- RevenueCat Test Store API key is configured
+- Offerings load successfully
+- Current Offering identifier:
+  canyoldasi_boost
+- Packages:
+  boost_1_day
+  boost_3_days
+  boost_7_days
+- RevenueCat Test Store purchase flow is implemented or prepared
+- Supabase is the application backend
+
+This step is ONLY for creating the secure Supabase database foundation required for listing promotions.
+
+Do not connect RevenueCat purchases to promotion activation yet.
+Do not update promoted_until from the client.
+Do not create fake transactions.
+Do not redesign any UI.
+
+==================================================
+1. AUDIT THE EXISTING DATABASE AND CODE
+==================================================
+
+Recursively inspect the project for:
+
+promoted_until
+is_promoted
+featured
+is_featured
+boost
+promotion
+listing_promotions
+purchase
+transaction
+revenuecat
+product_id
+package_identifier
+adoption_listings
+listings
+sahiplendirme
+
+Determine the actual table used for adoption listings.
+
+Do not assume the table is named listings.
+
+Inspect:
+
+- Supabase migrations
+- generated database types
+- listing queries
+- listing create/update functions
+- RLS policies
+- database functions
+- Edge Functions
+- client-side update code
+
+Do not create duplicate promotion columns or duplicate tables if equivalent production-safe structures already exist.
+
+==================================================
+2. LISTING PROMOTION COLUMN
+==================================================
+
+The adoption listing table must have:
+
+promoted_until timestamptz nullable
+
+If an equivalent column already exists, reuse it.
+
+Do not create a permanent boolean as the primary source of truth.
+
+An active promotion is defined as:
+
+promoted_until IS NOT NULL
+AND promoted_until > now()
+
+If is_promoted already exists:
+
+- audit every usage
+- do not rely on it as permanent truth
+- either derive it from promoted_until in queries
+- or keep it synchronized safely if the existing architecture requires it
+
+Do not allow stale promoted listings after expiration.
+
+==================================================
+3. CREATE PROMOTION PURCHASE TABLE
+==================================================
+
+Create a safe migration for a table similar to:
+
+listing_promotion_purchases
+
+Recommended columns:
+
+id uuid primary key default gen_random_uuid()
+
+user_id uuid not null references auth.users(id)
+
+listing_id uuid not null references the actual adoption listing table
+
+revenuecat_app_user_id text not null
+
+package_identifier text not null
+
+product_identifier text not null
+
+store text nullable
+
+transaction_identifier text not null
+
+purchase_status text not null
+
+duration_days integer not null
+
+promotion_started_at timestamptz nullable
+
+promotion_expires_at timestamptz nullable
+
+verified_at timestamptz nullable
+
+created_at timestamptz not null default now()
+
+updated_at timestamptz not null default now()
+
+Use the existing project naming conventions.
+
+Do not blindly copy these names if the project uses another consistent convention.
+
+==================================================
+4. PURCHASE STATUS CONSTRAINT
+==================================================
+
+Create a controlled purchase status model.
+
+Recommended allowed values:
+
+pending
+verified
+processed
+failed
+refunded
+revoked
+
+Use either:
+
+- a PostgreSQL enum
+- or a check constraint
+
+Choose the safest option based on the existing migration style.
+
+Do not allow arbitrary status text.
+
+==================================================
+5. UNIQUE TRANSACTION PROTECTION
+==================================================
+
+A single store or RevenueCat transaction must never activate a promotion twice.
+
+Add a database-level unique constraint or unique index.
+
+Recommended identity:
+
+transaction_identifier
+
+or:
+
+store + transaction_identifier
+
+Choose based on the actual data available from the installed RevenueCat SDK and planned webhook payload.
+
+Do not rely only on frontend checks.
+
+Do not implement only:
+
+if record exists then return
+
+without a unique database constraint.
+
+The database must prevent concurrent duplicate processing.
+
+==================================================
+6. DURATION CONSTRAINT
+==================================================
+
+Allowed promotion durations are:
+
+1 day
+3 days
+7 days
+
+Create a database constraint ensuring:
+
+duration_days IN (1, 3, 7)
+
+However, the client must not be allowed to choose duration directly during final activation.
+
+The server will map the product/package identifier to the duration.
+
+This constraint is only an additional safety layer.
+
+==================================================
+7. FOREIGN KEYS
+==================================================
+
+Use the real adoption listing table and owner schema.
+
+Validate:
+
+- user_id references auth.users or the correct profile identity
+- listing_id references the correct listing table
+- deletion behavior is appropriate
+
+Do not use ON DELETE CASCADE blindly.
+
+Recommended behavior:
+
+If a listing is deleted, promotion purchase audit history should usually remain or use an intentional safe strategy.
+
+If audit retention is important, consider:
+
+ON DELETE SET NULL
+
+with nullable listing_id
+
+or prevent deletion where appropriate.
+
+Choose based on the existing application deletion architecture.
+
+Explain the decision in the final report.
+
+==================================================
+8. UPDATED_AT TRIGGER
+==================================================
+
+If the project already uses a shared updated_at trigger function, reuse it.
+
+Do not create duplicate trigger functions.
+
+Ensure updated_at changes on promotion purchase record updates.
+
+==================================================
+9. INDEXES
+==================================================
+
+Create only useful indexes based on real query paths.
+
+Likely indexes:
+
+listing_id
+user_id
+purchase_status
+promotion_expires_at
+created_at
+
+For the listing table:
+
+promoted_until
+
+may need an index depending on the query and ordering strategy.
+
+Do not add indexes blindly.
+
+Consider the future query:
+
+active promoted listings first
+
+then normal listing ordering.
+
+Explain which indexes were added and why.
+
+==================================================
+10. ROW LEVEL SECURITY
+==================================================
+
+Enable RLS on the promotion purchase table.
+
+Normal authenticated clients must NOT be able to:
+
+- insert verified purchases
+- set purchase_status = verified
+- set purchase_status = processed
+- set arbitrary duration_days
+- set arbitrary transaction_identifier
+- set arbitrary promotion_expires_at
+- modify another user's purchase record
+
+The secure backend / Edge Function will perform verified writes.
+
+Recommended policy behavior:
+
+Authenticated users may read only their own promotion purchase history if the application needs it.
+
+Public users must not read sensitive transaction records.
+
+Client-side insert/update/delete should be blocked unless the current architecture has a narrowly scoped safe pending-intent flow.
+
+Do not expose:
+
+transaction identifiers
+purchase tokens
+private verification payloads
+
+through public selects.
+
+==================================================
+11. PROTECT PROMOTED_UNTIL
+==================================================
+
+Audit existing RLS policies on the listing table.
+
+Critical requirement:
+
+A normal authenticated user must not be able to directly run:
+
+supabase
+  .from(listingTable)
+  .update({
+    promoted_until: "2099-01-01"
+  })
+
+and successfully promote their listing.
+
+The user may still need permission to edit normal listing fields.
+
+Implement a safe architecture that protects promotion-managed fields without breaking ordinary listing edits.
+
+Possible approaches:
+
+- revoke direct update access to promotion fields through a secure RPC architecture
+- separate promotion state into a server-managed table
+- use a trigger or column-level privilege strategy supported by the current architecture
+- route listing updates through safe database functions
+
+Choose the solution that actually works with Supabase/Postgres and the existing app.
+
+Do not claim RLS can inspect omitted versus unchanged columns without implementing it correctly.
+
+Test the direct client attack.
+
+Expected:
+
+normal listing edits work
+direct promoted_until manipulation fails
+
+==================================================
+12. GENERATED TYPES
+==================================================
+
+Update or regenerate Supabase TypeScript database types if the repository uses generated types.
+
+Do not leave the application types out of sync with migrations.
+
+Avoid:
+
+any
+manual duplicated database row types
+@ts-ignore
+
+==================================================
+13. NO CLIENT ACTIVATION
+==================================================
+
+Search all client code for:
+
+promoted_until update
+is_promoted true
+promotion success
+fake purchase success
+
+At this stage:
+
+- do not connect purchase success to database activation
+- do not update promoted_until
+- do not show active promoted badges from the new transaction table
+- do not alter listing ranking yet
+
+Only prepare the database foundation.
+
+==================================================
+14. SAFE MIGRATION
+==================================================
+
+Create a non-destructive migration.
+
+Do not:
+
+- drop the listing table
+- reset the database
+- delete existing listings
+- delete existing user data
+- replace all RLS policies without auditing them
+- insert fake production transactions
+
+If promoted_until already exists, the migration must be idempotent or avoid duplicate-column failure according to the project's migration conventions.
+
+==================================================
+15. VALIDATION TESTS
+==================================================
+
+TEST 1:
+
+Existing adoption listings remain intact after migration.
+
+TEST 2:
+
+promoted_until accepts null.
+
+TEST 3:
+
+promoted_until accepts a valid future timestamptz through secure server context.
+
+TEST 4:
+
+promotion purchase duration 1 is accepted.
+
+TEST 5:
+
+duration 3 is accepted.
+
+TEST 6:
+
+duration 7 is accepted.
+
+TEST 7:
+
+duration 999 is rejected.
+
+TEST 8:
+
+Duplicate transaction_identifier is rejected by database uniqueness.
+
+TEST 9:
+
+Normal user attempts to insert a verified promotion purchase directly.
+
+Expected:
+Rejected.
+
+TEST 10:
+
+Normal user attempts to modify another user's promotion purchase.
+
+Expected:
+Rejected.
+
+TEST 11:
+
+Normal user attempts to set listing promoted_until directly.
+
+Expected:
+Rejected.
+
+TEST 12:
+
+Normal user edits a legitimate listing field such as title or description.
+
+Expected:
+Still works if they own the listing.
+
+TEST 13:
+
+Sensitive transaction information cannot be publicly queried.
+
+==================================================
+16. DO NOT IMPLEMENT YET
+==================================================
+
+DO NOT:
+
+- create RevenueCat webhook processing
+- create Supabase Edge Function purchase verification
+- call RevenueCat REST API
+- activate a promotion
+- calculate promotion extension
+- change listing ordering
+- show promotion countdown
+- process refunds
+- connect App Store or Google Play
+- create fake test transaction records from the client
+
+==================================================
+17. FINAL AUDIT
+==================================================
+
+After implementation, recursively audit:
+
+promoted_until
+is_promoted
+listing_promotion_purchases
+transaction_identifier
+duration_days
+RLS
+listing update policies
+service role
+EXPO_PUBLIC
+
+Confirm:
+
+- database migration is non-destructive
+- duplicate transactions are database-blocked
+- durations are constrained
+- normal users cannot grant themselves promotions
+- normal listing editing still works
+- sensitive purchase records are protected
+- generated types match the schema
+- no service-role secret exists in the client
+- no promotion activation has been implemented yet
+
+==================================================
+18. FINAL REPORT
+==================================================
+
+Return the report in Turkish using exactly these headings:
+
+1. GERÇEK SAHİPLENDİRME TABLOSU
+
+2. MEVCUT PROMOTION ALANLARI
+
+3. EKLENEN DATABASE MIGRATION
+
+4. PROMOTION PURCHASE TABLOSU
+
+5. UNIQUE TRANSACTION KORUMASI
+
+6. DURATION CONSTRAINT
+
+7. FOREIGN KEY KARARLARI
+
+8. INDEXLER
+
+9. RLS POLİTİKALARI
+
+10. PROMOTED_UNTIL CLIENT MANIPULATION KORUMASI
+
+11. GENERATED TYPES
+
+12. UYGULANAN TESTLER
+
+13. DEĞİŞTİRİLEN DOSYALAR
+
+14. EDGE FUNCTION AŞAMASINA HAZIRLIK
+
+15. KALAN RİSKLER
+
+IMPORTANT:
+
+Do not only describe the database architecture.
+
+Inspect the actual repository and existing Supabase schema.
+
+Implement the safe migration and security changes that are appropriate for the current project.
+
+Run relevant TypeScript, migration, and lint checks.
+
+Do not claim Supabase cloud migration was executed if only a local migration file was created.

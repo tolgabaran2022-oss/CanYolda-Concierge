@@ -121,21 +121,23 @@ export const promotionPackages = pgTable("promotion_packages", {
 });
 
 export const listingPromotions = pgTable("listing_promotions", {
-  id:                 text("id").primaryKey().default(sql`gen_random_uuid()::text`),
-  listingId:          text("listing_id").notNull().references(() => adoptionListings.id, { onDelete: "cascade" }),
-  ownerId:            text("owner_id").notNull(),
-  packageId:          text("package_id").notNull(),
-  stripeSessionId:    text("stripe_session_id"),
-  storeTransactionId: text("store_transaction_id"),
-  platform:           text("platform"),
-  verifiedAt:         timestamp("verified_at", { withTimezone: true }),
-  packageName:        text("package_name").notNull().default(""),
-  durationDays:       integer("duration_days").notNull(),
-  startsAt:           timestamp("starts_at", { withTimezone: true }),
-  expiresAt:          timestamp("expires_at", { withTimezone: true }),
-  status:             text("status").notNull().default("pending"),
-  createdAt:          timestamp("created_at", { withTimezone: true }).defaultNow(),
-  updatedAt:          timestamp("updated_at", { withTimezone: true }).defaultNow(),
+  id:                   text("id").primaryKey().default(sql`gen_random_uuid()::text`),
+  listingId:            text("listing_id").notNull().references(() => adoptionListings.id, { onDelete: "cascade" }),
+  ownerId:              text("owner_id").notNull(),
+  packageId:            text("package_id").notNull(),
+  stripeSessionId:      text("stripe_session_id"),
+  storeTransactionId:   text("store_transaction_id"),
+  revenueCatUserId:     text("revenuecat_app_user_id"),
+  productIdentifier:    text("product_identifier"),
+  platform:             text("platform"),
+  verifiedAt:           timestamp("verified_at", { withTimezone: true }),
+  packageName:          text("package_name").notNull().default(""),
+  durationDays:         integer("duration_days").notNull(),
+  startsAt:             timestamp("starts_at", { withTimezone: true }),
+  expiresAt:            timestamp("expires_at", { withTimezone: true }),
+  status:               text("status").notNull().default("pending"),
+  createdAt:            timestamp("created_at", { withTimezone: true }).defaultNow(),
+  updatedAt:            timestamp("updated_at", { withTimezone: true }).defaultNow(),
 });
 
 export type PromotionPackage        = typeof promotionPackages.$inferSelect;

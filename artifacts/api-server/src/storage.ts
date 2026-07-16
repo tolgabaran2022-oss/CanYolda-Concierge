@@ -247,11 +247,18 @@ export class Storage {
         owner_id TEXT NOT NULL,
         package_id TEXT NOT NULL,
         stripe_session_id TEXT,
+        store_transaction_id TEXT,
+        revenuecat_app_user_id TEXT,
+        product_identifier TEXT,
+        platform TEXT,
+        verified_at TIMESTAMPTZ,
         package_name TEXT NOT NULL DEFAULT '',
-        duration_days INTEGER NOT NULL,
+        duration_days INTEGER NOT NULL
+          CONSTRAINT listing_promotions_duration_check CHECK (duration_days IN (1, 3, 7, 15)),
         starts_at TIMESTAMPTZ,
         expires_at TIMESTAMPTZ,
-        status TEXT NOT NULL DEFAULT 'pending',
+        status TEXT NOT NULL DEFAULT 'pending'
+          CONSTRAINT listing_promotions_status_check CHECK (status IN ('pending','active','verified','processed','failed','refunded','revoked')),
         created_at TIMESTAMPTZ DEFAULT NOW(),
         updated_at TIMESTAMPTZ DEFAULT NOW()
       )
@@ -259,6 +266,10 @@ export class Storage {
     await db.execute(sql`CREATE INDEX IF NOT EXISTS listing_promotions_listing_id_idx ON listing_promotions(listing_id)`);
     await db.execute(sql`CREATE INDEX IF NOT EXISTS listing_promotions_session_id_idx ON listing_promotions(stripe_session_id)`);
     await db.execute(sql`CREATE INDEX IF NOT EXISTS listing_promotions_status_expires_idx ON listing_promotions(status, expires_at)`);
+    await db.execute(sql`CREATE UNIQUE INDEX IF NOT EXISTS listing_promotions_store_tx_idx ON listing_promotions(store_transaction_id) WHERE store_transaction_id IS NOT NULL`);
+    await db.execute(sql`CREATE INDEX IF NOT EXISTS listing_promotions_rc_user_idx ON listing_promotions(revenuecat_app_user_id) WHERE revenuecat_app_user_id IS NOT NULL`);
+    await db.execute(sql`CREATE INDEX IF NOT EXISTS listing_promotions_owner_status_idx ON listing_promotions(owner_id, status)`);
+    await db.execute(sql`CREATE INDEX IF NOT EXISTS listing_promotions_expires_idx ON listing_promotions(expires_at) WHERE expires_at IS NOT NULL`);
 
     await db.execute(sql`
       CREATE TABLE IF NOT EXISTS stories (

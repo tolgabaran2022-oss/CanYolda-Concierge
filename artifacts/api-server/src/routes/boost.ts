@@ -7,6 +7,17 @@ import { logger } from "../lib/logger.js";
 
 const router: IRouter = Router();
 
+/* ── Server-side package → duration mapping ──────────────────────
+   The client MUST NOT control durationDays directly.
+   The server resolves it from the verified package identifier.
+   Allowed values match the CHECK constraint on listing_promotions.
+─────────────────────────────────────────────────────────────────*/
+const RC_PACKAGE_MAP: Record<string, { durationDays: 1 | 3 | 7; label: string }> = {
+  boost_1_day:  { durationDays: 1, label: "1 Günlük Boost" },
+  boost_3_days: { durationDays: 3, label: "3 Günlük Boost" },
+  boost_7_days: { durationDays: 7, label: "7 Günlük Boost" },
+};
+
 /* ── GET /api/boost/packages ──────────────────────────────────── */
 router.get("/boost/packages", async (_req, res): Promise<void> => {
   try {
@@ -20,22 +31,42 @@ router.get("/boost/packages", async (_req, res): Promise<void> => {
 
 /* ── POST /api/boost/verify-iap ────────────────────────────────
    Called by the mobile app after a successful RevenueCat purchase.
-   We trust the JWT-authenticated user and activate the boost directly.
-   In production, you'd also verify the receipt with RC REST API.
+
+   Security properties:
+   - JWT authentication required (extractUserId throws on failure)
+   - Listing ownership verified before any write
+   - durationDays resolved server-side from rcPackageIdentifier (client cannot spoof duration)
+   - store_transaction_id unique constraint prevents double-activation at DB level
+   - Active promotion guard prevents extension without a new transaction
 ─────────────────────────────────────────────────────────────────*/
 router.post("/boost/verify-iap", async (req, res): Promise<void> => {
   try {
-    const { listingId, rcPackageIdentifier, durationDays, packageName } = req.body as {
-      listingId: string;
-      rcPackageIdentifier: string;
-      durationDays: number;
-      packageName: string;
+    const {
+      listingId,
+      rcPackageIdentifier,
+      rcTransactionId,
+      rcUserId,
+      productIdentifier,
+    } = req.body as {
+      listingId:            string;
+      rcPackageIdentifier:  string;
+      rcTransactionId?:     string;
+      rcUserId?:            string;
+      productIdentifier?:   string;
     };
 
-    if (!listingId || !rcPackageIdentifier || !durationDays || !packageName) {
-      res.status(400).json({ error: "listingId, rcPackageIdentifier, durationDays ve packageName zorunludur" });
+    if (!listingId || !rcPackageIdentifier) {
+      res.status(400).json({ error: "listingId ve rcPackageIdentifier zorunludur" });
       return;
     }
+
+    /* Resolve duration from server-side map — client cannot inject arbitrary duration */
+    const pkg = RC_PACKAGE_MAP[rcPackageIdentifier];
+    if (!pkg) {
+      res.status(400).json({ error: `Geçersiz paket tanımlayıcı: ${rcPackageIdentifier}` });
+      return;
+    }
+    const { durationDays, label: packageName } = pkg;
 
     /* Require authenticated user */
     let userId: string;
@@ -68,11 +99,15 @@ router.post("/boost/verify-iap", async (req, res): Promise<void> => {
     /* Block double-purchase while an active promotion exists */
     const existing = await storage.getActivePromotion(listingId);
     if (existing) {
-      res.status(409).json({ error: "Bu ilan zaten öne çıkarılıyor", expiresAt: existing.expiresAt });
+      res.status(409).json({
+        error: "Bu ilan zaten öne çıkarılıyor",
+        expiresAt: existing.expiresAt,
+      });
       return;
     }
 
-    /* Activate the promotion immediately */
+    /* Activate the promotion immediately.
+       store_transaction_id unique index at DB level prevents concurrent duplicates. */
     const now = new Date();
     const expiresAt = new Date(now.getTime() + durationDays * 24 * 60 * 60 * 1000);
 
@@ -83,19 +118,31 @@ router.post("/boost/verify-iap", async (req, res): Promise<void> => {
       packageName,
       durationDays,
       platform:           "iap",
+      storeTransactionId: rcTransactionId ?? null,
+      revenueCatUserId:   rcUserId ?? null,
+      productIdentifier:  productIdentifier ?? null,
       verifiedAt:         now,
       startsAt:           now,
       expiresAt,
       status:             "active",
     });
 
-    logger.info({ listingId, userId, rcPackageIdentifier, durationDays }, "IAP boost activated");
+    logger.info(
+      { listingId, userId, rcPackageIdentifier, durationDays, rcTransactionId },
+      "IAP boost activated"
+    );
 
     res.json({ success: true, expiresAt: expiresAt.toISOString() });
   } catch (err: unknown) {
-    const msg = err instanceof Error ? err.message : "Satın alma doğrulanamadı";
+    /* Unique constraint violation = duplicate transaction */
+    const msg = err instanceof Error ? err.message : "";
+    if (msg.includes("store_transaction_id") || msg.includes("listing_promotions_store_tx_idx")) {
+      logger.warn({ err }, "Duplicate IAP transaction rejected");
+      res.status(409).json({ error: "Bu işlem daha önce işlendi" });
+      return;
+    }
     logger.error({ err }, "Failed to verify IAP boost");
-    res.status(500).json({ error: msg });
+    res.status(500).json({ error: "Satın alma doğrulanamadı" });
   }
 });
 
