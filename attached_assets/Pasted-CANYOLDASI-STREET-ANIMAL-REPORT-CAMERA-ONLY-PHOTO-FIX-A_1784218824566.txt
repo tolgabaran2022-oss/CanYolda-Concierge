@@ -1,0 +1,172 @@
+CANYOLDASI — STREET ANIMAL REPORT CAMERA-ONLY PHOTO FIX
+
+Apply this change ONLY to the:
+
+“Sokak Hayvanı Ekle”
+or
+“Sokak Hayvanı Durum Bildir”
+
+screen and specifically to its:
+
+“Fotoğraf Ekle”
+
+field.
+
+REQUIRED BEHAVIOR:
+
+- Tapping “Fotoğraf Ekle” must open the device camera directly.
+- Do not show a source-selection menu.
+- Do not show:
+  - Galeriden Seç
+  - Fotoğraf Kitaplığı
+  - Dosyadan Ekle
+  - Existing Photo
+- The user must capture a new photo with the camera.
+- Existing device photos must not be selectable in this flow.
+
+Use the installed Expo/React Native camera-compatible image picker API.
+
+For Expo ImagePicker, use camera capture only, such as the SDK-supported equivalent of:
+
+launchCameraAsync(...)
+
+Do not call:
+
+launchImageLibraryAsync(...)
+DocumentPicker
+gallery picker
+file picker
+
+from the street animal report screen.
+
+CAMERA PERMISSION:
+
+Before opening the camera:
+
+- request camera permission
+- if permission is granted, open the camera
+- if denied, show:
+
+“Fotoğraf çekebilmek için kamera izni vermeniz gerekiyor.”
+
+Buttons:
+
+“Kamera İzni Ver”
+“Ayarları Aç” when permission is permanently denied
+
+Do not silently fail.
+
+PHOTO PREVIEW:
+
+After the photo is captured, show a preview.
+
+Provide:
+
+“Tekrar Çek”
+“Fotoğrafı Kullan”
+
+If the user cancels the camera or cancels the preview:
+
+- do not add a photo
+- keep the form usable
+
+SCOPE — VERY IMPORTANT:
+
+This camera-only restriction must apply ONLY to the street animal report photo field.
+
+Do not change or break gallery access in:
+
+- Sahiplendirme ilanı photos
+- Evcil hayvan profile photos
+- User profile photo
+- Listing edit photos
+- Any other image upload screen
+
+If a shared photo-picker component is used, add an explicit mode:
+
+cameraOnly: true
+
+or:
+
+sourceMode: "camera"
+
+Use this mode only in the street animal report screen.
+
+WEB BEHAVIOR:
+
+Do not allow gallery/file upload for this street animal reporting field on web.
+
+If secure live camera capture is not already implemented for web, show:
+
+“Sokak hayvanı bildirimi oluşturmak için iOS veya Android uygulamasını kullanın.”
+
+Do not show a normal file input.
+
+AUDIT:
+
+Recursively find the actual street animal report screen and its current image picker handler.
+
+Search for:
+
+Sokak Hayvanı Ekle
+Durum Bildir
+Fotoğraf Ekle
+launchImageLibraryAsync
+launchCameraAsync
+pickImage
+openGallery
+ImagePicker
+DocumentPicker
+
+Remove gallery access only from this specific flow.
+
+TESTS:
+
+1. Open Sokak Hayvanı Ekle.
+2. Tap Fotoğraf Ekle.
+Expected:
+Camera opens directly.
+
+3. Verify no gallery option appears.
+
+4. Cancel camera.
+Expected:
+No photo added.
+
+5. Capture photo.
+Expected:
+Preview appears.
+
+6. Tap Tekrar Çek.
+Expected:
+Camera opens again.
+
+7. Tap Fotoğrafı Kullan.
+Expected:
+Captured photo is added.
+
+8. Deny camera permission.
+Expected:
+Turkish permission warning appears.
+
+9. Open adoption listing photo upload.
+Expected:
+Gallery upload still works there.
+
+10. Open pet profile photo upload.
+Expected:
+Gallery upload still works there.
+
+Do not redesign the screen.
+Do not change unrelated image upload flows.
+Run TypeScript and relevant build checks.
+
+Return a short Turkish report with:
+
+1. Değiştirilen ekran
+2. Kullanılan kamera metodu
+3. Galeri erişiminin kaldırıldığı yer
+4. Kamera izin akışı
+5. Diğer ekranların etkilenmediğinin doğrulanması
+6. Değiştirilen dosyalar
+7. TypeScript/build sonucu

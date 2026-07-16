@@ -14,6 +14,7 @@ import React, { useState } from "react";
 import {
   ActivityIndicator,
   Alert,
+  Linking,
   Platform,
   Pressable,
   ScrollView,
@@ -132,6 +133,7 @@ export default function AddAnimalScreen() {
   const { user } = useAuth();
 
   const [image, setImage]                 = useState<string | undefined>();
+  const [pendingImage, setPendingImage]   = useState<string | undefined>();
   const [animalType, setAnimalType]       = useState<AnimalType>("diger");
   const [status, setStatus]               = useState<AnimalStatus>("unknown");
   const [notes, setNotes]                 = useState("");
@@ -143,19 +145,57 @@ export default function AddAnimalScreen() {
   const [locPermission, requestLocPermission] = Location.useForegroundPermissions();
 
   /* ── Actions ─────────────────────────────────────────────────── */
-  const pickImage = async () => {
-    const result = await ImagePicker.launchImageLibraryAsync({
+  const openCamera = async () => {
+    if (Platform.OS === "web") {
+      Alert.alert(
+        "Kamera Desteklenmiyor",
+        "Sokak hayvanı bildirimi oluşturmak için iOS veya Android uygulamasını kullanın.",
+        [{ text: "Tamam" }]
+      );
+      return;
+    }
+
+    const { status, canAskAgain } = await ImagePicker.requestCameraPermissionsAsync();
+
+    if (status !== "granted") {
+      Alert.alert(
+        "Kamera İzni Gerekli",
+        "Fotoğraf çekebilmek için kamera izni vermeniz gerekiyor.",
+        [
+          canAskAgain
+            ? { text: "Kamera İzni Ver", onPress: openCamera }
+            : { text: "Ayarları Aç", onPress: () => void Linking.openSettings() },
+          { text: "Vazgeç", style: "cancel" },
+        ]
+      );
+      return;
+    }
+
+    const result = await ImagePicker.launchCameraAsync({
       mediaTypes: ["images"],
-      allowsEditing: true,
-      aspect: [4, 3],
+      allowsEditing: false,
       quality: 0.7,
     });
+
     if (!result.canceled && result.assets[0]) {
-      setImage(result.assets[0].uri);
+      setPendingImage(result.assets[0].uri);
     }
   };
 
-  const removeImage = () => setImage(undefined);
+  const confirmImage = () => {
+    setImage(pendingImage);
+    setPendingImage(undefined);
+  };
+
+  const retakePhoto = () => {
+    setPendingImage(undefined);
+    void openCamera();
+  };
+
+  const removeImage = () => {
+    setImage(undefined);
+    setPendingImage(undefined);
+  };
 
   const showDuplicateAlert = (nearby: NearbyAnimal[], onContinue: () => void) => {
     const first = nearby[0];
@@ -312,38 +352,58 @@ export default function AddAnimalScreen() {
         {/* ── 1. Photo card ───────────────────────────────────────── */}
         <View style={S.section}>
           <SectionLabel label="Fotoğraf" />
-          <Pressable onPress={image ? pickImage : pickImage} style={[
-            S.photoCard,
-            { backgroundColor: C.bgSecondary, borderColor: C.borderStrong },
-          ]}>
-            {image ? (
-              <>
-                <Image source={{ uri: image }} style={S.photoImage} contentFit="cover" />
-                {/* Top-right remove button */}
-                <Pressable style={S.photoRemoveBtn} onPress={removeImage} hitSlop={8}>
-                  <Icon name="close-circle" size={26} color="#FFFFFF" />
-                </Pressable>
-                {/* Bottom overlay */}
-                <View style={S.photoOverlay}>
+
+          {/* Pending preview — captured but not yet confirmed */}
+          {pendingImage ? (
+            <View style={[S.photoCard, { backgroundColor: C.bgSecondary, borderColor: C.borderStrong }]}>
+              <Image source={{ uri: pendingImage }} style={S.photoImage} contentFit="cover" />
+              <View style={S.photoPreviewActions}>
+                <Pressable style={[S.photoPreviewBtn, { backgroundColor: "rgba(0,0,0,0.55)" }]} onPress={retakePhoto}>
                   <Icon name="camera-reverse-outline" size={16} color="#FFFFFF" />
-                  <Text style={S.photoOverlayText}>Fotoğrafı Değiştir</Text>
-                </View>
-              </>
-            ) : (
-              <View style={S.photoPlaceholderInner}>
-                <View style={[S.photoCameraCircle, { backgroundColor: C.purpleFaint }]}>
-                  <Icon name="camera-outline" size={28} color={C.purple} />
-                </View>
-                <Text style={[S.photoAddTitle, { color: C.text }]}>Fotoğraf Ekle</Text>
-                <Text style={[S.photoAddSub, { color: C.textMuted }]}>
-                  Hayvanın durumunu daha iyi anlamamıza yardımcı olur
-                </Text>
-                <View style={[S.optionalPill, { backgroundColor: C.purpleFaint }]}>
-                  <Text style={[S.optionalPillText, { color: C.purple }]}>İsteğe bağlı</Text>
-                </View>
+                  <Text style={S.photoPreviewBtnText}>Tekrar Çek</Text>
+                </Pressable>
+                <Pressable style={[S.photoPreviewBtn, { backgroundColor: C.purple }]} onPress={confirmImage}>
+                  <Icon name="checkmark-circle-outline" size={16} color="#FFFFFF" />
+                  <Text style={S.photoPreviewBtnText}>Fotoğrafı Kullan</Text>
+                </Pressable>
               </View>
-            )}
-          </Pressable>
+            </View>
+          ) : (
+            <Pressable onPress={openCamera} style={[
+              S.photoCard,
+              { backgroundColor: C.bgSecondary, borderColor: C.borderStrong },
+            ]}>
+              {image ? (
+                <>
+                  <Image source={{ uri: image }} style={S.photoImage} contentFit="cover" />
+                  {/* Top-right remove button */}
+                  <Pressable style={S.photoRemoveBtn} onPress={removeImage} hitSlop={8}>
+                    <Icon name="close-circle" size={26} color="#FFFFFF" />
+                  </Pressable>
+                  {/* Bottom overlay */}
+                  <View style={S.photoOverlay}>
+                    <Icon name="camera-reverse-outline" size={16} color="#FFFFFF" />
+                    <Text style={S.photoOverlayText}>Fotoğrafı Değiştir</Text>
+                  </View>
+                </>
+              ) : (
+                <View style={S.photoPlaceholderInner}>
+                  <View style={[S.photoCameraCircle, { backgroundColor: C.purpleFaint }]}>
+                    <Icon name="camera-outline" size={28} color={C.purple} />
+                  </View>
+                  <Text style={[S.photoAddTitle, { color: C.text }]}>Fotoğraf Ekle</Text>
+                  <Text style={[S.photoAddSub, { color: C.textMuted }]}>
+                    {Platform.OS === "web"
+                      ? "iOS veya Android uygulamasını kullanın"
+                      : "Kamera ile yeni fotoğraf çekin"}
+                  </Text>
+                  <View style={[S.optionalPill, { backgroundColor: C.purpleFaint }]}>
+                    <Text style={[S.optionalPillText, { color: C.purple }]}>İsteğe bağlı</Text>
+                  </View>
+                </View>
+              )}
+            </Pressable>
+          )}
         </View>
 
         {/* ── 2. Animal type ──────────────────────────────────────── */}
@@ -617,6 +677,26 @@ const S = StyleSheet.create({
     paddingVertical: 12,
   },
   photoOverlayText: { fontSize: 14, fontFamily: "Inter_600SemiBold", color: "#FFFFFF" },
+  photoPreviewActions: {
+    position: "absolute",
+    bottom: 0,
+    left: 0,
+    right: 0,
+    flexDirection: "row",
+    gap: 10,
+    padding: 12,
+    backgroundColor: "rgba(0,0,0,0.30)",
+  },
+  photoPreviewBtn: {
+    flex: 1,
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "center",
+    gap: 6,
+    paddingVertical: 10,
+    borderRadius: 12,
+  },
+  photoPreviewBtnText: { fontSize: 14, fontFamily: "Inter_600SemiBold", color: "#FFFFFF" },
   photoPlaceholderInner: {
     flex: 1,
     alignItems: "center",
