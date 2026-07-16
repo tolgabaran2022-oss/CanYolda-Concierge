@@ -276,11 +276,19 @@ export default function AnimalsScreen() {
         showsVerticalScrollIndicator={false}
         ItemSeparatorComponent={() => <View style={{ height: 2 }} />}
         ListEmptyComponent={
-          <EmptyState
-            icon="paw-outline"
-            title="Hayvan bulunamadı"
-            subtitle="Bu kategoride henüz sokak hayvanı bildirilmemiş."
-          />
+          animals.length === 0 ? (
+            <EmptyState
+              icon="paw-outline"
+              title="Henüz durum bildirimi bulunmuyor."
+              subtitle="Yakınındaki bir hayvan için ilk bildirimi sen oluşturabilirsin."
+            />
+          ) : (
+            <EmptyState
+              icon="paw-outline"
+              title="Bu filtrede hayvan yok"
+              subtitle="Farklı bir kategori seçerek diğer bildirimleri görebilirsin."
+            />
+          )
         }
       />
     </View>

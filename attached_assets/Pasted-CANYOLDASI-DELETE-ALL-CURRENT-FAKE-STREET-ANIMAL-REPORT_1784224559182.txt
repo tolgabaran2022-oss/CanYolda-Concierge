@@ -1,0 +1,446 @@
+CANYOLDASI — DELETE ALL CURRENT FAKE STREET ANIMAL REPORTS
+SAFE STREET REPORT TEST DATA CLEANUP
+
+The user wants to remove all currently existing fake, seeded, demo and QA street animal reports shown on the:
+
+“Hayvanlar”
+“Sokak Hayvanları”
+“Durum Bildirimleri”
+
+screen.
+
+This is NOT a UI hide task.
+
+Delete the actual fake/test report records from their real source.
+
+Examples visible in the current screen include report cards such as:
+
+- “Not eklenmemiş”
+- “Yürürken arka bacağına tam basamıyor. Bölgede bir sür...”
+- other current seeded/demo street animal reports
+- current fake counters such as Acil / Bekleyen / Sağlıklı / Toplam
+
+==================================================
+1. AUDIT THE REAL DATA SOURCE
+==================================================
+
+Inspect the complete data flow:
+
+Hayvanlar screen
+→ Street animal reports context/store
+→ API endpoint
+→ PostgreSQL / Drizzle database
+→ seed/mock/bootstrap logic
+
+Search recursively for:
+
+street_reports
+animal_reports
+reports
+status_reports
+nearby_animals
+SEED_REPORTS
+seedReports
+seedIfEmpty
+mock reports
+fake reports
+demo reports
+QA reports
+Not eklenmemiş
+Yürürken arka bacağına
+Ayşe Demir
+Kadıköy
+Beşiktaş
+
+Determine whether the visible records come from:
+
+- PostgreSQL rows
+- seed scripts
+- hardcoded frontend arrays
+- mock API responses
+- fallback data
+- local cache
+- AsyncStorage
+- development bootstrap code
+
+Do not assume all cards come from the same source.
+
+==================================================
+2. DELETE ONLY FAKE / TEST REPORTS
+==================================================
+
+Remove all current fake, demo, seed and QA street animal reports that populate the Hayvanlar screen.
+
+Do not merely filter or hide them in the UI.
+
+If records are in PostgreSQL:
+
+delete only confirmed fake/test report rows.
+
+If records come from seed code:
+
+remove or disable the automatic seed logic.
+
+If records are hardcoded:
+
+remove the hardcoded report array.
+
+If records are cached:
+
+invalidate and clear only the related street-report cache.
+
+Do not delete real user-created street animal reports.
+
+==================================================
+3. SAFETY BEFORE DESTRUCTIVE DELETE
+==================================================
+
+Before deletion, classify every current street report as one of:
+
+- confirmed seed/demo
+- confirmed QA/security test
+- real user-created
+- unknown
+
+Delete only:
+
+confirmed seed/demo
+confirmed QA/security test
+
+If any record cannot be confidently classified, stop before deleting that record and report:
+
+- report ID
+- title/notes
+- owner/user ID
+- createdAt
+- source
+- reason for ambiguity
+
+Do not delete ambiguous or real user reports.
+
+==================================================
+4. RELATED DATA CLEANUP
+==================================================
+
+For each deleted fake report, audit and safely clean related records:
+
+- report photos/media
+- confirmations
+- likes/help counts
+- comments
+- volunteers/claims
+- lifecycle history
+- notifications
+- favorites/saved records
+- map markers
+- moderation records
+- duplicate-report links
+- report analytics/test records
+
+Use the actual foreign-key relationships.
+
+Do not leave orphan rows.
+
+Do not delete unrelated user or pet data.
+
+==================================================
+5. IMAGE STORAGE CLEANUP
+==================================================
+
+If deleted fake reports have uploaded images:
+
+remove only report-specific orphan storage files that are no longer referenced.
+
+Do not delete:
+
+- adoption listing images
+- pet profile images
+- user profile images
+- shared placeholders
+- default paw images
+- real street report images
+
+Verify media ownership and references before deleting.
+
+==================================================
+6. REMOVE AUTO-SEED BEHAVIOR
+==================================================
+
+Audit startup, migration and development initialization logic.
+
+Ensure fake street reports are not automatically recreated after:
+
+- backend restart
+- Replit restart
+- redeploy
+- migration
+- app restart
+- empty-table detection
+
+Remove or isolate functions such as:
+
+seedIfEmpty()
+ensureDemoReports()
+createDefaultReports()
+SEED_REPORTS
+MOCK_REPORTS
+
+If test fixtures are needed for automated tests, keep them only in isolated test files.
+
+Do not run them against normal development or production data.
+
+==================================================
+7. UPDATE COUNTERS
+==================================================
+
+The screen currently shows counters such as:
+
+Acil
+Bekleyen
+Sağlıklı
+Toplam
+
+After cleanup, counters must be recalculated from the real remaining data.
+
+If no real reports remain:
+
+Acil: 0
+Bekleyen: 0
+Sağlıklı: 0
+Toplam: 0
+
+Do not leave stale values such as:
+
+3
+4
+4
+11
+
+Do not hardcode zero.
+
+Use the real API response/data source.
+
+==================================================
+8. EMPTY STATE
+==================================================
+
+If no real street reports remain, show a proper empty state.
+
+Suggested Turkish copy:
+
+“Henüz durum bildirimi bulunmuyor.”
+
+Secondary text:
+
+“Yakınındaki bir hayvan için ilk bildirimi sen oluşturabilirsin.”
+
+Primary CTA:
+
+“Durum Bildir”
+
+Do not show:
+
+- blank report cards
+- broken image placeholders
+- stale counters
+- old filters with fake counts
+- empty pagination
+- phantom map markers
+
+==================================================
+9. FILTER COUNTS
+==================================================
+
+Filter chips must reflect the actual remaining report data.
+
+Examples:
+
+Hepsi 0
+Acil 0
+Yardım Bekleyen 0
+Sağlıklı 0
+
+or hide zero-count badges according to the existing design system.
+
+Do not leave old count bubbles from cached or seeded data.
+
+==================================================
+10. MAP CLEANUP
+==================================================
+
+If fake reports also appear on the map:
+
+remove their markers.
+
+After deletion:
+
+- no stale markers
+- no orphan marker-to-card navigation
+- no deleted report detail screen
+- no cached bottom-sheet cards
+
+Refresh map/report data.
+
+==================================================
+11. CONTEXT / CACHE INVALIDATION
+==================================================
+
+After cleanup:
+
+- refresh the street animal report context/store
+- invalidate React Query keys if used
+- clear only relevant AsyncStorage cache if used
+- refresh map markers
+- refresh counters
+- refresh filters
+- refresh current screen
+
+Backend and app restart must not restore deleted fake reports.
+
+==================================================
+12. KEEP REAL REPORT CREATION WORKING
+==================================================
+
+After cleanup, verify:
+
+- “Durum Bildir” still opens
+- camera-only photo flow still works
+- gallery remains disabled only in this flow
+- photo remains mandatory
+- animal type remains mandatory
+- condition remains mandatory
+- location remains mandatory
+- new real report is saved
+- new report appears on the Hayvanlar screen
+- image preview appears correctly
+- map marker appears correctly
+- counters update correctly
+
+Do not remove the report feature itself.
+
+==================================================
+13. DO NOT DO THESE
+==================================================
+
+DO NOT:
+
+- truncate the entire database
+- drop report tables
+- reset PostgreSQL
+- delete all users
+- delete adoption listings
+- delete pet profiles
+- delete real street reports
+- hide fake reports only with CSS
+- hardcode an empty array
+- break report creation
+- remove map support
+- remove notification support
+- remove help/confirmation architecture
+- remove camera-only flow
+
+==================================================
+14. VALIDATION TESTS
+==================================================
+
+TEST 1:
+
+Open Hayvanlar after cleanup.
+
+Expected:
+All confirmed fake/seed/QA reports are gone.
+
+TEST 2:
+
+Check counters.
+
+Expected:
+Counters reflect only real remaining records.
+
+TEST 3:
+
+Restart backend and app.
+
+Expected:
+Deleted fake reports do not return.
+
+TEST 4:
+
+Open map.
+
+Expected:
+Deleted fake report markers are gone.
+
+TEST 5:
+
+Create a new real street animal report.
+
+Expected:
+It appears in the list and map.
+
+TEST 6:
+
+New report image.
+
+Expected:
+Image appears in the card preview.
+
+TEST 7:
+
+No reports remain.
+
+Expected:
+Correct empty state.
+
+TEST 8:
+
+Filters with zero reports.
+
+Expected:
+No crash and correct zero counts.
+
+==================================================
+15. FINAL REPORT
+==================================================
+
+Return the report in Turkish using exactly these headings:
+
+1. SOKAK HAYVANI BİLDİRİMLERİNİN GERÇEK VERİ KAYNAĞI
+
+2. SİLİNEN FAKE / SEED / QA BİLDİRİM SAYISI
+
+3. SİLİNEN BİLDİRİMLERİN ID VE ÖZETLERİ
+
+4. KORUNAN GERÇEK BİLDİRİMLER
+
+5. BAĞLANTILI VERİ TEMİZLİĞİ
+
+6. FOTOĞRAF / STORAGE TEMİZLİĞİ
+
+7. SEED / MOCK KODUNUN KALDIRILMASI
+
+8. SAYAÇLARIN YENİ DURUMU
+
+9. FİLTRE SAYILARININ YENİ DURUMU
+
+10. HARİTA MARKER TEMİZLİĞİ
+
+11. CACHE / CONTEXT REFRESH
+
+12. EMPTY STATE SONUCU
+
+13. YENİ GERÇEK BİLDİRİM OLUŞTURMA TESTİ
+
+14. DEĞİŞTİRİLEN DOSYALAR
+
+15. TYPESCRIPT / LINT / BUILD SONUCU
+
+16. KALAN RİSKLER
+
+IMPORTANT:
+
+Do not only hide the fake cards.
+
+Find and remove the real fake/seed/test data safely.
+
+Do not delete records whose fake/test status cannot be verified with confidence.

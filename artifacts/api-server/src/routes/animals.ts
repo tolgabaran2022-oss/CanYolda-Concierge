@@ -130,142 +130,6 @@ async function checkReporterAllowed(userId: string): Promise<{ blocked: boolean;
   return { blocked: false };
 }
 
-const SEED_ANIMALS = [
-  {
-    imageUrl: "https://images.unsplash.com/photo-1514888286974-6c03e2ca1dba?w=600&q=80",
-    animalType: "kedi",
-    locationName: "Kadıköy, İstanbul",
-    latitude: 40.9925,
-    longitude: 29.0234,
-    status: "injured",
-    notes: "Yürürken arka bacağına tam basamıyor. Bölgede bir süredir görülüyor ve kontrol edilmesi gerekiyor.",
-    userId: "seed-system",
-    userName: "Ayşe Demir",
-  },
-  {
-    imageUrl: "https://images.unsplash.com/photo-1587300003388-59208cc962cb?w=600&q=80",
-    animalType: "kopek",
-    locationName: "Beşiktaş, İstanbul",
-    latitude: 41.0422,
-    longitude: 29.0043,
-    status: "healthy",
-    notes: "Mahalle sakinleri tarafından mama ve su veriliyor. Genel görünümü sağlıklı.",
-    userId: "seed-system",
-    userName: "Mehmet Kaya",
-  },
-  {
-    imageUrl: "https://images.unsplash.com/photo-1592194996308-7b43878e84a6?w=600&q=80",
-    animalType: "kedi",
-    locationName: "Üsküdar, İstanbul",
-    latitude: 41.0225,
-    longitude: 29.0154,
-    status: "injured",
-    notes: "Ön patisinde açık yara görülüyor. Yürürken zorlanıyor ve veteriner desteğine ihtiyaç duyabilir.",
-    userId: "seed-system",
-    userName: "Elif Yılmaz",
-  },
-  {
-    imageUrl: "https://images.unsplash.com/photo-1552053831-71594a27632d?w=600&q=80",
-    animalType: "kopek",
-    locationName: "Fatih, İstanbul",
-    latitude: 41.0186,
-    longitude: 28.9395,
-    status: "hungry",
-    notes: "Oldukça zayıf ve çevrede yiyecek arıyor. Mama ve su desteğine ihtiyaç duyuyor.",
-    userId: "seed-system",
-    userName: "Tolga Aydın",
-  },
-  {
-    imageUrl: "https://images.unsplash.com/photo-1548247416-ec66f4900b2e?w=600&q=80",
-    animalType: "kedi",
-    locationName: "Şişli, İstanbul",
-    latitude: 41.0603,
-    longitude: 28.9877,
-    status: "hungry",
-    notes: "Sol gözünde yoğun akıntı görülüyor. Bölgede sakin şekilde bekliyor.",
-    userId: "seed-system",
-    userName: "Zeynep Arslan",
-  },
-  {
-    imageUrl: "https://images.unsplash.com/photo-1547407139-3c921a66005c?w=600&q=80",
-    animalType: "kopek",
-    locationName: "Bakırköy, İstanbul",
-    latitude: 40.9782,
-    longitude: 28.8675,
-    status: "unknown",
-    notes: "Boyun çevresinde belirgin iz var. Sahipli olup olmadığı bilinmiyor.",
-    userId: "seed-system",
-    userName: "Mert Çelik",
-  },
-  {
-    imageUrl: "https://images.unsplash.com/photo-1573865526537-6f87431cb8f0?w=600&q=80",
-    animalType: "kedi",
-    locationName: "Ataşehir, İstanbul",
-    latitude: 40.9843,
-    longitude: 29.1272,
-    status: "healthy",
-    notes: "Anne kedi üç yavrusuyla birlikte bina bahçesinde yaşıyor. Mama ve su bırakılıyor.",
-    userId: "seed-system",
-    userName: "Deniz Koç",
-  },
-  {
-    imageUrl: "https://images.unsplash.com/photo-1633722715463-d30f4f325e24?w=600&q=80",
-    animalType: "kopek",
-    locationName: "Maltepe, İstanbul",
-    latitude: 40.9344,
-    longitude: 29.1498,
-    status: "injured",
-    notes: "Koşmaya çalışırken arka ayağını havada tutuyor. Yaralanmış olabilir.",
-    userId: "seed-system",
-    userName: "Selin Şahin",
-  },
-  {
-    imageUrl: "https://images.unsplash.com/photo-1529778873920-4da4926a72c2?w=600&q=80",
-    animalType: "kedi",
-    locationName: "Beyoğlu, İstanbul",
-    latitude: 41.0335,
-    longitude: 28.9772,
-    status: "unknown",
-    notes: "İnsanlara alışkın görünüyor. Temiz ve sakin ancak sahibinin olup olmadığı bilinmiyor.",
-    userId: "seed-system",
-    userName: "Emre Aksoy",
-  },
-  {
-    imageUrl: "https://images.unsplash.com/photo-1561037404-61cd46aa615b?w=600&q=80",
-    animalType: "kopek",
-    locationName: "Sarıyer, İstanbul",
-    latitude: 41.1660,
-    longitude: 29.0517,
-    status: "healthy",
-    notes: "Düzenli mama ve su veriliyor. Genel sağlık durumu iyi görünüyor.",
-    userId: "seed-system",
-    userName: "Ceren Yıldız",
-  },
-];
-
-async function seedIfEmpty() {
-  try {
-    const existing = await db.select({ id: strayAnimals.id }).from(strayAnimals).limit(1);
-    if (existing.length === 0) {
-      for (const seed of SEED_ANIMALS) {
-        const priority = calculatePriorityScore({ status: seed.status, animalType: seed.animalType, notes: seed.notes });
-        const code = await generateReportCode();
-        const lockAt = new Date(Date.now() - 1000); // already locked
-        await db.insert(strayAnimals).values({
-          ...seed,
-          reportCode: code,
-          priorityScore: priority.score,
-          priorityLevel: priority.level,
-          editLockedAt: lockAt,
-          photoUploadedAt: new Date(),
-        });
-      }
-      logger.info("Stray animals seeded");
-    }
-  } catch (err) {
-    logger.error({ err }, "Animal seed failed");
-  }
-}
 
 /* ─────────────────────────────────────────────────────────────────────────────
    GET /api/animals/nearby — duplicate detection
@@ -333,7 +197,6 @@ router.get("/animals/nearby", async (req, res) => {
 /* ── GET /api/animals ─────────────────────────────────────────── */
 router.get("/animals", async (req, res) => {
   try {
-    await seedIfEmpty();
     const userId = uid(req);
 
     const animals = await db.select().from(strayAnimals).orderBy(desc(strayAnimals.createdAt));
@@ -653,7 +516,7 @@ router.delete("/animals/:id", async (req, res) => {
   try {
     const [existing] = await db.select().from(strayAnimals).where(eq(strayAnimals.id, req.params.id));
     if (!existing) { res.status(404).json({ error: "Hayvan bulunamadı" }); return; }
-    if (existing.userId !== userId && existing.userId !== "seed-system") {
+    if (existing.userId !== userId) {
       res.status(403).json({ error: "Yetki yok" });
       return;
     }
