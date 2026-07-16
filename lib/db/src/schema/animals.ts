@@ -75,6 +75,7 @@ export const adoptionListings = pgTable("adoption_listings", {
   toiletTraining:     text("toilet_training"),
   viewsCount:         integer("views_count").notNull().default(0),
   favoriteCount:      integer("favorite_count").notNull().default(0),
+  promotedUntil:      timestamp("promoted_until", { withTimezone: true }),
   createdAt:          timestamp("created_at", { withTimezone: true }).defaultNow(),
   updatedAt:          timestamp("updated_at", { withTimezone: true }).defaultNow(),
 });

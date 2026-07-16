@@ -1,0 +1,622 @@
+CANYOLDASI — STEP 12
+ATOMIC LISTING PROMOTION ACTIVATION
+
+Current backend:
+
+- Express
+- PostgreSQL
+- Drizzle ORM
+- RevenueCat Test Store purchase flow exists
+- Secure authenticated purchase verification endpoint exists or was prepared in Step 11
+- Database foundation includes:
+  - listing promotion purchase records
+  - transaction uniqueness protection
+  - allowed package identifiers
+  - duration constraints
+- The adoption listing table has or should have:
+  promoted_until
+
+This step must securely activate the listing promotion after a verified purchase.
+
+==================================================
+CORE REQUIREMENT
+==================================================
+
+A promotion may only be activated by the backend after all of these are true:
+
+1. Request is authenticated
+2. Listing exists
+3. Listing belongs to authenticated user
+4. Package identifier is allowed
+5. RevenueCat purchase is verified
+6. Transaction has not already been processed
+7. Purchase record is eligible for activation
+
+The mobile client must never directly update:
+
+promoted_until
+is_promoted
+promotion_expires_at
+purchase_status = processed
+
+==================================================
+1. AUDIT THE CURRENT STEP 11 IMPLEMENTATION
+==================================================
+
+Recursively inspect:
+
+- promotion verification endpoint
+- listing_promotion_purchases
+- purchase_status
+- transaction_identifier
+- package_identifier
+- duration_days
+- promoted_until
+- listing ownership checks
+- database transactions
+- Drizzle transaction usage
+
+Determine whether Step 11 only created a verified purchase record or already activated a promotion.
+
+Do not duplicate endpoints or handlers.
+
+There must be one controlled backend promotion pipeline.
+
+==================================================
+2. SERVER-SIDE PACKAGE MAPPING
+==================================================
+
+Create one server-side source of truth:
+
+boost_1_day -> 1 day
+boost_3_days -> 3 days
+boost_7_days -> 7 days
+
+Do not trust:
+
+durationDays
+duration_days
+expiresAt
+promotedUntil
+
+from the client request.
+
+The client may identify the selected package, but the backend must derive the duration.
+
+Reject unknown package identifiers.
+
+==================================================
+3. ATOMIC DATABASE TRANSACTION
+==================================================
+
+Use a real PostgreSQL transaction through Drizzle.
+
+Inside one atomic transaction:
+
+1. Lock or safely read the promotion purchase record
+2. Confirm purchase_status is verified and not already processed
+3. Confirm the transaction belongs to the authenticated user
+4. Confirm the listing matches the verified purchase context
+5. Read the current listing promoted_until
+6. Calculate the new expiration
+7. Update the listing promoted_until
+8. Update the purchase record to processed
+9. Store promotion_started_at and promotion_expires_at
+10. Commit
+
+If any step fails:
+
+rollback everything.
+
+Never allow:
+
+listing updated
+but purchase still verified
+
+or:
+
+purchase marked processed
+but listing not promoted
+
+==================================================
+4. PROMOTION STACKING LOGIC
+==================================================
+
+Use this exact business rule:
+
+If the listing is not actively promoted:
+
+baseTime = now()
+
+If promoted_until exists and promoted_until > now():
+
+baseTime = promoted_until
+
+Then:
+
+newPromotedUntil = baseTime + durationDays
+
+Examples:
+
+No active promotion
++ 3-day package
+= now + 3 days
+
+Current promotion expires July 20
+User purchases 3 days
+= July 23
+
+Expired promotion:
+promoted_until is in the past
++ 1 day
+= now + 1 day
+
+Do not replace remaining active promotion time.
+
+==================================================
+5. TIME HANDLING
+==================================================
+
+Use database/server UTC time.
+
+Do not use the mobile device clock as source of truth.
+
+Do not accept timestamps from the client.
+
+Use timestamptz-compatible values.
+
+Avoid timezone bugs.
+
+The API may return ISO 8601 timestamps to the client.
+
+==================================================
+6. IDEMPOTENCY
+==================================================
+
+The same verified purchase must never add time twice.
+
+If the purchase record is already:
+
+processed
+
+return an idempotent response.
+
+Example:
+
+{
+  "success": true,
+  "alreadyProcessed": true,
+  "promotedUntil": "..."
+}
+
+Do not extend the promotion again.
+
+Use database uniqueness and transaction-safe status handling.
+
+Protect against two simultaneous activation requests.
+
+==================================================
+7. ENDPOINT DESIGN
+==================================================
+
+Reuse the existing secure verification endpoint if the architecture is clean.
+
+Preferred final flow:
+
+POST /api/promotions/verify-purchase
+
+The endpoint:
+
+- authenticates user
+- validates ownership
+- verifies purchase
+- performs atomic promotion activation
+- returns final promoted_until
+
+Do not create several overlapping endpoints unless the current architecture intentionally separates verification and activation.
+
+If verification and activation remain separate:
+
+the activation endpoint must never trust a client-provided “verified” flag.
+
+It must load the verified purchase record from the database.
+
+==================================================
+8. REQUEST VALIDATION
+==================================================
+
+Use the existing validation library, such as Zod, if already present.
+
+Validate:
+
+- listingId
+- transaction identifier or secure purchase reference
+- package identifier only if required by the verified purchase flow
+
+Reject:
+
+- missing values
+- malformed UUIDs/IDs
+- unknown properties where appropriate
+- arbitrary duration
+- arbitrary promotedUntil
+
+Return safe 400 responses.
+
+==================================================
+9. AUTHORIZATION
+==================================================
+
+Confirm all of the following server-side:
+
+authenticatedUser.id === listing.ownerId
+
+authenticatedUser.id === purchase.userId
+
+purchase.listingId === requested listingId
+
+purchase.packageIdentifier is allowed
+
+Do not rely on the client’s selected listing.
+
+A verified purchase created for Listing A must not promote Listing B.
+
+==================================================
+10. PURCHASE STATUS TRANSITIONS
+==================================================
+
+Use controlled transitions.
+
+Recommended:
+
+pending -> verified -> processed
+
+Invalid transitions must be rejected.
+
+Examples:
+
+failed -> processed
+revoked -> processed
+refunded -> processed
+
+must not be allowed.
+
+Already processed should return idempotently.
+
+Store:
+
+verified_at
+promotion_started_at
+promotion_expires_at
+updated_at
+
+correctly.
+
+==================================================
+11. LISTING PROMOTION SOURCE OF TRUTH
+==================================================
+
+Use:
+
+promoted_until
+
+as the primary source of truth.
+
+If is_promoted exists:
+
+do not set it permanently true without expiration handling.
+
+Prefer deriving active state:
+
+promoted_until != null && promoted_until > now()
+
+If the existing schema requires is_promoted:
+
+update it safely and ensure expired values cannot remain stale.
+
+Do not introduce a second conflicting source of truth.
+
+==================================================
+12. RESPONSE MODEL
+==================================================
+
+Return a typed safe response such as:
+
+{
+  "success": true,
+  "purchaseId": "...",
+  "listingId": "...",
+  "packageIdentifier": "boost_3_days",
+  "durationDays": 3,
+  "promotionStartedAt": "...",
+  "promotedUntil": "...",
+  "alreadyProcessed": false
+}
+
+Do not return:
+
+- raw receipt
+- purchase token
+- RevenueCat secret
+- private verification payload
+- internal SQL errors
+
+==================================================
+13. CLIENT INTEGRATION
+==================================================
+
+After RevenueCat purchase success, the mobile client should call the secure backend endpoint.
+
+Expected flow:
+
+RevenueCat purchase succeeds
+↓
+client sends secure required purchase reference + listingId
+↓
+backend verifies and activates
+↓
+backend returns promotedUntil
+↓
+client invalidates/refetches listing queries
+↓
+success UI appears
+
+The client must not calculate the expiration date.
+
+The client must not update local listing state before backend success, except for safe loading UI.
+
+==================================================
+14. SUCCESS UX
+==================================================
+
+Only after backend activation succeeds, show:
+
+“İlanın öne çıkarıldı 🎉”
+
+Include the package duration where appropriate:
+
+“İlanın 3 gün boyunca daha görünür olacak.”
+
+If the promotion was extended, the UI may show the returned expiration date.
+
+Do not display success after RevenueCat success alone if backend activation failed.
+
+==================================================
+15. FAILURE AND RECOVERY
+==================================================
+
+Important scenario:
+
+RevenueCat purchase succeeds
+but backend activation request fails because of network loss.
+
+Do not tell the user to purchase again.
+
+Preserve enough purchase context to retry safely.
+
+On retry:
+
+same transaction
+same listing
+same package
+
+must result in one activation only.
+
+Provide a user-safe message:
+
+“Ödemen tamamlandı ancak ilan henüz etkinleştirilemedi. İşlem otomatik olarak tekrar kontrol edilecek.”
+
+Implement a safe retry/reconciliation path based on the actual project architecture.
+
+Do not store sensitive raw purchase data insecurely.
+
+==================================================
+16. QUERY INVALIDATION
+==================================================
+
+After successful activation, refresh all relevant listing data.
+
+Audit:
+
+- My Listings
+- Listing Detail
+- Adoption Listings
+- All Listings
+- Featured/Promoted sections
+
+Use the existing cache/state solution.
+
+Do not leave stale UI showing the listing as unpromoted.
+
+Do not refetch the entire app unnecessarily.
+
+==================================================
+17. SECURITY ATTACK TESTS
+==================================================
+
+ATTACK 1:
+Client sends durationDays = 999.
+
+Expected:
+Ignored/rejected.
+
+ATTACK 2:
+Client sends promotedUntil = year 2099.
+
+Expected:
+Ignored/rejected.
+
+ATTACK 3:
+One transaction submitted twice.
+
+Expected:
+One time extension only.
+
+ATTACK 4:
+Two simultaneous requests for same transaction.
+
+Expected:
+One activation only.
+
+ATTACK 5:
+Purchase for Listing A submitted for Listing B.
+
+Expected:
+Rejected.
+
+ATTACK 6:
+User attempts to promote another user’s listing.
+
+Expected:
+Rejected.
+
+ATTACK 7:
+Purchase status failed/refunded/revoked.
+
+Expected:
+No activation.
+
+ATTACK 8:
+Client directly updates promoted_until.
+
+Expected:
+Blocked by backend/database security.
+
+==================================================
+18. FUNCTIONAL TESTS
+==================================================
+
+TEST 1:
+No active promotion + 1 day.
+Expected:
+promoted_until = approximately now + 1 day.
+
+TEST 2:
+No active promotion + 3 days.
+Expected:
+approximately now + 3 days.
+
+TEST 3:
+No active promotion + 7 days.
+Expected:
+approximately now + 7 days.
+
+TEST 4:
+Existing active promotion with 2 days remaining + 3 days.
+Expected:
+approximately 5 days remaining.
+
+TEST 5:
+Expired promoted_until + 1 day.
+Expected:
+now + 1 day.
+
+TEST 6:
+Same purchase retried.
+Expected:
+same promoted_until, no second extension.
+
+TEST 7:
+Backend failure during transaction.
+Expected:
+full rollback.
+
+TEST 8:
+Client receives backend success.
+Expected:
+listing queries refresh and success UI appears.
+
+==================================================
+19. DO NOT IMPLEMENT YET
+==================================================
+
+Do not yet implement:
+
+- listing ranking changes
+- promoted listing badge redesign
+- countdown UI
+- refund webhook processing
+- App Store production products
+- Google Play production products
+- RevenueCat webhook lifecycle
+- promotional analytics
+
+This stage is only secure activation and client connection.
+
+==================================================
+20. FINAL RECURSIVE AUDIT
+==================================================
+
+Search again for:
+
+promoted_until
+is_promoted
+purchase_status
+processed
+duration_days
+boost_1_day
+boost_3_days
+boost_7_days
+transaction_identifier
+handlePurchase
+purchasePackage
+
+Confirm:
+
+- duration is server-controlled
+- activation is atomic
+- active promotion is extended instead of replaced
+- duplicate transactions are idempotent
+- mobile clock is not used
+- client never writes promoted_until
+- RevenueCat success alone does not show final promotion success
+- backend failure does not require another purchase
+- TypeScript types are valid
+
+==================================================
+21. FINAL REPORT
+==================================================
+
+Return the report in Turkish using exactly these headings:
+
+1. PURCHASE VERIFICATION AKIŞI
+
+2. ATOMIC PROMOTION TRANSACTION
+
+3. PACKAGE / DURATION SERVER MAPPING
+
+4. PROMOTION STACKING MANTIĞI
+
+5. IDEMPOTENCY KORUMASI
+
+6. AUTHENTICATION / OWNERSHIP KONTROLLERİ
+
+7. PURCHASE STATUS TRANSITIONS
+
+8. CLIENT PURCHASE SONRASI BACKEND ÇAĞRISI
+
+9. BAŞARI / HATA UX
+
+10. QUERY INVALIDATION
+
+11. DEĞİŞTİRİLEN DOSYALAR
+
+12. TYPESCRIPT / LINT / BUILD SONUCU
+
+13. GERÇEKTEN TEST EDİLEN SENARYOLAR
+
+14. TEST EDİLEMEYEN SENARYOLAR
+
+15. LISTING RANKING AŞAMASINA HAZIRLIK
+
+IMPORTANT:
+
+Do not only describe the solution.
+
+Inspect the actual Express + PostgreSQL + Drizzle repository.
+
+Implement the secure atomic activation flow.
+
+Run the relevant checks.
+
+Do not claim a real RevenueCat purchase was tested unless it was actually executed in a compatible Development Build.

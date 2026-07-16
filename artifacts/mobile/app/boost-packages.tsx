@@ -1,5 +1,6 @@
 import { Icon } from "@/components/Icon";
 import { useAuth } from "@/contexts/AuthContext";
+import { useAdoption } from "@/contexts/AdoptionContext";
 import { useColors } from "@/hooks/useColors";
 import { fetchOfferings } from "@/services/revenueCat";
 import * as Haptics from "expo-haptics";
@@ -64,9 +65,8 @@ type PurchaseState =
 
 /* ─────────────────────────────────────────────────────────────
    SAFE RESULT MODEL
-   Carries verified purchase data to the backend verification
-   endpoint (Step 11 — /api/promotions/verify-purchase).
-   Promotion activation (Step 12) is NOT performed here.
+   Carries verified purchase data to POST /api/promotions/verify-purchase.
+   The backend atomically records the purchase AND activates the promotion.
 ───────────────────────────────────────────────────────────── */
 type CompletedBoostPurchase = {
   packageIdentifier:     string;
@@ -77,15 +77,34 @@ type CompletedBoostPurchase = {
 };
 
 /**
- * Step 11 — POST /api/promotions/verify-purchase.
- * Records the RevenueCat purchase in listing_promotion_purchases.
- * Does NOT activate the listing promotion (listing_promotions not touched).
+ * POST /api/promotions/verify-purchase — verify + atomic activate.
+ */
+type VerifyPurchaseApiResult = {
+  success:            boolean;
+  alreadyProcessed:   boolean;
+  purchaseId:         string;
+  listingId:          string;
+  packageIdentifier:  string;
+  durationDays:       number;
+  promotionStartedAt: string;
+  promotedUntil:      string;
+};
+
+/**
+ * POST /api/promotions/verify-purchase
+ *
+ * Single call: records AND atomically activates the listing promotion.
+ * Returns null when the network fails — caller must surface a retry message.
+ * Throws never: all errors are caught and logged internally.
+ *
+ * Security: durationDays and promotedUntil are server-derived; not sent to
+ * the API. The backend reads PACKAGE_MAP and the listing's current state.
  */
 async function callVerifyPurchaseApi(
   result:    CompletedBoostPurchase,
   listingId: string,
   token:     string | null
-): Promise<{ purchaseId: string; durationDays: number } | null> {
+): Promise<VerifyPurchaseApiResult | null> {
   if (!token) {
     if (__DEV__) console.warn("[Boost] No auth token — skipping verify-purchase");
     return null;
@@ -109,29 +128,23 @@ async function callVerifyPurchaseApi(
       }),
     });
 
-    if (res.status === 409) {
-      if (__DEV__) console.log("[Boost] Purchase already recorded (duplicate transaction)");
-      return null;
-    }
-
     if (!res.ok) {
       const body = await res.json().catch(() => ({})) as Record<string, unknown>;
       if (__DEV__) console.warn("[Boost] verify-purchase failed:", res.status, body);
       return null;
     }
 
-    const data = await res.json() as {
-      success:          boolean;
-      purchaseId:       string;
-      packageIdentifier: string;
-      durationDays:     number;
-    };
-
+    const data = await res.json() as VerifyPurchaseApiResult;
     if (__DEV__) {
-      console.log("[Boost] Purchase recorded:", data.purchaseId, "duration:", data.durationDays);
+      console.log(
+        "[Boost] Promotion activated:",
+        data.purchaseId,
+        "| durationDays:", data.durationDays,
+        "| promotedUntil:", data.promotedUntil,
+        "| alreadyProcessed:", data.alreadyProcessed
+      );
     }
-
-    return { purchaseId: data.purchaseId, durationDays: data.durationDays };
+    return data;
   } catch (err: unknown) {
     if (__DEV__) console.warn("[Boost] verify-purchase network error:", err);
     return null;
@@ -214,6 +227,7 @@ export default function BoostPackagesScreen() {
   const insets = useSafeAreaInsets();
   const router = useRouter();
   const { user, token } = useAuth();
+  const { refresh: refreshAdoption } = useAdoption();
 
   const { listingId, petName } = useLocalSearchParams<{
     listingId: string;
@@ -315,24 +329,68 @@ export default function BoostPackagesScreen() {
         customerInfo:          result.customerInfo,
       };
 
-      /* Step 11 — record verified purchase in backend */
-      const recorded = await callVerifyPurchaseApi(
+      /* Atomically verify + activate listing promotion in backend.
+         IMPORTANT: success UX is shown ONLY after backend confirms activation.
+         If the network call fails the user sees a safe retry message — NOT
+         a false "success". They must not re-purchase; same transactionIdentifier
+         will idempotently re-activate on retry. */
+      const activated = await callVerifyPurchaseApi(
         completedPurchase,
         listingId,
         token
       );
 
       if (__DEV__) {
-        console.log("[Boost] verify-purchase result:", recorded);
+        console.log("[Boost] activation result:", activated);
       }
 
-      Alert.alert(
-        "Satın Alma Tamamlandı",
-        recorded
-          ? `Satın alma doğrulandı ve kaydedildi. İlan aktivasyonu bir sonraki aşamada tamamlanacak.`
-          : "Satın alma RevenueCat tarafından onaylandı. Arka plan doğrulaması devam ediyor.",
-        [{ text: "Tamam", onPress: () => { setPurchaseState("idle"); router.back(); } }]
-      );
+      if (activated?.success) {
+        /* Invalidate adoption listings cache so promoted state is visible */
+        try { await refreshAdoption(); } catch { /* non-critical */ }
+
+        const expiresLabel = activated.promotedUntil
+          ? new Date(activated.promotedUntil).toLocaleDateString("tr-TR", {
+              day: "numeric", month: "long", year: "numeric",
+            })
+          : null;
+
+        const body = activated.alreadyProcessed
+          ? "Bu satın alma daha önce işlenmişti. İlanın zaten öne çıkarılmış durumda."
+          : expiresLabel
+            ? `İlanın ${activated.durationDays} gün boyunca daha fazla kişiye ulaşacak.\n\nBitiş: ${expiresLabel}`
+            : `İlanın ${activated.durationDays} gün boyunca öne çıkarıldı.`;
+
+        Alert.alert(
+          activated.alreadyProcessed ? "Zaten Aktif" : "İlanın Öne Çıkarıldı 🎉",
+          body,
+          [{ text: "Tamam", onPress: () => { setPurchaseState("idle"); router.back(); } }]
+        );
+      } else {
+        /* Backend call failed (network loss, 5xx, etc.)
+           RevenueCat purchase is confirmed — do NOT ask user to re-purchase.
+           The same transactionIdentifier will safely re-activate on next attempt. */
+        Alert.alert(
+          "Ödemen Alındı",
+          "Ödemen tamamlandı ancak ilan henüz etkinleştirilemedi. Lütfen tekrar dene — aynı satın alma faturanlandırılmaz.",
+          [
+            {
+              text: "Tekrar Dene",
+              onPress: async () => {
+                const retry = await callVerifyPurchaseApi(completedPurchase, listingId, token);
+                if (retry?.success) {
+                  try { await refreshAdoption(); } catch { /* non-critical */ }
+                  setPurchaseState("idle");
+                  router.back();
+                } else {
+                  setPurchaseState("idle");
+                  router.back();
+                }
+              },
+            },
+            { text: "Tamam", onPress: () => { setPurchaseState("idle"); router.back(); } },
+          ]
+        );
+      }
     } catch (err: unknown) {
       const { kind, message } = classifyPurchaseError(err);
 

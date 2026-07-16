@@ -150,8 +150,21 @@ router.get("/adoption", async (req, res) => {
     type PromoEntry = { expiresAt: Date; packageName: string; startsAt: Date | null };
     const activePromos: Record<string, PromoEntry> = {};
 
+    const now = new Date();
+
+    /* Primary: IAP-based promotions via adoptionListings.promoted_until */
+    for (const l of listings) {
+      if (l.promotedUntil && l.promotedUntil > now) {
+        activePromos[l.id] = {
+          expiresAt:   l.promotedUntil,
+          packageName: "Öne Çıkarılmış",
+          startsAt:    null,
+        };
+      }
+    }
+
+    /* Secondary: legacy Stripe-based listing_promotions (fallback only) */
     try {
-      const now = new Date();
       const promos = await db
         .select({
           listingId:   listingPromotions.listingId,
@@ -173,7 +186,7 @@ router.get("/adoption", async (req, res) => {
         }
       }
     } catch {
-      /* listing_promotions may not exist yet on first boot — continue without featured data */
+      /* listing_promotions may not exist yet — continue */
     }
 
     const enriched = listings.map((l) => ({
@@ -181,16 +194,17 @@ router.get("/adoption", async (req, res) => {
       isFeatured:          !!activePromos[l.id],
       featuredUntil:       activePromos[l.id]?.expiresAt?.toISOString() ?? null,
       featuredPackageName: activePromos[l.id]?.packageName ?? null,
+      promotedUntil:       l.promotedUntil?.toISOString() ?? null,
     }));
 
     enriched.sort((a, b) => {
       const af = a.isFeatured ? 0 : 1;
       const bf = b.isFeatured ? 0 : 1;
       if (af !== bf) return af - bf;
-      if (!af) {
-        const ast = activePromos[a.id]?.startsAt?.getTime() ?? 0;
-        const bst = activePromos[b.id]?.startsAt?.getTime() ?? 0;
-        if (bst !== ast) return bst - ast;
+      if (af === 0) {
+        const ae = activePromos[a.id]?.expiresAt?.getTime() ?? 0;
+        const be = activePromos[b.id]?.expiresAt?.getTime() ?? 0;
+        if (be !== ae) return be - ae;
       }
       return (b.createdAt?.getTime() ?? 0) - (a.createdAt?.getTime() ?? 0);
     });

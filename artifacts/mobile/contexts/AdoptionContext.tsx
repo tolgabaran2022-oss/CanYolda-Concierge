@@ -42,6 +42,7 @@ export interface AdoptionListing {
   isFeatured?: boolean;
   featuredUntil?: string | null;
   featuredPackageName?: string | null;
+  promotedUntil?: string | null;
 }
 
 interface AdoptionContextType {
@@ -125,6 +126,7 @@ function mapFromApi(raw: Record<string, unknown>): AdoptionListing {
     isFeatured:          Boolean(raw.isFeatured),
     featuredUntil:       raw.featuredUntil ? String(raw.featuredUntil) : null,
     featuredPackageName: raw.featuredPackageName ? String(raw.featuredPackageName) : null,
+    promotedUntil:       raw.promotedUntil ? String(raw.promotedUntil) : null,
   };
 }
 
