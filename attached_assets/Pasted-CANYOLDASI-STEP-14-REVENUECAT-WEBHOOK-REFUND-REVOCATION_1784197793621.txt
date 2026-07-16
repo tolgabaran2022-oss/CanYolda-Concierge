@@ -1,0 +1,880 @@
+CANYOLDASI — STEP 14
+REVENUECAT WEBHOOK + REFUND / REVOCATION LIFECYCLE
+
+Current architecture:
+
+- Express backend
+- PostgreSQL
+- Drizzle ORM
+- RevenueCat Test Store integration
+- Secure purchase verification endpoint
+- Atomic promotion activation
+- listing_promotion_purchases table
+- adoption_listings.promoted_until is the primary promotion source of truth
+- Promotion stacking and idempotency are implemented
+- Promoted listing badge and remaining time UI are implemented
+
+This step is ONLY for implementing the RevenueCat webhook lifecycle.
+
+Do not redesign the mobile UI.
+Do not modify package prices.
+Do not replace the working purchase flow.
+Do not introduce Stripe, Apple Pay, or Google Pay.
+
+==================================================
+1. AUDIT THE EXISTING BACKEND
+==================================================
+
+Recursively inspect:
+
+- Express app bootstrap
+- body parser configuration
+- route registration
+- promotions routes
+- listing_promotion_purchases
+- transaction_identifier
+- purchase_status
+- RevenueCat services
+- environment variable validation
+- webhook endpoints
+- logging
+- database migrations
+- Drizzle schema
+- raw request body handling
+
+Search for:
+
+revenuecat
+webhook
+NON_RENEWING_PURCHASE
+CANCELLATION
+REFUND_REVERSED
+INITIAL_PURCHASE
+transaction_id
+original_transaction_id
+event.id
+authorization
+X-RevenueCat-Webhook-Signature
+express.json
+express.raw
+
+Do not create a duplicate webhook implementation if one already exists.
+
+==================================================
+2. CREATE THE WEBHOOK ENDPOINT
+==================================================
+
+Create a public backend endpoint such as:
+
+POST /api/webhooks/revenuecat
+
+The exact route may follow the existing API conventions.
+
+This endpoint must NOT require the normal mobile JWT authentication.
+
+It must authenticate RevenueCat requests using webhook-specific security.
+
+Do not expose this endpoint through client authentication middleware that expects a user session.
+
+==================================================
+3. AUTHORIZATION HEADER
+==================================================
+
+Use a server-only environment variable:
+
+REVENUECAT_WEBHOOK_AUTH_TOKEN
+
+RevenueCat dashboard will send this value in the Authorization header.
+
+Recommended dashboard value format:
+
+Bearer <strong-random-token>
+
+The backend must compare the complete Authorization header value.
+
+Reject missing or invalid authorization with:
+
+401 Unauthorized
+
+Use constant-time comparison where practical.
+
+Do not log the full authorization token.
+
+Do not place this secret in:
+
+- EXPO_PUBLIC variables
+- mobile source code
+- frontend bundles
+- committed source files
+
+==================================================
+4. HMAC SIGNATURE VERIFICATION
+==================================================
+
+Also support RevenueCat HMAC webhook signing.
+
+Use server-only environment variable:
+
+REVENUECAT_WEBHOOK_SIGNING_SECRET
+
+RevenueCat sends:
+
+X-RevenueCat-Webhook-Signature
+
+with a structure similar to:
+
+t=<unix_timestamp>,v1=<hmac_sha256_hex>
+
+Verification requirements:
+
+1. Read the raw HTTP request body bytes exactly as received
+2. Extract t and v1
+3. Build:
+
+<timestamp>.<raw_json_body>
+
+4. Compute HMAC-SHA256 using REVENUECAT_WEBHOOK_SIGNING_SECRET
+5. Compare using crypto.timingSafeEqual
+6. Reject signatures older than 5 minutes
+7. Reject malformed headers
+8. Reject invalid signatures with 401
+
+Do not:
+
+- JSON.parse and JSON.stringify before signature verification
+- compute HMAC from a reconstructed JSON object
+- expose the signing secret
+- skip verification in production
+
+RevenueCat HMAC verification depends on the exact raw body bytes.
+
+==================================================
+5. EXPRESS RAW BODY HANDLING
+==================================================
+
+Audit the current global:
+
+express.json()
+
+configuration.
+
+The RevenueCat webhook route must preserve the raw request body.
+
+Implement the route ordering correctly.
+
+Possible safe approaches:
+
+- register express.raw({ type: "application/json" }) specifically before global JSON middleware
+- or use the verify callback of express.json to preserve rawBody
+- or follow the existing backend framework convention
+
+Do not break JSON parsing for the rest of the API.
+
+Do not cause the webhook raw body to be consumed before signature verification.
+
+After signature verification, parse the JSON safely.
+
+==================================================
+6. PAYLOAD VALIDATION
+==================================================
+
+Validate the webhook structure using the existing schema validation library, preferably Zod if already present.
+
+Expected root structure:
+
+{
+  api_version: string,
+  event: {
+    id: string,
+    type: string,
+    app_user_id: string,
+    original_app_user_id?: string,
+    product_id?: string,
+    transaction_id?: string,
+    original_transaction_id?: string,
+    store?: string,
+    environment?: string,
+    event_timestamp_ms?: number,
+    purchased_at_ms?: number,
+    expiration_at_ms?: number,
+    cancel_reason?: string,
+    ...
+  }
+}
+
+Allow additional future RevenueCat fields.
+
+Do not reject a valid webhook only because RevenueCat adds a new optional field.
+
+Reject malformed payloads safely.
+
+Do not expose Zod internals or stack traces.
+
+==================================================
+7. WEBHOOK EVENT IDEMPOTENCY
+==================================================
+
+RevenueCat may deliver the same webhook event more than once.
+
+Create a database table if one does not exist:
+
+revenuecat_webhook_events
+
+Recommended columns:
+
+id uuid primary key default gen_random_uuid()
+
+revenuecat_event_id text not null unique
+
+event_type text not null
+
+app_user_id text nullable
+
+product_id text nullable
+
+transaction_id text nullable
+
+environment text nullable
+
+processing_status text not null
+
+received_at timestamptz not null default now()
+
+processed_at timestamptz nullable
+
+failure_reason text nullable
+
+payload jsonb nullable
+
+created_at timestamptz not null default now()
+
+updated_at timestamptz not null default now()
+
+Use existing project naming conventions.
+
+Do not store unnecessary sensitive payload fields if not needed.
+
+If payload is stored:
+
+- protect it from public/client access
+- consider redacting subscriber attributes
+- do not expose it through public API responses
+
+Add a unique constraint on:
+
+revenuecat_event_id
+
+If the same event ID is received again:
+
+return 200 idempotently.
+
+Do not process it twice.
+
+==================================================
+8. SUPPORTED PRODUCT IDS
+==================================================
+
+Only process CanYoldasi promotion products:
+
+canyoldasi_boost_1_day
+canyoldasi_boost_3_days
+canyoldasi_boost_7_days
+
+Unknown products must not modify promotion state.
+
+For unknown products:
+
+- record or safely ignore the event
+- return 200 after authentication and valid parsing
+- do not produce repeated RevenueCat retries for unrelated valid events
+
+Do not confuse package identifiers with product identifiers.
+
+Webhook product_id values are store product identifiers.
+
+==================================================
+9. EVENT TYPES
+==================================================
+
+Handle at least:
+
+NON_RENEWING_PURCHASE
+
+CANCELLATION
+
+REFUND_REVERSED
+
+TEST
+
+Unknown future event types must not crash the endpoint.
+
+Use a switch with a safe default.
+
+Do not treat subscription-only events as boost purchases.
+
+==================================================
+10. NON_RENEWING_PURCHASE
+==================================================
+
+For:
+
+NON_RENEWING_PURCHASE
+
+This represents a non-auto-renewing purchase.
+
+Find the matching promotion purchase record using the safest actual transaction identity available.
+
+Possible matching fields:
+
+transaction_id
+original_transaction_id
+product_id
+app_user_id
+
+Audit the current Step 10–12 transaction identifiers and RevenueCat SDK result.
+
+Do not guess blindly.
+
+If the purchase was already processed through the mobile verification endpoint:
+
+- mark webhook event processed
+- synchronize missing metadata if needed
+- do not add promotion duration again
+
+The webhook must not double-activate the listing.
+
+If a valid webhook purchase exists but the mobile callback failed before activation:
+
+implement a controlled reconciliation strategy only if the database contains a secure listing purchase context.
+
+Never choose an arbitrary listing based only on the user ID.
+
+A webhook transaction must map to the original listing purchase intent or existing purchase record.
+
+If no secure listing context exists:
+
+- record the event as awaiting reconciliation
+- do not assign it to a random listing
+- do not lose the event
+
+==================================================
+11. CANCELLATION / REFUND
+==================================================
+
+For:
+
+CANCELLATION
+
+Determine whether the event represents a refund or cancellation affecting a non-renewing purchase.
+
+Match the event to the existing listing promotion purchase record.
+
+Update:
+
+purchase_status = refunded
+
+or:
+
+purchase_status = revoked
+
+based on the actual available RevenueCat fields and current business rules.
+
+Store:
+
+refund/revocation timestamp
+cancel_reason
+RevenueCat event ID
+
+Do not delete purchase audit history.
+
+Do not allow the refunded transaction to be replayed later.
+
+==================================================
+12. PROMOTION REVERSAL BUSINESS RULE
+==================================================
+
+Implement this conservative CanYoldasi refund rule:
+
+If the refunded purchase is the only active promotion contribution and can be reversed unambiguously:
+
+reduce or end the promotion safely.
+
+However, promotions can be stacked.
+
+Example:
+
+1-day purchase
+then 7-day purchase
+
+If the 1-day purchase is refunded, do not blindly set promoted_until = now() because the 7-day valid purchase must remain.
+
+Do not subtract durations from a single timestamp without a reliable ledger.
+
+Audit whether the database records every purchase contribution with:
+
+promotion_started_at
+promotion_expires_at
+duration_days
+purchase_status
+
+Create a safe recalculation service.
+
+Recommended approach:
+
+Recalculate the listing’s valid promotion window from all non-refunded, non-revoked processed promotion purchase records.
+
+Do not mutate time by simply subtracting duration from the current promoted_until.
+
+==================================================
+13. PROMOTION LEDGER RECALCULATION
+==================================================
+
+Create one centralized backend function such as:
+
+recalculateListingPromotion(listingId)
+
+It must:
+
+1. Load valid processed promotion purchases for the listing
+2. Exclude:
+   - refunded
+   - revoked
+   - failed
+3. Order purchases deterministically
+4. Reconstruct the promotion timeline using server-side timestamps
+5. Calculate the correct current promoted_until
+6. Update adoption_listings.promoted_until atomically
+7. Return the new promoted_until
+
+Do not trust client dates.
+
+Do not use the mobile clock.
+
+Be careful with purchases made after an earlier promotion expired.
+
+Do not incorrectly merge completely separate historic promotion periods.
+
+Use the stored activation timestamps and durations to reproduce the actual promotion contributions safely.
+
+If exact reconstruction is impossible with the current schema:
+
+create the minimal safe migration needed to store contribution boundaries.
+
+Explain the migration.
+
+==================================================
+14. REFUND AFTER EXPIRATION
+==================================================
+
+If a refunded boost has already fully expired:
+
+- mark the purchase refunded
+- preserve the audit trail
+- do not make promoted_until negative
+- do not alter a newer unrelated active promotion incorrectly
+
+==================================================
+15. REFUND_REVERSED
+==================================================
+
+For:
+
+REFUND_REVERSED
+
+If RevenueCat reports that a refund was reversed:
+
+- restore the purchase status only after matching the original transaction safely
+- recalculate the listing promotion ledger
+- do not automatically grant duplicate time
+- ensure idempotency
+
+Do not assume every REFUND_REVERSED event applies to supported platforms or products.
+
+==================================================
+16. TEST EVENTS
+==================================================
+
+RevenueCat dashboard may send:
+
+TEST
+
+For TEST events:
+
+- validate authorization
+- validate HMAC
+- validate payload
+- store the webhook event
+- return 200
+- do not modify purchases
+- do not modify promoted_until
+
+This allows the endpoint to be tested safely.
+
+==================================================
+17. QUICK RESPONSE AND PROCESSING
+==================================================
+
+RevenueCat expects a successful 200 response and retries failed deliveries.
+
+Keep endpoint processing reliable and bounded.
+
+If the project already has a job queue:
+
+- authenticate
+- validate
+- persist event
+- respond 200
+- process asynchronously
+
+If no job queue exists:
+
+- use a short transactional synchronous implementation
+- avoid external network calls before responding
+- do not introduce a fragile in-memory background queue
+
+Do not return 200 before the event has at least been durably recorded.
+
+==================================================
+18. STATUS CODES
+==================================================
+
+Recommended:
+
+200:
+- processed
+- duplicate event
+- valid ignored event
+- TEST event
+
+400:
+- malformed JSON/payload
+
+401:
+- invalid Authorization
+- invalid HMAC
+- stale signature
+
+500:
+- database or internal processing failure that should be retried
+
+Do not return 404 for valid but unsupported RevenueCat event types.
+
+==================================================
+19. LOGGING
+==================================================
+
+Use structured safe logs.
+
+Allowed:
+
+- RevenueCat event ID
+- event type
+- environment
+- product ID
+- processing status
+
+Do not log:
+
+- authorization token
+- signing secret
+- complete subscriber attributes
+- raw personal customer data
+- private keys
+- full sensitive payload unless securely redacted
+
+==================================================
+20. ENVIRONMENT HANDLING
+==================================================
+
+Support RevenueCat environments:
+
+SANDBOX
+PRODUCTION
+
+Test Store events may have their own store/environment representation depending on RevenueCat payloads.
+
+Do not assume every test event says SANDBOX.
+
+Store the received environment.
+
+Allow separate webhook configurations in RevenueCat for testing and production later.
+
+Do not let production events hit an insecure development endpoint.
+
+==================================================
+21. DATABASE SECURITY
+==================================================
+
+Webhook tables and refund fields must be server-only.
+
+Mobile clients must not be able to:
+
+- insert webhook events
+- mark purchases refunded
+- mark purchases revoked
+- change cancel_reason
+- trigger promotion recalculation directly without authorization
+
+Audit API routes.
+
+Do not expose an unrestricted refund endpoint.
+
+==================================================
+22. FUNCTIONAL TESTS
+==================================================
+
+TEST 1:
+Valid TEST event.
+
+Expected:
+200.
+Event stored.
+No listing changed.
+
+TEST 2:
+Invalid Authorization.
+
+Expected:
+401.
+
+TEST 3:
+Invalid HMAC.
+
+Expected:
+401.
+
+TEST 4:
+Signature older than 5 minutes.
+
+Expected:
+401.
+
+TEST 5:
+Same RevenueCat event ID twice.
+
+Expected:
+Second delivery returns 200.
+No duplicate processing.
+
+TEST 6:
+NON_RENEWING_PURCHASE already activated by client flow.
+
+Expected:
+No second duration grant.
+
+TEST 7:
+Unknown product ID.
+
+Expected:
+200 ignored.
+No promotion change.
+
+TEST 8:
+CANCELLATION refund for one active purchase.
+
+Expected:
+Purchase marked refunded.
+Promotion recalculated.
+
+TEST 9:
+Stacked 1-day + 7-day promotions.
+Refund the 1-day purchase.
+
+Expected:
+Valid 7-day contribution remains.
+
+TEST 10:
+Refund an expired historic purchase.
+
+Expected:
+New active promotion remains intact.
+
+TEST 11:
+REFUND_REVERSED.
+
+Expected:
+Purchase restored safely.
+Promotion ledger recalculated.
+No duplicate time.
+
+TEST 12:
+Database failure during processing.
+
+Expected:
+500 so RevenueCat retries.
+No partial inconsistent update.
+
+==================================================
+23. SECURITY ATTACK TESTS
+==================================================
+
+ATTACK 1:
+Attacker sends webhook without RevenueCat authorization.
+
+Expected:
+Rejected.
+
+ATTACK 2:
+Attacker copies valid payload but changes product ID.
+
+Expected:
+HMAC fails.
+
+ATTACK 3:
+Replay valid signed payload after timestamp tolerance.
+
+Expected:
+Rejected as stale.
+
+ATTACK 4:
+Replay within tolerance.
+
+Expected:
+Unique event ID prevents duplicate processing.
+
+ATTACK 5:
+Client calls refund logic directly.
+
+Expected:
+No public route or rejected.
+
+ATTACK 6:
+Refund event for another product.
+
+Expected:
+No CanYoldasi promotion mutation.
+
+==================================================
+24. REVENUECAT DASHBOARD MANUAL CONFIGURATION
+==================================================
+
+At the end provide the exact manual steps required in RevenueCat:
+
+1. Open:
+   Project → Integrations → Webhooks
+
+2. Add a new webhook configuration
+
+3. Webhook URL:
+   https://<production-api-domain>/api/webhooks/revenuecat
+
+4. Authorization header:
+   Bearer <generated secure random token>
+
+5. Store the exact same full header in:
+   REVENUECAT_WEBHOOK_AUTH_TOKEN
+
+6. Enable HMAC signing
+
+7. Copy the signing secret immediately
+
+8. Store it in:
+   REVENUECAT_WEBHOOK_SIGNING_SECRET
+
+9. Select sandbox/testing events during development
+
+10. Later create a separate production configuration or safely enable production events
+
+11. Send a RevenueCat dashboard TEST event
+
+Do not ask the user to expose either secret in chat.
+
+==================================================
+25. DO NOT IMPLEMENT YET
+==================================================
+
+Do not yet implement:
+
+- App Store Connect production product setup
+- Google Play Console production product setup
+- production platform API credentials
+- push notification before promotion expiration
+- analytics dashboard
+- admin manual refunds
+- user-facing payment history screen
+
+==================================================
+26. FINAL RECURSIVE AUDIT
+==================================================
+
+Search again for:
+
+revenuecat webhook
+NON_RENEWING_PURCHASE
+CANCELLATION
+REFUND_REVERSED
+X-RevenueCat-Webhook-Signature
+REVENUECAT_WEBHOOK_AUTH_TOKEN
+REVENUECAT_WEBHOOK_SIGNING_SECRET
+express.raw
+transaction_identifier
+purchase_status
+refunded
+revoked
+promoted_until
+recalculateListingPromotion
+
+Confirm:
+
+- exact raw body is used for HMAC
+- webhook authentication is server-only
+- stale signatures are rejected
+- duplicate event IDs are idempotent
+- webhook purchase events do not double-grant time
+- stacked refunds do not destroy valid promotion time
+- test events never mutate listings
+- unknown future events do not crash
+- no secrets are exposed to mobile
+- TypeScript passes
+
+==================================================
+27. FINAL REPORT
+==================================================
+
+Return the report in Turkish using exactly these headings:
+
+1. WEBHOOK ENDPOINT
+
+2. AUTHORIZATION HEADER KORUMASI
+
+3. HMAC SIGNATURE DOĞRULAMASI
+
+4. RAW BODY EXPRESS YAPILANDIRMASI
+
+5. WEBHOOK EVENT IDEMPOTENCY
+
+6. NON_RENEWING_PURCHASE DAVRANIŞI
+
+7. CANCELLATION / REFUND DAVRANIŞI
+
+8. REFUND_REVERSED DAVRANIŞI
+
+9. STACKED PROMOTION RECALCULATION
+
+10. DATABASE MIGRATIONS
+
+11. SERVER-ONLY GÜVENLİK
+
+12. DEĞİŞTİRİLEN DOSYALAR
+
+13. TYPESCRIPT / LINT / BUILD SONUCU
+
+14. GERÇEKTEN TEST EDİLEN SENARYOLAR
+
+15. MANUEL REVENUECAT DASHBOARD AYARLARI
+
+16. PRODUCTION STORE AŞAMASINA HAZIRLIK
+
+17. KALAN RİSKLER
+
+IMPORTANT:
+
+Do not only describe the webhook.
+
+Inspect the actual Express + PostgreSQL + Drizzle repository.
+
+Implement the authenticated, HMAC-verified, idempotent RevenueCat webhook.
+
+Run the relevant checks.
+
+Do not claim a live RevenueCat webhook test passed unless an actual dashboard test event was delivered.

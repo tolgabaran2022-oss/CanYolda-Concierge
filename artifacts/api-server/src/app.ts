@@ -5,12 +5,27 @@ import path from "node:path";
 import { fileURLToPath } from "node:url";
 import router from "./routes/index.js";
 import { WebhookHandlers } from "./webhookHandlers.js";
+import { handleRcWebhook } from "./routes/rcWebhook.js";
 import { logger } from "./lib/logger.js";
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 
 const app: Express = express();
 
+/* ── RevenueCat webhook ─────────────────────────────────────────────────────
+   Registered BEFORE global express.json() so the body arrives as a raw Buffer.
+   No JWT auth middleware — the handler authenticates via Authorization header
+   and HMAC-SHA256 signature internally.
+──────────────────────────────────────────────────────────────────────────── */
+app.post(
+  "/api/webhooks/revenuecat",
+  express.raw({ type: "application/json" }),
+  async (req, res): Promise<void> => {
+    await handleRcWebhook(req.body as Buffer, req, res);
+  }
+);
+
+/* ── Stripe webhook ─────────────────────────────────────────────────────── */
 app.post(
   "/api/stripe/webhook",
   express.raw({ type: "application/json" }),

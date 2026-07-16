@@ -12,6 +12,7 @@
   "dependencies": {
     "@types/multer": "^2.2.0",
     "@workspace/api-zod": "workspace:*",
+    "zod": "catalog:",
     "@workspace/db": "workspace:*",
     "bcryptjs": "^3.0.3",
     "cookie-parser": "^1.4.7",

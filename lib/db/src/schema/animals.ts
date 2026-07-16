@@ -155,9 +155,38 @@ export const listingPromotionPurchases = pgTable("listing_promotion_purchases", 
   promotionStartedAt:   timestamp("promotion_started_at", { withTimezone: true }),
   promotionExpiresAt:   timestamp("promotion_expires_at", { withTimezone: true }),
   verifiedAt:           timestamp("verified_at", { withTimezone: true }).defaultNow(),
+  /** Webhook-managed fields (server-only, never set by mobile clients) */
+  refundedAt:           timestamp("refunded_at",   { withTimezone: true }),
+  cancelReason:         text("cancel_reason"),
+  revenuecatEventId:    text("revenuecat_event_id"),
   createdAt:            timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
   updatedAt:            timestamp("updated_at", { withTimezone: true }).notNull().defaultNow(),
 }, (t) => [unique("lpp_transaction_id_unique").on(t.transactionIdentifier)]);
+
+/**
+ * revenuecat_webhook_events
+ *
+ * Durable log of every RevenueCat webhook delivery.
+ * Unique on revenuecat_event_id → idempotency for duplicate deliveries.
+ * payload stores a safe, redacted JSON snapshot (no PII / subscriber attrs).
+ * Server-only — never exposed through public API routes.
+ */
+export const revenuecatWebhookEvents = pgTable("revenuecat_webhook_events", {
+  id:                text("id").primaryKey().default(sql`gen_random_uuid()::text`),
+  revenuecatEventId: text("revenuecat_event_id").notNull().unique(),
+  eventType:         text("event_type").notNull(),
+  appUserId:         text("app_user_id"),
+  productId:         text("product_id"),
+  transactionId:     text("transaction_id"),
+  environment:       text("environment"),
+  processingStatus:  text("processing_status").notNull(), // received|processed|skipped|failed
+  receivedAt:        timestamp("received_at",  { withTimezone: true }).notNull().defaultNow(),
+  processedAt:       timestamp("processed_at", { withTimezone: true }),
+  failureReason:     text("failure_reason"),
+  payload:           text("payload"),           // JSON.stringify of redacted snapshot
+  createdAt:         timestamp("created_at",   { withTimezone: true }).notNull().defaultNow(),
+  updatedAt:         timestamp("updated_at",   { withTimezone: true }).notNull().defaultNow(),
+});
 
 export type PromotionPackage        = typeof promotionPackages.$inferSelect;
 export type InsertPromotionPackage  = typeof promotionPackages.$inferInsert;
@@ -165,6 +194,8 @@ export type ListingPromotion        = typeof listingPromotions.$inferSelect;
 export type InsertListingPromotion  = typeof listingPromotions.$inferInsert;
 export type ListingPromotionPurchase       = typeof listingPromotionPurchases.$inferSelect;
 export type InsertListingPromotionPurchase = typeof listingPromotionPurchases.$inferInsert;
+export type RevenuecatWebhookEvent        = typeof revenuecatWebhookEvents.$inferSelect;
+export type InsertRevenuecatWebhookEvent  = typeof revenuecatWebhookEvents.$inferInsert;
 
 export type AdoptionListingFollow       = typeof adoptionListingFollows.$inferSelect;
 export type InsertAdoptionListingFollow = typeof adoptionListingFollows.$inferInsert;
