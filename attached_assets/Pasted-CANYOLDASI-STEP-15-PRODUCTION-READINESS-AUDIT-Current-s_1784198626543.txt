@@ -1,0 +1,215 @@
+CANYOLDASI — STEP 15
+
+PRODUCTION READINESS AUDIT
+
+Current status:
+
+RevenueCat integration completed.
+
+Webhook implemented.
+
+Promotion activation implemented.
+
+Promotion stacking implemented.
+
+Refund lifecycle implemented.
+
+Promoted listing UI implemented.
+
+Perform a COMPLETE production audit.
+
+==================================================
+
+Inspect the ENTIRE repository recursively.
+
+Audit:
+
+Authentication
+
+Authorization
+
+JWT
+
+RevenueCat
+
+Express
+
+PostgreSQL
+
+Drizzle
+
+Stripe
+
+Resend
+
+Environment variables
+
+Uploads
+
+Image handling
+
+Listing creation
+
+Listing editing
+
+Listing deletion
+
+Animal reports
+
+Map
+
+Chat
+
+Notifications
+
+Promotion
+
+Webhook
+
+Database migrations
+
+Indexes
+
+Rate limiting
+
+Security headers
+
+CORS
+
+Helmet
+
+Input validation
+
+Zod
+
+SQL Injection
+
+XSS
+
+CSRF
+
+DOS protection
+
+Password security
+
+Session lifecycle
+
+AsyncStorage
+
+Expo
+
+Native permissions
+
+Android
+
+iOS
+
+App Store
+
+Google Play
+
+==================================================
+
+Detect:
+
+security issues
+
+race conditions
+
+duplicate logic
+
+dead code
+
+memory leaks
+
+performance bottlenecks
+
+missing indexes
+
+missing validation
+
+broken ownership checks
+
+missing rate limits
+
+unsafe uploads
+
+unsafe image processing
+
+unsafe environment variables
+
+missing error handling
+
+missing retries
+
+unhandled promise rejections
+
+large rendering bottlenecks
+
+React performance issues
+
+navigation issues
+
+database transaction risks
+
+webhook risks
+
+RevenueCat risks
+
+==================================================
+
+Check App Store readiness.
+
+Check Google Play readiness.
+
+Check Expo production readiness.
+
+Check EAS build readiness.
+
+Check production environment separation.
+
+Check secrets.
+
+Check CI/CD readiness.
+
+==================================================
+
+Generate a prioritized report.
+
+Use severity:
+
+CRITICAL
+
+HIGH
+
+MEDIUM
+
+LOW
+
+Each finding must include:
+
+Problem
+
+Risk
+
+Suggested fix
+
+Estimated implementation difficulty
+
+==================================================
+
+Return:
+
+Overall production readiness score (0–100)
+
+Estimated remaining work before App Store submission
+
+Estimated remaining work before Google Play submission
+
+List all critical blockers.
+
+IMPORTANT:
+
+Do not modify the code.
+
+Only perform a deep recursive production audit.

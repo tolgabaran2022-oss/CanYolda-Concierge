@@ -113,3 +113,9 @@ id = "FmdoDr7amiZpQ0NdmxcIe"
 uri = "file://reports/canyoldasi_durum_raporu.zip"
 type = "unspecified"
 title = "CanYoldaşı Durum Raporu (.tex)"
+
+[[outputs]]
+id = "fYWkDbmqT44bdeMUFExB4"
+uri = "file://reports/canyoldasi_production_audit.zip"
+type = "unspecified"
+title = "CanYoldaşı Üretim Hazırlık Denetimi (.tex)"

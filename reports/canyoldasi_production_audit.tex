@@ -1,0 +1,529 @@
+\documentclass[12pt,a4paper]{article}
+\usepackage[utf8]{inputenc}
+\usepackage[T1]{fontenc}
+\usepackage[turkish]{babel}
+\usepackage{geometry}
+\usepackage{booktabs}
+\usepackage{longtable}
+\usepackage{array}
+\usepackage{hyperref}
+\usepackage{xcolor}
+\usepackage{titlesec}
+\usepackage{enumitem}
+\usepackage{fancyhdr}
+\usepackage{tabularx}
+\usepackage{multirow}
+\usepackage{lmodern}
+\usepackage{mdframed}
+\usepackage{tcolorbox}
+\usepackage{graphicx}
+\usepackage{amsmath}
+\usepackage{colortbl}
+
+\geometry{margin=2.2cm}
+
+% ── Renk paleti ──────────────────────────────────────────────────────────────
+\definecolor{critical}{RGB}{192, 0, 0}
+\definecolor{high}{RGB}{220, 100, 0}
+\definecolor{medium}{RGB}{180, 140, 0}
+\definecolor{low}{RGB}{60, 120, 60}
+\definecolor{primary}{RGB}{88, 56, 156}
+\definecolor{accent}{RGB}{147, 112, 219}
+\definecolor{rowgray}{RGB}{248, 248, 250}
+\definecolor{headergray}{RGB}{230, 230, 240}
+
+\hypersetup{colorlinks=true, linkcolor=primary, urlcolor=primary}
+
+\titleformat{\section}{\large\bfseries\color{primary}}{}{0em}{}[\titlerule]
+\titleformat{\subsection}{\normalsize\bfseries\color{accent}}{}{0em}{\thesubsection\ }
+
+\pagestyle{fancy}
+\fancyhf{}
+\rhead{\textcolor{gray}{\small CanYoldaşı — Üretim Hazırlık Denetimi}}
+\lhead{\textcolor{gray}{\small 16 Temmuz 2026 · GİZLİ}}
+\rfoot{\textcolor{gray}{\small \thepage}}
+\lfoot{\textcolor{gray}{\small Yalnızca iç kullanım içindir}}
+
+% ── Önem etiketi makroları ──────────────────────────────────────────────────
+\newcommand{\CRITICAL}{\colorbox{critical}{\textcolor{white}{\textbf{\small KRİTİK}}}}
+\newcommand{\HIGH}{\colorbox{high}{\textcolor{white}{\textbf{\small YÜKSEK}}}}
+\newcommand{\MEDIUM}{\colorbox{medium}{\textcolor{white}{\textbf{\small ORTA}}}}
+\newcommand{\LOW}{\colorbox{low}{\textcolor{white}{\textbf{\small DÜŞÜK}}}}
+
+\newcommand{\EASY}{\textcolor{low}{\textbf{Kolay}}}
+\newcommand{\MEDIUM_D}{\textcolor{medium}{\textbf{Orta}}}
+\newcommand{\HARD}{\textcolor{high}{\textbf{Zor}}}
+
+\tcbuselibrary{skins,breakable}
+\newtcolorbox{auditbox}[2][]{
+  colback=#2!8!white,
+  colframe=#2,
+  fonttitle=\bfseries\small,
+  title=#1,
+  breakable,
+  left=4pt, right=4pt, top=4pt, bottom=4pt
+}
+
+\begin{document}
+
+% ══════════════════════════════════════════════════════════════════════════════
+%  KAPAK
+% ══════════════════════════════════════════════════════════════════════════════
+\begin{center}
+  \vspace*{0.5em}
+  {\LARGE\bfseries\color{primary} CanYoldaşı}\\[0.4em]
+  {\Large\bfseries Üretim Hazırlık Denetimi}\\[0.3em]
+  {\normalsize\color{gray} Adım 15 — Derinlemesine Güvenlik ve Kalite Raporu}\\[0.2em]
+  {\normalsize\color{gray} 16 Temmuz 2026 · \textbf{GİZLİ — Yalnızca İç Kullanım}}
+  \vspace{0.5em}
+\end{center}
+
+% ══════════════════════════════════════════════════════════════════════════════
+%  YÖNETİCİ ÖZETİ
+% ══════════════════════════════════════════════════════════════════════════════
+\section{Yönetici Özeti}
+
+\begin{tcolorbox}[colback=primary!6!white, colframe=primary, fonttitle=\bfseries, title=Genel Üretim Hazırlık Skoru]
+\begin{center}
+  \Huge\bfseries\color{primary} 42 / 100
+\end{center}
+\vspace{0.3em}
+\begin{tabularx}{\textwidth}{lXr}
+  Kimlik Doğrulama / Yetkilendirme & & 55/100 \\
+  Güvenlik Başlıkları / CORS        & & 20/100 \\
+  Hız Sınırlama                     & & 30/100 \\
+  Girdi Doğrulama (Zod)             & & 25/100 \\
+  Veritabanı Güvenliği / Performans & & 55/100 \\
+  Ödeme Güvenliği                   & & 90/100 \\
+  Mobil Güvenlik                    & & 45/100 \\
+  App Store / Google Play Hazırlığı & & 50/100 \\
+  Performans                        & & 50/100 \\
+  Hata Yönetimi                     & & 55/100 \\
+\end{tabularx}
+\end{tcolorbox}
+
+\vspace{0.6em}
+\begin{tabularx}{\textwidth}{lX}
+  \toprule
+  \textbf{Metrik} & \textbf{Tahmin} \\
+  \midrule
+  App Store'a Kalan Süre & \textbf{4--6 hafta} (kritik engelleyiciler çözülünce) \\
+  Google Play'e Kalan Süre & \textbf{4--6 hafta} (App Store ile aynı döngü) \\
+  Kritik Engelleyici Sayısı & \textbf{5 adet} \\
+  Yüksek Öncelikli Bulgu & 7 adet \\
+  Orta Öncelikli Bulgu & 10 adet \\
+  Düşük Öncelikli Bulgu & 8 adet \\
+  \bottomrule
+\end{tabularx}
+
+% ══════════════════════════════════════════════════════════════════════════════
+%  KRİTİK ENGELLEYİCİLER
+% ══════════════════════════════════════════════════════════════════════════════
+\section{Kritik Engelleyiciler (App Store / Google Play Yayınına Engel)}
+
+\begin{auditbox}[C-1 · JWT Secret Sabit Varsayılan Değer]{critical}
+\textbf{Problem:} \texttt{JWT\_SECRET} ortam değişkeni ayarlanmamışsa sunucu \texttt{"dev-secret-change-me"} sabit değerini kullanıyor (\texttt{lib/auth.ts}). Üretim ortamında bu değer ayarlanmadan deploy edilirse tüm JWT token'ları tahmin edilebilir ve taklit edilebilir hale gelir.\\[0.3em]
+\textbf{Risk:} Herhangi bir kullanıcının hesabı tamamen ele geçirilebilir. Tüm kimlik doğrulama sistemi çöker.\\[0.3em]
+\textbf{Önerilen Düzeltme:} Sunucu başlangıcında \texttt{JWT\_SECRET} kontrolü ekle; değer yoksa süreci hata vererek durdur (\textit{fail-fast}). Replit Secrets'ta en az 64 karakter rastgele string olarak tanımla.\\[0.3em]
+\textbf{Uygulama Zorluğu:} \EASY\ (30 dakika)
+\end{auditbox}
+
+\begin{auditbox}[C-2 · RevenueCat Test Mağaza Anahtarı Üretimde Kullanılıyor]{critical}
+\textbf{Problem:} \texttt{artifacts/mobile/services/revenueCat.ts} dosyasında geliştirici uyarısı mevcut: \textit{"EXPO\_PUBLIC\_REVENUECAT\_API\_KEY currently uses the RevenueCat TEST STORE public SDK key. Before release, this MUST be replaced with platform-specific production keys."} Uygulama şu anda test mağaza anahtarıyla çalışıyor; App Store / Google Play geçiş incelemesinde reddedilir.\\[0.3em]
+\textbf{Risk:} Gerçek kullanıcı ödemeleri işlenemez. Apple / Google ödeme akışları çalışmaz.\\[0.3em]
+\textbf{Önerilen Düzeltme:} RevenueCat dashboard'undan iOS ve Android için ayrı üretim API anahtarları al. \texttt{Platform.select(\{ios: IOS\_KEY, android: ANDROID\_KEY\})} ile platforma özgü başlatma yap. EAS Secrets'a \texttt{EXPO\_PUBLIC\_REVENUECAT\_IOS\_API\_KEY} ve \texttt{EXPO\_PUBLIC\_REVENUECAT\_ANDROID\_API\_KEY} olarak ekle.\\[0.3em]
+\textbf{Uygulama Zorluğu:} \EASY\ (1 saat)
+\end{auditbox}
+
+\begin{auditbox}[C-3 · Stories Endpoint'inde Kimlik Doğrulama Atlatma]{critical}
+\textbf{Problem:} \texttt{POST /api/stories} endpoint'i \texttt{userId} değerini doğrudan \texttt{req.body}'den alıyor ve JWT token'ıyla karşılaştırmıyor. Herhangi bir kimliği doğrulanmış kullanıcı, başka bir kullanıcının \texttt{userId}'siyle hikaye gönderebilir.\\[0.3em]
+\textbf{Risk:} Kimliğe bürünme saldırısı. Bir kullanıcı, başka biri adına içerik oluşturabilir.\\[0.3em]
+\textbf{Önerilen Düzeltme:} \texttt{stories.ts} route handler'ında \texttt{userId}'yi \texttt{req.body}'den değil \texttt{extractUserId(req)} üzerinden al ve JWT ile zorunlu kıl.\\[0.3em]
+\textbf{Uygulama Zorluğu:} \EASY\ (15 dakika)
+\end{auditbox}
+
+\begin{auditbox}[C-4 · Güvenlik Başlıkları Eksik (Helmet Yok)]{critical}
+\textbf{Problem:} \texttt{app.ts} dosyasında \texttt{helmet} middleware'i yok. XSS koruması, clickjacking önleme (\texttt{X-Frame-Options}), MIME-sniffing önleme (\texttt{X-Content-Type-Options}), HSTS ve CSP başlıkları aktif değil.\\[0.3em]
+\textbf{Risk:} Tarayıcı tabanlı saldırılara açık. App Store güvenlik taramasında işaretlenebilir.\\[0.3em]
+\textbf{Önerilen Düzeltme:} \texttt{npm install helmet} ile ekle, \texttt{app.use(helmet())} olarak tüm route'lardan önce kayıt et.\\[0.3em]
+\textbf{Uygulama Zorluğu:} \EASY\ (20 dakika)
+\end{auditbox}
+
+\begin{auditbox}[C-5 · CORS Tüm Origin'lere Açık]{critical}
+\textbf{Problem:} \texttt{app.use(cors())} varsayılan yapılandırmasıyla tüm origin'lere (\texttt{*}) izin veriyor. Kötü niyetli bir web sitesi, giriş yapmış kullanıcı adına API istekleri gönderebilir.\\[0.3em]
+\textbf{Risk:} CSRF benzeri saldırı vektörü. Yetkisiz cross-origin istekleri.\\[0.3em]
+\textbf{Önerilen Düzeltme:} \texttt{cors(\{origin: [process.env.ALLOWED\_ORIGINS]\})} ile beyaz liste tanımla. Mobil app için bu genellikle Expo preview domain'i ve production domain'idir.\\[0.3em]
+\textbf{Uygulama Zorluğu:} \EASY\ (30 dakika)
+\end{auditbox}
+
+% ══════════════════════════════════════════════════════════════════════════════
+%  YÜKSEK ÖNCELİKLİ BULGULAR
+% ══════════════════════════════════════════════════════════════════════════════
+\section{Yüksek Öncelikli Bulgular}
+
+\begin{auditbox}[H-1 · JWT Token AsyncStorage'da Açık Metin Olarak Tutuluyor]{high}
+\textbf{Problem:} \texttt{AuthContext.tsx} JWT token'ı ve kullanıcı profilini \texttt{AsyncStorage}'a (\texttt{@canyoldasi:jwt}) yazıyor. Root'lanmış/jailbreak yapılmış cihazlarda diğer süreçler bu verilere erişebilir.\\[0.3em]
+\textbf{Risk:} Cihaz ele geçirilirse tüm kullanıcı oturumları çalınabilir.\\[0.3em]
+\textbf{Önerilen Düzeltme:} JWT token'ı için \texttt{expo-secure-store} kullanılmalı. Kullanıcı profil verisi (hassas olmayan) AsyncStorage'da kalabilir.\\[0.3em]
+\textbf{Uygulama Zorluğu:} \EASY\ (2 saat)
+\end{auditbox}
+
+\begin{auditbox}[H-2 · 401 Yanıtında Otomatik Çıkış Yok]{high}
+\textbf{Problem:} Mobil API istemcisinde (\texttt{AuthContext.tsx}) sunucu 401 döndürdüğünde otomatik logout veya token yenileme mekanizması yok. Süresi dolmuş token'lar sessizce hata üretir; kullanıcı anlayamaz.\\[0.3em]
+\textbf{Risk:} Kullanıcı deneyimi bozukluğu. Güvenli olmayan oturum durumu.\\[0.3em]
+\textbf{Önerilen Düzeltme:} Merkezi \texttt{apiFetch} yardımcısına 401 interceptor ekle; otomatik \texttt{logout()} çağır ve kullanıcıyı login ekranına yönlendir.\\[0.3em]
+\textbf{Uygulama Zorluğu:} \EASY\ (1.5 saat)
+\end{auditbox}
+
+\begin{auditbox}[H-3 · Beğeni/Yorum Sayaçları Transaction Dışında]{high}
+\textbf{Problem:} \texttt{feed.ts} route'unda beğeni ekleme/silme işlemi (INSERT/DELETE \texttt{feed\_likes}) ve \texttt{feed\_posts.likesCount} güncelleme ayrı sorgularda yapılıyor; ortak bir transaction içinde değil. Sunucu arızası arasında oluşursa sayaç kalıcı olarak tutarsız hale gelir.\\[0.3em]
+\textbf{Risk:} Veri tutarsızlığı. Yanlış beğeni sayıları.\\[0.3em]
+\textbf{Önerilen Düzeltme:} \texttt{db.transaction()} içine al; sayaç artırma/azaltmayı aynı transaction'da yap.\\[0.3em]
+\textbf{Uygulama Zorluğu:} \EASY\ (1 saat)
+\end{auditbox}
+
+\begin{auditbox}[H-4 · Kritik Sütunlarda Index Eksikliği]{high}
+\textbf{Problem:} Sık sorgulanan sütunlarda explicit Drizzle index tanımı yok:\\
+\texttt{userId} — feed\_posts, stories, stray\_animals, adoption\_listings, pet\_profiles\\
+\texttt{listingId} — adoption\_requests, listing\_promotions, listing\_promotion\_purchases\\
+\texttt{status} — stray\_animals, adoption\_listings, adoption\_requests\\
+\texttt{createdAt} — hemen tüm tablolar (ORDER BY için kullanılıyor)\\[0.3em]
+\textbf{Risk:} Veri büyüdükçe tam tablo taraması; ciddi performans degradasyonu.\\[0.3em]
+\textbf{Önerilen Düzeltme:} Drizzle schema'larında \texttt{index("idx\_name").on(t.column)} tanımları ekle; \texttt{executeSql} ile migrate et.\\[0.3em]
+\textbf{Uygulama Zorluğu:} \MEDIUM\_D\ (3 saat)
+\end{auditbox}
+
+\begin{auditbox}[H-5 · API Route'larında Girdi Doğrulama Neredeyse Yok]{high}
+\textbf{Problem:} Zod veya eşdeğer schema doğrulama yalnızca RevenueCat webhook handler'ında (\texttt{rcWebhook.ts}) mevcut. Diğer tüm route'lar \texttt{req.body as Record<string,string>} kalıbıyla çalışıyor; tip güvencesi yok, payload boyutu denetlenmez.\\[0.3em]
+\textbf{Risk:} Beklenmedik veri tipleri, aşırı büyük string'ler veya eksik alanlar sunucu hatalarına ya da DB kırılmalarına yol açabilir.\\[0.3em]
+\textbf{Önerilen Düzeltme:} \texttt{@workspace/api-zod} aracılığıyla her kritik endpoint için Zod şeması tanımla ve validation middleware olarak ekle. Önce kimlik doğrulama, ilan ve hayvan route'larından başla.\\[0.3em]
+\textbf{Uygulama Zorluğu:} \HARD\ (2--3 gün, kapsamlı)
+\end{auditbox}
+
+\begin{auditbox}[H-6 · Genel Hız Sınırlama Yok]{high}
+\textbf{Problem:} \texttt{POST /api/auth/login}, \texttt{POST /api/auth/register}, \texttt{POST /api/upload} endpoint'leri için hız sınırlama yok (yalnızca şifre sıfırlama kendi custom limiter'ına sahip). Brute-force login ve upload flood saldırılarına açık.\\[0.3em]
+\textbf{Risk:} Hesap kırma, servis dışı bırakma (DoS), depolama alanı tükenmesi.\\[0.3em]
+\textbf{Önerilen Düzeltme:} \texttt{express-rate-limit} ile en az login (5 deneme/15 dk) ve upload (10 istek/dk) için rate limit ekle.\\[0.3em]
+\textbf{Uygulama Zorluğu:} \EASY\ (2 saat)
+\end{auditbox}
+
+\begin{auditbox}[H-7 · Android İçin Google Maps API Anahtarı Tanımlanmamış]{high}
+\textbf{Problem:} \texttt{app.json} içinde \texttt{android.config.googleMaps.apiKey} alanı yok. Android'de üretim build'inde harita çalışmaz; Google Play incelemesinde tespit edilir.\\[0.3em]
+\textbf{Risk:} Uygulamanın temel özelliği (harita) Android'de çalışmaz.\\[0.3em]
+\textbf{Önerilen Düzeltme:} Google Cloud Console'da kısıtlanmış bir Android Maps API anahtarı oluştur, \texttt{app.json} \texttt{android.config.googleMaps.apiKey} alanına ekle.\\[0.3em]
+\textbf{Uygulama Zorluğu:} \EASY\ (1 saat)
+\end{auditbox}
+
+% ══════════════════════════════════════════════════════════════════════════════
+%  ORTA ÖNCELİKLİ BULGULAR
+% ══════════════════════════════════════════════════════════════════════════════
+\section{Orta Öncelikli Bulgular}
+
+\begin{longtable}{p{0.12\textwidth}p{0.24\textwidth}p{0.28\textwidth}p{0.24\textwidth}p{0.07\textwidth}}
+\toprule
+\textbf{ID} & \textbf{Problem} & \textbf{Risk} & \textbf{Önerilen Düzeltme} & \textbf{Zorluk} \\
+\midrule
+\endhead
+
+\rowcolor{rowgray}
+M-1 &
+FlatList büyük feed'lerde \linebreak kullanılıyor &
+Hızlı kaydırma sırasında boş alanlar, \linebreak yüksek bellek kullanımı &
+\texttt{feed.tsx} ve \texttt{animals.tsx}'te \texttt{@shopify/flash-list} kullan &
+\MEDIUM\_D \\
+
+M-2 &
+PostCard / AdoptionCard \linebreak memoize edilmemiş &
+Liste state değiştiğinde \linebreak tüm kart listesi yeniden render &
+\texttt{React.memo()} + \texttt{useCallback} \linebreak renderItem için &
+\EASY \\
+
+\rowcolor{rowgray}
+M-3 &
+Adoption request oluşturma \linebreak transactional değil &
+Eşzamanlı isteklerde \linebreak yarış durumu riski &
+delete + insert işlemlerini \linebreak \texttt{db.transaction()} içine al &
+\EASY \\
+
+M-4 &
+Pet şeması \linebreak cascade delete yok &
+Pet silinince pet\_posts, \linebreak pet\_health, pet\_followers \linebreak sahipsiz kalır &
+\texttt{pets.ts} şemasına \linebreak \texttt{.references(..., \{onDelete:"cascade"\})} ekle &
+\EASY \\
+
+\rowcolor{rowgray}
+M-5 &
+\texttt{uploadImage} fonksiyonu \linebreak 6+ ekranda tekrarlanıyor &
+Bakım zorluğu; bir ekranda hata \linebreak diğerlerinde gözden kaçar &
+Shared \texttt{utils/uploadImage.ts} \linebreak yardımcısına taşı &
+\EASY \\
+
+M-6 &
+Üretim console.log'ları \linebreak (\texttt{boost-packages.tsx}, \linebreak \texttt{animal/[id].tsx}) &
+Hassas bilgi sızıntısı; \linebreak App Store incelemesinde işaretlenebilir &
+\texttt{babel-plugin-transform-remove-console} \linebreak üretim babel config'e ekle &
+\EASY \\
+
+\rowcolor{rowgray}
+M-7 &
+Hardcoded \texttt{loremflickr.com} \linebreak avatar fallback &
+Dış CDN bağımlılığı; \linebreak servis kesilirse uygulama bozuk görünür &
+Yerel asset (\texttt{assets/images/default-avatar.png}) \linebreak kullan &
+\EASY \\
+
+M-8 &
+Konum izni reddedilince \linebreak sessiz fallback (İstanbul) &
+Yanlış hayvan konumu raporlanabilir; \linebreak kullanıcı bilgilendirilmez &
+İzin reddinde açık UI mesajı \linebreak ve "İzin Ver" butonu ekle &
+\EASY \\
+
+\rowcolor{rowgray}
+M-9 &
+Feed discover route \linebreak tüm post'ları JS'e çekiyor &
+Veri büyüdükçe bellek/ağ \linebreak performansı bozulur &
+Private profil filtrelemesini DB sorgusuna \linebreak (JOIN + WHERE) taşı &
+\MEDIUM\_D \\
+
+M-10 &
+Sosyal ve feed tablolarında \linebreak \texttt{updated\_at} yok &
+Cache invalidation için \linebreak güvenilir timestamp yok &
+Eksik tablolara \texttt{updated\_at} \linebreak sütunu ekle + migration &
+\EASY \\
+
+\bottomrule
+\end{longtable}
+
+% ══════════════════════════════════════════════════════════════════════════════
+%  DÜŞÜK ÖNCELİKLİ BULGULAR
+% ══════════════════════════════════════════════════════════════════════════════
+\section{Düşük Öncelikli Bulgular}
+
+\begin{longtable}{p{0.10\textwidth}p{0.28\textwidth}p{0.25\textwidth}p{0.26\textwidth}p{0.07\textwidth}}
+\toprule
+\textbf{ID} & \textbf{Problem} & \textbf{Risk} & \textbf{Önerilen Düzeltme} & \textbf{Zorluk} \\
+\midrule
+\endhead
+
+\rowcolor{rowgray}
+L-1 &
+\texttt{oauth\_users.email} nullable &
+Hesap bağlama tutarsızlığı &
+NOT NULL + migration &
+\EASY \\
+
+L-2 &
+\texttt{social\_profiles.username} \linebreak nullable ama ID olarak kullanılıyor &
+Olası null pointer hataları &
+NOT NULL kısıtı ekle &
+\EASY \\
+
+\rowcolor{rowgray}
+L-3 &
+Global \texttt{unhandledRejection} \linebreak listener yok &
+Yakalanmamış promise hataları \linebreak sessizce geçer &
+\texttt{index.ts}'e listener ekle \linebreak ve logla &
+\EASY \\
+
+L-4 &
+EAS config var, CI/CD yok &
+Manuel build riski &
+GitHub Actions + EAS build \linebreak pipeline kur &
+\HARD \\
+
+\rowcolor{rowgray}
+L-5 &
+Web stub (\texttt{react-native-maps.web.js}) \linebreak yalnızca geliştirme için gerekli &
+Gereksiz dosya; karmaşıklık \linebreak (gereklidir, kaldırmayın) &
+— (metro config zorunlu, \linebreak olduğu gibi bırakın) &
+— \\
+
+L-6 &
+Upload MIME sadece string \linebreak başlangıcını kontrol ediyor &
+Magic byte doğrulama yok; \linebreak kötü niyetli dosya yüklenebilir &
+\texttt{file-type} paketi ile \linebreak magic byte kontrolü ekle &
+\MEDIUM\_D \\
+
+\rowcolor{rowgray}
+L-7 &
+Bildirim izni için \linebreak explicit akış yok &
+iOS'ta sistem iletişim kutusu \linebreak görünmeyebilir &
+\texttt{expo-notifications} \linebreak \texttt{requestPermissionsAsync()} akışı kur &
+\EASY \\
+
+L-8 &
+Icon / Splash screen \linebreak asset boyutları doğrulanmadı &
+App Store 1024x1024 ve Android \linebreak adaptive icon gereksinimleri &
+Asset boyutlarını kontrol et; \linebreak App Store Connect'e yükle ve denetle &
+\EASY \\
+
+\bottomrule
+\end{longtable}
+
+% ══════════════════════════════════════════════════════════════════════════════
+%  KONU BAZLI DETAYLAR
+% ══════════════════════════════════════════════════════════════════════════════
+\section{Konu Bazlı Detaylı Değerlendirme}
+
+\subsection*{Ödeme Güvenliği (RevenueCat + Stripe)}
+
+\begin{tcolorbox}[colback=low!8!white, colframe=low, fonttitle=\bfseries, title=İyi Uygulama — Güçlü Yönler]
+\begin{itemize}[leftmargin=1em]
+  \item Atomik transaction ile verify-purchase pipeline (yarış durumu korumalı)
+  \item Sunucu tarafı \texttt{PACKAGE\_MAP} — istemci \texttt{durationDays} değerini taklit edemez
+  \item \texttt{transaction\_identifier} UNIQUE index — çift harcama önlenir
+  \item RevenueCat webhook: iki katmanlı güvenlik (Auth token + HMAC-SHA256)
+  \item 5 dakikalık imza geçerlilik penceresi
+  \item Idempotent webhook işleme (\texttt{revenuecat\_event\_id} UNIQUE)
+  \item Ledger tabanlı promosyon hesaplama (stacking-safe refund)
+\end{itemize}
+\end{tcolorbox}
+
+\subsection*{Veritabanı Performans Özeti}
+
+Kritik tablolar ve önerilen index'ler:
+
+\begin{tabularx}{\textwidth}{lXl}
+\toprule
+\textbf{Tablo} & \textbf{Eksik Index'ler} & \textbf{Öncelik} \\
+\midrule
+\texttt{feed\_posts} & \texttt{userId}, \texttt{createdAt}, \texttt{status} & Yüksek \\
+\texttt{stray\_animals} & \texttt{userId}, \texttt{status}, \texttt{createdAt} & Yüksek \\
+\texttt{adoption\_listings} & \texttt{userId}, \texttt{status}, \texttt{promotedUntil} & Yüksek \\
+\texttt{listing\_promotion\_purchases} & \texttt{listingId}, \texttt{userId}, \texttt{purchaseStatus} & Yüksek \\
+\texttt{adoption\_requests} & \texttt{listingId}, \texttt{requesterId}, \texttt{status} & Yüksek \\
+\texttt{pet\_profiles} & \texttt{userId}, \texttt{createdAt} & Orta \\
+\texttt{stories} & \texttt{userId}, \texttt{createdAt} & Orta \\
+\bottomrule
+\end{tabularx}
+
+\subsection*{Mobil Güvenlik Özeti}
+
+\begin{tabularx}{\textwidth}{lXl}
+\toprule
+\textbf{Alan} & \textbf{Durum} & \textbf{Öncelik} \\
+\midrule
+JWT depolama & AsyncStorage (şifresiz) & Yüksek \\
+401 interceptor & Yok & Yüksek \\
+Deep link koruması & Kısmi & Orta \\
+Form validasyonu & Tutarsız & Orta \\
+XSS sanitizasyon & Yok (React Native'de risk düşük) & Düşük \\
+RevenueCat üretim anahtarı & Test anahtarı kullanılıyor & \textbf{Kritik} \\
+console.log'lar & Kısmen \texttt{\_\_DEV\_\_} korumalı & Orta \\
+\bottomrule
+\end{tabularx}
+
+% ══════════════════════════════════════════════════════════════════════════════
+%  APP STORE / GOOGLE PLAY HAZIRLIK LİSTESİ
+% ══════════════════════════════════════════════════════════════════════════════
+\section{App Store / Google Play Hazırlık Kontrol Listesi}
+
+\begin{longtable}{p{0.55\textwidth}p{0.15\textwidth}p{0.25\textwidth}}
+\toprule
+\textbf{Gereksinim} & \textbf{Durum} & \textbf{Not} \\
+\midrule
+\endhead
+Bundle ID tanımlanmış & \textcolor{low}{\textbf{TAMAM}} & \texttt{com.canyoldasi.app} \\
+\rowcolor{rowgray}
+Versiyon numarası ayarlı & \textcolor{low}{\textbf{TAMAM}} & 1.0.0 \\
+iOS build numarası & \textcolor{low}{\textbf{TAMAM}} & 1.0.0.1 \\
+\rowcolor{rowgray}
+Android versionCode & \textcolor{low}{\textbf{TAMAM}} & 1 \\
+iOS izin açıklamaları (Info.plist) & \textcolor{low}{\textbf{TAMAM}} & Konum, kamera, galeri \\
+\rowcolor{rowgray}
+Android izin bildirimleri & \textcolor{low}{\textbf{TAMAM}} & Konum, kamera \\
+Privacy Manifest (iOS 17+) & \textcolor{low}{\textbf{TAMAM}} & NSUserTrackingUsageDescription mevcut \\
+\rowcolor{rowgray}
+ITSAppUsesNonExemptEncryption & \textcolor{low}{\textbf{TAMAM}} & false \\
+EAS build konfigürasyonu & \textcolor{low}{\textbf{TAMAM}} & eas.json mevcut \\
+\rowcolor{rowgray}
+RevenueCat üretim anahtarları & \textcolor{critical}{\textbf{EKSİK}} & \textbf{KRİTİK ENGELLEYICI} \\
+Google Maps API anahtarı (Android) & \textcolor{critical}{\textbf{EKSİK}} & \textbf{KRİTİK ENGELLEYICI} \\
+\rowcolor{rowgray}
+JWT Secret üretim değeri & \textcolor{critical}{\textbf{RİSKLİ}} & Varsayılan değer tehlikeli \\
+App Store 1024x1024 icon & \textcolor{medium}{\textbf{DOĞRULA}} & Boyut kontrol edilmedi \\
+\rowcolor{rowgray}
+Android adaptive icon & \textcolor{medium}{\textbf{DOĞRULA}} & Boyut kontrol edilmedi \\
+Splash screen & \textcolor{low}{\textbf{TAMAM}} & app.json'da tanımlı \\
+\rowcolor{rowgray}
+CI/CD pipeline & \textcolor{medium}{\textbf{EKSİK}} & Manuel build riski var \\
+console.log production strip & \textcolor{medium}{\textbf{EKSİK}} & Babel plugin gerekli \\
+\rowcolor{rowgray}
+Gizlilik politikası URL'si & \textcolor{medium}{\textbf{EKSİK}} & Her iki mağaza zorunlu kılıyor \\
+Kullanım koşulları URL'si & \textcolor{medium}{\textbf{EKSİK}} & Her iki mağaza zorunlu kılıyor \\
+\rowcolor{rowgray}
+Yaş derecelendirmesi & \textcolor{medium}{\textbf{DOĞRULA}} & App Store Connect'te ayarlanmalı \\
+\bottomrule
+\end{longtable}
+
+% ══════════════════════════════════════════════════════════════════════════════
+%  ÖNERİLEN ÇALIŞMA SIRASI
+% ══════════════════════════════════════════════════════════════════════════════
+\section{Önerilen Çalışma Sırası (Sprint Planı)}
+
+\begin{longtable}{p{0.08\textwidth}p{0.15\textwidth}p{0.52\textwidth}p{0.12\textwidth}}
+\toprule
+\textbf{Hafta} & \textbf{Kapsam} & \textbf{Görevler} & \textbf{Etki} \\
+\midrule
+\endhead
+
+\rowcolor{critical!10}
+1 &
+Kritik \linebreak Güvenlik &
+C-1: JWT fail-fast · C-2: RC üretim anahtarları · C-3: Stories auth bypass · C-4: Helmet · C-5: CORS kısıtla &
+\textcolor{critical}{\textbf{Kritik}} \\
+
+\rowcolor{high!10}
+2 &
+Yüksek \linebreak Güvenlik &
+H-1: expo-secure-store · H-2: 401 interceptor · H-3: Transaction'lar · H-6: Rate limiting · H-7: Google Maps key &
+\textcolor{high}{\textbf{Yüksek}} \\
+
+\rowcolor{medium!10}
+3 &
+DB \& \linebreak Performans &
+H-4: Index'ler · M-9: Feed sorgu optimizasyonu · M-10: updated\_at · M-3/M-4: Transaction/cascade &
+\textcolor{medium}{\textbf{Orta}} \\
+
+\rowcolor{medium!10}
+4 &
+Mobil \linebreak Kalite &
+M-1: FlashList · M-2: Memoization · M-5: uploadImage utils · M-6: console.log · M-7: local avatar · M-8: izin UI &
+\textcolor{medium}{\textbf{Orta}} \\
+
+\rowcolor{low!10}
+5--6 &
+Validasyon \linebreak \& Store &
+H-5: Zod validation tüm route'lar · Gizlilik politikası · Kullanım koşulları · App Store Connect metadata · EAS CI/CD &
+\textcolor{low}{\textbf{Düşük}} \\
+
+\bottomrule
+\end{longtable}
+
+% ══════════════════════════════════════════════════════════════════════════════
+%  SONUÇ
+% ══════════════════════════════════════════════════════════════════════════════
+\section{Sonuç}
+
+CanYoldaşı, ödeme güvenliği açısından (RevenueCat + Stripe entegrasyonu) endüstri standardında bir uygulama sunmaktadır. Atomik transaction'lar, HMAC doğrulama ve idempotent webhook işleme bu alanlarda güçlü bir temel oluşturmaktadır.
+
+Bununla birlikte, \textbf{5 kritik ve 7 yüksek öncelikli bulgu} App Store / Google Play yayını öncesinde giderilmesi zorunlu sorunlar içermektedir. En acil müdahale gerektiren konular şunlardır:
+
+\begin{enumerate}
+  \item \textbf{RevenueCat test anahtarının üretim anahtarıyla değiştirilmesi} — ödeme akışları çalışmaz.
+  \item \textbf{JWT Secret varsayılan değerinin kaldırılması} — tüm kimlik doğrulama sistemi açık.
+  \item \textbf{Helmet ve CORS konfigürasyonu} — temel web güvenliği eksik.
+  \item \textbf{Android Google Maps API anahtarı} — temel özellik çalışmaz.
+\end{enumerate}
+
+Bu engeller giderildikten sonra Hafta 5--6'daki validasyon ve mağaza metadata çalışmalarıyla uygulama \textbf{4--6 hafta içinde} App Store ve Google Play'de yayınlanmaya hazır hale gelebilir.
+
+\vspace{1.5em}
+\noindent\rule{\textwidth}{0.4pt}
+\begin{center}
+  \small\color{gray}
+  CanYoldaşı Üretim Hazırlık Denetimi · Adım 15 · 16 Temmuz 2026\\
+  pnpm monorepo · Expo SDK 54 · Express 5 · PostgreSQL · RevenueCat · Stripe\\
+  \textit{Bu belge otomatik analiz araçlarıyla üretilmiştir. Tüm bulgular geliştirici incelemesine tabidir.}
+\end{center}
+
+\end{document}
