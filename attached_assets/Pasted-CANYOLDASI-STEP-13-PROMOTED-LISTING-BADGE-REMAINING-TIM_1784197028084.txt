@@ -1,0 +1,504 @@
+CANYOLDASI — STEP 13
+PROMOTED LISTING BADGE + REMAINING TIME UI
+
+Current state:
+
+- RevenueCat Test Store purchase flow works
+- Backend verification and atomic activation work
+- adoption_listings.promoted_until is the single source of truth
+- Promotion stacking works
+- Duplicate transactions are idempotent
+- AdoptionContext.refresh() updates listing screens
+- Active promoted listings are already sorted before normal listings
+
+This step is ONLY for implementing the promoted listing visual state and remaining-time UX.
+
+Do not change payment logic.
+Do not change RevenueCat integration.
+Do not modify promotion duration calculations.
+Do not add webhooks yet.
+Do not redesign the entire application.
+
+==================================================
+1. AUDIT ALL LISTING UI SURFACES
+==================================================
+
+Recursively inspect the project for all adoption listing display surfaces:
+
+- Main adoption listing screen
+- All Listings
+- My Listings
+- Listing detail
+- Search results
+- Filtered results
+- Map-related listing cards if applicable
+- Featured/promoted sections
+- Preview cards
+
+Search for:
+
+promotedUntil
+promoted_until
+isPromoted
+is_promoted
+featured
+boost
+promotion
+Öne Çıkan
+İlanlarım
+adoption card
+listing card
+
+Identify all reusable listing card components.
+
+Do not add inconsistent promotion UI separately to every screen if one shared component can be used.
+
+==================================================
+2. ACTIVE PROMOTION SOURCE OF TRUTH
+==================================================
+
+A listing is actively promoted only when:
+
+promotedUntil is not null
+AND
+new Date(promotedUntil).getTime() > current server-compatible client time
+
+Do not rely on:
+
+isPromoted === true
+
+Do not permanently cache an active state after expiration.
+
+Create one shared helper such as:
+
+isListingPromoted(promotedUntil)
+
+Use it consistently.
+
+==================================================
+3. PROMOTED BADGE
+==================================================
+
+Show a premium but subtle badge only for currently active promotions.
+
+Turkish label:
+
+“Öne Çıkan”
+
+Recommended visual style:
+
+- compact pill badge
+- CanYoldasi purple/lilac brand color
+- small sparkle or lightning icon
+- high contrast text
+- not oversized
+- does not cover the animal image
+- does not conflict with favorite button, species badge, location, or status labels
+
+Keep the current CanYoldasi design system.
+
+Do not redesign listing cards.
+
+Do not use orange if the existing promoted design language is purple/lilac.
+
+==================================================
+4. BADGE PLACEMENT
+==================================================
+
+Choose one consistent placement based on the actual card layout.
+
+Preferred:
+
+Top-left or top area of listing image/card content.
+
+Avoid:
+
+- covering the animal’s face
+- overlapping favorite heart
+- overlapping image count
+- overlapping category/status chips
+- causing card height jumps
+
+Use the same visual language across all relevant listing cards.
+
+==================================================
+5. MY LISTINGS OWNER STATUS
+==================================================
+
+In “İlanlarım”, the owner should see a more informative promotion state.
+
+For active promotion show:
+
+“Öne çıkarılıyor”
+
+and remaining time.
+
+Examples:
+
+“2 gün 4 saat kaldı”
+
+“5 saat 18 dakika kaldı”
+
+“43 dakika kaldı”
+
+Do not show raw ISO date as the main label.
+
+Optionally show expiration date as secondary information if the current UI has room.
+
+==================================================
+6. REMAINING TIME FORMATTER
+==================================================
+
+Create one reusable formatter.
+
+Recommended output rules:
+
+More than or equal to 1 day:
+“2 gün 4 saat kaldı”
+
+Less than 1 day and more than or equal to 1 hour:
+“5 saat 18 dakika kaldı”
+
+Less than 1 hour:
+“43 dakika kaldı”
+
+Less than or equal to 0:
+promotion is expired
+
+Do not show negative time.
+
+Do not show:
+
+“-2 dakika”
+
+Do not use vague labels when a real remaining timestamp exists.
+
+==================================================
+7. COUNTDOWN UPDATE STRATEGY
+==================================================
+
+Do not trigger a full application re-render every second.
+
+Use an efficient update strategy.
+
+Recommended:
+
+- minute-level updates for remaining time labels
+- recalculate when screen gains focus
+- recalculate after app returns from background
+- recalculate after promotion purchase success
+- clean up timers on unmount
+
+Do not create one unmanaged interval per card for large lists.
+
+Prefer a shared current-time tick or parent-level minute update.
+
+==================================================
+8. AUTOMATIC EXPIRATION IN UI
+==================================================
+
+When promoted_until passes:
+
+- remove “Öne Çıkan” badge automatically
+- remove remaining time label
+- listing becomes normal without app restart
+- no negative countdown
+- no stale promoted state
+
+Since backend sorting already uses promoted_until, refresh relevant data when needed.
+
+However, active-state rendering must also be derived locally from the timestamp so the badge disappears on time.
+
+==================================================
+9. LISTING DETAIL SCREEN
+==================================================
+
+On the listing detail screen, if the listing is active promoted:
+
+Show a small “Öne Çıkan İlan” indicator.
+
+For the listing owner only, show remaining time in the owner action area.
+
+Do not expose purchase transaction details.
+
+Do not show package product IDs.
+
+==================================================
+10. EXPIRED PROMOTION STATE
+==================================================
+
+For expired promotions:
+
+Public viewers:
+No promoted badge.
+
+Listing owner:
+Do not show active countdown.
+
+If the existing “Öne Çıkar” action exists, it should become available again.
+
+Do not set promoted_until to null from the client merely because it expired.
+
+The timestamp may remain as audit/history data.
+
+==================================================
+11. PROMOTION BUTTON STATE
+==================================================
+
+In “İlanlarım”:
+
+If promotion is active, the owner can still purchase another package because stacking is supported.
+
+The CTA may say:
+
+“Öne Çıkarmayı Uzat”
+
+instead of:
+
+“Öne Çıkar”
+
+If promotion is not active:
+
+“Öne Çıkar”
+
+Use actual promotedUntil state.
+
+Do not disable repurchase while active.
+
+==================================================
+12. SUCCESS REFRESH
+==================================================
+
+After successful backend activation:
+
+- refresh adoption data
+- update badge immediately
+- update remaining time immediately
+- change CTA to “Öne Çıkarmayı Uzat”
+- avoid requiring navigation away and back
+
+Use the existing AdoptionContext.refresh() or the actual state architecture.
+
+==================================================
+13. ACCESSIBILITY
+==================================================
+
+Add accessible labels.
+
+Examples:
+
+“Öne çıkan ilan”
+
+“Promosyonun bitmesine 2 gün 4 saat kaldı”
+
+Do not rely only on color.
+
+The badge text must be readable with adequate contrast.
+
+==================================================
+14. TYPESCRIPT
+==================================================
+
+Use typed helpers.
+
+Avoid:
+
+any
+@ts-ignore
+duplicated date parsing logic
+non-null assertions without validation
+
+Handle:
+
+null
+undefined
+invalid date strings
+
+Invalid promotedUntil must safely behave as not promoted.
+
+==================================================
+15. PERFORMANCE AUDIT
+==================================================
+
+Test with:
+
+- 10 listings
+- 50 listings
+- 100 listings
+
+Ensure:
+
+- no interval per card
+- no unnecessary network requests every minute
+- no list scroll lag
+- no excessive context refresh
+- no date parsing crash
+
+Memoize reusable computations where appropriate, but do not overcomplicate.
+
+==================================================
+16. FUNCTIONAL TESTS
+==================================================
+
+TEST 1:
+
+Listing promoted until tomorrow.
+
+Expected:
+Public card shows “Öne Çıkan”.
+
+TEST 2:
+
+Owner opens My Listings.
+
+Expected:
+“Öne çıkarılıyor”
+and remaining time.
+
+TEST 3:
+
+Promotion has 2 days 4 hours remaining.
+
+Expected:
+“2 gün 4 saat kaldı”.
+
+TEST 4:
+
+Promotion has 45 minutes remaining.
+
+Expected:
+“45 dakika kaldı”.
+
+TEST 5:
+
+Promotion expires while screen remains open.
+
+Expected:
+Badge disappears automatically.
+No negative countdown.
+
+TEST 6:
+
+Expired promotion.
+
+Expected:
+Normal listing appearance.
+CTA says “Öne Çıkar”.
+
+TEST 7:
+
+Active promotion.
+
+Expected:
+CTA says “Öne Çıkarmayı Uzat”.
+
+TEST 8:
+
+Owner purchases another package while active.
+
+Expected:
+Expiration extends.
+Remaining time refreshes.
+
+TEST 9:
+
+Invalid promotedUntil string.
+
+Expected:
+No crash.
+Treated as not promoted.
+
+TEST 10:
+
+Large listing list.
+
+Expected:
+No one-interval-per-card performance issue.
+
+==================================================
+17. DO NOT IMPLEMENT YET
+==================================================
+
+Do not implement:
+
+- RevenueCat webhooks
+- refunds/revocations
+- App Store production products
+- Google Play production products
+- promotion analytics
+- admin promotion tools
+- push notifications before expiry
+- payment history screen
+
+==================================================
+18. FINAL RECURSIVE AUDIT
+==================================================
+
+Search again for:
+
+isPromoted
+is_promoted
+promotedUntil
+promoted_until
+Öne Çıkan
+Öne çıkarılıyor
+Öne Çıkarmayı Uzat
+setInterval
+countdown
+remainingTime
+
+Confirm:
+
+- promotedUntil is the source of truth
+- expired badges disappear
+- no negative countdown
+- no interval per card
+- shared formatter is used
+- public and owner views are consistent
+- active promotions can be extended
+- no payment logic was changed
+- TypeScript passes
+
+==================================================
+19. FINAL REPORT
+==================================================
+
+Return the report in Turkish using exactly these headings:
+
+1. PROMOTED BADGE UYGULAMASI
+
+2. ACTIVE PROMOTION HESAPLAMA MANTIĞI
+
+3. KALAN SÜRE FORMATTER
+
+4. COUNTDOWN UPDATE STRATEJİSİ
+
+5. İLANLARIM OWNER UX
+
+6. İLAN DETAY UX
+
+7. EXPIRED PROMOTION DAVRANIŞI
+
+8. ÖNE ÇIKAR / ÖNE ÇIKARMAYI UZAT CTA
+
+9. PERFORMANS KORUMALARI
+
+10. DEĞİŞTİRİLEN DOSYALAR
+
+11. TYPESCRIPT / LINT / BUILD SONUCU
+
+12. GERÇEKTEN TEST EDİLEN SENARYOLAR
+
+13. TEST EDİLEMEYEN SENARYOLAR
+
+14. WEBHOOK AŞAMASINA HAZIRLIK
+
+IMPORTANT:
+
+Do not only describe the UI.
+
+Inspect the real components and implement the promoted badge and remaining-time behavior.
+
+Run TypeScript and relevant checks.
+
+Do not claim device execution if it was not actually performed.

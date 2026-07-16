@@ -25,6 +25,7 @@ import { apiCheckAdoptionRequest } from "@/lib/adoptionRequestsApi";
 import { useBoost } from "@/contexts/BoostContext";
 import { useTheme } from "@/hooks/useTheme";
 import { formatTimeAgo } from "@/utils/formatters";
+import { formatRemainingTime, isListingPromoted } from "@/utils/promotionHelpers";
 import { apiGetContactPrefs, apiRevealPhone, type ContactPrefs } from "@/lib/contactApi";
 import { apiGetOrCreateConversation } from "@/lib/messagesApi";
 import {
@@ -58,15 +59,19 @@ const BTN_SHADOW = Platform.select({
 });
 
 // ── Helpers ───────────────────────────────────────────────────────────────────
-function BoostBadge({ expiresAt, packageHours }: { expiresAt: string; packageHours: number }) {
-  const remaining = new Date(expiresAt).getTime() - Date.now();
-  const hoursLeft = Math.max(0, Math.floor(remaining / 3_600_000));
-  const minutesLeft = Math.max(0, Math.floor((remaining % 3_600_000) / 60_000));
+function BoostBadge({ promotedUntil }: { promotedUntil: string }) {
+  const [now, setNow] = useState(() => new Date());
+  useEffect(() => {
+    const id = setInterval(() => setNow(new Date()), 60_000);
+    return () => clearInterval(id);
+  }, []);
+  const label = formatRemainingTime(promotedUntil, now);
+  if (!label) return null;
   return (
-    <View style={S.boostBadge}>
-      <LinearGradient colors={["#FFB347", "#E07A35"]} style={S.boostGrad}>
-        <Icon name="star" size={12} color={WHITE} />
-        <Text style={S.boostTxt}>Öne Çıkan · {hoursLeft > 0 ? `${hoursLeft}s ` : ""}{minutesLeft}dk kaldı</Text>
+    <View style={S.boostBadge} accessibilityLabel={`Öne çıkan ilan — ${label}`}>
+      <LinearGradient colors={[P2, DARK]} start={{ x: 0, y: 0 }} end={{ x: 1, y: 1 }} style={S.boostGrad}>
+        <Icon name="sparkles" size={12} color={WHITE} />
+        <Text style={S.boostTxt}>Öne Çıkan · {label}</Text>
       </LinearGradient>
     </View>
   );
@@ -356,9 +361,9 @@ export default function AdoptionDetailScreen() {
               </View>
             </View>
 
-            {/* Boost badge */}
-            {boost?.isFeatured && boost.expiresAt && (
-              <BoostBadge expiresAt={boost.expiresAt} packageHours={boost.packageHours ?? 24} />
+            {/* Boost badge — source of truth: listing.promotedUntil */}
+            {isListingPromoted(listing.promotedUntil) && (
+              <BoostBadge promotedUntil={listing.promotedUntil!} />
             )}
 
             {/* Quick stats */}
@@ -483,6 +488,40 @@ export default function AdoptionDetailScreen() {
                     </View>
                     <Icon name="chevron-forward" size={16} color={`${P}80`} />
                   </View>
+                </Pressable>
+
+                {/* Boost / extend boost button — always available for active listings */}
+                <Pressable
+                  style={({ pressed }) => [S.boostBtn, { opacity: pressed ? 0.88 : 1 }]}
+                  onPress={handleBoost}
+                  accessibilityRole="button"
+                  accessibilityLabel={
+                    isListingPromoted(listing.promotedUntil)
+                      ? "Öne çıkarmayı uzat"
+                      : "İlanı öne çıkar"
+                  }
+                >
+                  <LinearGradient
+                    colors={[P2, DARK]}
+                    start={{ x: 0, y: 0 }}
+                    end={{ x: 1, y: 1 }}
+                    style={S.boostBtnGrad}
+                  >
+                    <Icon name="sparkles" size={22} color={WHITE} />
+                    <View style={{ flex: 1 }}>
+                      <Text style={S.boostBtnTitle}>
+                        {isListingPromoted(listing.promotedUntil)
+                          ? "Öne Çıkarmayı Uzat"
+                          : "İlanı Öne Çıkar"}
+                      </Text>
+                      <Text style={S.boostBtnSub}>
+                        {isListingPromoted(listing.promotedUntil)
+                          ? "Mevcut promosyona ek süre ekle"
+                          : "Daha fazla kişiye ulaş, daha hızlı sahiplendir!"}
+                      </Text>
+                    </View>
+                    <Icon name="chevron-forward" size={16} color="rgba(255,255,255,0.7)" />
+                  </LinearGradient>
                 </Pressable>
 
                 <Pressable

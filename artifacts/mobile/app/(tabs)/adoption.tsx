@@ -36,6 +36,7 @@ import { useAuth } from "@/contexts/AuthContext";
 import { useBoost, type BoostPackage } from "@/contexts/BoostContext";
 import { useTheme } from "@/hooks/useTheme";
 import { formatTimeAgo } from "@/utils/formatters";
+import { isListingPromoted, formatRemainingTime, useNow } from "@/utils/promotionHelpers";
 import { apiFetchNotifications } from "@/lib/socialApi";
 import { apiGetConversations, type ApiConversation } from "@/lib/messagesApi";
 
@@ -385,13 +386,16 @@ const fc = StyleSheet.create({
 // ── Listing card ──────────────────────────────────────────────────────────────
 const IMG_H = 148;
 
-function ListingCard({ listing, isFeatured, featuredUntil }: { listing: AdoptionListing; isFeatured?: boolean; featuredUntil?: string | null }) {
+function ListingCard({ listing }: { listing: AdoptionListing }) {
   const T = useTheme();
   const router = useRouter();
   const { isFollowed, followListing, unfollowListing } = useAdoption();
   const { user } = useAuth();
   const [imgError, setImgError] = useState(false);
   const [followLoading, setFollowLoading] = useState(false);
+
+  /* Derived from promotedUntil — single source of truth; no BoostContext needed */
+  const isFeatured = isListingPromoted(listing.promotedUntil);
 
   const liked = isFollowed(listing.id);
 
@@ -857,15 +861,7 @@ const STATUS_CFG: Record<ListStatus, { color: string; bg: string; icon: string }
   "Süresi Doldu":    { color: "#DC2626", bg: "#FEE2E2",    icon: "close-circle-outline" },
 };
 
-function remainingTime(expiresAt: string): string {
-  const diff = new Date(expiresAt).getTime() - Date.now();
-  if (diff <= 0) return "Süre doldu";
-  const hours = Math.floor(diff / 3_600_000);
-  if (hours < 24) return `${hours}s kaldı`;
-  const days = Math.floor(hours / 24);
-  const remH = hours % 24;
-  return remH > 0 ? `${days}g ${remH}s kaldı` : `${days}g kaldı`;
-}
+/* remainingTime replaced by formatRemainingTime from @/utils/promotionHelpers */
 
 function mockViews(id: string): number {
   let h = 0;
@@ -897,7 +893,7 @@ interface MyCard {
 
 function MyListingCard({
   card, onEdit, onTogglePassive, onAdopted, onPreview, onDelete,
-  onBoost, isFeatured, featuredUntil, packageName,
+  onBoost, now,
 }: {
   card: MyCard;
   onEdit: () => void;
@@ -906,9 +902,7 @@ function MyListingCard({
   onPreview: () => void;
   onDelete: () => void;
   onBoost: () => void;
-  isFeatured?: boolean;
-  featuredUntil?: string | null;
-  packageName?: string | null;
+  now: Date;
 }) {
   const T = useTheme();
   const { listing, status, views, favs, msgs } = card;
@@ -917,7 +911,11 @@ function MyListingCard({
   const [imgError, setImgError] = useState(false);
 
   const isAdopted = status === "Sahiplendirildi";
-  const canBoost  = status === "Aktif" && !isFeatured;
+  /* Stacking is allowed — owner may always extend an active promotion */
+  const canBoost  = status === "Aktif";
+  /* Derived from promotedUntil — single source of truth */
+  const isFeatured = isListingPromoted(listing.promotedUntil, now);
+  const remainingLabel = isFeatured ? formatRemainingTime(listing.promotedUntil, now) : null;
 
   return (
     <View style={ml.cardOuter}>
@@ -958,13 +956,20 @@ function MyListingCard({
 
         <View style={ml.content}>
           {isFeatured && (
-            <View style={ml.featuredBannerInner}>
-              <Icon name="star" size={12} color={P} />
-              <Text style={ml.featuredBannerTxt}>{packageName ? `${packageName} · ÖNE ÇIKAN` : "ÖNE ÇIKAN · Aktif"}</Text>
-              {featuredUntil && (
+            <View
+              style={ml.featuredBannerInner}
+              accessibilityLabel={
+                remainingLabel
+                  ? `Öne çıkarılıyor — promosyonun bitmesine ${remainingLabel}`
+                  : "Öne çıkarılıyor"
+              }
+            >
+              <Icon name="sparkles" size={12} color={P} />
+              <Text style={ml.featuredBannerTxt}>Öne çıkarılıyor</Text>
+              {remainingLabel && (
                 <View style={ml.featuredTimeChip}>
                   <Icon name="time-outline" size={10} color={P} />
-                  <Text style={ml.featuredTimeTxt}>{remainingTime(featuredUntil)}</Text>
+                  <Text style={ml.featuredTimeTxt}>{remainingLabel}</Text>
                 </View>
               )}
             </View>
@@ -1039,14 +1044,29 @@ function MyListingCard({
                   <Icon name="rocket-outline" size={18} color={P} />
                 </View>
                 <View style={ml.promoteTextWrap}>
-                  <Text style={ml.promoteTitle}>İlanını öne çıkar</Text>
-                  <Text style={ml.promoteSub}>Daha fazla kişiye ulaş, daha hızlı sahiplendir!</Text>
+                  {isFeatured ? (
+                    <>
+                      <Text style={ml.promoteTitle}>Süreyi uzat</Text>
+                      <Text style={ml.promoteSub}>Mevcut promosyona ek süre ekle!</Text>
+                    </>
+                  ) : (
+                    <>
+                      <Text style={ml.promoteTitle}>İlanını öne çıkar</Text>
+                      <Text style={ml.promoteSub}>Daha fazla kişiye ulaş, daha hızlı sahiplendir!</Text>
+                    </>
+                  )}
                 </View>
               </View>
-              <Pressable onPress={() => { Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light); onBoost(); }}>
+              <Pressable
+                onPress={() => { Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light); onBoost(); }}
+                accessibilityRole="button"
+                accessibilityLabel={isFeatured ? "Öne çıkarmayı uzat" : "İlanı öne çıkar"}
+              >
                 <LinearGradient colors={[P2, P]} start={{ x: 0, y: 0 }} end={{ x: 1, y: 0 }} style={ml.promoteBtnGrad}>
                   <Icon name="sparkles" size={13} color={WHITE} />
-                  <Text style={ml.promoteBtnTxt}>Öne Çıkar</Text>
+                  <Text style={ml.promoteBtnTxt}>
+                    {isFeatured ? "Öne Çıkarmayı Uzat" : "Öne Çıkar"}
+                  </Text>
                 </LinearGradient>
               </Pressable>
             </View>
@@ -1084,6 +1104,8 @@ function MyListingsSection({
   const T = useTheme();
   const { fetchBoostStatus } = useBoost();
   const router = useRouter();
+  /* Single minute-level tick for all cards — no per-card interval */
+  const now = useNow(60_000);
 
   const [successModal, setSuccessModal] = useState<{ petName: string; pkgLabel: string; expiresAt: string } | null>(null);
 
@@ -1198,9 +1220,7 @@ function MyListingsSection({
         <MyListingCard
           key={c.listing.id}
           card={c}
-          isFeatured={(c.listing.isFeatured || boostStatuses[c.listing.id]?.isFeatured) ?? false}
-          featuredUntil={boostStatuses[c.listing.id]?.expiresAt ?? c.listing.featuredUntil ?? null}
-          packageName={boostStatuses[c.listing.id]?.packageName ?? c.listing.featuredPackageName ?? null}
+          now={now}
           onEdit={() => { Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light); router.push(`/adoption/edit/${c.listing.id}` as any); }}
           onTogglePassive={() => togglePassive(c.listing.id)}
           onAdopted={() => handleAdopted(c.listing.id, c.listing.petName)}
@@ -1360,12 +1380,12 @@ export default function AdoptionScreen() {
 
   const sorted = useMemo(() => {
     return [...listings].sort((a, b) => {
-      const af = (a.isFeatured || boostStatuses[a.id]?.isFeatured) ? 1 : 0;
-      const bf = (b.isFeatured || boostStatuses[b.id]?.isFeatured) ? 1 : 0;
+      const af = isListingPromoted(a.promotedUntil) ? 1 : 0;
+      const bf = isListingPromoted(b.promotedUntil) ? 1 : 0;
       if (bf !== af) return bf - af;
       return new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime();
     });
-  }, [listings, boostStatuses]);
+  }, [listings]);
 
   const filtered = useMemo(() => {
     let list = sorted;
@@ -1457,11 +1477,7 @@ export default function AdoptionScreen() {
             data={filtered}
             keyExtractor={(item) => item.id}
             renderItem={({ item }) => (
-              <ListingCard
-                listing={item}
-                isFeatured={boostStatuses[item.id]?.isFeatured ?? false}
-                featuredUntil={boostStatuses[item.id]?.expiresAt ?? null}
-              />
+              <ListingCard listing={item} />
             )}
             contentContainerStyle={{ paddingTop: 2, paddingBottom: botPad + 24 }}
             showsVerticalScrollIndicator={false}

@@ -3,10 +3,16 @@ import { Image } from "expo-image";
 import { useRouter } from "expo-router";
 import React from "react";
 import { Pressable, StyleSheet, Text, View } from "react-native";
+import { LinearGradient } from "expo-linear-gradient";
 import type { AdoptionListing } from "@/contexts/AdoptionContext";
-import { useBoost } from "@/contexts/BoostContext";
 import { useColors } from "@/hooks/useColors";
 import { formatTimeAgo } from "@/utils/formatters";
+import { isListingPromoted } from "@/utils/promotionHelpers";
+
+const P    = "#7C4DCC";
+const P2   = "#A480D8";
+const DARK = "#4B267D";
+const WHITE = "#FFFFFF";
 
 interface Props {
   listing: AdoptionListing;
@@ -15,9 +21,9 @@ interface Props {
 export function AdoptionCard({ listing }: Props) {
   const colors = useColors();
   const router = useRouter();
-  const { boostStatuses } = useBoost();
-  const boost = boostStatuses[listing.id];
-  const isFeatured = boost?.isFeatured ?? false;
+
+  /* Single source of truth — derived from listing.promotedUntil timestamp */
+  const isActive = isListingPromoted(listing.promotedUntil);
 
   return (
     <Pressable
@@ -25,18 +31,30 @@ export function AdoptionCard({ listing }: Props) {
         styles.card,
         {
           backgroundColor: colors.card,
-          borderColor: isFeatured ? "#E07A35" : colors.border,
-          borderWidth: isFeatured ? 1.5 : 1,
+          borderColor: isActive ? P : colors.border,
+          borderWidth: isActive ? 1.5 : 1,
           opacity: pressed ? 0.92 : 1,
         },
       ]}
       onPress={() => router.push(`/adoption/${listing.id}` as const)}
+      accessibilityRole="button"
+      accessibilityLabel={
+        isActive
+          ? `${listing.petName} — öne çıkan ilan`
+          : `${listing.petName} ilanı`
+      }
     >
-      {isFeatured && (
-        <View style={styles.featuredBanner}>
-          <Icon name="star" size={11} color="white" />
+      {isActive && (
+        <LinearGradient
+          colors={[P2, DARK]}
+          start={{ x: 0, y: 0 }}
+          end={{ x: 1, y: 1 }}
+          style={styles.featuredBanner}
+          accessibilityLabel="Öne çıkan ilan"
+        >
+          <Icon name="sparkles" size={11} color={WHITE} />
           <Text style={styles.featuredText}>Öne Çıkan</Text>
-        </View>
+        </LinearGradient>
       )}
 
       {listing.photo ? (
@@ -79,11 +97,7 @@ export function AdoptionCard({ listing }: Props) {
         </Text>
         <View style={styles.footer}>
           <View style={styles.locationRow}>
-            <Icon
-              name="location-outline"
-              size={12}
-              color={colors.mutedForeground}
-            />
+            <Icon name="location-outline" size={12} color={colors.mutedForeground} />
             <Text style={[styles.location, { color: colors.mutedForeground }]}>
               {listing.location}
             </Text>
@@ -108,14 +122,13 @@ const styles = StyleSheet.create({
     flexDirection: "row",
     alignItems: "center",
     gap: 5,
-    backgroundColor: "#E07A35",
     paddingHorizontal: 12,
     paddingVertical: 5,
   },
   featuredText: {
     fontSize: 12,
     fontFamily: "Inter_700Bold",
-    color: "white",
+    color: WHITE,
     letterSpacing: 0.3,
   },
   image: {
