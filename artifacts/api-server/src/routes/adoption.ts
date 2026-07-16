@@ -169,7 +169,18 @@ async function seedIfEmpty() {
 router.get("/adoption", async (req, res) => {
   try {
     await seedIfEmpty();
-    const listings = await db.select().from(adoptionListings).orderBy(desc(adoptionListings.createdAt));
+    /* DB-level promoted-first ordering:
+     * 1. CASE WHEN → 0 for active promo, 1 for normal/expired (ASC = promoted first)
+     * 2. Among promoted: latest expiry first (NULLS LAST covers non-promoted rows)
+     * 3. Among non-promoted: newest created_at first
+     * 4. Stable ID tiebreaker (deterministic across equal timestamps)
+     */
+    const listings = await db.select().from(adoptionListings).orderBy(
+      sql`CASE WHEN ${adoptionListings.promotedUntil} IS NOT NULL AND ${adoptionListings.promotedUntil} > NOW() THEN 0 ELSE 1 END`,
+      sql`CASE WHEN ${adoptionListings.promotedUntil} IS NOT NULL AND ${adoptionListings.promotedUntil} > NOW() THEN ${adoptionListings.promotedUntil} ELSE NULL END DESC NULLS LAST`,
+      desc(adoptionListings.createdAt),
+      desc(adoptionListings.id)
+    );
 
     if (!listings.length) {
       res.json([]);
@@ -227,6 +238,11 @@ router.get("/adoption", async (req, res) => {
       promotedUntil:       l.promotedUntil?.toISOString() ?? null,
     }));
 
+    /* Secondary JS sort: re-applies the same promoted-first rule after isFeatured
+     * enrichment (accounts for legacy listing_promotions entries where promoted_until
+     * may be null but the listing_promotions row is still active).
+     * DB sort already handles the promoted_until case; this pass catches the
+     * listing_promotions fallback and adds a stable id tiebreaker. */
     enriched.sort((a, b) => {
       const af = a.isFeatured ? 0 : 1;
       const bf = b.isFeatured ? 0 : 1;
@@ -236,7 +252,9 @@ router.get("/adoption", async (req, res) => {
         const be = activePromos[b.id]?.expiresAt?.getTime() ?? 0;
         if (be !== ae) return be - ae;
       }
-      return (b.createdAt?.getTime() ?? 0) - (a.createdAt?.getTime() ?? 0);
+      const cd = (b.createdAt?.getTime() ?? 0) - (a.createdAt?.getTime() ?? 0);
+      if (cd !== 0) return cd;
+      return a.id < b.id ? -1 : 1;
     });
 
     res.json(enriched);

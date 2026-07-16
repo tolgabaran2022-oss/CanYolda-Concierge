@@ -1,4 +1,4 @@
-import { boolean, integer, pgTable, real, text, timestamp, unique } from "drizzle-orm/pg-core";
+import { boolean, index, integer, pgTable, real, text, timestamp, unique } from "drizzle-orm/pg-core";
 import { sql } from "drizzle-orm";
 
 export const strayAnimals = pgTable("stray_animals", {
@@ -78,7 +78,15 @@ export const adoptionListings = pgTable("adoption_listings", {
   promotedUntil:      timestamp("promoted_until", { withTimezone: true }),
   createdAt:          timestamp("created_at", { withTimezone: true }).defaultNow(),
   updatedAt:          timestamp("updated_at", { withTimezone: true }).defaultNow(),
-});
+}, (t) => [
+  /* Partial index on promoted listings ordered by expiry + created_at.
+   * PostgreSQL uses this for bitmap heap scans when filtering active promotions.
+   * The CASE WHEN ORDER BY expression itself is not indexable (NOW() is not
+   * immutable), but this index accelerates the secondary sort within the
+   * promoted subset and the non-promoted created_at fallback.
+   * Materialized with executeSql — drizzle-kit push not required here. */
+  index("idx_adoption_listings_promo_sort").on(t.promotedUntil, t.createdAt, t.id),
+]);
 
 export const adoptionRequests = pgTable("adoption_requests", {
   id:             text("id").primaryKey().default(sql`gen_random_uuid()::text`),

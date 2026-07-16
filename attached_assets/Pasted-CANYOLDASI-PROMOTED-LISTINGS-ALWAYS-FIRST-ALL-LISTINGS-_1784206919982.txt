@@ -1,0 +1,455 @@
+CANYOLDASI — PROMOTED LISTINGS ALWAYS FIRST
+ALL LISTINGS SORTING FIX
+
+Current promotion system:
+
+- adoption_listings.promoted_until is the single source of truth
+- A promotion is active only when:
+  promoted_until IS NOT NULL
+  AND promoted_until > now()
+- RevenueCat purchase flow and backend promotion activation already exist
+- Promoted badge and countdown already exist
+
+Implement production-safe sorting so actively promoted listings are ALWAYS shown before regular listings on the “Tüm İlanlar” page.
+
+Do not redesign the page.
+Do not change payment logic.
+Do not change promotion duration.
+Do not use is_promoted as the primary source of truth.
+
+==================================================
+1. AUDIT THE CURRENT ALL LISTINGS DATA FLOW
+==================================================
+
+Recursively inspect:
+
+- Tüm İlanlar page
+- adoption listing endpoint
+- adoption context
+- listing query
+- pagination
+- filters
+- search
+- sort controls
+- promoted_until
+- promotedUntil
+- created_at
+- updated_at
+
+Find the exact backend query that supplies the “Tüm İlanlar” page.
+
+Do not fix this only by sorting the currently visible client array.
+
+The primary ordering must be performed by the backend/database query.
+
+==================================================
+2. ACTIVE PROMOTED LISTING RULE
+==================================================
+
+A listing is actively promoted only when:
+
+promoted_until IS NOT NULL
+AND promoted_until > CURRENT_TIMESTAMP
+
+Expired promotions must be treated exactly like normal listings.
+
+Do not use:
+
+is_promoted = true
+
+as the deciding condition.
+
+==================================================
+3. REQUIRED SORT ORDER
+==================================================
+
+The “Tüm İlanlar” query must return listings in this order:
+
+FIRST:
+All actively promoted listings
+
+THEN:
+All regular or expired listings
+
+Recommended ordering:
+
+ORDER BY
+  CASE
+    WHEN promoted_until IS NOT NULL
+      AND promoted_until > CURRENT_TIMESTAMP
+    THEN 0
+    ELSE 1
+  END ASC,
+
+  CASE
+    WHEN promoted_until IS NOT NULL
+      AND promoted_until > CURRENT_TIMESTAMP
+    THEN promoted_until
+  END DESC,
+
+  created_at DESC
+
+Equivalent Drizzle ORM logic may be used.
+
+Expected behavior:
+
+- active promoted listings always appear above regular listings
+- expired promoted listings automatically return to normal order
+- among promoted listings, use one deterministic rule
+- among regular listings, newest first
+
+Preferred rule among active promoted listings:
+
+latest promotion expiration first
+
+If the existing business rule already uses promotion activation time or another deterministic promoted ordering, preserve it consistently and explain it.
+
+==================================================
+4. FILTERS MUST PRESERVE PROMOTION PRIORITY
+==================================================
+
+Promotion priority must continue to work when the user applies:
+
+- animal type filter
+- city/location filter
+- gender filter
+- age filter
+- vaccination filter
+- search query
+- category filter
+- any other existing filter
+
+Correct flow:
+
+WHERE filters
+THEN promoted-first ordering
+
+Do not fetch all listings, sort globally, and then filter client-side.
+
+==================================================
+5. PAGINATION — CRITICAL
+==================================================
+
+Audit whether the page uses:
+
+- offset pagination
+- page number pagination
+- cursor pagination
+- infinite scroll
+
+Promoted-first ordering must work across the entire result set.
+
+Example:
+
+There are 30 promoted listings and page size is 20.
+
+Page 1:
+first 20 promoted listings
+
+Page 2:
+remaining 10 promoted listings
+then regular listings
+
+Do not merely inject promoted listings into the first loaded page.
+
+Do not duplicate a promoted listing across pages.
+
+Use a stable deterministic secondary order, including ID if needed.
+
+Example stable order:
+
+active promotion status
+promoted_until DESC
+created_at DESC
+id DESC
+
+==================================================
+6. CLIENT-SIDE SORTING
+==================================================
+
+Audit AdoptionContext and the “Tüm İlanlar” screen for additional client sorting.
+
+Remove or fix any client logic that overrides backend promoted-first order.
+
+Examples of conflicting client sorting:
+
+listings.sort((a, b) => newestFirst)
+
+sort by createdAt after API response
+
+reversing the list
+
+merging cached arrays incorrectly
+
+Client may preserve backend order, but must not reorder promoted listings below normal listings.
+
+==================================================
+7. REFRESH AFTER PURCHASE
+==================================================
+
+After a promotion purchase succeeds:
+
+- AdoptionContext.refresh() must run
+- “Tüm İlanlar” must immediately show the promoted listing at the top
+- user should not need to restart the app
+- user should not need to manually refresh
+
+If current cache logic appends the refreshed listing instead of replacing/reordering it, fix it.
+
+==================================================
+8. AUTOMATIC EXPIRATION
+==================================================
+
+When promoted_until expires:
+
+- the listing must no longer be treated as promoted
+- on the next API fetch it returns to normal ordering
+- the badge disappears
+- no database cron job is required only for ordering
+- do not permanently set is_promoted true
+
+If the screen remains open through expiration, trigger a lightweight refresh at an appropriate time or when the screen regains focus.
+
+Do not poll the backend every second.
+
+==================================================
+9. MULTIPLE PROMOTED LISTINGS
+==================================================
+
+Test multiple promoted listings.
+
+Example:
+
+Listing A:
+promoted_until = tomorrow
+
+Listing B:
+promoted_until = 7 days later
+
+Listing C:
+normal
+
+Expected with preferred rule:
+
+B
+A
+C
+
+All promoted listings remain above every regular listing.
+
+Do not guarantee that one purchased listing stays literally position #1 forever if another valid promoted listing has a higher promoted ordering priority.
+
+The business guarantee is:
+
+“Actively promoted listings are always in the promoted section before all regular listings.”
+
+==================================================
+10. OPTIONAL VISUAL GROUPING
+==================================================
+
+Do not create a completely separate screen.
+
+If the existing design supports it cleanly, the first promoted block may have a subtle section label:
+
+“Öne Çıkan İlanlar”
+
+However, this is optional.
+
+The primary requirement is correct data ordering.
+
+Do not duplicate promoted listings in both:
+
+- Öne Çıkan section
+- normal list
+
+Each listing must appear only once.
+
+==================================================
+11. DATABASE INDEX AUDIT
+==================================================
+
+Audit query performance.
+
+If appropriate, add a non-destructive index involving:
+
+promoted_until
+created_at
+
+Use a migration only if it materially improves the real query.
+
+Do not add an index blindly.
+
+Explain the chosen index and why PostgreSQL can use it.
+
+==================================================
+12. FUNCTIONAL TESTS
+==================================================
+
+TEST 1:
+
+10 regular listings.
+1 active promoted listing.
+
+Expected:
+Promoted listing is first.
+
+TEST 2:
+
+3 active promoted listings.
+20 regular listings.
+
+Expected:
+All 3 promoted listings are before all regular listings.
+
+TEST 3:
+
+Promoted listing expires.
+
+Expected:
+It returns to normal created_at ordering after refresh.
+
+TEST 4:
+
+User applies city filter.
+
+Expected:
+Matching promoted listings remain first within filtered results.
+
+TEST 5:
+
+User applies animal type filter.
+
+Expected:
+Matching promoted listings remain first.
+
+TEST 6:
+
+Promotion purchase succeeds while list is open.
+
+Expected:
+Purchased listing moves to promoted area immediately after refresh.
+
+TEST 7:
+
+30 promoted listings with page size 20.
+
+Expected:
+No duplicates.
+Pagination remains correct.
+
+TEST 8:
+
+Expired promoted_until but legacy is_promoted = true.
+
+Expected:
+Listing is treated as normal.
+
+TEST 9:
+
+Invalid promoted_until value in client model.
+
+Expected:
+No client crash.
+Backend remains source of ordering truth.
+
+TEST 10:
+
+Two listings have equal promoted_until and created_at.
+
+Expected:
+Stable order using ID or another deterministic key.
+
+==================================================
+13. DO NOT DO THESE
+==================================================
+
+DO NOT:
+
+- sort only on the client
+- pin expired promotions
+- rely only on is_promoted
+- duplicate promoted listings
+- ignore pagination
+- inject one promoted card manually at array index 0
+- hardcode listing IDs
+- create fake promoted data
+- change RevenueCat
+- change payment logic
+- reset the database
+- redesign Tüm İlanlar
+
+==================================================
+14. FINAL AUDIT
+==================================================
+
+Search again for:
+
+promoted_until
+promotedUntil
+is_promoted
+isPromoted
+created_at
+sort
+orderBy
+Tüm İlanlar
+AdoptionContext
+pagination
+infinite scroll
+
+Confirm:
+
+- backend performs promoted-first ordering
+- client does not override it
+- expired promotions become normal
+- filtered results preserve priority
+- pagination is stable
+- no duplicates occur
+- refresh after purchase updates the order
+- TypeScript passes
+- build passes
+
+==================================================
+15. FINAL REPORT
+==================================================
+
+Return the report in Turkish using exactly these headings:
+
+1. TÜM İLANLAR VERİ KAYNAĞI
+
+2. UYGULANAN PROMOTED-FIRST SIRALAMA
+
+3. PROMOTED İLANLARIN KENDİ İÇİNDEKİ SIRASI
+
+4. NORMAL İLANLARIN SIRASI
+
+5. FİLTRELERLE BİRLİKTE DAVRANIŞ
+
+6. PAGINATION DAVRANIŞI
+
+7. CLIENT-SIDE SORT ÇAKIŞMALARI
+
+8. SATIN ALMA SONRASI ANLIK GÜNCELLEME
+
+9. SÜRESİ DOLAN PROMOSYON DAVRANIŞI
+
+10. DATABASE INDEXLERİ
+
+11. DEĞİŞTİRİLEN DOSYALAR
+
+12. TYPESCRIPT / LINT / BUILD SONUCU
+
+13. GERÇEKTEN TEST EDİLEN SENARYOLAR
+
+14. KALAN RİSKLER
+
+IMPORTANT:
+
+Do not only explain the required sorting.
+
+Inspect the actual Express + PostgreSQL + Drizzle backend and the React Native client.
+
+Implement the promoted-first ordering end-to-end.
+
+Run the relevant checks.
+
+Do not claim real device testing unless it was actually executed.

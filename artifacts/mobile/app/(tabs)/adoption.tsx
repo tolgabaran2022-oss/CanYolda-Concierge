@@ -1380,10 +1380,22 @@ export default function AdoptionScreen() {
 
   const sorted = useMemo(() => {
     return [...listings].sort((a, b) => {
-      const af = isListingPromoted(a.promotedUntil) ? 1 : 0;
-      const bf = isListingPromoted(b.promotedUntil) ? 1 : 0;
-      if (bf !== af) return bf - af;
-      return new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime();
+      // Group: 0 = active promo, 1 = normal/expired → ascending = promoted first
+      const ap = isListingPromoted(a.promotedUntil) ? 0 : 1;
+      const bp = isListingPromoted(b.promotedUntil) ? 0 : 1;
+      if (ap !== bp) return ap - bp;
+      // Within promoted group: latest expiry first (matches backend ORDER BY)
+      if (ap === 0) {
+        const ae = new Date(a.promotedUntil!).getTime();
+        const be = new Date(b.promotedUntil!).getTime();
+        if (ae !== be) return be - ae;
+      }
+      // Within each group: newest first
+      const ad = new Date(a.createdAt).getTime();
+      const bd = new Date(b.createdAt).getTime();
+      if (ad !== bd) return bd - ad;
+      // Stable ID tiebreaker (matches backend id DESC)
+      return a.id < b.id ? 1 : -1;
     });
   }, [listings]);
 
@@ -1428,11 +1440,32 @@ export default function AdoptionScreen() {
     if (af.locationCity !== null) list = list.filter((l) => (extractCity(l.location) ?? "").toLowerCase() === af.locationCity!.toLowerCase());
 
     if (af.sortBy === "oldest") {
-      list = [...list].sort((a, b) => new Date(a.createdAt).getTime() - new Date(b.createdAt).getTime());
+      list = [...list].sort((a, b) => {
+        // Promoted group always before normal group
+        const ap = isListingPromoted(a.promotedUntil) ? 0 : 1;
+        const bp = isListingPromoted(b.promotedUntil) ? 0 : 1;
+        if (ap !== bp) return ap - bp;
+        // Within each group: oldest first
+        return new Date(a.createdAt).getTime() - new Date(b.createdAt).getTime();
+      });
     } else if (af.sortBy === "age_asc") {
-      list = [...list].sort((a, b) => { const am = parseAgeMonths(a.petAge ?? "") ?? 999; const bm = parseAgeMonths(b.petAge ?? "") ?? 999; return am - bm; });
+      list = [...list].sort((a, b) => {
+        const ap = isListingPromoted(a.promotedUntil) ? 0 : 1;
+        const bp = isListingPromoted(b.promotedUntil) ? 0 : 1;
+        if (ap !== bp) return ap - bp;
+        const am = parseAgeMonths(a.petAge ?? "") ?? 999;
+        const bm = parseAgeMonths(b.petAge ?? "") ?? 999;
+        return am - bm;
+      });
     } else if (af.sortBy === "age_desc") {
-      list = [...list].sort((a, b) => { const am = parseAgeMonths(a.petAge ?? "") ?? -1; const bm = parseAgeMonths(b.petAge ?? "") ?? -1; return bm - am; });
+      list = [...list].sort((a, b) => {
+        const ap = isListingPromoted(a.promotedUntil) ? 0 : 1;
+        const bp = isListingPromoted(b.promotedUntil) ? 0 : 1;
+        if (ap !== bp) return ap - bp;
+        const am = parseAgeMonths(a.petAge ?? "") ?? -1;
+        const bm = parseAgeMonths(b.petAge ?? "") ?? -1;
+        return bm - am;
+      });
     }
 
     return list;
