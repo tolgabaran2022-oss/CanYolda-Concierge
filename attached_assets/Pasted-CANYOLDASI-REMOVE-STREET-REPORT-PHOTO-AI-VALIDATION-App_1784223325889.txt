@@ -1,0 +1,385 @@
+CANYOLDASI — REMOVE STREET REPORT PHOTO AI VALIDATION
+
+Apply this change ONLY to the:
+
+“Sokak Hayvanı Ekle”
+“Sokak Hayvanı Durum Bildir”
+
+photo flow.
+
+The user no longer wants AI/manual animal-image validation in this flow.
+
+Remove the photo review process completely.
+
+==================================================
+1. REMOVE VALIDATION STATES
+==================================================
+
+Remove all states and UI related to:
+
+validating
+approved
+rejected
+pending_review
+timeout
+validation error
+animal detected
+confidence score
+
+Remove:
+
+“İnceleniyor...”
+“Fotoğraf kontrol ediliyor...”
+“Fotoğraf manuel incelemeye gönderildi.”
+“Tekrar Dene”
+“Yeni Fotoğraf Çek” validation error flow
+
+Do not leave dead UI or unused state.
+
+==================================================
+2. REMOVE VALIDATION SERVICES FROM THIS FLOW
+==================================================
+
+Audit and remove usage of:
+
+AnimalImageValidationService
+StubValidationProvider
+retryValidation
+validation endpoint
+animal confidence thresholds
+pending_review fallback
+
+from the street report creation flow.
+
+If these abstractions are used by another feature, do not delete globally.
+
+Only disconnect them from street animal report photo submission.
+
+==================================================
+3. KEEP CAMERA-ONLY
+==================================================
+
+The street report photo must still be captured only through the camera.
+
+Keep:
+
+launchCameraAsync
+
+Do not re-enable:
+
+launchImageLibraryAsync
+gallery picker
+file picker
+document picker
+
+This restriction applies only to street animal reports.
+
+==================================================
+4. KEEP REQUIRED FIELDS
+==================================================
+
+The report cannot be submitted unless all of these exist:
+
+- camera-captured photo
+- animal type
+- animal condition
+- valid location
+
+Notes remain optional.
+
+Keep the submit button disabled until required fields are complete.
+
+==================================================
+5. KEEP BASIC TECHNICAL IMAGE CHECKS
+==================================================
+
+Do not perform AI animal detection.
+
+Keep only fast technical validation:
+
+- file exists
+- supported image MIME type
+- valid dimensions
+- not corrupted
+- maximum 10 MB
+- upload completed successfully
+- persistent remote image URL exists
+
+Allowed:
+
+image/jpeg
+image/png
+image/webp
+image/heic
+image/heif
+
+Do not add artificial delays.
+
+==================================================
+6. PHOTO FLOW
+==================================================
+
+Expected flow:
+
+Tap “Fotoğraf Çek”
+↓
+Camera opens directly
+↓
+User captures photo
+↓
+Local preview appears immediately
+↓
+User selects “Fotoğrafı Kullan”
+↓
+Image uploads
+↓
+Remote image URL is stored
+↓
+Form becomes ready when all required fields are complete
+
+No AI review step.
+
+No manual review step.
+
+No pending state.
+
+==================================================
+7. UI COPY
+==================================================
+
+Keep:
+
+“Zorunlu — Yalnızca kamera ile çekilebilir”
+
+Supporting text:
+
+“Hayvanın olay yerindeki güncel ve net fotoğrafını çekin.”
+
+Do not mention AI validation or manual review.
+
+After successful upload show:
+
+“Fotoğraf hazır.”
+
+If upload fails show:
+
+“Fotoğraf yüklenemedi. Lütfen tekrar deneyin.”
+
+==================================================
+8. REPORT PUBLICATION
+==================================================
+
+After required fields and upload succeed:
+
+Allow the report to be submitted immediately.
+
+Do not set:
+
+pending_review
+
+Do not hide the report from public feed because of removed photo validation.
+
+Use the normal report publication status defined by the existing report lifecycle.
+
+Do not bypass other moderation/reporting systems.
+
+==================================================
+9. BACKEND CLEANUP
+==================================================
+
+Audit the street report creation endpoint.
+
+Remove the requirement that image validation status must be:
+
+approved
+pending_review
+
+The backend should validate only:
+
+- authenticated user
+- image belongs to user/report draft
+- persistent image exists
+- supported MIME
+- valid size
+- animal type
+- condition
+- location
+
+Do not accept arbitrary external image URLs.
+
+Do not accept local file URIs.
+
+==================================================
+10. DATABASE CLEANUP
+==================================================
+
+Audit whether street report records contain fields such as:
+
+image_validation_status
+validation_confidence
+detected_animal_type
+validation_provider
+validation_error
+review_status
+
+Do not drop columns destructively unless clearly safe.
+
+Stop requiring or populating them in this flow.
+
+If legacy records contain pending_review only because of the removed StubValidationProvider:
+
+do not bulk-publish blindly.
+
+Report how many such records exist and handle them safely.
+
+==================================================
+11. STATUS CARD IMAGE
+==================================================
+
+Preserve the previously fixed image preview behavior.
+
+After report creation:
+
+- status card must show the uploaded image immediately
+- app restart must still show the image
+- list/detail/map API responses must include the image
+- invalid image URL must show placeholder, not crash
+
+Do not regress photo preview.
+
+==================================================
+12. REMOVE DEAD CODE
+==================================================
+
+After disconnecting validation, recursively search for unused:
+
+validation state
+AbortController for validation
+validatingRef
+retryValidation
+StubValidationProvider
+pending review overlay
+confidence UI
+
+Remove dead imports, handlers and unreachable branches.
+
+Do not remove upload cancellation or camera permission logic.
+
+==================================================
+13. TESTS
+==================================================
+
+TEST 1:
+
+Open Street Animal Report.
+Tap photo area.
+
+Expected:
+Camera opens directly.
+
+TEST 2:
+
+Capture photo.
+
+Expected:
+Preview appears immediately.
+No “İnceleniyor...” state.
+
+TEST 3:
+
+Use photo.
+
+Expected:
+Upload starts and completes.
+“Fotoğraf hazır.” appears.
+
+TEST 4:
+
+Complete animal type, condition and location.
+
+Expected:
+Submit becomes enabled.
+
+TEST 5:
+
+Submit report.
+
+Expected:
+Report publishes immediately.
+No pending_review.
+
+TEST 6:
+
+Restart app.
+
+Expected:
+Report image remains visible.
+
+TEST 7:
+
+Upload fails.
+
+Expected:
+Clear retryable upload error.
+No endless spinner.
+
+TEST 8:
+
+Open adoption listing photo flow.
+
+Expected:
+Gallery access still works there.
+
+==================================================
+14. DO NOT DO THESE
+==================================================
+
+DO NOT:
+
+- re-enable gallery for street reports
+- remove photo requirement
+- remove location requirement
+- remove animal type requirement
+- remove condition requirement
+- save local URI to database
+- break status card photo preview
+- remove moderation/report abuse features globally
+- leave fake AI status messages
+- leave endless validation loading
+- redesign the screen
+
+==================================================
+15. FINAL REPORT
+==================================================
+
+Return the report in Turkish using exactly these headings:
+
+1. KALDIRILAN FOTOĞRAF DOĞRULAMA YAPISI
+
+2. KALDIRILAN VALIDATION STATE’LERİ
+
+3. KAMERA-ONLY AKIŞI
+
+4. KALAN TEKNİK FOTOĞRAF KONTROLLERİ
+
+5. BACKEND DEĞİŞİKLİKLERİ
+
+6. DATABASE ALANLARI DURUMU
+
+7. PENDING_REVIEW DAVRANIŞININ KALDIRILMASI
+
+8. DURUM KARTI FOTOĞRAF ÖNİZLEMESİ
+
+9. DEĞİŞTİRİLEN DOSYALAR
+
+10. TYPESCRIPT / LINT / BUILD SONUCU
+
+11. TEST EDİLEN SENARYOLAR
+
+12. KALAN RİSKLER
+
+IMPORTANT:
+
+Remove only the animal-photo AI/manual validation step.
+
+Keep camera-only capture, required fields, secure upload and persistent image preview.

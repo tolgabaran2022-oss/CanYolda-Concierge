@@ -21,8 +21,6 @@ import { createLimiter } from "../lib/rateLimiter.js";
 import {
   calculatePriorityScore,
   imageValidationService,
-  ANIMAL_CONFIDENCE_ACCEPT_THRESHOLD,
-  ANIMAL_CONFIDENCE_REVIEW_THRESHOLD,
 } from "../lib/priorityScore.js";
 import { generateReportCode } from "../lib/reportCode.js";
 
@@ -534,20 +532,6 @@ router.post("/animals", createLimiter, validateBody(CreateAnimalSchema), async (
     req.body as z.infer<typeof CreateAnimalSchema>;
 
   try {
-    // AI image validation (abstraction layer)
-    const validation = await imageValidationService.validate(imageUrl);
-
-    if (!validation.qualityPassed) {
-      res.status(422).json({ error: validation.rejectionReason ?? "Fotoğraf kalitesi yetersiz. Lütfen daha net bir fotoğraf çekin." });
-      return;
-    }
-
-    // Confident rejection: real provider says no animal and confidence is above accept threshold
-    if (!validation.requiresReview && !validation.isAnimalDetected && validation.confidence >= ANIMAL_CONFIDENCE_ACCEPT_THRESHOLD) {
-      res.status(422).json({ error: "Bu fotoğrafta bir hayvan tespit edilemedi. Lütfen hayvanın net göründüğü yeni bir fotoğraf çekin." });
-      return;
-    }
-
     // Priority score — server-only
     const priority = calculatePriorityScore({ status, animalType, notes });
 
@@ -585,15 +569,11 @@ router.post("/animals", createLimiter, validateBody(CreateAnimalSchema), async (
       reason: "Rapor oluşturuldu",
     });
 
-    // Queue in moderation: always when requiresReview, or when priority is high/critical
-    const needsQueue = validation.requiresReview || priority.level === "critical" || priority.level === "high";
+    // Queue in moderation: high/critical priority reports
+    const needsQueue = priority.level === "critical" || priority.level === "high";
     if (needsQueue) {
-      const queueType = priority.level === "critical"
-        ? "high_priority"
-        : validation.requiresReview ? "pending_review" : "pending_review";
-      const reason = validation.requiresReview
-        ? `Fotoğraf doğrulama bekleniyor (AI sağlayıcı yapılandırılmamış)`
-        : `Otomatik: priority=${priority.level} score=${priority.score}`;
+      const queueType = priority.level === "critical" ? "high_priority" : "pending_review";
+      const reason = `Otomatik: priority=${priority.level} score=${priority.score}`;
       await db.insert(moderationQueue).values({
         animalId: animal.id,
         queueType,

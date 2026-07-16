@@ -10,7 +10,7 @@ import { Image } from "expo-image";
 import * as ImagePicker from "expo-image-picker";
 import * as Location from "expo-location";
 import { useRouter } from "expo-router";
-import React, { useRef, useState } from "react";
+import React, { useState } from "react";
 import {
   ActivityIndicator,
   Alert,
@@ -128,15 +128,7 @@ async function uploadImage(localUri: string, token: string | null): Promise<stri
   return data.url;
 }
 
-type PhotoStatus = "idle" | "uploading" | "validating" | "approved" | "pending_review" | "rejected" | "upload_failed" | "timeout" | "error";
-
-type ValidationResult = {
-  isAnimalDetected: boolean;
-  confidence: number;
-  qualityPassed: boolean;
-  requiresReview: boolean;
-  rejectionReason?: string;
-};
+type PhotoStatus = "idle" | "uploading" | "ready" | "upload_failed";
 
 export default function AddAnimalScreen() {
   const C      = useColors();
@@ -151,9 +143,6 @@ export default function AddAnimalScreen() {
   const [photoStatus, setPhotoStatus]       = useState<PhotoStatus>("idle");
   const [photoStatusReason, setPhotoStatusReason] = useState<string | undefined>();
 
-  // Refs to prevent duplicate validation requests and allow cancellation
-  const validationAbortRef  = useRef<AbortController | null>(null);
-  const validatingRef       = useRef(false);
   const [animalType, setAnimalType]         = useState<AnimalType>("diger");
   const [status, setStatus]               = useState<AnimalStatus>("unknown");
   const [notes, setNotes]                 = useState("");
@@ -204,9 +193,6 @@ export default function AddAnimalScreen() {
 
   const confirmImage = async () => {
     if (!pendingImage) return;
-    // Prevent duplicate simultaneous validation calls
-    if (validatingRef.current) return;
-    validatingRef.current = true;
 
     const localUri = pendingImage;
     setImage(localUri);
@@ -215,88 +201,17 @@ export default function AddAnimalScreen() {
     setPhotoStatusReason(undefined);
     setPhotoStatus("uploading");
 
-    let uploadedUrl: string;
     try {
-      uploadedUrl = await uploadImage(localUri, token ?? null);
+      const uploadedUrl = await uploadImage(localUri, token ?? null);
+      setConfirmedImageUrl(uploadedUrl);
+      setPhotoStatus("ready");
     } catch {
-      validatingRef.current = false;
       setPhotoStatus("upload_failed");
-      setPhotoStatusReason("Fotoğraf yüklenemedi. Lütfen internet bağlantınızı kontrol edin.");
-      return;
-    }
-
-    // Abort any previous in-flight validation
-    validationAbortRef.current?.abort();
-    const abortController = new AbortController();
-    validationAbortRef.current = abortController;
-
-    // Hard 8-second timeout
-    const timeoutId = setTimeout(() => abortController.abort("timeout"), 8000);
-
-    setPhotoStatus("validating");
-    try {
-      const headers: Record<string, string> = { "Content-Type": "application/json" };
-      if (token) headers["Authorization"] = `Bearer ${token}`;
-      const res = await fetch(`${API_BASE}/animals/validate-image`, {
-        method: "POST",
-        headers,
-        body: JSON.stringify({ imageUrl: uploadedUrl }),
-        signal: abortController.signal,
-      });
-
-      clearTimeout(timeoutId);
-
-      if (!res.ok) {
-        // Server error (5xx, 4xx) — fall to pending_review with message
-        setConfirmedImageUrl(uploadedUrl);
-        setPhotoStatus("pending_review");
-        setPhotoStatusReason("Fotoğraf doğrulama servisi yanıt vermedi. Bildirimin incelemeye gönderilecek.");
-        return;
-      }
-
-      const result = await res.json() as ValidationResult;
-      setConfirmedImageUrl(uploadedUrl);
-
-      if (result.requiresReview) {
-        // No real AI configured — all photos go to manual review
-        setPhotoStatus("pending_review");
-        setPhotoStatusReason("Fotoğrafın hayvan içerdiği manuel incelemeyle doğrulanacak. Bildirimin onaylandıktan sonra haritada görünecek.");
-      } else if (!result.qualityPassed) {
-        setPhotoStatus("rejected");
-        setPhotoStatusReason(result.rejectionReason ?? "Fotoğraf kalitesi yetersiz.");
-      } else if (result.isAnimalDetected) {
-        setPhotoStatus("approved");
-      } else {
-        setPhotoStatus("rejected");
-        setPhotoStatusReason("Bu fotoğrafta bir hayvan tespit edilemedi. Lütfen hayvanın net göründüğü yeni bir fotoğraf çekin.");
-      }
-    } catch (err: unknown) {
-      clearTimeout(timeoutId);
-      setConfirmedImageUrl(uploadedUrl);
-
-      // Distinguish timeout from other network/abort errors
-      const isAbort = err instanceof Error && err.name === "AbortError";
-      const reason  = (err instanceof Error ? err.message : undefined) ?? "";
-
-      if (isAbort && reason === "timeout") {
-        setPhotoStatus("timeout");
-        setPhotoStatusReason("Fotoğraf doğrulaması 8 saniyede tamamlanamadı. Lütfen tekrar deneyin.");
-      } else if (isAbort) {
-        // User retook photo — silently discard, retakePhoto already reset state
-      } else {
-        setPhotoStatus("error");
-        setPhotoStatusReason("Ağ bağlantısı kesildi. Lütfen bağlantınızı kontrol edip tekrar deneyin.");
-      }
-    } finally {
-      validatingRef.current = false;
+      setPhotoStatusReason("Fotoğraf yüklenemedi. Lütfen tekrar deneyin.");
     }
   };
 
   const retakePhoto = () => {
-    // Cancel any in-flight validation before resetting state
-    validationAbortRef.current?.abort();
-    validationAbortRef.current = null;
-    validatingRef.current = false;
     setPendingImage(undefined);
     setImage(undefined);
     setConfirmedImageUrl(undefined);
@@ -306,72 +221,11 @@ export default function AddAnimalScreen() {
   };
 
   const removeImage = () => {
-    // Cancel any in-flight validation before resetting state
-    validationAbortRef.current?.abort();
-    validationAbortRef.current = null;
-    validatingRef.current = false;
     setImage(undefined);
     setPendingImage(undefined);
     setConfirmedImageUrl(undefined);
     setPhotoStatus("idle");
     setPhotoStatusReason(undefined);
-  };
-
-  /** Re-validate the already-uploaded image without re-uploading (used after timeout/error). */
-  const retryValidation = async () => {
-    if (!confirmedImageUrl || validatingRef.current) return;
-    validatingRef.current = true;
-
-    validationAbortRef.current?.abort();
-    const abortController = new AbortController();
-    validationAbortRef.current = abortController;
-    const timeoutId = setTimeout(() => abortController.abort("timeout"), 8000);
-
-    setPhotoStatus("validating");
-    setPhotoStatusReason(undefined);
-    try {
-      const headers: Record<string, string> = { "Content-Type": "application/json" };
-      if (token) headers["Authorization"] = `Bearer ${token}`;
-      const res = await fetch(`${API_BASE}/animals/validate-image`, {
-        method: "POST",
-        headers,
-        body: JSON.stringify({ imageUrl: confirmedImageUrl }),
-        signal: abortController.signal,
-      });
-      clearTimeout(timeoutId);
-
-      if (!res.ok) {
-        setPhotoStatus("pending_review");
-        setPhotoStatusReason("Fotoğraf doğrulama servisi yanıt vermedi. Bildirimin incelemeye gönderilecek.");
-        return;
-      }
-      const result = await res.json() as ValidationResult;
-      if (result.requiresReview) {
-        setPhotoStatus("pending_review");
-        setPhotoStatusReason("Fotoğrafın hayvan içerdiği manuel incelemeyle doğrulanacak. Bildirimin onaylandıktan sonra haritada görünecek.");
-      } else if (!result.qualityPassed) {
-        setPhotoStatus("rejected");
-        setPhotoStatusReason(result.rejectionReason ?? "Fotoğraf kalitesi yetersiz.");
-      } else if (result.isAnimalDetected) {
-        setPhotoStatus("approved");
-      } else {
-        setPhotoStatus("rejected");
-        setPhotoStatusReason("Bu fotoğrafta bir hayvan tespit edilemedi. Lütfen hayvanın net göründüğü yeni bir fotoğraf çekin.");
-      }
-    } catch (err: unknown) {
-      clearTimeout(timeoutId);
-      const isAbort = err instanceof Error && err.name === "AbortError";
-      const reason  = (err instanceof Error ? err.message : undefined) ?? "";
-      if (isAbort && reason === "timeout") {
-        setPhotoStatus("timeout");
-        setPhotoStatusReason("Fotoğraf doğrulaması 8 saniyede tamamlanamadı. Lütfen tekrar deneyin.");
-      } else if (!isAbort) {
-        setPhotoStatus("error");
-        setPhotoStatusReason("Ağ bağlantısı kesildi. Lütfen bağlantınızı kontrol edip tekrar deneyin.");
-      }
-    } finally {
-      validatingRef.current = false;
-    }
   };
 
   const showDuplicateAlert = (nearby: NearbyAnimal[], onContinue: () => void) => {
@@ -463,18 +317,14 @@ export default function AddAnimalScreen() {
     }
     if (!user) return;
 
-    if (!confirmedImageUrl || (photoStatus !== "approved" && photoStatus !== "pending_review")) {
-      const msgMap: Partial<Record<PhotoStatus, string>> = {
-        uploading:    "Fotoğraf yükleniyor, lütfen bekleyin.",
-        validating:   "Fotoğraf doğrulanıyor, lütfen bekleyin.",
-        rejected:     photoStatusReason ?? "Fotoğraf kabul edilmedi. Lütfen yeni bir fotoğraf çekin.",
-        upload_failed: photoStatusReason ?? "Fotoğraf yüklenemedi. Lütfen tekrar deneyin.",
-        timeout:      "Fotoğraf doğrulaması tamamlanamadı. Lütfen yeni fotoğraf çekin veya tekrar deneyin.",
-        error:        "Ağ hatası nedeniyle doğrulama yapılamadı. Lütfen bağlantınızı kontrol edin.",
-      };
+    if (!confirmedImageUrl || photoStatus !== "ready") {
       Alert.alert(
         "Fotoğraf Gerekli",
-        msgMap[photoStatus] ?? "Lütfen önce hayvanın fotoğrafını çekin.",
+        photoStatus === "uploading"
+          ? "Fotoğraf yükleniyor, lütfen bekleyin."
+          : photoStatus === "upload_failed"
+            ? (photoStatusReason ?? "Fotoğraf yüklenemedi. Lütfen tekrar deneyin.")
+            : "Lütfen önce hayvanın fotoğrafını çekin.",
       );
       return;
     }
@@ -559,57 +409,33 @@ export default function AddAnimalScreen() {
             </View>
           ) : (
             <Pressable
-              onPress={photoStatus === "uploading" || photoStatus === "validating" ? undefined : openCamera}
+              onPress={photoStatus === "uploading" ? undefined : openCamera}
               style={[S.photoCard, { backgroundColor: C.bgSecondary, borderColor: C.borderStrong }]}
             >
               {image ? (
                 <>
                   <Image source={{ uri: image }} style={S.photoImage} contentFit="cover" />
-                  {/* Top-right remove button — only when not processing */}
-                  {(photoStatus !== "uploading" && photoStatus !== "validating") && (
+                  {/* Top-right remove button — only when not uploading */}
+                  {photoStatus !== "uploading" && (
                     <Pressable style={S.photoRemoveBtn} onPress={removeImage} hitSlop={8}>
                       <Icon name="close-circle" size={26} color="#FFFFFF" />
                     </Pressable>
                   )}
                   {/* Status overlay */}
-                  {(photoStatus === "uploading" || photoStatus === "validating") ? (
+                  {photoStatus === "uploading" ? (
                     <View style={[S.photoStatusOverlay, { backgroundColor: "rgba(0,0,0,0.60)" }]}>
                       <ActivityIndicator color="#FFFFFF" />
-                      <Text style={S.photoStatusOverlayText}>
-                        {photoStatus === "uploading" ? "Fotoğraf yükleniyor…" : "Fotoğraf doğrulanıyor…"}
-                      </Text>
+                      <Text style={S.photoStatusOverlayText}>Fotoğraf yükleniyor…</Text>
                     </View>
-                  ) : photoStatus === "approved" ? (
+                  ) : photoStatus === "ready" ? (
                     <View style={[S.photoStatusOverlay, { backgroundColor: "rgba(34,197,94,0.75)" }]}>
                       <Icon name="checkmark-circle" size={20} color="#FFFFFF" />
-                      <Text style={S.photoStatusOverlayText}>Fotoğraf onaylandı</Text>
-                    </View>
-                  ) : photoStatus === "pending_review" ? (
-                    <View style={[S.photoStatusOverlay, { backgroundColor: "rgba(234,179,8,0.80)" }]}>
-                      <Icon name="time-outline" size={20} color="#FFFFFF" />
-                      <Text style={S.photoStatusOverlayText}>Manuel incelemeye gönderildi</Text>
-                    </View>
-                  ) : photoStatus === "rejected" ? (
-                    <View style={[S.photoStatusOverlay, { backgroundColor: "rgba(239,68,68,0.80)" }]}>
-                      <Icon name="close-circle-outline" size={20} color="#FFFFFF" />
-                      <Text style={S.photoStatusOverlayText}>
-                        {photoStatusReason ?? "Fotoğraf reddedildi — yeniden çekin"}
-                      </Text>
+                      <Text style={S.photoStatusOverlayText}>Fotoğraf hazır.</Text>
                     </View>
                   ) : photoStatus === "upload_failed" ? (
                     <View style={[S.photoStatusOverlay, { backgroundColor: "rgba(239,68,68,0.80)" }]}>
                       <Icon name="cloud-offline-outline" size={20} color="#FFFFFF" />
                       <Text style={S.photoStatusOverlayText}>Yükleme başarısız — tekrar çek</Text>
-                    </View>
-                  ) : photoStatus === "timeout" ? (
-                    <View style={[S.photoStatusOverlay, { backgroundColor: "rgba(234,179,8,0.80)" }]}>
-                      <Icon name="time-outline" size={20} color="#FFFFFF" />
-                      <Text style={S.photoStatusOverlayText}>Doğrulama zaman aşımı — tekrar dene</Text>
-                    </View>
-                  ) : photoStatus === "error" ? (
-                    <View style={[S.photoStatusOverlay, { backgroundColor: "rgba(239,68,68,0.80)" }]}>
-                      <Icon name="cloud-offline-outline" size={20} color="#FFFFFF" />
-                      <Text style={S.photoStatusOverlayText}>Ağ hatası — tekrar dene</Text>
                     </View>
                   ) : (
                     <View style={S.photoOverlay}>
@@ -637,36 +463,6 @@ export default function AddAnimalScreen() {
             </Pressable>
           )}
         </View>
-
-        {/* ── Timeout / error retry strip ─────────────────────────── */}
-        {(photoStatus === "timeout" || photoStatus === "error") && (
-          <View style={[S.retryStrip, { backgroundColor: photoStatus === "timeout" ? "#FEF9C3" : "#FEE2E2", borderColor: photoStatus === "timeout" ? "#FDE047" : "#FECACA" }]}>
-            <Text style={[S.retryStripMsg, { color: photoStatus === "timeout" ? "#854D0E" : "#991B1B" }]}>
-              {photoStatusReason}
-            </Text>
-            <View style={S.retryStripBtns}>
-              <Pressable
-                style={[S.retryBtn, { backgroundColor: C.purple }]}
-                onPress={() => { void retryValidation(); }}
-              >
-                <Text style={S.retryBtnText}>Tekrar Dene</Text>
-              </Pressable>
-              <Pressable
-                style={[S.retryBtn, { backgroundColor: C.bgSecondary, borderWidth: 1, borderColor: C.borderStrong }]}
-                onPress={retakePhoto}
-              >
-                <Text style={[S.retryBtnText, { color: C.text }]}>Yeni Fotoğraf Çek</Text>
-              </Pressable>
-            </View>
-          </View>
-        )}
-
-        {/* ── pending_review info strip ────────────────────────────── */}
-        {photoStatus === "pending_review" && photoStatusReason && (
-          <View style={[S.retryStrip, { backgroundColor: "#FEFCE8", borderColor: "#FDE047" }]}>
-            <Text style={[S.retryStripMsg, { color: "#713F12" }]}>{photoStatusReason}</Text>
-          </View>
-        )}
 
         {/* ── 2. Animal type ──────────────────────────────────────── */}
         <View style={S.section}>
@@ -850,29 +646,26 @@ export default function AddAnimalScreen() {
 
         {/* ── Submit ──────────────────────────────────────────────── */}
         {(() => {
-          const photoProcessing = photoStatus === "uploading" || photoStatus === "validating";
-          const canSubmit = !isSaving && !photoProcessing && (photoStatus === "approved" || photoStatus === "pending_review");
-          // timeout/error states block submission — user must retake or retry
+          const uploading  = photoStatus === "uploading";
+          const canSubmit  = !isSaving && !uploading && photoStatus === "ready";
           return (
             <Pressable
               style={({ pressed }) => [
                 S.submitBtn,
                 {
                   backgroundColor: C.purple,
-                  opacity: pressed || isSaving || photoProcessing || !canSubmit ? 0.55 : 1,
+                  opacity: pressed || isSaving || uploading || !canSubmit ? 0.55 : 1,
                 },
               ]}
               onPress={handleSave}
-              disabled={isSaving || photoProcessing}
+              disabled={isSaving || uploading}
             >
               {isSaving ? (
                 <ActivityIndicator color="white" size="small" />
-              ) : photoProcessing ? (
+              ) : uploading ? (
                 <>
                   <ActivityIndicator color="white" size="small" />
-                  <Text style={S.submitBtnText}>
-                    {photoStatus === "uploading" ? "Fotoğraf yükleniyor…" : "Doğrulanıyor…"}
-                  </Text>
+                  <Text style={S.submitBtnText}>Fotoğraf yükleniyor…</Text>
                 </>
               ) : (
                 <>
@@ -1195,35 +988,4 @@ const S = StyleSheet.create({
     elevation: 6,
   },
   submitBtnText: { fontSize: 16, fontFamily: "Inter_700Bold", color: "white" },
-
-  /* Retry / info strip (timeout, error, pending_review) */
-  retryStrip: {
-    marginHorizontal: 16,
-    marginTop: 8,
-    borderRadius: 12,
-    borderWidth: 1,
-    padding: 12,
-    gap: 8,
-  },
-  retryStripMsg: {
-    fontSize: 13,
-    fontFamily: "Inter_400Regular",
-    lineHeight: 18,
-  },
-  retryStripBtns: {
-    flexDirection: "row",
-    gap: 8,
-  },
-  retryBtn: {
-    flex: 1,
-    alignItems: "center",
-    justifyContent: "center",
-    borderRadius: 10,
-    paddingVertical: 9,
-  },
-  retryBtnText: {
-    fontSize: 13,
-    fontFamily: "Inter_600SemiBold",
-    color: "white",
-  },
 });
