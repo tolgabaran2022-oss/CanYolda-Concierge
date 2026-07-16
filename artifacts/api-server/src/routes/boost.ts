@@ -119,7 +119,7 @@ router.post("/boost/verify-iap", async (req, res): Promise<void> => {
       durationDays,
       platform:           "iap",
       storeTransactionId: rcTransactionId ?? null,
-      revenueCatUserId:   rcUserId ?? null,
+      revenuecatAppUserId: rcUserId ?? null,
       productIdentifier:  productIdentifier ?? null,
       verifiedAt:         now,
       startsAt:           now,

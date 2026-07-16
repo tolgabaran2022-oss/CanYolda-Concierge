@@ -205,7 +205,7 @@ router.post("/promotions/verify-purchase", async (req, res): Promise<void> => {
           .values({
             userId,
             listingId,
-            revenueCatUserId:      rcUserId,
+            revenuecatAppUserId:   rcUserId,
             packageIdentifier:     rcPackageIdentifier,
             productIdentifier,
             transactionIdentifier,

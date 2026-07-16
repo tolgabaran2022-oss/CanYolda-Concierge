@@ -34,6 +34,14 @@ export interface StrayAnimal {
   fedByUsers: string[];
   needsHelpByUsers: string[];
   comments: AnimalComment[];
+  /* New backend fields */
+  reportCode?: string;
+  priorityScore?: number;
+  priorityLabel?: string;
+  helpStatus?: string;
+  confirmationCount?: number;
+  editLockedAt?: string | null;
+  photoTakenAt?: string | null;
 }
 
 interface AnimalsContextType {
@@ -102,6 +110,13 @@ function mapFromApi(raw: Record<string, unknown>): StrayAnimal {
       text:      String(c.text ?? ""),
       timestamp: c.createdAt ? String(c.createdAt) : new Date().toISOString(),
     })),
+    reportCode:       raw.reportCode ? String(raw.reportCode) : undefined,
+    priorityScore:    raw.priorityScore != null ? Number(raw.priorityScore) : undefined,
+    priorityLabel:    raw.priorityLabel ? String(raw.priorityLabel) : undefined,
+    helpStatus:       raw.helpStatus ? String(raw.helpStatus) : undefined,
+    confirmationCount: raw.confirmationCount != null ? Number(raw.confirmationCount) : undefined,
+    editLockedAt:     raw.editLockedAt ? String(raw.editLockedAt) : null,
+    photoTakenAt:     raw.photoTakenAt ? String(raw.photoTakenAt) : null,
   };
 }
 
@@ -136,6 +151,13 @@ export function AnimalsProvider({ children }: { children: React.ReactNode }) {
           fedByUsers:       fedSet,
           needsHelpByUsers: helpSet,
           comments:         [],
+          reportCode:       raw.reportCode ? String(raw.reportCode) : undefined,
+          priorityScore:    raw.priorityScore != null ? Number(raw.priorityScore) : undefined,
+          priorityLabel:    raw.priorityLabel ? String(raw.priorityLabel) : undefined,
+          helpStatus:       raw.helpStatus ? String(raw.helpStatus) : undefined,
+          confirmationCount: raw.confirmationCount != null ? Number(raw.confirmationCount) : undefined,
+          editLockedAt:     raw.editLockedAt ? String(raw.editLockedAt) : null,
+          photoTakenAt:     raw.photoTakenAt ? String(raw.photoTakenAt) : null,
         };
       }));
     } catch {

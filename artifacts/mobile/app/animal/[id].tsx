@@ -247,6 +247,12 @@ export default function AnimalDetailScreen() {
   const [locationOpenCount,  setLocationOpenCount]  = useState(0);
   const [isOpeningMap,       setIsOpeningMap]       = useState(false);
 
+  /* ── New feature state ─── */
+  const [confirmCount,       setConfirmCount]       = useState(0);
+  const [isConfirming,       setIsConfirming]       = useState(false);
+  const [isVolunteering,     setIsVolunteering]     = useState(false);
+  const [hasVolunteered,     setHasVolunteered]     = useState(false);
+
   /* ── Help updates ─── */
   const [helpUpdates,        setHelpUpdates]        = useState<HelpUpdateItem[]>([]);
   const [uniqueHelperCount,  setUniqueHelperCount]  = useState(0);
@@ -255,6 +261,11 @@ export default function AnimalDetailScreen() {
   const helpScale    = useRef(new Animated.Value(1)).current;
   const scrollRef    = useRef<ScrollView>(null);
   const commentsYRef = useRef(0);
+
+  /* Sync confirmCount from animal data */
+  useEffect(() => {
+    if (animal?.confirmationCount != null) setConfirmCount(animal.confirmationCount);
+  }, [animal?.confirmationCount]);
 
   /* Fetch reporter profile for avatar */
   useEffect(() => {
@@ -300,6 +311,54 @@ export default function AnimalDetailScreen() {
     if (__DEV__) console.log("[HELP FLOW] update flow mounted, animalId:", animal?.id);
     fetchHelpUpdates();
   }, [fetchHelpUpdates]));
+
+  /* ── Confirm handler ─── */
+  const handleConfirm = useCallback(async () => {
+    if (!animal || !user) {
+      Alert.alert("Giriş Gerekli", "Bildirimi onaylamak için giriş yapın.");
+      return;
+    }
+    setIsConfirming(true);
+    try {
+      const res = await apiFetch(`/animals/${animal.id}/confirm`, { method: "POST" });
+      if (res.ok) {
+        const data = await res.json() as { confirmationCount: number };
+        setConfirmCount(data.confirmationCount ?? confirmCount + 1);
+        Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
+      } else {
+        const err = await res.json().catch(() => ({})) as { error?: string };
+        Alert.alert("Bilgi", err.error ?? "Zaten onayladınız veya kendi bildiriminizi onaylayamazsınız.");
+      }
+    } catch {
+      Alert.alert("Hata", "Onay gönderilemedi.");
+    } finally {
+      setIsConfirming(false);
+    }
+  }, [animal, user, confirmCount]);
+
+  /* ── Volunteer claim handler ─── */
+  const handleVolunteer = useCallback(async () => {
+    if (!animal || !user) {
+      Alert.alert("Giriş Gerekli", "Gönüllü olmak için giriş yapın.");
+      return;
+    }
+    setIsVolunteering(true);
+    try {
+      const res = await apiFetch(`/animals/${animal.id}/volunteer-claim`, { method: "POST" });
+      if (res.ok) {
+        setHasVolunteered(true);
+        Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
+        Alert.alert("Teşekkürler!", "Gönüllü olarak kaydedildiniz. Yardımınız için çok teşekkürler!");
+      } else {
+        const err = await res.json().catch(() => ({})) as { error?: string };
+        Alert.alert("Bilgi", err.error ?? "Zaten gönüllü oldunuz.");
+      }
+    } catch {
+      Alert.alert("Hata", "Gönüllü kaydı yapılamadı.");
+    } finally {
+      setIsVolunteering(false);
+    }
+  }, [animal, user]);
 
   /* ── Handlers ─── */
   const handleHelp = useCallback(() => {
@@ -474,6 +533,14 @@ export default function AnimalDetailScreen() {
   const helped      = !!user && animal.needsHelpByUsers.some(
     (u) => u === user.id || u === "_current_user_"
   );
+
+  /* Priority badge config */
+  const priorityLabel = animal.priorityLabel ?? "";
+  const priorityColor = priorityLabel === "KRİTİK" ? "#DC2626"
+    : priorityLabel === "YÜKSEK"  ? "#EA580C"
+    : priorityLabel === "ORTA"    ? "#D97706"
+    : "#16A34A";
+  const hasPriority = !!priorityLabel && priorityLabel !== "DÜŞÜK";
   const helpCount   = uniqueHelperCount;
   const thumbUri    = animal.image ?? animal.animalImage ?? getDefaultAnimalImageUri(animal.animalType);
   const animalLabel = formatAnimalType(animal.animalType);
@@ -591,6 +658,24 @@ export default function AnimalDetailScreen() {
           ══════════════════════════════════════════ */}
           <View style={D.card}>
 
+            {/* Priority badge + report code row */}
+            {(hasPriority || animal.reportCode) && (
+              <View style={{ flexDirection: "row", alignItems: "center", gap: 8, marginBottom: 10, flexWrap: "wrap" }}>
+                {hasPriority && (
+                  <View style={{ flexDirection: "row", alignItems: "center", gap: 4, backgroundColor: `${priorityColor}16`, paddingHorizontal: 10, paddingVertical: 5, borderRadius: 10, borderWidth: 1, borderColor: `${priorityColor}40` }}>
+                    <Icon name="alert-circle" size={13} color={priorityColor} />
+                    <Text style={{ fontSize: 12, fontFamily: "Inter_700Bold", color: priorityColor }}>{priorityLabel}</Text>
+                  </View>
+                )}
+                {animal.reportCode && (
+                  <View style={{ flexDirection: "row", alignItems: "center", gap: 4, backgroundColor: `${C.purpleFaint}`, paddingHorizontal: 10, paddingVertical: 5, borderRadius: 10 }}>
+                    <Icon name="card-outline" size={12} color={C.muted} />
+                    <Text style={{ fontSize: 11, fontFamily: "Inter_500Medium", color: C.muted }}>{animal.reportCode}</Text>
+                  </View>
+                )}
+              </View>
+            )}
+
             {/* Title — notes text, shown once */}
             <Text style={D.noteTitle} numberOfLines={4}>
               {animal.notes
@@ -670,6 +755,65 @@ export default function AnimalDetailScreen() {
                     value={animalLabel}
                   />
                 </View>
+              </View>
+            </View>
+
+            {/* Topluluk Aksiyonları — confirm + volunteer */}
+            <View style={D.section}>
+              <Text style={D.sectionTitle}>Topluluk Aksiyonları</Text>
+              <View style={{ flexDirection: "row", gap: 10 }}>
+                {/* Onayla */}
+                <Pressable
+                  onPress={handleConfirm}
+                  disabled={isConfirming || !user}
+                  style={({ pressed }) => [{
+                    flex: 1,
+                    flexDirection: "row",
+                    alignItems: "center",
+                    justifyContent: "center",
+                    gap: 7,
+                    paddingVertical: 14,
+                    borderRadius: 16,
+                    borderWidth: 1.5,
+                    borderColor: "#10B981",
+                    backgroundColor: pressed ? "#D1FAE5" : "#F0FDF4",
+                    opacity: isConfirming ? 0.7 : 1,
+                  }]}
+                >
+                  {isConfirming
+                    ? <ActivityIndicator size="small" color="#10B981" />
+                    : <Icon name="checkmark-circle-outline" size={18} color="#10B981" />
+                  }
+                  <Text style={{ fontSize: 14, fontFamily: "Inter_600SemiBold", color: "#065F46" }}>
+                    Onayla {confirmCount > 0 ? `(${confirmCount})` : ""}
+                  </Text>
+                </Pressable>
+                {/* Gönüllü Ol */}
+                <Pressable
+                  onPress={handleVolunteer}
+                  disabled={isVolunteering || !user || hasVolunteered}
+                  style={({ pressed }) => [{
+                    flex: 1,
+                    flexDirection: "row",
+                    alignItems: "center",
+                    justifyContent: "center",
+                    gap: 7,
+                    paddingVertical: 14,
+                    borderRadius: 16,
+                    borderWidth: 1.5,
+                    borderColor: hasVolunteered ? "#9CA3AF" : C.purple,
+                    backgroundColor: hasVolunteered ? "#F3F4F6" : (pressed ? C.purpleFaint : "#FAF8FF"),
+                    opacity: isVolunteering ? 0.7 : 1,
+                  }]}
+                >
+                  {isVolunteering
+                    ? <ActivityIndicator size="small" color={C.purple} />
+                    : <Icon name={hasVolunteered ? "checkmark-done" : "person-add-outline"} size={17} color={hasVolunteered ? "#6B7280" : C.purple} />
+                  }
+                  <Text style={{ fontSize: 14, fontFamily: "Inter_600SemiBold", color: hasVolunteered ? "#6B7280" : C.purpleDark }}>
+                    {hasVolunteered ? "Gönüllüsün" : "Gönüllü Ol"}
+                  </Text>
+                </Pressable>
               </View>
             </View>
 

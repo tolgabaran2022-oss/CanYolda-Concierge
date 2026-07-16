@@ -87,6 +87,23 @@ const API_BASE = process.env.EXPO_PUBLIC_DOMAIN
   ? `https://${process.env.EXPO_PUBLIC_DOMAIN}/api`
   : "http://localhost:8080/api";
 
+/* ── Duplicate detection ──────────────────────────────────────── */
+interface NearbyAnimal { id: string; notes: string; locationName?: string; reportCode?: string; }
+
+async function checkNearbyAnimals(lat: number, lng: number): Promise<NearbyAnimal[]> {
+  try {
+    const res = await fetch(
+      `${API_BASE}/animals/nearby?lat=${lat}&lng=${lng}&radiusM=100&sinceMinutes=60`,
+      { headers: { "Content-Type": "application/json" } }
+    );
+    if (!res.ok) return [];
+    const data = await res.json() as { animals: NearbyAnimal[] };
+    return data.animals ?? [];
+  } catch {
+    return [];
+  }
+}
+
 async function uploadImage(localUri: string): Promise<string> {
   const filename = localUri.split("/").pop() ?? "photo.jpg";
   const match = /\.(\w+)$/.exec(filename);
@@ -140,6 +157,21 @@ export default function AddAnimalScreen() {
 
   const removeImage = () => setImage(undefined);
 
+  const showDuplicateAlert = (nearby: NearbyAnimal[], onContinue: () => void) => {
+    const first = nearby[0];
+    const desc = first?.reportCode
+      ? `${first.reportCode} numaralı bildirim zaten var`
+      : "Bu konuma yakın son 1 saat içinde bir bildirim yapılmış";
+    Alert.alert(
+      "Benzer Bildirim Var",
+      `${desc}.\n\nYine de yeni bildirim yapmak ister misiniz?`,
+      [
+        { text: "Mevcut Bildirimi Gör", onPress: () => router.push(`/animal/${first?.id}`), style: "cancel" },
+        { text: "Yeni Bildirim Yap", onPress: onContinue },
+      ]
+    );
+  };
+
   const getLocation = async () => {
     setIsLocating(true);
     try {
@@ -150,15 +182,24 @@ export default function AddAnimalScreen() {
         navigator.geolocation.getCurrentPosition(
           async (pos) => {
             const coords = { latitude: pos.coords.latitude, longitude: pos.coords.longitude };
-            setLocation(coords);
             try {
               const [geo] = await Location.reverseGeocodeAsync(coords);
               const parts = [geo?.district ?? geo?.subregion, geo?.city ?? geo?.region].filter(Boolean);
-              setLocationName(parts.length > 0 ? parts.join(", ") : `${coords.latitude.toFixed(4)}, ${coords.longitude.toFixed(4)}`);
+              const name = parts.length > 0 ? parts.join(", ") : `${coords.latitude.toFixed(4)}, ${coords.longitude.toFixed(4)}`;
+              const nearby = await checkNearbyAnimals(coords.latitude, coords.longitude);
+              if (nearby.length > 0) {
+                setIsLocating(false);
+                showDuplicateAlert(nearby, () => { setLocation(coords); setLocationName(name); });
+              } else {
+                setLocation(coords);
+                setLocationName(name);
+                setIsLocating(false);
+              }
             } catch {
+              setLocation(coords);
               setLocationName(`${coords.latitude.toFixed(4)}, ${coords.longitude.toFixed(4)}`);
+              setIsLocating(false);
             }
-            setIsLocating(false);
           },
           () => {
             setLocation(DEFAULT_REGION);
@@ -169,16 +210,27 @@ export default function AddAnimalScreen() {
       } else {
         const loc = await Location.getCurrentPositionAsync({ accuracy: Location.Accuracy.Balanced });
         const coords = { latitude: loc.coords.latitude, longitude: loc.coords.longitude };
-        setLocation(coords);
         try {
           const [geo] = await Location.reverseGeocodeAsync(coords);
           const parts = [geo?.district ?? geo?.subregion, geo?.city ?? geo?.region].filter(Boolean);
-          setLocationName(parts.length > 0 ? parts.join(", ") : `${coords.latitude.toFixed(4)}, ${coords.longitude.toFixed(4)}`);
+          const name = parts.length > 0 ? parts.join(", ") : `${coords.latitude.toFixed(4)}, ${coords.longitude.toFixed(4)}`;
+          const nearby = await checkNearbyAnimals(coords.latitude, coords.longitude);
+          if (nearby.length > 0) {
+            setIsLocating(false);
+            Haptics.notificationAsync(Haptics.NotificationFeedbackType.Warning);
+            showDuplicateAlert(nearby, () => { setLocation(coords); setLocationName(name); });
+          } else {
+            setLocation(coords);
+            setLocationName(name);
+            Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
+            setIsLocating(false);
+          }
         } catch {
+          setLocation(coords);
           setLocationName(`${coords.latitude.toFixed(4)}, ${coords.longitude.toFixed(4)}`);
+          Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
+          setIsLocating(false);
         }
-        Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
-        setIsLocating(false);
       }
     } catch {
       setLocation(DEFAULT_REGION);

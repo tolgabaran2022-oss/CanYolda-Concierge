@@ -1,0 +1,411 @@
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+19. AI EMERGENCY PRIORITY SCORE
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+Every report should automatically receive an emergency priority.
+
+The priority is calculated using:
+
+• selected condition
+• detected animal type
+• AI image analysis
+• user notes
+• duplicate confirmations
+• historical data if available
+
+Priority levels:
+
+🔴 CRITICAL
+
+Examples:
+
+• severely injured
+• bleeding
+• trapped
+• traffic accident
+• unconscious
+• unable to move
+
+Score:
+
+90-100
+
+━━━━━━━━━━━━━━━━━━
+
+🟠 HIGH
+
+Examples
+
+• hungry
+• dehydrated
+• abandoned puppies
+• abandoned kittens
+• limping
+
+Score
+
+70-89
+
+━━━━━━━━━━━━━━━━━━
+
+🟡 MEDIUM
+
+Examples
+
+• thin
+• sick looking
+• needs food
+
+Score
+
+40-69
+
+━━━━━━━━━━━━━━━━━━
+
+🟢 LOW
+
+Healthy street animal.
+
+Score
+
+0-39
+
+The backend calculates the final score.
+
+The client cannot modify it.
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+20. DUPLICATE REPORT MERGING
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+When a new report is submitted
+
+Search
+
+Radius
+
+100 meters
+
+Time
+
+Last 60 minutes
+
+Same animal type
+
+Same emergency level
+
+If likely the same animal
+
+Show
+
+"Bu bölgede benzer bir bildirim bulundu."
+
+Display
+
+distance
+
+created time
+
+condition
+
+Buttons
+
+Bu Aynı Hayvan
+
+Yeni Bildirim Oluştur
+
+If user selects
+
+Bu Aynı Hayvan
+
+Do NOT create another report.
+
+Instead
+
+Increase
+
+confirmationCount
+
+Add reporter
+
+Update latest confirmation time
+
+Store confirmation history
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+21. COMMUNITY CONFIRMATIONS
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+Every report supports confirmations.
+
+Example
+
+12 kişi doğruladı
+
+Confirmation
+
+does NOT create duplicate reports.
+
+Instead
+
+increase
+
+confirmationCount
+
+Users may confirm only once.
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+22. HELP STATUS
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+Each report has
+
+OPEN
+
+HELP_IN_PROGRESS
+
+RESCUED
+
+FALSE_REPORT
+
+ARCHIVED
+
+Only moderators
+
+or
+
+authorized rescuers
+
+can change
+
+RESCUED
+
+FALSE_REPORT
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+23. REPORT OWNER FOLLOW-UP
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+Reporter receives notifications when
+
+someone confirms
+
+someone starts helping
+
+animal rescued
+
+report archived
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+24. VOLUNTEER CLAIM SYSTEM
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+A volunteer may press
+
+"Yardıma Gidiyorum"
+
+Status becomes
+
+HELP_IN_PROGRESS
+
+Display
+
+Volunteer profile
+
+Estimated arrival
+
+Only one active volunteer claim at a time.
+
+Others may still join as assistants.
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+25. PHOTO TIMESTAMP
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+Store
+
+upload time
+
+capture time (if available)
+
+Never trust client timestamps.
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+26. REPORT EDIT LIMIT
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+Reporter may edit
+
+notes
+
+photos
+
+only within
+
+15 minutes
+
+Animal type
+
+Condition
+
+Location
+
+cannot be changed after submission.
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+27. FALSE REPORT PROTECTION
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+If a user repeatedly submits
+
+false reports
+
+spam
+
+fake locations
+
+non-animal photos
+
+Automatically increase
+
+risk score
+
+Repeated abuse
+
+temporarily disables report creation.
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+28. MODERATOR DASHBOARD READY
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+Prepare backend architecture for future moderation.
+
+Queue
+
+pending_review
+
+high_priority
+
+duplicate_reports
+
+reported_false
+
+No admin UI yet.
+
+Only backend architecture.
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+29. NOTIFICATION PRIORITY
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+Nearby volunteers receive push notifications.
+
+Radius
+
+Critical
+
+5 km
+
+High
+
+3 km
+
+Medium
+
+1 km
+
+Low
+
+No automatic push.
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+30. REPORT LIFECYCLE
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+OPEN
+
+↓
+
+CONFIRMED
+
+↓
+
+HELP_IN_PROGRESS
+
+↓
+
+RESCUED
+
+↓
+
+ARCHIVED
+
+Every state transition
+
+must be stored
+
+with timestamps.
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+31. ANALYTICS PREPARATION
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+Prepare backend counters.
+
+Daily reports
+
+Resolved reports
+
+Average rescue time
+
+Critical rescue time
+
+Duplicate merge rate
+
+False report rate
+
+Volunteer response time
+
+Do NOT build dashboard yet.
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+32. FINAL PRODUCTION AUDIT
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+Audit
+
+security
+
+performance
+
+database
+
+API
+
+AI validation
+
+duplicate detection
+
+priority calculation
+
+notifications
+
+offline queue
+
+spam protection
+
+moderation
+
+Return
+
+Production readiness score
+
+Remaining risks
+
+Modified files
+
+TypeScript result
+
+Build result
+
+Performance impact
