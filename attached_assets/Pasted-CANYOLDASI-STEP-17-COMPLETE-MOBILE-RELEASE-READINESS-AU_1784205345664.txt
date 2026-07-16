@@ -1,0 +1,159 @@
+CANYOLDASI — STEP 17
+
+COMPLETE MOBILE RELEASE READINESS AUDIT
+
+The project has completed:
+
+- Authentication
+- Authorization
+- RevenueCat integration
+- Test Store purchases
+- Backend purchase verification
+- Atomic promotion activation
+- Promotion stacking
+- RevenueCat webhook
+- Helmet
+- Rate limiting
+- Secure CORS
+- Zod validation
+- Environment validation
+- Ownership validation
+- Production security hardening
+
+Do NOT modify any code.
+
+Perform a deep recursive audit of the ENTIRE repository.
+
+==================================================
+
+Inspect:
+
+Expo
+
+React Native
+
+EAS
+
+app.json
+
+app.config.*
+
+eas.json
+
+AndroidManifest.xml
+
+Info.plist
+
+Google Services
+
+Bundle identifiers
+
+Package name
+
+Deep links
+
+Universal links
+
+Push notifications
+
+Location permissions
+
+Camera permissions
+
+Gallery permissions
+
+Microphone permissions
+
+Background location
+
+Notification permissions
+
+RevenueCat production configuration
+
+Google Play Billing
+
+App Store In-App Purchases
+
+Version codes
+
+Build numbers
+
+App icons
+
+Adaptive icons
+
+Splash screen
+
+Fonts
+
+Images
+
+Performance
+
+Memory
+
+Bundle size
+
+Crash handling
+
+Offline behavior
+
+Accessibility
+
+Dark mode
+
+Tablet support
+
+Landscape handling
+
+Account deletion
+
+Privacy Policy
+
+Terms of Service
+
+GDPR
+
+KVKK
+
+COPPA
+
+User-generated content moderation
+
+Reporting system
+
+Store compliance
+
+==================================================
+
+Classify findings as:
+
+BLOCKER
+
+REQUIRED
+
+RECOMMENDED
+
+OPTIONAL
+
+For every finding include:
+
+- Problem
+- Why it matters
+- Suggested fix
+- Estimated effort
+
+Finally provide:
+
+- Overall production readiness score
+- App Store readiness score
+- Google Play readiness score
+- RevenueCat readiness score
+- Remaining blockers before TestFlight
+- Remaining blockers before Google Internal Testing
+- Remaining blockers before App Store Review
+- Remaining blockers before Google Play Review
+
+Do not change any files.
+
+Only audit.
