@@ -64,29 +64,78 @@ type PurchaseState =
 
 /* ─────────────────────────────────────────────────────────────
    SAFE RESULT MODEL
-   Carries verified purchase data to the backend activation
-   stage (Step 10). At this stage no DB write is performed.
+   Carries verified purchase data to the backend verification
+   endpoint (Step 11 — /api/promotions/verify-purchase).
+   Promotion activation (Step 12) is NOT performed here.
 ───────────────────────────────────────────────────────────── */
 type CompletedBoostPurchase = {
-  packageIdentifier: string;
-  productIdentifier: string;
-  customerInfo: CustomerInfo;
+  packageIdentifier:     string;
+  productIdentifier:     string;
+  transactionIdentifier: string | undefined;
+  rcUserId:              string;
+  customerInfo:          CustomerInfo;
 };
 
 /**
- * Placeholder for Step 10 — backend promotion activation.
- * Called after RevenueCat confirms a successful Test Store purchase.
- * Does NOT activate the listing promotion yet.
+ * Step 11 — POST /api/promotions/verify-purchase.
+ * Records the RevenueCat purchase in listing_promotion_purchases.
+ * Does NOT activate the listing promotion (listing_promotions not touched).
  */
-function handleVerifiedPurchaseResult(result: CompletedBoostPurchase): void {
-  if (__DEV__) {
-    console.log(
-      "[Boost] Test Store purchase completed.",
-      "pkg:", result.packageIdentifier,
-      "product:", result.productIdentifier
-    );
+async function callVerifyPurchaseApi(
+  result:    CompletedBoostPurchase,
+  listingId: string,
+  token:     string | null
+): Promise<{ purchaseId: string; durationDays: number } | null> {
+  if (!token) {
+    if (__DEV__) console.warn("[Boost] No auth token — skipping verify-purchase");
+    return null;
   }
-  // TODO Step 10: POST to /api/boost/verify-iap to activate listing promotion
+
+  const baseUrl = process.env.EXPO_PUBLIC_DOMAIN ?? "";
+
+  try {
+    const res = await fetch(`${baseUrl}/api/promotions/verify-purchase`, {
+      method:  "POST",
+      headers: {
+        "Content-Type":  "application/json",
+        Authorization:   `Bearer ${token}`,
+      },
+      body: JSON.stringify({
+        listingId,
+        rcPackageIdentifier:   result.packageIdentifier,
+        productIdentifier:     result.productIdentifier,
+        transactionIdentifier: result.transactionIdentifier ?? `rc-${Date.now()}`,
+        rcUserId:              result.rcUserId,
+      }),
+    });
+
+    if (res.status === 409) {
+      if (__DEV__) console.log("[Boost] Purchase already recorded (duplicate transaction)");
+      return null;
+    }
+
+    if (!res.ok) {
+      const body = await res.json().catch(() => ({})) as Record<string, unknown>;
+      if (__DEV__) console.warn("[Boost] verify-purchase failed:", res.status, body);
+      return null;
+    }
+
+    const data = await res.json() as {
+      success:          boolean;
+      purchaseId:       string;
+      packageIdentifier: string;
+      durationDays:     number;
+    };
+
+    if (__DEV__) {
+      console.log("[Boost] Purchase recorded:", data.purchaseId, "duration:", data.durationDays);
+    }
+
+    return { purchaseId: data.purchaseId, durationDays: data.durationDays };
+  } catch (err: unknown) {
+    if (__DEV__) console.warn("[Boost] verify-purchase network error:", err);
+    return null;
+  }
 }
 
 /* ─────────────────────────────────────────────────────────────
@@ -164,7 +213,7 @@ export default function BoostPackagesScreen() {
   const colors = useColors();
   const insets = useSafeAreaInsets();
   const router = useRouter();
-  const { user } = useAuth();
+  const { user, token } = useAuth();
 
   const { listingId, petName } = useLocalSearchParams<{
     listingId: string;
@@ -259,17 +308,29 @@ export default function BoostPackagesScreen() {
       Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
 
       const completedPurchase: CompletedBoostPurchase = {
-        packageIdentifier: selectedPackage.identifier,
-        productIdentifier: result.productIdentifier,
-        customerInfo:      result.customerInfo,
+        packageIdentifier:     selectedPackage.identifier,
+        productIdentifier:     result.productIdentifier,
+        transactionIdentifier: result.transaction?.transactionIdentifier,
+        rcUserId:              result.customerInfo.originalAppUserId,
+        customerInfo:          result.customerInfo,
       };
 
-      /* Placeholder — Step 10 will call the backend here */
-      handleVerifiedPurchaseResult(completedPurchase);
+      /* Step 11 — record verified purchase in backend */
+      const recorded = await callVerifyPurchaseApi(
+        completedPurchase,
+        listingId,
+        token
+      );
+
+      if (__DEV__) {
+        console.log("[Boost] verify-purchase result:", recorded);
+      }
 
       Alert.alert(
-        "Test Satın Alma Tamamlandı",
-        "Test satın alma işlemi RevenueCat tarafından tamamlandı.\n\nİlan aktivasyonu bir sonraki aşamada bağlanacak.",
+        "Satın Alma Tamamlandı",
+        recorded
+          ? `Satın alma doğrulandı ve kaydedildi. İlan aktivasyonu bir sonraki aşamada tamamlanacak.`
+          : "Satın alma RevenueCat tarafından onaylandı. Arka plan doğrulaması devam ediyor.",
         [{ text: "Tamam", onPress: () => { setPurchaseState("idle"); router.back(); } }]
       );
     } catch (err: unknown) {

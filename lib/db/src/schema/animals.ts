@@ -140,10 +140,30 @@ export const listingPromotions = pgTable("listing_promotions", {
   updatedAt:            timestamp("updated_at", { withTimezone: true }).defaultNow(),
 });
 
+export const listingPromotionPurchases = pgTable("listing_promotion_purchases", {
+  id:                   text("id").primaryKey().default(sql`gen_random_uuid()::text`),
+  userId:               text("user_id").notNull(),
+  listingId:            text("listing_id").references(() => adoptionListings.id, { onDelete: "set null" }),
+  revenueCatUserId:     text("revenuecat_app_user_id").notNull(),
+  packageIdentifier:    text("package_identifier").notNull(),
+  productIdentifier:    text("product_identifier").notNull(),
+  store:                text("store"),
+  transactionIdentifier: text("transaction_identifier").notNull(),
+  purchaseStatus:       text("purchase_status").notNull().default("verified"),
+  durationDays:         integer("duration_days").notNull(),
+  promotionStartedAt:   timestamp("promotion_started_at", { withTimezone: true }),
+  promotionExpiresAt:   timestamp("promotion_expires_at", { withTimezone: true }),
+  verifiedAt:           timestamp("verified_at", { withTimezone: true }).defaultNow(),
+  createdAt:            timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
+  updatedAt:            timestamp("updated_at", { withTimezone: true }).notNull().defaultNow(),
+}, (t) => [unique("lpp_transaction_id_unique").on(t.transactionIdentifier)]);
+
 export type PromotionPackage        = typeof promotionPackages.$inferSelect;
 export type InsertPromotionPackage  = typeof promotionPackages.$inferInsert;
 export type ListingPromotion        = typeof listingPromotions.$inferSelect;
 export type InsertListingPromotion  = typeof listingPromotions.$inferInsert;
+export type ListingPromotionPurchase       = typeof listingPromotionPurchases.$inferSelect;
+export type InsertListingPromotionPurchase = typeof listingPromotionPurchases.$inferInsert;
 
 export type AdoptionListingFollow       = typeof adoptionListingFollows.$inferSelect;
 export type InsertAdoptionListingFollow = typeof adoptionListingFollows.$inferInsert;

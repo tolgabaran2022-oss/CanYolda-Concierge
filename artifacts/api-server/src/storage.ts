@@ -272,6 +272,43 @@ export class Storage {
     await db.execute(sql`CREATE INDEX IF NOT EXISTS listing_promotions_expires_idx ON listing_promotions(expires_at) WHERE expires_at IS NOT NULL`);
 
     await db.execute(sql`
+      CREATE TABLE IF NOT EXISTS listing_promotion_purchases (
+        id                      TEXT        PRIMARY KEY DEFAULT gen_random_uuid()::text,
+        user_id                 TEXT        NOT NULL,
+        listing_id              TEXT,
+        revenuecat_app_user_id  TEXT        NOT NULL,
+        package_identifier      TEXT        NOT NULL,
+        product_identifier      TEXT        NOT NULL,
+        store                   TEXT,
+        transaction_identifier  TEXT        NOT NULL,
+        purchase_status         TEXT        NOT NULL DEFAULT 'verified'
+                                  CONSTRAINT lpp_status_check
+                                  CHECK (purchase_status IN ('pending','verified','processed','failed','refunded','revoked')),
+        duration_days           INTEGER     NOT NULL
+                                  CONSTRAINT lpp_duration_check
+                                  CHECK (duration_days IN (1, 3, 7)),
+        promotion_started_at    TIMESTAMPTZ,
+        promotion_expires_at    TIMESTAMPTZ,
+        verified_at             TIMESTAMPTZ DEFAULT NOW(),
+        created_at              TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+        updated_at              TIMESTAMPTZ NOT NULL DEFAULT NOW()
+      )
+    `);
+    await db.execute(sql`CREATE UNIQUE INDEX IF NOT EXISTS lpp_transaction_id_idx ON listing_promotion_purchases(transaction_identifier)`);
+    await db.execute(sql`
+      DO $$ BEGIN
+        IF NOT EXISTS (SELECT 1 FROM pg_constraint WHERE conname='lpp_listing_fk' AND conrelid='listing_promotion_purchases'::regclass) THEN
+          ALTER TABLE listing_promotion_purchases ADD CONSTRAINT lpp_listing_fk FOREIGN KEY (listing_id) REFERENCES adoption_listings(id) ON DELETE SET NULL;
+        END IF;
+      END $$
+    `);
+    await db.execute(sql`CREATE INDEX IF NOT EXISTS lpp_user_id_idx ON listing_promotion_purchases(user_id)`);
+    await db.execute(sql`CREATE INDEX IF NOT EXISTS lpp_listing_id_idx ON listing_promotion_purchases(listing_id) WHERE listing_id IS NOT NULL`);
+    await db.execute(sql`CREATE INDEX IF NOT EXISTS lpp_status_idx ON listing_promotion_purchases(purchase_status)`);
+    await db.execute(sql`CREATE INDEX IF NOT EXISTS lpp_rc_user_idx ON listing_promotion_purchases(revenuecat_app_user_id)`);
+    await db.execute(sql`CREATE INDEX IF NOT EXISTS lpp_created_at_idx ON listing_promotion_purchases(created_at)`);
+
+    await db.execute(sql`
       CREATE TABLE IF NOT EXISTS stories (
         id TEXT PRIMARY KEY DEFAULT gen_random_uuid()::text,
         user_id TEXT NOT NULL,

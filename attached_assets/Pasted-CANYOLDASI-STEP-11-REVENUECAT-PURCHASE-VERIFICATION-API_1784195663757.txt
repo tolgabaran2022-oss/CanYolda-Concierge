@@ -1,0 +1,185 @@
+CANYOLDASI — STEP 11
+
+REVENUECAT PURCHASE VERIFICATION API
+
+Current backend:
+
+Express
+PostgreSQL
+Drizzle ORM
+
+NOT Supabase.
+
+RevenueCat Test Store purchase flow is already implemented.
+
+Database foundation from Step 10 already exists.
+
+This step creates the secure backend purchase verification API.
+
+==================================================
+
+DO NOT activate listing promotion yet.
+
+DO NOT update promoted_until.
+
+DO NOT reorder listings.
+
+DO NOT show promoted badge.
+
+==================================================
+
+Create a new secure backend endpoint.
+
+Recommended:
+
+POST
+
+/api/promotions/verify-purchase
+
+Use the existing Express architecture.
+
+==================================================
+
+The endpoint must require authentication.
+
+Anonymous requests must return 401.
+
+==================================================
+
+Request body should include only:
+
+listingId
+
+RevenueCat purchase information actually returned by the SDK.
+
+Inspect the existing purchase result implementation.
+
+Do not invent fields.
+
+==================================================
+
+Validate:
+
+- authenticated user exists
+
+- listing exists
+
+- listing belongs to authenticated user
+
+Reject unauthorized requests.
+
+==================================================
+
+Validate package identifier.
+
+Only allow:
+
+boost_1_day
+
+boost_3_days
+
+boost_7_days
+
+Reject every other package.
+
+==================================================
+
+Map packages server-side.
+
+Never trust duration from client.
+
+Server mapping:
+
+boost_1_day -> 1
+
+boost_3_days -> 3
+
+boost_7_days -> 7
+
+==================================================
+
+Prevent duplicate purchases.
+
+Check transaction identifier uniqueness.
+
+Duplicate transaction:
+
+return already processed.
+
+Never insert twice.
+
+==================================================
+
+Insert purchase into:
+
+listing_promotion_purchases
+
+purchase_status:
+
+verified
+
+Do not activate promotion.
+
+Do not calculate expiration.
+
+==================================================
+
+Return:
+
+success
+
+purchase id
+
+package identifier
+
+duration
+
+No sensitive purchase data.
+
+==================================================
+
+Protect endpoint against:
+
+missing authentication
+
+missing listing
+
+listing owner mismatch
+
+invalid package
+
+duplicate transaction
+
+invalid payload
+
+==================================================
+
+Run:
+
+TypeScript
+
+lint
+
+backend build
+
+Return report:
+
+1. endpoint created
+
+2. files changed
+
+3. duplicate protection
+
+4. ownership validation
+
+5. authentication
+
+6. database insert
+
+7. promotion still NOT activated
+
+IMPORTANT:
+
+Only build the secure verification endpoint.
+
+Do not activate promotions yet.
