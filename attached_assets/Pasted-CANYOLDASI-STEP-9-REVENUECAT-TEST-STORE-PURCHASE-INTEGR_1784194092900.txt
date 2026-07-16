@@ -1,0 +1,577 @@
+CANYOLDASI — STEP 9
+REVENUECAT TEST STORE PURCHASE INTEGRATION
+
+Current project state:
+
+- react-native-purchases@10.4.2 is installed
+- RevenueCat SDK initialization is already implemented
+- RevenueCat Test Store public SDK key is configured through:
+  EXPO_PUBLIC_REVENUECAT_API_KEY
+- Current / Default Offering:
+  canyoldasi_boost
+- Packages:
+  boost_1_day
+  boost_3_days
+  boost_7_days
+- Offerings are already loaded on the existing Promote Listing screen
+- The selected package is stored as:
+  PurchasesPackage | null
+
+This step is ONLY for starting and completing the RevenueCat Test Store purchase flow.
+
+Do not activate the listing promotion yet.
+Do not update promoted_until yet.
+Do not create fake purchase success.
+Do not redesign the promotion screen.
+Do not add Stripe, Apple Pay, Google Pay, or a custom card form.
+
+==================================================
+1. AUDIT THE CURRENT PURCHASE CODE
+==================================================
+
+Recursively inspect the project for:
+
+Purchases.purchasePackage
+purchasePackage
+purchaseStoreProduct
+purchaseProduct
+purchaseCompleted
+purchaseSuccess
+mockPurchase
+fakePurchase
+paymentSuccess
+promoted_until
+is_promoted
+handlePromote
+handlePurchase
+RevenueCat
+
+Find the existing Promote Listing screen and the currently selected RevenueCat package state.
+
+If purchase logic already exists, audit and repair it instead of creating a duplicate flow.
+
+There must be one purchase handler source of truth.
+
+==================================================
+2. USE THE SELECTED REVENUECAT PACKAGE
+==================================================
+
+The purchase handler must use the exact PurchasesPackage object loaded from RevenueCat Offerings.
+
+Expected input:
+
+selectedPackage: PurchasesPackage | null
+
+If selectedPackage is null:
+
+do not start a purchase.
+
+Show:
+
+“Lütfen bir öne çıkarma paketi seçin.”
+
+Do not reconstruct a fake package from identifiers.
+
+Do not call the store using only a product ID string when the SDK expects the loaded package object.
+
+==================================================
+3. START THE PURCHASE
+==================================================
+
+Use the correct purchase API supported by:
+
+react-native-purchases@10.4.2
+
+Inspect the installed TypeScript declarations before implementation.
+
+Use the actual SDK method and result shape.
+
+Expected architecture:
+
+const result = await Purchases.purchasePackage(selectedPackage);
+
+Do not invent deprecated or nonexistent methods.
+
+Do not suppress TypeScript errors with:
+
+any
+@ts-ignore
+unknown as
+
+==================================================
+4. BUTTON BEHAVIOR
+==================================================
+
+Connect the existing primary:
+
+“Öne Çıkar”
+
+button to the real RevenueCat purchase handler.
+
+Expected button rules:
+
+- disabled while packages are loading
+- disabled when selectedPackage is null
+- disabled while purchase is already running
+- cannot be triggered twice by rapid taps
+- shows loading state while purchase is processing
+
+During purchase, button text may temporarily become:
+
+“İşleniyor…”
+
+Keep the existing CanYoldasi visual design.
+
+Do not create a second payment button.
+
+==================================================
+5. PURCHASE STATE MACHINE
+==================================================
+
+Implement explicit purchase states.
+
+Recommended:
+
+idle
+starting
+processing
+success
+cancelled
+pending
+error
+
+Do not rely on one ambiguous boolean if it causes stuck states.
+
+Use one predictable purchase pipeline.
+
+All success, cancellation, and error paths must release the loading state safely.
+
+==================================================
+6. HANDLE USER CANCELLATION
+==================================================
+
+User cancellation is not a payment failure.
+
+Inspect the RevenueCat error type and cancellation property supported by the installed SDK.
+
+When the user cancels:
+
+- do not activate promotion
+- do not modify Supabase
+- reset loading state
+- keep the promotion screen open
+- do not show a frightening generic error
+
+A subtle message is acceptable:
+
+“Satın alma işlemi iptal edildi.”
+
+Do not expose raw RevenueCat errors.
+
+==================================================
+7. HANDLE SUCCESS
+==================================================
+
+When RevenueCat returns a successful purchase result:
+
+capture only the safe data needed for the next stage.
+
+Expected information may include:
+
+- purchased package identifier
+- product identifier
+- CustomerInfo
+- transaction information available from the SDK result
+
+Inspect the actual SDK return type.
+
+Do not guess property names.
+
+At this stage, success means only:
+
+RevenueCat completed the Test Store purchase.
+
+Do NOT yet:
+
+- update promoted_until
+- set is_promoted = true
+- reorder listings
+- write a promotion transaction to Supabase
+- display the listing as promoted
+
+Instead store a safe in-memory purchase result or call a clearly named placeholder function for the next backend verification stage.
+
+Example architecture:
+
+handleVerifiedPurchaseResult(...)
+
+However, that function must not grant the promotion yet.
+
+==================================================
+8. SUCCESS UX FOR THIS STAGE
+==================================================
+
+After a successful Test Store purchase, show a development-stage message:
+
+“Test satın alma işlemi RevenueCat tarafından tamamlandı.”
+
+Also mention that listing activation will be connected in the next stage.
+
+Do not show:
+
+“İlanın öne çıkarıldı”
+
+because Supabase promotion activation is not implemented yet.
+
+Do not create misleading production UX.
+
+==================================================
+9. HANDLE PENDING PURCHASES
+==================================================
+
+Inspect whether the SDK can return or surface a pending purchase state for the current platform and Test Store path.
+
+A pending purchase must not be treated as success.
+
+If pending:
+
+- do not activate promotion
+- keep purchase record available for reconciliation if supported
+- show:
+
+“Ödemeniz mağaza tarafından işleniyor.”
+
+Do not grant a listing boost until a completed purchase is confirmed.
+
+==================================================
+10. HANDLE PURCHASE ERRORS
+==================================================
+
+Use safe Turkish user-facing messages.
+
+Generic error:
+
+“Satın alma işlemi tamamlanamadı. Lütfen tekrar deneyin.”
+
+Product unavailable:
+
+“Bu paket şu anda satın alınamıyor.”
+
+Network error:
+
+“Bağlantı sorunu nedeniyle satın alma tamamlanamadı.”
+
+Configuration error:
+
+“Ödeme sistemi şu anda kullanılamıyor.”
+
+Do not show:
+
+- raw SDK stack traces
+- receipt data
+- purchase tokens
+- API keys
+- internal RevenueCat error objects
+
+Development logs may contain safe error codes and messages only.
+
+==================================================
+11. PLATFORM GUARDS
+==================================================
+
+Native RevenueCat purchasing is intended for supported native builds.
+
+The project uses Expo.
+
+Do not attempt a native purchase through Expo Go if the native module is unavailable.
+
+Detect unsupported runtime safely.
+
+For unsupported runtime, show:
+
+“Satın alma testi için Development Build kullanmanız gerekiyor.”
+
+Do not fake success in Expo Go.
+
+Web must not start a native purchase flow.
+
+For web, show:
+
+“İlan öne çıkarma satın alma işlemi iOS ve Android uygulamalarında kullanılabilir.”
+
+Do not crash the web build.
+
+==================================================
+12. REVENUECAT TEST STORE
+==================================================
+
+The current API key belongs to RevenueCat Test Store.
+
+Do not introduce Apple App Store or Google Play specific product logic yet.
+
+Do not require App Store Connect or Google Play Console configuration for this stage.
+
+The purchase should run through RevenueCat Test Store in the supported development environment.
+
+Do not charge real money.
+
+Do not hardcode a successful purchase response.
+
+==================================================
+13. CUSTOMER IDENTITY CHECK
+==================================================
+
+Before starting the purchase, confirm RevenueCat is associated with the authenticated Supabase user UUID.
+
+Do not start purchases under:
+
+test-user
+anonymous-user
+user
+email address
+pet ID
+listing ID
+
+If authentication is not resolved or user is missing:
+
+do not start purchase.
+
+Show:
+
+“Satın alma işlemi için giriş yapmanız gerekiyor.”
+
+Do not break the existing authentication flow.
+
+==================================================
+14. PURCHASE LISTENER / DUPLICATE PROCESSING AUDIT
+==================================================
+
+Inspect whether the current RevenueCat implementation uses listeners or callbacks.
+
+Prevent:
+
+- duplicate purchase handlers
+- duplicate listener registration
+- multiple success callbacks
+- Fast Refresh duplicate processing
+- two purchases from one button tap
+
+Clean up listeners properly if listeners are used.
+
+Do not add unnecessary listeners if purchasePackage already returns the required result.
+
+==================================================
+15. SAFE RESULT MODEL
+==================================================
+
+Create a typed internal result model for the next backend stage.
+
+Example:
+
+type CompletedBoostPurchase = {
+  packageIdentifier: string;
+  productIdentifier: string;
+  customerInfo: CustomerInfo;
+};
+
+Use the actual available RevenueCat types.
+
+Do not store sensitive purchase proof in AsyncStorage unless required and securely designed.
+
+At this stage, keep the result only as needed for the next implementation stage.
+
+==================================================
+16. NO DATABASE ACTIVATION YET
+==================================================
+
+This stage must not change:
+
+listings.promoted_until
+listings.is_promoted
+listing_promotions
+promotion transactions
+listing sorting
+promotion badges
+
+Search the repository after implementation and confirm the purchase handler does not directly activate promotions.
+
+==================================================
+17. TEST SCENARIOS
+==================================================
+
+TEST 1:
+
+Open Promote Listing screen.
+
+Select boost_1_day.
+
+Tap “Öne Çıkar”.
+
+Expected:
+RevenueCat Test Store purchase flow starts.
+
+TEST 2:
+
+Cancel the purchase.
+
+Expected:
+No promotion activation.
+Loading resets.
+Screen remains usable.
+
+TEST 3:
+
+Complete the Test Store purchase.
+
+Expected:
+RevenueCat returns success.
+Development-stage success message appears.
+Supabase remains unchanged.
+
+TEST 4:
+
+Tap the purchase button twice rapidly.
+
+Expected:
+Only one purchase flow starts.
+
+TEST 5:
+
+selectedPackage is null.
+
+Expected:
+Purchase does not start.
+
+TEST 6:
+
+Unauthenticated user.
+
+Expected:
+Purchase does not start.
+
+TEST 7:
+
+RevenueCat product unavailable.
+
+Expected:
+Safe Turkish error.
+
+TEST 8:
+
+Network error.
+
+Expected:
+Safe Turkish error and loading resets.
+
+TEST 9:
+
+Expo Go.
+
+Expected:
+No fake success.
+Development Build requirement is shown.
+
+TEST 10:
+
+Web.
+
+Expected:
+No native purchase attempt.
+No crash.
+
+TEST 11:
+
+After success, inspect Supabase.
+
+Expected:
+promoted_until and is_promoted are unchanged.
+
+==================================================
+18. DO NOT IMPLEMENT
+==================================================
+
+DO NOT:
+
+- update promoted_until
+- set is_promoted
+- create listing_promotions records
+- grant boost duration
+- rank the listing higher
+- show an active promoted badge
+- add backend verification yet
+- add App Store Server API verification
+- add Google Play verification
+- add Stripe
+- add Apple Pay
+- add Google Pay
+- create fake purchase success
+- hardcode a Test Store transaction
+- redesign the screen
+
+==================================================
+19. FINAL AUDIT
+==================================================
+
+After implementation, recursively search for:
+
+purchasePackage
+purchaseSuccess
+mockPurchase
+fakePurchase
+paymentSuccess
+promoted_until
+is_promoted
+listing_promotions
+
+Confirm:
+
+- the selected RevenueCat package is used
+- one real RevenueCat purchase call exists
+- cancellation is handled
+- loading always resets
+- double taps are blocked
+- Test Store success does not activate the listing
+- no database promotion fields are changed
+- web does not crash
+- Expo Go does not fake a purchase
+- TypeScript types are correct
+
+==================================================
+20. FINAL REPORT
+==================================================
+
+Return the report in Turkish with exactly these headings:
+
+1. PURCHASE HANDLER DURUMU
+
+2. KULLANILAN REVENUECAT METODU
+
+3. SELECTED PACKAGE ENTEGRASYONU
+
+4. USER CANCELLATION DAVRANIŞI
+
+5. SUCCESS DAVRANIŞI
+
+6. PENDING / ERROR DAVRANIŞI
+
+7. EXPO GO / DEVELOPMENT BUILD DAVRANIŞI
+
+8. WEB PLATFORM DAVRANIŞI
+
+9. SUPABASE’İN DEĞİŞMEDİĞİNİN DOĞRULANMASI
+
+10. DEĞİŞTİRİLEN DOSYALAR
+
+11. TYPESCRIPT / LINT SONUCU
+
+12. BACKEND PROMOTION ACTIVATION AŞAMASINA HAZIRLIK
+
+IMPORTANT:
+
+Do not only explain the implementation.
+
+Inspect the existing project and implement the real RevenueCat Test Store purchase flow.
+
+Run TypeScript and relevant lint/build checks.
+
+Do not claim a successful purchase test unless it was actually executed in a compatible Development Build.
