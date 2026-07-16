@@ -36,3 +36,16 @@ export function extractUserId(req: Request): string {
   }
   return "";
 }
+
+/**
+ * Extract authenticated user ID from a request.
+ * Tries Bearer JWT first; falls back to the legacy `x-user-id` header
+ * so older mobile code continues to work during the Bearer migration.
+ * Returns empty string when neither is present.
+ */
+export function extractUserIdDual(req: Request): string {
+  const jwtId = extractUserId(req);
+  if (jwtId) return jwtId;
+  const headerId = req.headers["x-user-id"];
+  return (typeof headerId === "string" ? headerId : "") ?? "";
+}

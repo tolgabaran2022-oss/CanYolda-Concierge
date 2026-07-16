@@ -19,7 +19,7 @@ const RC_PACKAGE_MAP: Record<string, { durationDays: 1 | 3 | 7; label: string }>
 };
 
 /* ── GET /api/boost/packages ──────────────────────────────────── */
-router.get("/boost/packages", async (_req, res): Promise<void> => {
+router.get("/packages", async (_req, res): Promise<void> => {
   try {
     const packages = await storage.getBoostPackages();
     res.json({ data: packages });
@@ -39,7 +39,7 @@ router.get("/boost/packages", async (_req, res): Promise<void> => {
    - store_transaction_id unique constraint prevents double-activation at DB level
    - Active promotion guard prevents extension without a new transaction
 ─────────────────────────────────────────────────────────────────*/
-router.post("/boost/verify-iap", async (req, res): Promise<void> => {
+router.post("/verify-iap", async (req, res): Promise<void> => {
   try {
     const {
       listingId,
@@ -147,7 +147,7 @@ router.post("/boost/verify-iap", async (req, res): Promise<void> => {
 });
 
 /* ── POST /api/boost/status ──────────────────────────────────── */
-router.post("/boost/status", async (req, res): Promise<void> => {
+router.post("/status", async (req, res): Promise<void> => {
   try {
     const { listingIds } = req.body as { listingIds: string[] };
     if (!Array.isArray(listingIds)) {
@@ -163,7 +163,7 @@ router.post("/boost/status", async (req, res): Promise<void> => {
 });
 
 /* ── GET /api/boost/my-boosts ─────────────────────────────────── */
-router.get("/boost/my-boosts", async (req, res): Promise<void> => {
+router.get("/my-boosts", async (req, res): Promise<void> => {
   try {
     let userId: string;
     try {

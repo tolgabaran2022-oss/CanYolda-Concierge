@@ -58,7 +58,7 @@ export default function UserProfileScreen() {
   const T          = useTheme();
   const insets     = useSafeAreaInsets();
   const router     = useRouter();
-  const { user }   = useAuth();
+  const { user, token } = useAuth();
   const { userId } = useLocalSearchParams<{ userId: string }>();
 
   const [username,        setUsername]        = useState("");
@@ -163,7 +163,7 @@ export default function UserProfileScreen() {
     Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
     setMsgSending(true);
     try {
-      const conv = await apiGetOrCreateConversation(user.id, userId);
+      const conv = await apiGetOrCreateConversation(token ?? "", userId);
       router.push(`/messages/${encodeURIComponent(conv.id)}` as any);
     } catch {
       router.push("/messages" as any);

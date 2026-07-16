@@ -1,4 +1,5 @@
 import { Router } from "express";
+import { extractUserIdDual } from "../lib/jwtAuth.js";
 import { and, desc, eq, inArray, or, sql } from "drizzle-orm";
 import {
   db,
@@ -434,7 +435,7 @@ router.post("/feed/reseed", async (_req, res) => {
 router.get("/feed/posts", async (req, res) => {
   try {
     await seedIfEmpty();
-    const userId       = req.headers["x-user-id"] as string | undefined;
+    const userId       = extractUserIdDual(req) || undefined;
     const filterUserId = req.query["userId"]  as string | undefined;
     const mode         = req.query["mode"]    as string | undefined;
 
@@ -551,7 +552,8 @@ router.get("/feed/posts", async (req, res) => {
 /* ── POST /api/feed/posts ────────────────────────────────── */
 router.post("/feed/posts", async (req, res) => {
   try {
-    const { userId, username, avatarUrl, imageUrl, caption, location } = req.body as Record<string, string>;
+    const authId = extractUserIdDual(req);
+    const { username, avatarUrl, imageUrl, caption, location } = req.body as Record<string, string>;
     if (!username || !imageUrl) {
       res.status(400).json({ error: "username and imageUrl required" });
       return;
@@ -559,7 +561,7 @@ router.post("/feed/posts", async (req, res) => {
     const [post] = await db
       .insert(feedPosts)
       .values({
-        userId:    userId ?? "",
+        userId:    authId || "",
         username,
         avatarUrl: avatarUrl ?? "",
         imageUrl,
@@ -579,8 +581,8 @@ router.post("/feed/posts", async (req, res) => {
 router.post("/feed/posts/:id/like", async (req, res) => {
   try {
     const { id } = req.params;
-    const userId = req.headers["x-user-id"] as string;
-    if (!userId) { res.status(400).json({ error: "x-user-id header required" }); return; }
+    const userId = extractUserIdDual(req);
+    if (!userId) { res.status(401).json({ error: "Giriş yapılmamış" }); return; }
 
     const existing = await db
       .select()
@@ -634,8 +636,8 @@ router.post("/feed/posts/:id/like", async (req, res) => {
 router.post("/feed/posts/:id/bookmark", async (req, res) => {
   try {
     const { id } = req.params;
-    const userId = req.headers["x-user-id"] as string;
-    if (!userId) { res.status(400).json({ error: "x-user-id header required" }); return; }
+    const userId = extractUserIdDual(req);
+    if (!userId) { res.status(401).json({ error: "Giriş yapılmamış" }); return; }
 
     const existing = await db
       .select()
@@ -680,11 +682,12 @@ router.post("/feed/posts/:id/comments", async (req, res) => {
   try {
     const { id } = req.params;
     const { username, text } = req.body as { username: string; text: string };
-    if (!username || !text) { res.status(400).json({ error: "username and text required" }); return; }
+    const commentText = text || (req.body as any).content;
+    if (!username || !commentText) { res.status(400).json({ error: "username and text required" }); return; }
 
     const [comment] = await db
       .insert(feedComments)
-      .values({ postId: id, username, text })
+      .values({ postId: id, username, text: commentText })
       .returning();
     await db.update(feedPosts).set({ commentsCount: sql`comments_count + 1` }).where(eq(feedPosts.id, id));
     res.json(comment);
@@ -722,8 +725,8 @@ router.post("/feed/posts/:id/comments", async (req, res) => {
 /* ── GET /api/feed/bookmarks ─ saved posts for a user ───── */
 router.get("/feed/bookmarks", async (req, res) => {
   try {
-    const userId = req.headers["x-user-id"] as string;
-    if (!userId) { res.status(400).json({ error: "x-user-id required" }); return; }
+    const userId = extractUserIdDual(req);
+    if (!userId) { res.status(401).json({ error: "Giriş yapılmamış" }); return; }
 
     const bookmarked = await db
       .select({ postId: feedBookmarks.postId })
@@ -760,7 +763,7 @@ router.get("/feed/bookmarks", async (req, res) => {
 router.get("/feed/posts/:id", async (req, res) => {
   try {
     const { id }   = req.params;
-    const userId   = req.headers["x-user-id"] as string | undefined;
+    const userId   = extractUserIdDual(req) || undefined;
     const rows     = await db.select().from(feedPosts).where(eq(feedPosts.id, id)).limit(1);
     if (!rows[0]) { res.status(404).json({ error: "Post not found" }); return; }
 
@@ -784,8 +787,8 @@ router.get("/feed/posts/:id", async (req, res) => {
 router.patch("/feed/posts/:id", async (req, res) => {
   try {
     const { id }   = req.params;
-    const userId   = req.headers["x-user-id"] as string;
-    if (!userId) { res.status(400).json({ error: "x-user-id header required" }); return; }
+    const userId   = extractUserIdDual(req);
+    if (!userId) { res.status(401).json({ error: "Giriş yapılmamış" }); return; }
 
     const post = await db.select().from(feedPosts).where(eq(feedPosts.id, id)).limit(1);
     if (!post[0]) { res.status(404).json({ error: "Post not found" }); return; }
@@ -811,8 +814,8 @@ router.patch("/feed/posts/:id", async (req, res) => {
 router.delete("/feed/posts/:id", async (req, res) => {
   try {
     const { id } = req.params;
-    const userId = req.headers["x-user-id"] as string;
-    if (!userId) { res.status(400).json({ error: "x-user-id header required" }); return; }
+    const userId = extractUserIdDual(req);
+    if (!userId) { res.status(401).json({ error: "Giriş yapılmamış" }); return; }
 
     const post = await db.select().from(feedPosts).where(eq(feedPosts.id, id)).limit(1);
     if (!post[0]) { res.status(404).json({ error: "Post not found" }); return; }
@@ -835,8 +838,8 @@ router.delete("/feed/posts/:id", async (req, res) => {
 router.delete("/feed/posts/:id/comments/:commentId", async (req, res) => {
   try {
     const { id, commentId } = req.params;
-    const userId = req.headers["x-user-id"] as string;
-    if (!userId) { res.status(400).json({ error: "x-user-id header required" }); return; }
+    const userId = extractUserIdDual(req);
+    if (!userId) { res.status(401).json({ error: "Giriş yapılmamış" }); return; }
 
     const postOwner = await db.select({ userId: feedPosts.userId }).from(feedPosts).where(eq(feedPosts.id, id)).limit(1);
     const isPostOwner = postOwner[0]?.userId === userId;

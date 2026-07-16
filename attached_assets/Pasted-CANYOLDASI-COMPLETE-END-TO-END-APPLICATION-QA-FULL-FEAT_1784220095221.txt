@@ -1,0 +1,960 @@
+CANYOLDASI — COMPLETE END-TO-END APPLICATION QA
+FULL FEATURE TESTING + BUG FIXING + PRODUCTION VALIDATION
+
+The CanYoldasi application is close to release.
+
+Perform a COMPLETE end-to-end audit and test of EVERY implemented feature in the application.
+
+This is not only a code review.
+
+You must:
+
+- inspect the complete repository
+- identify every user-facing feature
+- test each feature individually
+- test connected data flows
+- test success, failure, empty, loading, permission and retry states
+- identify root causes
+- fix confirmed bugs
+- rerun tests after every fix
+- provide evidence-based results
+
+Do not skip a feature because it appears unrelated.
+
+Do not claim a feature passed unless it was actually executed or verified through a realistic test method.
+
+If native device execution is unavailable, clearly mark that test as:
+
+MANUAL DEVICE TEST REQUIRED
+
+Do not fabricate successful results.
+
+==================================================
+1. BUILD A COMPLETE FEATURE INVENTORY FIRST
+==================================================
+
+Before making changes, recursively inspect the entire project and create a complete feature inventory.
+
+Inspect:
+
+- routes
+- screens
+- tabs
+- modals
+- bottom sheets
+- components
+- contexts
+- stores
+- API routes
+- database tables
+- background jobs
+- permissions
+- notification handlers
+- upload flows
+- payment flows
+- settings
+- authentication
+- navigation
+- platform-specific code
+
+Create a feature checklist before testing.
+
+At minimum audit and test every feature in these groups:
+
+1. Authentication and account
+2. Sahiplendirme listings
+3. Street animal reports
+4. Map and location
+5. Evcilim / pet profiles
+6. Messages
+7. User profiles and social actions
+8. Notifications
+9. Search, filters and sorting
+10. RevenueCat and promotions
+11. Settings and privacy
+12. Uploads and images
+13. Error, loading and offline behavior
+14. Web, iOS and Android compatibility
+15. Backend security and ownership
+16. Database consistency
+17. Release configuration
+
+Do not assume this list is complete.
+
+Add every additional feature found in the repository.
+
+==================================================
+2. TESTING RULES
+==================================================
+
+For every feature, test:
+
+- happy path
+- invalid input
+- missing required fields
+- unauthorized access
+- loading state
+- empty state
+- network error
+- backend error
+- retry behavior
+- duplicate taps
+- stale cache
+- app restart
+- navigation away and back
+- ownership
+- multiple users where relevant
+- large data set where relevant
+- iOS behavior
+- Android behavior
+- Web behavior
+
+Every bug must be assigned:
+
+CRITICAL
+HIGH
+MEDIUM
+LOW
+
+For every confirmed bug provide:
+
+- feature
+- reproduction steps
+- expected result
+- actual result
+- root cause
+- files changed
+- fix implemented
+- retest result
+
+==================================================
+3. AUTHENTICATION AND ACCOUNT TESTS
+==================================================
+
+Test:
+
+- sign up
+- sign in
+- sign out
+- session restore
+- invalid email
+- invalid password
+- wrong password
+- duplicate account
+- password reset request
+- reset email flow
+- new password screen
+- expired reset link
+- Google sign-in if implemented
+- Apple sign-in if implemented
+- account deletion
+- profile deletion side effects
+- authorization after logout
+- token expiry
+- refresh token handling
+- multiple users on one device
+- protected routes
+- unauthorized API requests
+
+Verify:
+
+- no stale previous-user data remains after logout
+- RevenueCat identity changes correctly
+- private records are not visible to another user
+- account deletion is accessible and functional
+
+==================================================
+4. SAHIPLENDIRME LISTING TESTS
+==================================================
+
+Test the complete adoption listing lifecycle:
+
+- create listing
+- required field validation
+- photo selection
+- multiple photo upload
+- maximum 10 photos
+- cover photo
+- reorder photos
+- delete individual photo
+- edit listing
+- edit and save multiple images
+- preview before publishing
+- preview edit flow
+- publish listing
+- listing detail
+- My Listings
+- All Listings
+- delete listing
+- expired/deactivated listing behavior
+- filters
+- search
+- pagination
+- empty state
+- image fallback
+- listing ownership
+- messaging the owner
+- profile navigation from listing
+- featured/promoted sorting
+- promoted badge
+- promotion countdown
+- promotion expiry
+- extending a promotion
+
+Verify:
+
+- create and edit use the same data model
+- all photos persist after app restart
+- card and detail use the correct cover image
+- unauthorized users cannot edit/delete another listing
+- promoted listings always appear before regular listings
+- expired promotions automatically return to normal order
+
+==================================================
+5. STREET ANIMAL REPORT TESTS
+==================================================
+
+Test the entire street animal reporting flow:
+
+- open report screen
+- camera-only photo capture
+- verify gallery is unavailable
+- camera permission allowed
+- camera permission denied
+- permanently denied permission
+- retake photo
+- use captured photo
+- remove photo
+- mandatory animal photo
+- animal-only image validation
+- non-animal image rejection
+- animal type selection
+- animal condition selection
+- location required
+- GPS permission
+- GPS accuracy
+- manually selected location
+- location-distance warning
+- notes
+- duplicate nearby report detection
+- duplicate confirmation
+- create new report despite warning
+- spam limits
+- priority score
+- moderation state
+- pending review
+- report creation
+- status card image preview
+- map marker
+- report detail
+- refresh after create
+- app restart persistence
+- help count
+- confirm report
+- volunteer claim
+- report lifecycle
+- rescued status
+- false report status
+- archive behavior
+- report ID
+- report ownership
+- edit restrictions
+- notification triggers
+
+Critical validations:
+
+- only camera photo is accepted
+- gallery/file upload is rejected
+- report cannot be submitted without photo, animal type, condition and location
+- only persistent remote image URL is stored
+- the status card displays the uploaded image
+- non-animal images are rejected or placed into pending review
+- duplicate reports do not create unwanted duplicate cards
+- one user cannot confirm the same report multiple times
+- unauthorized lifecycle updates are rejected
+
+==================================================
+6. MAP AND LOCATION TESTS
+==================================================
+
+Test:
+
+- current location button
+- location permission
+- denied permission
+- location loading
+- GPS error
+- map marker rendering
+- marker tap
+- marker to report card navigation
+- report card to map navigation
+- Google Maps / Apple Maps opening
+- nearby reports
+- bottom sheet drag
+- bottom sheet expand/collapse
+- selected marker synchronization
+- map refresh
+- duplicate markers
+- invalid coordinates
+- location filters
+- iOS map behavior
+- Android map behavior
+- Web fallback
+
+Verify:
+
+- tapping a marker opens the correct report
+- stale markers are removed
+- no report with missing coordinates crashes the map
+- current location is not hardcoded
+
+==================================================
+7. EVCILIM / PET PROFILE TESTS
+==================================================
+
+Test:
+
+- add first pet
+- add multiple pets
+- switch active pet
+- pet list bottom sheet
+- pet profile image
+- pet details
+- breed
+- age
+- gender
+- vaccination records
+- appointments
+- food records
+- health notes
+- separate data for each pet
+- edit pet
+- delete pet
+- delete non-active pet
+- delete active pet
+- delete last pet
+- duplicate pet names
+- stale activePetId
+- persistence after restart
+- ownership
+- storage cleanup
+
+Verify:
+
+- adding a second pet does not delete the first
+- each pet keeps separate records
+- deletion uses pet ID, never name
+- active pet changes safely after deletion
+- empty state appears when no pets remain
+
+==================================================
+8. MESSAGING TESTS
+==================================================
+
+Test:
+
+- start conversation from listing
+- send message
+- receive message
+- two-user visibility
+- conversation list
+- unread count
+- read status
+- duplicate messages
+- retry failed send
+- empty message
+- long message
+- emoji
+- image attachment if supported
+- deleted listing conversation
+- blocked/removed user if supported
+- notification integration
+- stale cache
+- ordering
+- unauthorized thread access
+- offline send behavior
+
+Verify:
+
+- both users see the conversation
+- one user cannot read another conversation
+- rapid taps do not create duplicate messages
+- errors are recoverable
+
+==================================================
+9. USER PROFILE AND SOCIAL TESTS
+==================================================
+
+Test:
+
+- own profile
+- another user profile
+- profile photo
+- name
+- bio
+- follow
+- unfollow
+- follower count
+- following count
+- followers list
+- following list
+- private profile
+- profile navigation from listings
+- profile navigation from reports
+- message button
+- saved items
+- favorites
+- heart/unheart listing
+- Followed section
+- stale counters
+- duplicate follow actions
+- unauthorized updates
+
+Verify:
+
+- counts are correct
+- duplicate relations are blocked
+- privacy rules work
+- profile buttons navigate correctly
+
+==================================================
+10. NOTIFICATION TESTS
+==================================================
+
+Test:
+
+- notification permission request
+- denied permission
+- notification settings toggle
+- in-app notification list
+- unread count
+- mark as read
+- report confirmation notification
+- volunteer help notification
+- rescued notification
+- message notification
+- promotion success notification if implemented
+- deep link from notification
+- duplicate notification prevention
+- expired target handling
+- iOS
+- Android
+- Web fallback
+
+Verify notification actions open the correct screen.
+
+==================================================
+11. SEARCH, FILTER AND SORTING TESTS
+==================================================
+
+Test every filter and combination:
+
+- animal type
+- city
+- location
+- age
+- gender
+- vaccination
+- neutered
+- health condition
+- compatibility
+- status
+- search text
+- promoted-first order
+- newest-first order
+- empty results
+- reset filters
+- filter persistence
+- pagination
+- infinite scroll
+- duplicate records
+- stable ordering
+
+Verify:
+
+- filters are applied on backend when appropriate
+- promoted priority remains inside filtered results
+- no item appears twice
+- no stale filter state survives incorrectly
+
+==================================================
+12. REVENUECAT / PAYMENT / PROMOTION TESTS
+==================================================
+
+Test:
+
+- RevenueCat initialization
+- authenticated App User ID
+- offerings load
+- 1-day product
+- 3-day product
+- 7-day product
+- localized prices
+- package selection
+- default selected package
+- Test Store purchase
+- user cancellation
+- purchase error
+- network interruption
+- backend verification
+- listing ownership
+- duplicate transaction
+- idempotency
+- promotion activation
+- stacking
+- countdown
+- badge
+- promoted-first ordering
+- retry after payment success/backend failure
+- webhook TEST event
+- duplicate webhook
+- refund
+- revoke
+- refund reversal
+- expired promotion
+- web unsupported behavior
+- Expo Go unsupported behavior
+- Development Build requirements
+
+Never claim real Apple/Google payment success unless tested in the actual sandbox/store environment.
+
+==================================================
+13. SETTINGS AND PRIVACY TESTS
+==================================================
+
+Test:
+
+- settings screen
+- notification toggles
+- profile privacy
+- account section
+- password change
+- logout
+- account deletion
+- privacy policy
+- terms of service
+- KVKK text
+- GDPR consent if present
+- camera permission settings
+- location permission settings
+- notification settings
+- blocked users if implemented
+- app version display
+- support/contact action
+
+Verify all links open and all toggles persist.
+
+==================================================
+14. IMAGE AND UPLOAD TESTS
+==================================================
+
+Test every upload area separately:
+
+- street report camera-only
+- adoption listing gallery
+- pet profile
+- user profile
+- message attachment if supported
+
+Test:
+
+- valid JPEG
+- PNG
+- WEBP
+- HEIC
+- unsupported type
+- oversized file
+- corrupted image
+- rotated image
+- low-resolution image
+- upload timeout
+- retry
+- duplicate upload
+- storage URL
+- thumbnail
+- app restart
+- delete cleanup
+- ownership
+
+Do not apply the camera-only restriction globally.
+
+==================================================
+15. NAVIGATION TESTS
+==================================================
+
+Test every route and interaction:
+
+- all bottom tabs
+- back buttons
+- modal close
+- bottom sheet close
+- deep links
+- notification links
+- listing detail
+- report detail
+- profile detail
+- edit pages
+- preview pages
+- payment screen
+- password reset
+- unauthorized route redirect
+
+Check:
+
+- broken route names
+- double navigation
+- blank screens
+- lost form state
+- back button loops
+- Android hardware back
+- safe-area issues
+- Dynamic Island/notch
+- keyboard overlap
+
+==================================================
+16. UI / UX / ACCESSIBILITY TESTS
+==================================================
+
+Audit every screen for:
+
+- text overflow
+- clipped content
+- small touch targets
+- keyboard obstruction
+- scroll failure
+- safe-area
+- Android emoji
+- Web overflow
+- loading indicators
+- empty states
+- disabled states
+- error states
+- color contrast
+- accessibility labels
+- screen-reader support
+- font scaling
+- long names
+- long descriptions
+- small phones
+- large phones
+- tablet layouts
+- dark mode if supported
+
+Do not redesign the application unless required to fix a confirmed bug.
+
+==================================================
+17. BACKEND AND SECURITY TESTS
+==================================================
+
+Test all write endpoints for:
+
+- authentication
+- ownership
+- Zod validation
+- invalid IDs
+- SQL injection-like payloads
+- XSS strings
+- oversized body
+- rate limiting
+- duplicate request
+- replay
+- concurrency
+- unauthorized field updates
+- transaction rollback
+- sensitive error leakage
+
+Verify:
+
+- JWT secret is required
+- CORS rejects unapproved origins
+- Helmet is enabled
+- upload requires auth
+- users cannot edit other users’ records
+- clients cannot set promoted_until
+- clients cannot fake purchase status
+- clients cannot submit another user’s image
+- webhook secrets are server-only
+
+==================================================
+18. DATABASE CONSISTENCY TESTS
+==================================================
+
+Audit:
+
+- foreign keys
+- unique indexes
+- missing indexes
+- cascade behavior
+- nullable fields
+- duplicate rows
+- orphan media
+- stale active pet IDs
+- stale promoted flags
+- duplicate transactions
+- duplicate confirmations
+- duplicate follows
+- duplicate favorites
+- message thread consistency
+- report lifecycle history
+- migrations
+- generated types
+
+Run non-destructive consistency checks.
+
+Do not reset or delete production data.
+
+==================================================
+19. OFFLINE / NETWORK FAILURE TESTS
+==================================================
+
+Simulate or validate:
+
+- slow network
+- no network
+- request timeout
+- upload interrupted
+- purchase backend failure
+- message send failure
+- report create failure
+- stale cache
+- reconnect
+- retry
+- duplicate retry
+- offline queue if implemented
+
+Ensure no duplicate record is created after retry.
+
+==================================================
+20. PLATFORM-SPECIFIC TESTS
+==================================================
+
+iOS:
+
+- permissions
+- camera
+- location
+- notifications
+- safe areas
+- StoreKit/RevenueCat development build
+- keyboard
+- deep links
+
+Android:
+
+- permissions
+- camera
+- location
+- notifications
+- hardware back
+- adaptive icon
+- emoji
+- Play Billing development build
+- keyboard
+- deep links
+
+Web:
+
+- unsupported native feature guards
+- no file upload for street report
+- responsive layout
+- navigation
+- authentication
+- no native module crash
+
+Mark unavailable runtime tests honestly.
+
+==================================================
+21. AUTOMATED TESTS
+==================================================
+
+Create or improve automated tests where practical.
+
+Use the project’s existing test stack.
+
+At minimum add tests for critical pure logic:
+
+- promotion active/expired
+- promotion stacking
+- package duration mapping
+- duplicate transaction idempotency
+- promoted-first sorting
+- remaining time formatter
+- pet deletion active selection
+- report required fields
+- duplicate report distance/time logic
+- priority scoring
+- image field mapping
+- status card image fallback
+- request validation schemas
+
+Add API integration tests for critical endpoints where infrastructure permits.
+
+Do not add brittle snapshot tests with little value.
+
+==================================================
+22. FIXING RULES
+==================================================
+
+For every confirmed bug:
+
+1. reproduce it
+2. identify root cause
+3. implement the smallest safe fix
+4. run TypeScript
+5. run lint
+6. run relevant tests
+7. retest the user flow
+8. check connected regressions
+
+Do not change unrelated business rules.
+
+Do not introduce fake data unless isolated test fixtures are used.
+
+Do not silently remove features to make tests pass.
+
+Do not mark untested behavior as passed.
+
+==================================================
+23. TEST DATA SAFETY
+==================================================
+
+Use isolated test users and test records where possible.
+
+Do not:
+
+- reset the production database
+- delete real users
+- delete real listings
+- charge real money
+- send real push notifications to production users
+- modify production RevenueCat products
+- create public spam data
+
+Clean up test records safely.
+
+==================================================
+24. REQUIRED OUTPUT ARTIFACTS
+==================================================
+
+Create the following reports in the repository:
+
+1. FEATURE_INVENTORY.md
+
+Every feature found, grouped by module.
+
+2. QA_TEST_MATRIX.md
+
+Columns:
+
+Feature
+Test case
+Platform
+Expected
+Actual
+Status
+Evidence
+Bug ID
+
+3. BUG_REPORT.md
+
+Every confirmed bug with:
+
+Bug ID
+Severity
+Feature
+Reproduction
+Expected
+Actual
+Root cause
+Fix
+Retest
+
+4. MANUAL_DEVICE_TESTS.md
+
+Tests that require a physical iOS/Android device or store sandbox.
+
+5. RELEASE_BLOCKERS.md
+
+Only unresolved blockers before release.
+
+6. QA_SUMMARY.md
+
+Final executive summary.
+
+==================================================
+25. FINAL REPORT FORMAT
+==================================================
+
+Return the final report in Turkish using exactly these headings:
+
+1. TEST EDİLEN TOPLAM ÖZELLİK SAYISI
+
+2. TOPLAM TEST SENARYOSU
+
+3. BAŞARILI TESTLER
+
+4. BAŞARISIZ TESTLER
+
+5. DÜZELTİLEN BUG SAYISI
+
+6. KALAN CRITICAL BUGLAR
+
+7. KALAN HIGH BUGLAR
+
+8. AUTHENTICATION SONUÇLARI
+
+9. SAHİPLENDİRME SONUÇLARI
+
+10. SOKAK HAYVANI BİLDİRİM SONUÇLARI
+
+11. HARİTA SONUÇLARI
+
+12. EVCİLİM SONUÇLARI
+
+13. MESAJLAR SONUÇLARI
+
+14. PROFİL / SOSYAL SONUÇLARI
+
+15. NOTIFICATION SONUÇLARI
+
+16. REVENUECAT / PROMOTION SONUÇLARI
+
+17. UPLOAD / FOTOĞRAF SONUÇLARI
+
+18. BACKEND / SECURITY SONUÇLARI
+
+19. DATABASE SONUÇLARI
+
+20. IOS SONUÇLARI
+
+21. ANDROID SONUÇLARI
+
+22. WEB SONUÇLARI
+
+23. TYPESCRIPT / LINT / BUILD SONUÇLARI
+
+24. OLUŞTURULAN QA DOSYALARI
+
+25. MANUEL TEST GEREKTİREN AKIŞLAR
+
+26. RELEASE BLOCKERLARI
+
+27. GÜNCEL PRODUCTION READINESS PUANI
+
+28. APP STORE’A HAZIRLIK DURUMU
+
+29. GOOGLE PLAY’E HAZIRLIK DURUMU
+
+30. KALAN RİSKLER
+
+IMPORTANT:
+
+Do not return only an audit or general recommendations.
+
+Actually test every reachable feature one by one.
+
+Fix confirmed bugs.
+
+Rerun the relevant tests.
+
+Do not claim iOS, Android, StoreKit, Google Play Billing, push notification or physical-camera tests passed unless they were actually executed in the required environment.

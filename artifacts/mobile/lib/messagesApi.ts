@@ -2,9 +2,9 @@ const API_BASE = process.env.EXPO_PUBLIC_DOMAIN
   ? `https://${process.env.EXPO_PUBLIC_DOMAIN}/api`
   : "http://localhost:8080/api";
 
-function hdrs(userId?: string): Record<string, string> {
+function hdrs(token?: string | null): Record<string, string> {
   const h: Record<string, string> = { "Content-Type": "application/json" };
-  if (userId) h["x-user-id"] = userId;
+  if (token) h["Authorization"] = `Bearer ${token}`;
   return h;
 }
 
@@ -34,21 +34,21 @@ export type ApiMessage = {
 };
 
 export async function apiGetOrCreateConversation(
-  myId: string,
+  token: string,
   otherId: string,
   listing?: { id: string; title: string; imageUrl: string }
 ): Promise<ApiConversation> {
   const res = await fetch(`${API_BASE}/messages/conversations`, {
     method: "POST",
-    headers: hdrs(myId),
+    headers: hdrs(token),
     body: JSON.stringify({ otherId, listing }),
   });
   if (!res.ok) throw new Error("create conversation failed");
   return res.json() as Promise<ApiConversation>;
 }
 
-export async function apiGetConversations(myId: string): Promise<ApiConversation[]> {
-  const res = await fetch(`${API_BASE}/messages/conversations`, { headers: hdrs(myId) });
+export async function apiGetConversations(token: string): Promise<ApiConversation[]> {
+  const res = await fetch(`${API_BASE}/messages/conversations`, { headers: hdrs(token) });
   if (!res.ok) throw new Error("fetch conversations failed");
   const data = await res.json();
   return Array.isArray(data) ? (data as ApiConversation[]) : [];
@@ -56,42 +56,42 @@ export async function apiGetConversations(myId: string): Promise<ApiConversation
 
 export async function apiGetMessages(
   conversationId: string,
-  myId: string,
+  token: string,
   after?: string
 ): Promise<ApiMessage[]> {
   const url = after
     ? `${API_BASE}/messages/conversations/${conversationId}/messages?after=${encodeURIComponent(after)}`
     : `${API_BASE}/messages/conversations/${conversationId}/messages`;
-  const res = await fetch(url, { headers: hdrs(myId) });
+  const res = await fetch(url, { headers: hdrs(token) });
   if (!res.ok) throw new Error("fetch messages failed");
   return res.json() as Promise<ApiMessage[]>;
 }
 
 export async function apiSendMessage(
   conversationId: string,
-  myId: string,
+  token: string,
   message: string,
   imageUrl?: string
 ): Promise<ApiMessage> {
   const res = await fetch(`${API_BASE}/messages/conversations/${conversationId}/messages`, {
     method: "POST",
-    headers: hdrs(myId),
+    headers: hdrs(token),
     body: JSON.stringify({ message, imageUrl }),
   });
   if (!res.ok) throw new Error("send message failed");
   return res.json() as Promise<ApiMessage>;
 }
 
-export async function apiMarkRead(conversationId: string, myId: string): Promise<void> {
+export async function apiMarkRead(conversationId: string, token: string): Promise<void> {
   await fetch(`${API_BASE}/messages/conversations/${conversationId}/read`, {
     method: "POST",
-    headers: hdrs(myId),
+    headers: hdrs(token),
   });
 }
 
-export async function apiGetUnreadTotal(myId: string): Promise<number> {
+export async function apiGetUnreadTotal(token: string): Promise<number> {
   try {
-    const convs = await apiGetConversations(myId);
+    const convs = await apiGetConversations(token);
     return convs.reduce((sum, c) => sum + (c.unreadCount ?? 0), 0);
   } catch { return 0; }
 }

@@ -103,7 +103,7 @@ export default function AdoptionDetailScreen() {
   const insets = useSafeAreaInsets();
   const router = useRouter();
   const { getListing, deleteListing, isFollowed, followListing, unfollowListing } = useAdoption();
-  const { user } = useAuth();
+  const { user, token } = useAuth();
   const { boostStatuses, fetchBoostStatus } = useBoost();
   const [followLoading, setFollowLoading] = useState(false);
 
@@ -216,7 +216,7 @@ export default function AdoptionDetailScreen() {
     setMsgSending(true);
     try {
       const conv = await apiGetOrCreateConversation(
-        user.id,
+        token ?? "",
         listing.userId,
         {
           id:       listing.id,

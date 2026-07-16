@@ -36,7 +36,7 @@ export default function ConversationsScreen() {
   const T        = useTheme();
   const insets   = useSafeAreaInsets();
   const router   = useRouter();
-  const { user } = useAuth();
+  const { user, token } = useAuth();
 
   const [convs,      setConvs]      = useState<ApiConversation[]>([]);
   const [loading,    setLoading]    = useState(true);
@@ -47,7 +47,7 @@ export default function ConversationsScreen() {
   const load = useCallback(async () => {
     if (!user) return;
     try {
-      const data = await apiGetConversations(user.id);
+      const data = await apiGetConversations(token ?? "");
       setConvs(data);
     } catch { /* ignore */ }
     finally { setLoading(false); setRefreshing(false); }

@@ -14,7 +14,7 @@ function requireUser(req: any, res: any): string | null {
 }
 
 /* ── GET /api/messages/conversations ── list my conversations ── */
-router.get("/messages/conversations", async (req, res) => {
+router.get("/conversations", async (req, res) => {
   const myId = requireUser(req, res);
   if (!myId) return;
 
@@ -85,7 +85,7 @@ router.get("/messages/conversations", async (req, res) => {
 });
 
 /* ── POST /api/messages/conversations ── get or create ── */
-router.post("/messages/conversations", async (req, res) => {
+router.post("/conversations", async (req, res) => {
   const myId = requireUser(req, res);
   if (!myId) return;
 
@@ -194,7 +194,7 @@ router.post("/messages/conversations", async (req, res) => {
 });
 
 /* ── GET /api/messages/conversations/:id/messages ── */
-router.get("/messages/conversations/:id/messages", async (req, res) => {
+router.get("/conversations/:id/messages", async (req, res) => {
   const myId = requireUser(req, res);
   if (!myId) return;
 
@@ -240,7 +240,7 @@ router.get("/messages/conversations/:id/messages", async (req, res) => {
 });
 
 /* ── POST /api/messages/conversations/:id/messages ── send ── */
-router.post("/messages/conversations/:id/messages", async (req, res) => {
+router.post("/conversations/:id/messages", async (req, res) => {
   const myId = requireUser(req, res);
   if (!myId) return;
 
@@ -293,7 +293,7 @@ router.post("/messages/conversations/:id/messages", async (req, res) => {
 });
 
 /* ── POST /api/messages/conversations/:id/read ── mark read ── */
-router.post("/messages/conversations/:id/read", async (req, res) => {
+router.post("/conversations/:id/read", async (req, res) => {
   const myId = requireUser(req, res);
   if (!myId) return;
 

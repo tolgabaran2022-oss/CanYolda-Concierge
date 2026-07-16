@@ -10,3 +10,6 @@
 - [Local URI upload bug pattern](local-uri-upload-bug.md) — ImagePicker returns local file:// URIs; ALL screens that persist images must call uploadImage(/api/upload) first; 6 screens were missing this step
 - [RevenueCat IAP Boost system](revenuecat-iap-boost.md) — RC project/app/product IDs; connector proxy limitations; architecture for listing_boost IAP flow
 - [RevenueCat webhook & refund lifecycle](revenuecat-webhook-arch.md) — POST /api/webhooks/revenuecat with raw body before global JSON; auth token + optional HMAC; recalculateListingPromotion uses max(promotionExpiresAt) over processed purchases
+- [Router prefix + rate limiter pattern](router-prefix-ratelimit.md) — route files keep full internal prefix (e.g. /messages/conversations); index.ts uses router.use("/messages", limiter, subRouter) — stripping internal prefix causes double-mount; removing prefix from router.use makes limiter apply to ALL routes
+- [Feed/stories x-user-id dual auth](feed-auth-dual.md) — feed.ts and stories.ts used x-user-id header; fixed via extractUserIdDual() in jwtAuth.ts (Bearer JWT → fallback x-user-id); mobile feedApi.ts still sends x-user-id but dual helper accepts both
+- [QA report location](qa-reports.md) — full QA audit docs at docs/qa/ (FEATURE_INVENTORY, QA_TEST_MATRIX, BUG_REPORT, MANUAL_DEVICE_TESTS, RELEASE_BLOCKERS, QA_SUMMARY)

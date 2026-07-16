@@ -759,7 +759,7 @@ const acc = StyleSheet.create({
 function MessagesSection({ botPad }: { botPad: number }) {
   const T                        = useTheme();
   const router                   = useRouter();
-  const { user }                 = useAuth();
+  const { user, token }          = useAuth();
   const [convs,      setConvs]   = useState<ApiConversation[]>([]);
   const [loading,    setLoading] = useState(true);
   const [refreshing, setRef]     = useState(false);
@@ -767,7 +767,7 @@ function MessagesSection({ botPad }: { botPad: number }) {
   const load = useCallback(async () => {
     if (!user) { setLoading(false); return; }
     try {
-      const all = await apiGetConversations(user.id);
+      const all = await apiGetConversations(token ?? "");
       setConvs(all.filter((c) => !!c.listingId));
     } catch { /* ignore */ }
     finally { setLoading(false); setRef(false); }
@@ -1339,7 +1339,7 @@ export default function AdoptionScreen() {
   const router        = useRouter();
   const { listings, deleteListing } = useAdoption();
   const { boostStatuses }           = useBoost();
-  const { user }                    = useAuth();
+  const { user, token }             = useAuth();
   const [activeTab, setActiveTab]          = useState<Tab>("create");
   const [filter, setFilter]                = useState<Filter>("all");
   const [query, setQuery]                  = useState("");
@@ -1352,7 +1352,7 @@ export default function AdoptionScreen() {
     let cancelled = false;
     const poll = async () => {
       try {
-        const all = await apiGetConversations(user.id);
+        const all = await apiGetConversations(token ?? "");
         const count = all.filter((c) => !!c.listingId && c.unreadCount > 0).reduce((sum, c) => sum + c.unreadCount, 0);
         if (!cancelled) setUnreadAdoptionCount(count);
       } catch { /* ignore */ }

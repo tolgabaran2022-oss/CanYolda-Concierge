@@ -1,4 +1,5 @@
 import { Router } from "express";
+import { extractUserIdDual } from "../lib/jwtAuth.js";
 import { and, desc, eq, gt, inArray, sql } from "drizzle-orm";
 import { db, pool, stories, storyViews, storyLikes, storyReplies, socialProfiles, follows, notifications, conversations, messages } from "@workspace/db";
 import { logger } from "../lib/logger.js";
@@ -77,7 +78,7 @@ async function seedIfEmpty() {
 router.get("/stories/user/:userId", async (req, res) => {
   try {
     const { userId } = req.params;
-    const viewerId = req.headers["x-user-id"] as string | undefined;
+    const viewerId = extractUserIdDual(req) || undefined;
     const now = new Date();
 
     /* Privacy checks */
@@ -153,7 +154,7 @@ router.get("/stories/user/:userId", async (req, res) => {
 router.get("/stories", async (req, res) => {
   try {
     await seedIfEmpty();
-    const viewerId = req.headers["x-user-id"] as string | undefined;
+    const viewerId = extractUserIdDual(req) || undefined;
     const now = new Date();
 
     const hiddenUsers = await db
@@ -274,8 +275,8 @@ router.post("/stories", async (req, res) => {
 router.post("/stories/:id/view", async (req, res) => {
   try {
     const { id } = req.params;
-    const viewerId = req.headers["x-user-id"] as string;
-    if (!viewerId) { res.status(400).json({ error: "x-user-id header required" }); return; }
+    const viewerId = extractUserIdDual(req);
+    if (!viewerId) { res.status(401).json({ error: "Giriş yapılmamış" }); return; }
 
     await db.insert(storyViews).values({ storyId: id, viewerId }).onConflictDoNothing();
 
@@ -311,8 +312,8 @@ router.get("/stories/:id/views", async (req, res) => {
 router.post("/stories/:id/like", async (req, res) => {
   try {
     const { id } = req.params;
-    const userId = req.headers["x-user-id"] as string;
-    if (!userId) { res.status(401).json({ error: "x-user-id required" }); return; }
+    const userId = extractUserIdDual(req);
+    if (!userId) { res.status(401).json({ error: "Giriş yapılmamış" }); return; }
 
     const existing = await db.select({ id: storyLikes.id })
       .from(storyLikes)
@@ -416,8 +417,8 @@ router.get("/stories/:id/likers", async (req, res) => {
 router.post("/stories/:id/reply", async (req, res) => {
   try {
     const { id } = req.params;
-    const senderId = req.headers["x-user-id"] as string;
-    if (!senderId) { res.status(401).json({ error: "x-user-id required" }); return; }
+    const senderId = extractUserIdDual(req);
+    if (!senderId) { res.status(401).json({ error: "Giriş yapılmamış" }); return; }
 
     const { receiverId, message } = req.body as { receiverId: string; message: string };
     if (!receiverId || !message?.trim()) {

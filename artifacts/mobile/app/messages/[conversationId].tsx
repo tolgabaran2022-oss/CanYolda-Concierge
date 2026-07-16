@@ -71,7 +71,7 @@ export default function ChatScreen() {
   const T        = useTheme();
   const insets   = useSafeAreaInsets();
   const router   = useRouter();
-  const { user } = useAuth();
+  const { user, token } = useAuth();
   const { conversationId } = useLocalSearchParams<{ conversationId: string }>();
 
   const [conv,     setConv]     = useState<ApiConversation | null>(null);
@@ -89,7 +89,7 @@ export default function ChatScreen() {
   const loadConv = useCallback(async () => {
     if (!user || !conversationId) return;
     try {
-      const all = await apiGetConversations(user.id);
+      const all = await apiGetConversations(token ?? "");
       const c = all.find((c) => c.id === conversationId);
       if (c) setConv(c);
     } catch { /* ignore */ }
@@ -98,10 +98,10 @@ export default function ChatScreen() {
   const loadMsgs = useCallback(async () => {
     if (!user || !conversationId) return;
     try {
-      const data = await apiGetMessages(conversationId, user.id);
+      const data = await apiGetMessages(conversationId, token ?? "");
       setMsgs(data);
       if (data.length) latestAt.current = data[data.length - 1].createdAt;
-      await apiMarkRead(conversationId, user.id);
+      await apiMarkRead(conversationId, token ?? "");
     } catch { /* ignore */ }
     finally { setLoading(false); }
   }, [user, conversationId]);
@@ -109,7 +109,7 @@ export default function ChatScreen() {
   const pollNew = useCallback(async () => {
     if (!user || !conversationId || !latestAt.current) return;
     try {
-      const fresh = await apiGetMessages(conversationId, user.id, latestAt.current);
+      const fresh = await apiGetMessages(conversationId, token ?? "", latestAt.current);
       if (fresh.length) {
         setMsgs((prev) => {
           const ids = new Set(prev.map((m) => m.id));
@@ -117,7 +117,7 @@ export default function ChatScreen() {
           return added.length ? [...prev, ...added] : prev;
         });
         latestAt.current = fresh[fresh.length - 1].createdAt;
-        await apiMarkRead(conversationId, user.id);
+        await apiMarkRead(conversationId, token ?? "");
         setTimeout(() => flatRef.current?.scrollToEnd({ animated: true }), 100);
       }
     } catch { /* ignore */ }
@@ -146,7 +146,7 @@ export default function ChatScreen() {
     setSending(true);
     Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
     try {
-      const msg = await apiSendMessage(conversationId!, user!.id, draft);
+      const msg = await apiSendMessage(conversationId!, token ?? "", draft);
       setMsgs((p) => [...p, msg]);
       latestAt.current = msg.createdAt;
       setTimeout(() => flatRef.current?.scrollToEnd({ animated: true }), 80);
@@ -168,7 +168,7 @@ export default function ChatScreen() {
     Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
     setSending(true);
     try {
-      const msg = await apiSendMessage(conversationId, user.id, "📷 Fotoğraf", result.assets[0].uri);
+      const msg = await apiSendMessage(conversationId, token ?? "", "📷 Fotoğraf", result.assets[0].uri);
       setMsgs((p) => [...p, msg]);
       latestAt.current = msg.createdAt;
       setTimeout(() => flatRef.current?.scrollToEnd({ animated: true }), 80);

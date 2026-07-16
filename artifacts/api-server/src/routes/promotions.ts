@@ -48,7 +48,7 @@ const PACKAGE_MAP: Record<string, { durationDays: 1 | 3 | 7 }> = {
  * A7  status failed/revoked → only 'verified' transitions to 'processed'
  * A8  client writes directly → backend-only column; client has no direct DB access
  */
-router.post("/promotions/verify-purchase", async (req, res): Promise<void> => {
+router.post("/verify-purchase", async (req, res): Promise<void> => {
   /* ── 1. Authentication ──────────────────────────────────────── */
   let userId: string;
   try {
@@ -317,7 +317,7 @@ router.post("/promotions/verify-purchase", async (req, res): Promise<void> => {
    Returns current promotion state for a single listing.
    Used by the mobile client to refresh after activation.
 ──────────────────────────────────────────────────────────────── */
-router.get("/promotions/status/:listingId", async (req, res): Promise<void> => {
+router.get("/status/:listingId", async (req, res): Promise<void> => {
   const { listingId } = req.params;
   if (!listingId) { res.status(400).json({ error: "listingId gerekli" }); return; }
 
