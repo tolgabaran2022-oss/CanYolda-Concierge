@@ -1,0 +1,381 @@
+CANYOLDASI — EVCIL DOSTLARIM LISTESINE SOLDA SIL IKONU EKLE
+
+Current screen:
+
+Evcilim
+→ Evcil Dostlarım bottom sheet
+
+The app already supports multiple pets and has pet deletion logic.
+
+Add a delete icon to the LEFT side of every pet row in the “Evcil Dostlarım” list.
+
+This is a UI + existing delete-flow integration task.
+
+Do not create a second delete implementation.
+Reuse the existing secure pet deletion handler.
+
+==================================================
+1. AUDIT CURRENT PET DELETE FLOW
+==================================================
+
+Recursively inspect:
+
+Evcil Dostlarım
+pet list
+activePet
+selectedPet
+deletePet
+handleDeletePet
+removePet
+deletingPetId
+confirmation modal
+pet ownership
+pet ID
+active pet replacement
+last pet deletion
+
+Find the existing production-safe pet deletion logic.
+
+Do not duplicate delete requests or create a new local-only delete flow.
+
+==================================================
+2. DELETE ICON PLACEMENT
+==================================================
+
+Add a small delete/trash icon to the LEFT side of every pet row.
+
+Recommended row structure:
+
+[Delete Icon] [Pet Avatar] [Pet Name / Breed]                  [Selected Check]
+
+The delete icon must:
+
+- remain vertically centered
+- have a safe touch target
+- not overlap the pet avatar
+- not shift names inconsistently
+- use a subtle destructive red tone
+- preserve the current premium CanYoldasi layout
+- remain visible on selected and unselected rows
+
+Do not put a huge red button on every row.
+
+Use the project’s existing icon library.
+
+==================================================
+3. TAP BEHAVIOR
+==================================================
+
+Normal tap on the pet row:
+
+selects the pet
+
+Tap on the delete icon:
+
+opens delete confirmation
+
+The delete icon tap must NOT also select the pet.
+
+Use:
+
+stopPropagation
+
+or the React Native equivalent interaction separation.
+
+Do not let one tap both select and delete.
+
+==================================================
+4. CONFIRMATION MODAL
+==================================================
+
+When the delete icon is tapped, show a confirmation modal.
+
+Dynamic title:
+
+“Pamuk silinsin mi?”
+
+Description:
+
+“Bu evcil hayvan profilini silmek istediğine emin misin? Bu işlem geri alınamaz.”
+
+Buttons:
+
+“Vazgeç”
+“Sil”
+
+The “Sil” button must use destructive styling.
+
+Do not delete immediately without confirmation.
+
+==================================================
+5. DELETE BY UNIQUE PET ID
+==================================================
+
+Deletion must use the unique pet ID.
+
+Never delete by:
+
+name
+breed
+list index
+display order
+
+There may be multiple pets named:
+
+Pamuk
+
+Deleting one must not delete the other.
+
+==================================================
+6. ACTIVE PET DELETE LOGIC
+==================================================
+
+Reuse the existing logic.
+
+If the deleted pet is active:
+
+- delete it
+- select the first remaining pet
+- persist the new active pet ID
+
+If the deleted pet is not active:
+
+- preserve the current active pet
+
+If the last pet is deleted:
+
+- activePet = null
+- activePetId = null
+- show the existing empty state
+
+Do not leave stale selected checkmarks.
+
+==================================================
+7. LOADING STATE
+==================================================
+
+While a pet is being deleted:
+
+- disable its delete icon
+- show a small loading indicator in place of the icon if appropriate
+- prevent duplicate taps
+- do not block unrelated pets unnecessarily unless required by the current mutation architecture
+
+Use the existing:
+
+deletingPetId
+
+or equivalent state.
+
+==================================================
+8. ERROR AND SUCCESS UX
+==================================================
+
+Success:
+
+“Pamuk silindi.”
+
+Error:
+
+“Evcil hayvan silinemedi. Lütfen tekrar deneyin.”
+
+Unauthorized:
+
+“Bu evcil hayvanı silme yetkiniz yok.”
+
+Do not show raw backend/database errors.
+
+==================================================
+9. BOTTOM SHEET LAYOUT
+==================================================
+
+The current list can contain many pets.
+
+After adding the left delete icon:
+
+- preserve vertical spacing
+- preserve scrolling
+- keep “Evcil Hayvan Ekle” button visible
+- avoid clipping names
+- support long pet names
+- support 10+ pets
+- do not overlap bottom safe area
+- maintain iOS and Android spacing
+
+==================================================
+10. ACCESSIBILITY
+==================================================
+
+Delete icon accessibility label:
+
+“Pamuk evcil hayvanını sil”
+
+Selected state label:
+
+“Pamuk seçili”
+
+Use a minimum safe touch target.
+
+Do not rely only on red color.
+
+==================================================
+11. SCOPE
+==================================================
+
+Apply this only to:
+
+Evcilim
+→ Evcil Dostlarım list
+
+Do not add delete icons to:
+
+- adoption listings
+- street animal reports
+- user profiles
+- messages
+- unrelated cards
+
+Do not redesign the Evcilim screen.
+
+==================================================
+12. TESTS
+==================================================
+
+TEST 1:
+
+Tap pet row.
+
+Expected:
+Pet becomes active.
+No delete modal.
+
+TEST 2:
+
+Tap delete icon.
+
+Expected:
+Delete confirmation opens.
+Pet is not selected automatically.
+
+TEST 3:
+
+Cancel deletion.
+
+Expected:
+No data change.
+
+TEST 4:
+
+Delete a non-active pet.
+
+Expected:
+Only selected pet is removed.
+Current active pet remains.
+
+TEST 5:
+
+Delete active pet.
+
+Expected:
+First remaining pet becomes active.
+
+TEST 6:
+
+Delete last pet.
+
+Expected:
+Empty state appears.
+No crash.
+
+TEST 7:
+
+Two pets named Pamuk.
+
+Expected:
+Only the selected pet ID is deleted.
+
+TEST 8:
+
+Tap delete twice quickly.
+
+Expected:
+One delete request.
+
+TEST 9:
+
+Restart app after deletion.
+
+Expected:
+Deleted pet does not return.
+Active pet selection remains correct.
+
+TEST 10:
+
+Long pet list.
+
+Expected:
+Scrolling and bottom CTA remain usable.
+
+==================================================
+13. FINAL AUDIT
+==================================================
+
+Search again for:
+
+deletePet
+handleDeletePet
+deletingPetId
+activePet
+activePetId
+selectedPet
+pet.id
+Evcil Dostlarım
+
+Confirm:
+
+- only one delete handler exists
+- deletion uses pet ID
+- delete icon does not trigger row selection
+- active pet replacement works
+- last pet deletion works
+- list refreshes immediately
+- app restart does not restore deleted pet
+- TypeScript passes
+
+==================================================
+14. FINAL REPORT
+==================================================
+
+Return the report in Turkish using exactly these headings:
+
+1. SIL IKONU YERLESIMI
+
+2. KULLANILAN DELETE HANDLER
+
+3. CONFIRMATION MODALI
+
+4. ACTIVE PET SILINME DAVRANISI
+
+5. SON PET SILINME DAVRANISI
+
+6. DUPLICATE PET NAME KORUMASI
+
+7. LOADING / DOUBLE TAP KORUMASI
+
+8. BOTTOM SHEET LAYOUT SONUCU
+
+9. DEGISEN DOSYALAR
+
+10. TYPESCRIPT / LINT / BUILD SONUCU
+
+11. TEST EDILEN SENARYOLAR
+
+12. KALAN RISKLER
+
+IMPORTANT:
+
+Do not only add a visual trash icon.
+
+Connect it to the existing secure pet deletion flow.
+
+Do not delete by name or array index.

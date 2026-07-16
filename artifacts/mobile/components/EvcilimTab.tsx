@@ -6,6 +6,7 @@ import { useRouter } from "expo-router";
 import React, { useCallback, useEffect, useState } from "react";
 import {
   ActivityIndicator,
+  Alert,
   Modal,
   Platform,
   Pressable,
@@ -278,6 +279,8 @@ function PetSelectorSheet({
   onSelect,
   onAdd,
   onClose,
+  onDelete,
+  deletingPetId,
 }: {
   visible: boolean;
   pets: Pet[];
@@ -285,7 +288,15 @@ function PetSelectorSheet({
   onSelect: (id: string) => void;
   onAdd: () => void;
   onClose: () => void;
+  onDelete: (id: string) => Promise<void>;
+  deletingPetId: string | null;
 }) {
+  const [pendingDeletePet, setPendingDeletePet] = useState<Pet | null>(null);
+
+  useEffect(() => {
+    if (visible && pets.length === 0) onClose();
+  }, [pets.length, visible, onClose]);
+
   return (
     <Modal
       visible={visible}
@@ -305,8 +316,10 @@ function PetSelectorSheet({
             contentContainerStyle={ss.listContent}
           >
             {pets.map((pet) => {
-              const isSelected = pet.id === selectedPetId;
-              const subtitle = buildPetSubtitle(pet.type, pet.breed, pet.gender);
+              const isSelected  = pet.id === selectedPetId;
+              const isDeleting  = deletingPetId === pet.id;
+              const anyDeleting = deletingPetId !== null;
+              const subtitle    = buildPetSubtitle(pet.type, pet.breed, pet.gender);
               return (
                 <Pressable
                   key={pet.id}
@@ -321,6 +334,31 @@ function PetSelectorSheet({
                     onClose();
                   }}
                 >
+                  {/* ── Delete icon (left) ─────────────── */}
+                  <Pressable
+                    hitSlop={12}
+                    accessibilityRole="button"
+                    accessibilityLabel={`${pet.name} evcil hayvanını sil`}
+                    style={ss.deleteBtn}
+                    disabled={anyDeleting}
+                    onPress={(e) => {
+                      e.stopPropagation?.();
+                      Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+                      setPendingDeletePet(pet);
+                    }}
+                  >
+                    {isDeleting ? (
+                      <ActivityIndicator size="small" color={C.red} />
+                    ) : (
+                      <Icon
+                        name="trash-outline"
+                        size={18}
+                        color={anyDeleting ? "#D8D0E8" : C.red}
+                      />
+                    )}
+                  </Pressable>
+
+                  {/* ── Avatar ─────────────────────────── */}
                   <View style={ss.avatarWrap}>
                     {pet.image ? (
                       <Image
@@ -337,6 +375,8 @@ function PetSelectorSheet({
                       </LinearGradient>
                     )}
                   </View>
+
+                  {/* ── Name / subtitle ────────────────── */}
                   <View style={ss.rowInfo}>
                     <Text
                       style={[ss.petName, isSelected && ss.petNameSelected]}
@@ -348,6 +388,8 @@ function PetSelectorSheet({
                       <Text style={ss.petSub} numberOfLines={1}>{subtitle}</Text>
                     ) : null}
                   </View>
+
+                  {/* ── Selected checkmark (right) ─────── */}
                   {isSelected && (
                     <Icon name="checkmark-circle" size={22} color={C.purple} />
                   )}
@@ -364,6 +406,46 @@ function PetSelectorSheet({
           </Pressable>
         </View>
       </View>
+
+      {/* ── Delete confirmation modal ───────────────────────────── */}
+      <Modal
+        visible={!!pendingDeletePet}
+        transparent
+        animationType="fade"
+        statusBarTranslucent
+        onRequestClose={() => setPendingDeletePet(null)}
+      >
+        <View style={dm.overlay}>
+          <Pressable style={dm.backdrop} onPress={() => setPendingDeletePet(null)} />
+          <View style={dm.card}>
+            <Text style={dm.title}>
+              {pendingDeletePet?.name} silinsin mi?
+            </Text>
+            <Text style={dm.body}>
+              Bu evcil hayvan profilini silmek istediğine emin misin? Bu işlem geri alınamaz.
+            </Text>
+            <View style={dm.btns}>
+              <Pressable
+                style={({ pressed }) => [dm.cancelBtn, pressed && { opacity: 0.8 }]}
+                onPress={() => setPendingDeletePet(null)}
+              >
+                <Text style={dm.cancelTxt}>Vazgeç</Text>
+              </Pressable>
+              <Pressable
+                style={({ pressed }) => [dm.deleteBtn, pressed && { opacity: 0.8 }]}
+                onPress={async () => {
+                  if (!pendingDeletePet) return;
+                  const pet = pendingDeletePet;
+                  setPendingDeletePet(null);
+                  await onDelete(pet.id);
+                }}
+              >
+                <Text style={dm.deleteTxt}>Sil</Text>
+              </Pressable>
+            </View>
+          </View>
+        </View>
+      </Modal>
     </Modal>
   );
 }
@@ -381,8 +463,9 @@ const ss = StyleSheet.create({
   title:           { fontSize: 20, fontFamily: "Inter_700Bold", color: C.text, letterSpacing: -0.4, paddingHorizontal: 24, paddingTop: 14, paddingBottom: 14, borderBottomWidth: 1, borderBottomColor: C.border },
   list:            { flexGrow: 0 },
   listContent:     { paddingVertical: 8 },
-  row:             { flexDirection: "row", alignItems: "center", paddingHorizontal: 24, paddingVertical: 14, gap: 14 },
+  row:             { flexDirection: "row", alignItems: "center", paddingLeft: 12, paddingRight: 24, paddingVertical: 14, gap: 12 },
   rowSelected:     { backgroundColor: `${C.purple}0A` },
+  deleteBtn:       { width: 36, height: 36, alignItems: "center", justifyContent: "center", flexShrink: 0 },
   avatarWrap:      { width: 52, height: 52, borderRadius: 26, overflow: "hidden", flexShrink: 0 },
   avatar:          { width: 52, height: 52 },
   avatarFallback:  { width: 52, height: 52, borderRadius: 26, alignItems: "center", justifyContent: "center" },
@@ -398,6 +481,29 @@ const ss = StyleSheet.create({
     backgroundColor: "#F7F2FF",
   },
   addBtnTxt:       { fontSize: 14, fontFamily: "Inter_600SemiBold", color: C.purple },
+});
+const dm = StyleSheet.create({
+  overlay:   { flex: 1, alignItems: "center", justifyContent: "center" },
+  backdrop:  { ...StyleSheet.absoluteFillObject, backgroundColor: "rgba(0,0,0,0.55)" },
+  card:      {
+    backgroundColor: "#fff",
+    borderRadius: 24,
+    marginHorizontal: 32,
+    padding: 24,
+    gap: 12,
+    ...Platform.select({
+      ios:     { shadowColor: "#000", shadowOffset: { width: 0, height: 8 }, shadowOpacity: 0.18, shadowRadius: 24 },
+      android: { elevation: 12 },
+      default: {},
+    }),
+  },
+  title:     { fontSize: 18, fontFamily: "Inter_700Bold", color: C.text, letterSpacing: -0.3, textAlign: "center" },
+  body:      { fontSize: 14, fontFamily: "Inter_400Regular", color: C.textSec, lineHeight: 20, textAlign: "center" },
+  btns:      { flexDirection: "row", gap: 10, marginTop: 8 },
+  cancelBtn: { flex: 1, height: 48, alignItems: "center", justifyContent: "center", borderRadius: 14, backgroundColor: "#F5F2FB", borderWidth: 1, borderColor: C.border },
+  cancelTxt: { fontSize: 15, fontFamily: "Inter_600SemiBold", color: C.textSec },
+  deleteBtn: { flex: 1, height: 48, alignItems: "center", justifyContent: "center", borderRadius: 14, backgroundColor: C.red },
+  deleteTxt: { fontSize: 15, fontFamily: "Inter_700Bold", color: "#fff" },
 });
 
 /* ══════════════════════════════════════════════════════════════════════════════
@@ -758,7 +864,7 @@ function LoadingSkeleton() {
    7. MAIN EXPORTED COMPONENT
 ══════════════════════════════════════════════════════════════════════════════ */
 export function EvcilimTab({ botPad }: { botPad: number }) {
-  const { pets, isLoading: petsLoading, error: petsError, refresh: refreshPets } = usePets();
+  const { pets, isLoading: petsLoading, error: petsError, refresh: refreshPets, deletePet } = usePets();
   const { user } = useAuth();
   const router   = useRouter();
 
@@ -769,6 +875,7 @@ export function EvcilimTab({ botPad }: { botPad: number }) {
   const [nutrition, setNutrition]         = useState<ApiNutrition | null>(null);
   const [dataLoading, setDataLoading]     = useState(false);
   const [refreshing, setRefreshing]       = useState(false);
+  const [deletingPetId, setDeletingPetId] = useState<string | null>(null);
 
   // Validate/initialize selectedPetId whenever pets list changes.
   // If the current selection still exists → keep it (this prevents
@@ -789,6 +896,24 @@ export function EvcilimTab({ botPad }: { botPad: number }) {
     (route: string) => router.push(route as Parameters<typeof router.push>[0]),
     [router]
   );
+
+  const handleDeletePet = useCallback(async (id: string) => {
+    setDeletingPetId(id);
+    try {
+      await deletePet(id);
+      Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
+    } catch (err: unknown) {
+      Haptics.notificationAsync(Haptics.NotificationFeedbackType.Error);
+      const msg = err instanceof Error ? err.message : "";
+      if (msg.toLowerCase().includes("yetkisiz") || msg.toLowerCase().includes("unauthorized") || msg.toLowerCase().includes("403")) {
+        Alert.alert("Yetki Hatası", "Bu evcil hayvanı silme yetkiniz yok.");
+      } else {
+        Alert.alert("Hata", "Evcil hayvan silinemedi. Lütfen tekrar deneyin.");
+      }
+    } finally {
+      setDeletingPetId(null);
+    }
+  }, [deletePet]);
 
   const loadData = useCallback(async (petId: string, userId: string) => {
     setDataLoading(true);
@@ -901,6 +1026,8 @@ export function EvcilimTab({ botPad }: { botPad: number }) {
         onSelect={(id) => setSelectedPetId(id)}
         onAdd={() => nav("/evcilim/add")}
         onClose={() => setPetSelectorOpen(false)}
+        onDelete={handleDeletePet}
+        deletingPetId={deletingPetId}
       />
     </>
   );
