@@ -73,6 +73,7 @@ import {
   Settings,
   Share2,
   ShieldCheck,
+  ShoppingBag,
   SlidersHorizontal,
   Smile,
   Sparkles,
@@ -88,6 +89,10 @@ import {
   Video,
   X,
   XCircle,
+  BellOff,
+  Dumbbell,
+  HeartOff,
+  Type,
   Zap,
 } from "lucide-react-native";
 
@@ -236,9 +241,21 @@ const ICON_MAP: Record<string, LucideIcon> = {
   "flag":                     Flag,
   "radio-button-on":          Check,
   "unknown":                  HelpCircle,
+  "help-circle-outline":      HelpCircle,
+  "help-circle":              HelpCircle,
   "open":                     AlertCircle,
 
+  // ── Misc additions ───────────────────────────────────
+  "bag-handle-outline":       ShoppingBag,
+  "barbell-outline":          Dumbbell,
+  "grid-outline":             Grid3X3,
+  "heart-dislike-outline":    HeartOff,
+  "notifications-off-outline":BellOff,
+  "text-outline":             Type,
+  "time":                     Clock,
+
   // ── Auth / Security ──────────────────────────────────
+  "lock-closed":              Lock,
   "lock-closed-outline":      Lock,
   "lock":                     Lock,
   "key-outline":              KeyRound,

@@ -5,7 +5,7 @@ const connectors = new ReplitConnectors();
 type RcResult<T> = { data?: T; error?: unknown };
 
 async function rcReq<T>(path: string, options: { method: string; body?: unknown } = { method: "GET" }): Promise<RcResult<T>> {
-  const fetchOpts: RequestInit = { method: options.method };
+  const fetchOpts: { method: string; body?: string; headers?: Record<string, string> } = { method: options.method };
   if (options.body !== undefined) {
     fetchOpts.body = JSON.stringify(options.body);
     fetchOpts.headers = { "Content-Type": "application/json" };
