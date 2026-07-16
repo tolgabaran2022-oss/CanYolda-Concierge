@@ -47,7 +47,7 @@ router.use(animalsRouter);
 router.use(adoptionRouter);
 router.use(adoptionRequestsRouter);
 
-/* Image upload endpoint */
-router.use("/upload",      uploadLimiter, uploadRouter);
+/* Image upload endpoint — uploadLimiter applied before the router */
+router.use(uploadLimiter, uploadRouter);
 
 export default router;
