@@ -11,6 +11,7 @@
  */
 
 import { Platform } from "react-native";
+import type { PurchasesPackage } from "react-native-purchases";
 
 /** Module-level guard — ensures Purchases.configure() is called at most once. */
 let _initialized = false;
@@ -134,50 +135,38 @@ export function isRevenueCatInitialized(): boolean {
    Offerings
 ────────────────────────────────────────────────────────────── */
 
-/** Simplified package data returned from RC for display & purchase. */
-export interface RCPackageInfo {
-  /** RC package identifier, e.g. "boost_1_day" */
-  identifier: string;
-  /** Localized product title from RevenueCat / App Store / Play Store */
-  title: string;
-  /** Localized price string including currency symbol, e.g. "₺29,99" */
-  priceString: string;
-  /** Raw numeric price (for sorting / comparison) */
-  price: number;
-  /** ISO currency code, e.g. "TRY" */
-  currencyCode: string;
-  /** Raw PurchasesPackage object — pass to Purchases.purchasePackage() when ready */
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  nativePackage: any;
-}
-
-/** RC offering identifier used by CanYoldaşı */
-const OFFERING_ID = "canyoldasi_boost";
+/** Expected offering identifier for CanYoldaşı boost feature */
+const EXPECTED_OFFERING_ID = "canyoldasi_boost";
 
 /**
- * Fetch the canyoldasi_boost offering from RevenueCat.
- * Returns available packages sorted by price ascending.
- * Throws on network/SDK error so callers can show a retry UI.
+ * Fetch boost packages from RevenueCat.
+ *
+ * Lookup order: offerings.current → offerings.all["canyoldasi_boost"]
+ * Throws on network / SDK error so callers can show a retry UI.
+ * Returns an empty array on web (native IAP not supported).
  */
-export async function fetchOfferings(): Promise<RCPackageInfo[]> {
+export async function fetchOfferings(): Promise<PurchasesPackage[]> {
   if (Platform.OS === "web") return [];
 
   const sdk = await getPurchases();
   if (!sdk) throw new Error("RevenueCat SDK unavailable");
   if (!_initialized) throw new Error("RevenueCat SDK not yet initialized");
 
-  const offerings = await sdk.Purchases.getOfferings();
-  const offering = offerings.all[OFFERING_ID] ?? offerings.current;
-  if (!offering) throw new Error(`Offering "${OFFERING_ID}" not found`);
+  const allOfferings = await sdk.Purchases.getOfferings();
 
-  return offering.availablePackages
-    .map((pkg: any): RCPackageInfo => ({
-      identifier:    pkg.identifier,
-      title:         pkg.product.title ?? pkg.product.localizedTitle ?? pkg.identifier,
-      priceString:   pkg.product.priceString,
-      price:         pkg.product.price,
-      currencyCode:  pkg.product.currencyCode ?? "TRY",
-      nativePackage: pkg,
-    }))
-    .sort((a: RCPackageInfo, b: RCPackageInfo) => a.price - b.price);
+  /* Prefer the current/default offering; fall back to explicit ID */
+  const offering =
+    allOfferings.current ?? allOfferings.all[EXPECTED_OFFERING_ID] ?? null;
+
+  if (!offering) {
+    throw new Error("No RevenueCat offering available");
+  }
+
+  if (__DEV__ && offering.identifier !== EXPECTED_OFFERING_ID) {
+    console.warn(
+      `[RevenueCat] Unexpected offering identifier: "${offering.identifier}" (expected "${EXPECTED_OFFERING_ID}")`
+    );
+  }
+
+  return offering.availablePackages as PurchasesPackage[];
 }

@@ -1,0 +1,540 @@
+CANYOLDAŞI — AŞAMA 8
+REVENUECAT OFFERINGS / PAKETLERİ UYGULAMADA GÖSTERME
+
+RevenueCat tarafında aşağıdaki yapı hazır:
+
+Current / Default Offering Identifier:
+canyoldasi_boost
+
+Products:
+canyoldasi_boost_1_day
+canyoldasi_boost_3_days
+canyoldasi_boost_7_days
+
+Packages:
+boost_1_day
+boost_3_days
+boost_7_days
+
+react-native-purchases@10.4.2 kurulu.
+
+RevenueCat SDK initialization önceki aşamada yapılmış olmalı.
+
+Bu aşamada SADECE RevenueCat Offering ve paketlerini mevcut “İlanı Öne Çıkar” ekranına bağla.
+
+Henüz satın alma işlemini başlatma.
+Henüz purchasePackage kullanma.
+Henüz Supabase promoted_until alanını güncelleme.
+Fake ödeme başarısı oluşturma.
+Mevcut ekranı baştan tasarlama.
+
+==================================================
+1. MEVCUT KODU DENETLE
+==================================================
+
+Projede recursive olarak şunları ara:
+
+Purchases.getOfferings
+getOfferings
+RevenueCat
+offering
+offerings
+package
+packages
+boost_1_day
+boost_3_days
+boost_7_days
+canyoldasi_boost
+promote
+promotion
+Öne Çıkar
+İlanı Öne Çıkar
+
+Mevcut “Öne Çıkar” ekranını bul.
+
+RevenueCat offerings yükleme mantığı daha önce varsa duplicate implementation oluşturma.
+
+Tek source of truth kullan.
+
+==================================================
+2. CURRENT OFFERING YÜKLE
+==================================================
+
+RevenueCat SDK hazır olduktan sonra:
+
+Purchases.getOfferings()
+
+çağrısını kullan.
+
+Öncelikle:
+
+offerings.current
+
+değerini kontrol et.
+
+Current offering mevcut değilse explicit olarak:
+
+offerings.all["canyoldasi_boost"]
+
+değerini fallback olarak kontrol et.
+
+Ancak bilinmeyen veya yanlış bir offering kullanma.
+
+Expected offering identifier:
+
+canyoldasi_boost
+
+Current offering identifier farklıysa development ortamında güvenli uyarı logla.
+
+API key veya satın alma verisi loglama.
+
+==================================================
+3. PAKETLERİ DOĞRU EŞLEŞTİR
+==================================================
+
+Offering içindeki availablePackages listesini kullan.
+
+Package identifier mapping:
+
+boost_1_day
+→ 1 Gün Öne Çıkar
+→ durationDays: 1
+
+boost_3_days
+→ 3 Gün Öne Çıkar
+→ durationDays: 3
+
+boost_7_days
+→ 7 Gün Öne Çıkar
+→ durationDays: 7
+
+Server tarafı ileride duration değerini product ID üzerinden doğrulayacak.
+
+Bu aşamada UI mapping için merkezi bir config oluştur.
+
+Örneğin:
+
+const BOOST_PACKAGE_CONFIG = {
+  boost_1_day: {
+    durationDays: 1,
+    title: "1 Gün Öne Çıkar",
+  },
+  boost_3_days: {
+    durationDays: 3,
+    title: "3 Gün Öne Çıkar",
+    badge: "En Popüler",
+  },
+  boost_7_days: {
+    durationDays: 7,
+    title: "7 Gün Öne Çıkar",
+  },
+};
+
+Magic stringleri farklı componentlere dağıtma.
+
+==================================================
+4. FİYATLARI REVENUECAT’TEN AL
+==================================================
+
+Fiyatları uygulamada hardcode etme.
+
+Yanlış:
+
+₺29,99
+₺59,99
+₺99,99
+
+Doğru:
+
+RevenueCat StoreProduct içerisindeki localized / formatted price alanını kullan.
+
+Installed react-native-purchases@10.4.2 type tanımlarını incele ve doğru alanı kullan.
+
+Örneğin SDK type yapısına göre:
+
+package.product.priceString
+
+veya mevcut sürümün gerçek typed alanı.
+
+SDK’da bulunmayan alanları uydurma.
+
+Ekranda RevenueCat’in döndürdüğü mağaza fiyatı gösterilmeli.
+
+Test Store kullanıldığı için fiyat USD veya test fiyatı olarak görünebilir. Bu normaldir.
+
+==================================================
+5. PAKET SIRALAMASI
+==================================================
+
+RevenueCat’ten gelen sıra değişken olabilir.
+
+UI sırası her zaman şu olmalı:
+
+1. boost_1_day
+2. boost_3_days
+3. boost_7_days
+
+availablePackages dizisini package identifier’a göre map edip sırala.
+
+Unknown package gelirse uygulamayı crash ettirme.
+
+Bilinmeyen package identifier’ı güvenli şekilde atla ve development log oluştur.
+
+==================================================
+6. SELECTED PACKAGE STATE
+==================================================
+
+Kullanıcının seçtiği RevenueCat package object state içinde tutulmalı.
+
+Örneğin:
+
+selectedPackage: PurchasesPackage | null
+
+Sadece package identifier string saklayıp daha sonra offering’i yeniden aramak zorunda bırakma.
+
+Varsayılan olarak 3 günlük paket seçili olsun:
+
+boost_3_days
+
+Eğer boost_3_days yüklenmediyse available package listesindeki ilk geçerli paketi seç.
+
+Hiç paket yoksa selectedPackage null olmalı.
+
+==================================================
+7. MEVCUT CANYOLDAŞI UI TASARIMINI KORU
+==================================================
+
+Mevcut premium mor/lila tasarımı koru.
+
+Paket kartları:
+
+1 Gün
+RevenueCat fiyatı
+
+3 Gün
+RevenueCat fiyatı
+En Popüler
+
+7 Gün
+RevenueCat fiyatı
+
+Selected kart:
+
+- mor border
+- hafif mor arka plan
+- seçili indicator
+
+Unselected kart:
+
+- mevcut nötr stil
+
+Tüm tasarım sistemini değiştirme.
+
+Yeni bağımsız ödeme ekranı oluşturma.
+
+Mevcut “Öne Çıkar” ekranındaki paket alanına bağla.
+
+==================================================
+8. LOADING STATE
+==================================================
+
+Paketler yüklenirken kullanıcı boş ekran görmemeli.
+
+State oluştur:
+
+idle
+loading
+success
+error
+
+Loading sırasında mevcut tasarıma uygun skeleton veya activity indicator göster.
+
+“Öne Çıkar” ana butonu paketler yüklenmeden aktif olmamalı.
+
+Loading tamamlanmadan user package seçememeli.
+
+==================================================
+9. ERROR STATE
+==================================================
+
+Offerings yüklenemezse Türkçe hata göster:
+
+“Öne çıkarma paketleri yüklenemedi. Lütfen tekrar deneyin.”
+
+Altında:
+
+“Tekrar Dene”
+
+butonu olsun.
+
+Retry butonu offerings fetch işlemini yeniden çalıştırmalı.
+
+Error oluştuğunda uygulama crash olmamalı.
+
+Raw RevenueCat hata mesajı kullanıcıya gösterilmemeli.
+
+Development ortamında güvenli hata kodu/message loglanabilir.
+
+API key veya hassas satın alma verisi loglanmamalı.
+
+==================================================
+10. EMPTY STATE
+==================================================
+
+RevenueCat offering bulunur ama package yoksa:
+
+“Şu anda kullanılabilir öne çıkarma paketi bulunmuyor.”
+
+göster.
+
+Öne Çıkar butonu disabled olsun.
+
+Fake package oluşturma.
+
+Hardcoded fallback fiyat gösterme.
+
+==================================================
+11. REFRESH / SCREEN LIFECYCLE
+==================================================
+
+Ekran her render olduğunda RevenueCat’e gereksiz tekrar tekrar istek atma.
+
+UseEffect dependency’lerini doğru kur.
+
+React Strict Mode veya navigation remount durumunda duplicate fetch riskini azalt.
+
+Ancak kullanıcı Retry butonuna basınca yeniden fetch yapılabilmeli.
+
+Ekrana geri dönüldüğünde eski package state geçerliyse güvenli şekilde gösterilebilir.
+
+==================================================
+12. PLATFORM KORUMASI
+==================================================
+
+RevenueCat native satın alma akışı iOS ve Android Development Build gerektiriyor.
+
+Bu aşamada yalnızca offerings load ediliyor olsa da:
+
+Web platformunda native module crash oluşturmamalı.
+
+Web için satın alma paketlerini fake şekilde yükleme.
+
+Web’te mevcut business kararı doğrultusunda şu mesaj gösterilebilir:
+
+“İlan öne çıkarma satın alma işlemi iOS ve Android uygulamalarında kullanılabilir.”
+
+Web build kırılmamalı.
+
+==================================================
+13. ANA BUTON DAVRANIŞI
+==================================================
+
+Bu aşamada “Öne Çıkar” ana butonunu ödeme başlatacak şekilde bağlama.
+
+Henüz purchasePackage çağırma.
+
+Buton selected package yoksa disabled olsun.
+
+Selected package varsa buton görsel olarak hazır olabilir ancak geçici olarak:
+
+- mevcut no-op handler
+veya
+- development log
+
+kullanma.
+
+En güvenlisi:
+
+handlePurchase fonksiyonunun sonraki aşamada bağlanacağını belirten güvenli bir handler oluştur ancak fake başarı verme.
+
+Kullanıcıya “başarılı ödeme” mesajı gösterme.
+
+İlanı öne çıkarma.
+
+Database’i değiştirme.
+
+==================================================
+14. TYPESCRIPT
+==================================================
+
+RevenueCat types’larını doğru kullan.
+
+Avoid:
+
+any
+@ts-ignore
+unknown as PurchasesPackage
+
+Gerekli type’ları react-native-purchases paketinden import et.
+
+Nullable state’leri güvenli yönet.
+
+==================================================
+15. TEST SENARYOLARI
+==================================================
+
+TEST 1:
+
+Öne Çıkar ekranını aç.
+
+Expected:
+Loading görünür.
+
+TEST 2:
+
+RevenueCat offering başarılı gelir.
+
+Expected:
+1 Gün, 3 Gün, 7 Gün kartları görünür.
+
+TEST 3:
+
+Fiyatlar RevenueCat StoreProduct’tan gelir.
+
+Expected:
+Hardcoded fiyat bulunmaz.
+
+TEST 4:
+
+Default selected package:
+
+Expected:
+boost_3_days seçili.
+
+TEST 5:
+
+1 günlük kartı seç.
+
+Expected:
+selectedPackage = boost_1_day
+
+TEST 6:
+
+7 günlük kartı seç.
+
+Expected:
+selectedPackage = boost_7_days
+
+TEST 7:
+
+RevenueCat offering fetch hata verir.
+
+Expected:
+Türkçe error + Retry.
+
+TEST 8:
+
+Retry başarılı olur.
+
+Expected:
+Packages görünür.
+
+TEST 9:
+
+Offering var, package yok.
+
+Expected:
+Empty state ve disabled button.
+
+TEST 10:
+
+Web build.
+
+Expected:
+Native module crash yok.
+
+TEST 11:
+
+“Öne Çıkar” butonuna bas.
+
+Expected:
+Henüz gerçek ödeme başlatılmaz.
+Fake success oluşmaz.
+Database değişmez.
+
+==================================================
+16. BU AŞAMADA YAPMA
+==================================================
+
+DO NOT:
+
+- Purchases.purchasePackage çağırma
+- ödeme başarılı mesajı gösterme
+- promoted_until güncelleme
+- is_promoted true yapma
+- Supabase migration yapma
+- transaction kaydı oluşturma
+- Apple/Google ödeme ekranı açma
+- fiyatları hardcode etme
+- fake package oluşturma
+- RevenueCat API key’i koda yazma
+- ekranı baştan tasarlama
+- RevenueCat dashboard yapılandırmasını değiştirme
+
+==================================================
+17. FINAL AUDIT
+==================================================
+
+Implementation sonrası tekrar ara:
+
+Purchases.getOfferings
+Purchases.purchasePackage
+hardcoded price
+29.99
+59.99
+99.99
+boost_1_day
+boost_3_days
+boost_7_days
+canyoldasi_boost
+
+Kontrol et:
+
+- duplicate offerings fetch var mı?
+- hardcoded fiyat kaldı mı?
+- package sıralaması doğru mu?
+- 3 günlük paket varsayılan seçili mi?
+- unknown package crash oluşturuyor mu?
+- web build kırılıyor mu?
+- purchasePackage yanlışlıkla çağrılıyor mu?
+- Supabase promotion state değişiyor mu?
+
+Bu aşamada database veya satın alma akışı değişmemeli.
+
+==================================================
+18. FINAL RAPOR
+==================================================
+
+İşlem sonunda Türkçe olarak şu başlıklarla rapor ver:
+
+1. OFFERING YÜKLEME DURUMU
+
+2. BULUNAN OFFERING IDENTIFIER
+
+3. BULUNAN PACKAGE’LAR
+
+4. FİYATLARIN GELDİĞİ ALAN
+
+5. DEFAULT SELECTED PACKAGE
+
+6. LOADING / ERROR / RETRY DURUMU
+
+7. WEB PLATFORM DAVRANIŞI
+
+8. DEĞİŞTİRİLEN DOSYALAR
+
+9. TYPESCRIPT / LINT SONUCU
+
+10. SATIN ALMA AŞAMASINA HAZIRLIK DURUMU
+
+IMPORTANT:
+
+Do not only explain the code.
+
+Inspect the existing project.
+
+Implement the RevenueCat offerings loading flow.
+
+Run TypeScript and relevant lint/build checks.
+
+Do not claim native platform execution if it was not actually run.

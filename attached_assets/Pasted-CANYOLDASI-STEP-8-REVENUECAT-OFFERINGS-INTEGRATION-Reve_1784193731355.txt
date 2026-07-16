@@ -1,0 +1,365 @@
+CANYOLDASI — STEP 8
+REVENUECAT OFFERINGS INTEGRATION
+
+RevenueCat has already been configured.
+
+Current / Default Offering Identifier:
+canyoldasi_boost
+
+Products:
+- canyoldasi_boost_1_day
+- canyoldasi_boost_3_days
+- canyoldasi_boost_7_days
+
+Packages:
+- boost_1_day
+- boost_3_days
+- boost_7_days
+
+The project already uses:
+
+react-native-purchases@10.4.2
+
+RevenueCat SDK initialization has already been completed.
+
+This step is ONLY about integrating RevenueCat Offerings into the existing "Promote Listing" screen.
+
+DO NOT:
+
+- start purchases
+- call purchasePackage()
+- activate promoted listings
+- update Supabase
+- update promoted_until
+- create fake purchases
+- redesign the UI
+
+==================================================
+1. AUDIT THE EXISTING IMPLEMENTATION
+==================================================
+
+Recursively inspect the project for:
+
+Purchases.getOfferings
+RevenueCat
+Offering
+Offerings
+Package
+Packages
+boost_1_day
+boost_3_days
+boost_7_days
+canyoldasi_boost
+Promote Listing
+Promotion Screen
+
+Find the existing Promote Listing screen.
+
+If Offerings loading already exists, do not duplicate the implementation.
+
+Maintain a single source of truth.
+
+==================================================
+2. LOAD THE CURRENT OFFERING
+==================================================
+
+Load RevenueCat Offerings using:
+
+Purchases.getOfferings()
+
+Use:
+
+offerings.current
+
+If current is null, safely fallback to:
+
+offerings.all["canyoldasi_boost"]
+
+Do not use unknown offerings.
+
+Expected offering identifier:
+
+canyoldasi_boost
+
+If another offering is returned, log a safe development warning.
+
+Never log API keys or purchase credentials.
+
+==================================================
+3. MAP THE PACKAGES
+==================================================
+
+Map the available packages into UI models.
+
+Package mapping:
+
+boost_1_day
+→ 1 Day Promotion
+→ durationDays = 1
+
+boost_3_days
+→ 3 Day Promotion
+→ durationDays = 3
+→ badge = "Most Popular"
+
+boost_7_days
+→ 7 Day Promotion
+→ durationDays = 7
+
+Create a centralized configuration.
+
+Example:
+
+BOOST_PACKAGE_CONFIG
+
+Do not spread magic strings across components.
+
+==================================================
+4. USE REVENUECAT PRICES
+==================================================
+
+Never hardcode prices.
+
+Incorrect:
+
+$0.99
+$1.99
+$2.99
+
+Use the localized StoreProduct pricing provided by RevenueCat.
+
+Read the correct property from react-native-purchases 10.4.2.
+
+Display localized prices returned by RevenueCat.
+
+==================================================
+5. SORT PACKAGES
+==================================================
+
+RevenueCat package order is not guaranteed.
+
+Always display:
+
+1 Day
+
+3 Days
+
+7 Days
+
+Sort packages according to identifier.
+
+Unknown packages must not crash the app.
+
+==================================================
+6. SELECTED PACKAGE STATE
+==================================================
+
+Store the selected package as:
+
+selectedPackage: PurchasesPackage | null
+
+Default selection:
+
+boost_3_days
+
+If unavailable:
+
+select the first valid package.
+
+If there are no packages:
+
+selectedPackage = null
+
+==================================================
+7. KEEP THE EXISTING UI
+==================================================
+
+Do not redesign the screen.
+
+Keep the current CanYoldasi premium purple UI.
+
+Cards should display:
+
+1 Day Promotion
+localized price
+
+3 Day Promotion
+localized price
+Most Popular badge
+
+7 Day Promotion
+localized price
+
+Selected card:
+
+- purple border
+- purple background
+- selected indicator
+
+==================================================
+8. LOADING STATE
+==================================================
+
+Implement loading states.
+
+loading
+
+success
+
+error
+
+Display a loading indicator while RevenueCat packages are loading.
+
+Disable the Promote button while loading.
+
+==================================================
+9. ERROR STATE
+==================================================
+
+If RevenueCat Offerings cannot be loaded:
+
+Show:
+
+"Promotion packages could not be loaded."
+
+Add a Retry button.
+
+Retry must reload Offerings.
+
+Do not expose RevenueCat internal errors to users.
+
+==================================================
+10. EMPTY STATE
+==================================================
+
+If the Offering exists but contains no packages:
+
+Display:
+
+"No promotion packages are currently available."
+
+Disable the Promote button.
+
+Do not create fake packages.
+
+==================================================
+11. LIFECYCLE
+==================================================
+
+Avoid duplicate Offerings requests.
+
+Do not request Offerings on every render.
+
+Support Retry.
+
+Prevent duplicate fetches during React Strict Mode.
+
+==================================================
+12. WEB PLATFORM
+==================================================
+
+Do not break the web build.
+
+Do not fake native purchases on web.
+
+If purchases are unavailable on web, show an appropriate message.
+
+==================================================
+13. PROMOTE BUTTON
+==================================================
+
+The Promote button should NOT start purchases yet.
+
+Do not call:
+
+Purchases.purchasePackage()
+
+Do not activate promotions.
+
+Do not update Supabase.
+
+Do not display purchase success.
+
+Simply prepare the button for the next step.
+
+==================================================
+14. TYPESCRIPT
+==================================================
+
+Use proper RevenueCat types.
+
+Avoid:
+
+any
+
+@ts-ignore
+
+Use PurchasesPackage types correctly.
+
+==================================================
+15. TESTS
+==================================================
+
+Verify:
+
+Loading
+
+Offering loaded
+
+3 packages displayed
+
+Localized prices displayed
+
+Default selected package:
+
+boost_3_days
+
+Package selection works.
+
+Retry works.
+
+No hardcoded prices.
+
+No purchase starts.
+
+==================================================
+16. DO NOT IMPLEMENT
+==================================================
+
+Do NOT:
+
+- purchasePackage
+- payment
+- promoted_until
+- Supabase updates
+- fake success
+- hardcoded prices
+- fake packages
+
+==================================================
+17. FINAL REPORT
+==================================================
+
+Return a report including:
+
+1. RevenueCat Offering loaded
+
+2. Offering identifier
+
+3. Packages found
+
+4. Localized pricing source
+
+5. Default selected package
+
+6. Loading/Error state
+
+7. Modified files
+
+8. TypeScript result
+
+9. Ready for purchase integration
+
+Only integrate RevenueCat Offerings.
+
+Do not implement purchases yet.
