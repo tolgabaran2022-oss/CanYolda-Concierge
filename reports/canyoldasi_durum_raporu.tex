@@ -1,0 +1,223 @@
+\documentclass[12pt,a4paper]{article}
+\usepackage[utf8]{inputenc}
+\usepackage[T1]{fontenc}
+\usepackage[turkish]{babel}
+\usepackage{geometry}
+\usepackage{booktabs}
+\usepackage{longtable}
+\usepackage{array}
+\usepackage{hyperref}
+\usepackage{xcolor}
+\usepackage{titlesec}
+\usepackage{enumitem}
+\usepackage{fancyhdr}
+\usepackage{tabularx}
+\usepackage{lmodern}
+
+\geometry{margin=2.5cm}
+
+\definecolor{primary}{RGB}{88, 56, 156}
+\definecolor{accent}{RGB}{147, 112, 219}
+\definecolor{lightgray}{RGB}{245, 245, 245}
+
+\hypersetup{
+  colorlinks=true,
+  linkcolor=primary,
+  urlcolor=primary
+}
+
+\titleformat{\section}{\large\bfseries\color{primary}}{}{0em}{}[\titlerule]
+\titleformat{\subsection}{\normalsize\bfseries\color{accent}}{}{0em}{}
+
+\pagestyle{fancy}
+\fancyhf{}
+\rhead{\textcolor{gray}{\small CanYoldaşı — Geliştirme Durum Raporu}}
+\lhead{\textcolor{gray}{\small 16 Temmuz 2026}}
+\rfoot{\textcolor{gray}{\small \thepage}}
+
+\begin{document}
+
+% ── Başlık ───────────────────────────────────────────────────────────────────
+\begin{center}
+  {\LARGE\bfseries\color{primary} CanYoldaşı}\\[0.4em]
+  {\large Geliştirme Durum Raporu}\\[0.3em]
+  {\normalsize\color{gray} 16 Temmuz 2026}
+\end{center}
+
+\vspace{1em}
+\noindent
+CanYoldaşı, Türkiye'deki sokak hayvanlarını raporlamak, takip etmek ve sahiplendirme ilanları
+yönetmek için geliştirilen topluluk odaklı bir mobil uygulamadır.
+\vspace{1em}
+
+% ── Stack ────────────────────────────────────────────────────────────────────
+\section{Teknik Altyapı}
+
+\begin{tabularx}{\textwidth}{lX}
+  \toprule
+  \textbf{Katman} & \textbf{Teknoloji} \\
+  \midrule
+  Mobil & Expo SDK 54, expo-router, React Native 0.81 \\
+  Backend & Express 5 + PostgreSQL + Drizzle ORM \\
+  Kimlik Doğrulama & JWT (email/şifre, AsyncStorage) \\
+  Harita & react-native-maps@1.18.0 (sabitlenmiş) \\
+  IAP Ödemesi & RevenueCat (iOS + Android) \\
+  Web Ödemesi & Stripe \\
+  E-posta & Resend (şifre sıfırlama) \\
+  Monorepo & pnpm workspaces, TypeScript 5.9 \\
+  \bottomrule
+\end{tabularx}
+
+% ── Tamamlanan Adımlar ───────────────────────────────────────────────────────
+\section{Tamamlanan Adımlar}
+
+% ── Adım 10–11 ──
+\subsection{Adım 10–11 — RevenueCat IAP Entegrasyonu}
+
+\begin{itemize}[leftmargin=1.5em]
+  \item \texttt{react-native-purchases} SDK entegrasyonu (iOS + Android)
+  \item Ürün tanımları: \texttt{canyoldasi\_boost\_1\_day}, \texttt{canyoldasi\_boost\_3\_days},
+        \texttt{canyoldasi\_boost\_7\_days}
+  \item IAP satın alma akışı: platform ödeme sayfası $\rightarrow$ RevenueCat $\rightarrow$ sunucu doğrulama
+\end{itemize}
+
+% ── Adım 12 ──
+\subsection{Adım 12 — Verify-Purchase Atomik Pipeline}
+
+Endpoint: \texttt{POST /api/promotions/verify-purchase}
+
+\begin{tabularx}{\textwidth}{lX}
+  \toprule
+  \textbf{Güvenlik Katmanı} & \textbf{Detay} \\
+  \midrule
+  JWT zorunlu & 401 — anonim istekler reddedilir \\
+  İlan sahipliği & \texttt{listing.userId === auth userId} — 403 \\
+  \texttt{durationDays} & Sunucu tarafı \texttt{PACKAGE\_MAP}'ten; istemciden alınmaz \\
+  Stacking & Aktif promosyon varsa üstüne eklenir \\
+  Idempotency & \texttt{transaction\_identifier} UNIQUE index — çift gönderim güvenli \\
+  \bottomrule
+\end{tabularx}
+
+% ── Adım 13 ──
+\subsection{Adım 13 — Promosyon UI ve Paylaşılan Yardımcılar}
+
+\begin{itemize}[leftmargin=1.5em]
+  \item \texttt{promotionHelpers.ts}: \texttt{isListingPromoted()}, \texttt{formatRemainingTime()},
+        \texttt{useNow()} (dakikalık tick)
+  \item Mor/leylak badge: \textit{⭐ Öne Çıkan · 2g 14s}
+  \item ``Öne Çıkarmayı Uzat'' stacking CTA butonu
+  \item Öne çıkan ilanlar liste başında sıralanır
+  \item iOS 26+ Liquid Glass sekme çubuğu; eski sürümlerde BlurView fallback
+\end{itemize}
+
+% ── Adım 14 ──
+\subsection{Adım 14 — RevenueCat Webhook + İade/İptal Yaşam Döngüsü}
+
+Yeni endpoint: \texttt{POST /api/webhooks/revenuecat}
+
+\vspace{0.5em}
+\noindent\textbf{Güvenlik Katmanları (sırayla):}
+
+\begin{enumerate}[leftmargin=1.5em]
+  \item \texttt{Authorization} header $\leftrightarrow$ \texttt{REVENUECAT\_WEBHOOK\_AUTH\_TOKEN}
+        ortam değişkeni — \texttt{crypto.timingSafeEqual} ile sabit zamanlı karşılaştırma;
+        ortam değişkeni yoksa fail-closed (tüm istekler reddedilir)
+  \item \texttt{X-RevenueCat-Webhook-Signature: t=\textless ts\textgreater,v1=\textless hex\textgreater}
+        HMAC-SHA256 $\leftrightarrow$ \texttt{REVENUECAT\_WEBHOOK\_SIGNING\_SECRET}
+        — opsiyonel; set edilmişse zorunludur; 5 dakikadan eski imzalar reddedilir
+  \item Zod şema doğrulama
+  \item \texttt{revenuecat\_event\_id} UNIQUE kontrolü — çift teslimat idempotent 200 döner
+\end{enumerate}
+
+\vspace{0.5em}
+\noindent\textbf{Event Yönlendirme Tablosu:}
+
+\begin{tabularx}{\textwidth}{lX}
+  \toprule
+  \textbf{Event Türü} & \textbf{Davranış} \\
+  \midrule
+  \texttt{NON\_RENEWING\_PURCHASE} &
+    Webhook reconciliation yolu — \texttt{verified} durumundaki satın alımı
+    \texttt{processed}'e geçirir ve ilanı aktive eder \\
+  \texttt{CANCELLATION} &
+    \texttt{processed} $\rightarrow$ \texttt{refunded}; promosyon ledger'ı
+    yeniden hesaplanır \\
+  \texttt{REFUND\_REVERSED} &
+    \texttt{refunded} $\rightarrow$ \texttt{processed} restore edilir;
+    promosyon ledger'ı yeniden hesaplanır \\
+  \texttt{TEST} &
+    Kaydedilir, \texttt{skipped} olarak işaretlenir; ilan mutasyonu yapılmaz \\
+  bilinmeyen & Güvenli \texttt{skipped} — uygulama crash olmaz \\
+  \bottomrule
+\end{tabularx}
+
+\vspace{0.5em}
+\noindent\textbf{Promosyon Ledger Algoritması (\texttt{recalculateListingPromotion}):}
+
+\vspace{0.3em}
+\noindent
+İade sonrasında kalan tüm \texttt{purchaseStatus = "processed"} satın alımlar üzerinden
+$\max(\texttt{promotionExpiresAt})$ hesaplanır ve \texttt{adoption\_listings.promoted\_until}
+güncellenir. Stacking senaryolarında geçerli promosyon süresi hiçbir zaman kesilmez.
+
+\vspace{0.5em}
+\noindent\textbf{Yeni Veritabanı Nesneleri:}
+
+\begin{itemize}[leftmargin=1.5em]
+  \item Yeni tablo: \texttt{revenuecat\_webhook\_events}
+        (\texttt{revenuecat\_event\_id} UNIQUE; \texttt{processing\_status}:
+        received | processed | skipped | failed; redakte payload)
+  \item \texttt{listing\_promotion\_purchases} tablosuna yeni sütunlar:
+        \texttt{refunded\_at}, \texttt{cancel\_reason}, \texttt{revenuecat\_event\_id}
+\end{itemize}
+
+% ── Typecheck ────────────────────────────────────────────────────────────────
+\section{Typecheck Durumu}
+
+\begin{tabularx}{\textwidth}{lX}
+  \toprule
+  \textbf{Paket} & \textbf{Durum} \\
+  \midrule
+  \texttt{@workspace/api-server} & \textcolor{green!60!black}{\textbf{PASS}} \\
+  \texttt{@workspace/mobile} & \textcolor{green!60!black}{\textbf{PASS}} \\
+  \texttt{@workspace/mockup-sandbox} & \textcolor{orange}{\textbf{MEVCUT HATA}}
+    — \texttt{calendar.tsx}, \texttt{spinner.tsx} (önceden var; bu adımla ilgisiz) \\
+  \bottomrule
+\end{tabularx}
+
+% ── Aktifleştirme ────────────────────────────────────────────────────────────
+\section{Aktifleştirme Gereksinimleri}
+
+RevenueCat webhook'unu canlıya almak için aşağıdaki adımlar gereklidir:
+
+\begin{enumerate}[leftmargin=1.5em]
+  \item RevenueCat dashboard $\rightarrow$ \textbf{Integrations $\rightarrow$ Webhooks}
+        $\rightarrow$ URL: \texttt{https://\textless domain\textgreater/api/webhooks/revenuecat}
+  \item Ortam değişkeni: \texttt{REVENUECAT\_WEBHOOK\_AUTH\_TOKEN}
+        (rastgele, güçlü bir string — örn. 32+ karakter)
+  \item Opsiyonel (önerilen): \texttt{REVENUECAT\_WEBHOOK\_SIGNING\_SECRET}
+        (RevenueCat'in imzalama anahtarı)
+\end{enumerate}
+
+% ── Ürün Özellikleri ─────────────────────────────────────────────────────────
+\section{Ürün Özellikleri Genel Bakış}
+
+\begin{itemize}[leftmargin=1.5em]
+  \item İnteraktif harita — İstanbul'daki sokak hayvanları; renkli markerlar
+        (durum: aç / yaralı / sağlıklı / bilinmiyor)
+  \item Sokak hayvanı rapor CRUD — fotoğraf, konum, yorum, mama verme
+  \item Evcil hayvan profil yönetimi — aşı bilgisi, besleme notları
+  \item Sahiplendirme ilan panosu — iletişim bilgisi, başvuru formu
+  \item Tam kimlik doğrulama akışı — kayıt / giriş / çıkış / şifre sıfırlama
+  \item IAP öne çıkarma sistemi — stacking, ledger tabanlı iade yönetimi
+\end{itemize}
+
+\vspace{2em}
+\noindent\rule{\textwidth}{0.4pt}
+\begin{center}
+  \small\color{gray}
+  CanYoldaşı — Topluluk Odaklı Sokak Hayvanı Uygulaması \\
+  pnpm monorepo · Expo SDK 54 · Express 5 · PostgreSQL · RevenueCat · Stripe
+\end{center}
+
+\end{document}

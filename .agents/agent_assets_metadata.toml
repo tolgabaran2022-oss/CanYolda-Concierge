@@ -107,3 +107,9 @@ id = "WQej5QSZSYmU1oIoZXuEF"
 uri = "file://rapor.txt"
 type = "text"
 title = "RevenueCat IAP Entegrasyon Raporu"
+
+[[outputs]]
+id = "FmdoDr7amiZpQ0NdmxcIe"
+uri = "file://reports/canyoldasi_durum_raporu.zip"
+type = "unspecified"
+title = "CanYoldaşı Durum Raporu (.tex)"
