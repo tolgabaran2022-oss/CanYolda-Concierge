@@ -1,4 +1,4 @@
-import { apiFetch, API_BASE } from "./apiClient.js";
+import { apiFetch, API_BASE } from "./apiClient";
 
 export type ApiPetProfile = {
   id: string;
