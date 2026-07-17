@@ -185,7 +185,6 @@ export function AnimalsProvider({ children }: { children: React.ReactNode }) {
           notes:        animal.notes,
           userName:     animal.userName,
         }),
-        headers: { "x-user-id": animal.userId },
       });
       const data = await safeJson<Record<string, unknown>>(res);
       if (!res.ok) throw new Error(String(data.error ?? "Rapor oluşturulamadı"));
@@ -206,7 +205,6 @@ export function AnimalsProvider({ children }: { children: React.ReactNode }) {
   const toggleFed = useCallback(async (id: string, userId: string) => {
     const res = await apiFetch(`/animals/${id}/fed`, {
       method: "POST",
-      headers: { "x-user-id": userId },
     });
     if (!res.ok) throw new Error("İşlem başarısız");
     const { fed } = await safeJson<{ fed: boolean; fedCount: number }>(res);
@@ -227,7 +225,6 @@ export function AnimalsProvider({ children }: { children: React.ReactNode }) {
   const toggleNeedsHelp = useCallback(async (id: string, userId: string) => {
     const res = await apiFetch(`/animals/${id}/needs-help`, {
       method: "POST",
-      headers: { "x-user-id": userId },
     });
     if (!res.ok) throw new Error("İşlem başarısız");
     const { needsHelp } = await safeJson<{ needsHelp: boolean; needsHelpCount: number }>(res);
@@ -249,7 +246,6 @@ export function AnimalsProvider({ children }: { children: React.ReactNode }) {
     async (id: string, comment: Omit<AnimalComment, "id" | "timestamp">) => {
       const res = await apiFetch(`/animals/${id}/comments`, {
         method: "POST",
-        headers: { "x-user-id": comment.userId },
         body: JSON.stringify({ text: comment.text, userName: comment.userName }),
       });
       const data = await safeJson<Record<string, unknown>>(res);
@@ -275,7 +271,6 @@ export function AnimalsProvider({ children }: { children: React.ReactNode }) {
   const deleteAnimal = useCallback(async (id: string, userId: string) => {
     const res = await apiFetch(`/animals/${id}`, {
       method: "DELETE",
-      headers: { "x-user-id": userId },
     });
     const data = await safeJson<Record<string, unknown>>(res);
     if (!res.ok) throw new Error(String(data.error ?? "Bildirim silinemedi"));

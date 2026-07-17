@@ -423,7 +423,7 @@ export default function AddAdoptionScreen() {
         dogCompatibility,
         toiletTraining,
       });
-      apiSaveListingContact(user.id, newId, `+90${phone}`, allowPhoneContact, allowMessages).catch(() => {});
+      apiSaveListingContact(newId, `+90${phone}`, allowPhoneContact, allowMessages).catch(() => {});
       Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
       router.back();
     } catch {

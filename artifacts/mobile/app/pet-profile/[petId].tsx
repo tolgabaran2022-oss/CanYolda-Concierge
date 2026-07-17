@@ -63,8 +63,8 @@ function formatDate(iso: string) {
 
 // ── Add Post Modal ─────────────────────────────────────────────────────────────
 function AddPostModal({
-  visible, petId, userId, onClose, onAdded,
-}: { visible: boolean; petId: string; userId: string; onClose: () => void; onAdded: (post: ApiPetPost) => void }) {
+  visible, petId, onClose, onAdded,
+}: { visible: boolean; petId: string; onClose: () => void; onAdded: (post: ApiPetPost) => void }) {
   const T = useTheme();
   const [imageUri, setImageUri] = useState("");
   const [caption, setCaption] = useState("");
@@ -80,7 +80,7 @@ function AddPostModal({
     if (!imageUri) { Alert.alert("Hata", "Lütfen bir fotoğraf seçin."); return; }
     setLoading(true);
     try {
-      const post = await apiCreatePetPost(petId, userId, { imageUrl: imageUri, caption, location });
+      const post = await apiCreatePetPost(petId, { imageUrl: imageUri, caption, location });
       Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
       onAdded(post);
       setImageUri(""); setCaption(""); setLocation("");
@@ -128,8 +128,8 @@ function AddPostModal({
 
 // ── Add Health Modal ────────────────────────────────────────────────────────────
 function AddHealthModal({
-  visible, petId, userId, onClose, onAdded,
-}: { visible: boolean; petId: string; userId: string; onClose: () => void; onAdded: (h: ApiPetHealth) => void }) {
+  visible, petId, onClose, onAdded,
+}: { visible: boolean; petId: string; onClose: () => void; onAdded: (h: ApiPetHealth) => void }) {
   const T = useTheme();
   const [vaccineName, setVaccineName] = useState("");
   const [date, setDate] = useState("");
@@ -141,7 +141,7 @@ function AddHealthModal({
     if (!vaccineName.trim() || !date.trim()) { Alert.alert("Hata", "Aşı adı ve tarih zorunlu."); return; }
     setLoading(true);
     try {
-      const row = await apiAddPetHealth(petId, userId, { vaccineName, date, nextDate, note });
+      const row = await apiAddPetHealth(petId, { vaccineName, date, nextDate, note });
       Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
       onAdded(row);
       setVaccineName(""); setDate(""); setNextDate(""); setNote("");
@@ -174,8 +174,8 @@ function AddHealthModal({
 
 // ── Edit Pet Modal ─────────────────────────────────────────────────────────────
 function EditPetModal({
-  visible, pet, userId, onClose, onSaved,
-}: { visible: boolean; pet: ApiPetProfile; userId: string; onClose: () => void; onSaved: (p: ApiPetProfile) => void }) {
+  visible, pet, onClose, onSaved,
+}: { visible: boolean; pet: ApiPetProfile; onClose: () => void; onSaved: (p: ApiPetProfile) => void }) {
   const T = useTheme();
   const [name, setName] = useState(pet.name);
   const [breed, setBreed] = useState(pet.breed);
@@ -197,7 +197,7 @@ function EditPetModal({
     if (!name.trim()) { Alert.alert("Hata", "İsim zorunlu."); return; }
     setLoading(true);
     try {
-      const updated = await apiUpdatePet(pet.id, userId, { name, breed, gender, birthDate, weight, color, bio, location });
+      const updated = await apiUpdatePet(pet.id, { name, breed, gender, birthDate, weight, color, bio, location });
       Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
       onSaved(updated);
       onClose();
@@ -271,7 +271,7 @@ export default function PetProfileScreen() {
       ]);
       setPet(p); setPosts(ps); setHealth(h);
       if (user?.id && p.ownerId !== user.id) {
-        const following = await apiCheckPetFollow(petId, user.id);
+        const following = await apiCheckPetFollow(petId);
         setIsFollowing(following);
       }
     } catch {
@@ -284,7 +284,7 @@ export default function PetProfileScreen() {
   const handleFollow = async () => {
     if (!user?.id || !petId) return;
     try {
-      const r = await apiTogglePetFollow(petId, user.id);
+      const r = await apiTogglePetFollow(petId);
       setIsFollowing(r.following);
       setPet((prev) => prev ? { ...prev, followersCount: r.followersCount } : prev);
       Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
@@ -300,7 +300,7 @@ export default function PetProfileScreen() {
         text: "Sil", style: "destructive",
         onPress: async () => {
           try {
-            await apiDeletePetPost(petId!, postId, user!.id);
+            await apiDeletePetPost(petId!, postId);
             setPosts((ps) => ps.filter((p) => p.id !== postId));
             setPet((p) => p ? { ...p, postsCount: Math.max(0, p.postsCount - 1) } : p);
           } catch { Alert.alert("Hata", "Silinemedi."); }
@@ -316,7 +316,7 @@ export default function PetProfileScreen() {
         text: "Sil", style: "destructive",
         onPress: async () => {
           try {
-            await apiDeletePetHealth(petId!, healthId, user!.id);
+            await apiDeletePetHealth(petId!, healthId);
             setHealth((h) => h.filter((r) => r.id !== healthId));
           } catch { Alert.alert("Hata", "Silinemedi."); }
         },
@@ -534,7 +534,6 @@ export default function PetProfileScreen() {
         <AddPostModal
           visible={showAddPost}
           petId={petId!}
-          userId={user.id}
           onClose={() => setShowAddPost(false)}
           onAdded={(post) => {
             setPosts((ps) => [post, ...ps]);
@@ -546,7 +545,6 @@ export default function PetProfileScreen() {
         <AddHealthModal
           visible={showAddHealth}
           petId={petId!}
-          userId={user.id}
           onClose={() => setShowAddHealth(false)}
           onAdded={(h) => setHealth((prev) => [h, ...prev])}
         />
@@ -555,7 +553,6 @@ export default function PetProfileScreen() {
         <EditPetModal
           visible={showEditPet}
           pet={pet}
-          userId={user.id}
           onClose={() => setShowEditPet(false)}
           onSaved={setPet}
         />

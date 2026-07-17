@@ -240,7 +240,6 @@ export function AdoptionProvider({ children }: { children: React.ReactNode }) {
     async (listing: Omit<AdoptionListing, "id" | "createdAt">): Promise<string> => {
       const res = await apiFetch("/adoption", {
         method: "POST",
-        headers: { "x-user-id": listing.userId },
         body: JSON.stringify({
           petName:            listing.petName,
           petType:            listing.petType,
@@ -281,7 +280,6 @@ export function AdoptionProvider({ children }: { children: React.ReactNode }) {
       const userId = updates.userId ?? listings.find((l) => l.id === id)?.userId ?? "";
       const res = await apiFetch(`/adoption/${id}`, {
         method: "PATCH",
-        headers: { "x-user-id": userId },
         body: JSON.stringify({
           petName:            updates.petName,
           petType:            updates.petType,
@@ -320,7 +318,6 @@ export function AdoptionProvider({ children }: { children: React.ReactNode }) {
     const userId = listings.find((l) => l.id === id)?.userId ?? "";
     const res = await apiFetch(`/adoption/${id}`, {
       method: "DELETE",
-      headers: { "x-user-id": userId },
     });
     const data = await safeJson<Record<string, unknown>>(res);
     if (!res.ok) throw new Error(String(data.error ?? "İlan silinemedi"));

@@ -163,7 +163,6 @@ export default function HelpUpdateScreen() {
           note: note.trim(),
           userName: user.name ?? user.email ?? "",
         }),
-        headers: { "x-user-id": user.id },
       });
 
       if (!res.ok) {

@@ -1,12 +1,4 @@
-const API_BASE = process.env.EXPO_PUBLIC_DOMAIN
-  ? `https://${process.env.EXPO_PUBLIC_DOMAIN}/api`
-  : "http://localhost:8080/api";
-
-function hdrs(userId?: string): Record<string, string> {
-  const h: Record<string, string> = { "Content-Type": "application/json" };
-  if (userId) h["x-user-id"] = userId;
-  return h;
-}
+import { apiFetch, API_BASE } from "./apiClient.js";
 
 export type ContactPrefs = {
   allowPhoneContact: boolean;
@@ -19,30 +11,23 @@ export type PhoneRevealResult = {
   allowMessages:     boolean;
 };
 
-/** Save contact prefs + phone number for a listing (owner only). */
+/** Authenticated — save contact prefs + phone number for a listing (owner only). */
 export async function apiSaveListingContact(
-  myId: string,
   listingId: string,
   phoneNumber: string,
   allowPhoneContact: boolean,
   allowMessages: boolean
 ): Promise<void> {
-  const res = await fetch(`${API_BASE}/listings/contact`, {
+  const res = await apiFetch("/listings/contact", {
     method: "POST",
-    headers: hdrs(myId),
     body: JSON.stringify({ listingId, phoneNumber, allowPhoneContact, allowMessages }),
   });
   if (!res.ok) throw new Error("save contact failed");
 }
 
-/** Reveal the phone number for a listing (requires auth; fails if owner disabled it). */
-export async function apiRevealPhone(
-  myId: string,
-  listingId: string
-): Promise<PhoneRevealResult> {
-  const res = await fetch(`${API_BASE}/listings/${listingId}/phone`, {
-    headers: hdrs(myId),
-  });
+/** Authenticated — reveal the phone number for a listing. */
+export async function apiRevealPhone(listingId: string): Promise<PhoneRevealResult> {
+  const res = await apiFetch(`/listings/${listingId}/phone`);
   if (res.status === 403) {
     const body = await res.json() as { error: string };
     throw new Error(body.error ?? "Telefon numarası paylaşılmıyor");
@@ -54,7 +39,7 @@ export async function apiRevealPhone(
   return res.json() as Promise<PhoneRevealResult>;
 }
 
-/** Get public contact preferences for a listing (no auth required). */
+/** Public — get public contact preferences for a listing (no auth required). */
 export async function apiGetContactPrefs(listingId: string): Promise<ContactPrefs> {
   try {
     const res = await fetch(`${API_BASE}/listings/${listingId}/contact-prefs`);

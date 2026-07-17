@@ -158,7 +158,7 @@ export default function NotesScreen() {
   const load = useCallback(async () => {
     if (!petId || !user) return;
     setLoading(true);
-    try { setNotes(await apiGetNotes(petId, user.id)); }
+    try { setNotes(await apiGetNotes(petId)); }
     finally { setLoading(false); }
   }, [petId, user?.id]);
 
@@ -167,10 +167,10 @@ export default function NotesScreen() {
   const handleSave = async (title: string, content: string) => {
     if (!petId || !user) return;
     if (editing) {
-      const updated = await apiUpdateNote(petId, editing.id, user.id, { title, content });
+      const updated = await apiUpdateNote(petId, editing.id, { title, content });
       setNotes((prev) => prev.map((n) => n.id === editing.id ? updated : n));
     } else {
-      const created = await apiCreateNote(petId, user.id, { title, content });
+      const created = await apiCreateNote(petId, { title, content });
       setNotes((prev) => [created, ...prev]);
     }
     Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
@@ -183,7 +183,7 @@ export default function NotesScreen() {
         text: "Sil", style: "destructive",
         onPress: async () => {
           if (!petId || !user) return;
-          await apiDeleteNote(petId, note.id, user.id);
+          await apiDeleteNote(petId, note.id);
           setNotes((prev) => prev.filter((n) => n.id !== note.id));
           Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
         },

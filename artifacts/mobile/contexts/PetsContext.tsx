@@ -97,9 +97,7 @@ export function PetsProvider({ children }: { children: React.ReactNode }) {
     if (!userId) { setIsLoading(false); return; }
     try {
       setError(null);
-      const res = await apiFetch("/pets", {
-        headers: { "x-user-id": userId },
-      });
+      const res = await apiFetch("/pets");
       if (!res.ok) throw new Error("Sunucu hatası");
       const data = await safeJson<Array<Record<string, unknown>>>(res);
       setPets(data.map(mapFromApi));
@@ -116,7 +114,6 @@ export function PetsProvider({ children }: { children: React.ReactNode }) {
     async (pet: Omit<Pet, "id" | "createdAt">) => {
       const res = await apiFetch("/pets", {
         method: "POST",
-        headers: { "x-user-id": pet.userId },
         body: JSON.stringify({
           name:            pet.name,
           type:            pet.type,
@@ -143,7 +140,6 @@ export function PetsProvider({ children }: { children: React.ReactNode }) {
       const uid = updates.userId ?? pets.find((p) => p.id === id)?.userId ?? "";
       const res = await apiFetch(`/pets/${id}`, {
         method: "PATCH",
-        headers: { "x-user-id": uid },
         body: JSON.stringify({
           name:            updates.name,
           type:            updates.type,
@@ -170,7 +166,6 @@ export function PetsProvider({ children }: { children: React.ReactNode }) {
     const uid = pets.find((p) => p.id === id)?.userId ?? "";
     const res = await apiFetch(`/pets/${id}`, {
       method: "DELETE",
-      headers: { "x-user-id": uid },
     });
     const data = await safeJson<Record<string, unknown>>(res);
     if (!res.ok) throw new Error(String(data.error ?? "Evcil hayvan silinemedi"));

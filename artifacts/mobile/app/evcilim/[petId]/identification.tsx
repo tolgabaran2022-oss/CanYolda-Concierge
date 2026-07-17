@@ -92,7 +92,7 @@ export default function IdentificationScreen() {
     if (!petId || !user) return;
     setLoading(true);
     try {
-      const data = await apiGetIdentification(petId, user.id);
+      const data = await apiGetIdentification(petId);
       if (data) {
         setMicrochip(data.microchipNumber);
         setPassport(data.passportNumber);
@@ -113,7 +113,7 @@ export default function IdentificationScreen() {
     if (!petId || !user) return;
     setSaving(true);
     try {
-      await apiUpsertIdentification(petId, user.id, {
+      await apiUpsertIdentification(petId, {
         microchipNumber, passportNumber, healthBookNumber, registrationNumber,
         insuranceInfo, veterinarianName, veterinarianPhone, emergencyContactName, emergencyContactPhone,
       });

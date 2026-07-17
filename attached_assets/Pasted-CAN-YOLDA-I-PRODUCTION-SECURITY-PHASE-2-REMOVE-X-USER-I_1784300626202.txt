@@ -1,0 +1,596 @@
+CAN YOLDAŞI — PRODUCTION SECURITY PHASE 2
+REMOVE X-USER-ID AUTHENTICATION AND ENFORCE JWT
+
+Current stack:
+
+- Expo / React Native
+- Express
+- PostgreSQL
+- Drizzle ORM
+- JWT authentication
+
+Phase 1 has already removed:
+
+- Feed
+- Stories
+- Create Post
+- Post Detail
+- Follow system
+- Feed-related database tables and API routes
+
+IMPORTANT:
+
+Do not reintroduce Feed, Stories or Follow functionality.
+
+Do not redesign screens.
+
+Do not reset or delete production data.
+
+This phase is strictly an authentication and authorization security cleanup.
+
+==================================================
+1. FULL X-USER-ID AUDIT
+==================================================
+
+Recursively search the entire monorepo for:
+
+- x-user-id
+- X-User-Id
+- extractUserIdDual
+- extractUserId
+- Authorization
+- Bearer
+- userId headers
+- manually injected user IDs
+- fallback identity logic
+
+Inspect:
+
+- mobile app
+- API server
+- shared libraries
+- services
+- API clients
+- routes
+- middleware
+- tests
+- scripts
+
+Produce a usage inventory before changing code.
+
+Classify every occurrence as:
+
+1. Authentication mechanism
+2. Legacy compatibility code
+3. Harmless test/mock code
+4. Business data field
+5. Security risk
+
+Do not confuse a legitimate request-body userId relationship with authentication.
+
+==================================================
+2. REMOVE HEADER-BASED IDENTITY
+==================================================
+
+The following must never be accepted as authentication:
+
+x-user-id
+X-User-Id
+custom user ID headers
+query-string user IDs
+request-body user IDs
+
+A client must not be able to impersonate another user by sending an arbitrary ID.
+
+Remove all backend authentication fallback behavior based on x-user-id.
+
+Delete:
+
+extractUserIdDual()
+
+only after confirming there are zero remaining legitimate usages.
+
+If the function is exported anywhere, remove stale exports and imports.
+
+==================================================
+3. JWT AUTHENTICATION STANDARD
+==================================================
+
+Protected routes must identify the authenticated user only from a valid JWT:
+
+Authorization: Bearer <access_token>
+
+Create or reuse one centralized authentication middleware.
+
+Preferred behavior:
+
+- read Authorization header
+- require Bearer scheme
+- verify signature
+- verify expiry
+- validate payload shape
+- extract authenticated user ID
+- attach authenticated identity to req.auth or equivalent typed location
+- reject malformed or expired tokens
+- never trust client-provided user ID as identity
+
+Use the existing JWT_SECRET environment validation.
+
+Do not create a second JWT implementation.
+
+Do not decode without verifying.
+
+==================================================
+4. ROUTE CLASSIFICATION
+==================================================
+
+Audit every API route and classify it as:
+
+PUBLIC:
+- registration
+- login
+- forgot password
+- reset password
+- public adoption listing reads
+- public stray animal reads where intentionally public
+
+AUTHENTICATED:
+- profile settings
+- user-specific notifications
+- messages
+- conversations
+- creating listings
+- creating stray reports
+- pet profiles
+- favorites
+- adoption requests
+- boost purchases
+- promotion management
+
+OWNER-ONLY:
+- editing/deleting adoption listings
+- editing/deleting stray animal reports
+- editing/deleting pets
+- editing personal profile
+- managing personal listings
+- deleting account
+
+MEMBER-ONLY:
+- reading conversation messages
+- sending messages into a conversation
+
+Do not accidentally protect intended public read endpoints.
+
+Do not accidentally leave write endpoints public.
+
+==================================================
+5. SOCIAL AND NOTIFICATIONS ROUTES
+==================================================
+
+The Phase 1 report identified remaining x-user-id usage in:
+
+- socialApi.ts
+- notifications API
+
+Audit both mobile and backend implementations.
+
+Migrate them to JWT Bearer authentication.
+
+For profile settings:
+
+GET /api/social/settings
+PATCH /api/social/settings
+
+Expected:
+
+- user identity must come from verified JWT
+- no user ID header
+- no user ID request body used as identity
+- user can access only their own settings
+
+For notifications:
+
+- authenticated user sees only their notifications
+- mark-as-read operations affect only their notifications
+- notification IDs must still be ownership-checked
+- no arbitrary user ID may select another user’s notifications
+
+==================================================
+6. MOBILE API CLIENT MIGRATION
+==================================================
+
+Remove all x-user-id header injection from the mobile application.
+
+Use the existing authenticated API client or create one shared request wrapper if necessary.
+
+Expected request behavior:
+
+Authorization: Bearer <stored JWT>
+
+Requirements:
+
+- retrieve token from the existing secure/auth storage architecture
+- do not duplicate token-loading logic across every file
+- do not use hardcoded user IDs
+- do not use profile IDs as authentication
+- handle missing token cleanly
+- handle 401 consistently
+- prevent infinite retry loops
+- do not log tokens
+
+Audit:
+
+- socialApi.ts
+- notifications API
+- messagesApi.ts
+- pets API
+- adoption API
+- stray animal API
+- profile API
+- promotion / RevenueCat API
+- upload API
+- account/settings API
+
+Even if only some currently use x-user-id, confirm all protected requests use the same JWT standard.
+
+==================================================
+7. OWNERSHIP AUTHORIZATION
+==================================================
+
+Authentication alone is not enough.
+
+For every update/delete route:
+
+1. Verify JWT
+2. Load target resource
+3. Confirm resource owner equals authenticated user
+4. Reject otherwise with 403
+5. Perform mutation
+
+Never trust:
+
+req.body.userId
+req.params.userId
+req.query.userId
+x-user-id
+
+as proof of ownership.
+
+They may identify a target resource, but authorization must always use the verified JWT identity.
+
+Use:
+
+401 Unauthorized:
+missing, malformed or expired authentication
+
+403 Forbidden:
+valid user but not authorized for the resource
+
+404 Not Found:
+use consistently where hiding resource existence is appropriate
+
+==================================================
+8. USER PROFILE ROUTES
+==================================================
+
+Public profile viewing may remain public if this is the intended product behavior.
+
+Example:
+
+GET /api/social/users/:userId
+
+may return only public profile fields.
+
+It must not expose:
+
+- email
+- phone number
+- password hash
+- reset token data
+- private settings
+- exact private location
+- security metadata
+
+Editing a profile must require JWT and must only update the authenticated user’s profile.
+
+Do not allow:
+
+PATCH /users/:arbitraryUserId
+
+to update another account.
+
+==================================================
+9. FILE UPLOAD SECURITY
+==================================================
+
+Audit every upload endpoint.
+
+Require JWT for user-generated uploads including:
+
+- profile images
+- pet images
+- adoption listing images
+- stray animal report images
+- message attachments if supported
+
+Associate uploads with the authenticated JWT user.
+
+Do not trust x-user-id or form-data userId.
+
+Preserve existing:
+
+- MIME validation
+- size limits
+- image validation
+- filename safety
+
+Do not expose server filesystem paths.
+
+==================================================
+10. WEBSOCKET / REAL-TIME AUTH
+==================================================
+
+If the messaging system uses WebSocket, Socket.IO, SSE or polling:
+
+- audit how the connection identifies the user
+- remove x-user-id fallback
+- require verified JWT during connection or initial authenticated request
+- prevent joining another user’s conversation
+- verify conversation membership
+
+If there is no real-time transport, document that clearly.
+
+==================================================
+11. REMOVE DEAD AUTH CODE
+==================================================
+
+After migration, remove:
+
+- extractUserIdDual
+- x-user-id middleware
+- x-user-id header builders
+- compatibility comments
+- deprecated auth helpers
+- unused imports
+- stale types
+- fake local user ID fallbacks
+
+Do not remove legitimate userId fields used as database foreign keys.
+
+==================================================
+12. ERROR HANDLING
+==================================================
+
+Standardize safe authentication errors.
+
+Missing or malformed token:
+
+{
+  "error": "Oturum gerekli."
+}
+
+Expired token:
+
+{
+  "error": "Oturumunuzun süresi dolmuş. Lütfen tekrar giriş yapın."
+}
+
+Forbidden ownership action:
+
+{
+  "error": "Bu işlem için yetkiniz yok."
+}
+
+Do not expose:
+
+- JWT internals
+- verification stack traces
+- JWT_SECRET
+- database queries
+- password hashes
+- token contents
+
+Mobile behavior on 401:
+
+- clear invalid auth state according to existing architecture
+- navigate safely to login
+- do not create redirect loops
+- preserve user-friendly messaging
+
+==================================================
+13. SECURITY TEST MATRIX
+==================================================
+
+TEST 1:
+Call protected endpoint without Authorization header.
+
+Expected:
+401.
+
+TEST 2:
+Send x-user-id with no JWT.
+
+Expected:
+401.
+x-user-id must have no authentication effect.
+
+TEST 3:
+Send malformed Bearer token.
+
+Expected:
+401.
+
+TEST 4:
+Send expired JWT.
+
+Expected:
+401 with safe session-expired response.
+
+TEST 5:
+Valid user reads their own settings.
+
+Expected:
+200.
+
+TEST 6:
+Valid user attempts to edit another user's profile.
+
+Expected:
+403 or safe 404.
+
+TEST 7:
+Valid user attempts to delete another user's pet.
+
+Expected:
+403 or safe 404.
+
+TEST 8:
+Valid user attempts to delete another user's adoption listing.
+
+Expected:
+403 or safe 404.
+
+TEST 9:
+Valid user attempts to modify another user's stray report.
+
+Expected:
+403 or safe 404.
+
+TEST 10:
+Valid user tries to read a conversation they do not belong to.
+
+Expected:
+403 or safe 404.
+
+TEST 11:
+Valid user reads their notifications.
+
+Expected:
+Only their own notifications.
+
+TEST 12:
+Valid user submits another userId in body while authenticated.
+
+Expected:
+Body userId does not override JWT identity.
+
+TEST 13:
+Public listing read endpoint without JWT.
+
+Expected:
+Still works if intended to be public.
+
+TEST 14:
+Authenticated image upload.
+
+Expected:
+Works and binds upload to authenticated user.
+
+TEST 15:
+Unauthenticated image upload.
+
+Expected:
+401.
+
+TEST 16:
+Search entire repository for x-user-id.
+
+Expected:
+Zero production authentication usages.
+
+==================================================
+14. TYPE SAFETY
+==================================================
+
+Add or preserve proper Express request typing for authenticated identity.
+
+Avoid:
+
+(req as any).user
+
+where a typed interface or declaration merging can be used.
+
+Run:
+
+- database/shared library typecheck
+- API server typecheck
+- mobile typecheck
+- lint if configured
+- Expo Doctor if available and safe
+
+Do not report PASS without running the command.
+
+==================================================
+15. DO NOT DO THESE
+==================================================
+
+DO NOT:
+
+- add Supabase Auth
+- add Firebase Auth
+- create a second authentication system
+- trust x-user-id
+- trust body userId as identity
+- make all routes private indiscriminately
+- expose private profile fields
+- change password reset architecture
+- change RevenueCat configuration
+- change app UI
+- restore Feed or Stories
+- restore Follow functionality
+- delete application data
+- reset the database
+- weaken ownership checks
+- log JWT tokens
+
+==================================================
+16. FINAL REPORT
+==================================================
+
+Return a detailed Turkish report with exactly these headings:
+
+1. X-USER-ID KULLANIM ENVANTERİ
+
+2. KALDIRILAN GÜVENSİZ AUTH MEKANİZMALARI
+
+3. JWT MIDDLEWARE MİMARİSİ
+
+4. PUBLIC ROUTE'LAR
+
+5. AUTHENTICATED ROUTE'LAR
+
+6. OWNER-ONLY ROUTE'LAR
+
+7. SOCIAL SETTINGS GÜVENLİĞİ
+
+8. NOTIFICATION GÜVENLİĞİ
+
+9. MESAJLAŞMA YETKİ KONTROLLERİ
+
+10. UPLOAD ENDPOINT GÜVENLİĞİ
+
+11. MOBİL API CLIENT DEĞİŞİKLİKLERİ
+
+12. SİLİNEN DEAD CODE
+
+13. DEĞİŞTİRİLEN DOSYALAR
+
+14. SECURITY TEST SONUÇLARI
+
+15. TYPESCRIPT / LINT / EXPO DOCTOR SONUÇLARI
+
+16. GERÇEKTEN TEST EDİLEN SENARYOLAR
+
+17. MANUEL TEST GEREKTİREN SENARYOLAR
+
+18. KALAN GÜVENLİK RİSKLERİ
+
+19. PHASE 2 FINAL VERDICT
+
+IMPORTANT:
+
+Do not only remove the x-user-id string.
+
+Verify that every protected backend route derives identity exclusively from a cryptographically verified JWT.
+
+Do not claim security is fixed until repository search, ownership tests and typechecks are complete.

@@ -95,7 +95,7 @@ export default function NutritionScreen() {
     if (!petId || !user) return;
     setLoading(true);
     try {
-      const data = await apiGetNutrition(petId, user.id);
+      const data = await apiGetNutrition(petId);
       if (data) {
         setFoodBrand(data.foodBrand); setFoodName(data.foodName); setFoodType(data.foodType);
         setDailyAmount(String(data.dailyAmountGrams || "")); setMealsPerDay(String(data.mealsPerDay || "2"));
@@ -112,7 +112,7 @@ export default function NutritionScreen() {
     if (!petId || !user) return;
     setSaving(true);
     try {
-      await apiUpsertNutrition(petId, user.id, {
+      await apiUpsertNutrition(petId, {
         foodBrand, foodName, foodType,
         dailyAmountGrams: parseInt(dailyAmountGrams) || 0,
         mealsPerDay: parseInt(mealsPerDay) || 2,

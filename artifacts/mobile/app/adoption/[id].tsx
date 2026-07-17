@@ -152,7 +152,7 @@ export default function AdoptionDetailScreen() {
   /* Check if requester already has a pending/reviewing request */
   useEffect(() => {
     if (!id || !user || isOwner) return;
-    apiCheckAdoptionRequest(id, user.id).then(setExistingRequest).catch(() => {});
+    apiCheckAdoptionRequest(id).then(setExistingRequest).catch(() => {});
   }, [id, user, isOwner]);
 
   /* Fetch public contact prefs when listing loads */
@@ -197,7 +197,7 @@ export default function AdoptionDetailScreen() {
     setRevealLoading(true);
     setRevealError(null);
     try {
-      const result = await apiRevealPhone(user.id, id!);
+      const result = await apiRevealPhone(id!);
       setRevealedPhone(result.phoneNumber);
     } catch (e: any) {
       setRevealError(e?.message ?? "Telefon numarası alınamadı");

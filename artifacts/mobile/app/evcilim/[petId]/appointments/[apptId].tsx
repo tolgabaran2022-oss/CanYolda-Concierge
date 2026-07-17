@@ -278,7 +278,7 @@ export default function AppointmentDetailScreen() {
   const load = useCallback(async () => {
     if (!petId || !apptId || !user) return;
     setLoading(true);
-    try { setAppt(await apiGetAppointment(petId, apptId, user.id)); }
+    try { setAppt(await apiGetAppointment(petId, apptId)); }
     finally { setLoading(false); }
   }, [petId, apptId, user?.id]);
 
@@ -286,7 +286,7 @@ export default function AppointmentDetailScreen() {
 
   const handleUpdate = async (data: Partial<Omit<ApiAppointment, "id" | "petId" | "userId" | "createdAt" | "updatedAt">>) => {
     if (!petId || !apptId || !user) return;
-    const updated = await apiUpdateAppointment(petId, apptId, user.id, data);
+    const updated = await apiUpdateAppointment(petId, apptId, data);
     setAppt(updated);
     Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
   };
@@ -311,7 +311,7 @@ export default function AppointmentDetailScreen() {
           onPress: async () => {
             if (!petId || !apptId || !user) return;
             try {
-              await apiDeleteAppointment(petId, apptId, user.id);
+              await apiDeleteAppointment(petId, apptId);
               Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
               router.back();
             } catch {

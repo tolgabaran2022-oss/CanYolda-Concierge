@@ -122,7 +122,7 @@ function AdoptionHeader({ topPad }: { topPad: number }) {
   React.useEffect(() => {
     if (!user) return;
     let cancelled = false;
-    apiFetchNotifications(user.id).then((notifs) => {
+    apiFetchNotifications().then((notifs) => {
       if (cancelled) return;
       const count = notifs.filter((n) => !n.read && ADOPTION_NOTIF_TYPES.includes(n.type)).length;
       setUnreadCount(count);

@@ -238,7 +238,7 @@ export default function AppointmentsScreen() {
   const load = useCallback(async () => {
     if (!petId || !user) return;
     setLoading(true);
-    try { setAppointments(await apiGetAppointments(petId, user.id)); }
+    try { setAppointments(await apiGetAppointments(petId)); }
     finally { setLoading(false); }
   }, [petId, user?.id]);
 
@@ -246,7 +246,7 @@ export default function AppointmentsScreen() {
 
   const handleAdd = async (data: Omit<ApiAppointment, "id" | "petId" | "userId" | "createdAt" | "updatedAt">) => {
     if (!petId || !user) return;
-    const created = await apiCreateAppointment(petId, user.id, data);
+    const created = await apiCreateAppointment(petId, data);
     setAppointments((prev) => [created, ...prev]);
     Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
   };

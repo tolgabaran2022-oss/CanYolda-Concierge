@@ -339,7 +339,7 @@ export default function VaccinationsScreen() {
   const load = useCallback(async () => {
     if (!petId || !user) return;
     setLoading(true);
-    try { setVaccinations(await apiGetVaccinations(petId, user.id)); }
+    try { setVaccinations(await apiGetVaccinations(petId)); }
     finally { setLoading(false); }
   }, [petId, user?.id]);
 
@@ -350,10 +350,10 @@ export default function VaccinationsScreen() {
   const handleSave = async (data: Omit<ApiVaccination, "id" | "petId" | "userId" | "createdAt" | "updatedAt">) => {
     if (!petId || !user) return;
     if (editing) {
-      const updated = await apiUpdateVaccination(petId, editing.id, user.id, data);
+      const updated = await apiUpdateVaccination(petId, editing.id, data);
       setVaccinations((prev) => prev.map((v) => v.id === editing.id ? updated : v));
     } else {
-      const created = await apiCreateVaccination(petId, user.id, data);
+      const created = await apiCreateVaccination(petId, data);
       setVaccinations((prev) => [created, ...prev]);
     }
     Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
@@ -366,7 +366,7 @@ export default function VaccinationsScreen() {
         text: "Sil", style: "destructive",
         onPress: async () => {
           if (!petId || !user) return;
-          await apiDeleteVaccination(petId, vacc.id, user.id);
+          await apiDeleteVaccination(petId, vacc.id);
           setVaccinations((prev) => prev.filter((v) => v.id !== vacc.id));
           Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
         },

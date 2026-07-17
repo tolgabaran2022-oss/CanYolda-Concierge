@@ -1,12 +1,4 @@
-const API_BASE = process.env.EXPO_PUBLIC_DOMAIN
-  ? `https://${process.env.EXPO_PUBLIC_DOMAIN}/api`
-  : "http://localhost:8080/api";
-
-function hdrs(userId?: string): Record<string, string> {
-  const h: Record<string, string> = { "Content-Type": "application/json" };
-  if (userId) h["x-user-id"] = userId;
-  return h;
-}
+import { apiFetch } from "./apiClient.js";
 
 /* ── Types ─────────────────────────────────────────────────────────────── */
 
@@ -94,20 +86,18 @@ export type ApiNutrition = {
 
 /* ── Vaccinations ────────────────────────────────────────────────────── */
 
-export async function apiGetVaccinations(petId: string, userId: string): Promise<ApiVaccination[]> {
-  const res = await fetch(`${API_BASE}/pets/${petId}/vaccinations`, { headers: hdrs(userId) });
+export async function apiGetVaccinations(petId: string): Promise<ApiVaccination[]> {
+  const res = await apiFetch(`/pets/${petId}/vaccinations`);
   if (!res.ok) return [];
   return res.json() as Promise<ApiVaccination[]>;
 }
 
 export async function apiCreateVaccination(
   petId: string,
-  userId: string,
   data: Omit<ApiVaccination, "id" | "petId" | "userId" | "createdAt" | "updatedAt">
 ): Promise<ApiVaccination> {
-  const res = await fetch(`${API_BASE}/pets/${petId}/vaccinations`, {
+  const res = await apiFetch(`/pets/${petId}/vaccinations`, {
     method: "POST",
-    headers: hdrs(userId),
     body: JSON.stringify(data),
   });
   if (!res.ok) throw new Error("create vaccination failed");
@@ -117,48 +107,41 @@ export async function apiCreateVaccination(
 export async function apiUpdateVaccination(
   petId: string,
   vaccinationId: string,
-  userId: string,
   data: Partial<Omit<ApiVaccination, "id" | "petId" | "userId" | "createdAt" | "updatedAt">>
 ): Promise<ApiVaccination> {
-  const res = await fetch(`${API_BASE}/pets/${petId}/vaccinations/${vaccinationId}`, {
+  const res = await apiFetch(`/pets/${petId}/vaccinations/${vaccinationId}`, {
     method: "PATCH",
-    headers: hdrs(userId),
     body: JSON.stringify(data),
   });
   if (!res.ok) throw new Error("update vaccination failed");
   return res.json() as Promise<ApiVaccination>;
 }
 
-export async function apiDeleteVaccination(petId: string, vaccinationId: string, userId: string): Promise<void> {
-  const res = await fetch(`${API_BASE}/pets/${petId}/vaccinations/${vaccinationId}`, {
-    method: "DELETE",
-    headers: hdrs(userId),
-  });
+export async function apiDeleteVaccination(petId: string, vaccinationId: string): Promise<void> {
+  const res = await apiFetch(`/pets/${petId}/vaccinations/${vaccinationId}`, { method: "DELETE" });
   if (!res.ok) throw new Error("delete vaccination failed");
 }
 
 /* ── Appointments ────────────────────────────────────────────────────── */
 
-export async function apiGetAppointments(petId: string, userId: string): Promise<ApiAppointment[]> {
-  const res = await fetch(`${API_BASE}/pets/${petId}/appointments`, { headers: hdrs(userId) });
+export async function apiGetAppointments(petId: string): Promise<ApiAppointment[]> {
+  const res = await apiFetch(`/pets/${petId}/appointments`);
   if (!res.ok) return [];
   return res.json() as Promise<ApiAppointment[]>;
 }
 
-export async function apiGetAppointment(petId: string, apptId: string, userId: string): Promise<ApiAppointment | null> {
-  const res = await fetch(`${API_BASE}/pets/${petId}/appointments/${apptId}`, { headers: hdrs(userId) });
+export async function apiGetAppointment(petId: string, apptId: string): Promise<ApiAppointment | null> {
+  const res = await apiFetch(`/pets/${petId}/appointments/${apptId}`);
   if (!res.ok) return null;
   return res.json() as Promise<ApiAppointment>;
 }
 
 export async function apiCreateAppointment(
   petId: string,
-  userId: string,
   data: Omit<ApiAppointment, "id" | "petId" | "userId" | "createdAt" | "updatedAt">
 ): Promise<ApiAppointment> {
-  const res = await fetch(`${API_BASE}/pets/${petId}/appointments`, {
+  const res = await apiFetch(`/pets/${petId}/appointments`, {
     method: "POST",
-    headers: hdrs(userId),
     body: JSON.stringify(data),
   });
   if (!res.ok) throw new Error("create appointment failed");
@@ -168,42 +151,35 @@ export async function apiCreateAppointment(
 export async function apiUpdateAppointment(
   petId: string,
   appointmentId: string,
-  userId: string,
   data: Partial<Omit<ApiAppointment, "id" | "petId" | "userId" | "createdAt" | "updatedAt">>
 ): Promise<ApiAppointment> {
-  const res = await fetch(`${API_BASE}/pets/${petId}/appointments/${appointmentId}`, {
+  const res = await apiFetch(`/pets/${petId}/appointments/${appointmentId}`, {
     method: "PATCH",
-    headers: hdrs(userId),
     body: JSON.stringify(data),
   });
   if (!res.ok) throw new Error("update appointment failed");
   return res.json() as Promise<ApiAppointment>;
 }
 
-export async function apiDeleteAppointment(petId: string, appointmentId: string, userId: string): Promise<void> {
-  const res = await fetch(`${API_BASE}/pets/${petId}/appointments/${appointmentId}`, {
-    method: "DELETE",
-    headers: hdrs(userId),
-  });
+export async function apiDeleteAppointment(petId: string, appointmentId: string): Promise<void> {
+  const res = await apiFetch(`/pets/${petId}/appointments/${appointmentId}`, { method: "DELETE" });
   if (!res.ok) throw new Error("delete appointment failed");
 }
 
 /* ── Identification ──────────────────────────────────────────────────── */
 
-export async function apiGetIdentification(petId: string, userId: string): Promise<ApiIdentification | null> {
-  const res = await fetch(`${API_BASE}/pets/${petId}/identification`, { headers: hdrs(userId) });
+export async function apiGetIdentification(petId: string): Promise<ApiIdentification | null> {
+  const res = await apiFetch(`/pets/${petId}/identification`);
   if (!res.ok) return null;
   return res.json() as Promise<ApiIdentification>;
 }
 
 export async function apiUpsertIdentification(
   petId: string,
-  userId: string,
   data: Omit<ApiIdentification, "id" | "petId" | "userId" | "createdAt" | "updatedAt">
 ): Promise<ApiIdentification> {
-  const res = await fetch(`${API_BASE}/pets/${petId}/identification`, {
+  const res = await apiFetch(`/pets/${petId}/identification`, {
     method: "PUT",
-    headers: hdrs(userId),
     body: JSON.stringify(data),
   });
   if (!res.ok) throw new Error("upsert identification failed");
@@ -212,20 +188,18 @@ export async function apiUpsertIdentification(
 
 /* ── Notes ───────────────────────────────────────────────────────────── */
 
-export async function apiGetNotes(petId: string, userId: string): Promise<ApiPetNote[]> {
-  const res = await fetch(`${API_BASE}/pets/${petId}/notes`, { headers: hdrs(userId) });
+export async function apiGetNotes(petId: string): Promise<ApiPetNote[]> {
+  const res = await apiFetch(`/pets/${petId}/notes`);
   if (!res.ok) return [];
   return res.json() as Promise<ApiPetNote[]>;
 }
 
 export async function apiCreateNote(
   petId: string,
-  userId: string,
   data: { title: string; content: string }
 ): Promise<ApiPetNote> {
-  const res = await fetch(`${API_BASE}/pets/${petId}/notes`, {
+  const res = await apiFetch(`/pets/${petId}/notes`, {
     method: "POST",
-    headers: hdrs(userId),
     body: JSON.stringify(data),
   });
   if (!res.ok) throw new Error("create note failed");
@@ -235,42 +209,35 @@ export async function apiCreateNote(
 export async function apiUpdateNote(
   petId: string,
   noteId: string,
-  userId: string,
   data: { title?: string; content?: string }
 ): Promise<ApiPetNote> {
-  const res = await fetch(`${API_BASE}/pets/${petId}/notes/${noteId}`, {
+  const res = await apiFetch(`/pets/${petId}/notes/${noteId}`, {
     method: "PATCH",
-    headers: hdrs(userId),
     body: JSON.stringify(data),
   });
   if (!res.ok) throw new Error("update note failed");
   return res.json() as Promise<ApiPetNote>;
 }
 
-export async function apiDeleteNote(petId: string, noteId: string, userId: string): Promise<void> {
-  const res = await fetch(`${API_BASE}/pets/${petId}/notes/${noteId}`, {
-    method: "DELETE",
-    headers: hdrs(userId),
-  });
+export async function apiDeleteNote(petId: string, noteId: string): Promise<void> {
+  const res = await apiFetch(`/pets/${petId}/notes/${noteId}`, { method: "DELETE" });
   if (!res.ok) throw new Error("delete note failed");
 }
 
 /* ── Nutrition ───────────────────────────────────────────────────────── */
 
-export async function apiGetNutrition(petId: string, userId: string): Promise<ApiNutrition | null> {
-  const res = await fetch(`${API_BASE}/pets/${petId}/nutrition`, { headers: hdrs(userId) });
+export async function apiGetNutrition(petId: string): Promise<ApiNutrition | null> {
+  const res = await apiFetch(`/pets/${petId}/nutrition`);
   if (!res.ok) return null;
   return res.json() as Promise<ApiNutrition>;
 }
 
 export async function apiUpsertNutrition(
   petId: string,
-  userId: string,
   data: Omit<ApiNutrition, "id" | "petId" | "userId" | "createdAt" | "updatedAt">
 ): Promise<ApiNutrition> {
-  const res = await fetch(`${API_BASE}/pets/${petId}/nutrition`, {
+  const res = await apiFetch(`/pets/${petId}/nutrition`, {
     method: "PUT",
-    headers: hdrs(userId),
     body: JSON.stringify(data),
   });
   if (!res.ok) throw new Error("upsert nutrition failed");

@@ -51,7 +51,6 @@ export interface SendAdoptionRequestPayload {
 export async function apiSendAdoptionRequest(payload: SendAdoptionRequestPayload): Promise<AdoptionRequest> {
   const res = await apiFetch("/adoption-requests", {
     method: "POST",
-    headers: { "x-user-id": payload.userId },
     body: JSON.stringify({
       listingId:      payload.listingId,
       requesterName:  payload.requesterName,
@@ -69,35 +68,32 @@ export async function apiSendAdoptionRequest(payload: SendAdoptionRequestPayload
   return data as unknown as AdoptionRequest;
 }
 
-export async function apiGetMyRequests(userId: string): Promise<AdoptionRequest[]> {
-  const res = await apiFetch("/adoption-requests/my", { headers: { "x-user-id": userId } });
+export async function apiGetMyRequests(): Promise<AdoptionRequest[]> {
+  const res = await apiFetch("/adoption-requests/my");
   if (!res.ok) return [];
   return res.json() as Promise<AdoptionRequest[]>;
 }
 
-export async function apiGetReceivedRequests(userId: string): Promise<AdoptionRequest[]> {
-  const res = await apiFetch("/adoption-requests/received", { headers: { "x-user-id": userId } });
+export async function apiGetReceivedRequests(): Promise<AdoptionRequest[]> {
+  const res = await apiFetch("/adoption-requests/received");
   if (!res.ok) return [];
   return res.json() as Promise<AdoptionRequest[]>;
 }
 
 export async function apiCheckAdoptionRequest(
-  listingId: string,
-  userId: string
+  listingId: string
 ): Promise<{ hasRequest: boolean; requestId?: string; status?: string }> {
-  const res = await apiFetch(`/adoption-requests/check/${listingId}`, { headers: { "x-user-id": userId } });
+  const res = await apiFetch(`/adoption-requests/check/${listingId}`);
   if (!res.ok) return { hasRequest: false };
   return res.json() as Promise<{ hasRequest: boolean; requestId?: string; status?: string }>;
 }
 
 export async function apiUpdateRequestStatus(
   requestId: string,
-  userId: string,
   status: "accepted" | "rejected" | "cancelled" | "reviewing"
 ): Promise<AdoptionRequest> {
   const res = await apiFetch(`/adoption-requests/${requestId}/status`, {
     method: "PATCH",
-    headers: { "x-user-id": userId },
     body: JSON.stringify({ status }),
   });
   const data = await res.json() as Record<string, unknown>;
@@ -105,8 +101,8 @@ export async function apiUpdateRequestStatus(
   return data as unknown as AdoptionRequest;
 }
 
-export async function apiGetRequestsForListing(listingId: string, userId: string): Promise<AdoptionRequest[]> {
-  const res = await apiFetch(`/adoption-requests/for-listing/${listingId}`, { headers: { "x-user-id": userId } });
+export async function apiGetRequestsForListing(listingId: string): Promise<AdoptionRequest[]> {
+  const res = await apiFetch(`/adoption-requests/for-listing/${listingId}`);
   if (!res.ok) return [];
   return res.json() as Promise<AdoptionRequest[]>;
 }

@@ -1,5 +1,5 @@
 import jwt from "jsonwebtoken";
-import type { Request } from "express";
+import type { Request, Response, NextFunction } from "express";
 
 /**
  * Return the JWT secret.
@@ -20,9 +20,12 @@ export function getJwtSecret(): string {
 /**
  * Extract and verify the authenticated user ID from a request.
  *
- * Prefers the `Authorization: Bearer <token>` header (verified JWT).
- * Returns an empty string if the token is absent or invalid — callers
- * must treat an empty string as unauthenticated.
+ * Reads the `Authorization: Bearer <token>` header only (verified JWT).
+ * Returns an empty string if the token is absent or invalid.
+ * Callers must treat an empty string as unauthenticated.
+ *
+ * x-user-id headers are intentionally ignored and never accepted
+ * as a source of identity.
  */
 export function extractUserId(req: Request): string {
   const auth = req.headers.authorization;
@@ -38,14 +41,33 @@ export function extractUserId(req: Request): string {
 }
 
 /**
- * Extract authenticated user ID from a request.
- * Tries Bearer JWT first; falls back to the legacy `x-user-id` header
- * so older mobile code continues to work during the Bearer migration.
- * Returns empty string when neither is present.
+ * Express middleware — enforces JWT Bearer authentication.
+ *
+ * On success:                calls next()
+ * Missing/malformed token:   401 { error: "Oturum gerekli." }
+ * Expired token:             401 { error: "Oturumunuzun süresi dolmuş. Lütfen tekrar giriş yapın." }
+ *
+ * x-user-id headers are completely ignored; identity comes only from
+ * a verified JWT.
  */
-export function extractUserIdDual(req: Request): string {
-  const jwtId = extractUserId(req);
-  if (jwtId) return jwtId;
-  const headerId = req.headers["x-user-id"];
-  return (typeof headerId === "string" ? headerId : "") ?? "";
+export function requireAuth(req: Request, res: Response, next: NextFunction): void {
+  const auth = req.headers.authorization;
+  if (!auth?.startsWith("Bearer ")) {
+    res.status(401).json({ error: "Oturum gerekli." });
+    return;
+  }
+  try {
+    const payload = jwt.verify(auth.slice(7), getJwtSecret()) as jwt.JwtPayload;
+    if (typeof payload.sub !== "string" || !payload.sub) {
+      res.status(401).json({ error: "Oturum gerekli." });
+      return;
+    }
+    next();
+  } catch (err) {
+    if (err instanceof jwt.TokenExpiredError) {
+      res.status(401).json({ error: "Oturumunuzun süresi dolmuş. Lütfen tekrar giriş yapın." });
+    } else {
+      res.status(401).json({ error: "Oturum gerekli." });
+    }
+  }
 }

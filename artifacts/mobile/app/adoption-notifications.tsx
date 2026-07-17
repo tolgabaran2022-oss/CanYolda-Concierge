@@ -268,7 +268,7 @@ export default function AdoptionNotificationsScreen() {
     if (!user) return;
     if (refresh) setRefreshing(true);
     try {
-      const data = await apiFetchNotifications(user.id);
+      const data = await apiFetchNotifications();
       setNotifs(data);
     } catch {
       setNotifs([]);
@@ -292,14 +292,14 @@ export default function AdoptionNotificationsScreen() {
   const handleMarkAll = async () => {
     if (!user || unreadCount === 0) return;
     Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
-    await apiMarkAllNotificationsRead(user.id).catch(() => {});
+    await apiMarkAllNotificationsRead().catch(() => {});
     setNotifs((prev) => prev.map((n) => ({ ...n, read: true })));
   };
 
   const handleMarkOne = async (id: string) => {
     const notif = notifs.find((n) => n.id === id);
     if (!notif || notif.read || !user) return;
-    await apiMarkNotificationRead(id, user.id).catch(() => {});
+    await apiMarkNotificationRead(id).catch(() => {});
     setNotifs((prev) => prev.map((n) => n.id === id ? { ...n, read: true } : n));
   };
 

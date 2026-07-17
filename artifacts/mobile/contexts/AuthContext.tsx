@@ -199,10 +199,8 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       if (user.provider && user.provider !== "local") {
         throw new Error("Sosyal hesaplarda şifre değiştirilemez.");
       }
-      const token = await AsyncStorage.getItem(TOKEN_KEY);
       const res = await apiFetch("/auth/change-password", {
         method: "POST",
-        headers: token ? { Authorization: `Bearer ${token}` } : {},
         body: JSON.stringify({ currentPassword, newPassword }),
       });
       const data = await safeJson<{ error?: string }>(res);
@@ -244,13 +242,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   const getSettings = useCallback(async (): Promise<UserSettings> => {
     if (!user) return { ...DEFAULT_SETTINGS };
     try {
-      const token = await AsyncStorage.getItem(TOKEN_KEY);
-      const res = await apiFetch("/social/settings", {
-        headers: {
-          "x-user-id": user.id,
-          ...(token ? { Authorization: `Bearer ${token}` } : {}),
-        },
-      });
+      const res = await apiFetch("/social/settings");
       if (!res.ok) return { ...DEFAULT_SETTINGS };
       const data = await safeJson<Partial<UserSettings>>(res);
       return { ...DEFAULT_SETTINGS, ...data };
@@ -262,13 +254,8 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   /* ── Update settings ──────────────────────────────────── */
   const updateSettings = useCallback(async (settings: Partial<UserSettings>) => {
     if (!user) throw new Error("Giriş yapılmamış.");
-    const token = await AsyncStorage.getItem(TOKEN_KEY);
     const res = await apiFetch("/social/settings", {
       method: "PATCH",
-      headers: {
-        "x-user-id": user.id,
-        ...(token ? { Authorization: `Bearer ${token}` } : {}),
-      },
       body: JSON.stringify(settings),
     });
     const data = await safeJson<{ error?: string }>(res);

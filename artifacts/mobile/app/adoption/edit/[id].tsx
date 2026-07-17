@@ -500,7 +500,7 @@ export default function EditAdoptionScreen() {
       });
       /* Sync phone + prefs to backend */
       apiSaveListingContact(
-        user.id, listing.id,
+        listing.id,
         `+90${phone.replace(/\D/g, "")}`,
         allowPhoneContact,
         allowMessages

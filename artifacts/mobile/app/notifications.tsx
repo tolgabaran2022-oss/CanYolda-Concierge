@@ -61,7 +61,7 @@ export default function NotificationsScreen() {
     if (!user) return;
     if (refresh) setRefreshing(true);
     try {
-      const data = await apiFetchNotifications(user.id);
+      const data = await apiFetchNotifications();
       setNotifs(data);
     } catch {
       setNotifs([]);
@@ -76,14 +76,14 @@ export default function NotificationsScreen() {
   const handleMarkAll = async () => {
     if (!user || unreadCount === 0) return;
     Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
-    await apiMarkAllNotificationsRead(user.id).catch(() => {});
+    await apiMarkAllNotificationsRead().catch(() => {});
     setNotifs((prev) => prev.map((n) => ({ ...n, read: true })));
   };
 
   const handleTap = async (n: AppNotification) => {
     Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
     if (!n.read && user) {
-      apiMarkNotificationRead(n.id, user.id).catch(() => {});
+      apiMarkNotificationRead(n.id).catch(() => {});
       setNotifs((prev) => prev.map((x) => x.id === n.id ? { ...x, read: true } : x));
     }
     if (n.senderId) router.push(`/user-profile/${encodeURIComponent(n.senderId)}`);

@@ -919,9 +919,9 @@ export function EvcilimTab({ botPad }: { botPad: number }) {
     setDataLoading(true);
     try {
       const [v, a, n] = await Promise.all([
-        apiGetVaccinations(petId, userId),
-        apiGetAppointments(petId, userId),
-        apiGetNutrition(petId, userId),
+        apiGetVaccinations(petId),
+        apiGetAppointments(petId),
+        apiGetNutrition(petId),
       ]);
       setVaccinations(v);
       setAppointments(a);
