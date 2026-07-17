@@ -49,7 +49,7 @@ router.post("/adoption-requests", async (req, res) => {
       listingId,
       requesterId:   userId,
       requesterName: String(requesterName ?? ""),
-      ownerId:       listing.userId,
+      ownerId:       listing.userId ?? undefined,
       reason:        String(reason).trim(),
       hadPetBefore:  hadPetBefore === true || hadPetBefore === "true",
       livingSpace:   String(livingSpace),
@@ -59,8 +59,8 @@ router.post("/adoption-requests", async (req, res) => {
       status:        "pending",
     }).returning();
 
-    /* Create notification for listing owner */
-    await db.insert(notifications).values({
+    /* Create notification for listing owner (skip if listing was anonymised) */
+    if (listing.userId) await db.insert(notifications).values({
       receiverId:   listing.userId,
       senderId:     userId,
       senderName:   String(requesterName ?? ""),

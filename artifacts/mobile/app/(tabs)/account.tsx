@@ -222,6 +222,34 @@ export default function AccountScreen() {
           </View>
         </View>
 
+        {/* ── Hukuki ─────────────────────────────────────── */}
+        <View style={S.section}>
+          <Text style={[S.sectionTitle, { color: T.textFaint }]}>Hukuki</Text>
+          <View style={[S.card, { backgroundColor: T.card, borderColor: T.border }]}>
+            <Pressable
+              style={({ pressed }) => [S.row, { opacity: pressed ? 0.75 : 1 }]}
+              onPress={() => router.push("/privacy-policy" as any)}
+            >
+              <View style={[S.iconBadge, { backgroundColor: T.purpleFaint }]}>
+                <Icon name="shield-checkmark-outline" size={18} color={T.purple} />
+              </View>
+              <Text style={[S.rowLabel, { flex: 1, color: T.text }]}>Gizlilik Politikası</Text>
+              <Icon name="chevron-forward" size={16} color={T.textFaint} />
+            </Pressable>
+            <View style={[S.divider, { backgroundColor: T.divider }]} />
+            <Pressable
+              style={({ pressed }) => [S.row, { opacity: pressed ? 0.75 : 1 }]}
+              onPress={() => router.push("/terms-of-service" as any)}
+            >
+              <View style={[S.iconBadge, { backgroundColor: T.purpleFaint }]}>
+                <Icon name="document-text-outline" size={18} color={T.purple} />
+              </View>
+              <Text style={[S.rowLabel, { flex: 1, color: T.text }]}>Kullanım Koşulları</Text>
+              <Icon name="chevron-forward" size={16} color={T.textFaint} />
+            </Pressable>
+          </View>
+        </View>
+
         {/* ── Tehlikeli Alan ──────────────────────────────── */}
         <View style={S.section}>
           <Text style={[S.sectionTitle, { color: T.textFaint }]}>Tehlikeli Alan</Text>

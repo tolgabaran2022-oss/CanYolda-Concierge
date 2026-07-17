@@ -149,10 +149,20 @@ export default function WelcomeScreen() {
 
         {/* Yasal metin */}
         <Text style={styles.terms}>
-          Devam ederek{" "}
-          <Text style={styles.termsLink}>Kullanım Koşulları</Text>
-          {" "}ve{" "}
-          <Text style={styles.termsLink}>Gizlilik Politikası</Text>
+          {"Devam ederek "}
+          <Text
+            style={styles.termsLink}
+            onPress={() => router.push("/terms-of-service" as any)}
+            accessibilityRole="link"
+            accessibilityLabel="Kullanım Koşulları"
+          >Kullanım Koşulları</Text>
+          {" ve "}
+          <Text
+            style={styles.termsLink}
+            onPress={() => router.push("/privacy-policy" as any)}
+            accessibilityRole="link"
+            accessibilityLabel="Gizlilik Politikası"
+          >Gizlilik Politikası</Text>
           {"'nı kabul etmiş olursunuz."}
         </Text>
       </SafeAreaView>

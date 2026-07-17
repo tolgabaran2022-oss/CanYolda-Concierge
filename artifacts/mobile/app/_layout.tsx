@@ -93,6 +93,8 @@ function RootLayoutNav() {
       <Stack.Screen name="help-update/[animalId]" options={{ headerShown: false }} />
       <Stack.Screen name="evcilim/[petId]/appointments/[apptId]" options={{ headerShown: false }} />
       <Stack.Screen name="evcilim/add" options={{ presentation: "modal", headerShown: false }} />
+      <Stack.Screen name="privacy-policy" options={{ headerShown: false }} />
+      <Stack.Screen name="terms-of-service" options={{ headerShown: false }} />
     </Stack>
   );
 }

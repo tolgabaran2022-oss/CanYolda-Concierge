@@ -96,12 +96,13 @@ function haversineMeters(
 /* ── Notify report owner ─────────────────────────────────────── */
 async function notifyOwner(
   animalId: string,
-  ownerId: string,
+  ownerId: string | null | undefined,
   actorId: string,
   type: string,
   title: string,
   body: string,
 ): Promise<void> {
+  if (!ownerId) return; // anonymised / deleted owner — skip notification
   if (ownerId === actorId) return; // no self-notification
   try {
     await db.insert(animalNotifications).values({ userId: ownerId, animalId, type, title, body });
@@ -709,8 +710,8 @@ router.patch("/animals/:id/help-status", validateBody(HelpStatusSchema), async (
       reason: reason ?? "",
     });
 
-    // If FALSE_REPORT → update risk score
-    if (newStatus === "FALSE_REPORT") {
+    // If FALSE_REPORT → update risk score (skip if report was anonymised — owner deleted)
+    if (newStatus === "FALSE_REPORT" && animal.userId) {
       await db.insert(userRiskScores).values({
         userId: animal.userId,
         falseReportCount: 1,

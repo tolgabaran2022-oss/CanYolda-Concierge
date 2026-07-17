@@ -1,0 +1,363 @@
+CAN YOLDAŞI — PRODUCTION PHASE 6
+STORE COMPLIANCE, PRIVACY & ACCOUNT DELETION
+
+Current status
+
+- Feed removed
+- Production authentication completed
+- RevenueCat audited
+- Build configuration audited
+- Production QA completed
+
+This phase focuses ONLY on App Store and Google Play policy compliance.
+
+Do NOT redesign UI.
+
+Do NOT modify working business logic unless required for compliance.
+
+Do NOT invent legal text.
+
+Analyze first.
+
+==================================================
+1. APP STORE GUIDELINE AUDIT
+==================================================
+
+Audit the application against current Apple App Store Review Guidelines.
+
+Focus on:
+
+- 1.2 User Generated Content
+- 2.x Functionality
+- 5.1 Privacy
+- 5.1.1 Account Management
+- 5.1.2 Data Collection
+- In-app purchases
+- Login
+- Account deletion
+
+For every applicable guideline:
+
+PASS
+
+WARNING
+
+FAIL
+
+Explain why.
+
+==================================================
+2. GOOGLE PLAY POLICY AUDIT
+==================================================
+
+Audit:
+
+Developer Program Policies
+
+User Data Policy
+
+Data Safety
+
+Account Deletion Policy
+
+Location Policy
+
+Photo permissions
+
+Payments
+
+Subscriptions
+
+Sensitive permissions
+
+Return:
+
+PASS
+
+WARNING
+
+FAIL
+
+==================================================
+3. ACCOUNT DELETION
+==================================================
+
+Audit account deletion.
+
+Requirements:
+
+User can permanently delete account.
+
+Requires authentication.
+
+Confirmation dialog.
+
+Cannot accidentally trigger.
+
+JWT invalidated.
+
+Sensitive personal data removed or anonymized according to product policy.
+
+Return exact missing implementation if incomplete.
+
+==================================================
+4. PRIVACY POLICY
+==================================================
+
+Audit:
+
+Privacy Policy
+
+Terms of Service
+
+Community Guidelines
+
+Cookie policy if web requires it.
+
+Verify:
+
+Clickable links.
+
+Correct navigation.
+
+No placeholder URLs.
+
+No dead links.
+
+Do not invent URLs.
+
+==================================================
+5. DATA SAFETY INVENTORY
+==================================================
+
+Produce complete inventory.
+
+Include:
+
+Name
+
+Email
+
+Phone
+
+Location
+
+Photos
+
+Messages
+
+Pet information
+
+Adoption listings
+
+Purchase information
+
+Device identifiers
+
+Crash logs
+
+Analytics
+
+Authentication tokens
+
+For every item:
+
+Collected?
+
+Stored?
+
+Shared?
+
+Encrypted?
+
+User deletable?
+
+Retention?
+
+Purpose?
+
+==================================================
+6. PERMISSION JUSTIFICATION
+==================================================
+
+Audit every Android and iOS permission.
+
+For each permission explain:
+
+Feature using it
+
+Whether truly required
+
+Can it be removed?
+
+Store risk
+
+==================================================
+7. LEGAL SCREENS
+==================================================
+
+Audit:
+
+Settings
+
+Registration
+
+Login
+
+Profile
+
+Account
+
+Verify:
+
+Privacy Policy accessible.
+
+Terms accessible.
+
+Delete Account accessible.
+
+==================================================
+8. CONTENT MODERATION
+==================================================
+
+Even though Feed is removed:
+
+Audit remaining UGC:
+
+Messages
+
+Animal reports
+
+Adoption listings
+
+Profile images
+
+User avatars
+
+Photos
+
+Determine:
+
+Report feature
+
+Block feature
+
+Delete feature
+
+Abuse handling
+
+Moderator tools
+
+If missing:
+
+recommend minimal production solution.
+
+==================================================
+9. AGE RATING
+==================================================
+
+Estimate appropriate:
+
+Apple age rating
+
+Google content rating
+
+Based on current features.
+
+==================================================
+10. APP STORE METADATA
+==================================================
+
+Audit whether project already contains:
+
+App name
+
+Subtitle
+
+Description
+
+Keywords
+
+Privacy URL
+
+Support URL
+
+Marketing URL
+
+Screenshots
+
+Feature graphic
+
+App icon
+
+Adaptive icon
+
+Return what still must be prepared.
+
+==================================================
+11. RELEASE DOCUMENTATION
+==================================================
+
+Generate checklist.
+
+Developer Console
+
+App Store Connect
+
+Google Play Console
+
+EAS Submit
+
+Production Secrets
+
+RevenueCat
+
+Privacy
+
+Data Safety
+
+Support Email
+
+Support Website
+
+==================================================
+12. FINAL REPORT
+==================================================
+
+Return exactly:
+
+1. Apple Guideline Audit
+
+2. Google Play Policy Audit
+
+3. Account Deletion
+
+4. Privacy Policy
+
+5. Terms of Service
+
+6. Data Safety Inventory
+
+7. Permission Audit
+
+8. UGC Moderation
+
+9. Age Rating
+
+10. Store Metadata
+
+11. Release Documentation Checklist
+
+12. Remaining Compliance Issues
+
+13. Phase 6 Final Verdict
+
+Verdict must be one of:
+
+NOT STORE READY
+
+STORE READY WITH BLOCKERS
+
+READY FOR STORE SUBMISSION
+
+Do not claim READY FOR STORE SUBMISSION unless all required compliance items are verified or explicitly completed.

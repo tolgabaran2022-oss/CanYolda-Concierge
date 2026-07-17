@@ -107,7 +107,7 @@ router.post("/verify-purchase", async (req, res): Promise<void> => {
   const { durationDays } = pkg;
 
   /* ── 5. Listing existence + ownership (outside transaction) ─── */
-  let listing: { id: string; userId: string; promotedUntil: Date | null };
+  let listing: { id: string; userId: string | null; promotedUntil: Date | null };
   try {
     const rows = await db
       .select({
@@ -125,7 +125,7 @@ router.post("/verify-purchase", async (req, res): Promise<void> => {
     }
     listing = rows[0]!;
 
-    if (listing.userId !== userId) {
+    if (!listing.userId || listing.userId !== userId) {
       res.status(403).json({ error: "Bu ilan size ait değil" });
       return;
     }
