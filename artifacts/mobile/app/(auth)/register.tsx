@@ -8,7 +8,7 @@
  *  - Input glow halkası odakta
  *  - Buton shimmer süpürmesi
  */
-import { Ionicons } from "@expo/vector-icons";
+import { Icon } from "@/components/Icon";
 import * as Haptics from "expo-haptics";
 import { LinearGradient } from "expo-linear-gradient";
 import { useRouter } from "expo-router";
@@ -182,7 +182,7 @@ function GlowPaw({ reduceMotion }: { reduceMotion: boolean }) {
           end={{ x: 1, y: 1 }}
           style={styles.iconBlob}
         >
-          <Ionicons name="paw" size={34} color={C.white} />
+          <Icon name="paw" size={34} color={C.white} />
         </LinearGradient>
       </Animated.View>
     </Animated.View>
@@ -343,7 +343,7 @@ export default function RegisterScreen() {
               style={({ pressed }) => [styles.backBtn, pressed && styles.pressed]}
               accessibilityRole="button" accessibilityLabel="Geri dön" hitSlop={8}
             >
-              <Ionicons name="chevron-back" size={22} color={C.purple900} />
+              <Icon name="chevron-back" size={22} color={C.purple900} />
             </Pressable>
           </Animated.View>
 
@@ -362,7 +362,7 @@ export default function RegisterScreen() {
             <AnimatedField
               label="Ad Soyad" focused={focusedField === "name"} delay={330}
               icon={
-                <Ionicons
+                <Icon
                   name="person-outline" size={19}
                   color={focusedField === "name" ? C.purple500 : C.muted}
                   style={styles.inputIcon}
@@ -386,7 +386,7 @@ export default function RegisterScreen() {
             <AnimatedField
               label="Telefon Numarası" focused={focusedField === "phone"} delay={370}
               icon={
-                <Ionicons
+                <Icon
                   name="call-outline" size={19}
                   color={focusedField === "phone" ? C.purple500 : C.muted}
                   style={styles.inputIcon}
@@ -418,7 +418,7 @@ export default function RegisterScreen() {
             <AnimatedField
               label="E-posta" focused={focusedField === "email"} delay={410}
               icon={
-                <Ionicons
+                <Icon
                   name="mail-outline" size={19}
                   color={focusedField === "email" ? C.purple500 : C.muted}
                   style={styles.inputIcon}
@@ -442,7 +442,7 @@ export default function RegisterScreen() {
             <AnimatedField
               label="Şifre" focused={focusedField === "password"} delay={450}
               icon={
-                <Ionicons
+                <Icon
                   name="lock-closed-outline" size={19}
                   color={focusedField === "password" ? C.purple500 : C.muted}
                   style={styles.inputIcon}
@@ -464,7 +464,7 @@ export default function RegisterScreen() {
                 hitSlop={8} accessibilityRole="button"
                 accessibilityLabel={showPassword ? "Şifreyi gizle" : "Şifreyi göster"}
               >
-                <Ionicons name={showPassword ? "eye-off-outline" : "eye-outline"} size={20} color={C.purple600} />
+                <Icon name={showPassword ? "eye-off-outline" : "eye-outline"} size={20} color={C.purple600} />
               </Pressable>
             </AnimatedField>
 
@@ -488,7 +488,7 @@ export default function RegisterScreen() {
           </Animated.View>
 
           <Animated.View entering={FadeIn.delay(630).duration(350)} style={styles.hint}>
-            <Ionicons name="shield-checkmark-outline" size={16} color={C.muted} />
+            <Icon name="shield-checkmark-outline" size={16} color={C.muted} />
             <Text style={styles.hintText} maxFontSizeMultiplier={1.3}>
               Bilgilerin güvenle şifrelenir; şifreni kimseyle paylaşma.
             </Text>
