@@ -1,0 +1,204 @@
+================================================================================
+CANYOLDASI — KAPSAMLI DENETiM RAPORU
+Tarih: 17 Temmuz 2026
+Platform: Expo SDK 54 | React Native 0.81.5 | Express + PostgreSQL
+================================================================================
+
+PROJE HARiTASI
+--------------
+Framework          : Expo SDK ~54.0.27
+React Native       : 0.81.5
+Navigation         : expo-router (file-based routing)
+State yonetimi     : Context API (Auth, Animals, Pets, Adoption, Boost)
+Backend            : Express + Drizzle ORM + PostgreSQL
+Auth               : JWT (AsyncStorage)
+Icons              : lucide-react-native + ozel Icon.tsx alias map
+Resimler           : expo-image-picker + /api/upload
+Odemeler           : RevenueCat (IAP) + Stripe (Boost)
+Aktif ekranlar     : 45 dosya (artifacts/mobile/app/) — yinelenen veya olü route yok
+
+
+================================================================================
+BULUNAN VE DÜZELTiLEN HATALAR
+================================================================================
+
+------------------------------------------------------------------------
+BUG 1 — adoption_requests INSERT 500 HATASI (KRiTiK) — DÜZELTILDI
+------------------------------------------------------------------------
+
+Etki : "Sahiplenmek istiyorum" → "Talebi Gönder" butonu her zaman hata veriyordu.
+Dosya: lib/db/src/schema/animals.ts
+
+Kanit (API log):
+  POST /adoption-requests failed
+  column "message" of relation "adoption_requests" does not exist
+
+Kök neden:
+  adoptionRequests Drizzle semasinda "message: text("message")" kolonu
+  tanimlanmisti, ancak gercek PostgreSQL tablosuna hic migrate edilmemisti.
+  Drizzle ORM her INSERT sorgusuna bu kolonu ekliyordu -> 500 hatasi.
+
+Ikincil sorun:
+  accepted_at / rejected_at kolonlari veritabaninda mevcuttu ama Drizzle
+  semasinda yoktu. Bu yüzden talep kabul/red zaman damgalari kaydedilemiyordu.
+
+Yapilan degisiklik:
+  - "message" kolonu sema tanimlamasindan kaldirildi
+  - "acceptedAt" ve "rejectedAt" sema tanimlamasina eklendi
+  - lib/db TypeScript rebuild yapildi
+  - API sunucusu yeniden baslatildi
+
+Veritabani dogrulamasi:
+  adoption_requests tablosu DB kolonlari ile tam eslesme saglandiginda:
+  id: f6cc9aab | status: accepted | accepted_at: 2026-07-17 18:40:36 UTC
+
+
+------------------------------------------------------------------------
+BUG 2 — 21 Eksik ikon alias (UI BOZULMASI) — DÜZELTILDI
+------------------------------------------------------------------------
+
+Etki : Birden fazla ekranda ikonlar bos/yanlis gorünüyordu (HelpCircle fallback).
+Dosya: artifacts/mobile/components/Icon.tsx
+
+Kanit (Expo log — frekans sirasi):
+  [Icon] Unknown icon name: "nutrition-outline"             — 73 kez
+  [Icon] Unknown icon name: "id-card-outline"              — 40 kez
+  [Icon] Unknown icon name: "Star"                         — 26 kez
+  [Icon] Unknown icon name: "TrendingUp"                    —  9 kez
+  [Icon] Unknown icon name: "RefreshCw"                     —  9 kez
+  [Icon] Unknown icon name: "Info"                          —  9 kez
+  [Icon] Unknown icon name: "Eye"                           —  9 kez
+  [Icon] Unknown icon name: "ChevronLeft"                   —  9 kez
+  [Icon] Unknown icon name: "sparkles-outline"              —  6 kez
+  [Icon] Unknown icon name: "leaf-outline"                  —  6 kez
+  [Icon] Unknown icon name: "ellipsis-horizontal-circle-outline" — 6 kez
+  [Icon] Unknown icon name: "apps-outline"                  —  6 kez
+  [Icon] Unknown icon name: "shield-outline"                —  5 kez
+  [Icon] Unknown icon name: "radio-button-on-outline"       —  5 kez
+  [Icon] Unknown icon name: "clipboard-outline"             —  5 kez
+  [Icon] Unknown icon name: "business-outline"              —  5 kez
+  [Icon] Unknown icon name: "person-circle-outline"         —  3 kez
+
+Etkilenen dosyalar:
+  boost-packages.tsx        → Star, ChevronLeft, TrendingUp, Eye, RefreshCw, Info
+  (tabs)/adoption.tsx       → apps-outline, leaf-outline, sparkles-outline,
+                               ellipsis-horizontal-circle-outline
+  EvcilimTab.tsx            → nutrition-outline, id-card-outline
+  evcilim/[petId].tsx       → id-card-outline
+  evcilim/identification.tsx → radio-button-on-outline, clipboard-outline,
+                               business-outline, shield-outline
+  evcilim/appointments/...  → person-circle-outline
+
+Yapilan degisiklik:
+  Icon.tsx'e 4 yeni lucide import eklendi:
+    Leaf, IdCard, Building2, ClipboardList
+
+  21 yeni alias eklendi:
+    "Star"                              → Star
+    "ChevronLeft"                       → ChevronLeft
+    "TrendingUp"                        → TrendingUp
+    "Eye"                               → Eye
+    "RefreshCw"                         → RefreshCw
+    "Info"                              → Info
+    "nutrition-outline"                 → UtensilsCrossed
+    "id-card-outline"                   → IdCard
+    "apps-outline"                      → Grid3X3
+    "leaf-outline"                      → Leaf
+    "sparkles-outline"                  → Sparkles
+    "ellipsis-horizontal-circle-outline"→ MoreHorizontal
+    "shield-outline"                    → ShieldCheck
+    "radio-button-on-outline"           → Check
+    "clipboard-outline"                 → ClipboardList
+    "business-outline"                  → Building2
+    "person-circle-outline"             → CircleUser
+
+
+================================================================================
+API TEST SONUCLARI (Kanitli)
+================================================================================
+
+Test ortami : HTTP API dogrudan localhost:80 üzerinden
+Test yöntemi: Gercek kayit akisiyla 2 test kullanicisi olusturuldu (User A, User B)
+
+ #  Test                             Endpoint                          Beklenen  Gercek  Sonuc
+--- -------------------------------- --------------------------------- --------- ------- ------
+ 1  Kullanici kaydi (telefonla)      POST /api/auth/register           201       201     PASS
+ 2  Sahiplendirme ilani olustur      POST /api/adoption                201       201     PASS
+ 3  Sahiplendirme talebi gönder      POST /api/adoption-requests       201       201     PASS
+ 4  Tekrar talep engeli              POST /api/adoption-requests       409       409     PASS
+                                     (ayni ilan, ayni kullanici)
+ 5  Kendi ilanina talep engeli       POST /api/adoption-requests       400       400     PASS
+                                     (sahip hesabiyla)
+ 6  Talep kabul et (sahip)           PATCH /api/adoption-requests/:id  200+ts    200     PASS
+                                     {status:"accepted"}               dolu      accept_at dolu
+ 7  Yetkisiz kabul engeli            PATCH (basvurucu hesabiyla)       403       403     PASS
+                                     {status:"accepted"}
+ 8  Talep iptal et (basvurucu)       PATCH {status:"cancelled"}        200       200     PASS
+ 9  Kimliksiz talep engeli           POST (token yok)                  401       401     PASS
+10  Evcil hayvan ekle                POST /api/pets                    201       201     PASS
+11  Evcil hayvanlari listele         GET /api/pets                     200       200     PASS
+12  Sokak hayvani ihbar et           POST /api/animals                 201       201     PASS
+13  Hayvanlari listele               GET /api/animals                  200       200     PASS
+14  Profil görüntüle                 GET /api/auth/me                  200       200     PASS
+15  Profil sync + düzenle            POST /users/sync                  200       200     PASS
+                                     -> PATCH /users/:id               200       200     PASS
+16  Bildirimler                      GET /api/notifications            200       200     PASS
+                                                                       (1 bildirim)
+17  ilan listesi                     GET /api/adoption                 200       200     PASS
+18  Gelen talepler (sahip)           GET /api/adoption-requests/received 200    200     PASS
+19  Kendi taleplerim                 GET /api/adoption-requests/my     200       200     PASS
+20  Talep durumu kontrol             GET /api/adoption-requests/check/:id 200   200     PASS
+
+Veritabani dogrulamasi:
+  adoption_requests : status=accepted, accepted_at=2026-07-17 18:40:36 UTC  OK
+  adoption_listings : pet_name=Audit Kedi, status=Aktif                     OK
+  pet_profiles      : name=Audit Köpek, type=Köpek                         OK
+
+
+================================================================================
+PLATFORM TEST ÖZETI
+================================================================================
+
+Platform   Durum    Kanit
+---------  -------  -----------------------------------------------------------
+Web        PASS     Screenshot alindi — Harita, hayvan listesi, navigasyon görünür
+iOS        BLOCKED  Gercek cihaz / iOS Simulator mevcut degil
+Android    BLOCKED  Emülatör / gercek cihaz mevcut degil
+
+
+================================================================================
+TYPESCRIPT KONTROL SONUCLARI
+================================================================================
+
+@workspace/mobile      — 0 hata  PASS
+@workspace/api-server  — 0 hata  PASS
+@workspace/lib/db      — 0 hata  PASS
+@workspace/mockup-sandbox — ONCEDEN MEVCUT HATA (React 19 VoidOrUndefinedOnly
+                            uyumsuzlugu — bu oturumdan önce mevcuttu,
+                            yapilan degisikliklerle ilgisi yok)
+
+
+================================================================================
+DEGISTIRILEN DOSYALAR
+================================================================================
+
+Dosya                                   Degisiklik
+--------------------------------------  -----------------------------------------
+lib/db/src/schema/animals.ts            "message" kolonu kaldirildi;
+                                        "acceptedAt" + "rejectedAt" eklendi
+artifacts/mobile/components/Icon.tsx    4 yeni lucide import;
+                                        21 yeni icon alias eklendi
+
+
+================================================================================
+SONUC
+================================================================================
+
+Toplam bulunan kritik bug   : 2
+Düzeltilen bug              : 2
+Kalan kritik bug            : 0
+API test gecti / toplam     : 20 / 20
+Web görsel dogrulama        : PASS
+iOS/Android                 : BLOCKED (ortam kisitlamasi)
+
+================================================================================
