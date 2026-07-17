@@ -789,6 +789,75 @@ router.post("/auth/facebook", async (req, res): Promise<void> => {
   }
 });
 
+/* ── DELETE /api/auth/account ───────────────────────────────── */
+router.delete("/auth/account", async (req, res): Promise<void> => {
+  const header = req.headers.authorization;
+  if (!header?.startsWith("Bearer ")) {
+    res.status(401).json({ error: "Token gerekli" });
+    return;
+  }
+
+  let userId: string;
+  try {
+    const payload = jwt.verify(header.slice(7), getJwtSecret()) as jwt.JwtPayload;
+    userId = payload.sub as string;
+  } catch {
+    res.status(401).json({ error: "Geçersiz token" });
+    return;
+  }
+
+  const { password } = req.body as { password?: string };
+  if (!password) {
+    res.status(400).json({ error: "Şifre doğrulaması gerekli" });
+    return;
+  }
+
+  try {
+    const rows = await db.select().from(localUsers).where(eq(localUsers.id, userId)).limit(1);
+    if (rows.length === 0) {
+      res.status(404).json({ error: "Kullanıcı bulunamadı" });
+      return;
+    }
+
+    const match = await bcrypt.compare(password, rows[0].passwordHash);
+    if (!match) {
+      res.status(401).json({ error: "Şifre hatalı" });
+      return;
+    }
+
+    await pool.query(
+      `BEGIN;
+       -- Anonymise public contributions (keep community data, remove identity)
+       UPDATE stray_animals     SET user_id = NULL WHERE user_id = $1;
+       UPDATE adoption_listings SET user_id = NULL, user_name = 'Silinmiş Kullanıcı', contact_info = '' WHERE user_id = $1;
+       -- Remove private / personal records
+       DELETE FROM notifications         WHERE receiver_id = $1 OR actor_id = $1;
+       DELETE FROM animal_notifications  WHERE user_id = $1;
+       DELETE FROM adoption_requests     WHERE requester_id = $1;
+       DELETE FROM adoption_listing_follows WHERE user_id = $1;
+       DELETE FROM animal_interactions   WHERE user_id = $1;
+       DELETE FROM volunteer_claims      WHERE user_id = $1;
+       DELETE FROM report_confirmations  WHERE user_id = $1;
+       DELETE FROM pet_vaccinations      WHERE EXISTS (SELECT 1 FROM pet_profiles pp WHERE pp.id = pet_vaccinations.pet_id AND pp.owner_id = $1);
+       DELETE FROM pet_appointments      WHERE EXISTS (SELECT 1 FROM pet_profiles pp WHERE pp.id = pet_appointments.pet_id AND pp.owner_id = $1);
+       DELETE FROM pet_identification    WHERE EXISTS (SELECT 1 FROM pet_profiles pp WHERE pp.id = pet_identification.pet_id AND pp.owner_id = $1);
+       DELETE FROM pet_notes             WHERE EXISTS (SELECT 1 FROM pet_profiles pp WHERE pp.id = pet_notes.pet_id AND pp.owner_id = $1);
+       DELETE FROM pet_nutrition         WHERE EXISTS (SELECT 1 FROM pet_profiles pp WHERE pp.id = pet_nutrition.pet_id AND pp.owner_id = $1);
+       DELETE FROM pet_profiles          WHERE owner_id = $1;
+       DELETE FROM social_profiles       WHERE user_id = $1;
+       DELETE FROM local_users           WHERE id = $1;
+       COMMIT;`,
+      [userId],
+    );
+
+    logger.info({ userId }, "User account deleted");
+    res.json({ ok: true, message: "Hesabınız başarıyla silindi." });
+  } catch (err) {
+    logger.error({ err }, "DELETE /auth/account error");
+    res.status(500).json({ error: "Sunucu hatası" });
+  }
+});
+
 /* ── GET /api/auth/me ────────────────────────────────────────── */
 router.get("/auth/me", (req, res): void => {
   const header = req.headers.authorization;

@@ -20,6 +20,7 @@ import {
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { useAuth } from "@/contexts/AuthContext";
 import { useTheme } from "@/hooks/useTheme";
+import { apiFetch } from "@/lib/apiClient";
 
 
 const TAB_FLOAT_H    = 64;
@@ -35,6 +36,7 @@ export default function AccountScreen() {
   const topPad       = Platform.OS === "web" ? (SW < 1024 ? 54 : 16) : insets.top;
   const tabClearance = Platform.OS === "web" ? (SW < 1024 ? 100 : 24) : (insets.bottom + TAB_BOTTOM_GAP + TAB_FLOAT_H);
 
+  /* ── Change password modal state ───────────────────────────── */
   const [pwModalVisible, setPwModalVisible] = useState(false);
   const [currentPw,   setCurrentPw]   = useState("");
   const [newPw,       setNewPw]       = useState("");
@@ -44,9 +46,20 @@ export default function AccountScreen() {
   const [showConfirm, setShowConfirm] = useState(false);
   const [pwLoading,   setPwLoading]   = useState(false);
 
+  /* ── Delete account modal state ────────────────────────────── */
+  const [deleteModalVisible, setDeleteModalVisible] = useState(false);
+  const [deletePw,     setDeletePw]     = useState("");
+  const [showDeletePw, setShowDeletePw] = useState(false);
+  const [deleteLoading, setDeleteLoading] = useState(false);
+
   const openPwModal = () => {
     setCurrentPw(""); setNewPw(""); setConfirmPw("");
     setPwModalVisible(true);
+  };
+
+  const openDeleteModal = () => {
+    setDeletePw("");
+    setDeleteModalVisible(true);
   };
 
   const handleChangePassword = async () => {
@@ -93,6 +106,42 @@ export default function AccountScreen() {
     ]);
   };
 
+  const handleDeleteAccount = async () => {
+    if (!deletePw) {
+      Alert.alert("Hata", "Şifrenizi girin."); return;
+    }
+    setDeleteLoading(true);
+    try {
+      await apiFetch("/auth/account", { method: "DELETE", body: JSON.stringify({ password: deletePw }) });
+      Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
+      setDeleteModalVisible(false);
+      await logout();
+    } catch (e: unknown) {
+      const msg = e instanceof Error ? e.message : "Hesap silinemedi.";
+      Alert.alert("Hata", msg);
+      Haptics.notificationAsync(Haptics.NotificationFeedbackType.Error);
+    } finally {
+      setDeleteLoading(false);
+    }
+  };
+
+  const confirmDeleteAccount = () => {
+    if (Platform.OS === "web") {
+      if (window.confirm("Hesabınızı kalıcı olarak silmek istediğinizden emin misiniz? Bu işlem geri alınamaz.")) {
+        openDeleteModal();
+      }
+      return;
+    }
+    Alert.alert(
+      "Hesabı Sil",
+      "Bu işlem geri alınamaz. Tüm kişisel verileriniz silinecek. Devam etmek istiyor musunuz?",
+      [
+        { text: "İptal", style: "cancel" },
+        { text: "Evet, Sil", style: "destructive", onPress: openDeleteModal },
+      ],
+    );
+  };
+
   if (!user) return null;
 
   return (
@@ -110,6 +159,14 @@ export default function AccountScreen() {
             <Text style={[S.headerName, { color: T.purpleDark }]}>{user.name}</Text>
             <Text style={[S.headerEmail, { color: T.textMuted }]}>{user.email}</Text>
           </View>
+          <Pressable
+            style={({ pressed }) => [S.headerSearchBtn, { opacity: pressed ? 0.7 : 1, backgroundColor: T.purpleFaint }]}
+            onPress={() => { Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light); router.push("/search" as any); }}
+            accessibilityLabel="Kullanıcı ara"
+            accessibilityRole="button"
+          >
+            <Icon name="search-outline" size={20} color={T.purple} />
+          </Pressable>
         </View>
       </LinearGradient>
 
@@ -160,6 +217,26 @@ export default function AccountScreen() {
                 <Icon name="log-out-outline" size={18} color="#D94040" />
               </View>
               <Text style={[S.rowLabel, { flex: 1, color: "#D94040" }]}>Çıkış Yap</Text>
+              <Icon name="chevron-forward" size={16} color="#D94040" />
+            </Pressable>
+          </View>
+        </View>
+
+        {/* ── Tehlikeli Alan ──────────────────────────────── */}
+        <View style={S.section}>
+          <Text style={[S.sectionTitle, { color: T.textFaint }]}>Tehlikeli Alan</Text>
+          <View style={[S.card, { backgroundColor: T.card, borderColor: "#D94040" }]}>
+            <Pressable
+              style={({ pressed }) => [S.row, { opacity: pressed ? 0.75 : 1 }]}
+              onPress={confirmDeleteAccount}
+            >
+              <View style={[S.iconBadge, S.iconBadgeDanger]}>
+                <Icon name="trash-outline" size={18} color="#D94040" />
+              </View>
+              <View style={{ flex: 1 }}>
+                <Text style={[S.rowLabel, { color: "#D94040" }]}>Hesabı Sil</Text>
+                <Text style={[S.rowDesc, { color: T.textFaint }]}>Tüm veriler kalıcı olarak silinir</Text>
+              </View>
               <Icon name="chevron-forward" size={16} color="#D94040" />
             </Pressable>
           </View>
@@ -241,6 +318,76 @@ export default function AccountScreen() {
           </View>
         </KeyboardAvoidingView>
       </Modal>
+
+      {/* ── Hesap Sil Modal ──────────────────────────── */}
+      <Modal
+        visible={deleteModalVisible}
+        animationType="slide"
+        transparent
+        onRequestClose={() => setDeleteModalVisible(false)}
+      >
+        <KeyboardAvoidingView
+          behavior={Platform.OS === "ios" ? "padding" : "height"}
+          style={[S.modalOverlay, { backgroundColor: T.overlay }]}
+        >
+          <Pressable style={StyleSheet.absoluteFill} onPress={() => setDeleteModalVisible(false)} />
+          <View style={[
+            S.modalSheet,
+            { backgroundColor: T.card, paddingBottom: Math.max(insets.bottom, 24) },
+          ]}>
+            <View style={[S.modalHandle, { backgroundColor: T.border }]} />
+            <Text style={[S.modalTitle, { color: "#D94040" }]}>Hesabı Kalıcı Sil</Text>
+            <Text style={[S.modalSubtitle, { color: T.textMuted }]}>
+              Bu işlem geri alınamaz. Onaylamak için şifrenizi girin.
+            </Text>
+
+            <View style={S.modalInputGroup}>
+              <Text style={[S.modalLabel, { color: T.textMuted }]}>Şifreniz</Text>
+              <View style={[S.modalInputWrap, { backgroundColor: T.input, borderColor: "#D94040" }]}>
+                <Icon name="lock-closed-outline" size={18} color="#D94040" />
+                <TextInput
+                  style={[S.modalInput, { color: T.text }]}
+                  value={deletePw}
+                  onChangeText={setDeletePw}
+                  placeholder="Şifrenizi girin"
+                  placeholderTextColor={T.placeholder}
+                  secureTextEntry={!showDeletePw}
+                  autoCapitalize="none"
+                />
+                <Pressable onPress={() => setShowDeletePw((v) => !v)}>
+                  <Icon name={showDeletePw ? "eye-off-outline" : "eye-outline"} size={18} color="#D94040" />
+                </Pressable>
+              </View>
+            </View>
+
+            <View style={S.modalBtnRow}>
+              <Pressable
+                style={({ pressed }) => [
+                  S.modalCancelBtn,
+                  { backgroundColor: T.purpleFaint, opacity: pressed ? 0.7 : 1 },
+                ]}
+                onPress={() => setDeleteModalVisible(false)}
+              >
+                <Text style={[S.modalCancelText, { color: T.purpleDark }]}>İptal</Text>
+              </Pressable>
+              <Pressable
+                style={({ pressed }) => [
+                  S.modalSaveBtn,
+                  { backgroundColor: "#D94040", opacity: (pressed || deleteLoading) ? 0.85 : 1 },
+                ]}
+                onPress={handleDeleteAccount}
+                disabled={deleteLoading || !deletePw}
+                accessibilityState={{ disabled: deleteLoading || !deletePw }}
+              >
+                {deleteLoading
+                  ? <ActivityIndicator color="#FFF" size="small" />
+                  : <Text style={S.modalSaveText}>Hesabı Sil</Text>
+                }
+              </Pressable>
+            </View>
+          </View>
+        </KeyboardAvoidingView>
+      </Modal>
     </View>
   );
 }
@@ -250,6 +397,10 @@ const S = StyleSheet.create({
 
   header:      { paddingHorizontal: 20, paddingBottom: 20 },
   headerInner: { flexDirection: "row", alignItems: "center", gap: 14 },
+  headerSearchBtn: {
+    width: 38, height: 38, borderRadius: 12,
+    alignItems: "center", justifyContent: "center",
+  },
   avatarCircle: {
     width: 52, height: 52, borderRadius: 26,
     alignItems: "center", justifyContent: "center",

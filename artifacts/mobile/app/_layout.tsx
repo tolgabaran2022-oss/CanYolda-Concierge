@@ -83,6 +83,16 @@ function RootLayoutNav() {
       <Stack.Screen name="user-profile/[userId]" />
       <Stack.Screen name="pet-profile/[petId]" />
       <Stack.Screen name="messages" />
+      <Stack.Screen name="search" options={{ headerShown: false }} />
+      <Stack.Screen name="notifications" options={{ headerShown: false }} />
+      <Stack.Screen name="adoption-notifications" options={{ headerShown: false }} />
+      <Stack.Screen name="adoption/[id]" options={{ headerShown: false }} />
+      <Stack.Screen name="boost-packages" options={{ presentation: "modal", headerShown: false }} />
+      <Stack.Screen name="profile-edit" options={{ headerShown: false }} />
+      <Stack.Screen name="adoption-request/[listingId]" options={{ headerShown: false }} />
+      <Stack.Screen name="help-update/[animalId]" options={{ headerShown: false }} />
+      <Stack.Screen name="evcilim/[petId]/appointments/[apptId]" options={{ headerShown: false }} />
+      <Stack.Screen name="evcilim/add" options={{ presentation: "modal", headerShown: false }} />
     </Stack>
   );
 }

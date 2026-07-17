@@ -1,0 +1,924 @@
+CAN YOLDAŞI — PRODUCTION PHASE 5
+END-TO-END QA, STABILITY AND USER FLOW AUDIT
+
+Current status:
+
+- Feed and Stories system removed
+- Legacy feed tables and routes removed
+- JWT security migration completed or under final verification
+- RevenueCat production flow audited
+- EAS production configuration audited
+- Application is approaching release candidate stage
+
+This phase focuses on:
+
+- Functional QA
+- Regression testing
+- Cross-platform behavior
+- Error handling
+- Stability
+- Data integrity
+- Real user flows
+
+IMPORTANT:
+
+Do not redesign the application.
+
+Do not add new product features.
+
+Do not change working business logic unless a verified bug requires it.
+
+Do not delete production data.
+
+Analyze first, test second, fix only confirmed issues.
+
+==================================================
+1. COMPLETE SCREEN AND ROUTE INVENTORY
+==================================================
+
+Recursively inspect the mobile application and API server.
+
+Create a complete inventory of:
+
+- Expo Router screens
+- Tab screens
+- Stack screens
+- Modal screens
+- Dynamic routes
+- API endpoints
+- Auth requirements
+- Navigation entry points
+- Deep links
+- Hidden or orphaned routes
+
+For each screen report:
+
+- Route
+- Purpose
+- Authentication requirement
+- Entry point
+- Back navigation behavior
+- Loading state
+- Empty state
+- Error state
+- Platform-specific risk
+- Current status
+
+Identify:
+
+- unreachable screens
+- orphaned screens
+- routes not registered in layouts
+- duplicate screens
+- dead navigation links
+- buttons with no action
+- buttons navigating to wrong routes
+
+Pay special attention to previously reported routes:
+
+- adoption-notifications
+- help-update/[animalId]
+- notifications
+- search
+
+==================================================
+2. AUTHENTICATION FLOW TEST
+==================================================
+
+Audit and test:
+
+- Login
+- Registration
+- Logout
+- Forgot password
+- Reset password
+- Expired reset token
+- Reused reset token
+- Same-password rejection
+- Invalid email
+- Duplicate email registration
+- Wrong password
+- Missing fields
+- Session persistence
+- Expired JWT
+- Invalid JWT
+- Logout token cleanup
+- App reopen while authenticated
+- App reopen while logged out
+
+Expected behavior:
+
+- No infinite loading
+- No redirect loops
+- No blank screens
+- No token leakage
+- Friendly Turkish error messages
+- Password fields hidden by default
+- Correct keyboard type
+- Correct loading indicators
+- Buttons disabled during submission
+- Duplicate requests prevented
+
+==================================================
+3. ONBOARDING AND FIRST LAUNCH
+==================================================
+
+If onboarding exists:
+
+Test:
+
+- Fresh installation
+- First launch
+- Skip onboarding
+- Complete onboarding
+- App restart
+- Logout and login
+- Reinstall behavior
+- Authenticated user should not see onboarding again unless intended
+
+Verify that onboarding state is not confused with authentication state.
+
+==================================================
+4. MAP AND LOCATION FLOW
+==================================================
+
+Test:
+
+- Location permission not requested yet
+- Permission allowed
+- Permission denied
+- Permission permanently denied
+- Location services disabled
+- GPS timeout
+- Approximate location
+- No network
+- Map load failure
+- User location button
+- Animal marker tap
+- Bottom sheet open/close
+- Marker-to-detail navigation
+- External map launch
+- Android and iOS map behavior
+
+Verify:
+
+- App does not crash if location is unavailable
+- Permission messages accurately describe actual usage
+- No background location request
+- No infinite spinner
+- No invalid coordinates
+- No duplicated markers
+- Bottom sheet gestures work correctly
+
+==================================================
+5. STRAY ANIMAL REPORT FLOW
+==================================================
+
+Test full flow:
+
+- Open add-animal
+- Add photo from gallery
+- Add photo from camera
+- Deny camera permission
+- Deny photo permission
+- Select location
+- Enter animal details
+- Submit
+- View created report
+- Edit own report
+- Delete own report
+- Attempt to edit another user’s report
+- Attempt to delete another user’s report
+- Empty required fields
+- Upload failure
+- API failure
+- Slow network
+- Double tap submit
+
+Verify:
+
+- No duplicate records
+- Ownership checks work
+- Image remains after app restart
+- Location is stored correctly
+- “Konum belirtilmedi” does not appear when location exists
+- Help counter increments only once per action
+- Creator can manage their own record only
+
+==================================================
+6. ADOPTION FLOW
+==================================================
+
+Test:
+
+- View all listings
+- Open listing detail
+- Create listing
+- Upload images
+- Fill all animal details
+- Preview listing
+- Return from preview to edit
+- Publish listing
+- Edit own listing
+- Delete own listing
+- Message listing owner
+- Submit adoption request if supported
+- View own listings
+- Boost listing
+- Promotion expiration
+- Featured listing ordering
+- Empty state
+- Failed image upload
+- Failed API request
+- Double submission
+
+Verify all form fields:
+
+- Age
+- Identity/chip
+- Vaccination
+- Appointment information
+- Food information
+- Gender
+- Neutered status
+- Internal parasite
+- External parasite
+- Health note
+- Cat compatible
+- Dog compatible
+- Toilet trained
+
+Verify:
+
+- Preview and edit forms contain the same data
+- No field is lost during navigation
+- Featured listings return to normal after expiration
+- A listing cannot be boosted without ownership
+- User cannot edit another user’s listing
+
+==================================================
+7. PET PROFILE FLOW
+==================================================
+
+Test:
+
+- Add first pet
+- Add second pet
+- Add multiple pets
+- Edit one pet
+- Delete selected pet
+- Ensure deleting one pet does not affect others
+- Upload pet photo
+- Add vaccination data
+- Add health card data
+- View pet profile
+- App restart
+- Offline state
+- Failed API request
+
+Verify:
+
+- Each pet has separate data
+- Second pet does not replace first pet
+- Correct pet is edited
+- Correct pet is deleted
+- No stale data remains after deletion
+- Pet ownership is enforced
+
+==================================================
+8. MESSAGING FLOW
+==================================================
+
+Test with two separate users where possible.
+
+Test:
+
+- Start conversation from listing owner button
+- Send first message
+- Receive message
+- Reopen conversation
+- Message ordering
+- Empty conversation
+- Long message
+- Turkish characters
+- Emoji
+- Rapid multiple messages
+- Network interruption
+- Duplicate send prevention
+- Conversation list
+- Unread count
+- Read state
+- Unauthorized conversation access
+- Attempt to access another conversation ID manually
+
+Verify:
+
+- Messages visible to both participants
+- No message appears for unrelated users
+- Conversation membership enforced
+- No x-user-id identity fallback
+- Message screen handles deleted listing/user safely
+- Keyboard does not cover input
+- Android and iOS layouts are usable
+
+If real-time transport exists:
+
+- Verify reconnect behavior
+- Verify JWT authentication
+- Verify no duplicate listeners
+
+If polling is used:
+
+- Verify polling stops when screen is closed
+- Verify no memory leak
+
+==================================================
+9. PROFILE AND ACCOUNT FLOW
+==================================================
+
+Test:
+
+- View own profile
+- Edit profile
+- View another user’s public profile
+- Send message from profile
+- Change avatar
+- Change name
+- Change bio
+- Change location
+- Privacy settings
+- Notification settings
+- Logout
+- Account deletion
+
+Verify public profile does not expose:
+
+- Email
+- Phone
+- Password hash
+- JWT
+- Private settings
+- Exact private location
+- Security metadata
+
+Verify account deletion:
+
+- Requires authentication
+- Requires confirmation
+- Cannot be triggered accidentally
+- Deletes or anonymizes data according to product policy
+- Invalidates active session
+- Returns user to authentication screen
+- Does not leave orphaned sensitive records
+
+If account deletion is not implemented, mark it as a release blocker.
+
+==================================================
+10. NOTIFICATIONS FLOW
+==================================================
+
+Test:
+
+- Notifications screen opens
+- Only authenticated user’s notifications appear
+- Single notification mark as read
+- Mark all as read
+- Unread count updates
+- Empty state
+- Deleted target record
+- Invalid notification ID
+- Another user’s notification access attempt
+- App restart
+
+If push notifications exist:
+
+Test:
+
+- Permission requested at appropriate time
+- Token registration
+- Token update
+- Logout cleanup
+- Denied permission
+- Foreground notification
+- Background notification
+- Notification tap navigation
+
+If push is not fully implemented, clearly report it.
+
+==================================================
+11. SEARCH FLOW
+==================================================
+
+Audit the search screen.
+
+Test:
+
+- Empty query
+- Short query
+- User search
+- Adoption search
+- Animal search
+- Turkish characters
+- Upper/lowercase
+- No results
+- Network failure
+- Rapid typing
+- Repeated searches
+- Result navigation
+
+Verify:
+
+- Debounce if needed
+- No excessive API calls
+- No private data leakage
+- No dead result links
+
+==================================================
+12. IMAGE AND UPLOAD TESTING
+==================================================
+
+Audit all image upload flows.
+
+Test:
+
+- JPEG
+- PNG
+- HEIC if supported
+- Large image
+- Small image
+- Corrupt image
+- Unsupported file
+- Camera photo
+- Gallery photo
+- Upload cancellation
+- Network interruption
+- Server error
+- Retry
+- Multiple images
+
+Verify:
+
+- MIME validation
+- File size limit
+- Safe file naming
+- No path traversal
+- Auth required
+- Ownership association
+- Permanent storage
+- Correct public URL
+- No local server path exposed
+
+Important:
+
+Audit whether files are still written to local /uploads storage.
+
+If uploads are lost after restart or deployment, mark as release blocker.
+
+==================================================
+13. REVENUECAT USER FLOW QA
+==================================================
+
+Test or statically verify:
+
+- Boost packages screen
+- Offerings load
+- Package display
+- Purchase button
+- Purchase cancel
+- Purchase success
+- Backend verification
+- Promotion activation
+- Restore purchases
+- Expired purchase
+- Duplicate webhook
+- Invalid webhook authorization
+- Missing API key
+- No offerings state
+- Store unavailable
+- Network failure
+
+Do not claim real payment success without sandbox device testing.
+
+Clearly separate:
+
+- Code-level verification
+- Sandbox verification
+- Production verification
+
+==================================================
+14. OFFLINE AND NETWORK FAILURE TESTING
+==================================================
+
+For every major screen test:
+
+- No internet
+- Very slow internet
+- API timeout
+- HTTP 400
+- HTTP 401
+- HTTP 403
+- HTTP 404
+- HTTP 409
+- HTTP 429
+- HTTP 500
+- Malformed API response
+
+Verify:
+
+- Friendly Turkish messages
+- Retry option where appropriate
+- No crash
+- No infinite loading
+- No duplicate mutation
+- No corrupted local state
+
+==================================================
+15. LOADING, EMPTY AND ERROR STATES
+==================================================
+
+Every data-driven screen must have:
+
+- Initial loading state
+- Pull-to-refresh if appropriate
+- Empty state
+- Error state
+- Retry action
+- Success feedback for mutations
+
+Audit all screens for missing states.
+
+Do not leave blank white screens.
+
+==================================================
+16. ANDROID UI QA
+==================================================
+
+Test or audit:
+
+- Small Android screen
+- Large Android screen
+- Keyboard overlap
+- Status bar
+- Navigation bar
+- Safe area
+- Back button
+- Emoji rendering
+- Image picker
+- Permission dialogs
+- Bottom sheets
+- Maps
+- Long Turkish text
+- Font scaling
+- Dark mode if supported
+
+Verify previous Android-specific issues:
+
+- Broken emojis
+- Content visible only on iOS
+- Web/Android layout inconsistencies
+- Overflow
+- Hero section clipping
+- Back icon problems
+
+==================================================
+17. IOS UI QA
+==================================================
+
+Test or audit:
+
+- Safe areas
+- Dynamic Island/notch
+- Keyboard avoidance
+- Permission dialogs
+- Photo picker
+- Camera
+- Location
+- Maps
+- Back gestures
+- Bottom sheets
+- Modal dismissal
+- In-app purchase sheet
+- Long Turkish text
+- Font scaling
+
+Verify no permission is requested without feature usage.
+
+==================================================
+18. WEB COMPATIBILITY
+==================================================
+
+If web remains supported:
+
+Test:
+
+- Responsive layouts
+- Overflow
+- Navigation
+- Authentication
+- Image upload
+- Map fallback
+- Unsupported native modules
+- RevenueCat behavior
+- External links
+- Browser refresh on dynamic routes
+
+If web is not intended for production, document this clearly and prevent false readiness claims.
+
+==================================================
+19. ACCESSIBILITY AUDIT
+==================================================
+
+Audit interactive elements for:
+
+- accessibilityLabel
+- accessibilityRole
+- accessible touch targets
+- minimum touch size
+- screen reader names
+- color contrast
+- font scaling
+- disabled state
+- form labels
+- error announcements
+- icon-only button labels
+
+Prioritize:
+
+- Auth screens
+- Navigation tabs
+- Form controls
+- Submit buttons
+- Delete actions
+- Map controls
+- Message input
+- Purchase buttons
+
+==================================================
+20. PERFORMANCE AND MEMORY
+==================================================
+
+Audit:
+
+- Repeated API calls
+- Unbounded lists
+- Missing pagination
+- Large image rendering
+- Excessive re-renders
+- Map marker performance
+- Message list performance
+- Bottom sheet performance
+- Event listener cleanup
+- Polling cleanup
+- React Query cache behavior
+- Memory leaks
+
+Check large lists for:
+
+- FlatList usage
+- stable keys
+- pagination
+- loading more
+- empty states
+
+==================================================
+21. DATA INTEGRITY
+==================================================
+
+Verify:
+
+- No duplicate reports from double submit
+- No duplicate listings
+- No duplicate messages
+- No duplicate promotions
+- Ownership foreign keys valid
+- Deleting a user does not leave sensitive orphaned data
+- Expired promotions update correctly
+- Notification references handle deleted records
+- Image records do not point to missing files
+- Transactions used where multi-step writes require atomicity
+
+==================================================
+22. SECURITY REGRESSION TESTS
+==================================================
+
+Retest:
+
+- x-user-id has no authentication effect
+- Protected routes require JWT
+- Body userId cannot override authenticated user
+- Another user’s resource cannot be edited
+- Another conversation cannot be read
+- Notifications are user-scoped
+- Uploads require JWT
+- RevenueCat webhook requires authorization
+- Password reset tokens cannot be reused
+- Same password reset is rejected
+- Private profile fields are not exposed
+
+==================================================
+23. AUTOMATED TEST FOUNDATION
+==================================================
+
+The project previously had no automated tests.
+
+Create a minimal but meaningful test foundation only if safe and compatible.
+
+Priority backend tests:
+
+- Auth login
+- Forgot/reset password
+- JWT middleware
+- Ownership authorization
+- Adoption listing ownership
+- Pet ownership
+- Message conversation membership
+- Notification ownership
+- RevenueCat webhook authorization
+- Duplicate promotion prevention
+
+Priority mobile tests:
+
+- Auth form validation
+- Forgot-password cooldown
+- Reset-password validation
+- Critical navigation routes
+- Mutation double-submit prevention
+
+Do not attempt to create hundreds of shallow tests.
+
+Prefer fewer high-value tests.
+
+Add a test script to package.json if missing.
+
+==================================================
+24. CRASH REPORTING AUDIT
+==================================================
+
+Check whether Sentry, Crashlytics or equivalent is configured.
+
+Verify:
+
+- Production-only initialization
+- Source maps
+- Environment
+- Release version
+- User privacy
+- No password/token capture
+- Error boundary
+- API error reporting
+
+If no crash reporting exists, mark it as a high-priority release issue.
+
+Do not add a vendor unless explicitly instructed; prepare the integration plan.
+
+==================================================
+25. COMMANDS TO RUN
+==================================================
+
+Run all available checks:
+
+- shared library typecheck
+- API server typecheck
+- mobile typecheck
+- lint
+- tests
+- Expo Doctor
+- production Expo config validation
+- build-related validation commands that do not require unavailable credentials
+
+Do not claim a command passed unless it was actually executed.
+
+==================================================
+26. BUG FIXING RULES
+==================================================
+
+Fix only confirmed issues that are:
+
+- security regressions
+- broken navigation
+- crash risks
+- data corruption risks
+- critical loading/error state failures
+- clear release blockers
+
+For broader UI improvements:
+
+report them but do not redesign.
+
+Before every fix:
+
+- identify root cause
+- list affected files
+- preserve existing feature behavior
+
+After every fix:
+
+- rerun relevant checks
+- report result
+
+==================================================
+27. FINAL REPORT FORMAT
+==================================================
+
+Return a detailed Turkish report with exactly these headings:
+
+1. GENEL QA ÖZETİ
+
+2. EKRAN VE ROUTE ENVANTERİ
+
+3. AUTH AKIŞI TESTLERİ
+
+4. HARİTA VE KONUM TESTLERİ
+
+5. SOKAK HAYVANI AKIŞI
+
+6. SAHİPLENDİRME AKIŞI
+
+7. EVCİL HAYVAN PROFİLLERİ
+
+8. MESAJLAŞMA AKIŞI
+
+9. PROFİL VE HESAP YÖNETİMİ
+
+10. BİLDİRİMLER
+
+11. ARAMA
+
+12. GÖRSEL YÜKLEME VE DEPOLAMA
+
+13. REVENUECAT QA
+
+14. OFFLINE VE API HATA SENARYOLARI
+
+15. ANDROID SONUÇLARI
+
+16. IOS SONUÇLARI
+
+17. WEB SONUÇLARI
+
+18. ACCESSIBILITY SONUÇLARI
+
+19. PERFORMANS VE MEMORY
+
+20. VERİ BÜTÜNLÜĞÜ
+
+21. GÜVENLİK REGRESYON TESTLERİ
+
+22. EKLENEN OTOMATİK TESTLER
+
+23. CRASH REPORTING DURUMU
+
+24. DÜZELTİLEN HATALAR
+
+25. DEĞİŞTİRİLEN DOSYALAR
+
+26. ÇALIŞTIRILAN KOMUTLAR
+
+27. BAŞARILI TESTLER
+
+28. BAŞARISIZ TESTLER
+
+29. MANUEL CİHAZ TESTİ GEREKTİRENLER
+
+30. RELEASE BLOCKER'LAR
+
+31. KALAN YÜKSEK RİSKLER
+
+32. PHASE 5 FINAL VERDICT
+
+==================================================
+28. FINAL VERDICT RULE
+==================================================
+
+Use one of these exact verdicts:
+
+- NOT RELEASE READY
+- RELEASE CANDIDATE WITH BLOCKERS
+- RELEASE CANDIDATE
+- READY FOR STORE COMPLIANCE REVIEW
+
+Do not use READY FOR STORE COMPLIANCE REVIEW if any of these remain:
+
+- Account deletion missing
+- Privacy policy missing
+- Local non-persistent uploads
+- Authentication bypass
+- Unauthorized resource access
+- Broken payment verification
+- App crash in critical flow
+- Broken production build configuration
+- Missing required permission compliance
+- Unresolved data corruption issue
+
+IMPORTANT:
+
+Clearly distinguish:
+
+- Code reviewed
+- Automated test executed
+- Simulator test executed
+- Real device test executed
+- Sandbox purchase test executed
+- Production test executed
+
+Never claim real-device or store testing unless it actually happened.
