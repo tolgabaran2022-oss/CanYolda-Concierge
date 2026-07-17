@@ -1,0 +1,536 @@
+CAN YOLDAŞI — FINAL RELEASE CANDIDATE
+RC 1.0 MASTER AUDIT
+
+ROLE
+
+You are acting as:
+
+Senior Staff Software Engineer
+Principal Mobile Architect
+Security Engineer
+App Store Reviewer
+Google Play Reviewer
+QA Lead
+
+This is the FINAL production audit before worldwide release.
+
+No assumptions.
+
+No optimism.
+
+No placeholders.
+
+Only evidence-based conclusions.
+
+==================================================
+PROJECT GOAL
+==================================================
+
+Determine whether CanYoldaşı can safely be released to:
+
+• Apple App Store
+• Google Play Store
+
+Evaluate the entire repository as if you are approving a production release for millions of users.
+
+==================================================
+PHASE VALIDATION
+==================================================
+
+Verify every previous production phase.
+
+Phase 1
+Feed Removal
+
+Confirm:
+
+• Feed completely removed
+• Stories removed
+• Dead routes removed
+• Dead imports removed
+• Dead database schema removed
+
+--------------------------------------------------
+
+Phase 2
+
+Authentication
+
+Confirm:
+
+• JWT mandatory
+• No x-user-id authentication
+• Ownership validation
+• Protected routes secured
+
+--------------------------------------------------
+
+Phase 3
+
+RevenueCat
+
+Confirm:
+
+• Production API keys
+• Restore flow
+• Purchase verification
+• Webhook authorization
+
+--------------------------------------------------
+
+Phase 4
+
+Build
+
+Confirm:
+
+• eas.json
+• AAB build
+• iOS production config
+• Versioning
+• Icons
+• Splash
+• Permissions
+
+--------------------------------------------------
+
+Phase 5
+
+QA
+
+Confirm:
+
+• Critical user flows
+• Navigation
+• Loading states
+• Error states
+• Empty states
+• Offline behavior
+
+--------------------------------------------------
+
+Phase 6
+
+Compliance
+
+Confirm:
+
+• Privacy
+• Terms
+• Account deletion
+• Permissions
+• Store metadata
+• Policy compliance
+
+--------------------------------------------------
+
+Phase 7
+
+Security
+
+Confirm:
+
+• OWASP
+• JWT
+• Upload security
+• SQL Injection
+• XSS
+• Authorization
+• Secrets
+• Rate limiting
+
+==================================================
+FULL REPOSITORY AUDIT
+==================================================
+
+Search entire repository for:
+
+TODO
+
+FIXME
+
+HACK
+
+TEMP
+
+TEST ONLY
+
+DEBUG
+
+console.log
+
+console.error
+
+mock
+
+fake
+
+placeholder
+
+sample
+
+example
+
+development
+
+staging
+
+sandbox
+
+test key
+
+hardcoded secrets
+
+temporary code
+
+deprecated code
+
+beta packages
+
+unused packages
+
+unused screens
+
+unused API
+
+unused migrations
+
+dead assets
+
+duplicate utilities
+
+legacy auth
+
+legacy routes
+
+legacy schemas
+
+unused environment variables
+
+unused secrets
+
+==================================================
+CONFIGURATION AUDIT
+==================================================
+
+Verify:
+
+Environment variables
+
+Secrets
+
+Expo config
+
+Android config
+
+iOS config
+
+RevenueCat
+
+Resend
+
+JWT
+
+Database
+
+Uploads
+
+Storage
+
+Build profiles
+
+==================================================
+DATABASE AUDIT
+==================================================
+
+Verify:
+
+Schema consistency
+
+Foreign keys
+
+Indexes
+
+Ownership
+
+Cascade rules
+
+Migration history
+
+Unused tables
+
+Orphan records risk
+
+Duplicate indexes
+
+==================================================
+API AUDIT
+==================================================
+
+Verify every endpoint.
+
+Classify:
+
+Public
+
+Authenticated
+
+Owner-only
+
+Admin
+
+Webhook
+
+Verify:
+
+Authentication
+
+Authorization
+
+Validation
+
+Rate limiting
+
+Logging
+
+Error handling
+
+==================================================
+MOBILE AUDIT
+==================================================
+
+Inspect:
+
+Expo Router
+
+Navigation
+
+Tabs
+
+Stacks
+
+Deep links
+
+Permissions
+
+Maps
+
+Uploads
+
+Messaging
+
+Notifications
+
+RevenueCat
+
+Profile
+
+Authentication
+
+Adoption
+
+Pets
+
+Animals
+
+==================================================
+PERFORMANCE AUDIT
+==================================================
+
+Inspect:
+
+Large FlatLists
+
+Images
+
+Queries
+
+Pagination
+
+React Query
+
+Memory leaks
+
+Repeated renders
+
+Large components
+
+Bundle size
+
+==================================================
+DEPENDENCY AUDIT
+==================================================
+
+Audit every dependency.
+
+Identify:
+
+Unused
+
+Deprecated
+
+Beta
+
+Security risks
+
+Large packages
+
+==================================================
+RELEASE CHECKLIST
+==================================================
+
+Generate complete release checklist.
+
+Apple
+
+Google
+
+Backend
+
+Database
+
+Secrets
+
+Monitoring
+
+Crash Reporting
+
+RevenueCat
+
+Privacy
+
+Support
+
+Documentation
+
+==================================================
+STORE READINESS SCORE
+==================================================
+
+Generate scores:
+
+Architecture
+
+Security
+
+Performance
+
+Maintainability
+
+Scalability
+
+UX Stability
+
+Production Readiness
+
+Store Compliance
+
+Overall Score
+
+Each scored out of 100.
+
+==================================================
+BLOCKER ANALYSIS
+==================================================
+
+List every remaining blocker.
+
+Categorize:
+
+Critical
+
+High
+
+Medium
+
+Low
+
+Informational
+
+Every blocker must include:
+
+Why
+
+Affected files
+
+Risk
+
+Recommended fix
+
+Estimated effort
+
+==================================================
+GO / NO-GO DECISION
+==================================================
+
+Choose exactly one:
+
+NO-GO
+
+GO AFTER FIXING BLOCKERS
+
+RELEASE CANDIDATE
+
+READY FOR APP STORE
+
+READY FOR GOOGLE PLAY
+
+READY FOR WORLDWIDE RELEASE
+
+Never choose READY FOR WORLDWIDE RELEASE unless every critical blocker has been eliminated.
+
+==================================================
+FINAL REPORT
+==================================================
+
+Return a professional Turkish report.
+
+Exactly these sections:
+
+1. Executive Summary
+
+2. Phase Validation
+
+3. Repository Audit
+
+4. Architecture Review
+
+5. Database Review
+
+6. API Review
+
+7. Mobile Review
+
+8. Security Review
+
+9. Performance Review
+
+10. Dependency Review
+
+11. Store Compliance
+
+12. Release Checklist
+
+13. Remaining Blockers
+
+14. Risk Matrix
+
+15. Production Scores
+
+16. Final Decision
+
+17. Immediate Next Actions
+
+18. CTO Release Recommendation
+
+IMPORTANT:
+
+Do not guess.
+
+If something cannot be verified, explicitly state:
+
+"DOĞRULANAMADI"
+
+Only approve release based on verified evidence.
+
+This is the final production sign-off.

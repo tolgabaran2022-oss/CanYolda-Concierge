@@ -22,7 +22,15 @@ import { PetsProvider } from "@/contexts/PetsContext";
 import { ThemeProvider } from "@/contexts/ThemeContext";
 
 SplashScreen.preventAutoHideAsync();
-const queryClient = new QueryClient();
+const queryClient = new QueryClient({
+  defaultOptions: {
+    queries: {
+      staleTime:          30 * 1000,
+      retry:              2,
+      refetchOnWindowFocus: false,
+    },
+  },
+});
 
 function RootLayoutNav() {
   const { user, isLoading } = useAuth();
