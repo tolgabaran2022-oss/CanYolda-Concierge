@@ -1,0 +1,124 @@
+CanYoldaşı uygulamasına kapsamlı, recursive ve uygulamalı bir hata denetimi yap.
+
+AMAÇ:
+Uygulamadaki yalnızca görünür UI hatalarını değil; mantık, veri akışı, kullanıcı kimliği, yetkilendirme, form, Supabase, Storage, RLS, navigation, state, cache, platform uyumluluğu ve production problemlerini tespit et ve düzelt.
+
+PLATFORMLAR:
+- Android
+- iOS
+- Web
+
+Bu görev sadece raporlama görevi değildir.
+
+Önce uygulamayı incele.
+Sonra test et.
+Gerçek hataları tespit et.
+Kod düzeltmelerini uygula.
+Veritabanı ve RLS sorunlarını düzelt.
+Sonra aynı testleri tekrar çalıştır.
+İşlem sonunda kanıtlı bir rapor hazırla.
+
+Tahmin ederek “çalışıyor” yazma.
+Test edilmeyen bir alan için “test edildi” deme.
+Çalıştırılamayan platform veya senaryo varsa açıkça belirt.
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+1. ÇALIŞMA YÖNTEMİ
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+Denetimi şu döngüyle yürüt:
+
+1. Uygulama mimarisini incele
+2. Gerçek route ve component dosyalarını bul
+3. Supabase tablolarını ve ilişkileri incele
+4. Auth ve kullanıcı profili akışını incele
+5. Her özelliği kullanıcı gibi test et
+6. Console, network ve Supabase hatalarını kaydet
+7. Hatanın gerçek kaynağını belirle
+8. Kod veya veritabanı düzeltmesini uygula
+9. Testi yeniden çalıştır
+10. İlgili diğer ekranlarda aynı hata modelini ara
+11. Regression testi yap
+12. Sonuçları raporla
+
+Bir hata bulunduğunda yalnızca o ekrandaki semptomu düzeltme.
+
+Aynı altyapıyı kullanan tüm ekranları recursive olarak tara.
+
+Örnek:
+Fotoğraf seçimi bir ekranda bozuksa şu ekranların tamamını kontrol et:
+
+- Yeni İlan Oluştur
+- Evcil Hayvan Ekle
+- Durum Bildir
+- Profil fotoğrafı
+- İlan düzenleme
+- Mesaj eki
+- Diğer medya alanları
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+2. TEST ÖNCESİ PROJE HARİTASI ÇIKAR
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+Önce gerçek proje yapısını inceleyerek şu haritayı oluştur:
+
+- Uygulama framework ve sürümü
+- Expo SDK sürümü
+- React Native sürümü
+- React sürümü
+- Navigation sistemi
+- State yönetimi
+- Query/cache sistemi
+- Supabase client yapısı
+- Auth provider
+- Storage servisleri
+- Image picker sistemi
+- Notification sistemi
+- RevenueCat entegrasyonu
+- Environment değişkenleri
+- Native pluginler
+- Android yapılandırması
+- iOS yapılandırması
+- Web yapılandırması
+- Test altyapısı
+- Lint ve TypeScript yapılandırması
+
+Gerçekte kullanılmayan eski route ve component’leri tespit et.
+
+Aynı ekranın birden fazla kopyası varsa hangisinin aktif olduğunu doğrula.
+
+Her ana ekranın gerçek dosya yolunu raporla.
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+3. TEST ORTAMLARINI HAZIRLA
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+Şu platformları ayrı ayrı hazırla:
+
+ANDROID:
+- Android development build
+- Android emülatör
+- Mümkünse gerçek Android cihaz
+- Güncel Android sürümü
+- Eski izinlerin temizlendiği yeni kurulum
+
+IOS:
+- iOS Simulator
+- Mümkünse gerçek iPhone
+- Yeni development build
+- Kamera testi için gerçek cihaz gerektiğini dikkate al
+
+WEB:
+- Mobil viewport
+- Masaüstü viewport
+- Chrome tabanlı test
+- Responsive test
+
+Sadece Expo Web önizlemesini Android ve iOS testi olarak kabul etme.
+
+Native config veya plugin değişmişse eski build ile test yapma.
+
+Gerekli durumlarda:
+
+```bash
+npx expo start --clear
