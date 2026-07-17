@@ -1,0 +1,428 @@
+CAN YOLDAŞI — PHASE 0 PRODUCTION READINESS AUDIT
+Tarih: 17 Temmuz 2026
+Versiyon: 1.0.0 (versionCode: 1)
+Denetçi: Replit Agent (read-only, kod değişikliği yapılmadı)
+
+NOT: Audit şablonu Supabase, Google Sign-In ve Apple Sign-In baz alıyordu.
+Gerçek stack bunlardan hiçbirini kullanmıyor — JWT + PostgreSQL/Drizzle ORM + Express.
+
+════════════════════════════════════════════════════════════════════
+A. EXECUTIVE SUMMARY
+════════════════════════════════════════════════════════════════════
+
+Genel Hazırlık       : 38 / 100
+App Store Hazırlığı  : 22 / 100
+Google Play Hazırlığı: 20 / 100
+Güvenlik             : 55 / 100
+Stabilite            : 48 / 100
+Gizlilik             : 30 / 100
+
+Mevcut Tavsiye: NOT RELEASE READY
+
+Uygulama temel kullanım akışlarında çalışıyor, ancak mağaza gönderimi
+ve gerçek kullanıcılara açılış için birden fazla kritik bloker var.
+En acil sorunlar:
+(1) RevenueCat üretim API anahtarları eksik — IAP tamamen çalışmaz
+(2) Android production build'i AAB yerine APK üretiyor — Play Store reddeder
+(3) feed.tsx ve feed altyapısı "kaldırıldı" denilmesine rağmen tamamen aktif
+(4) eas.json placeholder değerleri içeriyor
+(5) gizlilik politikası ve hesap silme akışı doğrulanamıyor
+
+════════════════════════════════════════════════════════════════════
+B. RELEASE BLOCKERS
+════════════════════════════════════════════════════════════════════
+
+────────────────────────────────────────────────────────────────────
+RB-01 — RevenueCat üretim API anahtarları yok
+────────────────────────────────────────────────────────────────────
+Ciddiyet  : CRITICAL
+Alan      : Ödeme / IAP
+Sorun     : revenueCat.ts satır 5'te "TEST STORE" olduğu belirtiliyor.
+            EXPO_PUBLIC_REVENUECAT_ANDROID_API_KEY ve
+            EXPO_PUBLIC_REVENUECAT_IOS_API_KEY MISSING olarak işaretli.
+Kanıt     : artifacts/mobile/services/revenueCat.ts:5
+            "EXPO_PUBLIC_REVENUECAT_API_KEY currently uses the RevenueCat TEST STORE"
+Kullanıcı : Boost (ücretli ilan öne çıkarma) canlıda tamamen çalışmaz.
+Mağaza    : Apple / Google IAP gerçek ürün testleri geçemez.
+Düzeltme  : Replit Secrets'a iOS ve Android üretim anahtarlarını ekle;
+            revenueCat.ts'yi Platform.OS ile doğru anahtarı seçecek şekilde güncelle.
+Kabul     : EXPO_PUBLIC_REVENUECAT_IOS_API_KEY ve
+            EXPO_PUBLIC_REVENUECAT_ANDROID_API_KEY set edilmiş;
+            test satın alma production sandbox'ta tamamlanmış.
+
+────────────────────────────────────────────────────────────────────
+RB-02 — Android production build AAB değil APK üretiyor
+────────────────────────────────────────────────────────────────────
+Ciddiyet  : CRITICAL
+Alan      : Yapı / Dağıtım
+Sorun     : eas.json içinde production.android.buildType = "apk"
+            Google Play, Ağustos 2021'den itibaren yeni uygulamalar için AAB zorunlu.
+Kanıt     : artifacts/mobile/eas.json:
+            "android": { "buildType": "apk" }
+Mağaza    : Google Play APK yüklemesini REDDEDER.
+Düzeltme  : "buildType": "apk" → "buildType": "app-bundle"
+
+────────────────────────────────────────────────────────────────────
+RB-03 — EAS submit placeholder değerleri
+────────────────────────────────────────────────────────────────────
+Ciddiyet  : CRITICAL
+Alan      : Mağaza Gönderimi
+Sorun     : eas.json App Store Connect için gerçek değerler yerine placeholder.
+Kanıt     : "ascAppId": "YOUR_APP_STORE_CONNECT_APP_ID"
+            "ascTeamId": "YOUR_APPLE_TEAM_ID"
+Mağaza    : eas submit komutu App Store'a gönderim yapamaz.
+Düzeltme  : Gerçek App Store Connect App ID ve Apple Team ID ile doldur.
+
+────────────────────────────────────────────────────────────────────
+RB-04 — Feed ekranı "kaldırıldı" denmesine rağmen tamamen aktif
+────────────────────────────────────────────────────────────────────
+Ciddiyet  : CRITICAL
+Alan      : Mimari / UGC / Güvenlik
+Sorun     : feed.tsx (892 satır), create-post.tsx, post-detail/[postId].tsx
+            tablar içinde kayıtlı ve erişilebilir. API feed.ts, stories.ts
+            tüm route'larıyla aktif. DB'de feed_posts, feed_likes,
+            feed_bookmarks, stories, story_views tabloları mevcut.
+            Moderasyon, içerik güvenliği, spam koruması yok.
+Kanıt     : artifacts/mobile/app/(tabs)/_layout.tsx — feed.tsx tab olarak kayıtlı
+            artifacts/api-server/src/routes/feed.ts — aktif
+Kullanıcı : Moderasyon olmadan fotoğraf ve yazı paylaşılabilir.
+Mağaza    : Apple ve Google UGC içeren uygulamalarda moderasyon ister.
+Düzeltme  : Ya feed'i tam ve güvenli yap (moderasyon, rapor, blok),
+            ya da navigasyon ve API'den tamamen kaldır.
+
+────────────────────────────────────────────────────────────────────
+RB-05 — Legacy x-user-id header kimlik doğrulama atlatma riski
+────────────────────────────────────────────────────────────────────
+Ciddiyet  : CRITICAL (Blocker kapsamında)
+Alan      : Güvenlik / Auth
+Sorun     : extractUserIdDual() geçerli JWT yoksa x-user-id HTTP header'ını
+            kullanıcı kimliği olarak kabul ediyor. Bu header herhangi bir
+            istemci tarafından serbestçe ayarlanabilir.
+Kanıt     : artifacts/api-server/src/lib/jwtAuth.ts:
+            extractUserIdDual — jwtId yoksa req.headers["x-user-id"] döndürür.
+            feed.ts ve stories.ts tüm auth çağrıları extractUserIdDual kullanıyor.
+Kullanıcı : Saldırgan herhangi bir kullanıcının feed işlemlerini o kullanıcı
+            adına gerçekleştirebilir.
+Düzeltme  : extractUserIdDual kullanımını kaldır; feed ve stories route'larını
+            düz extractUserId ile JWT zorunlu yapısına geç.
+
+════════════════════════════════════════════════════════════════════
+C. HIGH-PRIORITY ISSUES
+════════════════════════════════════════════════════════════════════
+
+HP-01 — sdkVersion app.json'da tanımlı değil
+Alan    : Build Yapılandırması
+Sorun   : expo.sdkVersion alanı set edilmemiş.
+Kanıt   : python3 çıktısı: SDK: NOT SET
+Düzeltme: "sdkVersion": "54.0.0" ekle.
+
+HP-02 — Arka plan konum izni tutarsızlığı
+Alan    : İzinler / Gizlilik
+Sorun   : NSLocationAlwaysAndWhenInUseUsageDescription "arka plan konumunu
+          kullanır" diyor, ancak isIosBackgroundLocationEnabled: false.
+          Arka plan konum kodu bulunamadı.
+Kanıt   : app.json:61 ve app.json:111-112
+Mağaza  : Apple yanıltıcı açıklama için uygulamayı reddeder veya askıya alır.
+Düzeltme: NSLocationAlways* açıklamalarını kaldır veya düzelt;
+          sadece NSLocationWhenInUseUsageDescription kullan.
+
+HP-03 — NSFaceIDUsageDescription ve NSMicrophoneUsageDescription kullanılmıyor
+Alan    : İzinler / Gizlilik
+Sorun   : app.json'da Face ID ve mikrofon açıklamaları var, bunları
+          kullanan hiçbir kod bulunamadı.
+Kanıt   : app.json:71-76
+Mağaza  : Apple gereksiz privacy manifest girişlerini reddeder.
+Düzeltme: Bu iki izni kaldır.
+
+HP-04 — Rate limiting tek process, in-memory
+Alan    : Güvenlik / Altyapı
+Sorun   : express-rate-limit bellek içi kullanıyor. Yeniden başlatmada
+          sayaçlar sıfırlanır. Multi-instance için uygun değil.
+Kanıt   : rateLimiter.ts yorum: "For multi-instance deployments,
+          replace with a Redis store"
+Düzeltme: Production için Redis store entegre et.
+
+HP-05 — JWT 30 günlük, refresh token mekanizması yok
+Alan    : Auth / Güvenlik
+Sorun   : JWT 30 gün geçerli, refresh token yok.
+          Token çalınırsa 30 gün boyunca geçerli.
+Kanıt   : auth.ts:14 — const JWT_EXPIRES = "30d"
+Düzeltme: Kısa ömürlü access token + refresh token veya token iptal ekle.
+
+HP-06 — WRITE_EXTERNAL_STORAGE / READ_EXTERNAL_STORAGE deprecated
+Alan    : Android İzinleri
+Sorun   : app.json Android permissions listesinde bu ikisi var,
+          Android 10+ (API 29+) üzerinde işlevsiz.
+Kanıt   : app.json permissions dizisi
+Düzeltme: Bu iki izni kaldır.
+
+HP-07 — Hiç test yok
+Alan    : Test Kapsama
+Sorun   : Unit, component, integration veya e2e test bulunamadı.
+Kanıt   : package.json'da test script yok; test dosyası bulunamadı.
+Düzeltme: Auth akışı, ödeme doğrulama, sahiplik kontrolleri için testler yaz.
+
+HP-08 — Üretim crash reporting yok
+Alan    : Gözlemlenebilirlik
+Sorun   : Sentry, Crashlytics veya benzeri SDK bulunamadı.
+Kanıt   : package.json — @sentry/react-native, firebase/crashlytics yok.
+Düzeltme: Üretim öncesi Sentry veya Crashlytics entegre et.
+
+HP-09 — Gizlilik politikası uygulama içinde doğrulanamadı
+Alan    : Gizlilik / Mağaza Uyumu
+Sorun   : Kayıt ekranında "Gizlilik Politikası" statik metin olarak var;
+          gerçek URL'ye navigasyon gözlemlenmedi. Hesap silme akışı
+          bulunamadı.
+Kanıt   : login.tsx — statik Text, WebView/URL yönlendirmesi yok.
+Mağaza  : Apple ve Google aktif gizlilik politikası zorunlu kılıyor.
+Düzeltme: Tıklanabilir link; gerçek web sayfası veya in-app WebView.
+
+════════════════════════════════════════════════════════════════════
+D. MEDIUM-PRIORITY ISSUES
+════════════════════════════════════════════════════════════════════
+
+MP-01: Android versionCode 1 sabit, autoIncrement ile çelişebilir.
+MP-02: REVENUECAT_WEBHOOK_AUTH_TOKEN set edilmemiş — webhook reddediyor.
+MP-03: Splash ekranı uygulama ikonu ile aynı (icon.png).
+MP-04: oauth_users tablosu var, OAuth akışı implement edilmemiş.
+MP-05: profile.tsx ve account.tsx — iki sekme çakışıyor, amaç belirsiz.
+MP-06: create-post.tsx ve post-detail/[postId].tsx — feed kaldırılmış ama erişilebilir.
+MP-07: /uploads klasörü sunucu disk'e yazıyor, yeniden başlatmada kalıcı değil.
+MP-08: password_reset_codes tablosu raw SQL ile oluşturuluyor (migration dışı).
+MP-09: adoption-notifications.tsx — root layout'a kayıtlı değil.
+MP-10: help-update/[animalId].tsx — root layout'a kayıtlı değil.
+
+════════════════════════════════════════════════════════════════════
+E. LOW-PRIORITY ISSUES
+════════════════════════════════════════════════════════════════════
+
+LP-01: babel-plugin-react-compiler ^19.0.0-beta — production'da beta plugin riski.
+LP-02: expo-glass-effect ~0.1.4 — resmi Expo paketi değil, yayıncı belirsiz.
+LP-03: @stardazed/streams-text-encoding, @ungap/structured-clone — amaç belirsiz.
+LP-04: isLiquidGlassAvailable() — yalnızca iOS 26+, henüz yaygın değil.
+LP-05: expo-router.origin: 'https://replit.com/' — production domain ile değiştir.
+LP-06: CFBundleDisplayName: "CanYoldasi" — Türkçe karakter eksik (CanYoldaşı olmalı).
+
+════════════════════════════════════════════════════════════════════
+F. GÜVENLİK VE YETKİLENDİRME MATRİSİ
+════════════════════════════════════════════════════════════════════
+
+Kaynak               | Oku          | Oluştur  | Güncelle    | Sil         | Sahip | Risk
+─────────────────────┼──────────────┼──────────┼─────────────┼─────────────┼───────┼────────
+local_users          | JWT (kendin) | Public   | JWT         | —           | ✅    | ORTA
+stray_animals        | Public       | JWT      | JWT+sahip   | JWT+sahip   | ✅    | DÜŞÜK
+adoption_listings    | Public       | JWT      | JWT+sahip   | JWT+sahip   | ✅    | DÜŞÜK
+adoption_requests    | JWT          | JWT      | JWT+sahip   | JWT+sahip   | ✅    | DÜŞÜK
+pet_profiles         | JWT          | JWT      | JWT+sahip   | JWT+sahip   | ✅    | DÜŞÜK
+messages/conv.       | JWT+üye      | JWT      | —           | —           | ✅    | DÜŞÜK
+feed_posts           | Public+xuid  | x-uid    | x-uid       | x-uid       | ❌    | YÜKSEK
+stories              | Public+xuid  | x-uid    | x-uid       | x-uid       | ❌    | YÜKSEK
+listing_promotions   | JWT          | Webhook  | Webhook     | —           | ✅    | DÜŞÜK
+
+xuid = x-user-id header (sahte ayarlanabilir)
+
+════════════════════════════════════════════════════════════════════
+G. İZİN MATRİSİ
+════════════════════════════════════════════════════════════════════
+
+İzin                                    | Platform | Durum          | Risk
+────────────────────────────────────────┼──────────┼────────────────┼──────────
+ACCESS_FINE_LOCATION                    | Android  | ✅ Gerekli      | Düşük
+ACCESS_COARSE_LOCATION                  | Android  | ✅ Gerekli      | Düşük
+CAMERA                                  | Android  | ✅ Gerekli      | Düşük
+NSCameraUsageDescription                | iOS      | ✅ Gerekli      | Düşük
+NSPhotoLibraryUsageDescription          | iOS      | ✅ Gerekli      | Düşük
+NSLocationAlwaysAndWhenInUseUsageDesc.  | iOS      | ❌ Yanıltıcı    | YÜKSEK
+NSLocationAlwaysUsageDescription        | iOS      | ❌ Kullanılmıyor| YÜKSEK
+NSFaceIDUsageDescription                | iOS      | ❌ Kullanılmıyor| ORTA
+NSMicrophoneUsageDescription            | iOS      | ❌ Kullanılmıyor| ORTA
+READ_EXTERNAL_STORAGE                   | Android  | ❌ Deprecated   | DÜŞÜK
+WRITE_EXTERNAL_STORAGE                  | Android  | ❌ Deprecated   | DÜŞÜK
+RECEIVE_BOOT_COMPLETED                  | Android  | ? Doğrulanmalı | ?
+VIBRATE                                 | Android  | ✅ Gerekli      | Düşük
+
+════════════════════════════════════════════════════════════════════
+H. VERİ TOPLAMA MATRİSİ
+════════════════════════════════════════════════════════════════════
+
+Veri Türü       | Depolama     | Paylaşım         | Silme
+────────────────┼──────────────┼──────────────────┼──────────────
+Ad              | PostgreSQL   | Hayvan raporu    | NOT VERIFIED
+E-posta         | PostgreSQL   | Yok              | NOT VERIFIED
+Telefon         | PostgreSQL   | Yok              | NOT VERIFIED
+Profil fotoğraf | Sunucu disk  | Raporda görünür  | NOT VERIFIED
+Konum (lat/lng) | PostgreSQL   | Herkese açık     | NOT VERIFIED
+JWT token       | AsyncStorage | Yok              | Logout'ta
+RC satın alma   | RC + PgSQL   | RevenueCat ile   | NOT VERIFIED
+Push token      | NOT VERIFIED | Yok              | NOT VERIFIED
+
+════════════════════════════════════════════════════════════════════
+I. ROUTE VE EKRAN ENVANTERİ
+════════════════════════════════════════════════════════════════════
+
+Route                       | Auth | Durum
+────────────────────────────┼──────┼──────────────────────────────
+/(auth)/login               | Hayır| ✅ Aktif
+/(auth)/login-form          | Hayır| ✅ Aktif
+/(auth)/register            | Hayır| ✅ Aktif
+/(auth)/forgot-password     | Hayır| ✅ Aktif
+/(auth)/verify-reset-code   | Hayır| ✅ Aktif
+/(auth)/reset-password      | Hayır| ✅ Aktif
+/(tabs)/index (Harita)      | ✅   | ✅ Aktif
+/(tabs)/animals             | ✅   | ✅ Aktif
+/(tabs)/adoption            | ✅   | ✅ Aktif
+/(tabs)/pets                | ✅   | ✅ Aktif
+/(tabs)/account             | ✅   | ✅ Aktif
+/(tabs)/feed                | ✅   | ⚠️  ÖLÜMCÜL KOD / UGC RİSKİ
+/(tabs)/profile             | ✅   | ⚠️  Amacı belirsiz
+/add-animal                 | ✅   | ✅ Aktif (modal)
+/add-adoption               | ✅   | ✅ Aktif
+/animal/[id]                | ✅   | ✅ Aktif
+/adoption/[id]              | ✅   | ✅ Aktif
+/messages                   | ✅   | ✅ Aktif
+/messages/[conversationId]  | ✅   | ✅ Aktif
+/boost-packages             | ✅   | ✅ Aktif (RC test key!)
+/create-post                | ✅   | ⚠️  ÖLÜMCÜL KOD
+/post-detail/[postId]       | ✅   | ⚠️  ÖLÜMCÜL KOD
+/user-profile/[userId]      | ✅   | ⚠️  Feed bağımlı
+/follow-list/[userId]       | ✅   | ⚠️  Feed bağımlı
+/adoption-notifications     | ✅   | ⚠️  Layout'a kayıtlı değil
+/help-update/[animalId]     | ✅   | ⚠️  Layout'a kayıtlı değil
+/notifications              | ✅   | NOT VERIFIED
+/search                     | ✅   | NOT VERIFIED
+
+════════════════════════════════════════════════════════════════════
+J. BAĞIMLILIK ENVANTERİ
+════════════════════════════════════════════════════════════════════
+
+Paket                         | Versiyon    | Native | Durum
+──────────────────────────────┼─────────────┼────────┼──────────────────────
+expo                          | ~54.0.27    | Hayır  | ✅ (sdkVersion eksik)
+react-native                  | 0.81.5      | Evet   | ✅
+react-native-purchases (RC)   | ^10.4.2     | Evet   | ⚠️  Test key'de
+react-native-maps             | 1.18.0      | Evet   | ✅ (pinned, değiştirme)
+expo-location                 | ~19.0.8     | Hayır  | ✅
+expo-image-picker             | ~17.0.9     | Hayır  | ✅
+expo-glass-effect             | ~0.1.4      | ?      | ⚠️  Resmi Expo değil
+babel-plugin-react-compiler   | beta        | Hayır  | ⚠️  Beta
+@gorhom/bottom-sheet          | ^5.2.14     | Hayır  | ✅
+react-native-reanimated       | ~4.1.1      | Hayır  | ✅
+@tanstack/react-query         | catalog     | Hayır  | ✅
+
+════════════════════════════════════════════════════════════════════
+K. ÖLÜMCÜL / KALINTI KOD (Feed/Akış)
+════════════════════════════════════════════════════════════════════
+
+Mobile Screens (hâlâ aktif):
+  - artifacts/mobile/app/(tabs)/feed.tsx (892 satır)
+  - artifacts/mobile/app/create-post.tsx
+  - artifacts/mobile/app/post-detail/[postId].tsx
+  - artifacts/mobile/app/user-profile/[userId].tsx
+  - artifacts/mobile/app/follow-list/[userId].tsx
+
+API Routes (hâlâ aktif):
+  - artifacts/api-server/src/routes/feed.ts (x-user-id güvenlik açığı)
+  - artifacts/api-server/src/routes/stories.ts (x-user-id güvenlik açığı)
+
+Database Tables (hâlâ mevcut):
+  - feed_posts, feed_comments, feed_likes, feed_bookmarks
+  - stories, story_views, story_likes, story_replies
+  - follows, social_profiles
+
+════════════════════════════════════════════════════════════════════
+L. TEST SONUÇLARI
+════════════════════════════════════════════════════════════════════
+
+Komut                                          | Kod | Sonuç
+───────────────────────────────────────────────┼─────┼──────────────────────
+pnpm --filter @workspace/mobile run typecheck  | 0   | ✅ Hata yok
+pnpm --filter @workspace/api-server typecheck  | N/R | NOT VERIFIED
+Lint                                           | N/R | .eslintrc bulunamadı
+Unit tests                                     | N/A | Test dosyası yok
+E2E tests                                      | N/A | Yapılandırma yok
+expo-doctor                                    | N/R | Çalıştırılmadı
+
+════════════════════════════════════════════════════════════════════
+M. MAĞAZA GÖNDERİM EKSİKLİKLERİ
+════════════════════════════════════════════════════════════════════
+
+Apple App Store:
+  [ ] ascAppId placeholder (YOUR_APP_STORE_CONNECT_APP_ID)
+  [ ] ascTeamId placeholder (YOUR_APPLE_TEAM_ID)
+  [ ] Privacy Policy URL gerçek değil (doğrulanamadı)
+  [ ] NSFaceID ve NSMicrophone gereksiz izin beyanı
+  [ ] NSLocationAlways açıklaması yanıltıcı
+  [ ] Hesap silme akışı doğrulanamadı (App Store Guideline 5.1.1)
+  [ ] Feed UGC moderasyon eksik (App Store Guideline 1.2)
+  [ ] sdkVersion eksik
+
+Google Play:
+  [ ] buildType: "apk" → AAB zorunlu
+  [ ] Gizlilik politikası URL doğrulanamadı
+  [ ] Data Safety form doldurulmamış
+  [ ] Hesap silme web URL'si gerekli (Play politikası)
+  [ ] WRITE/READ_EXTERNAL_STORAGE deprecated izinler
+  [ ] RevenueCat üretim anahtarı eksik
+
+════════════════════════════════════════════════════════════════════
+N. ÖNCELİKLİ DÜZELTME YOL HARİTASI
+════════════════════════════════════════════════════════════════════
+
+P0 — Mağaza Gönderimi Öncesi Zorunlu:
+  1. [RB-02] eas.json Android buildType → "app-bundle"
+  2. [RB-03] eas.json placeholder değerlerini doldur
+  3. [RB-01] RevenueCat iOS + Android üretim anahtarlarını ekle
+  4. [RB-04] Feed'i tamamla (moderasyon) VEYA tamamen kaldır
+  5. [RB-05] extractUserIdDual kaldır, JWT zorunlu yap
+  6. [HP-02/03] Kullanılmayan/yanıltıcı izinleri kaldır
+  7. [HP-09] Privacy policy ve hesap silme akışını uygula
+  8. [HP-01] sdkVersion: "54.0.0" ekle
+
+P1 — Üretim Açılışı Öncesi:
+  9.  [HP-04] Rate limiting Redis'e taşı
+  10. [HP-05] JWT süresini kısalt veya refresh token ekle
+  11. [HP-08] Crash reporting ekle (Sentry önerilir)
+  12. [HP-06] Deprecated Android izinleri kaldır
+  13. [MP-02] REVENUECAT_WEBHOOK_AUTH_TOKEN sırrını ekle
+  14. [MP-07] Uploads'u kalıcı depolamaya taşı (S3/R2/object storage)
+  15. [MP-09/10] adoption-notifications ve help-update route'larını kaydet
+
+P2 — Yayın Sonrası Kısa Vadeli:
+  16. [HP-07] Auth ve boost için temel testler yaz
+  17. [MP-04] oauth_users tablosunu kaldır veya OAuth implement et
+  18. [LP-06] CFBundleDisplayName: "CanYoldaşı" (Türkçe karakter)
+  19. [LP-05] expo-router.origin production domain ile değiştir
+
+P3 — İyileştirme:
+  20. Moderation queue ve UGC rapor sistemi
+  21. Bildirim token yönetimi ve cleanup
+  22. Token rotation (logout sonrası)
+  23. Tüm ekranlar için accessibility denetimi
+
+════════════════════════════════════════════════════════════════════
+O. FINAL VERDICT
+════════════════════════════════════════════════════════════════════
+
+Bugün mağazaya göndermek güvenli mi?
+→ HAYIR. En az 3 kritik bloker (AAB, EAS placeholders, RevenueCat test key)
+  mağaza gönderimini engeller.
+
+Bugün gerçek kullanıcılara açmak güvenli mi?
+→ HAYIR. Feed/Akış ekranı moderasyon olmadan aktif ve x-user-id header
+  güvenlik açığı bu riski oluşturuyor.
+
+En Önemli 5 Risk:
+  1. Feed UGC güvensizliği — Moderasyon yok, x-user-id header spoofing
+  2. RevenueCat test key — Canlıda ödeme alınamaz
+  3. Yanıltıcı izin beyanları — Apple ret / askıya alma riski
+  4. Hesap silme / gizlilik politikası — Mağaza politikası ihlali riski
+  5. Upload kalıcısızlığı — Yeniden başlatmada tüm görseller kaybolur
+
+Phase 0 Sonrası İlk Denetim Edilecek Ekran:
+→ feed.tsx — En fazla teknik borç, en büyük güvenlik riski,
+  "ya kaldır ya tamamla" kararı burada.
+
+════════════════════════════════════════════════════════════════════
+Bu rapor tamamen read-only denetimdir.
+Hiçbir kod, veritabanı veya konfigürasyon değiştirilmemiştir.
+════════════════════════════════════════════════════════════════════

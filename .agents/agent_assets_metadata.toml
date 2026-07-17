@@ -119,3 +119,9 @@ id = "fYWkDbmqT44bdeMUFExB4"
 uri = "file://reports/canyoldasi_production_audit.zip"
 type = "unspecified"
 title = "CanYoldaşı Üretim Hazırlık Denetimi (.tex)"
+
+[[outputs]]
+id = "okxqFjut1C1ZnJzPWejJ8"
+uri = "file://canyoldasi-audit-report.txt"
+type = "text"
+title = "CanYoldaşı — Phase 0 Production Readiness Audit"
