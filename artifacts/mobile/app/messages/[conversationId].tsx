@@ -3,6 +3,7 @@ import * as Haptics from "expo-haptics";
 import { Image } from "expo-image";
 import * as ImagePicker from "expo-image-picker";
 import { useLocalSearchParams, useRouter } from "expo-router";
+import { API_BASE } from "@/lib/apiClient";
 import React, {
   useCallback,
   useEffect,
@@ -154,6 +155,26 @@ export default function ChatScreen() {
     finally { setSending(false); }
   };
 
+  const uploadMsgImage = async (localUri: string): Promise<string> => {
+    const filename = localUri.split("/").pop() ?? "photo.jpg";
+    const match = filename.match(/\.(\w+)$/);
+    const mimeType = match ? `image/${match[1].toLowerCase().replace("jpg", "jpeg")}` : "image/jpeg";
+    const formData = new FormData();
+    if (typeof document !== "undefined") {
+      const response = await fetch(localUri);
+      const blob = await response.blob();
+      formData.append("image", blob, filename);
+    } else {
+      formData.append("image", { uri: localUri, name: filename, type: mimeType } as unknown as Blob);
+    }
+    const headers: Record<string, string> = {};
+    if (token) headers["Authorization"] = `Bearer ${token}`;
+    const res = await fetch(`${API_BASE}/upload`, { method: "POST", body: formData, headers });
+    if (!res.ok) throw new Error("Upload failed");
+    const data = await res.json() as { url: string };
+    return data.url;
+  };
+
   const handleImage = async () => {
     const perm = await ImagePicker.requestMediaLibraryPermissionsAsync();
     if (!perm.granted) return;
@@ -168,7 +189,8 @@ export default function ChatScreen() {
     Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
     setSending(true);
     try {
-      const msg = await apiSendMessage(conversationId, token ?? "", "📷 Fotoğraf", result.assets[0].uri);
+      const remoteUrl = await uploadMsgImage(result.assets[0].uri);
+      const msg = await apiSendMessage(conversationId, token ?? "", "📷 Fotoğraf", remoteUrl);
       setMsgs((p) => [...p, msg]);
       latestAt.current = msg.createdAt;
       setTimeout(() => flatRef.current?.scrollToEnd({ animated: true }), 80);

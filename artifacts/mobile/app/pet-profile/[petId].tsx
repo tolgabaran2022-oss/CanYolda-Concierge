@@ -21,6 +21,7 @@ import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { useLocalSearchParams, useRouter } from "expo-router";
 import * as ImagePicker from "expo-image-picker";
 import * as Haptics from "expo-haptics";
+import { API_BASE } from "@/lib/apiClient";
 import { Icon } from "@/components/Icon";
 import { LinearGradient } from "expo-linear-gradient";
 import { BlurView } from "expo-blur";
@@ -62,10 +63,31 @@ function formatDate(iso: string) {
 }
 
 // ── Add Post Modal ─────────────────────────────────────────────────────────────
+async function uploadPostImage(localUri: string, token: string | null): Promise<string> {
+  const filename = localUri.split("/").pop() ?? "photo.jpg";
+  const match = filename.match(/\.(\w+)$/);
+  const mimeType = match ? `image/${match[1].toLowerCase().replace("jpg", "jpeg")}` : "image/jpeg";
+  const formData = new FormData();
+  if (typeof document !== "undefined") {
+    const response = await fetch(localUri);
+    const blob = await response.blob();
+    formData.append("image", blob, filename);
+  } else {
+    formData.append("image", { uri: localUri, name: filename, type: mimeType } as unknown as Blob);
+  }
+  const headers: Record<string, string> = {};
+  if (token) headers["Authorization"] = `Bearer ${token}`;
+  const res = await fetch(`${API_BASE}/upload`, { method: "POST", body: formData, headers });
+  if (!res.ok) throw new Error("Upload failed");
+  const data = await res.json() as { url: string };
+  return data.url;
+}
+
 function AddPostModal({
   visible, petId, onClose, onAdded,
 }: { visible: boolean; petId: string; onClose: () => void; onAdded: (post: ApiPetPost) => void }) {
   const T = useTheme();
+  const { token } = useAuth();
   const [imageUri, setImageUri] = useState("");
   const [caption, setCaption] = useState("");
   const [location, setLocation] = useState("");
@@ -80,7 +102,8 @@ function AddPostModal({
     if (!imageUri) { Alert.alert("Hata", "Lütfen bir fotoğraf seçin."); return; }
     setLoading(true);
     try {
-      const post = await apiCreatePetPost(petId, { imageUrl: imageUri, caption, location });
+      const remoteUrl = await uploadPostImage(imageUri, token ?? null);
+      const post = await apiCreatePetPost(petId, { imageUrl: remoteUrl, caption, location });
       Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
       onAdded(post);
       setImageUri(""); setCaption(""); setLocation("");

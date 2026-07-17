@@ -1,4 +1,4 @@
-import { Ionicons } from "@expo/vector-icons";
+import { Icon } from "@/components/Icon";
 import * as Haptics from "expo-haptics";
 import { LinearGradient } from "expo-linear-gradient";
 import { useLocalSearchParams, useRouter } from "expo-router";
@@ -166,7 +166,7 @@ export default function VerifyResetCodeScreen() {
             accessibilityLabel="Geri dön"
             hitSlop={8}
           >
-            <Ionicons name="chevron-back" size={22} color={C.purple900} />
+            <Icon name="ChevronLeft" size={22} color={C.purple900} />
           </Pressable>
 
           {/* İkon */}
@@ -177,7 +177,7 @@ export default function VerifyResetCodeScreen() {
               end={{ x: 1, y: 1 }}
               style={styles.iconBlob}
             >
-              <Ionicons name="mail-unread" size={34} color={C.white} />
+              <Icon name="mail-outline" size={34} color={C.white} />
             </LinearGradient>
           </View>
 
@@ -215,7 +215,7 @@ export default function VerifyResetCodeScreen() {
 
             {errorMsg ? (
               <View style={styles.errorRow}>
-                <Ionicons name="alert-circle" size={14} color={C.error} />
+                <Icon name="alert-circle-outline" size={14} color={C.error} />
                 <Text style={styles.errorText}>{errorMsg}</Text>
               </View>
             ) : remaining !== null ? null : null}
@@ -259,7 +259,7 @@ export default function VerifyResetCodeScreen() {
                 <ActivityIndicator size="small" color={C.purple600} />
               ) : (
                 <>
-                  <Ionicons name="refresh" size={14} color={C.purple600} />
+                  <Icon name="RefreshCw" size={14} color={C.purple600} />
                   <Text style={styles.resendText}>Kodu yeniden gönder</Text>
                 </>
               )}
@@ -268,7 +268,7 @@ export default function VerifyResetCodeScreen() {
 
           {/* İpucu */}
           <View style={styles.hint}>
-            <Ionicons name="information-circle-outline" size={16} color={C.muted} />
+            <Icon name="Info" size={16} color={C.muted} />
             <Text style={styles.hintText} maxFontSizeMultiplier={1.3}>
               Kod birkaç dakika içinde gelmezse spam klasörünü kontrol et. Kod 10 dakika geçerlidir.
             </Text>

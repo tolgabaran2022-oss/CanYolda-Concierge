@@ -149,3 +149,9 @@ id = "g8UOHutAvlIJ-eGktlbvI"
 uri = "file://CanYoldasi_Denetim_Raporu.txt"
 type = "text"
 title = "CanYoldaşı Denetim Raporu"
+
+[[outputs]]
+id = "ZWc-GqWqGYvLMsi28gPtU"
+uri = "file://CanYoldasi_Master_Audit_Raporu.txt"
+type = "text"
+title = "CanYoldaşı Master Production Readiness Audit Raporu"

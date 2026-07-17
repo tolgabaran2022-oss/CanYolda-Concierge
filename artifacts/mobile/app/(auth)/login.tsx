@@ -4,7 +4,7 @@
  * Tasarım: Figma — lavanta arkaplan, organik blob + pati dekorasyonu (sağ alt),
  *          "bir tık uzağında" bold mor, hero görseli fade-in.
  */
-import { Ionicons } from "@expo/vector-icons";
+import { Icon } from "@/components/Icon";
 import * as Haptics from "expo-haptics";
 import { LinearGradient } from "expo-linear-gradient";
 import { useRouter } from "expo-router";
@@ -62,7 +62,7 @@ export default function WelcomeScreen() {
 
       {/* ── Sağ alt dekoratif blob + pati ─────────────────────────── */}
       <View style={styles.decoBlob} pointerEvents="none">
-        <Ionicons name="paw" size={52} color="rgba(255,255,255,0.75)" />
+        <Icon name="paw" size={52} color="rgba(255,255,255,0.75)" />
       </View>
       <View style={styles.decoCircleSm} pointerEvents="none" />
       <View style={styles.decoCircleTiny} pointerEvents="none" />

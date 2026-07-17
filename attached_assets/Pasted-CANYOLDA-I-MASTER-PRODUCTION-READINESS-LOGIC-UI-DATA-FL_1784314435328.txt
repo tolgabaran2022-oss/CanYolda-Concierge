@@ -1,0 +1,217 @@
+CANYOLDAŞI — MASTER PRODUCTION READINESS, LOGIC, UI, DATA FLOW, SECURITY, E2E VE PLATFORM AUDIT
+
+AMAÇ:
+
+CanYoldaşı uygulamasını App Store ve Google Play yayın sürecinden önce kapsamlı şekilde denetle.
+
+Bu görev yalnızca kod inceleme veya API testi değildir.
+
+Uygulamadaki:
+
+- UI hataları
+- Mantık hataları
+- Veri akışı hataları
+- Form hataları
+- Kullanıcı kimliği hataları
+- Yetkilendirme hataları
+- Backend hataları
+- Veritabanı hataları
+- Storage hataları
+- RLS ve güvenlik açıkları
+- Navigation hataları
+- Cache ve state tutarsızlıkları
+- Platform uyumsuzlukları
+- Android hataları
+- iOS hataları
+- Web hataları
+- Bildirim sorunları
+- Mesajlaşma sorunları
+- Ödeme sorunları
+- App Store ve Google Play uyumluluk sorunları
+
+tespit edilmeli, düzeltilmeli ve yeniden test edilmelidir.
+
+SADECE RAPOR HAZIRLAMA.
+
+Şu işlem sırasını uygula:
+
+1. Projeyi incele
+2. Gerçek aktif dosyaları bul
+3. Test ortamını hazırla
+4. Statik testleri çalıştır
+5. UI ve kullanıcı akışlarını test et
+6. Backend ve veritabanını doğrula
+7. Hataları önem derecesine göre sınıflandır
+8. Kod ve veritabanı düzeltmelerini uygula
+9. Aynı testleri yeniden çalıştır
+10. Regression testi yap
+11. Kanıtlı sonuç raporu hazırla
+
+Tahmin ederek “çalışıyor” deme.
+
+Test edilmeyen özelliği PASS olarak işaretleme.
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+1. ZORUNLU TEST DOĞRULAMA KURALI
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+Bir özelliği yalnızca kodunu inceleyerek PASS olarak işaretleme.
+
+PASS verilebilmesi için:
+
+1. Özellik gerçekten çalıştırılmış olmalı.
+2. İlgili kullanıcı aksiyonu uygulanmış olmalı.
+3. Beklenen UI sonucu görülmüş olmalı.
+4. Backend işlemi varsa API sonucu doğrulanmış olmalı.
+5. Veritabanı işlemi varsa veritabanında doğrulanmış olmalı.
+6. Console veya network üzerinde beklenmeyen hata bulunmamalı.
+7. Test sonrası kalıcı veri yeniden okunarak doğrulanmalı.
+8. İlgili platformda gerçekten çalıştırılmış olmalı.
+
+Sadece kod incelemesi yapılan sonuçlar:
+
+STATIC REVIEW
+
+olarak işaretlenmeli.
+
+Platform veya özellik çalıştırılamıyorsa:
+
+BLOCKED
+
+Test yapılmadıysa:
+
+NOT TESTED
+
+Test yapıldı ancak başarısızsa:
+
+FAIL
+
+olarak raporlanmalı.
+
+Android testi yapmadan Web sonucunu Android PASS kabul etme.
+
+iOS testi yapmadan Android veya Web sonucunu iOS PASS kabul etme.
+
+Expo Web önizlemesini native mobil testi olarak kabul etme.
+
+Emülatör testini gerçek cihaz testi olarak raporlama.
+
+Kamera, fotoğraf izinleri, bildirim, Apple ile giriş ve ödeme gibi fiziksel cihaz gerektiren özellikleri cihaz olmadan PASS gösterme.
+
+Her PASS sonucu için şu kanıtları ekle:
+
+- Çalıştırılan komut
+- Test tarihi ve saati
+- Platform
+- Cihaz veya emülatör bilgisi
+- Kullanılan test hesabı
+- Test adımları
+- Beklenen sonuç
+- Gerçek sonuç
+- İlgili console logu
+- API sonucu
+- Veritabanı doğrulaması
+- Ekran görüntüsü veya test çıktısı varsa referansı
+
+Kanıtı olmayan test sonucu PASS sayılmayacaktır.
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+2. DENETİM ÇALIŞMA MODELİ
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+Her özellik için şu recursive denetim döngüsünü uygula:
+
+1. Gerçek route dosyasını bul
+2. Gerçek component dosyasını bul
+3. Kullanılan hook ve servisleri bul
+4. API endpoint’ini bul
+5. Veritabanı tablosunu bul
+6. RLS veya yetkilendirme kontrolünü bul
+7. UI aksiyonunu çalıştır
+8. Network ve console loglarını incele
+9. Veritabanı sonucunu kontrol et
+10. Hatanın gerçek nedenini belirle
+11. Düzeltmeyi uygula
+12. Aynı testi yeniden çalıştır
+13. Ortak altyapıyı kullanan diğer ekranları tara
+14. Regression testi yap
+
+Örnek:
+
+Fotoğraf yükleme bir ekranda bozuksa yalnızca o ekranı düzeltme.
+
+Aşağıdaki tüm medya giriş noktalarını da denetle:
+
+- Yeni İlan Oluştur
+- İlan Düzenle
+- Evcil Hayvan Ekle
+- Evcil Hayvan Düzenle
+- Durum Bildir
+- Profil fotoğrafı
+- Mesaj eki
+- Kimlik veya aşı belgesi
+- Diğer görsel yükleme alanları
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+3. PROJE HARİTASI VE MİMARİ DENETİMİ
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+Önce gerçek proje yapısını çıkar.
+
+Raporla:
+
+- Framework
+- Expo SDK
+- React Native sürümü
+- React sürümü
+- Router/navigation sistemi
+- State yönetimi
+- Cache/query sistemi
+- Backend framework
+- ORM
+- Veritabanı
+- Auth sistemi
+- Token saklama yöntemi
+- Profil sistemi
+- Storage sistemi
+- Image Picker sistemi
+- Camera sistemi
+- Notification sistemi
+- Realtime sistemi
+- RevenueCat
+- Stripe
+- Google giriş
+- Apple giriş
+- Harita sistemi
+- Environment değişkenleri
+- Android native yapılandırması
+- iOS native yapılandırması
+- Web yapılandırması
+- Test altyapısı
+- Build sistemi
+- CI/CD varsa yapısı
+
+Ayrıca tespit et:
+
+- Kullanılmayan route’lar
+- Eski component’ler
+- Duplicate ekranlar
+- Aynı ekranın birden fazla sürümü
+- Render edilmeyen dosyalar
+- Kullanılmayan servisler
+- Eski mock veri kaynakları
+- Production’da yanlışlıkla kalan test verileri
+- Hardcoded kullanıcı ID’leri
+- Hardcoded URL’ler
+- Hardcoded token veya secret değerleri
+
+Her ana ekranın gerçek dosya yolunu raporla.
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+4. STATİK KOD VE BAĞIMLILIK AUDIT
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+Şu komutları çalıştır:
+
+```bash
+npx tsc --noEmit
