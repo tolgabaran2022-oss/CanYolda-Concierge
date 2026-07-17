@@ -137,3 +137,9 @@ id = "8Ea9IU0sK6x_6CUJsUSYj"
 uri = "file://attached_assets/canyoldasi-build-readiness-report.txt"
 type = "text"
 title = "CanYoldaşı — Build Readiness Report"
+
+[[outputs]]
+id = "KnEFCrRgWEOn_2H733F_P"
+uri = "file://attached_assets/canyoldasi-production-api-readiness.txt"
+type = "text"
+title = "CanYoldaşı — Production API Readiness Report"

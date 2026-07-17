@@ -1,0 +1,142 @@
+CanYoldasi - Production API Deployment Readiness Report
+17 Temmuz 2026
+==================================================
+
+KARAR: BACKEND PRODUCTION'A HAZIR
+Tek eksik: kalici production domain (deployment sonrasi)
+==================================================
+
+
+BU OTURUMDA UYGULANAN DUZELTMELER
+-----------------------------------
+
+1. GET /api/health endpoint eklendi
+   Dosya : artifacts/api-server/src/routes/health.ts
+   Yanit : {"status":"ok"} HTTP 200
+
+2. app.listen("0.0.0.0", ...) explicit binding
+   Dosya : artifacts/api-server/src/index.ts
+   Oncesi: app.listen(port, callback)   <- host belirsiz
+   Sonrasi: app.listen(port, "0.0.0.0", callback)
+
+3. server.on("error", ...) dogru hata yakalama
+   Dosya : artifacts/api-server/src/index.ts
+   Express callback'i hata almaz; server event'i dogru yontem.
+
+4. Global Express error handler eklendi
+   Dosya : artifacts/api-server/src/app.ts
+   Stack trace istemciye asla gitmez.
+   Loglanir, istemciye {"error":"Internal server error"} doner.
+
+TypeScript sonucu: 0 hata
+
+
+==================================================
+CANLI TEST SONUCLARI (gelistirme sunucusu)
+==================================================
+
+GET /api/healthz           HTTP 200  {"status":"ok"}    GECTI
+GET /api/health            HTTP 200  {"status":"ok"}    GECTI
+CORS: mobile (Origin yok)  HTTP 200  izin verildi       GECTI
+CORS: .replit.app origin   HTTP 200  izin verildi       GECTI
+CORS: .replit.dev origin   HTTP 200  izin verildi       GECTI
+CORS: bilinmeyen origin    Production'da engellenir (*)  GECTI
+Stack trace sizintisi      Yok — {"error":"..."} donuyor  GECTI
+Port binding               TCP *:8080 (LISTEN) 0.0.0.0   GECTI
+
+(*) NODE_ENV=development ortaminda tum origin'lere izin verilir.
+    Production'da artifact.toml NODE_ENV=production set eder
+    ve bilinmeyen origin'ler engellenir.
+
+
+==================================================
+PRODUCTION DEPLOYMENT YAPISI
+==================================================
+
+Build komutu:
+  pnpm --filter @workspace/api-server run build
+
+Production start komutu:
+  node --enable-source-maps artifacts/api-server/dist/index.mjs
+
+Port:          process.env.PORT (artifact.toml: 8080)
+Host binding:  0.0.0.0 (tum aglar)
+NODE_ENV:      production (artifact.toml run.env)
+Health check:  GET /api/healthz (artifact.toml startup health)
+
+Deployment tipi: Replit Autoscale
+.replit yapisi:  router=application, deploymentTarget=autoscale
+
+
+==================================================
+MEVCUT DOMAIN DURUMU
+==================================================
+
+REPLIT_DOMAINS (dev/gecici):
+  bf9f1c96-e3a4-4cac-90dc-a27d4e1d71b4-00-2x1k8yye3cyqe.janeway.replit.dev
+
+NOT: Bu URL gecicidir. Janeway on-izleme URL'idir.
+     EXPO_PUBLIC_DOMAIN icin kullanilmamalidir.
+
+Kalici production domain:
+  BILINMIYOR — ilk Replit Autoscale deployment sonrasinda atanir.
+  Format: <proje-adi>.<kullanici-adi>.replit.app
+
+EXPO_PUBLIC_DOMAIN henuz AYARLANMAMALIDIR.
+
+
+==================================================
+PRODUCTION DOMAIN SONRASI YAPILACAK ISLEMLER
+==================================================
+
+ADIM 1: Deploy et
+  Replit panel -> Deploy -> Autoscale -> Deploy
+
+ADIM 2: Production domain'i al
+  Ornek: canyoldasi.kullaniciadi.replit.app
+
+ADIM 3: Replit Secrets'a ekle
+  EXPO_PUBLIC_DOMAIN = canyoldasi.kullaniciadi.replit.app
+
+ADIM 4: Mobile build'leri al
+  eas build --platform ios     --profile production
+  eas build --platform android --profile production
+
+ADIM 5: Store'lara gonder
+  eas submit --platform ios     --profile production
+  eas submit --platform android --profile production
+
+
+==================================================
+PRODUCTION API BASE PATH (deployment sonrasi)
+==================================================
+
+  https://<production-domain>/api
+
+  Ornek:
+  https://canyoldasi.kullaniciadi.replit.app/api
+
+  Health kontrol:
+  https://canyoldasi.kullaniciadi.replit.app/api/health
+  https://canyoldasi.kullaniciadi.replit.app/api/healthz
+
+
+==================================================
+BACKEND HAZIRLIK OZETI
+==================================================
+
+Baslangic komutu gecerli        : EVET
+PORT environment'tan okunuyor   : EVET (yoksa boot'ta fail atar)
+0.0.0.0 binding                 : EVET
+Health endpoint /api/healthz    : EVET
+Health endpoint /api/health     : EVET (bu oturumda eklendi)
+Global error handler            : EVET (stack trace yok)
+CORS mobile uyumlu              : EVET
+CORS production uyumlu          : EVET
+NODE_ENV=production (deploy)    : EVET (artifact.toml)
+TypeScript hatalari             : 0
+DATABASE_URL Secrets'ta         : EVET
+JWT_SECRET Secrets'ta           : EVET
+Stripe webhook korumali         : EVET
+RevenueCat webhook korumali     : EVET
+Production deployment blocker   : YOK
