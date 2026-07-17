@@ -1,14 +1,10 @@
 /**
- * ResetPasswordScreen — Yeni Şifre Oluştur
+ * ResetPasswordScreen — Yeni Şifre Oluştur (link tabanlı flow)
  *
- * Birleşik akış: 6 haneli kod + yeni şifre + şifre onayı tek ekranda
- * Tasarım dili: register.tsx ile birebir aynı sistem
- *  - MorphBlob: organik köşe bloblları
- *  - GlowLock: çift daire + kilit ikonu
- *  - AnimatedField: glow borderlı input alanı
- *  - ShimmerBtn: shimmer süpürmeli buton
+ * Token URL parametresinden alınır (e-posta bağlantısından deep link).
+ * Mount'ta GET /api/auth/reset-password/verify ile doğrulanır.
+ * POST /api/auth/reset-password { token, newPassword, confirmPassword } ile kaydedilir.
  */
-import { Ionicons } from "@expo/vector-icons";
 import * as Haptics from "expo-haptics";
 import { LinearGradient } from "expo-linear-gradient";
 import { useLocalSearchParams, useRouter } from "expo-router";
@@ -42,10 +38,13 @@ import Animated, {
   withDelay,
   withRepeat,
   withSequence,
-  withSpring,
   withTiming,
 } from "react-native-reanimated";
 import { SafeAreaView } from "react-native-safe-area-context";
+import {
+  Lock, LockOpen, Eye, EyeOff, ChevronLeft,
+  CheckCircle, XCircle, AlertCircle,
+} from "lucide-react-native";
 
 const API_BASE = process.env.EXPO_PUBLIC_DOMAIN
   ? `https://${process.env.EXPO_PUBLIC_DOMAIN}/api`
@@ -64,8 +63,6 @@ const C = {
   success:   "#38A169",
 };
 
-const RESEND_COOLDOWN = 60;
-
 type PasswordRule = { label: string; test: (p: string) => boolean };
 const PWD_RULES: PasswordRule[] = [
   { label: "En az 8 karakter",     test: (p) => p.length >= 8 },
@@ -76,9 +73,9 @@ const PWD_RULES: PasswordRule[] = [
 ];
 function isStrong(p: string) { return PWD_RULES.every((r) => r.test(p)); }
 
-const AnimatedPressable = Animated.createAnimatedComponent(Pressable);
+type TokenState = "verifying" | "valid" | "expired" | "used" | "error";
 
-/* ── Organik blob köşe morfing ───────────────────────────────────── */
+/* ── Organik blob ─────────────────────────────────────────────── */
 function MorphBlob({ style, delay = 0 }: { style: object; delay?: number }) {
   const morph = useSharedValue(0);
   useEffect(() => {
@@ -103,52 +100,7 @@ function MorphBlob({ style, delay = 0 }: { style: object; delay?: number }) {
   return <Animated.View style={[style, blobStyle]} pointerEvents="none" />;
 }
 
-/* ── Kilit ikonu: çift daire + glow pulse ────────────────────────── */
-function GlowLock({ reduceMotion }: { reduceMotion: boolean }) {
-  const glow = useSharedValue(0);
-  useEffect(() => {
-    if (reduceMotion) return;
-    glow.value = withRepeat(
-      withSequence(
-        withTiming(1, { duration: 1800, easing: Easing.inOut(Easing.sin) }),
-        withTiming(0, { duration: 1800, easing: Easing.inOut(Easing.sin) })
-      ),
-      -1
-    );
-  }, [reduceMotion]);
-
-  const ringStyle = useAnimatedStyle(() => ({
-    opacity:   interpolate(glow.value, [0, 1], [0, 0.45]),
-    transform: [{ scale: interpolate(glow.value, [0, 1], [1, 1.22]) }],
-  }));
-  const outerStyle = useAnimatedStyle(() => ({
-    opacity:   interpolate(glow.value, [0, 1], [0.8, 1]),
-    transform: [{ scale: interpolate(glow.value, [0, 1], [1, 1.03]) }],
-  }));
-  const innerScale = useAnimatedStyle(() => ({
-    transform: [{ scale: interpolate(glow.value, [0, 1], [1, 1.035]) }],
-  }));
-
-  return (
-    <Animated.View entering={FadeIn.delay(120).duration(500)} style={styles.iconWrap}>
-      <Animated.View style={[styles.glowRing, ringStyle]} />
-      <Animated.View style={[styles.iconOuterCircle, outerStyle]}>
-        <Animated.View style={innerScale}>
-          <LinearGradient
-            colors={[C.purple500, C.purple600]}
-            start={{ x: 0, y: 0 }}
-            end={{ x: 1, y: 1 }}
-            style={styles.iconInnerCircle}
-          >
-            <Ionicons name="lock-closed" size={28} color={C.white} />
-          </LinearGradient>
-        </Animated.View>
-      </Animated.View>
-    </Animated.View>
-  );
-}
-
-/* ── Glow borderlı animasyonlu input alanı ───────────────────────── */
+/* ── Glow borderlı animasyonlu input alanı ──────────────────── */
 function AnimatedField({
   label, icon, children, focused, delay,
 }: {
@@ -185,168 +137,89 @@ function AnimatedField({
   );
 }
 
-/* ── Shimmer süpürmeli buton ─────────────────────────────────────── */
-function ShimmerBtn({
-  label, valid, loading, onPress, animStyle, onPressIn, onPressOut, entryDelay,
-}: {
-  label: string;
-  valid: boolean;
-  loading: boolean;
-  onPress: () => void;
-  animStyle: object;
-  onPressIn: () => void;
-  onPressOut: () => void;
-  entryDelay: number;
-}) {
-  const sweep = useSharedValue(-120);
-  useEffect(() => {
-    if (!valid) { sweep.value = -120; return; }
-    sweep.value = withDelay(
-      300,
-      withRepeat(
-        withSequence(
-          withTiming(320, { duration: 1600, easing: Easing.inOut(Easing.quad) }),
-          withTiming(-120, { duration: 0 }),
-          withTiming(-120, { duration: 2200 })
-        ),
-        -1
-      )
-    );
-  }, [valid]);
-
-  const shimmerStyle = useAnimatedStyle(() => ({ transform: [{ translateX: sweep.value }] }));
-
-  return (
-    <Animated.View entering={FadeIn.delay(entryDelay).duration(400)}>
-      <AnimatedPressable
-        onPress={onPress} onPressIn={onPressIn} onPressOut={onPressOut}
-        disabled={!valid || loading}
-        style={animStyle}
-        accessibilityRole="button"
-        accessibilityState={{ disabled: !valid || loading }}
-      >
-        <LinearGradient
-          colors={valid ? [C.purple500, C.purple600] : [C.purple200, C.purple200]}
-          start={{ x: 0, y: 0 }} end={{ x: 1, y: 1 }}
-          style={[styles.btn, valid && styles.btnShadow]}
-        >
-          {loading ? (
-            <ActivityIndicator color={C.white} />
-          ) : (
-            <Text style={[styles.btnText, !valid && styles.btnTextDisabled]} maxFontSizeMultiplier={1.2}>
-              {label}
-            </Text>
-          )}
-          {valid && (
-            <Animated.View style={[styles.shimmerStrip, shimmerStyle]} pointerEvents="none" />
-          )}
-        </LinearGradient>
-      </AnimatedPressable>
-    </Animated.View>
-  );
-}
-
-/* ═══════════════════════════════════════════════════════════════════ */
+/* ═══════════════════════════════════════════════════════════════ */
 export default function ResetPasswordScreen() {
   const router = useRouter();
-  const { email } = useLocalSearchParams<{ email: string }>();
+  const { token } = useLocalSearchParams<{ token?: string }>();
 
-  const [code,        setCode]        = useState("");
-  const [password,    setPassword]    = useState("");
-  const [confirm,     setConfirm]     = useState("");
-  const [showPwd,     setShowPwd]     = useState(false);
-  const [showCfm,     setShowCfm]     = useState(false);
-  const [focusedField,setFocusedField]= useState<"code" | "pwd" | "cfm" | null>(null);
-  const [loading,     setLoading]     = useState(false);
-  const [resending,   setResending]   = useState(false);
-  const [success,     setSuccess]     = useState(false);
-  const [errorMsg,    setErrorMsg]    = useState("");
-  const [cooldown,    setCooldown]    = useState(0);
-  const [reduceMotion,setReduceMotion]= useState(false);
-  const [maxReached,  setMaxReached]  = useState(false);
+  const [tokenState, setTokenState] = useState<TokenState>("verifying");
+  const [password,   setPassword]   = useState("");
+  const [confirm,    setConfirm]    = useState("");
+  const [showPwd,    setShowPwd]    = useState(false);
+  const [showCfm,    setShowCfm]    = useState(false);
+  const [focusedField, setFocusedField] = useState<"pwd" | "cfm" | null>(null);
+  const [loading,    setLoading]    = useState(false);
+  const [success,    setSuccess]    = useState(false);
+  const [errorMsg,   setErrorMsg]   = useState("");
+  const [reduceMotion, setReduceMotion] = useState(false);
 
-  const pwdRef  = useRef<TextInput>(null);
-  const cfmRef  = useRef<TextInput>(null);
-  const timerRef= useRef<ReturnType<typeof setInterval> | null>(null);
+  const cfmRef = useRef<TextInput>(null);
 
-  const btnScale = useSharedValue(1);
-  const btnAnimStyle = useAnimatedStyle(() => ({ transform: [{ scale: btnScale.value }] }));
-
-  const [fontsLoaded] = useFonts({ Quicksand_500Medium, Quicksand_600SemiBold, Quicksand_700Bold });
+  const [fontsLoaded] = useFonts({
+    Quicksand_500Medium,
+    Quicksand_600SemiBold,
+    Quicksand_700Bold,
+  });
 
   useEffect(() => {
     AccessibilityInfo.isReduceMotionEnabled().then(setReduceMotion);
   }, []);
 
+  /* Verify token on mount */
   useEffect(() => {
-    return () => { if (timerRef.current) clearInterval(timerRef.current); };
-  }, []);
+    if (!token) {
+      setTokenState("error");
+      return;
+    }
+    let cancelled = false;
+    (async () => {
+      try {
+        const res = await fetch(
+          `${API_BASE}/auth/reset-password/verify?token=${encodeURIComponent(token)}`
+        );
+        const data = await res.json() as { valid: boolean; reason?: string };
+        if (cancelled) return;
+        if (data.valid) {
+          setTokenState("valid");
+        } else if (data.reason === "used") {
+          setTokenState("used");
+        } else if (data.reason === "expired" || data.reason === "not_found") {
+          setTokenState("expired");
+        } else {
+          setTokenState("error");
+        }
+      } catch {
+        if (!cancelled) setTokenState("error");
+      }
+    })();
+    return () => { cancelled = true; };
+  }, [token]);
 
   if (!fontsLoaded) return null;
 
-  const startCooldown = () => {
-    setCooldown(RESEND_COOLDOWN);
-    timerRef.current = setInterval(() => {
-      setCooldown((c) => {
-        if (c <= 1) { clearInterval(timerRef.current!); return 0; }
-        return c - 1;
-      });
-    }, 1000);
-  };
+  const canSubmit = isStrong(password) && password === confirm;
 
-  const canSubmit =
-    code.length === 6 &&
-    isStrong(password) &&
-    password === confirm &&
-    !maxReached;
-
-  /* ── Form gönder ─────────────────────────────────────────────────*/
+  /* ── Form gönder ─────────────────────────────────────────── */
   const onSubmit = async () => {
-    if (!canSubmit || loading) return;
+    if (!canSubmit || loading || !token) return;
     setErrorMsg("");
     setLoading(true);
     Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
 
     try {
-      // Adım 1: Kodu doğrula → resetToken al
-      const verifyRes = await fetch(`${API_BASE}/auth/verify-reset-code`, {
+      const res = await fetch(`${API_BASE}/auth/reset-password`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ email, code }),
+        body: JSON.stringify({ token, newPassword: password, confirmPassword: confirm }),
       });
-      const verifyData = await verifyRes.json() as {
-        ok?: boolean; error?: string;
-        resetToken?: string; remaining?: number; maxAttemptsReached?: boolean;
-      };
+      const data = await res.json() as { ok?: boolean; error?: string; expired?: boolean };
 
-      if (!verifyRes.ok) {
+      if (!res.ok) {
         Haptics.notificationAsync(Haptics.NotificationFeedbackType.Error);
-        if (verifyData.maxAttemptsReached) {
-          setMaxReached(true);
-          setErrorMsg(verifyData.error ?? "Maksimum deneme sayısına ulaşıldı. Yeni kod talep edin.");
+        if (data.expired) {
+          setTokenState("expired");
         } else {
-          const kalan = typeof verifyData.remaining === "number"
-            ? ` (${verifyData.remaining} hakkınız kaldı)`
-            : "";
-          setErrorMsg((verifyData.error ?? "Kod hatalı.") + kalan);
-          setCode("");
-        }
-        return;
-      }
-
-      // Adım 2: Yeni şifreyi kaydet
-      const resetRes = await fetch(`${API_BASE}/auth/reset-password`, {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ resetToken: verifyData.resetToken, password }),
-      });
-      const resetData = await resetRes.json() as { ok?: boolean; error?: string; expired?: boolean };
-
-      if (!resetRes.ok) {
-        Haptics.notificationAsync(Haptics.NotificationFeedbackType.Error);
-        setErrorMsg(resetData.error ?? "Şifre güncellenemedi. Lütfen tekrar deneyin.");
-        if (resetData.expired) {
-          setTimeout(() => router.replace("/(auth)/forgot-password" as never), 2500);
+          setErrorMsg(data.error ?? "Şifre güncellenemedi. Lütfen tekrar deneyin.");
         }
         return;
       }
@@ -361,56 +234,31 @@ export default function ResetPasswordScreen() {
     }
   };
 
-  /* ── Yeniden gönder ──────────────────────────────────────────────*/
-  const onResend = async () => {
-    if (resending || cooldown > 0) return;
-    setResending(true);
-    setErrorMsg("");
-    setMaxReached(false);
-    setCode("");
-
-    try {
-      const res = await fetch(`${API_BASE}/auth/forgot-password`, {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ email }),
-      });
-      const data = await res.json() as { ok?: boolean; error?: string };
-      if (!res.ok && res.status === 429) {
-        setErrorMsg(data.error ?? "Lütfen biraz bekleyin.");
-      } else {
-        startCooldown();
-      }
-    } catch {
-      setErrorMsg("İnternet bağlantınızı kontrol edin.");
-    } finally {
-      setResending(false);
-    }
-  };
-
-  /* ── Başarı ekranı ───────────────────────────────────────────────*/
+  /* ── Başarı ekranı ─────────────────────────────────────── */
   if (success) {
     return (
       <SafeAreaView style={styles.container} edges={["top", "bottom"]}>
         <StatusBar barStyle="dark-content" backgroundColor={C.cream} />
         <MorphBlob style={[styles.blob, styles.blobTopRight]} />
         <MorphBlob style={[styles.blob, styles.blobBottomLeft]} delay={2500} />
-        <View style={styles.successWrap}>
+        <View style={styles.centerWrap}>
           <Animated.View entering={FadeIn.duration(400)}>
-            <View style={styles.successOuterCircle}>
+            <View style={styles.stateOuterCircle}>
               <LinearGradient
                 colors={[C.purple500, C.purple600]}
                 start={{ x: 0, y: 0 }}
                 end={{ x: 1, y: 1 }}
-                style={styles.successIconCircle}
+                style={styles.stateIconCircle}
               >
-                <Ionicons name="checkmark" size={38} color={C.white} />
+                <CheckCircle size={38} color={C.white} strokeWidth={2.5} />
               </LinearGradient>
             </View>
           </Animated.View>
           <Animated.View entering={FadeIn.delay(200).duration(400)}>
-            <Text style={styles.successTitle} maxFontSizeMultiplier={1.2}>Şifren Güncellendi!</Text>
-            <Text style={styles.successMsg} maxFontSizeMultiplier={1.3}>
+            <Text style={styles.stateTitle} maxFontSizeMultiplier={1.2}>
+              Şifren Güncellendi!
+            </Text>
+            <Text style={styles.stateMsg} maxFontSizeMultiplier={1.3}>
               Yeni şifrenle giriş yapabilirsin.
             </Text>
           </Animated.View>
@@ -435,7 +283,81 @@ export default function ResetPasswordScreen() {
     );
   }
 
-  /* ── Ana form ────────────────────────────────────────────────────*/
+  /* ── Token doğrulanıyor ────────────────────────────────── */
+  if (tokenState === "verifying") {
+    return (
+      <SafeAreaView style={styles.container} edges={["top", "bottom"]}>
+        <StatusBar barStyle="dark-content" backgroundColor={C.cream} />
+        <View style={styles.centerWrap}>
+          <ActivityIndicator size="large" color={C.purple500} />
+          <Text style={styles.verifyingText} maxFontSizeMultiplier={1.2}>
+            Bağlantı doğrulanıyor…
+          </Text>
+        </View>
+      </SafeAreaView>
+    );
+  }
+
+  /* ── Geçersiz / süresi dolmuş token ───────────────────── */
+  if (tokenState === "expired" || tokenState === "used" || tokenState === "error") {
+    const isUsed    = tokenState === "used";
+    const isExpired = tokenState === "expired";
+    return (
+      <SafeAreaView style={styles.container} edges={["top", "bottom"]}>
+        <StatusBar barStyle="dark-content" backgroundColor={C.cream} />
+        <MorphBlob style={[styles.blob, styles.blobTopRight]} />
+        <MorphBlob style={[styles.blob, styles.blobBottomLeft]} delay={2500} />
+        <View style={styles.centerWrap}>
+          <Animated.View entering={FadeIn.duration(400)}>
+            <View style={[styles.stateOuterCircle, styles.stateOuterCircleError]}>
+              <View style={[styles.stateIconCircle, styles.stateIconCircleError]}>
+                {isUsed
+                  ? <CheckCircle size={38} color={C.muted} strokeWidth={2.5} />
+                  : <XCircle size={38} color={C.white} strokeWidth={2.5} />
+                }
+              </View>
+            </View>
+          </Animated.View>
+          <Animated.View entering={FadeIn.delay(150).duration(400)}>
+            <Text style={styles.stateTitle} maxFontSizeMultiplier={1.2}>
+              {isUsed
+                ? "Bağlantı Kullanıldı"
+                : isExpired
+                  ? "Bağlantının Süresi Doldu"
+                  : "Geçersiz Bağlantı"}
+            </Text>
+            <Text style={styles.stateMsg} maxFontSizeMultiplier={1.3}>
+              {isUsed
+                ? "Bu şifre sıfırlama bağlantısı zaten kullanılmış."
+                : isExpired
+                  ? "Bu bağlantı 30 dakika geçerliydi. Lütfen yeni bir bağlantı talep edin."
+                  : "Bu şifre sıfırlama bağlantısı geçersiz. Yeni bir tane talep edin."}
+            </Text>
+          </Animated.View>
+          <Animated.View entering={FadeIn.delay(280).duration(400)} style={{ width: "100%" }}>
+            <Pressable
+              onPress={() => router.replace("/(auth)/forgot-password" as never)}
+              style={({ pressed }) => [pressed && styles.pressed]}
+              accessibilityRole="button"
+            >
+              <LinearGradient
+                colors={[C.purple500, C.purple600]}
+                start={{ x: 0, y: 0 }}
+                end={{ x: 1, y: 1 }}
+                style={[styles.btn, styles.btnShadow, { marginTop: 32 }]}
+              >
+                <Text style={styles.btnText} maxFontSizeMultiplier={1.2}>
+                  Yeni Bağlantı Talep Et
+                </Text>
+              </LinearGradient>
+            </Pressable>
+          </Animated.View>
+        </View>
+      </SafeAreaView>
+    );
+  }
+
+  /* ── Ana form (tokenState === "valid") ─────────────────── */
   return (
     <SafeAreaView style={styles.container} edges={["top", "bottom"]}>
       <StatusBar barStyle="dark-content" backgroundColor={C.cream} />
@@ -462,28 +384,38 @@ export default function ResetPasswordScreen() {
               accessibilityLabel="Geri dön"
               hitSlop={8}
             >
-              <Ionicons name="chevron-back" size={22} color={C.purple900} />
+              <ChevronLeft size={22} color={C.purple900} strokeWidth={2.5} />
             </Pressable>
           </Animated.View>
 
           {/* Kilit ikonu */}
-          <GlowLock reduceMotion={reduceMotion} />
+          <Animated.View entering={FadeIn.delay(120).duration(500)} style={styles.iconWrap}>
+            <View style={styles.iconOuterCircle}>
+              <LinearGradient
+                colors={[C.purple500, C.purple600]}
+                start={{ x: 0, y: 0 }}
+                end={{ x: 1, y: 1 }}
+                style={styles.iconInnerCircle}
+              >
+                <Lock size={28} color={C.white} strokeWidth={2} />
+              </LinearGradient>
+            </View>
+          </Animated.View>
 
           {/* Başlık */}
           <Animated.View entering={FadeIn.delay(200).duration(400)}>
-            <Text style={styles.title} maxFontSizeMultiplier={1.2}>Yeni Şifre Oluştur</Text>
-            <Text style={styles.subtitleLine} maxFontSizeMultiplier={1.3}>
-              6 haneli doğrulama kodunu şu adrese gönderdik
+            <Text style={styles.title} maxFontSizeMultiplier={1.2}>
+              Yeni Şifre Oluştur
             </Text>
-            <Text style={styles.emailLine} maxFontSizeMultiplier={1.2} numberOfLines={1}>
-              {email ?? ""}
+            <Text style={styles.subtitleLine} maxFontSizeMultiplier={1.3}>
+              Güvenli yeni şifreni belirle.
             </Text>
           </Animated.View>
 
           {/* Hata mesajı */}
           {errorMsg ? (
             <Animated.View entering={FadeIn.duration(250)} style={styles.globalError}>
-              <Ionicons name="alert-circle" size={16} color={C.error} />
+              <AlertCircle size={16} color={C.error} strokeWidth={2} />
               <Text style={styles.globalErrorText}>{errorMsg}</Text>
             </Animated.View>
           ) : null}
@@ -491,63 +423,21 @@ export default function ResetPasswordScreen() {
           {/* Form kartı */}
           <Animated.View entering={FadeIn.delay(280).duration(400)} style={styles.card}>
 
-            {/* Doğrulama Kodu */}
-            <AnimatedField
-              label="Doğrulama Kodu"
-              focused={focusedField === "code"}
-              delay={330}
-              icon={
-                <Ionicons
-                  name="shield-checkmark-outline"
-                  size={19}
-                  color={focusedField === "code" ? C.purple500 : C.muted}
-                  style={styles.inputIcon}
-                />
-              }
-            >
-              <TextInput
-                style={styles.input}
-                value={code}
-                onChangeText={(t) => {
-                  setCode(t.replace(/\D/g, "").slice(0, 6));
-                  if (errorMsg) setErrorMsg("");
-                }}
-                onFocus={() => setFocusedField("code")}
-                onBlur={() => setFocusedField(null)}
-                placeholder="6 haneli kod"
-                placeholderTextColor={C.muted}
-                keyboardType="number-pad"
-                maxLength={6}
-                returnKeyType="next"
-                onSubmitEditing={() => pwdRef.current?.focus()}
-                textContentType="oneTimeCode"
-                autoComplete={Platform.OS === "android" ? "sms-otp" : "one-time-code"}
-                editable={!maxReached}
-                accessibilityLabel="6 haneli doğrulama kodu"
-              />
-              {code.length === 6 && (
-                <Ionicons name="checkmark-circle" size={18} color={C.success} />
-              )}
-            </AnimatedField>
-
-            <View style={styles.fieldGap} />
-
             {/* Yeni Şifre */}
             <AnimatedField
               label="Yeni Şifre"
               focused={focusedField === "pwd"}
-              delay={390}
+              delay={330}
               icon={
-                <Ionicons
-                  name="lock-closed-outline"
+                <Lock
                   size={19}
                   color={focusedField === "pwd" ? C.purple500 : C.muted}
+                  strokeWidth={2}
                   style={styles.inputIcon}
                 />
               }
             >
               <TextInput
-                ref={pwdRef}
                 style={styles.input}
                 value={password}
                 onChangeText={setPassword}
@@ -566,10 +456,14 @@ export default function ResetPasswordScreen() {
               />
               <Pressable
                 onPress={() => { Haptics.selectionAsync(); setShowPwd((v) => !v); }}
-                hitSlop={8} accessibilityRole="button"
+                hitSlop={8}
+                accessibilityRole="button"
                 accessibilityLabel={showPwd ? "Şifreyi gizle" : "Şifreyi göster"}
               >
-                <Ionicons name={showPwd ? "eye-off-outline" : "eye-outline"} size={20} color={C.purple600} />
+                {showPwd
+                  ? <EyeOff size={20} color={C.purple600} strokeWidth={2} />
+                  : <Eye size={20} color={C.purple600} strokeWidth={2} />
+                }
               </Pressable>
             </AnimatedField>
 
@@ -580,11 +474,10 @@ export default function ResetPasswordScreen() {
                   const ok = r.test(password);
                   return (
                     <View key={r.label} style={styles.ruleRow}>
-                      <Ionicons
-                        name={ok ? "checkmark-circle" : "ellipse-outline"}
-                        size={13}
-                        color={ok ? C.success : C.muted}
-                      />
+                      {ok
+                        ? <CheckCircle size={13} color={C.success} strokeWidth={2.5} />
+                        : <View style={styles.ruleCircle} />
+                      }
                       <Text style={[styles.ruleTxt, ok && styles.ruleTxtOk]}>{r.label}</Text>
                     </View>
                   );
@@ -594,16 +487,16 @@ export default function ResetPasswordScreen() {
 
             <View style={styles.fieldGap} />
 
-            {/* Yeni Şifre Tekrar */}
+            {/* Şifre Tekrar */}
             <AnimatedField
               label="Yeni Şifre Tekrar"
               focused={focusedField === "cfm"}
-              delay={450}
+              delay={390}
               icon={
-                <Ionicons
-                  name="lock-closed-outline"
+                <LockOpen
                   size={19}
                   color={focusedField === "cfm" ? C.purple500 : C.muted}
+                  strokeWidth={2}
                   style={styles.inputIcon}
                 />
               }
@@ -615,7 +508,7 @@ export default function ResetPasswordScreen() {
                 onChangeText={setConfirm}
                 onFocus={() => setFocusedField("cfm")}
                 onBlur={() => setFocusedField(null)}
-                placeholder="Şifreni tekrar gir"
+                placeholder="Şifreni tekrar yaz"
                 placeholderTextColor={C.muted}
                 secureTextEntry={!showCfm}
                 autoCapitalize="none"
@@ -624,70 +517,58 @@ export default function ResetPasswordScreen() {
                 textContentType="newPassword"
                 returnKeyType="done"
                 onSubmitEditing={onSubmit}
-                accessibilityLabel="Şifre onayı"
+                accessibilityLabel="Yeni şifre tekrar"
               />
               <Pressable
                 onPress={() => { Haptics.selectionAsync(); setShowCfm((v) => !v); }}
-                hitSlop={8} accessibilityRole="button"
+                hitSlop={8}
+                accessibilityRole="button"
               >
-                <Ionicons name={showCfm ? "eye-off-outline" : "eye-outline"} size={20} color={C.purple600} />
+                {showCfm
+                  ? <EyeOff size={20} color={C.purple600} strokeWidth={2} />
+                  : <Eye size={20} color={C.purple600} strokeWidth={2} />
+                }
               </Pressable>
             </AnimatedField>
 
-            {/* Şifre eşleşme göstergesi */}
-            {confirm.length > 0 && (
-              <View style={styles.matchRow}>
-                <Ionicons
-                  name={password === confirm ? "checkmark-circle" : "close-circle"}
-                  size={13}
-                  color={password === confirm ? C.success : C.error}
-                />
-                <Text style={[styles.matchText, password !== confirm && { color: C.error }]}>
-                  {password === confirm ? "Şifreler uyuşuyor" : "Şifreler uyuşmuyor"}
-                </Text>
-              </View>
+            {/* Eşleşme uyarısı */}
+            {confirm.length > 0 && password !== confirm && (
+              <Animated.View entering={FadeIn.duration(200)} style={styles.mismatchWarn}>
+                <AlertCircle size={12} color={C.error} strokeWidth={2} />
+                <Text style={styles.mismatchText}>Şifreler eşleşmiyor</Text>
+              </Animated.View>
             )}
 
-            {/* Ana buton */}
-            <ShimmerBtn
-              label="Yeni Şifreyi Kaydet"
-              valid={canSubmit}
-              loading={loading}
-              onPress={onSubmit}
-              animStyle={btnAnimStyle}
-              entryDelay={510}
-              onPressIn={() => { if (canSubmit) btnScale.value = withSpring(0.97, { damping: 18 }); }}
-              onPressOut={() => { btnScale.value = withSpring(1, { damping: 14 }); }}
-            />
+            <View style={styles.fieldGap} />
 
-            {/* Yeniden gönder satırı */}
-            <Animated.View entering={FadeIn.delay(570).duration(350)} style={styles.resendRow}>
-              <Text style={styles.resendText} maxFontSizeMultiplier={1.2}>Kod gelmedi mi? </Text>
+            {/* Submit butonu */}
+            <Animated.View entering={FadeIn.delay(450).duration(400)}>
               <Pressable
-                onPress={onResend}
-                disabled={resending || cooldown > 0}
+                onPress={onSubmit}
+                disabled={!canSubmit || loading}
+                style={({ pressed }) => [pressed && canSubmit && styles.pressed]}
                 accessibilityRole="button"
-                hitSlop={8}
+                accessibilityState={{ disabled: !canSubmit || loading }}
               >
-                {resending ? (
-                  <ActivityIndicator size="small" color={C.purple600} />
-                ) : cooldown > 0 ? (
-                  <Text style={[styles.resendLink, { color: C.muted }]} maxFontSizeMultiplier={1.2}>
-                    {cooldown} sn sonra tekrar gönder
-                  </Text>
-                ) : (
-                  <Text style={styles.resendLink} maxFontSizeMultiplier={1.2}>Tekrar Gönder</Text>
-                )}
+                <LinearGradient
+                  colors={canSubmit ? [C.purple500, C.purple600] : [C.purple200, C.purple200]}
+                  start={{ x: 0, y: 0 }}
+                  end={{ x: 1, y: 1 }}
+                  style={[styles.btn, canSubmit && styles.btnShadow]}
+                >
+                  {loading ? (
+                    <ActivityIndicator color={C.white} />
+                  ) : (
+                    <Text
+                      style={[styles.btnText, !canSubmit && styles.btnTextDisabled]}
+                      maxFontSizeMultiplier={1.2}
+                    >
+                      Şifremi Güncelle
+                    </Text>
+                  )}
+                </LinearGradient>
               </Pressable>
             </Animated.View>
-          </Animated.View>
-
-          {/* Alt güvenlik notu */}
-          <Animated.View entering={FadeIn.delay(630).duration(350)} style={styles.hint}>
-            <Ionicons name="shield-checkmark-outline" size={16} color={C.muted} />
-            <Text style={styles.hintText} maxFontSizeMultiplier={1.3}>
-              Yeni şifren güçlü şekilde korunur; doğrulama kodunu kimseyle paylaşma.
-            </Text>
           </Animated.View>
         </ScrollView>
       </KeyboardAvoidingView>
@@ -697,12 +578,18 @@ export default function ResetPasswordScreen() {
 
 const styles = StyleSheet.create({
   container: { flex: 1, backgroundColor: C.cream },
-  flex:      { flex: 1 },
-  scroll:    { flexGrow: 1, paddingHorizontal: 26, paddingBottom: 24 },
+  flex: { flex: 1 },
+  scroll: { flexGrow: 1, paddingHorizontal: 26, paddingBottom: 32 },
 
-  blob:           { position: "absolute", backgroundColor: C.purple100 },
-  blobTopRight:   { width: 220, height: 220, top: -70, right: -80 },
-  blobBottomLeft: { width: 180, height: 180, bottom: -60, left: -70 },
+  blob: { position: "absolute", backgroundColor: C.purple100 },
+  blobTopRight: {
+    width: 200, height: 200, borderRadius: 100,
+    top: -60, right: -70, opacity: 0.9,
+  },
+  blobBottomLeft: {
+    width: 160, height: 160, borderRadius: 80,
+    bottom: -50, left: -60, opacity: 0.7,
+  },
 
   backBtn: {
     width: 42, height: 42, borderRadius: 21, marginTop: 8,
@@ -712,54 +599,41 @@ const styles = StyleSheet.create({
     shadowRadius: 6, shadowOffset: { width: 0, height: 3 }, elevation: 2,
   },
 
-  iconWrap: { alignItems: "center", marginTop: 22, position: "relative" },
-  glowRing: {
-    position: "absolute",
-    width: 120, height: 120, borderRadius: 60,
-    backgroundColor: C.purple500,
-    top: -8, left: "50%", marginLeft: -60,
-  },
+  iconWrap: { alignItems: "center", marginTop: 28 },
   iconOuterCircle: {
-    width: 104, height: 104, borderRadius: 52,
+    width: 96, height: 96, borderRadius: 48,
     backgroundColor: C.purple100,
     alignItems: "center", justifyContent: "center",
   },
   iconInnerCircle: {
-    width: 72, height: 72,
+    width: 72, height: 72, borderRadius: 36,
     alignItems: "center", justifyContent: "center",
-    borderTopLeftRadius:     36,
-    borderTopRightRadius:    30,
-    borderBottomLeftRadius:  28,
-    borderBottomRightRadius: 38,
-    shadowColor:    C.purple600,
-    shadowOpacity:  0.4,
-    shadowRadius:   16,
-    shadowOffset:   { width: 0, height: 8 },
-    elevation: 8,
+    shadowColor: C.purple600, shadowOpacity: 0.35,
+    shadowRadius: 14, shadowOffset: { width: 0, height: 8 }, elevation: 8,
   },
 
   title: {
-    textAlign: "center", marginTop: 18,
-    fontSize: 25, color: C.purple900, fontFamily: "Quicksand_700Bold",
+    textAlign: "center", marginTop: 20,
+    fontSize: 24, color: C.purple900, fontFamily: "Quicksand_700Bold",
   },
   subtitleLine: {
-    textAlign: "center", marginTop: 10, lineHeight: 22,
-    fontSize: 14.5, color: C.muted, fontFamily: "Quicksand_500Medium",
-  },
-  emailLine: {
-    textAlign: "center", marginTop: 4,
-    fontSize: 14.5, color: C.purple600, fontFamily: "Quicksand_700Bold",
+    textAlign: "center", marginTop: 8,
+    fontSize: 14, color: C.muted, fontFamily: "Quicksand_500Medium",
   },
 
   globalError: {
-    flexDirection: "row", alignItems: "center", gap: 8,
-    backgroundColor: "#FFF5F5", borderRadius: 14, padding: 14, marginTop: 16,
-    borderWidth: 1, borderColor: "rgba(229,62,62,0.2)",
+    flexDirection: "row", gap: 8, alignItems: "center",
+    marginTop: 16, paddingHorizontal: 14, paddingVertical: 12,
+    borderRadius: 14, backgroundColor: "#FFF5F5",
+    borderWidth: 1, borderColor: "#FED7D7",
   },
-  globalErrorText: { fontSize: 13.5, color: C.error, fontFamily: "Quicksand_500Medium", flex: 1 },
+  globalErrorText: {
+    flex: 1, fontSize: 13.5, color: C.error, fontFamily: "Quicksand_600SemiBold",
+  },
 
   card: {
-    marginTop: 24, padding: 20, borderRadius: 24, backgroundColor: C.white,
+    marginTop: 24, padding: 20, borderRadius: 24,
+    backgroundColor: C.white,
     shadowColor: C.purple900, shadowOpacity: 0.07,
     shadowRadius: 16, shadowOffset: { width: 0, height: 8 }, elevation: 4,
   },
@@ -767,72 +641,71 @@ const styles = StyleSheet.create({
     fontSize: 13.5, color: C.purple900,
     fontFamily: "Quicksand_600SemiBold", marginBottom: 8, marginLeft: 2,
   },
-  fieldGap: { height: 16 },
   inputWrap: {
     flexDirection: "row", alignItems: "center",
-    height: 52, borderRadius: 16, paddingHorizontal: 14, borderWidth: 1.5,
+    height: 52, borderRadius: 16, paddingHorizontal: 14,
+    backgroundColor: C.cream, borderWidth: 1.5, borderColor: "transparent",
   },
   inputIcon: { marginRight: 10 },
-  input: { flex: 1, fontSize: 15.5, color: C.purple900, fontFamily: "Quicksand_600SemiBold" },
+  input: {
+    flex: 1, fontSize: 15.5, color: C.purple900,
+    fontFamily: "Quicksand_600SemiBold",
+  },
+  fieldGap: { height: 12 },
 
-  rulesBox: { gap: 5, backgroundColor: C.purple100, borderRadius: 14, padding: 12, marginTop: 4 },
-  ruleRow:  { flexDirection: "row", alignItems: "center", gap: 7 },
+  rulesBox: { marginTop: 8, gap: 4, paddingHorizontal: 2 },
+  ruleRow:  { flexDirection: "row", alignItems: "center", gap: 6 },
+  ruleCircle: { width: 11, height: 11, borderRadius: 6, borderWidth: 1.5, borderColor: C.muted },
   ruleTxt:  { fontSize: 12.5, color: C.muted, fontFamily: "Quicksand_500Medium" },
-  ruleTxtOk:{ color: C.success, fontFamily: "Quicksand_600SemiBold" },
+  ruleTxtOk: { color: C.success, fontFamily: "Quicksand_600SemiBold" },
 
-  matchRow:  { flexDirection: "row", alignItems: "center", gap: 5, marginTop: 6 },
-  matchText: { fontSize: 12.5, color: C.success, fontFamily: "Quicksand_500Medium" },
+  mismatchWarn: {
+    flexDirection: "row", alignItems: "center", gap: 5, marginTop: 6, paddingLeft: 2,
+  },
+  mismatchText: { fontSize: 12, color: C.error, fontFamily: "Quicksand_500Medium" },
 
   btn: {
-    height: 54, borderRadius: 27, marginTop: 20,
+    height: 54, borderRadius: 27, marginTop: 8,
     alignItems: "center", justifyContent: "center", overflow: "hidden",
   },
   btnShadow: {
     shadowColor: C.purple600, shadowOpacity: 0.35,
     shadowRadius: 12, shadowOffset: { width: 0, height: 8 }, elevation: 6,
   },
-  btnText:         { color: C.white, fontSize: 16, letterSpacing: 0.2, fontFamily: "Quicksand_700Bold" },
+  btnText: {
+    color: C.white, fontSize: 16, letterSpacing: 0.2,
+    fontFamily: "Quicksand_700Bold",
+  },
   btnTextDisabled: { color: C.purple600, opacity: 0.55 },
-  shimmerStrip: {
-    position: "absolute", top: 0, bottom: 0, width: 60,
-    backgroundColor: "rgba(255,255,255,0.22)",
-    transform: [{ skewX: "-18deg" }],
-  },
 
-  resendRow:  { flexDirection: "row", justifyContent: "center", alignItems: "center", marginTop: 16 },
-  resendText: { fontSize: 14, color: C.muted, fontFamily: "Quicksand_500Medium" },
-  resendLink: { fontSize: 14, color: C.purple600, fontFamily: "Quicksand_700Bold" },
-
-  hint: {
-    flexDirection: "row", gap: 8, alignItems: "flex-start",
-    marginTop: "auto", paddingTop: 28, paddingHorizontal: 8,
-  },
-  hintText: { flex: 1, fontSize: 12.5, lineHeight: 19, color: C.muted, fontFamily: "Quicksand_500Medium" },
-
-  successWrap: {
+  /* State screens (loading / expired / success) */
+  centerWrap: {
     flex: 1, alignItems: "center", justifyContent: "center",
-    paddingHorizontal: 32,
+    paddingHorizontal: 36,
   },
-  successOuterCircle: {
-    width: 120, height: 120, borderRadius: 60,
+  verifyingText: {
+    marginTop: 16, fontSize: 15, color: C.muted,
+    fontFamily: "Quicksand_500Medium",
+  },
+  stateOuterCircle: {
+    width: 104, height: 104, borderRadius: 52,
     backgroundColor: C.purple100,
     alignItems: "center", justifyContent: "center",
-    marginBottom: 0,
+    marginBottom: 24,
   },
-  successIconCircle: {
-    width: 84, height: 84, borderRadius: 42,
+  stateOuterCircleError: { backgroundColor: "#FFF5F5" },
+  stateIconCircle: {
+    width: 78, height: 78, borderRadius: 39,
     alignItems: "center", justifyContent: "center",
-    shadowColor: C.purple600, shadowOpacity: 0.4,
-    shadowRadius: 20, shadowOffset: { width: 0, height: 10 }, elevation: 12,
   },
-  successTitle: {
-    marginTop: 24, fontSize: 26, color: C.purple900,
-    fontFamily: "Quicksand_700Bold", textAlign: "center",
+  stateIconCircleError: { backgroundColor: "#FC8181" },
+  stateTitle: {
+    textAlign: "center", fontSize: 22,
+    color: C.purple900, fontFamily: "Quicksand_700Bold", marginBottom: 10,
   },
-  successMsg: {
-    marginTop: 10, fontSize: 15, color: C.muted,
-    fontFamily: "Quicksand_500Medium", textAlign: "center", lineHeight: 22,
+  stateMsg: {
+    textAlign: "center", fontSize: 14.5, lineHeight: 22,
+    color: C.muted, fontFamily: "Quicksand_500Medium",
   },
-
   pressed: { transform: [{ scale: 0.97 }] },
 });

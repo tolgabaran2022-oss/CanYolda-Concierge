@@ -1,7 +1,7 @@
 import { Router } from "express";
 import jwt from "jsonwebtoken";
 import bcrypt from "bcryptjs";
-import { createHash, randomInt } from "crypto";
+import { createHash, randomBytes, randomInt } from "crypto";
 import { z } from "zod";
 import { db, pool, oauthUsers, localUsers } from "@workspace/db";
 import { and, eq } from "drizzle-orm";
@@ -37,8 +37,9 @@ const VerifyResetCodeSchema = z.object({
 });
 
 const ResetPasswordSchema = z.object({
-  resetToken: z.string().min(1, "Sıfırlama token'ı gerekli").max(1000),
-  password:   z.string().min(8, "Şifre en az 8 karakter olmalı").max(128),
+  token:           z.string().min(1, "Token gerekli").max(256),
+  newPassword:     z.string().min(8, "Şifre en az 8 karakter olmalı").max(128),
+  confirmPassword: z.string().min(1, "Şifre tekrarı gerekli").max(128),
 });
 
 const ChangePasswordSchema = z.object({
@@ -59,7 +60,7 @@ const RESET_CODE_TTL_MS   = 10 * 60 * 1000;   // 10 minutes
 const MAX_ATTEMPTS        = 5;
 const RESEND_COOLDOWN_MS  = 60 * 1000;         // 60 seconds
 
-/* ── password_reset_codes table (idempotent) ─────────────────── */
+/* ── password_reset_codes table (idempotent, legacy OTP flow) ── */
 pool.query(`
   CREATE TABLE IF NOT EXISTS password_reset_codes (
     id            TEXT PRIMARY KEY DEFAULT gen_random_uuid()::text,
@@ -74,6 +75,22 @@ pool.query(`
   CREATE INDEX IF NOT EXISTS idx_prc_user_id ON password_reset_codes(user_id);
   CREATE INDEX IF NOT EXISTS idx_prc_email   ON password_reset_codes(email);
   CREATE INDEX IF NOT EXISTS idx_prc_active  ON password_reset_codes(email, used_at, expires_at);
+`).catch(() => {});
+
+/* ── password_reset_tokens table (link-based flow) ──────────── */
+pool.query(`
+  CREATE TABLE IF NOT EXISTS password_reset_tokens (
+    id           TEXT PRIMARY KEY DEFAULT gen_random_uuid()::text,
+    user_id      TEXT NOT NULL,
+    token_hash   TEXT NOT NULL UNIQUE,
+    expires_at   TIMESTAMPTZ NOT NULL,
+    used_at      TIMESTAMPTZ,
+    created_at   TIMESTAMPTZ NOT NULL DEFAULT now(),
+    requested_ip TEXT,
+    user_agent   TEXT
+  );
+  CREATE INDEX IF NOT EXISTS idx_prt_user_id    ON password_reset_tokens(user_id);
+  CREATE INDEX IF NOT EXISTS idx_prt_token_hash ON password_reset_tokens(token_hash);
 `).catch(() => {});
 
 /* ── Helpers ─────────────────────────────────────────────────── */
@@ -118,18 +135,28 @@ function getClientIp(req: Parameters<typeof router.post>[1] extends (req: infer 
   return raw.split(",")[0].trim();
 }
 
-/* ── Resend email ─────────────────────────────────────────────── */
-async function sendResetEmail(toEmail: string, code: string): Promise<void> {
+/* ── Resend — link-based email ───────────────────────────────── */
+async function sendResetLinkEmail(toEmail: string, resetLink: string): Promise<void> {
   const RESEND_API_KEY = process.env.RESEND_API_KEY;
   if (!RESEND_API_KEY) throw new Error("RESEND_API_KEY not configured");
 
+  const fromAddress = process.env.PASSWORD_RESET_FROM_EMAIL
+    ?? "CanYoldaşı <noreply@canyoldasimapp.com>";
+
+  const safeLink = resetLink.replace(/"/g, "%22");
+
   const html = `<!DOCTYPE html>
 <html lang="tr">
-<head><meta charset="UTF-8"><meta name="viewport" content="width=device-width,initial-scale=1"></head>
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1">
+  <title>CanYolda&#x15F;&#x131; &#x15E;ifre S&#x131;f&#x131;rlama</title>
+</head>
 <body style="margin:0;padding:0;background:#FBF2EA;font-family:'Helvetica Neue',Helvetica,Arial,sans-serif">
   <table width="100%" cellpadding="0" cellspacing="0" style="background:#FBF2EA;padding:40px 20px">
     <tr><td>
       <table width="100%" cellpadding="0" cellspacing="0" style="max-width:520px;margin:0 auto;background:#ffffff;border-radius:24px;overflow:hidden;box-shadow:0 4px 24px rgba(108,92,231,0.10)">
+        <!-- Header -->
         <tr>
           <td style="background:linear-gradient(135deg,#6C5CE7,#534AB7);padding:32px 40px;text-align:center">
             <p style="margin:0;font-size:28px">&#x1F43E;</p>
@@ -137,24 +164,40 @@ async function sendResetEmail(toEmail: string, code: string): Promise<void> {
             <p style="margin:4px 0 0;color:rgba(255,255,255,0.80);font-size:13px">Dostlar&#x131;n &#x130;&#xe7;in, Hep Yan&#x131;nda</p>
           </td>
         </tr>
+        <!-- Body -->
         <tr>
           <td style="padding:36px 40px">
-            <p style="margin:0 0 16px;font-size:15px;color:#4A4A6A;line-height:1.6">Merhaba,</p>
-            <p style="margin:0 0 24px;font-size:15px;color:#4A4A6A;line-height:1.6">
+            <p style="margin:0 0 10px;font-size:15px;color:#4A4A6A;line-height:1.6">Merhaba,</p>
+            <p style="margin:0 0 28px;font-size:15px;color:#4A4A6A;line-height:1.6">
               CanYolda&#x15F;&#x131; hesab&#x131;n&#x131;z i&#xe7;in bir &#x15F;ifre s&#x131;f&#x131;rlama iste&#x11F;i ald&#x131;k.
-              &#x15E;ifre s&#x131;f&#x131;rlama kodunuz:
+              A&#x15F;a&#x11F;&#x131;daki butona t&#x131;klayarak yeni &#x15F;ifrenizi olu&#x15F;turabilirsiniz.
             </p>
-            <div style="background:#F0EEFF;border:2px solid #6C5CE7;border-radius:16px;padding:24px;text-align:center;margin:0 0 24px">
-              <span style="font-size:38px;font-weight:800;letter-spacing:12px;color:#26215C;font-family:'Courier New',monospace">${code}</span>
-            </div>
-            <p style="margin:0 0 12px;font-size:13.5px;color:#8B8798;line-height:1.6">
-              &#x23F1; Bu kod <strong>10 dakika</strong> boyunca ge&#xe7;erlidir.
+            <!-- CTA Button -->
+            <table cellpadding="0" cellspacing="0" style="margin:0 auto 28px">
+              <tr>
+                <td style="background:linear-gradient(135deg,#6C5CE7,#534AB7);border-radius:14px">
+                  <a href="${safeLink}"
+                     style="display:inline-block;padding:16px 36px;color:#ffffff;font-size:16px;font-weight:700;text-decoration:none;letter-spacing:0.2px">
+                    &#x15E;ifremi S&#x131;f&#x131;rla
+                  </a>
+                </td>
+              </tr>
+            </table>
+            <p style="margin:0 0 10px;font-size:13.5px;color:#8B8798;line-height:1.6">
+              &#x23F1; Bu ba&#x11F;lant&#x131; <strong>30 dakika</strong> boyunca ge&#xe7;erlidir.
             </p>
-            <p style="margin:0;font-size:13.5px;color:#8B8798;line-height:1.6">
+            <p style="margin:0 0 24px;font-size:13.5px;color:#8B8798;line-height:1.6">
               Bu i&#x15F;lemi siz istemedinizse bu e-postas&#x131; dikkate almayabilirsiniz.
+              Hesab&#x131;n&#x131;z g&#xfc;vende olmaya devam edecektir.
+            </p>
+            <!-- Fallback link -->
+            <p style="margin:0;font-size:12px;color:#ABABC0;line-height:1.6;word-break:break-all">
+              Buton t&#x131;klanm&#x131;yorsa bu adresi taray&#x131;c&#x131;n&#x131;za yap&#x131;&#x15F;t&#x131;r&#x131;n:<br>
+              <span style="color:#6C5CE7">${safeLink}</span>
             </p>
           </td>
         </tr>
+        <!-- Footer -->
         <tr>
           <td style="background:#F7F4FF;padding:20px 40px;text-align:center;border-top:1px solid #EAE7FB">
             <p style="margin:0;font-size:12px;color:#8B8798">
@@ -168,6 +211,8 @@ async function sendResetEmail(toEmail: string, code: string): Promise<void> {
 </body>
 </html>`;
 
+  const text = `CanYoldaşı Şifre Sıfırlama\n\nŞifrenizi sıfırlamak için aşağıdaki bağlantıya tıklayın:\n${resetLink}\n\nBu bağlantı 30 dakika boyunca geçerlidir.\n\nBu isteği siz yapmadıysanız bu e-postayı dikkate almayabilirsiniz.`;
+
   const resp = await fetch("https://api.resend.com/emails", {
     method: "POST",
     headers: {
@@ -175,16 +220,17 @@ async function sendResetEmail(toEmail: string, code: string): Promise<void> {
       "Content-Type": "application/json",
     },
     body: JSON.stringify({
-      from: process.env.RESEND_FROM_EMAIL ?? "CanYoldaşı <onboarding@resend.dev>",
-      to: [toEmail],
-      subject: "CanYoldaşı Şifre Sıfırlama Kodu",
+      from: fromAddress,
+      to:   [toEmail],
+      subject: "CanYoldaşı şifre sıfırlama bağlantın",
       html,
+      text,
     }),
   });
 
   if (!resp.ok) {
     const body = await resp.text().catch(() => "");
-    throw new Error(`Resend ${resp.status}: ${body}`);
+    throw new Error(`Resend ${resp.status}: ${body.slice(0, 200)}`);
   }
 }
 
@@ -355,7 +401,6 @@ const GENERIC_RESPONSE = {
 router.post("/auth/forgot-password", passwordResetLimiter, validateBody(ForgotPasswordSchema), async (req, res): Promise<void> => {
   const ip = getClientIp(req);
 
-  // Secondary IP rate limit guard (express-rate-limit is the primary)
   if (!checkIpRateLimit(ipResetMap, ip, 5, 15 * 60 * 1000)) {
     res.status(429).json({ error: "Çok fazla istek. Lütfen daha sonra tekrar deneyin." });
     return;
@@ -371,7 +416,6 @@ router.post("/auth/forgot-password", passwordResetLimiter, validateBody(ForgotPa
       .where(eq(localUsers.email, normalizedEmail))
       .limit(1);
 
-    // Always return generic response to prevent email enumeration
     if (users.length === 0) {
       res.json(GENERIC_RESPONSE);
       return;
@@ -381,7 +425,7 @@ router.post("/auth/forgot-password", passwordResetLimiter, validateBody(ForgotPa
 
     // 60-second resend cooldown
     const recent = await pool.query<{ created_at: Date }>(
-      `SELECT created_at FROM password_reset_codes
+      `SELECT created_at FROM password_reset_tokens
        WHERE user_id = $1 AND used_at IS NULL AND expires_at > now()
        ORDER BY created_at DESC LIMIT 1`,
       [user.id]
@@ -395,41 +439,48 @@ router.post("/auth/forgot-password", passwordResetLimiter, validateBody(ForgotPa
       }
     }
 
-    // Invalidate all previous unused codes for this user
+    // Invalidate all previous unused tokens for this user
     await pool.query(
-      `UPDATE password_reset_codes SET used_at = now() WHERE user_id = $1 AND used_at IS NULL`,
+      `UPDATE password_reset_tokens SET used_at = now() WHERE user_id = $1 AND used_at IS NULL`,
       [user.id]
     );
 
-    // Generate cryptographically secure 6-digit code
-    const code = String(randomInt(100000, 1000000)).padStart(6, "0");
-    const codeHash = sha256(code);
-    const expiresAt = new Date(Date.now() + RESET_CODE_TTL_MS);
+    // Generate cryptographically secure raw token + hash it
+    const rawToken  = randomBytes(32).toString("hex");
+    const tokenHash = sha256(rawToken);
+    const expiresAt = new Date(Date.now() + 30 * 60 * 1000); // 30 minutes
 
     const inserted = await pool.query<{ id: string }>(
-      `INSERT INTO password_reset_codes (user_id, email, code_hash, expires_at)
-       VALUES ($1, $2, $3, $4) RETURNING id`,
-      [user.id, normalizedEmail, codeHash, expiresAt]
+      `INSERT INTO password_reset_tokens (user_id, token_hash, expires_at, requested_ip, user_agent)
+       VALUES ($1, $2, $3, $4, $5) RETURNING id`,
+      [user.id, tokenHash, expiresAt, ip, req.headers["user-agent"]?.slice(0, 255) ?? null]
     );
+    req.log.info({ tokenId: inserted.rows[0].id }, "Reset token generated");
 
-    req.log.info({ codeId: inserted.rows[0].id }, "Reset code generated");
+    // Build reset link — never expose rawToken in logs
+    const baseUrl = process.env.PASSWORD_RESET_BASE_URL
+      ?? (process.env.REPLIT_EXPO_DEV_DOMAIN
+        ? `https://${process.env.REPLIT_EXPO_DEV_DOMAIN}/(auth)/reset-password`
+        : "https://canyoldasimapp.com/reset-password");
+    const resetLink = `${baseUrl}?token=${rawToken}`;
 
-    // Send email — if Resend fails, log but still return generic response
     try {
-      await sendResetEmail(normalizedEmail, code);
-      req.log.info({ userId: user.id }, "Password reset email sent via Resend");
+      await sendResetLinkEmail(normalizedEmail, resetLink);
+      req.log.info({ userId: user.id }, "Password reset link email sent via Resend");
     } catch (emailErr) {
-      req.log.error({ err: emailErr, msg: emailErr instanceof Error ? emailErr.message : String(emailErr) }, "Resend email failed");
-      // In dev: expose code in logs only (never in response)
-      if (process.env.NODE_ENV !== "production") {
-        req.log.warn({ code }, "DEV MODE — reset code (not sent via email)");
-      }
+      // Clean up the token so user can retry cleanly
+      await pool.query(
+        `UPDATE password_reset_tokens SET used_at = now() WHERE id = $1`,
+        [inserted.rows[0].id]
+      ).catch(() => {});
+      req.log.error({ err: emailErr instanceof Error ? emailErr.message : String(emailErr) }, "Resend email failed");
+      res.status(503).json({ error: "Şifre sıfırlama e-postası şu anda gönderilemedi. Lütfen biraz sonra tekrar deneyin." });
+      return;
     }
 
     res.json(GENERIC_RESPONSE);
   } catch (err) {
     req.log.error({ err }, "POST /auth/forgot-password error");
-    // Still return generic to avoid information leakage
     res.json(GENERIC_RESPONSE);
   }
 });
@@ -523,37 +574,59 @@ router.post("/auth/verify-reset-code", passwordResetLimiter, validateBody(Verify
   }
 });
 
+/* ── GET /api/auth/reset-password/verify ────────────────────── */
+router.get("/auth/reset-password/verify", async (req, res): Promise<void> => {
+  const { token } = req.query as { token?: string };
+
+  if (!token || typeof token !== "string" || token.length > 256) {
+    res.status(400).json({ valid: false, reason: "missing_token" });
+    return;
+  }
+
+  try {
+    const tokenHash = sha256(token);
+    const rows = await pool.query<{ expires_at: Date; used_at: Date | null }>(
+      `SELECT expires_at, used_at FROM password_reset_tokens
+       WHERE token_hash = $1 LIMIT 1`,
+      [tokenHash]
+    );
+
+    if ((rows.rowCount ?? 0) === 0) {
+      res.json({ valid: false, reason: "not_found" });
+      return;
+    }
+
+    const row = rows.rows[0];
+    if (row.used_at !== null) {
+      res.json({ valid: false, reason: "used" });
+      return;
+    }
+    if (new Date() > new Date(row.expires_at)) {
+      res.json({ valid: false, reason: "expired" });
+      return;
+    }
+
+    res.json({ valid: true });
+  } catch (err) {
+    req.log.error({ err }, "GET /auth/reset-password/verify error");
+    res.status(500).json({ valid: false, reason: "server_error" });
+  }
+});
+
 /* ── POST /api/auth/reset-password ──────────────────────────── */
 router.post("/auth/reset-password", passwordResetLimiter, validateBody(ResetPasswordSchema), async (req, res): Promise<void> => {
-  const { resetToken, password } = req.body as z.infer<typeof ResetPasswordSchema>;
+  const { token, newPassword, confirmPassword } = req.body as z.infer<typeof ResetPasswordSchema>;
 
-  // Verify reset token
-  let payload: jwt.JwtPayload;
-  try {
-    payload = jwt.verify(resetToken, getJwtSecret() + "_reset_v1") as jwt.JwtPayload;
-  } catch {
-    res.status(401).json({
-      error: "Sıfırlama oturumunun süresi dolmuş. Lütfen tekrar başlayın.",
-      expired: true,
-    });
+  if (newPassword !== confirmPassword) {
+    res.status(400).json({ error: "Şifreler eşleşmiyor." });
     return;
   }
 
-  if (payload.type !== "password_reset" || !payload.sub || !payload.jti) {
-    res.status(401).json({ error: "Geçersiz token" });
-    return;
-  }
-
-  // Password strength
-  if (password.length < 8) {
-    res.status(400).json({ error: "Şifre en az 8 karakter olmalı" });
-    return;
-  }
   if (
-    !/[A-Z]/.test(password) ||
-    !/[a-z]/.test(password) ||
-    !/[0-9]/.test(password) ||
-    !/[^A-Za-z0-9]/.test(password)
+    !/[A-Z]/.test(newPassword) ||
+    !/[a-z]/.test(newPassword) ||
+    !/[0-9]/.test(newPassword) ||
+    !/[^A-Za-z0-9]/.test(newPassword)
   ) {
     res.status(400).json({
       error: "Şifre; büyük harf, küçük harf, rakam ve özel karakter içermelidir.",
@@ -562,36 +635,60 @@ router.post("/auth/reset-password", passwordResetLimiter, validateBody(ResetPass
   }
 
   try {
-    // Verify code record is still unused (prevent replay)
-    const rows = await pool.query<{ id: string; used_at: Date | null }>(
-      `SELECT id, used_at FROM password_reset_codes WHERE id = $1`,
-      [payload.jti as string]
+    const tokenHash = sha256(token);
+
+    const rows = await pool.query<{
+      id: string; user_id: string; expires_at: Date; used_at: Date | null;
+    }>(
+      `SELECT id, user_id, expires_at, used_at FROM password_reset_tokens
+       WHERE token_hash = $1 LIMIT 1`,
+      [tokenHash]
     );
 
-    if ((rows.rowCount ?? 0) === 0 || rows.rows[0].used_at !== null) {
+    if ((rows.rowCount ?? 0) === 0) {
       res.status(400).json({
-        error: "Bu sıfırlama oturumu zaten kullanılmış veya geçersiz.",
+        error: "Bu şifre sıfırlama bağlantısının süresi dolmuş veya bağlantı geçersiz.",
         expired: true,
       });
       return;
     }
 
-    // Hash new password — never log plaintext
-    const newHash = await bcrypt.hash(password, BCRYPT_ROUNDS);
+    const row = rows.rows[0];
 
-    // Update password
+    if (row.used_at !== null) {
+      res.status(400).json({
+        error: "Bu şifre sıfırlama bağlantısı zaten kullanılmış.",
+        expired: true,
+      });
+      return;
+    }
+
+    if (new Date() > new Date(row.expires_at)) {
+      res.status(400).json({
+        error: "Bu şifre sıfırlama bağlantısının süresi dolmuş. Lütfen yeni bağlantı talep edin.",
+        expired: true,
+      });
+      return;
+    }
+
+    const newHash = await bcrypt.hash(newPassword, BCRYPT_ROUNDS);
+
     await db
       .update(localUsers)
       .set({ passwordHash: newHash, updatedAt: new Date() })
-      .where(eq(localUsers.id, payload.sub as string));
+      .where(eq(localUsers.id, row.user_id));
 
-    // Mark code as used (single-use enforcement)
     await pool.query(
-      `UPDATE password_reset_codes SET used_at = now() WHERE id = $1`,
-      [payload.jti as string]
+      `UPDATE password_reset_tokens SET used_at = now() WHERE id = $1`,
+      [row.id]
     );
 
-    req.log.info({ userId: payload.sub }, "Password reset completed");
+    await pool.query(
+      `UPDATE password_reset_tokens SET used_at = now() WHERE user_id = $1 AND used_at IS NULL`,
+      [row.user_id]
+    );
+
+    req.log.info({ userId: row.user_id }, "Password reset completed via link token");
     res.json({ ok: true });
   } catch (err) {
     req.log.error({ err }, "POST /auth/reset-password error");

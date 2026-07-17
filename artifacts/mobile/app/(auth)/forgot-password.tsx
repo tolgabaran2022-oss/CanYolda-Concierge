@@ -1,13 +1,9 @@
 /**
  * ForgotPasswordScreen — canyoldaşı şifre sıfırlama ekranı
  *
- * Tasarım notları:
- *  - Karşılama ekranıyla aynı dil: krem zemin, organik mor blob'lar, pati motifi
- *  - Gri daire yerine gradyanlı organik blob içinde pati ikonu (marka imzası)
- *  - Form üstte toplanır; klavye açılınca KeyboardAvoidingView ile yukarı kayar
- *  - Alt boşluk dekoratif blob + faydalı ipucu metniyle dengelenir
+ * Link tabanlı akış: E-posta gönderilir, başarı ekranı gösterilir.
+ * Kullanıcı e-postasındaki butona tıklayarak reset-password ekranına gider.
  */
-import { Ionicons } from "@expo/vector-icons";
 import * as Haptics from "expo-haptics";
 import { LinearGradient } from "expo-linear-gradient";
 import { useRouter } from "expo-router";
@@ -17,7 +13,7 @@ import {
   Quicksand_700Bold,
   useFonts,
 } from "@expo-google-fonts/quicksand";
-import React, { useMemo, useState } from "react";
+import React, { useEffect, useMemo, useRef, useState } from "react";
 import {
   ActivityIndicator,
   Alert,
@@ -32,6 +28,7 @@ import {
   View,
 } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
+import { ChevronLeft, Mail, ArrowLeft, Info, CheckCircle, RefreshCw } from "lucide-react-native";
 
 const API_BASE = process.env.EXPO_PUBLIC_DOMAIN
   ? `https://${process.env.EXPO_PUBLIC_DOMAIN}/api`
@@ -46,15 +43,22 @@ const C = {
   purple100: "#EAE7FB",
   muted:     "#8B8798",
   white:     "#FFFFFF",
+  success:   "#38A169",
+  successBg: "#F0FFF4",
+  successBdr:"#9AE6B4",
 };
 
 const EMAIL_RE = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+const COOLDOWN_SECS = 60;
 
 export default function ForgotPasswordScreen() {
   const router = useRouter();
-  const [email, setEmail] = useState("");
+  const [email, setEmail]     = useState("");
   const [focused, setFocused] = useState(false);
   const [loading, setLoading] = useState(false);
+  const [sent, setSent]       = useState(false);
+  const [cooldown, setCooldown] = useState(0);
+  const timerRef = useRef<ReturnType<typeof setInterval> | null>(null);
 
   const [fontsLoaded] = useFonts({
     Quicksand_500Medium,
@@ -64,7 +68,21 @@ export default function ForgotPasswordScreen() {
 
   const valid = useMemo(() => EMAIL_RE.test(email.trim()), [email]);
 
+  useEffect(() => {
+    return () => { if (timerRef.current) clearInterval(timerRef.current); };
+  }, []);
+
   if (!fontsLoaded) return null;
+
+  const startCooldown = () => {
+    setCooldown(COOLDOWN_SECS);
+    timerRef.current = setInterval(() => {
+      setCooldown((c) => {
+        if (c <= 1) { clearInterval(timerRef.current!); return 0; }
+        return c - 1;
+      });
+    }, 1000);
+  };
 
   const onSend = async () => {
     if (!valid || loading) return;
@@ -78,15 +96,41 @@ export default function ForgotPasswordScreen() {
       });
       const data = await res.json() as { ok?: boolean; error?: string };
       if (!res.ok) {
-        Alert.alert("Hata", data.error ?? "Kod gönderilemedi. Lütfen tekrar deneyin.");
+        if (res.status === 429) {
+          Alert.alert("Yavaşla", data.error ?? "Lütfen biraz bekleyin.");
+        } else {
+          Alert.alert("Hata", data.error ?? "Bağlantı gönderilemedi. Lütfen tekrar deneyin.");
+        }
         return;
       }
-      router.push({
-        pathname: "/(auth)/reset-password" as never,
-        params: { email: email.trim().toLowerCase() },
-      } as never);
+      setSent(true);
+      startCooldown();
     } catch {
       Alert.alert("Hata", "İnternet bağlantınızı kontrol edin ve tekrar deneyin.");
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const onResend = async () => {
+    if (loading || cooldown > 0) return;
+    Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+    setLoading(true);
+    try {
+      const res = await fetch(`${API_BASE}/auth/forgot-password`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ email: email.trim().toLowerCase() }),
+      });
+      const data = await res.json() as { ok?: boolean; error?: string };
+      if (!res.ok) {
+        Alert.alert("Hata", data.error ?? "Tekrar gönderilemedi.");
+        return;
+      }
+      startCooldown();
+      Alert.alert("Gönderildi", "Yeni şifre sıfırlama bağlantısı gönderildi.");
+    } catch {
+      Alert.alert("Hata", "İnternet bağlantınızı kontrol edin.");
     } finally {
       setLoading(false);
     }
@@ -96,7 +140,6 @@ export default function ForgotPasswordScreen() {
     <SafeAreaView style={styles.container} edges={["top", "bottom"]}>
       <StatusBar barStyle="dark-content" backgroundColor={C.cream} />
 
-      {/* Dekoratif blob'lar — karşılama ekranındaki motifin devamı */}
       <View style={[styles.blob, styles.blobTopRight]} pointerEvents="none" />
       <View style={[styles.blob, styles.blobBottomLeft]} pointerEvents="none" />
 
@@ -120,10 +163,10 @@ export default function ForgotPasswordScreen() {
             accessibilityLabel="Geri dön"
             hitSlop={8}
           >
-            <Ionicons name="chevron-back" size={22} color={C.purple900} />
+            <ChevronLeft size={22} color={C.purple900} strokeWidth={2.5} />
           </Pressable>
 
-          {/* Marka imzası: organik blob içinde pati */}
+          {/* Marka ikonu */}
           <View style={styles.iconWrap}>
             <LinearGradient
               colors={[C.purple500, C.purple600]}
@@ -131,7 +174,7 @@ export default function ForgotPasswordScreen() {
               end={{ x: 1, y: 1 }}
               style={styles.iconBlob}
             >
-              <Ionicons name="paw" size={34} color={C.white} />
+              <Mail size={34} color={C.white} strokeWidth={2} />
             </LinearGradient>
           </View>
 
@@ -139,76 +182,104 @@ export default function ForgotPasswordScreen() {
             Şifreni mi unuttun?
           </Text>
           <Text style={styles.subtitle} maxFontSizeMultiplier={1.3}>
-            Sorun değil! E-postanı yaz,{"\n"}sana bir sıfırlama kodu gönderelim.
+            {sent
+              ? "E-postanı kontrol et ve bağlantıya tıkla."
+              : "Sorun değil! E-postanı yaz, sana bir sıfırlama bağlantısı gönderelim."}
           </Text>
 
-          {/* Form kartı */}
-          <View style={styles.card}>
-            <Text style={styles.label}>E-posta</Text>
-            <View
-              style={[
-                styles.inputWrap,
-                focused && styles.inputWrapFocused,
-              ]}
-            >
-              <Ionicons
-                name="mail-outline"
-                size={19}
-                color={focused ? C.purple500 : C.muted}
-                style={styles.inputIcon}
-              />
-              <TextInput
-                style={styles.input}
-                value={email}
-                onChangeText={setEmail}
-                onFocus={() => setFocused(true)}
-                onBlur={() => setFocused(false)}
-                placeholder="ornek@mail.com"
-                placeholderTextColor={C.muted}
-                keyboardType="email-address"
-                autoCapitalize="none"
-                autoCorrect={false}
-                autoComplete="email"
-                textContentType="emailAddress"
-                returnKeyType="send"
-                onSubmitEditing={onSend}
-                accessibilityLabel="E-posta adresi"
-              />
-            </View>
+          {/* Başarı kartı */}
+          {sent ? (
+            <View style={styles.successCard}>
+              <View style={styles.successRow}>
+                <CheckCircle size={20} color={C.success} strokeWidth={2} />
+                <Text style={styles.successTitle} maxFontSizeMultiplier={1.2}>
+                  Bağlantı gönderildi!
+                </Text>
+              </View>
+              <Text style={styles.successMsg} maxFontSizeMultiplier={1.3}>
+                <Text style={styles.successEmail}>{email.trim().toLowerCase()}</Text>
+                {" "}adresine şifre sıfırlama bağlantısı gönderdik.
+                E-postanda "Şifremi Sıfırla" butonuna tıkla.
+              </Text>
 
-            <Pressable
-              onPress={onSend}
-              disabled={!valid || loading}
-              style={({ pressed }) => [pressed && valid && styles.pressed]}
-              accessibilityRole="button"
-              accessibilityState={{ disabled: !valid || loading }}
-            >
-              <LinearGradient
-                colors={
-                  valid
-                    ? [C.purple500, C.purple600]
-                    : [C.purple200, C.purple200]
-                }
-                start={{ x: 0, y: 0 }}
-                end={{ x: 1, y: 1 }}
-                style={[styles.btn, valid && styles.btnShadow]}
+              {/* Tekrar Gönder */}
+              <Pressable
+                onPress={onResend}
+                disabled={loading || cooldown > 0}
+                style={({ pressed }) => [styles.resendBtn, pressed && styles.pressed]}
+                accessibilityRole="button"
               >
                 {loading ? (
-                  <ActivityIndicator color={C.white} />
+                  <ActivityIndicator size="small" color={C.purple500} />
                 ) : (
-                  <Text
-                    style={[
-                      styles.btnText,
-                      !valid && styles.btnTextDisabled,
-                    ]}
-                    maxFontSizeMultiplier={1.2}
-                  >
-                    Sıfırlama Kodu Gönder
-                  </Text>
+                  <>
+                    <RefreshCw size={14} color={cooldown > 0 ? C.muted : C.purple500} strokeWidth={2.5} />
+                    <Text style={[styles.resendText, cooldown > 0 && styles.resendTextMuted]}>
+                      {cooldown > 0
+                        ? `Tekrar gönder (${cooldown}s)`
+                        : "Bağlantıyı tekrar gönder"}
+                    </Text>
+                  </>
                 )}
-              </LinearGradient>
-            </Pressable>
-          </View>
+              </Pressable>
+            </View>
+          ) : (
+            /* Form kartı */
+            <View style={styles.card}>
+              <Text style={styles.label}>E-posta</Text>
+              <View style={[styles.inputWrap, focused && styles.inputWrapFocused]}>
+                <Mail
+                  size={19}
+                  color={focused ? C.purple500 : C.muted}
+                  strokeWidth={2}
+                  style={styles.inputIcon}
+                />
+                <TextInput
+                  style={styles.input}
+                  value={email}
+                  onChangeText={setEmail}
+                  onFocus={() => setFocused(true)}
+                  onBlur={() => setFocused(false)}
+                  placeholder="ornek@mail.com"
+                  placeholderTextColor={C.muted}
+                  keyboardType="email-address"
+                  autoCapitalize="none"
+                  autoCorrect={false}
+                  autoComplete="email"
+                  textContentType="emailAddress"
+                  returnKeyType="send"
+                  onSubmitEditing={onSend}
+                  accessibilityLabel="E-posta adresi"
+                />
+              </View>
+
+              <Pressable
+                onPress={onSend}
+                disabled={!valid || loading}
+                style={({ pressed }) => [pressed && valid && styles.pressed]}
+                accessibilityRole="button"
+                accessibilityState={{ disabled: !valid || loading }}
+              >
+                <LinearGradient
+                  colors={valid ? [C.purple500, C.purple600] : [C.purple200, C.purple200]}
+                  start={{ x: 0, y: 0 }}
+                  end={{ x: 1, y: 1 }}
+                  style={[styles.btn, valid && styles.btnShadow]}
+                >
+                  {loading ? (
+                    <ActivityIndicator color={C.white} />
+                  ) : (
+                    <Text
+                      style={[styles.btnText, !valid && styles.btnTextDisabled]}
+                      maxFontSizeMultiplier={1.2}
+                    >
+                      Sıfırlama Bağlantısı Gönder
+                    </Text>
+                  )}
+                </LinearGradient>
+              </Pressable>
+            </View>
+          )}
 
           {/* Giriş ekranına dönüş */}
           <Pressable
@@ -220,17 +291,17 @@ export default function ForgotPasswordScreen() {
             hitSlop={8}
             style={styles.backLinkWrap}
           >
-            <Ionicons name="arrow-back" size={15} color={C.purple600} />
+            <ArrowLeft size={15} color={C.purple600} strokeWidth={2.5} />
             <Text style={styles.backLink} maxFontSizeMultiplier={1.2}>
               Giriş ekranına dön
             </Text>
           </Pressable>
 
-          {/* Alt boşluğu dolduran faydalı ipucu */}
+          {/* Alt ipucu */}
           <View style={styles.hint}>
-            <Ionicons name="information-circle-outline" size={16} color={C.muted} />
+            <Info size={16} color={C.muted} strokeWidth={2} />
             <Text style={styles.hintText} maxFontSizeMultiplier={1.3}>
-              Kod birkaç dakika içinde gelmezse spam klasörünü kontrol etmeyi unutma.
+              Bağlantı birkaç dakika içinde gelmezse spam klasörünü kontrol etmeyi unutma. Bağlantı 30 dakika geçerlidir.
             </Text>
           </View>
         </ScrollView>
@@ -244,7 +315,6 @@ const styles = StyleSheet.create({
   flex: { flex: 1 },
   scroll: { flexGrow: 1, paddingHorizontal: 26, paddingBottom: 24 },
 
-  // Dekoratif blob'lar
   blob: { position: "absolute", backgroundColor: C.purple100 },
   blobTopRight: {
     width: 220, height: 220, borderRadius: 110,
@@ -281,6 +351,30 @@ const styles = StyleSheet.create({
     textAlign: "center", marginTop: 8, lineHeight: 22,
     fontSize: 14.5, color: C.muted, fontFamily: "Quicksand_500Medium",
   },
+
+  successCard: {
+    marginTop: 26, padding: 20, borderRadius: 20,
+    backgroundColor: C.successBg,
+    borderWidth: 1.5, borderColor: C.successBdr,
+  },
+  successRow: { flexDirection: "row", alignItems: "center", gap: 8, marginBottom: 10 },
+  successTitle: {
+    fontSize: 16, color: C.success, fontFamily: "Quicksand_700Bold",
+  },
+  successMsg: {
+    fontSize: 14, lineHeight: 21, color: "#2D6A4F",
+    fontFamily: "Quicksand_500Medium",
+  },
+  successEmail: { fontFamily: "Quicksand_700Bold", color: "#1B4332" },
+  resendBtn: {
+    flexDirection: "row", alignItems: "center", gap: 6,
+    marginTop: 16, alignSelf: "flex-start",
+    paddingVertical: 4,
+  },
+  resendText: {
+    fontSize: 13.5, color: C.purple500, fontFamily: "Quicksand_600SemiBold",
+  },
+  resendTextMuted: { color: C.muted },
 
   card: {
     marginTop: 26, padding: 20, borderRadius: 24,
