@@ -27,6 +27,7 @@ import { useAuth } from "@/contexts/AuthContext";
 import { useTheme } from "@/hooks/useTheme";
 import { TURKEY_PROVINCES, type Province } from "@/constants/turkeyLocations";
 import { apiSaveListingContact } from "@/lib/contactApi";
+import { PET_DETAIL_OPTIONS, type DetailOption } from "@/lib/petDetailOptions";
 
 /* ── Tokens ─────────────────────────────────────────────── */
 const C = {
@@ -329,6 +330,13 @@ export default function EditAdoptionScreen() {
   const [email,              setEmail]              = useState("");
   const [allowPhoneContact,  setAllowPhoneContact]  = useState(true);
   const [allowMessages,      setAllowMessages]      = useState(true);
+  const [healthStatus,       setHealthStatus]       = useState("");
+  const [vaccinationStatus,  setVaccinationStatus]  = useState("");
+  const [environmentType,    setEnvironmentType]    = useState("");
+  const [childCompatibility, setChildCompatibility] = useState("");
+  const [catCompatibility,   setCatCompatibility]   = useState("");
+  const [dogCompatibility,   setDogCompatibility]   = useState("");
+  const [toiletTraining,     setToiletTraining]     = useState("");
   const [isSaving,           setIsSaving]           = useState(false);
   const [errors,      setErrors]      = useState<Record<string, string>>({});
 
@@ -363,6 +371,13 @@ export default function EditAdoptionScreen() {
     setEmail(parseEmailFromContact(listing.contactInfo));
     setAllowPhoneContact(listing.allowPhoneContact ?? true);
     setAllowMessages(listing.allowMessages ?? true);
+    setHealthStatus(listing.healthStatus ?? "");
+    setVaccinationStatus(listing.vaccinationStatus ?? "");
+    setEnvironmentType(listing.environmentType ?? "");
+    setChildCompatibility(listing.childCompatibility ?? "");
+    setCatCompatibility(listing.catCompatibility ?? "");
+    setDogCompatibility(listing.dogCompatibility ?? "");
+    setToiletTraining(listing.toiletTraining ?? "");
   }, [listing?.id]);
 
   if (!listing || listing.userId !== user?.id) {
@@ -464,6 +479,13 @@ export default function EditAdoptionScreen() {
     if (!province)                     errs.province   = "İl seçimi zorunludur";
     if (!district)                     errs.district   = "İlçe seçimi zorunludur";
     if (description.trim().length < 30) errs.description = "En az 30 karakter yazınız";
+    if (!healthStatus)       errs.healthStatus       = "Lütfen detay bilgilerini tamamla.";
+    if (!vaccinationStatus)  errs.vaccinationStatus  = "Lütfen detay bilgilerini tamamla.";
+    if (!environmentType)    errs.environmentType    = "Lütfen detay bilgilerini tamamla.";
+    if (!childCompatibility) errs.childCompatibility = "Lütfen detay bilgilerini tamamla.";
+    if (!catCompatibility)   errs.catCompatibility   = "Lütfen detay bilgilerini tamamla.";
+    if (!dogCompatibility)   errs.dogCompatibility   = "Lütfen detay bilgilerini tamamla.";
+    if (!toiletTraining)     errs.toiletTraining     = "Lütfen detay bilgilerini tamamla.";
     const pe = validatePhone(phone); if (pe) errs.phone = pe;
     const ee = validateEmail(email); if (ee) errs.email = ee;
     setErrors(errs);
@@ -497,6 +519,13 @@ export default function EditAdoptionScreen() {
         contactInfo:       `Tel: +90 ${formatPhone(phone)} | E-posta: ${email.trim()}`,
         allowPhoneContact,
         allowMessages,
+        healthStatus,
+        vaccinationStatus,
+        environmentType,
+        childCompatibility,
+        catCompatibility,
+        dogCompatibility,
+        toiletTraining,
       });
       /* Sync phone + prefs to backend */
       apiSaveListingContact(
@@ -731,6 +760,70 @@ export default function EditAdoptionScreen() {
                   </Text>
                 </View>
               </FieldWrap>
+            </View>
+
+            {/* ═══════════════════════════════════════════════
+                DETAIL INFO
+            ═══════════════════════════════════════════════ */}
+            <View style={S.sectionCard}>
+              <View style={S.sectionTitleRow}>
+                <Icon name="list-outline" size={18} color={C.purple} />
+                <Text style={S.sectionTitle}>Detay Bilgiler</Text>
+              </View>
+              <Text style={{ fontSize: 12, fontFamily: "Inter_400Regular", color: C.sub, marginTop: -8, lineHeight: 17 }}>
+                Patili dostun hakkında temel bilgileri seç
+              </Text>
+
+              {(errors.healthStatus || errors.vaccinationStatus || errors.environmentType ||
+                errors.childCompatibility || errors.catCompatibility || errors.dogCompatibility || errors.toiletTraining) ? (
+                <View style={S.detailErrorBanner}>
+                  <Icon name="alert-circle" size={14} color={C.error} />
+                  <Text style={S.detailErrorTxt}>Lütfen detay bilgilerini tamamla.</Text>
+                </View>
+              ) : null}
+
+              {([
+                { key: "healthStatus"       as const, label: "Sağlık Durumu",   iconName: "medkit-outline"           as const, opts: PET_DETAIL_OPTIONS.healthStatus,       state: healthStatus,       setter: setHealthStatus },
+                { key: "vaccinationStatus"  as const, label: "Aşı",             iconName: "shield-checkmark-outline" as const, opts: PET_DETAIL_OPTIONS.vaccinationStatus,  state: vaccinationStatus,  setter: setVaccinationStatus },
+                { key: "environmentType"    as const, label: "İç/Dış Mekan",    iconName: "home-outline"             as const, opts: PET_DETAIL_OPTIONS.environmentType,    state: environmentType,    setter: setEnvironmentType },
+                { key: "childCompatibility" as const, label: "Çocuk Uyumu",     iconName: "people-outline"           as const, opts: PET_DETAIL_OPTIONS.childCompatibility, state: childCompatibility, setter: setChildCompatibility },
+                { key: "catCompatibility"   as const, label: "Kedi Uyumu",      iconName: "paw"                      as const, opts: PET_DETAIL_OPTIONS.catCompatibility,   state: catCompatibility,   setter: setCatCompatibility },
+                { key: "dogCompatibility"   as const, label: "Köpek Uyumu",     iconName: "paw"                      as const, opts: PET_DETAIL_OPTIONS.dogCompatibility,   state: dogCompatibility,   setter: setDogCompatibility },
+                { key: "toiletTraining"     as const, label: "Tuvalet Eğitimi", iconName: "checkmark-circle-outline" as const, opts: PET_DETAIL_OPTIONS.toiletTraining,     state: toiletTraining,     setter: setToiletTraining },
+              ] as const).map(({ key, label, iconName, opts, state, setter }) => (
+                <View key={key} style={S.detailFieldWrap}>
+                  <View style={S.detailFieldHeader}>
+                    <Icon name={iconName} size={15} color={C.purpleDark} />
+                    <Text style={[S.detailFieldLabel, !!errors[key] && { color: C.error }]}>{label}</Text>
+                    {!!errors[key] && <Icon name="alert-circle" size={13} color={C.error} />}
+                  </View>
+                  <View style={S.detailChipRow}>
+                    {(opts as readonly DetailOption[]).map((opt) => {
+                      const active = state === opt.value;
+                      return (
+                        <Pressable
+                          key={opt.value}
+                          onPress={() => {
+                            Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+                            setter(opt.value);
+                            setErrors((e) => ({ ...e, [key]: "" }));
+                          }}
+                          style={({ pressed }) => [
+                            S.detailChip,
+                            { borderColor: active ? C.purple : C.border, backgroundColor: active ? C.purple + "14" : C.inputBg },
+                            { opacity: pressed ? 0.8 : 1 },
+                          ]}
+                        >
+                          {active && <Icon name="checkmark" size={12} color={C.purple} />}
+                          <Text style={[S.detailChipTxt, { color: active ? C.purple : C.muted }, active && { fontFamily: "Inter_700Bold" }]}>
+                            {opt.label}
+                          </Text>
+                        </Pressable>
+                      );
+                    })}
+                  </View>
+                </View>
+              ))}
             </View>
 
             {/* ═══════════════════════════════════════════════
@@ -1058,6 +1151,16 @@ const S = StyleSheet.create({
   /* Email */
   emailWrap:  { flexDirection: "row", alignItems: "center", height: 54, borderRadius: 14, borderWidth: 1.5, borderColor: C.border, backgroundColor: C.inputBg, overflow: "hidden" },
   emailInput: { flex: 1, paddingRight: 12, fontSize: 15, fontFamily: "Inter_400Regular", color: C.label, height: "100%" },
+
+  /* Detail info chips */
+  detailErrorBanner: { flexDirection: "row", alignItems: "center", gap: 8, backgroundColor: C.errorBg, borderRadius: 10, padding: 12 },
+  detailErrorTxt:    { flex: 1, fontSize: 13, fontFamily: "Inter_500Medium", color: C.error },
+  detailFieldWrap:   { marginBottom: 4 },
+  detailFieldHeader: { flexDirection: "row", alignItems: "center", gap: 7, marginBottom: 10 },
+  detailFieldLabel:  { fontSize: 13, fontFamily: "Inter_600SemiBold", color: C.label, flex: 1 },
+  detailChipRow:     { flexDirection: "row", flexWrap: "wrap", gap: 8 },
+  detailChip:        { flexDirection: "row", alignItems: "center", gap: 5, borderWidth: 1.5, borderRadius: 50, paddingVertical: 7, paddingHorizontal: 13 },
+  detailChipTxt:     { fontSize: 13, fontFamily: "Inter_500Medium" },
 
   /* CTA */
   ctaWrap: {
