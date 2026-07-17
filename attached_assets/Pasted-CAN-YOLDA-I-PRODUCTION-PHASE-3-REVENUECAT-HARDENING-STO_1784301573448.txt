@@ -1,0 +1,293 @@
+CAN YOLDAŞI — PRODUCTION PHASE 3
+REVENUECAT HARDENING & STORE READINESS
+
+Current status:
+
+- RevenueCat SDK integrated
+- Boost packages implemented
+- Purchase verification endpoint exists
+- Promotion system implemented
+- Feed system removed
+- JWT authentication architecture in progress
+
+This phase focuses ONLY on production readiness for RevenueCat.
+
+Do not redesign the UI.
+
+Do not remove existing purchase functionality.
+
+Do not modify unrelated authentication code.
+
+==================================================
+1. FULL REVENUECAT AUDIT
+==================================================
+
+Inspect the entire project.
+
+Search for:
+
+RevenueCat
+Purchases
+react-native-purchases
+purchasePackage
+restorePurchases
+CustomerInfo
+Offerings
+Entitlements
+Webhooks
+listing_promotions
+verify-purchase
+RevenueCat API keys
+
+Create an inventory before changing code.
+
+Report:
+
+- SDK initialization
+- API key loading
+- Platform selection
+- Purchase flow
+- Restore flow
+- Webhook flow
+- Backend verification
+- Database updates
+
+==================================================
+2. PRODUCTION API KEY LOADING
+==================================================
+
+Verify platform-specific loading.
+
+Android:
+
+EXPO_PUBLIC_REVENUECAT_ANDROID_API_KEY
+
+iOS:
+
+EXPO_PUBLIC_REVENUECAT_IOS_API_KEY
+
+Never use:
+
+TEST STORE
+
+Never use one key for both platforms.
+
+Fail fast if production keys are missing.
+
+==================================================
+3. REMOVE TEST STORE REMNANTS
+==================================================
+
+Search for:
+
+TEST STORE
+debug purchases
+fake purchases
+mock purchases
+temporary purchase code
+
+Remove or disable all production-incompatible code.
+
+==================================================
+4. WEBHOOK SECURITY
+==================================================
+
+Audit webhook endpoint.
+
+Require:
+
+REVENUECAT_WEBHOOK_AUTH_TOKEN
+
+Verify:
+
+Authorization header
+
+Reject unauthorized webhook requests.
+
+Do not process spoofed webhook calls.
+
+==================================================
+5. PURCHASE VERIFICATION
+==================================================
+
+Verify backend purchase flow.
+
+Expected:
+
+RevenueCat purchase
+
+↓
+
+Backend verification
+
+↓
+
+listing_promotions update
+
+↓
+
+Expiration calculated
+
+↓
+
+Promotion activated
+
+No client-side trust.
+
+==================================================
+6. RESTORE PURCHASES
+==================================================
+
+Audit restore purchases.
+
+Expected:
+
+Restore button
+
+↓
+
+RevenueCat restore
+
+↓
+
+Backend verification
+
+↓
+
+Promotion recovery if appropriate
+
+Handle:
+
+no purchases
+
+multiple purchases
+
+expired purchases
+
+==================================================
+7. ERROR HANDLING
+==================================================
+
+Standardize errors.
+
+Examples:
+
+Purchase cancelled
+
+Store unavailable
+
+Network error
+
+Verification failed
+
+Already owned
+
+User-friendly Turkish messages.
+
+==================================================
+8. DATABASE AUDIT
+==================================================
+
+Inspect:
+
+listing_promotions
+
+Verify:
+
+owner
+
+expiration
+
+status
+
+purchase source
+
+RevenueCat identifiers
+
+No duplicate active promotions.
+
+==================================================
+9. SECURITY
+==================================================
+
+Ensure:
+
+No API keys committed.
+
+No secret in client.
+
+No fake entitlement.
+
+No trust in client purchase result.
+
+Backend always verifies.
+
+==================================================
+10. STORE READINESS
+==================================================
+
+Verify:
+
+Sandbox compatible
+
+Production compatible
+
+Google Play compatible
+
+App Store compatible
+
+==================================================
+11. TEST MATRIX
+==================================================
+
+Test:
+
+- Successful purchase
+- Cancel purchase
+- Restore purchase
+- Expired promotion
+- Invalid webhook
+- Duplicate webhook
+- Missing API key
+- Missing webhook token
+- Invalid entitlement
+
+==================================================
+12. FINAL REPORT
+==================================================
+
+Return in Turkish.
+
+Use exactly these headings:
+
+1. RevenueCat SDK Durumu
+
+2. Production API Key Durumu
+
+3. Test Store Temizliği
+
+4. Purchase Flow
+
+5. Restore Purchases
+
+6. Backend Verification
+
+7. Webhook Güvenliği
+
+8. Database Durumu
+
+9. Değiştirilen Dosyalar
+
+10. TypeScript Sonucu
+
+11. Gerçekten Test Edilen Senaryolar
+
+12. Manuel Test Gerektiren Senaryolar
+
+13. Kalan Riskler
+
+14. Phase 3 Final Verdict
+
+IMPORTANT:
+
+Do not claim App Store readiness unless production API keys, webhook authentication and backend verification are all confirmed.

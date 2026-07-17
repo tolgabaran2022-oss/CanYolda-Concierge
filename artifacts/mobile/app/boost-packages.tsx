@@ -2,7 +2,7 @@ import { Icon } from "@/components/Icon";
 import { useAuth } from "@/contexts/AuthContext";
 import { useAdoption } from "@/contexts/AdoptionContext";
 import { useColors } from "@/hooks/useColors";
-import { fetchOfferings } from "@/services/revenueCat";
+import { fetchOfferings, restorePurchases } from "@/services/revenueCat";
 import * as Haptics from "expo-haptics";
 import { LinearGradient } from "expo-linear-gradient";
 import { useLocalSearchParams, useRouter } from "expo-router";
@@ -61,7 +61,8 @@ type PurchaseState =
   | "success"
   | "cancelled"
   | "pending"
-  | "error";
+  | "error"
+  | "restoring";
 
 /* ─────────────────────────────────────────────────────────────
    SAFE RESULT MODEL
@@ -123,7 +124,7 @@ async function callVerifyPurchaseApi(
         listingId,
         rcPackageIdentifier:   result.packageIdentifier,
         productIdentifier:     result.productIdentifier,
-        transactionIdentifier: result.transactionIdentifier ?? `rc-${Date.now()}`,
+        transactionIdentifier: result.transactionIdentifier,
         rcUserId:              result.rcUserId,
       }),
     });
@@ -321,10 +322,15 @@ export default function BoostPackagesScreen() {
       setPurchaseState("success");
       Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
 
+      const txId = result.transaction?.transactionIdentifier;
+      if (!txId) {
+        if (__DEV__) console.warn("[Boost] RC returned no transactionIdentifier — purchase recorded without idempotency key");
+      }
+
       const completedPurchase: CompletedBoostPurchase = {
         packageIdentifier:     selectedPackage.identifier,
         productIdentifier:     result.productIdentifier,
-        transactionIdentifier: result.transaction?.transactionIdentifier,
+        transactionIdentifier: txId,
         rcUserId:              result.customerInfo.originalAppUserId,
         customerInfo:          result.customerInfo,
       };
@@ -419,6 +425,78 @@ export default function BoostPackagesScreen() {
       setPurchaseState("error");
       Alert.alert("Hata", message, [{ text: "Tamam", onPress: () => setPurchaseState("idle") }]);
     } finally {
+      purchasingRef.current = false;
+    }
+  };
+
+  /* ── Restore purchases handler ────────────────────────── */
+  const handleRestore = async () => {
+    if (Platform.OS === "web") return;
+    if (purchasingRef.current) return;
+    purchasingRef.current = true;
+    setPurchaseState("restoring");
+
+    try {
+      const customerInfo = await restorePurchases();
+      if (!customerInfo) {
+        Alert.alert("Bilgi", "Geri yükleme bu platformda desteklenmiyor.", [{ text: "Tamam" }]);
+        return;
+      }
+
+      /* For boost (one-time / NON_RENEWING), check non-subscription transactions */
+      const boostProductIds = new Set(["canyoldasi_boost_1_day", "canyoldasi_boost_3_days", "canyoldasi_boost_7_days"]);
+      const boostTxns = customerInfo.nonSubscriptionTransactions?.filter(
+        (t) => boostProductIds.has(t.productIdentifier)
+      ) ?? [];
+
+      if (!token || !listingId || boostTxns.length === 0) {
+        Alert.alert(
+          "Geri Yüklendi",
+          "Bu hesapla ilişkili öne çıkarma satın alımı bulunamadı.",
+          [{ text: "Tamam" }]
+        );
+        return;
+      }
+
+      /* Attempt to re-verify the most recent matching transaction */
+      const latest = boostTxns.sort(
+        (a, b) => new Date(b.purchaseDate).getTime() - new Date(a.purchaseDate).getTime()
+      )[0]!;
+
+      const restored = await callVerifyPurchaseApi(
+        {
+          packageIdentifier:     latest.productIdentifier.replace("canyoldasi_", ""),
+          productIdentifier:     latest.productIdentifier,
+          transactionIdentifier: latest.transactionIdentifier,
+          rcUserId:              customerInfo.originalAppUserId,
+          customerInfo,
+        },
+        listingId,
+        token
+      );
+
+      if (restored?.success) {
+        try { await refreshAdoption(); } catch { /* non-critical */ }
+        Alert.alert(
+          restored.alreadyProcessed ? "Zaten Aktif" : "Satın Alım Geri Yüklendi",
+          restored.alreadyProcessed
+            ? "Bu satın alma zaten aktif durumda."
+            : `İlanın ${restored.durationDays} gün boyunca tekrar öne çıkarıldı.`,
+          [{ text: "Tamam", onPress: () => { setPurchaseState("idle"); router.back(); } }]
+        );
+      } else {
+        Alert.alert(
+          "Geri Yükleme Tamamlandı",
+          "Hesabınızın satın alma geçmişi güncellendi. Aktif bir öne çıkarma bulunamadı.",
+          [{ text: "Tamam" }]
+        );
+      }
+    } catch (err: unknown) {
+      const msg = err instanceof Error ? err.message : String(err);
+      if (__DEV__) console.warn("[Boost] Restore failed:", msg);
+      Alert.alert("Hata", "Satın alımlar geri yüklenemedi. Lütfen tekrar deneyin.", [{ text: "Tamam" }]);
+    } finally {
+      setPurchaseState("idle");
       purchasingRef.current = false;
     }
   };
@@ -611,6 +689,23 @@ export default function BoostPackagesScreen() {
             Satın alma Apple/Google hesabınız üzerinden gerçekleşir. Süre bitince tekrar öne çıkarabilirsiniz.
           </Text>
         </View>
+
+        {/* Restore purchases — required by App Store Review Guidelines §3.1.1 */}
+        {Platform.OS !== "web" && (
+          <Pressable
+            style={styles.restoreBtn}
+            onPress={handleRestore}
+            disabled={purchaseState === "restoring" || isPurchasing}
+          >
+            {purchaseState === "restoring" ? (
+              <ActivityIndicator size="small" color={colors.mutedForeground} />
+            ) : (
+              <Text style={[styles.restoreText, { color: colors.mutedForeground }]}>
+                Satın Alımları Geri Yükle
+              </Text>
+            )}
+          </Pressable>
+        )}
       </ScrollView>
 
       {/* CTA */}
@@ -705,4 +800,6 @@ const styles = StyleSheet.create({
     shadowOpacity: 0.3, shadowRadius: 12, elevation: 6,
   },
   ctaButtonText: { fontSize: 17, fontFamily: "Inter_700Bold", color: "white" },
+  restoreBtn:    { alignItems: "center", justifyContent: "center", paddingVertical: 14, minHeight: 44 },
+  restoreText:   { fontSize: 14, fontFamily: "Inter_500Medium", textDecorationLine: "underline" },
 });

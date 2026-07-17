@@ -9,6 +9,7 @@
 - [Local URI upload bug pattern](local-uri-upload-bug.md) — ImagePicker returns local file:// URIs; ALL screens that persist images must call uploadImage(/api/upload) first; 6 screens were missing this step
 - [RevenueCat IAP Boost system](revenuecat-iap-boost.md) — RC project/app/product IDs; connector proxy limitations; architecture for listing_boost IAP flow
 - [RevenueCat webhook & refund lifecycle](revenuecat-webhook-arch.md) — POST /api/webhooks/revenuecat with raw body before global JSON; auth token + optional HMAC; recalculateListingPromotion uses max(promotionExpiresAt) over processed purchases
+- [RevenueCat platform-specific API keys](revenuecat-platform-keys.md) — must use EXPO_PUBLIC_REVENUECAT_IOS_API_KEY / ANDROID_API_KEY in production; legacy single key kept as dev fallback only; restorePurchases() added to revenueCat.ts for App Store §3.1.1
 - [Router prefix + rate limiter pattern](router-prefix-ratelimit.md) — route files keep full internal prefix (e.g. /messages/conversations); index.ts uses router.use("/messages", limiter, subRouter) — stripping internal prefix causes double-mount; removing prefix from router.use makes limiter applies to ALL routes
 - [QA report location](qa-reports.md) — full QA audit docs at docs/qa/ (FEATURE_INVENTORY, QA_TEST_MATRIX, BUG_REPORT, MANUAL_DEVICE_TESTS, RELEASE_BLOCKERS, QA_SUMMARY)
 - [reportCode RIGHT fix](reportcode-right-fix.md) — SUBSTRING(col FROM $n) in Drizzle sql`` hits PostgreSQL regex overload; use RIGHT(report_code, 6) instead; COUNT-based seq also breaks after deletes — use MAX

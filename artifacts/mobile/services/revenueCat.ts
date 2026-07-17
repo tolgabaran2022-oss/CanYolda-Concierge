@@ -1,13 +1,13 @@
 /**
  * Central RevenueCat service for CanYoldaşı.
  *
- * ⚠️  IMPORTANT — TEST STORE KEY WARNING:
- *   EXPO_PUBLIC_REVENUECAT_API_KEY currently uses the RevenueCat TEST STORE
- *   public SDK key during development.
- *   Before App Store / Google Play production release this MUST be replaced
- *   with the platform-specific production RevenueCat public API keys
- *   (EXPO_PUBLIC_REVENUECAT_IOS_API_KEY / EXPO_PUBLIC_REVENUECAT_ANDROID_API_KEY).
- *   NEVER ship production intentionally using the Test Store key.
+ * API key selection (platform-specific):
+ *   iOS     → EXPO_PUBLIC_REVENUECAT_IOS_API_KEY
+ *   Android → EXPO_PUBLIC_REVENUECAT_ANDROID_API_KEY
+ *
+ * Both env vars must be set before submitting to App Store / Google Play.
+ * The old single-key var (EXPO_PUBLIC_REVENUECAT_API_KEY) is kept only as a
+ * last-resort development fallback so CI/dev builds don't crash silently.
  */
 
 import { Platform } from "react-native";
@@ -30,6 +30,42 @@ async function getPurchases() {
 }
 
 /**
+ * Resolves the platform-appropriate RevenueCat public SDK key.
+ *
+ * Priority:
+ *   1. Platform-specific key (EXPO_PUBLIC_REVENUECAT_IOS_API_KEY / ANDROID)
+ *   2. Legacy single-key (EXPO_PUBLIC_REVENUECAT_API_KEY) — dev fallback only
+ *
+ * Returns undefined if no key is configured so the caller can warn.
+ */
+function resolveApiKey(): string | undefined {
+  if (Platform.OS === "ios") {
+    const iosKey = process.env.EXPO_PUBLIC_REVENUECAT_IOS_API_KEY;
+    if (iosKey) return iosKey;
+  }
+
+  if (Platform.OS === "android") {
+    const androidKey = process.env.EXPO_PUBLIC_REVENUECAT_ANDROID_API_KEY;
+    if (androidKey) return androidKey;
+  }
+
+  // Dev fallback — single shared key (Test Store).
+  // ⚠ NEVER ship to production without platform-specific keys above.
+  const legacyKey = process.env.EXPO_PUBLIC_REVENUECAT_API_KEY;
+  if (legacyKey) {
+    if (__DEV__) {
+      console.warn(
+        "[RevenueCat] Using legacy EXPO_PUBLIC_REVENUECAT_API_KEY — " +
+        "set platform-specific keys before App Store / Google Play submission."
+      );
+    }
+    return legacyKey;
+  }
+
+  return undefined;
+}
+
+/**
  * Initialize the RevenueCat SDK.
  * Idempotent — safe to call multiple times (Fast Refresh, Strict Mode, remount).
  * Must be called before any other SDK operation.
@@ -40,9 +76,14 @@ async function getPurchases() {
 export async function initializeRevenueCat(userId?: string | null): Promise<void> {
   if (Platform.OS === "web") return;
 
-  const apiKey = process.env.EXPO_PUBLIC_REVENUECAT_API_KEY;
+  const apiKey = resolveApiKey();
   if (!apiKey) {
-    if (__DEV__) console.warn("[RevenueCat] API key is missing — EXPO_PUBLIC_REVENUECAT_API_KEY not set");
+    if (__DEV__) {
+      console.warn(
+        "[RevenueCat] No API key configured. " +
+        "Set EXPO_PUBLIC_REVENUECAT_IOS_API_KEY or EXPO_PUBLIC_REVENUECAT_ANDROID_API_KEY."
+      );
+    }
     return;
   }
 
@@ -63,7 +104,7 @@ export async function initializeRevenueCat(userId?: string | null): Promise<void
 
       Purchases.configure({ apiKey });
       _initialized = true;
-      if (__DEV__) console.log("[RevenueCat] SDK configured");
+      if (__DEV__) console.log("[RevenueCat] SDK configured (platform:", Platform.OS, ")");
     }
 
     /* Associate with the authenticated user UUID if provided */
@@ -169,4 +210,28 @@ export async function fetchOfferings(): Promise<PurchasesPackage[]> {
   }
 
   return offering.availablePackages as PurchasesPackage[];
+}
+
+/* ──────────────────────────────────────────────────────────────
+   Restore Purchases
+────────────────────────────────────────────────────────────── */
+
+/**
+ * Restore previous purchases from the App Store / Google Play.
+ *
+ * Required by App Store Review Guidelines §3.1.1 on every paywall screen.
+ * Returns the refreshed CustomerInfo; throws on SDK error.
+ * Web: no-op (returns null).
+ */
+export async function restorePurchases() {
+  if (Platform.OS === "web") return null;
+
+  const sdk = await getPurchases();
+  if (!sdk) throw new Error("RevenueCat SDK unavailable");
+  if (!_initialized) throw new Error("RevenueCat SDK not yet initialized");
+
+  if (__DEV__) console.log("[RevenueCat] Restoring purchases…");
+  const customerInfo = await sdk.Purchases.restorePurchases();
+  if (__DEV__) console.log("[RevenueCat] Restore complete");
+  return customerInfo;
 }
