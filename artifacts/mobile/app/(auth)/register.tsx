@@ -50,10 +50,12 @@ import { SafeAreaView } from "react-native-safe-area-context";
 import { useAuth } from "@/contexts/AuthContext";
 
 const C = {
-  cream:     "#FBF2EA",
+  lavender:     "#EDE8FF",
+  lavenderSoft: "#F3F0FF",
   purple900: "#26215C",
   purple600: "#534AB7",
   purple500: "#6C5CE7",
+  purple300: "#A78BFA",
   purple200: "#CECBF6",
   purple100: "#EAE7FB",
   muted:     "#8B8798",
@@ -95,7 +97,7 @@ function AnimatedField({
 
   const wrapStyle = useAnimatedStyle(() => ({
     borderColor: interpolateColor(focus.value, [0, 1], ["transparent", C.purple500]),
-    backgroundColor: interpolateColor(focus.value, [0, 1], [C.cream, C.white]),
+    backgroundColor: interpolateColor(focus.value, [0, 1], [C.lavenderSoft, C.white]),
     transform: [{ scale: interpolate(focus.value, [0, 1], [1, 1.018]) }],
     shadowOpacity: interpolate(focus.value, [0, 1], [0, 0.18]),
     shadowRadius: interpolate(focus.value, [0, 1], [0, 10]),
@@ -169,6 +171,9 @@ function GlowPaw({ reduceMotion }: { reduceMotion: boolean }) {
 
   return (
     <Animated.View entering={FadeIn.delay(120).duration(500)} style={styles.iconWrap}>
+      {/* Dolgulu dış halka */}
+      <View style={styles.glowRingBase} />
+      {/* Pulse halkası */}
       <Animated.View style={[styles.glowRing, ringStyle]} />
       <Animated.View style={blobScale}>
         <LinearGradient
@@ -319,7 +324,7 @@ export default function RegisterScreen() {
 
   return (
     <SafeAreaView style={styles.container} edges={["top", "bottom"]}>
-      <StatusBar barStyle="dark-content" backgroundColor={C.cream} />
+      <StatusBar barStyle="dark-content" backgroundColor={C.lavender} />
 
       <MorphBlob style={[styles.blob, styles.blobTopRight]} delay={0} />
       <MorphBlob style={[styles.blob, styles.blobBottomLeft]} delay={2500} />
@@ -495,7 +500,7 @@ export default function RegisterScreen() {
 }
 
 const styles = StyleSheet.create({
-  container: { flex: 1, backgroundColor: C.cream },
+  container: { flex: 1, backgroundColor: C.lavender },
   flex: { flex: 1 },
   scroll: { flexGrow: 1, paddingHorizontal: 26, paddingBottom: 24 },
 
@@ -512,16 +517,22 @@ const styles = StyleSheet.create({
   },
 
   iconWrap: { alignItems: "center", marginTop: 22, position: "relative" },
+  glowRingBase: {
+    position: "absolute",
+    width: 114, height: 114, borderRadius: 57,
+    backgroundColor: C.purple200,
+    top: -13, left: "50%", marginLeft: -57,
+    opacity: 0.55,
+  },
   glowRing: {
     position: "absolute",
-    width: 108, height: 108, borderRadius: 54,
+    width: 114, height: 114, borderRadius: 57,
     backgroundColor: C.purple500,
-    top: -10, left: "50%", marginLeft: -54,
+    top: -13, left: "50%", marginLeft: -57,
   },
   iconBlob: {
     width: 88, height: 88, alignItems: "center", justifyContent: "center",
-    borderTopLeftRadius: 44, borderTopRightRadius: 38,
-    borderBottomLeftRadius: 36, borderBottomRightRadius: 46,
+    borderRadius: 44,
     shadowColor: C.purple600, shadowOpacity: 0.4,
     shadowRadius: 16, shadowOffset: { width: 0, height: 8 }, elevation: 8,
   },

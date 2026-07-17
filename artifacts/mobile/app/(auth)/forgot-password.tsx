@@ -35,10 +35,12 @@ const API_BASE = process.env.EXPO_PUBLIC_DOMAIN
   : "http://localhost:8080/api";
 
 const C = {
-  cream:     "#FBF2EA",
+  lavender:     "#EDE8FF",
+  lavenderSoft: "#F3F0FF",
   purple900: "#26215C",
   purple600: "#534AB7",
   purple500: "#6C5CE7",
+  purple300: "#A78BFA",
   purple200: "#CECBF6",
   purple100: "#EAE7FB",
   muted:     "#8B8798",
@@ -154,7 +156,7 @@ export default function ForgotPasswordScreen() {
 
   return (
     <SafeAreaView style={styles.container} edges={["top", "bottom"]}>
-      <StatusBar barStyle="dark-content" backgroundColor={C.cream} />
+      <StatusBar barStyle="dark-content" backgroundColor={C.lavender} />
 
       <View style={[styles.blob, styles.blobTopRight]} pointerEvents="none" />
       <View style={[styles.blob, styles.blobBottomLeft]} pointerEvents="none" />
@@ -184,6 +186,7 @@ export default function ForgotPasswordScreen() {
 
           {/* Marka ikonu */}
           <View style={styles.iconWrap}>
+            <View style={styles.glowRingBase} />
             <LinearGradient
               colors={[C.purple500, C.purple600]}
               start={{ x: 0, y: 0 }}
@@ -327,7 +330,7 @@ export default function ForgotPasswordScreen() {
 }
 
 const styles = StyleSheet.create({
-  container: { flex: 1, backgroundColor: C.cream },
+  container: { flex: 1, backgroundColor: C.lavender },
   flex: { flex: 1 },
   scroll: { flexGrow: 1, paddingHorizontal: 26, paddingBottom: 24 },
 
@@ -349,12 +352,18 @@ const styles = StyleSheet.create({
     shadowRadius: 6, shadowOffset: { width: 0, height: 3 }, elevation: 2,
   },
 
-  iconWrap: { alignItems: "center", marginTop: 28 },
+  iconWrap: { alignItems: "center", marginTop: 28, position: "relative" },
+  glowRingBase: {
+    position: "absolute",
+    width: 114, height: 114, borderRadius: 57,
+    backgroundColor: C.purple200,
+    top: -13, left: "50%", marginLeft: -57,
+    opacity: 0.55,
+  },
   iconBlob: {
     width: 88, height: 88,
     alignItems: "center", justifyContent: "center",
-    borderTopLeftRadius: 44, borderTopRightRadius: 38,
-    borderBottomLeftRadius: 36, borderBottomRightRadius: 46,
+    borderRadius: 44,
     shadowColor: C.purple600, shadowOpacity: 0.35,
     shadowRadius: 14, shadowOffset: { width: 0, height: 8 }, elevation: 8,
   },
@@ -405,7 +414,7 @@ const styles = StyleSheet.create({
   inputWrap: {
     flexDirection: "row", alignItems: "center",
     height: 52, borderRadius: 16, paddingHorizontal: 14,
-    backgroundColor: C.cream, borderWidth: 1.5, borderColor: "transparent",
+    backgroundColor: C.lavenderSoft, borderWidth: 1.5, borderColor: "transparent",
   },
   inputWrapFocused: { borderColor: C.purple500, backgroundColor: C.white },
   inputIcon: { marginRight: 10 },
