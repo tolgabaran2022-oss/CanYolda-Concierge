@@ -1,11 +1,10 @@
 /**
  * WelcomeScreen — CanYoldaşı giriş ekranı
  *
- * Mimari:
- *   View (flex:1, backgroundColor cream)
- *     ├── heroWrap  — height * 0.58, resizeMode cover + krem gradyan
- *     └── SafeAreaView (flex:1) — butonlar, link, yasal metin
+ * Tasarım: Figma — lavanta arkaplan, organik blob + pati dekorasyonu (sağ alt),
+ *          "bir tık uzağında" bold mor, hero görseli fade-in.
  */
+import { Ionicons } from "@expo/vector-icons";
 import * as Haptics from "expo-haptics";
 import { LinearGradient } from "expo-linear-gradient";
 import { useRouter } from "expo-router";
@@ -28,14 +27,20 @@ import { SafeAreaView, useSafeAreaInsets } from "react-native-safe-area-context"
 
 /* ── Renk paleti ───────────────────────────────────────────────────── */
 const C = {
-  cream:     "#FBF2EA",
+  lavender:  "#EDE8FF",
   purple900: "#26215C",
   purple600: "#534AB7",
   purple500: "#6C5CE7",
+  purple300: "#A78BFA",
   purple200: "#CECBF6",
+  purple100: "#EAE7FB",
   muted:     "#8B8798",
   white:     "#FFFFFF",
 };
+
+/* Arkaplan rengi rgba (hero fade için) */
+const BG_RGBA0 = "rgba(237,232,255,0)";
+const BG_SOLID = C.lavender;
 
 const HERO_IMAGE = require("@/assets/images/login-hero.jpg");
 
@@ -53,9 +58,16 @@ export default function WelcomeScreen() {
 
   return (
     <View style={styles.container}>
-      <StatusBar barStyle="dark-content" backgroundColor={C.cream} />
+      <StatusBar barStyle="dark-content" backgroundColor={BG_SOLID} />
 
-      {/* ── Hero görseli — kalan tüm alanı doldurur ─────────────── */}
+      {/* ── Sağ alt dekoratif blob + pati ─────────────────────────── */}
+      <View style={styles.decoBlob} pointerEvents="none">
+        <Ionicons name="paw" size={52} color="rgba(255,255,255,0.75)" />
+      </View>
+      <View style={styles.decoCircleSm} pointerEvents="none" />
+      <View style={styles.decoCircleTiny} pointerEvents="none" />
+
+      {/* ── Hero görseli ───────────────────────────────────────────── */}
       <View style={[styles.heroWrap, { marginTop: insets.top }]}>
         <Image
           source={HERO_IMAGE}
@@ -64,21 +76,21 @@ export default function WelcomeScreen() {
           accessible
           accessibilityLabel="canyoldaşı — köpek ve kedi ile karşılama görseli"
         />
-        {/* Üstten yumuşak beyaz geçiş */}
+        {/* Üstten lavanta geçiş */}
         <LinearGradient
-          colors={[C.cream, "rgba(251,242,234,0)"]}
+          colors={[BG_SOLID, BG_RGBA0]}
           style={styles.heroTopFade}
           pointerEvents="none"
         />
-        {/* Görselden krem zemine yumuşak geçiş */}
+        {/* Alttan lavanta geçiş */}
         <LinearGradient
-          colors={["rgba(251,242,234,0)", C.cream]}
+          colors={[BG_RGBA0, BG_SOLID]}
           style={styles.heroFade}
           pointerEvents="none"
         />
       </View>
 
-      {/* ── Buton alanı ──────────────────────────────────────────── */}
+      {/* ── Buton alanı ──────────────────────────────────────────────── */}
       <SafeAreaView edges={["bottom"]} style={styles.sheet}>
         {/* Giriş Yap */}
         <Pressable
@@ -97,7 +109,7 @@ export default function WelcomeScreen() {
             style={[styles.btn, styles.btnPrimary]}
           >
             <Text style={styles.btnPrimaryText} maxFontSizeMultiplier={1.2}>
-              Giriş yap
+              Giriş Yap
             </Text>
           </LinearGradient>
         </Pressable>
@@ -117,11 +129,11 @@ export default function WelcomeScreen() {
           accessibilityLabel="Kayıt Ol"
         >
           <Text style={styles.btnSecondaryText} maxFontSizeMultiplier={1.2}>
-            Kayıt ol
+            Kayıt Ol
           </Text>
         </Pressable>
 
-        {/* Şifremi Unuttum */}
+        {/* Şifremi Unuttum? */}
         <Pressable
           onPress={() => {
             Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
@@ -131,7 +143,7 @@ export default function WelcomeScreen() {
           hitSlop={8}
         >
           <Text style={styles.forgot} maxFontSizeMultiplier={1.2}>
-            Şifremi unuttum?
+            Şifremi Unuttum?
           </Text>
         </Pressable>
 
@@ -151,16 +163,57 @@ export default function WelcomeScreen() {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: C.cream,
+    backgroundColor: C.lavender,
   },
 
-  /* Hero */
+  /* ── Dekoratif blob (sağ alt) ─── */
+  decoBlob: {
+    position:             "absolute",
+    bottom:               -32,
+    right:                -32,
+    width:                168,
+    height:               168,
+    borderTopLeftRadius:  100,
+    borderTopRightRadius: 60,
+    borderBottomLeftRadius: 80,
+    borderBottomRightRadius: 50,
+    backgroundColor:      C.purple300,
+    opacity:              0.55,
+    alignItems:           "center",
+    justifyContent:       "center",
+    zIndex:               0,
+  },
+  decoCircleSm: {
+    position:        "absolute",
+    bottom:          112,
+    right:           -10,
+    width:           44,
+    height:          44,
+    borderRadius:    22,
+    backgroundColor: C.purple200,
+    opacity:         0.7,
+    zIndex:          0,
+  },
+  decoCircleTiny: {
+    position:        "absolute",
+    bottom:          168,
+    right:           28,
+    width:           18,
+    height:          18,
+    borderRadius:    9,
+    backgroundColor: C.purple300,
+    opacity:         0.45,
+    zIndex:          0,
+  },
+
+  /* ── Hero ─── */
   heroWrap: {
-    width: "100%",
-    flex:  1,
+    width:  "100%",
+    flex:   1,
+    zIndex: 1,
   },
   heroImage: {
-    width: "100%",
+    width:  "100%",
     height: "100%",
   },
   heroTopFade: {
@@ -168,43 +221,44 @@ const styles = StyleSheet.create({
     left:     0,
     right:    0,
     top:      0,
-    height:   80,
+    height:   90,
   },
   heroFade: {
     position: "absolute",
     left:     0,
     right:    0,
     bottom:   0,
-    height:   96,
+    height:   110,
   },
 
-  /* Sheet */
+  /* ── Sheet ─── */
   sheet: {
     paddingHorizontal: 26,
     paddingTop:        8,
     paddingBottom:     12,
     gap:               14,
+    zIndex:            1,
   },
 
-  /* Buttons */
+  /* ── Buttons ─── */
   btn: {
-    height:          54,
-    borderRadius:    27,
-    alignItems:      "center",
-    justifyContent:  "center",
+    height:         54,
+    borderRadius:   27,
+    alignItems:     "center",
+    justifyContent: "center",
   },
   btnPrimary: {
     shadowColor:   C.purple600,
-    shadowOpacity: 0.35,
-    shadowRadius:  12,
+    shadowOpacity: 0.38,
+    shadowRadius:  14,
     shadowOffset:  { width: 0, height: 8 },
-    elevation:     6,
+    elevation:     7,
   },
   btnPrimaryText: {
-    color:          C.white,
-    fontSize:       16.5,
-    fontFamily:     "Quicksand_700Bold",
-    letterSpacing:  0.2,
+    color:         C.white,
+    fontSize:      16.5,
+    fontFamily:    "Quicksand_700Bold",
+    letterSpacing: 0.2,
   },
   btnSecondary: {
     backgroundColor: C.white,
@@ -226,20 +280,20 @@ const styles = StyleSheet.create({
     transform: [{ scale: 0.97 }],
   },
 
-  /* Links */
+  /* ── Links ─── */
   forgot: {
-    textAlign:  "center",
-    fontSize:   14.5,
-    color:      C.purple600,
-    fontFamily: "Quicksand_600SemiBold",
+    textAlign:       "center",
+    fontSize:        14.5,
+    color:           C.purple600,
+    fontFamily:      "Quicksand_600SemiBold",
     paddingVertical: 2,
   },
   terms: {
-    textAlign:       "center",
-    fontSize:        12.5,
-    lineHeight:      20,
-    color:           C.muted,
-    fontFamily:      "Quicksand_500Medium",
+    textAlign:         "center",
+    fontSize:          12.5,
+    lineHeight:        20,
+    color:             C.muted,
+    fontFamily:        "Quicksand_500Medium",
     paddingHorizontal: 6,
   },
   termsLink: {
