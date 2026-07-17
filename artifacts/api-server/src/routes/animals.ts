@@ -13,6 +13,8 @@ import {
   moderationQueue,
   userRiskScores,
   animalNotifications,
+  socialProfiles,
+  localUsers,
 } from "@workspace/db";
 import { logger } from "../lib/logger.js";
 import { extractUserId } from "../lib/jwtAuth.js";
@@ -910,7 +912,18 @@ router.delete("/animals/:id/comments/:commentId", async (req, res) => {
 /* ── GET /api/animals/:id/help-updates ───────────────────────── */
 router.get("/animals/:id/help-updates", async (req, res) => {
   try {
-    const updates = await db.select().from(animalHelpUpdates)
+    const updates = await db.select({
+      id:         animalHelpUpdates.id,
+      animalId:   animalHelpUpdates.animalId,
+      userId:     animalHelpUpdates.userId,
+      userName:   animalHelpUpdates.userName,
+      photoUrl:   animalHelpUpdates.photoUrl,
+      status:     animalHelpUpdates.status,
+      note:       animalHelpUpdates.note,
+      createdAt:  animalHelpUpdates.createdAt,
+      userAvatar: socialProfiles.avatarUrl,
+    }).from(animalHelpUpdates)
+      .leftJoin(socialProfiles, eq(socialProfiles.id, animalHelpUpdates.userId))
       .where(eq(animalHelpUpdates.animalId, req.params.id))
       .orderBy(desc(animalHelpUpdates.createdAt));
 
@@ -936,7 +949,16 @@ router.post("/animals/:id/help-updates", validateBody(HelpUpdateSchema), async (
     if (!animal) { res.status(404).json({ error: "Hayvan bulunamadı" }); return; }
 
     const { status, note = "", photoUrl = "" } = req.body as z.infer<typeof HelpUpdateSchema>;
-    const userName = "Anonim";
+
+    /* Resolve real display name: social_profiles → local_users → fallback */
+    const [profile] = await db.select({ name: socialProfiles.name })
+      .from(socialProfiles).where(eq(socialProfiles.id, userId));
+    let userName = profile?.name?.trim() ?? "";
+    if (!userName) {
+      const [lu] = await db.select({ name: localUsers.name })
+        .from(localUsers).where(eq(localUsers.id, userId));
+      userName = lu?.name?.trim() ?? "Anonim";
+    }
 
     const [inserted] = await db.insert(animalHelpUpdates).values({
       animalId: id,

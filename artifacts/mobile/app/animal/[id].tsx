@@ -95,14 +95,15 @@ const HELP_STATUS_MAP: Record<string, { label: string; color: string }> = {
 };
 
 interface HelpUpdateItem {
-  id:        string;
-  animalId:  string;
-  userId:    string;
-  userName:  string;
-  photoUrl:  string;
-  status:    string;
-  note:      string;
-  createdAt: string;
+  id:          string;
+  animalId:    string;
+  userId:      string;
+  userName:    string;
+  userAvatar?: string;
+  photoUrl:    string;
+  status:      string;
+  note:        string;
+  createdAt:   string;
 }
 
 /* ── Animal type display ────────────────────────────────────────────────────── */
@@ -906,10 +907,14 @@ export default function AnimalDetailScreen() {
                   {helpUpdates.slice(0, 3).map((u) => (
                     <View key={u.id} style={{ backgroundColor: "#F8F5FF", borderRadius: 16, padding: 14, gap: 10, borderWidth: 1, borderColor: "rgba(116,79,190,0.08)" }}>
                       <View style={{ flexDirection: "row", alignItems: "center", gap: 10 }}>
-                        <View style={{ width: 36, height: 36, borderRadius: 18, backgroundColor: `${C.purple}18`, alignItems: "center", justifyContent: "center" }}>
-                          <Text style={{ fontSize: 12, fontFamily: "Inter_700Bold", color: C.purple }}>
-                            {initialsOf(u.userName || "?")}
-                          </Text>
+                        <View style={{ width: 36, height: 36, borderRadius: 18, backgroundColor: `${C.purple}18`, alignItems: "center", justifyContent: "center", overflow: "hidden" }}>
+                          {u.userAvatar ? (
+                            <Image source={{ uri: u.userAvatar }} style={{ width: 36, height: 36 }} contentFit="cover" />
+                          ) : (
+                            <Text style={{ fontSize: 12, fontFamily: "Inter_700Bold", color: C.purple }}>
+                              {initialsOf(u.userName || "?")}
+                            </Text>
+                          )}
                         </View>
                         <View style={{ flex: 1 }}>
                           <Text style={{ fontSize: 13, fontFamily: "Inter_600SemiBold", color: C.text }}>
