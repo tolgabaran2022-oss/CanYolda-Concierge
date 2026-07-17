@@ -1,3 +1,4 @@
+import AsyncStorage from "@react-native-async-storage/async-storage";
 import { Icon } from "@/components/Icon";
 import * as Haptics from "expo-haptics";
 import * as ImagePicker from "expo-image-picker";
@@ -25,6 +26,8 @@ const API_BASE = process.env.EXPO_PUBLIC_DOMAIN
   ? `https://${process.env.EXPO_PUBLIC_DOMAIN}/api`
   : "http://localhost:8080/api";
 
+const TOKEN_KEY = "@canyoldasi:jwt";
+
 async function uploadImage(localUri: string): Promise<string> {
   const filename = localUri.split("/").pop() ?? "photo.jpg";
   const match = /\.(\w+)$/.exec(filename);
@@ -37,8 +40,14 @@ async function uploadImage(localUri: string): Promise<string> {
   } else {
     formData.append("image", { uri: localUri, name: filename, type: mimeType } as unknown as Blob);
   }
-  const res = await fetch(`${API_BASE}/upload`, { method: "POST", body: formData });
-  if (!res.ok) throw new Error("Fotoğraf yüklenemedi");
+  const token = await AsyncStorage.getItem(TOKEN_KEY);
+  const headers: Record<string, string> = {};
+  if (token) headers["Authorization"] = `Bearer ${token}`;
+  const res = await fetch(`${API_BASE}/upload`, { method: "POST", body: formData, headers });
+  if (!res.ok) {
+    console.error("[uploadImage] HTTP", res.status, await res.text().catch(() => ""));
+    throw new Error("Fotoğraf yüklenemedi");
+  }
   const data = await res.json() as { url: string };
   return data.url;
 }
@@ -61,7 +70,28 @@ export default function AddPetScreen() {
   const [feedingNotes, setFeedingNotes] = useState("");
   const [isSaving, setIsSaving] = useState(false);
 
-  const pickImage = async () => {
+  const openCamera = async () => {
+    const perm = await ImagePicker.requestCameraPermissionsAsync();
+    if (!perm.granted) {
+      Alert.alert("Kamera İzni Gerekli", "Ayarlar'dan kamera iznini etkinleştirin.");
+      return;
+    }
+    const result = await ImagePicker.launchCameraAsync({
+      allowsEditing: true,
+      aspect: [1, 1],
+      quality: 0.7,
+    });
+    if (!result.canceled && result.assets[0]) {
+      setImage(result.assets[0].uri);
+    }
+  };
+
+  const openGallery = async () => {
+    const perm = await ImagePicker.requestMediaLibraryPermissionsAsync();
+    if (!perm.granted) {
+      Alert.alert("Galeri İzni Gerekli", "Ayarlar'dan fotoğraf kütüphanesi iznini etkinleştirin.");
+      return;
+    }
     const result = await ImagePicker.launchImageLibraryAsync({
       mediaTypes: ["images"],
       allowsEditing: true,
@@ -71,6 +101,18 @@ export default function AddPetScreen() {
     if (!result.canceled && result.assets[0]) {
       setImage(result.assets[0].uri);
     }
+  };
+
+  const pickImage = () => {
+    Alert.alert(
+      "Fotoğraf Ekle",
+      "Nasıl fotoğraf eklemek istersiniz?",
+      [
+        { text: "Kamera", onPress: openCamera },
+        { text: "Galeri", onPress: openGallery },
+        { text: "İptal", style: "cancel" },
+      ]
+    );
   };
 
   const handleSave = async () => {

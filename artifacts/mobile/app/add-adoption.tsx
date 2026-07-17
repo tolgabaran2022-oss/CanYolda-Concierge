@@ -5,13 +5,12 @@ import * as ImagePicker from "expo-image-picker";
 import { Image } from "expo-image";
 import { LinearGradient } from "expo-linear-gradient";
 import { useRouter } from "expo-router";
-import React, { useEffect, useRef, useState } from "react";
+import React, { useRef, useState } from "react";
 import {
   ActivityIndicator,
   Alert,
   Dimensions,
   FlatList,
-  InteractionManager,
   KeyboardAvoidingView,
   Modal,
   Platform,
@@ -227,37 +226,17 @@ const PHOTO_H = PHOTO_W * 1.15;
 function AddPhotoSheet({ visible, onCamera, onGallery, onClose }: {
   visible: boolean; onCamera: () => void; onGallery: () => void; onClose: () => void;
 }) {
-  const T          = useTheme();
-  const insets     = useSafeAreaInsets();
-  const pendingRef = useRef<null | (() => void)>(null);
-
-  /* Android / Web: visible true→false triggers runAfterInteractions */
-  const prevVisibleRef = useRef(visible);
-  useEffect(() => {
-    if (prevVisibleRef.current && !visible && pendingRef.current) {
-      const action = pendingRef.current;
-      pendingRef.current = null;
-      InteractionManager.runAfterInteractions(() => action());
-    }
-    prevVisibleRef.current = visible;
-  }, [visible]);
-
-  /* iOS: onDismiss fires after native slide-out animation is fully done */
-  const handleDismiss = () => {
-    if (pendingRef.current) {
-      const action = pendingRef.current;
-      pendingRef.current = null;
-      action();
-    }
-  };
+  const T      = useTheme();
+  const insets = useSafeAreaInsets();
 
   const scheduleAction = (action: () => void) => {
-    pendingRef.current = action;
     onClose();
+    const delay = Platform.OS === "ios" ? 550 : 350;
+    setTimeout(() => action(), delay);
   };
 
   return (
-    <Modal visible={visible} animationType="slide" transparent onRequestClose={onClose} onDismiss={handleDismiss}>
+    <Modal visible={visible} animationType="slide" transparent onRequestClose={onClose}>
       <Pressable style={{ flex: 1, backgroundColor: "rgba(0,0,0,0.35)" }} onPress={onClose} />
       <View style={[APS.sheet, { backgroundColor: T.card, paddingBottom: insets.bottom + 16 }]}>
         <View style={APS.handle} />
