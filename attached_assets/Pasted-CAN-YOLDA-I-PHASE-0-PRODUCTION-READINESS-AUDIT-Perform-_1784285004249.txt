@@ -1,0 +1,946 @@
+CAN YOLDAŞI — PHASE 0 PRODUCTION READINESS AUDIT
+
+Perform a comprehensive, read-only production readiness audit of the entire CanYoldaşı mobile application.
+
+IMPORTANT RULES:
+
+* Do not modify any code.
+* Do not automatically fix any issue.
+* Do not delete or migrate any database table.
+* Do not install, uninstall, or upgrade packages.
+* Do not change environment variables.
+* Do not expose secret keys, access tokens, passwords, service-role keys, private URLs, or user data.
+* Mask all sensitive values in the report.
+* Inspect the actual project files and configuration. Do not provide generic recommendations.
+* Every finding must include evidence: file path, component, function, database table, policy, configuration field, or reproducible flow.
+* If something cannot be verified, clearly mark it as “NOT VERIFIED”.
+* Do not claim that something works merely because code exists.
+* Separate implemented functionality from functionality that has been tested successfully.
+
+PROJECT CONTEXT
+
+CanYoldaşı is a React Native / Expo pet community application.
+
+Known technologies:
+
+* Expo SDK 54
+* React Native 0.81.5
+* React 19
+* TypeScript
+* Supabase Authentication
+* Supabase PostgreSQL
+* Supabase Storage
+* RevenueCat / react-native-purchases 10.4.2
+* Google Sign-In
+* Apple Sign-In
+
+Primary application areas:
+
+* Authentication
+* Pet adoption listings
+* Listing creation and editing
+* Listing promotion
+* Map and location-based animal status reports
+* Direct messaging
+* User profiles
+* Follow system
+* Multiple pet profiles
+* Pet health and vaccination data
+* Notifications
+* Image and camera uploads
+* Saved listings
+* Privacy settings
+* Account deletion
+
+The old social Feed/Akış feature has been removed. Check whether unused feed code, database tables, routes, permissions, storage folders, hooks, API functions, navigation entries, notification types, or dependencies still remain.
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+1. PROJECT AND BUILD CONFIGURATION
+   ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+Inspect:
+
+* package.json
+* package-lock.json, yarn.lock or pnpm-lock.yaml
+* app.json
+* app.config.js / app.config.ts
+* eas.json
+* tsconfig.json
+* babel.config.js
+* metro.config.js
+* eslint configuration
+* environment variable loading
+* Expo plugins
+* native configuration
+* iOS configuration
+* Android configuration
+* build profiles
+* development, preview and production environments
+
+Report:
+
+* Expo SDK compatibility
+* React Native compatibility
+* React compatibility
+* Dependency conflicts
+* Deprecated packages
+* Unmaintained packages
+* Duplicate libraries
+* Packages requiring native builds
+* Expo Go incompatible functionality
+* Missing config plugins
+* New Architecture compatibility
+* Development-only packages used in production
+* Hardcoded environment values
+* Production builds pointing to development services
+* Missing production environment validation
+* Missing application versioning
+* Missing build-number/version-code strategy
+* Missing bundle identifiers
+* Missing package names
+* Missing app icons, splash screens or adaptive icons
+* Incorrect deep-linking configuration
+* Incorrect URL scheme configuration
+
+Identify the current:
+
+* Expo SDK version
+* React Native version
+* React version
+* iOS bundle identifier
+* Android package name
+* iOS build number
+* Android version code
+* Minimum iOS version
+* Android minSdk
+* Android compileSdk
+* Android targetSdk
+
+Confirm whether Android is prepared to target API level 36.
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+2. APPLICATION ARCHITECTURE
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+Map the actual application architecture:
+
+* Route system
+* Navigation stacks
+* Tab navigation
+* Authentication guards
+* Protected routes
+* Modal routes
+* Deep links
+* State management
+* Server state
+* Local state
+* Persistent storage
+* Supabase client initialization
+* API/service layer
+* Image upload layer
+* Notification layer
+* Payment layer
+* Error handling
+* Logging
+
+Detect:
+
+* Circular dependencies
+* Duplicate business logic
+* Very large components
+* Dead code
+* Orphaned screens
+* Routes pointing to removed screens
+* Old Feed/Akış code
+* Unsafe navigation parameters
+* Navigation loops
+* Screens accessible without authentication
+* Screens that cannot be reached
+* Broken back navigation
+* State desynchronization
+* Race conditions
+* Unhandled promises
+* Stale closures
+* Memory leaks
+* Listener cleanup issues
+* Subscription cleanup issues
+* Realtime channel cleanup issues
+* setTimeout or setInterval cleanup issues
+
+Produce a route and navigation inventory.
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+3. AUTHENTICATION AND SESSION SECURITY
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+Audit:
+
+* Email registration
+* Email login
+* Password reset
+* Email verification
+* Google Sign-In
+* Sign in with Apple
+* Logout
+* Session restoration
+* Token refresh
+* Expired sessions
+* Deleted users
+* Disabled users
+* Multiple devices
+* Authentication loading states
+* Unauthorized navigation
+* Password validation
+* Brute-force protection
+* Rate limiting
+* Error message privacy
+
+Verify:
+
+* Whether a user can access protected screens before session validation finishes
+* Whether logout clears local user data
+* Whether account switching leaks the previous user’s data
+* Whether OAuth redirect URLs are correct
+* Whether Apple Sign-In is available when another third-party login is provided on iOS
+* Whether Apple private relay emails are handled
+* Whether password-reset links open the correct screen
+* Whether expired reset links fail safely
+* Whether Supabase service-role credentials are present in the client application
+
+Flag any client-side admin or privileged operation.
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+4. SUPABASE DATABASE AND RLS
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+Inventory every database table, view, function, trigger and relevant relationship.
+
+For every user-facing table, report:
+
+* Table name
+* Purpose
+* Primary key
+* Foreign keys
+* Owner/user relationship
+* Whether RLS is enabled
+* SELECT policy
+* INSERT policy
+* UPDATE policy
+* DELETE policy
+* Whether users can access another user’s private data
+* Whether users can change ownership fields
+* Whether anonymous users have access
+* Whether admin operations are protected
+* Whether cascading deletion is configured safely
+
+Pay particular attention to tables related to:
+
+* profiles
+* adoption listings
+* listing images
+* promoted listings
+* payments
+* subscriptions
+* pets
+* vaccinations
+* health records
+* map reports
+* help counters
+* comments or old feed content
+* saved listings
+* follows
+* blocks
+* reports
+* messages
+* conversations
+* conversation members
+* notifications
+* device tokens
+* account deletion
+* moderation
+* audit logs
+
+Attempt to identify horizontal privilege-escalation risks such as:
+
+* User A reading User B’s private pet information
+* User A editing User B’s listing
+* User A deleting User B’s image
+* User A reading conversations they do not belong to
+* User A sending messages as another user
+* User A promoting an listing without payment
+* User A changing subscription or premium status
+* User A incrementing counters repeatedly
+* User A creating notifications for arbitrary users
+* User A viewing blocked users’ restricted content
+
+Do not execute destructive tests.
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+5. SUPABASE STORAGE
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+Inventory all storage buckets.
+
+For each bucket, report:
+
+* Public or private
+* Allowed file types
+* File-size limit
+* Upload policy
+* Read policy
+* Update policy
+* Delete policy
+* File ownership strategy
+* Path naming strategy
+* Signed URL use
+* Orphan-file cleanup
+* Image compression
+* Metadata stripping
+* Duplicate upload handling
+
+Test logically whether one user could overwrite, read or delete another user’s files.
+
+Inspect handling of:
+
+* Profile photos
+* Pet photos
+* Adoption-listing images
+* Map-report images
+* Chat attachments
+* Deleted-account files
+
+Flag unrestricted public uploads and executable file risks.
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+6. USER-GENERATED CONTENT AND MODERATION
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+Because CanYoldaşı contains user profiles, photographs, adoption listings, map reports and direct messages, audit all user-generated content protections.
+
+Verify the existence and actual implementation of:
+
+* Report user
+* Report listing
+* Report photograph
+* Report map status
+* Report message
+* Block user
+* Unblock user
+* Hide blocked-user content
+* Stop messages from blocked users
+* Content removal
+* Moderation queue
+* Moderator/admin access control
+* Terms acceptance
+* Community guidelines
+* Abuse-contact mechanism
+* Spam prevention
+* Rate limiting
+* Offensive-content handling
+* Illegal animal-sale prevention
+* Fraud/scam handling
+* Emergency-content disclaimer
+
+Determine whether report and block buttons are visible and functional from every relevant screen.
+
+Check whether blocking works in both directions and across:
+
+* Profiles
+* Search
+* Listings
+* Messages
+* Follow relationships
+* Notifications
+* Map reports
+
+Flag missing UGC safeguards as RELEASE BLOCKERS.
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+7. PRIVACY, CONSENT AND DATA DELETION
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+Inventory all personal data collected or processed:
+
+* Name
+* Email
+* Telephone number
+* Profile photo
+* User-generated photographs
+* Approximate location
+* Precise location
+* Device identifiers
+* Push notification token
+* Messages
+* Pet information
+* Health or vaccination information
+* Purchase history
+* Analytics
+* Crash data
+* Authentication data
+
+Identify every third-party SDK that may collect data.
+
+Verify:
+
+* Privacy Policy is accessible before registration
+* Privacy Policy is accessible in Settings
+* Terms of Use are accessible
+* Consent text is not preselected improperly
+* Permission requests contain purpose explanations
+* Data is collected only when required
+* Privacy choices are available
+* Account deletion can be initiated inside the app
+* Account deletion does not merely log the user out
+* Account deletion removes or anonymizes associated data
+* Storage files are deleted or handled
+* Active subscriptions are explained
+* Legally retained data is documented
+* Reauthentication is used for destructive actions
+* Deletion failures are recoverable
+* Google Play has a publicly accessible web account-deletion route
+* The deletion page is not a login-only, broken or placeholder page
+
+Map collected data to:
+
+* Apple App Privacy labels
+* Google Play Data Safety form
+
+Do not guess. Mark unknown SDK collection as NOT VERIFIED.
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+8. PERMISSIONS
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+Inventory all iOS usage-description keys and Android permissions.
+
+Audit:
+
+* Camera
+* Photo library
+* Location
+* Notifications
+* Microphone
+* Contacts
+* Tracking
+* Storage/media
+* Background location
+* Foreground services
+* Bluetooth
+* Call logs
+* SMS
+* Exact alarms
+
+For every permission, report:
+
+* Where it is declared
+* Where it is requested
+* Why it is required
+* Whether it is requested contextually
+* Whether denial is handled
+* Whether “Don’t ask again” is handled on Android
+* Whether the user can open system settings
+* Whether limited-photo access is handled on iOS
+* Whether approximate location works
+* Whether precise location is truly required
+* Whether the permission is broader than necessary
+
+Flag any unused or excessive permission.
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+9. MAP AND LOCATION SAFETY
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+Audit:
+
+* Initial location loading
+* Permission denied
+* Approximate location
+* GPS disabled
+* No network
+* Timeout
+* Stale location
+* Location spoofing assumptions
+* Map marker loading
+* Marker clustering
+* Bottom-sheet behavior
+* Map-to-card navigation
+* External Apple Maps / Google Maps links
+* User-submitted location validation
+* Exact-location privacy
+* Background location usage
+* Location retention
+
+Determine whether precise home locations or sensitive user locations could be exposed publicly.
+
+Check whether map reports automatically expire, can be resolved, can be deleted by their creator, and can be moderated.
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+10. MESSAGING AND REALTIME
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+Audit:
+
+* Conversation creation
+* Duplicate conversation prevention
+* Conversation membership
+* Message sending
+* Message receiving
+* Pagination
+* Realtime subscriptions
+* Unread counters
+* Read receipts
+* Notification delivery
+* Message ordering
+* Offline sending
+* Retry behavior
+* Duplicate messages
+* Empty messages
+* Long messages
+* Attachment security
+* Deleted users
+* Blocked users
+* Deleted listings
+* Race conditions
+* Message spoofing
+
+Verify using code and RLS that users can only read conversations in which they are participants.
+
+Flag missing message reporting, blocking or moderation controls.
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+11. LISTINGS AND PROMOTION
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+Audit the complete adoption-listing lifecycle:
+
+* Create
+* Draft
+* Preview
+* Edit
+* Publish
+* View
+* Save
+* Share
+* Promote
+* Expire
+* Unpublish
+* Delete
+
+Check:
+
+* Form validation
+* Required fields
+* Invalid values
+* Image limits
+* Duplicate submissions
+* Double taps
+* Loading indicators
+* Failed uploads
+* Partial database writes
+* Rollback
+* Ownership checks
+* Content moderation
+* Listing expiration
+* Promotion expiration
+* Server-time usage
+* Search and filter correctness
+* Deleted-user listings
+* Deep links
+
+Verify that the preview-edit screen and normal edit screen use the same data contract and validation.
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+12. REVENUECAT AND STORE PAYMENTS
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+Audit:
+
+* react-native-purchases installation
+* Expo config plugin
+* Native build requirement
+* iOS API key handling
+* Android API key handling
+* RevenueCat project configuration assumptions
+* Offerings
+* Packages
+* Entitlements
+* Product identifiers
+* Purchase flow
+* Restore purchases
+* Pending purchases
+* Cancelled purchases
+* Failed purchases
+* Duplicate purchase taps
+* Network failure
+* Subscription status refresh
+* Webhook validation
+* Server-side entitlement verification
+* Promotion activation
+* Promotion expiration
+* Refunds
+* Revocations
+* Grace period
+* Billing retry
+* Account switching
+* Anonymous RevenueCat users
+* User-ID linking
+* Logout behavior
+
+Determine whether the client can directly assign itself premium or promoted status.
+
+Confirm that digital promotion features use Apple In-App Purchase and Google Play Billing rather than an external payment method inside the app.
+
+Flag any test product, sandbox key, placeholder price or client-controlled entitlement in production.
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+13. ERROR HANDLING AND RESILIENCE
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+Audit the application under:
+
+* No internet
+* Slow internet
+* Supabase outage
+* Storage outage
+* Authentication outage
+* RevenueCat outage
+* Map-provider failure
+* Image upload failure
+* Push-notification failure
+* API timeout
+* Malformed response
+* Empty database result
+* Deleted referenced records
+* Expired session
+* App background/foreground transitions
+* Device clock mismatch
+
+Find:
+
+* Unhandled promise rejections
+* Infinite loading indicators
+* Silent failures
+* Blank screens
+* Crash paths
+* Missing error boundaries
+* Raw technical errors shown to users
+* Retry loops
+* Duplicate writes
+* Non-idempotent actions
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+14. PERFORMANCE
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+Inspect:
+
+* Initial bundle size
+* Startup path
+* Unnecessary initial API calls
+* Image dimensions
+* Image compression
+* Image caching
+* List virtualization
+* FlatList configuration
+* Pagination
+* Map marker rendering
+* Realtime subscriptions
+* Memoization
+* Repeated Supabase queries
+* N+1 queries
+* Excessive rerenders
+* Large local-storage payloads
+* Memory leaks
+* Expensive animations
+* Main-thread blocking
+* Excessive logging
+* Battery usage
+* Network usage
+
+Identify performance risks for:
+
+* Older Android devices
+* Low-memory devices
+* Slow mobile networks
+* Large listing datasets
+* Large message histories
+* Many map markers
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+15. ACCESSIBILITY AND RESPONSIVE UI
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+Inspect the existing UI implementation for:
+
+* Screen-reader labels
+* Button roles
+* Accessible names
+* Touch target sizes
+* Dynamic text
+* Font scaling
+* Color contrast
+* Keyboard navigation
+* Focus order
+* Reduced-motion support
+* Error announcements
+* Form labels
+* Placeholder-only fields
+* Safe areas
+* Keyboard avoidance
+* Small devices
+* Large devices
+* Tablets
+* Landscape
+* Android navigation bar
+* iPhone Dynamic Island
+* Devices with notches
+* RTL resilience
+* Turkish-character rendering
+
+Do not redesign screens during this phase.
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+16. NOTIFICATIONS
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+Audit:
+
+* Permission request timing
+* Expo push token creation
+* Device-token storage
+* Duplicate tokens
+* Token rotation
+* Logout cleanup
+* Deleted-account cleanup
+* Notification ownership
+* Notification authorization
+* Deep-link navigation
+* Foreground notifications
+* Background notifications
+* Terminated-state navigation
+* Invalid routes
+* Deleted content
+* Blocked-user notifications
+* Notification preference enforcement
+* Unsubscribe behavior
+
+Verify that one user cannot send arbitrary notifications to another user from the client.
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+17. LOGGING, ANALYTICS AND CRASH REPORTING
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+Inventory:
+
+* Console logs
+* Analytics SDKs
+* Crash SDKs
+* Debug tools
+* Network logging
+* Supabase logging
+* RevenueCat logging
+
+Find any logs containing:
+
+* Access tokens
+* Refresh tokens
+* Email addresses
+* Telephone numbers
+* Locations
+* Messages
+* User IDs
+* Payment information
+* Signed URLs
+* Environment secrets
+
+Determine whether production crash reporting and release tracking exist.
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+18. TEST COVERAGE AND RELEASE PIPELINE
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+Inventory:
+
+* Unit tests
+* Component tests
+* Integration tests
+* End-to-end tests
+* RLS tests
+* Database migration tests
+* Payment tests
+* Authentication tests
+* Build checks
+* Type checking
+* Linting
+* CI/CD
+* EAS Build
+* EAS Submit
+* Environment separation
+* Rollback process
+
+Run only safe, non-destructive commands where supported:
+
+* TypeScript type-check
+* Lint
+* Existing automated tests
+* Expo configuration validation
+* Dependency health checks
+
+Do not auto-fix.
+
+For every command, include:
+
+* Exact command
+* Exit status
+* Relevant output summary
+* Whether the result is reproducible
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+19. REQUIRED REPORT FORMAT
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+Return the report in the following exact structure:
+
+A. EXECUTIVE SUMMARY
+
+* Overall readiness score: X/100
+* App Store readiness score: X/100
+* Google Play readiness score: X/100
+* Security score: X/100
+* Stability score: X/100
+* Privacy score: X/100
+* Current recommendation:
+
+  * RELEASE READY
+  * CONDITIONALLY READY
+  * NOT RELEASE READY
+
+B. RELEASE BLOCKERS
+
+For every blocker include:
+
+* ID
+* Severity
+* Area
+* Exact issue
+* Evidence
+* File path or database object
+* User impact
+* Apple/Google impact
+* Reproduction or verification method
+* Required fix
+* Acceptance criteria
+
+C. HIGH-PRIORITY ISSUES
+
+Use the same evidence format.
+
+D. MEDIUM-PRIORITY ISSUES
+
+Use the same evidence format.
+
+E. LOW-PRIORITY ISSUES
+
+Use the same evidence format.
+
+F. SECURITY AND RLS MATRIX
+
+Create a table containing:
+
+* Resource
+* Read
+* Create
+* Update
+* Delete
+* Owner restriction
+* RLS status
+* Risk
+
+G. PERMISSION MATRIX
+
+Create a table containing:
+
+* Permission
+* Platform
+* Declared
+* Requested
+* Purpose
+* Denial handling
+* Required or removable
+* Risk
+
+H. DATA COLLECTION MATRIX
+
+Create a table containing:
+
+* Data type
+* Source
+* Purpose
+* Storage
+* Shared with
+* Linked to identity
+* Apple disclosure
+* Google disclosure
+* Deletion behavior
+
+I. ROUTE AND SCREEN INVENTORY
+
+For every screen include:
+
+* Route
+* Authentication requirement
+* Entry point
+* Data source
+* Loading state
+* Empty state
+* Error state
+* Accessibility status
+* Audit status
+
+J. DEPENDENCY AND SDK INVENTORY
+
+For every relevant SDK include:
+
+* Package
+* Version
+* Purpose
+* Native dependency
+* Data collection risk
+* Production readiness
+* Recommended action
+
+K. DEAD OR LEGACY CODE
+
+List all remnants of the removed Feed/Akış system.
+
+L. TEST RESULTS
+
+List all commands and results.
+
+M. STORE SUBMISSION GAPS
+
+Separate:
+
+* Apple App Store
+* Google Play
+
+N. PRIORITIZED REMEDIATION ROADMAP
+
+Group fixes into:
+
+* P0: Must fix before any store submission
+* P1: Must fix before production release
+* P2: Should fix shortly after release
+* P3: Improvement
+
+O. FINAL VERDICT
+
+State clearly:
+
+* Is the application safe to submit today?
+* Is the application safe to release to real users today?
+* What are the five most important risks?
+* Which screen should be audited first after Phase 0?
+
+Do not change the project. Produce the audit report only.
