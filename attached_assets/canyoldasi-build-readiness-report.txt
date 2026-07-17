@@ -1,0 +1,111 @@
+CanYoldasi - Ilk Production Build Hazirlik Raporu
+17 Temmuz 2026
+==================================================
+
+KARAR: BLOKERLARI GIDER, SONRA BUILD AL
+==================================================
+
+
+BLOCKER 1 — API Domain Ayarlanmamis
+--------------------------------------
+Onem   : KRITIK
+Dosya  : artifacts/mobile/lib/apiClient.ts
+Sorun  : EXPO_PUBLIC_DOMAIN Secrets'ta yok.
+         Fallback "http://localhost:8080/api" bundle'a gomulur.
+         Gercek cihazda TUM API cagrisi basarisiz olur.
+         (kayit, giris, harita, sahiplendirme, mesajlasma)
+Cozum  : Replit Secrets => EXPO_PUBLIC_DOMAIN = <production-domain>
+         Ornek: bf9f1c96-...expo.janeway.replit.dev
+
+
+BLOCKER 2 — icon.png Boyutu Yanlis
+--------------------------------------
+Onem   : YUKSEK
+Dosya  : artifacts/mobile/assets/images/icon.png
+Sorun  : Mevcut boyut 1254x1254 px.
+         Apple App Store Connect tam olarak 1024x1024 ister.
+         EAS Build basariyla uretir ancak
+         App Store yuklemesi aninda reddedilir.
+Cozum  : Ikonu 1024x1024 px olarak yeniden export et,
+         ayni dosya yoluna kaydet.
+
+
+BLOCKER 3 — App Store Submit Secrets Eksik
+--------------------------------------
+Onem   : YUKSEK
+Dosya  : artifacts/mobile/eas.json (satirlar 30-31)
+Sorun  : APP_STORE_CONNECT_APP_ID ve APPLE_TEAM_ID
+         Replit Secrets'ta set degil.
+         "eas submit --platform ios" bu degerleri okur.
+         Build uretilir ama App Store'a GONDERILEMEZ.
+Cozum  : App Store Connect => App ID al
+           => APP_STORE_CONNECT_APP_ID Replit Secrets'a ekle
+         Apple Developer => Team ID al
+           => APPLE_TEAM_ID Replit Secrets'a ekle
+
+
+==================================================
+GECEN KONTROLLER (build'i engellemez)
+==================================================
+
+TypeScript hatalari             : 0 hata
+app.json yapisi                 : Gecerli
+  bundleIdentifier              : com.canyoldasi.app
+  android.package               : com.canyoldasi.app
+  version                       : 1.0.0
+  ios.buildNumber               : 1
+  android.versionCode           : 1
+eas.json production profili     : distribution=store, AAB+release
+react-native-maps plugins disinda: Dogru (eklenmemeli)
+RevenueCat legacy key           : EXPO_PUBLIC_REVENUECAT_API_KEY set
+iOS izinleri                    : NSLocation, NSCamera, NSPhoto - Turkce
+Android izinleri                : ACCESS_FINE_LOCATION, CAMERA, VIBRATE
+RECORD_AUDIO engeli             : blockedPermissions'da
+aps-environment                 : production
+ITSAppUsesNonExemptEncryption   : false
+Splash screen                   : expo-splash-screen plugin kayitli
+Adaptive icon                   : foregroundImage + backgroundColor set
+Expo config plugins             : expo-router, expo-font, expo-location,
+                                  expo-image-picker, expo-splash-screen
+Metro monorepo + web stub       : Dogru yapilandirilmis
+JWT_SECRET                      : Set
+DATABASE_URL                    : Set
+RESEND_API_KEY                  : Set
+
+
+==================================================
+ADIM ADIM COZUM SIRASI
+==================================================
+
+1. Replit Secrets => EXPO_PUBLIC_DOMAIN ekle
+2. icon.png => 1024x1024 yeniden export et
+3. APP_STORE_CONNECT_APP_ID => Replit Secrets
+4. APPLE_TEAM_ID => Replit Secrets
+
+Bunlarin ardindan:
+
+  eas build --platform android --profile production   => .aab uretilir
+  eas build --platform ios --profile production       => IPA uretilir
+
+  eas submit --platform android --profile production  => Play Store
+  eas submit --platform ios --profile production      => App Store
+
+
+==================================================
+EK NOTLAR (build bloklamaz, submit/runtime icin onemli)
+==================================================
+
+- EXPO_PUBLIC_REVENUECAT_IOS_API_KEY eksik
+  Platform-specific iOS key yok, legacy key kullaniliyor.
+  IAP calisir ama iOS/Android key ayrimi saglanamaz.
+
+- EXPO_PUBLIC_REVENUECAT_ANDROID_API_KEY eksik
+  Ayni sekilde Android icin platform-specific key yok.
+
+- runtimeVersion app.json'da null
+  OTA (Over-The-Air) guncelleme desteklenmiyor.
+  Hot fix icin yeni build gerekir.
+
+- Kalan 1 duplicate DB index: idx_pet_identification_pet_id
+  Calismayi engellemez. Kaldirilabilir:
+  DROP INDEX IF EXISTS idx_pet_identification_pet_id;

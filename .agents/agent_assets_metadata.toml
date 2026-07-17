@@ -131,3 +131,9 @@ id = "2OfRzY3VCYqJdy5loVY0m"
 uri = "file://phase1_feed_cleanup_raporu.txt"
 type = "text"
 title = "Phase 1 — Feed Cleanup Raporu"
+
+[[outputs]]
+id = "8Ea9IU0sK6x_6CUJsUSYj"
+uri = "file://attached_assets/canyoldasi-build-readiness-report.txt"
+type = "text"
+title = "CanYoldaşı — Build Readiness Report"
