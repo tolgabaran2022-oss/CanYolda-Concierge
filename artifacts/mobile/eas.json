@@ -20,15 +20,15 @@
         "buildType": "release"
       },
       "android": {
-        "buildType": "apk"
+        "buildType": "app-bundle"
       }
     }
   },
   "submit": {
     "production": {
       "ios": {
-        "ascAppId": "YOUR_APP_STORE_CONNECT_APP_ID",
-        "ascTeamId": "YOUR_APPLE_TEAM_ID"
+        "ascAppId": "$APP_STORE_CONNECT_APP_ID",
+        "ascTeamId": "$APPLE_TEAM_ID"
       }
     }
   }

@@ -1,0 +1,247 @@
+CAN YOLDAŞI — PRODUCTION PHASE 4
+EAS BUILD & STORE RELEASE HARDENING
+
+Current status:
+
+- Feed removed
+- Authentication production-ready
+- Password reset production-ready
+- RevenueCat production integration audited
+- Preparing for App Store & Google Play release
+
+This phase focuses ONLY on release configuration.
+
+Do not modify application features.
+
+Do not redesign UI.
+
+Do not change business logic.
+
+==================================================
+1. FULL RELEASE CONFIG AUDIT
+==================================================
+
+Inspect:
+
+- app.json
+- app.config.*
+- eas.json
+- package.json
+- expo configuration
+- Android config
+- iOS config
+- Expo plugins
+
+Create an inventory before changing anything.
+
+==================================================
+2. ANDROID BUILD
+==================================================
+
+Verify production profile.
+
+If:
+
+buildType = apk
+
+Change to:
+
+buildType = app-bundle
+
+Confirm:
+
+Google Play production uses AAB.
+
+Development profiles may still use APK if appropriate.
+
+==================================================
+3. EAS SUBMIT
+==================================================
+
+Inspect:
+
+production submit profile
+
+Replace placeholder values only if configuration supports environment variables.
+
+Audit:
+
+Apple Team ID
+
+App Store Connect App ID
+
+Bundle Identifier
+
+Package Name
+
+Ensure nothing references:
+
+YOUR_APP_STORE_CONNECT_APP_ID
+
+YOUR_APPLE_TEAM_ID
+
+or similar placeholders.
+
+==================================================
+4. VERSIONING
+==================================================
+
+Audit:
+
+version
+
+versionCode
+
+buildNumber
+
+autoIncrement
+
+Ensure production versioning follows Expo recommendations.
+
+Prevent duplicate version uploads.
+
+==================================================
+5. APP ICONS
+==================================================
+
+Audit:
+
+App Icon
+
+Adaptive Icon
+
+Splash Icon
+
+Notification Icon
+
+Verify:
+
+correct sizes
+
+transparent assets where required
+
+no missing files
+
+==================================================
+6. SPLASH SCREEN
+==================================================
+
+Audit splash configuration.
+
+Ensure:
+
+correct resolution
+
+no distortion
+
+light mode compatibility
+
+dark mode compatibility if supported
+
+==================================================
+7. PERMISSIONS CLEANUP
+==================================================
+
+Audit every declared permission.
+
+Remove unused permissions.
+
+Especially verify:
+
+READ_EXTERNAL_STORAGE
+
+WRITE_EXTERNAL_STORAGE
+
+NSFaceIDUsageDescription
+
+NSMicrophoneUsageDescription
+
+NSLocationAlwaysUsageDescription
+
+Keep only permissions that are actually required.
+
+==================================================
+8. PRIVACY
+==================================================
+
+Verify:
+
+Privacy Policy URL
+
+Terms URL
+
+Account deletion support
+
+If missing:
+
+report exactly what is still required.
+
+Do not invent URLs.
+
+==================================================
+9. EXPO DOCTOR
+==================================================
+
+Run:
+
+expo-doctor
+
+Resolve production issues where possible.
+
+==================================================
+10. BUILD VALIDATION
+==================================================
+
+Verify production build can complete.
+
+Check:
+
+Android
+
+iOS
+
+Metro
+
+Expo config
+
+Native modules
+
+No missing assets.
+
+==================================================
+11. FINAL REPORT
+==================================================
+
+Return a Turkish report with:
+
+1. EAS Durumu
+
+2. Android Build
+
+3. iOS Build
+
+4. Store Submission
+
+5. Version Yönetimi
+
+6. İzin Temizliği
+
+7. Splash & Icon Durumu
+
+8. Privacy Gereksinimleri
+
+9. Expo Doctor Sonucu
+
+10. Değiştirilen Dosyalar
+
+11. TypeScript Sonucu
+
+12. Build Sonucu
+
+13. Manuel Test Gerektiren Noktalar
+
+14. Phase 4 Final Verdict
+
+IMPORTANT:
+
+Do not claim the application is App Store or Google Play ready unless build configuration, permissions and release settings have all been verified.
