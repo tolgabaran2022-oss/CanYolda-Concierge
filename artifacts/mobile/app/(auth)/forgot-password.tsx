@@ -49,7 +49,14 @@ const C = {
 };
 
 const EMAIL_RE = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
-const COOLDOWN_SECS = 60;
+const COOLDOWN_MS = 120 * 1000; // 120 seconds
+
+function formatRemaining(ms: number): string {
+  const totalSecs = Math.max(0, Math.ceil(ms / 1000));
+  const mins = Math.floor(totalSecs / 60);
+  const secs = totalSecs % 60;
+  return `${String(mins).padStart(2, "0")}:${String(secs).padStart(2, "0")}`;
+}
 
 export default function ForgotPasswordScreen() {
   const router = useRouter();
@@ -57,7 +64,8 @@ export default function ForgotPasswordScreen() {
   const [focused, setFocused] = useState(false);
   const [loading, setLoading] = useState(false);
   const [sent, setSent]       = useState(false);
-  const [cooldown, setCooldown] = useState(0);
+  const [remaining, setRemaining]       = useState(0);
+  const resendAvailableAtRef = useRef<number | null>(null);
   const timerRef = useRef<ReturnType<typeof setInterval> | null>(null);
 
   const [fontsLoaded] = useFonts({
@@ -75,13 +83,21 @@ export default function ForgotPasswordScreen() {
   if (!fontsLoaded) return null;
 
   const startCooldown = () => {
-    setCooldown(COOLDOWN_SECS);
+    if (timerRef.current) clearInterval(timerRef.current);
+    const availableAt = Date.now() + COOLDOWN_MS;
+    resendAvailableAtRef.current = availableAt;
+    setRemaining(COOLDOWN_MS);
     timerRef.current = setInterval(() => {
-      setCooldown((c) => {
-        if (c <= 1) { clearInterval(timerRef.current!); return 0; }
-        return c - 1;
-      });
-    }, 1000);
+      const rem = (resendAvailableAtRef.current ?? 0) - Date.now();
+      if (rem <= 0) {
+        clearInterval(timerRef.current!);
+        timerRef.current = null;
+        resendAvailableAtRef.current = null;
+        setRemaining(0);
+      } else {
+        setRemaining(rem);
+      }
+    }, 250);
   };
 
   const onSend = async () => {
@@ -113,7 +129,7 @@ export default function ForgotPasswordScreen() {
   };
 
   const onResend = async () => {
-    if (loading || cooldown > 0) return;
+    if (loading || remaining > 0) return;
     Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
     setLoading(true);
     try {
@@ -205,7 +221,7 @@ export default function ForgotPasswordScreen() {
               {/* Tekrar Gönder */}
               <Pressable
                 onPress={onResend}
-                disabled={loading || cooldown > 0}
+                disabled={loading || remaining > 0}
                 style={({ pressed }) => [styles.resendBtn, pressed && styles.pressed]}
                 accessibilityRole="button"
               >
@@ -213,10 +229,10 @@ export default function ForgotPasswordScreen() {
                   <ActivityIndicator size="small" color={C.purple500} />
                 ) : (
                   <>
-                    <RefreshCw size={14} color={cooldown > 0 ? C.muted : C.purple500} strokeWidth={2.5} />
-                    <Text style={[styles.resendText, cooldown > 0 && styles.resendTextMuted]}>
-                      {cooldown > 0
-                        ? `Tekrar gönder (${cooldown}s)`
+                    <RefreshCw size={14} color={remaining > 0 ? C.muted : C.purple500} strokeWidth={2.5} />
+                    <Text style={[styles.resendText, remaining > 0 && styles.resendTextMuted]}>
+                      {remaining > 0
+                        ? `Tekrar Gönder (${formatRemaining(remaining)})`
                         : "Bağlantıyı tekrar gönder"}
                     </Text>
                   </>

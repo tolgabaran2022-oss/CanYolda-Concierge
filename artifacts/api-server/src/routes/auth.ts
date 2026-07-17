@@ -225,6 +225,10 @@ async function sendResetLinkEmail(toEmail: string, resetLink: string): Promise<v
       subject: "CanYoldaşı şifre sıfırlama bağlantın",
       html,
       text,
+      headers: {
+        "X-Entity-Ref-ID": `pwr-${toEmail}-${Date.now()}`,
+        "Precedence": "transactional",
+      },
     }),
   });
 
@@ -667,6 +671,27 @@ router.post("/auth/reset-password", passwordResetLimiter, validateBody(ResetPass
       res.status(400).json({
         error: "Bu şifre sıfırlama bağlantısının süresi dolmuş. Lütfen yeni bağlantı talep edin.",
         expired: true,
+      });
+      return;
+    }
+
+    // Load user's current password hash for same-password check
+    const userRows = await db
+      .select({ passwordHash: localUsers.passwordHash })
+      .from(localUsers)
+      .where(eq(localUsers.id, row.user_id))
+      .limit(1);
+
+    if (userRows.length === 0) {
+      res.status(500).json({ error: "Kullanıcı kaydı bulunamadı." });
+      return;
+    }
+
+    // Reject if new password is identical to current — do NOT consume token
+    const isSamePassword = await bcrypt.compare(newPassword, userRows[0].passwordHash);
+    if (isSamePassword) {
+      res.status(400).json({
+        error: "Yeni şifreniz mevcut şifrenizden farklı olmalıdır.",
       });
       return;
     }
