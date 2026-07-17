@@ -47,7 +47,7 @@ interface AuthContextType {
   token: string | null;
   isLoading: boolean;
   login: (email: string, password: string) => Promise<void>;
-  register: (name: string, email: string, password: string) => Promise<void>;
+  register: (name: string, email: string, password: string, phone: string) => Promise<void>;
   logout: () => Promise<void>;
   changePassword: (currentPassword: string, newPassword: string) => Promise<void>;
   updateProfile: (updates: ProfileUpdates) => Promise<void>;
@@ -120,10 +120,10 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
 
   /* ── Register ─────────────────────────────────────────── */
   const register = useCallback(
-    async (name: string, email: string, password: string) => {
+    async (name: string, email: string, password: string, phone: string) => {
       const res = await apiFetch("/auth/register", {
         method: "POST",
-        body: JSON.stringify({ name, email, password }),
+        body: JSON.stringify({ name, email, password, phone }),
       });
       const data = await safeJson<{ error?: string; token?: string; user?: { id: string; email: string; name: string; avatar?: string | null } }>(res);
       if (!res.ok) throw new Error(data.error ?? "Kayıt başarısız.");

@@ -18,6 +18,8 @@ const JWT_EXPIRES = "30d";
 /* ── Zod schemas ─────────────────────────────────────────────── */
 const RegisterSchema = z.object({
   name:     z.string().trim().min(1, "Ad gerekli").max(100),
+  phone:    z.string()
+    .regex(/^5[0-9]{9}$/, "Geçerli bir Türk GSM numarası girin (5XX XXX XX XX)"),
   email:    z.string().trim().email("Geçerli bir e-posta girin").max(255),
   password: z.string().min(6, "Şifre en az 6 karakter olmalı").max(128),
 });
@@ -273,11 +275,14 @@ async function upsertOAuthUser(
 
 /* ── POST /api/auth/register ─────────────────────────────────── */
 router.post("/auth/register", authLimiter, validateBody(RegisterSchema), async (req, res): Promise<void> => {
-  const { name, email, password } = req.body as z.infer<typeof RegisterSchema>;
+  const { name, phone, email, password } = req.body as z.infer<typeof RegisterSchema>;
 
   try {
     const normalizedEmail = email.toLowerCase().trim();
+    // Normalize: 10-digit local number → E.164 without +
+    const normalizedPhone = "90" + phone.replace(/\D/g, "");
 
+    // Email uniqueness check
     const existing = await db
       .select({ id: localUsers.id })
       .from(localUsers)
@@ -289,13 +294,26 @@ router.post("/auth/register", authLimiter, validateBody(RegisterSchema), async (
       return;
     }
 
+    // Phone uniqueness check
+    const existingPhone = await db
+      .select({ id: localUsers.id })
+      .from(localUsers)
+      .where(eq(localUsers.phoneNumber, normalizedPhone))
+      .limit(1);
+
+    if (existingPhone.length > 0) {
+      res.status(409).json({ error: "Bu telefon numarası zaten kayıtlı." });
+      return;
+    }
+
     const passwordHash = await bcrypt.hash(password, BCRYPT_ROUNDS);
 
     const [user] = await db
       .insert(localUsers)
-      .values({ name: name.trim(), email: normalizedEmail, passwordHash })
+      .values({ name: name.trim(), email: normalizedEmail, passwordHash, phoneNumber: normalizedPhone })
       .returning();
 
+    req.log.info({ userId: user.id }, "New user registered");
     res.status(201).json({
       token: makeToken(user),
       user: { id: user.id, email: user.email, name: user.name, avatar: user.avatarUrl ?? null },

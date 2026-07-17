@@ -1,0 +1,113 @@
+CANYOLDASI — ADD PROFESSIONAL PHONE NUMBER FIELD TO SIGN-UP
+
+Update the "Hesap Oluştur" screen to include a new required phone number field.
+
+Do NOT redesign the screen.
+
+Keep the current CanYoldaşı visual language.
+
+--------------------------------------------------
+FIELD ORDER
+--------------------------------------------------
+
+1. Ad Soyad
+2. Telefon Numarası
+3. E-posta
+4. Şifre
+
+--------------------------------------------------
+PHONE FIELD
+--------------------------------------------------
+
+Label:
+
+Telefon Numarası
+
+Placeholder:
+
++90 (5__) ___ __ __
+
+Requirements:
+
+• phone icon on the left
+• numeric keyboard
+• automatic formatting
+• default country code +90
+• Turkish GSM validation
+• maximum 10 local digits
+• smooth typing
+• support paste
+• trim spaces automatically
+
+--------------------------------------------------
+VALIDATION
+--------------------------------------------------
+
+Phone number is REQUIRED.
+
+Reject:
+
+- invalid Turkish GSM numbers
+- duplicates already registered
+- empty value
+
+Show Turkish validation messages.
+
+--------------------------------------------------
+DATABASE
+--------------------------------------------------
+
+Store normalized format:
+
+905321234567
+
+Display formatted version only in the UI.
+
+Create a unique index if one does not already exist.
+
+--------------------------------------------------
+SECURITY
+--------------------------------------------------
+
+Do not trust frontend validation.
+
+Backend must validate:
+
+- required
+- normalized
+- unique
+- Turkish mobile format
+
+--------------------------------------------------
+FUTURE READY
+--------------------------------------------------
+
+Prepare the architecture for future:
+
+- SMS verification
+- WhatsApp verification
+- Two-factor authentication
+
+Do NOT implement SMS verification yet.
+
+--------------------------------------------------
+DESIGN
+--------------------------------------------------
+
+Do not change:
+
+- colors
+- spacing
+- card radius
+- typography
+- button size
+
+The new field must look like it has always been part of the design.
+
+Return a report listing:
+
+- modified files
+- database changes
+- API changes
+- validation changes
+- TypeScript result

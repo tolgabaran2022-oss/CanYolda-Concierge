@@ -60,8 +60,18 @@ const C = {
   white:     "#FFFFFF",
 };
 
-const EMAIL_RE = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+const EMAIL_RE  = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+const PHONE_RE   = /^5[0-9]{9}$/;
 const AnimatedPressable = Animated.createAnimatedComponent(Pressable);
+
+/** 10 ham rakamı → "(5XX) XXX XX XX" formatında görüntüle */
+function formatPhoneDisplay(d: string): string {
+  if (d.length === 0) return "";
+  if (d.length <= 3)  return `(${d}`;
+  if (d.length <= 6)  return `(${d.slice(0, 3)}) ${d.slice(3)}`;
+  if (d.length <= 8)  return `(${d.slice(0, 3)}) ${d.slice(3, 6)} ${d.slice(6)}`;
+  return `(${d.slice(0, 3)}) ${d.slice(3, 6)} ${d.slice(6, 8)} ${d.slice(8, 10)}`;
+}
 
 /* ── Animasyonlu input alanı: glow halkası + renk geçişi ── */
 function AnimatedField({
@@ -249,22 +259,33 @@ export default function RegisterScreen() {
   const router = useRouter();
   const { register } = useAuth();
 
-  const emailRef = useRef<TextInput>(null);
+  const phoneRef    = useRef<TextInput>(null);
+  const emailRef    = useRef<TextInput>(null);
   const passwordRef = useRef<TextInput>(null);
 
-  const [name, setName] = useState("");
-  const [email, setEmail] = useState("");
-  const [password, setPassword] = useState("");
+  const [name, setName]             = useState("");
+  const [phoneRaw, setPhoneRaw]     = useState(""); // max 10 digits, starts with 5
+  const [email, setEmail]           = useState("");
+  const [password, setPassword]     = useState("");
   const [showPassword, setShowPassword] = useState(false);
-  const [focusedField, setFocusedField] = useState<"name" | "email" | "password" | null>(null);
-  const [loading, setLoading] = useState(false);
+  const [focusedField, setFocusedField] = useState<"name" | "phone" | "email" | "password" | null>(null);
+  const [loading, setLoading]       = useState(false);
   const [reduceMotion, setReduceMotion] = useState(false);
 
   const [fontsLoaded] = useFonts({ Quicksand_500Medium, Quicksand_600SemiBold, Quicksand_700Bold });
 
+  const onPhoneChange = (text: string) => {
+    const digits = text.replace(/\D/g, "").slice(0, 10);
+    setPhoneRaw(digits);
+  };
+
   const valid = useMemo(
-    () => name.trim().length >= 2 && EMAIL_RE.test(email.trim()) && password.length >= 6,
-    [name, email, password]
+    () =>
+      name.trim().length >= 2 &&
+      PHONE_RE.test(phoneRaw) &&
+      EMAIL_RE.test(email.trim()) &&
+      password.length >= 6,
+    [name, phoneRaw, email, password]
   );
 
   const btnScale = useSharedValue(1);
@@ -284,7 +305,7 @@ export default function RegisterScreen() {
     Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
     setLoading(true);
     try {
-      await register(name.trim(), email.trim(), password);
+      await register(name.trim(), email.trim(), password, phoneRaw);
       Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
       router.replace("/(tabs)");
     } catch (e: unknown) {
@@ -349,15 +370,48 @@ export default function RegisterScreen() {
                 placeholder="Adın Soyadın" placeholderTextColor={C.muted}
                 autoCapitalize="words" autoCorrect={false}
                 autoComplete="name" textContentType="name"
-                returnKeyType="next" onSubmitEditing={() => emailRef.current?.focus()}
+                returnKeyType="next" onSubmitEditing={() => phoneRef.current?.focus()}
                 accessibilityLabel="Ad Soyad"
               />
             </AnimatedField>
 
             <View style={styles.fieldGap} />
 
+            {/* ── Telefon Numarası ── */}
             <AnimatedField
-              label="E-posta" focused={focusedField === "email"} delay={390}
+              label="Telefon Numarası" focused={focusedField === "phone"} delay={370}
+              icon={
+                <Ionicons
+                  name="call-outline" size={19}
+                  color={focusedField === "phone" ? C.purple500 : C.muted}
+                  style={styles.inputIcon}
+                />
+              }
+            >
+              <Text style={styles.phonePrefix}>+90 </Text>
+              <TextInput
+                ref={phoneRef}
+                style={styles.input}
+                value={formatPhoneDisplay(phoneRaw)}
+                onChangeText={onPhoneChange}
+                onFocus={() => setFocusedField("phone")}
+                onBlur={() => setFocusedField(null)}
+                placeholder="(5__) ___ __ __"
+                placeholderTextColor={C.muted}
+                keyboardType="number-pad"
+                autoCorrect={false}
+                autoComplete="tel"
+                textContentType="telephoneNumber"
+                returnKeyType="next"
+                onSubmitEditing={() => emailRef.current?.focus()}
+                accessibilityLabel="Telefon numarası"
+              />
+            </AnimatedField>
+
+            <View style={styles.fieldGap} />
+
+            <AnimatedField
+              label="E-posta" focused={focusedField === "email"} delay={410}
               icon={
                 <Ionicons
                   name="mail-outline" size={19}
@@ -496,6 +550,10 @@ const styles = StyleSheet.create({
     height: 52, borderRadius: 16, paddingHorizontal: 14, borderWidth: 1.5,
   },
   inputIcon: { marginRight: 10 },
+  phonePrefix: {
+    fontSize: 15.5, color: C.purple900, fontFamily: "Quicksand_600SemiBold",
+    marginRight: 2,
+  },
   input: { flex: 1, fontSize: 15.5, color: C.purple900, fontFamily: "Quicksand_600SemiBold" },
 
   btn: {

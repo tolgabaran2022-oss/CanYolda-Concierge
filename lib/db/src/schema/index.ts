@@ -42,10 +42,14 @@ export const localUsers = pgTable("local_users", {
   email:        text("email").notNull(),
   name:         text("name").notNull(),
   passwordHash: text("password_hash").notNull(),
+  phoneNumber:  text("phone_number"),
   avatarUrl:    text("avatar_url"),
   createdAt:    timestamp("created_at", { withTimezone: true }).defaultNow(),
   updatedAt:    timestamp("updated_at", { withTimezone: true }).defaultNow(),
-}, (t) => [uniqueIndex("local_users_email_unique").on(t.email)]);
+}, (t) => [
+  uniqueIndex("local_users_email_unique").on(t.email),
+  uniqueIndex("local_users_phone_unique").on(t.phoneNumber),
+]);
 
 export type FeaturedListing = typeof featuredListings.$inferSelect;
 export type InsertFeaturedListing = typeof featuredListings.$inferInsert;
