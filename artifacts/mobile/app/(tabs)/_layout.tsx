@@ -137,8 +137,6 @@ export default function TabLayout() {
       {TABS.map((tab) => (
         <Tabs.Screen key={tab.name} name={tab.name} options={{ title: tab.title }} />
       ))}
-      <Tabs.Screen name="feed"    options={{ href: null, headerShown: false }} />
-      <Tabs.Screen name="profile" options={{ href: null, headerShown: false }} />
     </Tabs>
   );
 

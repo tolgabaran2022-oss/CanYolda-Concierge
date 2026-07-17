@@ -1,0 +1,144 @@
+CAN YOLDAŞI — PRODUCTION CLEANUP PHASE 1
+
+Görev:
+Uygulamadaki eski Instagram tarzı Feed / Akış sistemini tamamen kaldır.
+
+ÖNEMLİ:
+Bu bir yeniden tasarım değildir.
+Yeni özellik ekleme değildir.
+Sadece kaldırma ve temizlik işlemidir.
+
+Mevcut ana uygulama özellikleri korunacak:
+
+- Harita
+- Sokak Hayvanları
+- Sahiplendirme
+- Evcilim
+- Mesajlar
+- Profil
+- Bildirimler
+
+Bunlar kesinlikle zarar görmemeli.
+
+==================================================
+1. MOBILE ROUTE TEMİZLİĞİ
+==================================================
+
+Aşağıdaki ekranları kaldır:
+
+- app/(tabs)/feed.tsx
+- app/create-post.tsx
+- app/post-detail/[postId].tsx
+
+Eğer başka feed ilişkili ekranlar varsa tespit et:
+
+- user-profile feed bağımlılıkları
+- follow-list bağımlılıkları
+- story ekranları
+
+Bunları analiz et.
+
+==================================================
+2. TAB NAVIGATION TEMİZLİĞİ
+==================================================
+
+app/(tabs)/_layout.tsx kontrol et.
+
+Feed tabı varsa tamamen kaldır.
+
+Alt navigasyonda sadece gerçek özellikler kalmalı:
+
+- Harita
+- Hayvanlar
+- Sahiplendirme
+- Evcilim
+- Hesap
+
+Hiçbir boş tab bırakma.
+
+==================================================
+3. API TEMİZLİĞİ
+==================================================
+
+Aşağıdaki API route'ları kaldır veya erişimi tamamen kapat:
+
+- feed.ts
+- stories.ts
+
+Kontrol et:
+
+- router kayıtları
+- middleware bağlantıları
+- importlar
+
+Kullanılmayan route importlarını temizle.
+
+==================================================
+4. DATABASE TEMİZLİĞİ
+==================================================
+
+Feed ile ilişkili tabloları analiz et:
+
+- feed_posts
+- feed_comments
+- feed_likes
+- feed_bookmarks
+- stories
+- story_views
+- story_likes
+- story_replies
+- follows
+- social_profiles
+
+Önce bağımlılık analizi yap.
+
+Silme işlemi sırasında:
+
+- aktif kullanılan tablo varsa dokunma
+- sadece gerçekten kullanılmayan feed tablolarını kaldır
+
+Migration düzenini bozma.
+
+==================================================
+5. AUTH / SECURITY TEMİZLİĞİ
+==================================================
+
+Feed kaldırıldıktan sonra:
+
+extractUserIdDual
+
+kullanım alanlarını listele.
+
+Feed ve stories dışında kullanılan yerleri raporla.
+
+Şimdilik sadece analiz et.
+
+Henüz güvenlik değişikliği yapma.
+
+==================================================
+6. TYPESCRIPT KONTROLÜ
+==================================================
+
+İşlem sonrası çalıştır:
+
+mobile typecheck
+api-server typecheck
+
+Hata bırakma.
+
+==================================================
+7. RAPOR VER
+==================================================
+
+Türkçe rapor oluştur:
+
+- Silinen dosyalar
+- Güncellenen dosyalar
+- Kaldırılan route'lar
+- Kaldırılan navigation kayıtları
+- Database değişiklikleri
+- TypeScript sonucu
+- Çalışan ekranların listesi
+- Risk kalan noktalar
+
+KOD DEĞİŞİKLİĞİ YAPMADAN ÖNCE analiz et ve sonra uygula.

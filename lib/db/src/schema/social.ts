@@ -24,13 +24,6 @@ export const socialProfiles = pgTable("social_profiles", {
 export type SocialProfile       = typeof socialProfiles.$inferSelect;
 export type InsertSocialProfile = typeof socialProfiles.$inferInsert;
 
-export const follows = pgTable("follows", {
-  id:          text("id").primaryKey().default(sql`gen_random_uuid()::text`),
-  followerId:  text("follower_id").notNull(),
-  followingId: text("following_id").notNull(),
-  createdAt:   timestamp("created_at", { withTimezone: true }).defaultNow(),
-}, (t) => [unique("follows_unique").on(t.followerId, t.followingId)]);
-
 export const notifications = pgTable("notifications", {
   id:           text("id").primaryKey().default(sql`gen_random_uuid()::text`),
   receiverId:   text("receiver_id").notNull(),
@@ -45,5 +38,4 @@ export const notifications = pgTable("notifications", {
   createdAt:    timestamp("created_at", { withTimezone: true }).defaultNow(),
 });
 
-export type Follow         = typeof follows.$inferSelect;
 export type Notification   = typeof notifications.$inferSelect;

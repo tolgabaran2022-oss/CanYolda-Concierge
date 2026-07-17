@@ -15,11 +15,6 @@ export type SocialUser = {
   postCount: number;
 };
 
-export type FollowCounts = {
-  followers: number;
-  following: number;
-};
-
 export type AppNotification = {
   id:           string;
   senderId:     string;
@@ -32,37 +27,6 @@ export type AppNotification = {
   read:         boolean;
   createdAt:    string;
 };
-
-/* ── Follow / unfollow ─────────────────────────────────── */
-export async function apiToggleFollow(
-  currentUserId: string,
-  targetId: string
-): Promise<{ following: boolean }> {
-  const res = await fetch(`${API_BASE}/social/follow/${encodeURIComponent(targetId)}`, {
-    method: "POST",
-    headers: hdrs(currentUserId),
-  });
-  if (!res.ok) throw new Error("toggle follow failed");
-  return res.json() as Promise<{ following: boolean }>;
-}
-
-export async function apiCheckFollowing(
-  followerId: string,
-  targetId: string
-): Promise<{ following: boolean }> {
-  const res = await fetch(
-    `${API_BASE}/social/follow/check?followerId=${encodeURIComponent(followerId)}&targetId=${encodeURIComponent(targetId)}`,
-    { headers: hdrs(followerId) }
-  );
-  if (!res.ok) throw new Error("check follow failed");
-  return res.json() as Promise<{ following: boolean }>;
-}
-
-export async function apiGetFollowCounts(userId: string): Promise<FollowCounts> {
-  const res = await fetch(`${API_BASE}/social/follow/counts?userId=${encodeURIComponent(userId)}`);
-  if (!res.ok) throw new Error("get follow counts failed");
-  return res.json() as Promise<FollowCounts>;
-}
 
 /* ── Profile sync ──────────────────────────────────────── */
 export type FullProfile = {
@@ -111,29 +75,6 @@ export async function apiGetFullProfile(userId: string): Promise<FullProfile | n
   const res = await fetch(`${API_BASE}/users/${encodeURIComponent(userId)}`);
   if (!res.ok) return null;
   return res.json() as Promise<FullProfile>;
-}
-
-export type FollowUser = {
-  userId:      string;
-  username:    string;
-  avatarUrl:   string;
-  isFollowing: boolean;
-};
-
-export async function apiGetFollowersList(userId: string, callerId?: string): Promise<FollowUser[]> {
-  const params = callerId ? `?callerId=${encodeURIComponent(callerId)}` : "";
-  const res = await fetch(`${API_BASE}/social/follow/followers/${encodeURIComponent(userId)}${params}`);
-  if (!res.ok) throw new Error("get followers failed");
-  const data = await res.json();
-  return Array.isArray(data) ? (data as FollowUser[]) : [];
-}
-
-export async function apiGetFollowingList(userId: string, callerId?: string): Promise<FollowUser[]> {
-  const params = callerId ? `?callerId=${encodeURIComponent(callerId)}` : "";
-  const res = await fetch(`${API_BASE}/social/follow/following/${encodeURIComponent(userId)}${params}`);
-  if (!res.ok) throw new Error("get following failed");
-  const data = await res.json();
-  return Array.isArray(data) ? (data as FollowUser[]) : [];
 }
 
 /* ── User search ───────────────────────────────────────── */

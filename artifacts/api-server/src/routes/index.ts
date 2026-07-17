@@ -3,8 +3,6 @@ import healthRouter from "./health.js";
 import boostRouter from "./boost.js";
 import promotionsRouter from "./promotions.js";
 import authRouter from "./auth.js";
-import feedRouter from "./feed.js";
-import storiesRouter from "./stories.js";
 import socialRouter from "./social.js";
 import notificationsRouter from "./notifications.js";
 import usersRouter from "./users.js";
@@ -31,8 +29,6 @@ router.use(authRouter);
 router.use("/boost",       promotionLimiter, boostRouter);
 router.use("/promotions",  promotionLimiter, promotionsRouter);
 
-router.use(feedRouter);
-router.use(storiesRouter);
 router.use(socialRouter);
 router.use(notificationsRouter);
 router.use(usersRouter);

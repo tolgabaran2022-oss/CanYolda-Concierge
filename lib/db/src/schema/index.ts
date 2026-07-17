@@ -1,7 +1,5 @@
 import { integer, pgTable, text, timestamp } from "drizzle-orm/pg-core";
 import { sql } from "drizzle-orm";
-export * from "./feed.js";
-export { stories, storyViews } from "./feed.js";
 export * from "./social.js";
 export * from "./pets.js";
 export * from "./petManagement.js";
