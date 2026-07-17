@@ -1,3 +1,4 @@
+import AsyncStorage from "@react-native-async-storage/async-storage";
 import { Icon } from "@/components/Icon";
 import * as Haptics from "expo-haptics";
 import * as ImagePicker from "expo-image-picker";
@@ -33,6 +34,8 @@ const API_BASE = process.env.EXPO_PUBLIC_DOMAIN
   ? `https://${process.env.EXPO_PUBLIC_DOMAIN}/api`
   : "http://localhost:8080/api";
 
+const TOKEN_KEY = "@canyoldasi:jwt";
+
 async function uploadPhoto(localUri: string): Promise<string> {
   const filename = localUri.split("/").pop() ?? "photo.jpg";
   const match = /\.(\w+)$/.exec(filename);
@@ -47,8 +50,15 @@ async function uploadPhoto(localUri: string): Promise<string> {
     formData.append("image", { uri: localUri, name: filename, type } as unknown as Blob);
   }
 
-  const res = await fetch(`${API_BASE}/upload`, { method: "POST", body: formData });
-  if (!res.ok) throw new Error("Fotoğraf yüklenemedi");
+  const token = await AsyncStorage.getItem(TOKEN_KEY);
+  const headers: Record<string, string> = {};
+  if (token) headers["Authorization"] = `Bearer ${token}`;
+
+  const res = await fetch(`${API_BASE}/upload`, { method: "POST", body: formData, headers });
+  if (!res.ok) {
+    console.error("[uploadPhoto] HTTP", res.status, await res.text().catch(() => ""));
+    throw new Error("Fotoğraf yüklenemedi");
+  }
   const data = await res.json() as { url: string };
   return data.url;
 }
@@ -293,6 +303,7 @@ export default function AddAdoptionScreen() {
   const [allowPhoneContact,  setAllowPhoneContact]  = useState(true);
   const [allowMessages,      setAllowMessages]      = useState(true);
   const [isSaving,           setIsSaving]           = useState(false);
+  const [isUploading,        setIsUploading]        = useState(false);
   const [errors,             setErrors]             = useState<Record<string, string>>({});
   const [healthStatus,       setHealthStatus]       = useState("");
   const [vaccinationStatus,  setVaccinationStatus]  = useState("");
@@ -331,13 +342,16 @@ export default function AddAdoptionScreen() {
       Alert.alert("Limit Aşıldı", `En fazla ${MAX_PHOTOS} fotoğraf ekleyebilirsiniz.`);
       return;
     }
+    const perm = await ImagePicker.requestMediaLibraryPermissionsAsync();
+    if (!perm.granted) {
+      Alert.alert("Galeri İzni Gerekli", "Ayarlar'dan fotoğraf kütüphanesi iznini etkinleştirin.");
+      return;
+    }
     const remaining = MAX_PHOTOS - images.length;
     const result = await ImagePicker.launchImageLibraryAsync({
       mediaTypes: ["images"],
       allowsMultipleSelection: true,
       selectionLimit: remaining,
-      allowsEditing: images.length === 0,
-      aspect: [4, 3],
       quality: 0.8,
     });
     if (!result.canceled && result.assets.length > 0) {
@@ -389,6 +403,7 @@ export default function AddAdoptionScreen() {
     try {
       let remoteImages: string[];
       try {
+        setIsUploading(true);
         remoteImages = await Promise.all(
           images.map((uri) =>
             (uri.startsWith("file://") || uri.startsWith("content://") || uri.startsWith("ph://"))
@@ -396,8 +411,11 @@ export default function AddAdoptionScreen() {
               : Promise.resolve(uri)
           )
         );
-      } catch {
+        setIsUploading(false);
+      } catch (uploadErr) {
+        console.error("[handleSave] photo upload failed", uploadErr);
         Alert.alert("Fotoğraf Yüklenemedi", "Fotoğraflardan biri yüklenemedi. Lütfen tekrar deneyin.");
+        setIsUploading(false);
         setIsSaving(false);
         return;
       }
@@ -908,7 +926,12 @@ export default function AddAdoptionScreen() {
               style={S.cta}
             >
               {isSaving ? (
-                <ActivityIndicator color="#FFF" />
+                <View style={{ flexDirection: "row", alignItems: "center", gap: 10 }}>
+                  <ActivityIndicator color="#FFF" size="small" />
+                  <Text style={S.ctaTxt}>
+                    {isUploading ? "Fotoğraflar yükleniyor..." : "Kaydediliyor..."}
+                  </Text>
+                </View>
               ) : (
                 <>
                   <Icon name="heart" size={20} color="#FFF" />

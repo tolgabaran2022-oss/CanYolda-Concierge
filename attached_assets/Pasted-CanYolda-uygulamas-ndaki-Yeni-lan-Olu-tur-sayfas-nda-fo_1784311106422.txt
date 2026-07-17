@@ -1,0 +1,83 @@
+CanYoldaşı uygulamasındaki “Yeni İlan Oluştur” sayfasında fotoğraf yükleme özelliğini tamamen düzelt.
+
+SORUN:
+“Fotoğraf Ekle” alanına basıldığında cihaz galerisi açılmıyor veya seçilen fotoğraf ekranda görünmüyor.
+
+YAPILACAKLAR:
+
+1. Expo Image Picker kullan:
+- expo-image-picker paketinin kurulu olduğunu kontrol et.
+- Kurulu değilse yükle.
+- Galeri erişim iznini kullanıcıdan iste.
+- İzin reddedilirse Türkçe bir uyarı göster.
+
+2. “Fotoğraf Ekle” alanının tamamını tıklanabilir yap:
+- Sadece artı ikonuna değil, kesik çizgili kutunun tamamına basılabilsin.
+- TouchableOpacity veya Pressable kullan.
+- Üstünde görünmez bir View’ın dokunmayı engellemediğini kontrol et.
+- zIndex, pointerEvents ve absolute konumlandırma sorunlarını düzelt.
+
+3. Galeriyi şu ayarlarla aç:
+- mediaTypes: images
+- allowsMultipleSelection: true destekleniyorsa kullan
+- quality: 0.8
+- selectionLimit: kalan fotoğraf hakkı
+- edit ekranı açılmasın
+
+4. Fotoğraf sınırı:
+- En fazla 10 fotoğraf yüklenebilsin.
+- Sayaç dinamik olarak 0/10, 1/10, 2/10 şeklinde güncellensin.
+- 10 fotoğrafa ulaşıldığında yeni fotoğraf eklenemesin.
+- Kullanıcıya “En fazla 10 fotoğraf ekleyebilirsiniz.” uyarısı gösterilsin.
+
+5. Önizleme:
+- Seçilen fotoğrafları fotoğraf ekleme alanında küçük kare kartlar halinde göster.
+- İlk fotoğrafın üzerinde “Kapak” etiketi bulunsun.
+- Her fotoğrafta sağ üst köşede silme butonu olsun.
+- Fotoğraflar yatay kaydırılabilir olsun.
+- Kullanıcı isterse fotoğrafların sırasını değiştirebilsin.
+- İlk sıraya alınan fotoğraf otomatik kapak fotoğrafı olsun.
+
+6. State yapısı:
+- Fotoğrafları geçici component state’inde uri, mimeType, fileName, width, height bilgileriyle tut.
+- Form gönderilirken fotoğraf dizisini ilan oluşturma işlemine aktar.
+- Fotoğraflar yüklenmeden ilan veritabanına boş veya geçersiz URL yazılmasın.
+
+7. Supabase Storage:
+- İlan yayınlanırken her fotoğrafı Supabase Storage içindeki adoption-listings veya uygun mevcut bucket’a yükle.
+- Dosya yolu:
+  userId/listingId/timestamp-index.jpg
+- Yükleme tamamlandıktan sonra public URL veya signed URL üret.
+- Fotoğraf URL’lerini ilan fotoğrafları tablosuna sıralı şekilde kaydet.
+- İlk fotoğrafı cover_image_url olarak ilana yaz.
+- Yükleme başarısız olursa ilanı yayınlanmış gibi gösterme.
+- Kullanıcıya anlaşılır Türkçe hata mesajı göster.
+
+8. Yüklenme durumu:
+- Fotoğraflar yüklenirken “İlanı Yayınla” butonunu devre dışı bırak.
+- Butonda loading spinner ve “Fotoğraflar yükleniyor...” metni göster.
+- Kullanıcının butona iki kere basarak çift ilan oluşturmasını engelle.
+
+9. Platform uyumluluğu:
+- iOS, Android ve Web üzerinde kontrol et.
+- Web’de dosya seçici açılmalı.
+- iOS Info.plist galeri izin açıklamasını kontrol et.
+- Android medya/fotoğraf izinlerini Expo sürümüne uygun şekilde yönet.
+
+10. Hata kayıtları:
+- Image Picker sonucu, izin durumu ve upload hatalarını console.error ile detaylı yaz.
+- Kullanıcıya teknik hata kodu değil, Türkçe anlaşılır mesaj göster.
+
+KABUL KRİTERLERİ:
+- “Fotoğraf Ekle” kutusuna basınca galeri açılıyor.
+- Bir veya birden fazla fotoğraf seçilebiliyor.
+- Fotoğraflar anında ekranda önizleniyor.
+- Sayaç doğru güncelleniyor.
+- Fotoğraf silinebiliyor.
+- İlk fotoğraf kapak olarak belirleniyor.
+- İlan yayınlandığında fotoğraflar Supabase Storage’a yükleniyor.
+- İlan detayında ve tüm ilanlar sayfasında doğru görseller görünüyor.
+- Uygulama yeniden açıldığında görseller kaybolmuyor.
+- iOS, Android ve Web’de çalışma kontrolü yapılıyor.
+
+Mevcut tasarımı değiştirme. Sadece fotoğraf yükleme fonksiyonunu ve gerekli backend bağlantılarını düzelt.
