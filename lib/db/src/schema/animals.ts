@@ -200,8 +200,9 @@ export const adoptionRequests = pgTable("adoption_requests", {
   hasOtherPets:  boolean("has_other_pets").notNull().default(false),
   aloneDuration: text("alone_duration").notNull().default(""),
   note:          text("note").notNull().default(""),
-  message:       text("message").notNull().default(""),
   status:        text("status").notNull().default("pending"),
+  acceptedAt:    timestamp("accepted_at", { withTimezone: true }),
+  rejectedAt:    timestamp("rejected_at", { withTimezone: true }),
   createdAt:     timestamp("created_at", { withTimezone: true }).defaultNow(),
   updatedAt:     timestamp("updated_at", { withTimezone: true }).defaultNow(),
 });
