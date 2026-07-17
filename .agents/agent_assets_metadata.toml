@@ -125,3 +125,9 @@ id = "okxqFjut1C1ZnJzPWejJ8"
 uri = "file://canyoldasi-audit-report.txt"
 type = "text"
 title = "CanYoldaşı — Phase 0 Production Readiness Audit"
+
+[[outputs]]
+id = "2OfRzY3VCYqJdy5loVY0m"
+uri = "file://phase1_feed_cleanup_raporu.txt"
+type = "text"
+title = "Phase 1 — Feed Cleanup Raporu"

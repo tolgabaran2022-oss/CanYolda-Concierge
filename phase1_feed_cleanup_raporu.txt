@@ -1,0 +1,152 @@
+=============================================================
+   CANYOLDAŞI — PHASE 1: FEED/AKIŞ SİSTEMİ KALDIRILDI
+   Tarih: 17 Temmuz 2026
+=============================================================
+
+ÖZET
+----
+Instagram tarzı Feed/Akış sistemi uygulamadan tamamen kaldırıldı.
+Korunan özellikler: Harita, Hayvanlar, Sahiplendirme, Evcilim,
+Mesajlar, Profil, Bildirimler.
+
+TypeScript: libs ✅  |  api-server ✅  |  mobile ✅
+Her iki workflow: RUNNING ✅
+
+-------------------------------------------------------------
+1. SİLİNEN MOBİL DOSYALAR (14 dosya)
+-------------------------------------------------------------
+
+EKRANLAR:
+  - artifacts/mobile/app/(tabs)/feed.tsx          (892 satır)
+  - artifacts/mobile/app/(tabs)/profile.tsx       (hidden feed-tab)
+  - artifacts/mobile/app/create-post.tsx
+  - artifacts/mobile/app/post-detail/[postId].tsx
+  - artifacts/mobile/app/follow-list/[userId].tsx
+
+BİLEŞENLER:
+  - artifacts/mobile/components/PostCard.tsx
+  - artifacts/mobile/components/EditPostModal.tsx
+  - artifacts/mobile/components/CommentSheet.tsx
+  - artifacts/mobile/components/StoryBar.tsx
+  - artifacts/mobile/components/StoryViewer.tsx
+  - artifacts/mobile/components/ProfileStoryAvatar.tsx
+  - artifacts/mobile/components/CreateStoryModal.tsx
+
+LİBRARY:
+  - artifacts/mobile/lib/feedApi.ts
+  - artifacts/mobile/lib/storiesApi.ts
+
+-------------------------------------------------------------
+2. SİLİNEN API ROTA DOSYALARI (2 dosya)
+-------------------------------------------------------------
+
+  - artifacts/api-server/src/routes/feed.ts
+  - artifacts/api-server/src/routes/stories.ts
+
+-------------------------------------------------------------
+3. DB SCHEMA DOSYASI SİLİNDİ
+-------------------------------------------------------------
+
+  - lib/db/src/schema/feed.ts
+    (feedPosts, feedComments, feedLikes, feedBookmarks,
+     stories, storyViews, storyLikes, storyReplies tabloları)
+
+-------------------------------------------------------------
+4. VERİTABANI — DROP EDİLEN TABLOLAR (9 tablo)
+-------------------------------------------------------------
+
+  DROP TABLE feed_posts      CASCADE ✅
+  DROP TABLE feed_comments   CASCADE ✅
+  DROP TABLE feed_likes      CASCADE ✅
+  DROP TABLE feed_bookmarks  CASCADE ✅
+  DROP TABLE stories         CASCADE ✅
+  DROP TABLE story_views     CASCADE ✅
+  DROP TABLE story_likes     CASCADE ✅
+  DROP TABLE story_replies   CASCADE ✅
+  DROP TABLE follows         CASCADE ✅
+
+  KORUNAN: social_profiles (auth akışı için kritik)
+
+-------------------------------------------------------------
+5. GÜNCELLENEN DOSYALAR — DEĞİŞİKLİK ÖZETİ
+-------------------------------------------------------------
+
+artifacts/mobile/app/(tabs)/_layout.tsx
+  - feed ve profile Tabs.Screen kayıtları kaldırıldı
+  - TABS dizisi değişmedi (5 tab korunuyor)
+
+artifacts/api-server/src/routes/index.ts
+  - feedRouter import + router.use kaldırıldı
+  - storiesRouter import + router.use kaldırıldı
+
+artifacts/api-server/src/routes/social.ts  [YENİDEN YAZILDI]
+  - Kaldırılan rotalar:
+      POST /api/social/follow/:targetId
+      GET  /api/social/follow/check
+      GET  /api/social/follow/counts
+      GET  /api/social/follow/followers/:userId
+      GET  /api/social/follow/following/:userId
+  - Korunan ve güncellenen rotalar:
+      GET  /api/social/users          → feedPosts yerine socialProfiles
+      GET  /api/social/users/:userId  → feedPosts yerine socialProfiles
+      GET  /api/social/settings       → değişmedi
+      PATCH /api/social/settings      → değişmedi
+
+artifacts/api-server/src/routes/users.ts
+  - follows ve feedPosts importları kaldırıldı
+  - GET /users/:id basitleştirildi: sadece socialProfiles tablosu
+  - followersCount / followingCount / postsCount artık 0 döndürüyor
+
+artifacts/mobile/app/user-profile/[userId].tsx  [YENİDEN YAZILDI]
+  - Kaldırılanlar: ProfileStoryAvatar, takip butonu, takipçi/takip
+    sayıları, gönderi grid'i, feedApi/storiesApi bağımlılıkları
+  - Korunanlar:
+      · Avatar (düz Image bileşeni)
+      · Kullanıcı adı, bio, konum
+      · "Mesaj Gönder" butonu (messagesApi.ts ile)
+      · "Profili Düzenle" butonu (kendi profili için)
+      · Evcil hayvan listesi (apiGetUserPets)
+
+artifacts/mobile/lib/socialApi.ts
+  - Kaldırılan fonksiyonlar:
+      apiToggleFollow, apiCheckFollowing, apiGetFollowCounts,
+      apiGetFollowersList, apiGetFollowingList
+  - Kaldırılan tipler:
+      FollowCounts, FollowUser
+  - Korunanlar: apiSyncProfile, apiUpdateProfile, apiGetFullProfile,
+      apiSearchUsers, apiGetUser, apiFetchNotifications,
+      apiMarkNotificationRead, apiMarkAllNotificationsRead
+
+lib/db/src/schema/social.ts
+  - follows tablosu ve Follow tipi kaldırıldı
+  - socialProfiles ve notifications tabloları korundu
+
+lib/db/src/schema/index.ts
+  - export * from "./feed.js" kaldırıldı
+  - export { stories, storyViews } from "./feed.js" kaldırıldı
+
+-------------------------------------------------------------
+6. ERTELENENLER (DEFERRED)
+-------------------------------------------------------------
+
+GÜVENLIK:
+  - jwtAuth.ts içindeki extractUserIdDual() artık kullanılmıyor
+    (feed.ts ve stories.ts silindiği için). Güvenlik temizliği
+    bir sonraki fazda yapılacak.
+  - socialApi.ts ve notifications API hâlâ x-user-id header
+    kullanıyor → ileride JWT Bearer'a migrate edilmeli.
+
+-------------------------------------------------------------
+7. PLATFORM UYUMLULUK
+-------------------------------------------------------------
+
+TypeScript derleme:
+  @workspace/db (libs)    → PASS ✅
+  @workspace/api-server   → PASS ✅
+  @workspace/mobile       → PASS ✅
+
+Workflow durumu:
+  API Server              → RUNNING ✅
+  Expo (mobile)           → RUNNING ✅
+
+=============================================================
