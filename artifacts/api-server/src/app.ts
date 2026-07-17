@@ -1,4 +1,4 @@
-import express, { type Express } from "express";
+import express, { type Express, type Request, type Response, type NextFunction } from "express";
 import cors from "cors";
 import helmet from "helmet";
 import pinoHttp from "pino-http";
@@ -149,5 +149,15 @@ const uploadsDir = path.resolve(__dirname, "../../uploads");
 app.use("/api/uploads", express.static(uploadsDir));
 
 app.use("/api", router);
+
+/* ── Global error handler ─────────────────────────────────────────────────
+   Must be registered AFTER all routes. 4-argument signature is required by
+   Express to recognise this as an error handler. Never expose err.stack or
+   err.message to clients in production — log internally, return generic msg.
+──────────────────────────────────────────────────────────────────────────── */
+app.use((err: Error, req: Request, res: Response, _next: NextFunction) => {
+  logger.error({ err, path: req.path, method: req.method }, "Unhandled route error");
+  res.status(500).json({ error: "Internal server error" });
+});
 
 export default app;
