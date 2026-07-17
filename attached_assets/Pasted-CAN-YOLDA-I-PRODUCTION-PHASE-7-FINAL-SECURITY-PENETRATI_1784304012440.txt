@@ -1,0 +1,519 @@
+CAN YOLDAŞI — PRODUCTION PHASE 7
+FINAL SECURITY PENETRATION TEST
+OWASP MOBILE + API HARDENING
+
+Current status
+
+- Feed removed
+- Legacy auth removed
+- JWT authentication enforced
+- RevenueCat production audited
+- Build configuration audited
+- QA completed
+- Store compliance completed
+
+This phase performs the FINAL SECURITY AUDIT.
+
+This is NOT a feature implementation phase.
+
+Do NOT redesign UI.
+
+Do NOT add business features.
+
+Only identify and fix real security issues.
+
+==================================================
+1. COMPLETE ATTACK SURFACE INVENTORY
+==================================================
+
+Inspect the entire application.
+
+Inventory every:
+
+REST endpoint
+
+Upload endpoint
+
+Authentication endpoint
+
+RevenueCat webhook
+
+Password reset endpoint
+
+File serving endpoint
+
+Search endpoint
+
+Notification endpoint
+
+Messaging endpoint
+
+Map endpoint
+
+Adoption endpoint
+
+Pet endpoint
+
+Profile endpoint
+
+Background task
+
+Scheduled task
+
+Deep Link
+
+Expo Router screen
+
+External URL
+
+Native capability
+
+Permission
+
+Generate complete attack surface map.
+
+==================================================
+2. OWASP API TOP 10 AUDIT
+==================================================
+
+Audit for:
+
+Broken Object Level Authorization
+
+Broken Authentication
+
+Broken Function Level Authorization
+
+Unrestricted Resource Consumption
+
+Broken Business Logic
+
+Server Side Request Forgery
+
+Security Misconfiguration
+
+Injection
+
+Improper Inventory Management
+
+Unsafe API Consumption
+
+For every item:
+
+PASS
+
+WARNING
+
+FAIL
+
+Explain why.
+
+==================================================
+3. IDOR TESTING
+==================================================
+
+Attempt authorization bypass.
+
+Examples:
+
+/animals/:id
+
+/adoption/:id
+
+/pets/:id
+
+/messages/:id
+
+/profile/:id
+
+/notifications/:id
+
+/change-password
+
+/update-profile
+
+/delete-account
+
+Attempt:
+
+replace IDs
+
+modify body userId
+
+modify params
+
+modify query
+
+verify ownership enforcement.
+
+==================================================
+4. JWT SECURITY
+==================================================
+
+Verify:
+
+JWT signature validation
+
+Expiration validation
+
+Algorithm validation
+
+Missing JWT
+
+Malformed JWT
+
+Expired JWT
+
+Replay attempt
+
+Token tampering
+
+Header manipulation
+
+Clock skew
+
+Secret exposure
+
+Token logging
+
+Refresh behavior
+
+Logout invalidation
+
+==================================================
+5. PASSWORD RESET SECURITY
+==================================================
+
+Attempt:
+
+Reuse token
+
+Expired token
+
+Guess token
+
+Random token
+
+Replay token
+
+Multiple reset
+
+Same password
+
+Race condition
+
+Token leakage
+
+User enumeration
+
+Timing attack
+
+==================================================
+6. FILE UPLOAD PENETRATION
+==================================================
+
+Attempt:
+
+Executable upload
+
+Double extension
+
+Large file
+
+Path traversal
+
+SVG script
+
+Corrupt image
+
+MIME spoof
+
+Filename injection
+
+Duplicate upload
+
+Missing auth
+
+Another user upload
+
+==================================================
+7. SQL INJECTION
+==================================================
+
+Audit every database interaction.
+
+Search:
+
+raw SQL
+
+template strings
+
+unsafe concatenation
+
+user input
+
+LIKE queries
+
+search endpoints
+
+ORDER BY
+
+LIMIT
+
+OFFSET
+
+Dynamic SQL
+
+==================================================
+8. XSS / HTML INJECTION
+==================================================
+
+Audit:
+
+Messages
+
+Profile bio
+
+Animal description
+
+Adoption description
+
+Search
+
+Notifications
+
+Ensure:
+
+escaped rendering
+
+React Native safety
+
+Web compatibility
+
+==================================================
+9. RATE LIMITING
+==================================================
+
+Verify:
+
+Login
+
+Register
+
+Forgot password
+
+Reset password
+
+Uploads
+
+Messaging
+
+Search
+
+Promotion
+
+Webhook
+
+==================================================
+10. DOS / RESOURCE ABUSE
+==================================================
+
+Audit:
+
+Large uploads
+
+Repeated requests
+
+Message spam
+
+Notification spam
+
+Search spam
+
+Listing spam
+
+Image spam
+
+Map spam
+
+==================================================
+11. SECRET MANAGEMENT
+==================================================
+
+Verify:
+
+No secrets committed
+
+No API keys logged
+
+No JWT logged
+
+No RevenueCat key exposure
+
+No Resend key exposure
+
+No production secrets in client bundle
+
+==================================================
+12. DEPENDENCY SECURITY
+==================================================
+
+Audit:
+
+npm packages
+
+deprecated packages
+
+beta packages
+
+known vulnerabilities
+
+Expo packages
+
+Native modules
+
+Unused dependencies
+
+==================================================
+13. TRANSPORT SECURITY
+==================================================
+
+Verify:
+
+HTTPS assumptions
+
+Secure cookies if used
+
+Authorization headers
+
+TLS expectations
+
+No HTTP production URLs
+
+==================================================
+14. PRIVACY
+==================================================
+
+Verify:
+
+PII exposure
+
+Email exposure
+
+Phone exposure
+
+Exact location exposure
+
+JWT exposure
+
+Internal IDs
+
+Stack traces
+
+Server errors
+
+==================================================
+15. LOGGING
+==================================================
+
+Ensure logs never contain:
+
+Passwords
+
+JWT
+
+Reset tokens
+
+RevenueCat receipts
+
+Emails unnecessarily
+
+Phone numbers unnecessarily
+
+Secrets
+
+==================================================
+16. RELEASE BLOCKER REVIEW
+==================================================
+
+Re-evaluate every previous blocker.
+
+Confirm whether resolved or still open.
+
+==================================================
+17. FINAL SECURITY SCORE
+==================================================
+
+Generate:
+
+Security Score /100
+
+Risk Matrix
+
+Critical
+
+High
+
+Medium
+
+Low
+
+Informational
+
+==================================================
+18. FINAL REPORT
+==================================================
+
+Return in Turkish.
+
+Exactly:
+
+1. Attack Surface
+
+2. OWASP API Top 10
+
+3. JWT Security
+
+4. Authorization Tests
+
+5. Password Reset Security
+
+6. Upload Security
+
+7. SQL Injection Audit
+
+8. XSS Audit
+
+9. Rate Limiting
+
+10. Dependency Security
+
+11. Secret Management
+
+12. Logging Audit
+
+13. Privacy Audit
+
+14. Remaining Vulnerabilities
+
+15. Fixed Vulnerabilities
+
+16. Release Blockers
+
+17. Security Score
+
+18. Phase 7 Final Verdict
+
+Verdict:
+
+CRITICAL
+
+HIGH RISK
+
+MEDIUM RISK
+
+LOW RISK
+
+PRODUCTION READY SECURITY
+
+Never claim Production Ready Security unless every critical finding has been resolved or explicitly verified.

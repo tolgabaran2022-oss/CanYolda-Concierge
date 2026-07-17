@@ -25,10 +25,20 @@ const upload = multer({
   storage,
   limits: { fileSize: 10 * 1024 * 1024 },
   fileFilter: (_req, file, cb) => {
-    if (file.mimetype.startsWith("image/")) {
+    /* Allow raster images only — SVG is intentionally blocked (stored XSS risk) */
+    const ALLOWED_MIMES = new Set([
+      "image/jpeg",
+      "image/jpg",
+      "image/png",
+      "image/gif",
+      "image/webp",
+      "image/heic",
+      "image/heif",
+    ]);
+    if (ALLOWED_MIMES.has(file.mimetype)) {
       cb(null, true);
     } else {
-      cb(new Error("Only image files are allowed"));
+      cb(new Error("Only JPEG, PNG, GIF, WebP and HEIC images are allowed"));
     }
   },
 });

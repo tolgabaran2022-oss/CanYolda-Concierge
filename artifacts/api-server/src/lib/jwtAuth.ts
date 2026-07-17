@@ -7,7 +7,7 @@ import type { Request, Response, NextFunction } from "express";
  * env.ts validates this at boot; this is a secondary guard.
  */
 export function getJwtSecret(): string {
-  const secret = process.env.JWT_SECRET ?? process.env.SESSION_SECRET;
+  const secret = process.env.JWT_SECRET;
   if (!secret) {
     throw new Error("[jwtAuth] JWT_SECRET environment variable is required but not set");
   }
@@ -31,7 +31,11 @@ export function extractUserId(req: Request): string {
   const auth = req.headers.authorization;
   if (auth?.startsWith("Bearer ")) {
     try {
-      const payload = jwt.verify(auth.slice(7), getJwtSecret()) as jwt.JwtPayload;
+      const payload = jwt.verify(
+        auth.slice(7),
+        getJwtSecret(),
+        { algorithms: ["HS256"] },
+      ) as jwt.JwtPayload;
       if (typeof payload.sub === "string" && payload.sub) return payload.sub;
     } catch {
       return "";
@@ -57,7 +61,11 @@ export function requireAuth(req: Request, res: Response, next: NextFunction): vo
     return;
   }
   try {
-    const payload = jwt.verify(auth.slice(7), getJwtSecret()) as jwt.JwtPayload;
+    const payload = jwt.verify(
+      auth.slice(7),
+      getJwtSecret(),
+      { algorithms: ["HS256"] },
+    ) as jwt.JwtPayload;
     if (typeof payload.sub !== "string" || !payload.sub) {
       res.status(401).json({ error: "Oturum gerekli." });
       return;

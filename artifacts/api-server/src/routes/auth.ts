@@ -101,7 +101,7 @@ function makeToken(user: { id: string; email: string | null; name: string | null
   return jwt.sign(
     { sub: user.id, email: user.email, name: user.name },
     getJwtSecret(),
-    { expiresIn: JWT_EXPIRES }
+    { algorithm: "HS256", expiresIn: JWT_EXPIRES }
   );
 }
 
@@ -585,7 +585,7 @@ router.post("/auth/verify-reset-code", passwordResetLimiter, validateBody(Verify
     const resetToken = jwt.sign(
       { sub: row.user_id, type: "password_reset", jti: row.id },
       getJwtSecret() + "_reset_v1",
-      { expiresIn: RESET_TOKEN_TTL }
+      { algorithm: "HS256", expiresIn: RESET_TOKEN_TTL }
     );
 
     req.log.info({ userId: row.user_id, codeId: row.id }, "Reset code verified, reset token issued");

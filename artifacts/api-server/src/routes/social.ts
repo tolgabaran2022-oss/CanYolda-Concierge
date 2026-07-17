@@ -17,6 +17,9 @@ pool.query(`
 
 /* ── GET /api/social/users ─ search users ─────────────────── */
 router.get("/social/users", async (req, res) => {
+  const callerId = extractUserId(req);
+  if (!callerId) { res.status(401).json({ error: "Giriş yapılmamış" }); return; }
+
   try {
     const q = (req.query["q"] as string ?? "").trim();
     if (!q || q.length < 1) { res.json([]); return; }
