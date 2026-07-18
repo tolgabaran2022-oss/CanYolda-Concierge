@@ -575,7 +575,7 @@ export default function AnimalDetailScreen() {
         <ScrollView
           ref={scrollRef}
           showsVerticalScrollIndicator={false}
-          contentContainerStyle={{ paddingBottom: insets.bottom + 140 }}
+          contentContainerStyle={{ paddingBottom: 56 + Math.max(insets.bottom, 12) + 32 }}
         >
           {/* ══════════════════════════════════════════
               HERO IMAGE
@@ -1019,12 +1019,12 @@ export default function AnimalDetailScreen() {
       ══════════════════════════════════════════ */}
       <View style={[D.actionBar, { paddingBottom: Math.max(insets.bottom, 12) }]}>
         <Pressable
-          style={({ pressed }) => [{ flex: 1 }, pressed && { opacity: 0.9 }]}
+          style={({ pressed }) => [D.helpButton, pressed && { opacity: 0.9 }]}
           onPress={handleHelp}
           accessibilityRole="button"
           accessibilityLabel="Yardım et"
         >
-          <Animated.View style={{ transform: [{ scale: helpScale }] }}>
+          <Animated.View style={{ transform: [{ scale: helpScale }], flex: 1 }}>
             <LinearGradient
               colors={["#9C7FE0", "#5B3FD6"]}
               start={{ x: 0, y: 0 }}
@@ -1167,7 +1167,8 @@ const D = StyleSheet.create({
   footer:         { fontSize: 12, fontFamily: "Inter_400Regular", color: C.muted, textAlign: "center", marginTop: 28, marginBottom: 8 },
 
   /* Sticky action bar */
-  actionBar:      { backgroundColor: C.white, borderTopWidth: 1, borderTopColor: "rgba(30,20,50,0.06)", paddingHorizontal: 16, paddingTop: 12 },
-  actionFill:     { height: 52, borderRadius: 16, flexDirection: "row", alignItems: "center", justifyContent: "center", gap: 8 },
+  actionBar:      { position: "absolute", left: 0, right: 0, bottom: 0, paddingHorizontal: 20, paddingTop: 12, backgroundColor: C.white, borderTopWidth: 1, borderTopColor: "rgba(30,20,50,0.06)" },
+  helpButton:     { width: "100%", height: 56, minHeight: 56, borderRadius: 18, overflow: "hidden", alignItems: "center", justifyContent: "center" },
+  actionFill:     { flex: 1, borderRadius: 18, flexDirection: "row", alignItems: "center", justifyContent: "center", gap: 8 },
   actionFillText: { fontSize: 15, fontFamily: "Inter_700Bold", color: "#FFF" },
 });
