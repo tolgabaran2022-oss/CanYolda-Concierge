@@ -1,0 +1,186 @@
+Harita ekranına “Acil Durum Bildir” özelliği ekle.
+
+AMAÇ:
+
+Harita ekranından acil durum bildiren kullanıcı, Sokak Hayvanları ekranındaki mevcut “Durum Bildir” sistemiyle aynı formu ve aynı backend kayıt akışını kullanmalı.
+
+Harita için ayrı veya kopya bir bildirim sistemi oluşturma. Mevcut Durum Bildir bileşenini, doğrulamalarını, servislerini ve Supabase kayıt mantığını yeniden kullan.
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+1. HARİTA EKRANI TASARIMI
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+Harita ekranının üst bölümünde bulunan “CanYoldaşı / 4 hayvan” bilgi çubuğunun hemen altında veya harita üzerindeki sağ üst kontrol alanında görünür bir “Acil Durum Bildir” butonu ekle.
+
+Buton:
+
+- Metin: “Acil Durum Bildir”
+- Sol ikon: uyarı üçgeni veya beyaz “+”
+- Kırmızı/turuncu gradient tasarım
+- Haritadaki mor konum butonuyla çakışmamalı
+- Harita işaretlerini ve üst bilgi çubuğunu kapatmamalı
+- Safe Area içinde kalmalı
+- Farklı ekran ölçülerinde taşmamalı
+- Premium CanYoldaşı tasarım diline uyumlu olmalı
+
+Önerilen konum:
+Üstteki CanYoldaşı bilgi kartının hemen altında, sağa hizalı ve kompakt buton.
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+2. BUTON AKSİYONU
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+“Acil Durum Bildir” butonuna basıldığında Sokak Hayvanları sayfasındaki mevcut “Durum Bildir” formunu aç.
+
+Şu an çalışan aynı ekran, modal veya bottom sheet kullanılmalı.
+
+Yeni ve bağımsız bir form oluşturma.
+Mevcut formu kopyalama.
+Tekrar eden kod oluşturma.
+
+Gerekirse mevcut formu ortak bir bileşen veya ortak route hâline getir ve hem:
+
+- Sokak Hayvanları > Durum Bildir
+- Harita > Acil Durum Bildir
+
+butonlarından aynı bileşeni aç.
+
+Haritadan açıldığında form başlığı “Acil Durum Bildir” olabilir ancak alanlar ve kayıt sistemi aynı kalmalı.
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+3. KONUM AKIŞI
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+Haritadan açılan bildirim formuna mümkünse mevcut harita merkez koordinatını veya kullanıcının güncel konumunu başlangıç değeri olarak aktar.
+
+Öncelik sırası:
+
+1. Kullanıcının doğrulanmış güncel konumu
+2. Haritanın seçili koordinatı
+3. Haritanın merkez koordinatı
+4. Hiçbiri yoksa formdaki mevcut konum seçme akışı
+
+Konum izni yoksa uygulama çökmemeli. Kullanıcıya anlaşılır izin açıklaması gösterilmeli ve konumu manuel seçmesine izin verilmeli.
+
+Kaydedilen bildirimin latitude ve longitude değerleri boş bırakılmamalı.
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+4. AYNI BACKEND VE VERİ MODELİ
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+Haritadan oluşturulan bildirimler Sokak Hayvanları ekranındaki mevcut bildirimlerle:
+
+- Aynı Supabase tablosuna
+- Aynı alan adlarıyla
+- Aynı kullanıcı kimliğiyle
+- Aynı fotoğraf yükleme sistemiyle
+- Aynı durum kategorileriyle
+- Aynı doğrulama kurallarıyla
+- Aynı oluşturma servisiyle
+
+kaydedilmeli.
+
+Ayrı “emergency_reports” tablosu oluşturma.
+Mevcut çalışan tabloyu ve servisi kullan.
+
+Bildirim kaydında mevcut sistemin desteklediği alanları koru:
+
+- Kullanıcı ID
+- Başlık veya açıklama
+- Durum kategorisi
+- Fotoğraf
+- Latitude
+- Longitude
+- Oluşturulma tarihi
+- Aktif/pasif durumu
+- Kullanıcı adı ve soyadı
+
+Kullanıcı adı “Anonim” olarak kaydedilmemeli. Mevcut profil verisindeki ad-soyad kullanılmalı.
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+5. KAYIT SONRASI SENKRONİZASYON
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+Kayıt başarılı olduğunda:
+
+1. Başarı mesajı göster.
+2. Formu kapat.
+3. Yeni bildirim Sokak Hayvanları sayfasındaki listeye gelsin.
+4. İlgili filtre ve toplam sayaçları güncellensin.
+5. Harita verileri yeniden çekilsin.
+6. Yeni bildirim koordinatında harita işareti oluşsun.
+7. Kullanıcı harita işaretine bastığında mevcut bildirim önizleme kartı açılsın.
+8. Karttan mevcut Durum Detay ekranına gidilebilsin.
+
+Uygulama yeniden açıldığında da bildirim hem listede hem haritada görünmeye devam etmeli. Sadece yerel state ile geçici ekleme yapma; kayıt Supabase’de kalıcı olmalı.
+
+React Query kullanılıyorsa oluşturma sonrasında ilgili query key’lerini invalidate et. Başka state yönetimi kullanılıyorsa mevcut veri yenileme mekanizmasını uygula.
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+6. KATEGORİ EŞLEŞMESİ
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+Haritadaki ve Sokak Hayvanları sayfasındaki kategori isimleri/verileri tek kaynaktan gelmeli.
+
+Örnek:
+
+- Acil / Yaralı
+- Yardım Bekleyen
+- Aç
+- Sağlıklı
+
+Haritadaki işaret rengi ve ikonu bildirimin kategorisine göre mevcut tasarımla eşleşmeli.
+
+Yeni kategori isimleri uydurma veya aynı kategorinin farklı değerlerini oluşturma.
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+7. KORUNACAK ALANLAR
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+- Mevcut harita görünümünü bozma.
+- “Yakındaki Hayvanlar” bottom sheet yapısını bozma.
+- Konumuma git butonunu değiştirme.
+- Harita işaretlerine dokunma işlevini bozma.
+- Alt navigasyon çubuğuyla çakışma oluşturma.
+- Sokak Hayvanları ekranındaki mevcut “Durum Bildir” butonunu kaldırma.
+- Mevcut bildirim detay, yorum ve yardım akışlarını değiştirme.
+- Başka sayfalarda gereksiz tasarım değişikliği yapma.
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+8. GERÇEK TEST VE DOĞRULAMA
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+Değişiklikten sonra gerçek kullanıcı akışıyla test et:
+
+1. Harita ekranını aç.
+2. “Acil Durum Bildir” butonuna bas.
+3. Mevcut bildirim formunun açıldığını doğrula.
+4. Fotoğraf, kategori, açıklama ve konum ekle.
+5. Bildirimi kaydet.
+6. Başarı UI sonucunu gör.
+7. Supabase’de kaydın oluştuğunu doğrula.
+8. Kaydın latitude ve longitude alanlarını doğrula.
+9. Sokak Hayvanları sayfasına geç.
+10. Yeni bildirimin listede ve doğru kategoride göründüğünü doğrula.
+11. Sayaçların güncellendiğini doğrula.
+12. Haritaya dön.
+13. Yeni harita işaretinin doğru koordinatta göründüğünü doğrula.
+14. İşarete basıp önizleme kartını aç.
+15. Detay sayfasına geçişi doğrula.
+16. Uygulamayı yenile ve verinin hâlâ mevcut olduğunu doğrula.
+17. Console ve network üzerinde beklenmeyen hata olmadığını doğrula.
+
+Yalnız kod incelemesi yapıldıysa PASS yazma, STATIC REVIEW olarak raporla.
+Platform çalıştırılamıyorsa BLOCKED yaz.
+Test yapılmadıysa NOT TESTED yaz.
+Web testi Android veya iOS PASS sayılmamalı.
+
+Sonunda:
+
+- Değiştirilen dosyaları
+- Yeniden kullanılan mevcut bileşen ve servisleri
+- Veritabanına yazılan tabloyu
+- Test edilen platformları
+- Her testin PASS / STATIC REVIEW / BLOCKED / NOT TESTED durumunu
+
+ayrı ayrı raporla.

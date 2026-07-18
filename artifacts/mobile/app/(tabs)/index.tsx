@@ -4,6 +4,7 @@ import BottomSheet, {
 } from "@gorhom/bottom-sheet";
 import { Icon } from "@/components/Icon";
 import * as Haptics from "expo-haptics";
+import { LinearGradient } from "expo-linear-gradient";
 import * as Location from "expo-location";
 import { useRouter } from "expo-router";
 import React, {
@@ -558,11 +559,41 @@ export default function MapScreen() {
         </View>
       </View>
 
-      {/* Location button — fixed right side, below header */}
+      {/* Emergency report button — right side, below top bar */}
+      <Pressable
+        style={({ pressed }) => [
+          styles.emergencyBtn,
+          { top: topPad + 62, opacity: pressed ? 0.85 : 1 },
+        ]}
+        onPress={() => {
+          const coords = userLocation ?? { latitude: region.latitude, longitude: region.longitude };
+          router.push({
+            pathname: "/add-animal",
+            params: {
+              initialLat: String(coords.latitude),
+              initialLng: String(coords.longitude),
+            },
+          });
+          Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
+        }}
+        hitSlop={4}
+      >
+        <LinearGradient
+          colors={["#FF6B35", "#EF4444"]}
+          start={{ x: 0, y: 0 }}
+          end={{ x: 1, y: 0 }}
+          style={styles.emergencyGradient}
+        >
+          <Icon name="warning" size={14} color="#FFF" />
+          <Text style={styles.emergencyText}>Acil Durum Bildir</Text>
+        </LinearGradient>
+      </Pressable>
+
+      {/* Location button — fixed right side, below emergency button */}
       <Pressable
         style={({ pressed }) => [
           styles.locateBtn,
-          { top: topPad + 72, opacity: pressed ? 0.85 : 1 },
+          { top: topPad + 112, opacity: pressed ? 0.85 : 1 },
         ]}
         onPress={() => {
           locateMe();
@@ -730,6 +761,32 @@ const styles = StyleSheet.create({
   countText: {
     fontSize: 13,
     fontFamily: "Inter_600SemiBold",
+  },
+
+  emergencyBtn: {
+    position: "absolute",
+    right: 12,
+    borderRadius: 20,
+    overflow: "hidden",
+    shadowColor: "#EF4444",
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.28,
+    shadowRadius: 8,
+    elevation: 6,
+  },
+  emergencyGradient: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 6,
+    paddingHorizontal: 14,
+    paddingVertical: 9,
+    borderRadius: 20,
+  },
+  emergencyText: {
+    fontSize: 13,
+    fontFamily: "Inter_700Bold",
+    color: "#FFF",
+    letterSpacing: -0.1,
   },
 
   locateBtn: {

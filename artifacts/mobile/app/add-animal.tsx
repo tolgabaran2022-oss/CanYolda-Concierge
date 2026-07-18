@@ -9,8 +9,8 @@ import * as Haptics from "expo-haptics";
 import { Image } from "expo-image";
 import * as ImagePicker from "expo-image-picker";
 import * as Location from "expo-location";
-import { useRouter } from "expo-router";
-import React, { useState } from "react";
+import { useLocalSearchParams, useRouter } from "expo-router";
+import React, { useEffect, useState } from "react";
 import {
   ActivityIndicator,
   Alert,
@@ -136,6 +136,7 @@ export default function AddAnimalScreen() {
   const router = useRouter();
   const { addAnimal } = useAnimals();
   const { user, token } = useAuth();
+  const params = useLocalSearchParams<{ initialLat?: string; initialLng?: string }>();
 
   const [image, setImage]                   = useState<string | undefined>(); // confirmed local URI
   const [pendingImage, setPendingImage]     = useState<string | undefined>(); // captured, awaiting confirm
@@ -150,6 +151,17 @@ export default function AddAnimalScreen() {
   const [location, setLocation]           = useState<{ latitude: number; longitude: number } | null>(null);
   const [locationName, setLocationName]   = useState<string | undefined>();
   const [isLocating, setIsLocating]       = useState(false);
+
+  /* ── Pre-fill location from route params (e.g. from map screen) ── */
+  useEffect(() => {
+    const lat = params.initialLat ? parseFloat(params.initialLat) : NaN;
+    const lng = params.initialLng ? parseFloat(params.initialLng) : NaN;
+    if (!isNaN(lat) && !isNaN(lng) && lat !== 0 && lng !== 0) {
+      setLocation({ latitude: lat, longitude: lng });
+      setLocationName(`${lat.toFixed(4)}, ${lng.toFixed(4)}`);
+    }
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
   const [isSaving, setIsSaving]           = useState(false);
   const [locPermission, requestLocPermission] = Location.useForegroundPermissions();
 
