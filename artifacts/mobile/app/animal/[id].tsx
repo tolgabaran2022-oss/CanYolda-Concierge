@@ -1019,17 +1019,7 @@ export default function AnimalDetailScreen() {
       ══════════════════════════════════════════ */}
       <View style={[D.actionBar, { paddingBottom: Math.max(insets.bottom, 12) }]}>
         <Pressable
-          style={({ pressed }) => [D.actionOutline, pressed && { opacity: 0.8 }]}
-          onPress={handleComment}
-          accessibilityRole="button"
-          accessibilityLabel="Yorum yap"
-        >
-          <Icon name="chatbubble-outline" size={18} color={C.purple} />
-          <Text style={D.actionOutlineText}>Yorum Yap</Text>
-        </Pressable>
-
-        <Pressable
-          style={({ pressed }) => [{ flex: 1.4 }, pressed && { opacity: 0.9 }]}
+          style={({ pressed }) => [{ flex: 1 }, pressed && { opacity: 0.9 }]}
           onPress={handleHelp}
           accessibilityRole="button"
           accessibilityLabel="Yardım et"
@@ -1177,9 +1167,7 @@ const D = StyleSheet.create({
   footer:         { fontSize: 12, fontFamily: "Inter_400Regular", color: C.muted, textAlign: "center", marginTop: 28, marginBottom: 8 },
 
   /* Sticky action bar */
-  actionBar:      { backgroundColor: C.white, borderTopWidth: 1, borderTopColor: "rgba(30,20,50,0.06)", paddingHorizontal: 16, paddingTop: 12, flexDirection: "row", gap: 12 },
-  actionOutline:  { flex: 1, height: 52, borderRadius: 16, borderWidth: 1.5, borderColor: C.purple, flexDirection: "row", alignItems: "center", justifyContent: "center", gap: 8 },
-  actionOutlineText: { fontSize: 15, fontFamily: "Inter_600SemiBold", color: C.purple },
+  actionBar:      { backgroundColor: C.white, borderTopWidth: 1, borderTopColor: "rgba(30,20,50,0.06)", paddingHorizontal: 16, paddingTop: 12 },
   actionFill:     { height: 52, borderRadius: 16, flexDirection: "row", alignItems: "center", justifyContent: "center", gap: 8 },
   actionFillText: { fontSize: 15, fontFamily: "Inter_700Bold", color: "#FFF" },
 });
