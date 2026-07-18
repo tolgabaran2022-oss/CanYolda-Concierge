@@ -1,0 +1,256 @@
+Fix and fully verify the missing image issue in the WEB version of the CanYoldaşı application.
+
+CURRENT ISSUE
+
+1. Images are not visible on the status cards on the “Animals” page.
+2. Pet photos are not visible in the “My Pet / Evcilim” section.
+3. Text, status, user, and location data load correctly, but image areas remain as empty purple placeholders.
+4. The problem is specifically visible on WEB.
+5. Do not break the existing Android or iOS behavior.
+
+TASK 1 — INSPECT THE REAL DATA FLOW
+
+Identify and inspect:
+
+- The photo field used by the status cards.
+- The photo field used by pet records.
+- The actual values stored in the Supabase database.
+- Whether each value is:
+  - A complete URL
+  - A Supabase Storage path
+  - A string
+  - An array
+  - A JSON string
+  - An object
+
+Compare the database column names with the frontend field names.
+
+Check for mismatches such as:
+
+- `image_url`
+- `imageUrl`
+- `photo_url`
+- `photoUrl`
+- `image`
+- `photo`
+- `photos`
+- `images`
+
+Do not assume the data structure. Confirm it using real database records.
+
+TASK 2 — CHECK SUPABASE STORAGE
+
+- Identify and verify the exact bucket names.
+- Confirm that the files actually exist in the expected buckets.
+- If the bucket is public, convert storage paths into valid HTTPS URLs using `getPublicUrl()`.
+- If the database already contains a complete `http://` or `https://` URL, do not pass it through `getPublicUrl()` again.
+- If the bucket is private, generate valid signed URLs.
+- If signed URLs have expired, regenerate them when the list is loaded.
+- Open at least one real generated image URL directly in the browser.
+- Verify whether it returns the actual image.
+
+Check for:
+
+- Incorrect bucket names
+- Duplicate bucket names inside paths
+- Missing or duplicated slashes
+- Incorrect URL encoding
+- Missing files
+- Expired signed URLs
+- Storage access policy errors
+- HTTP URLs being blocked on an HTTPS page
+- 401, 403, or 404 responses
+
+TASK 3 — FIX WEB IMAGE RENDERING
+
+Verify that React Native Web receives a valid image source:
+
+`source={{ uri: finalImageUrl }}`
+
+Make sure the final image URL is not:
+
+- `undefined`
+- `null`
+- An empty string
+- `[object Object]`
+- A JSON string that was not parsed
+- A local device URI such as `file://` or `content://`
+
+Verify that the image container has an explicit width and height on WEB.
+
+Check for styles that may hide the image:
+
+- `display: none`
+- `opacity: 0`
+- Incorrect `zIndex`
+- Incorrect absolute positioning
+- Incorrect `overflow`
+- A placeholder layer covering the image
+- A platform condition that renders images only on native platforms
+
+Use appropriate image styling where needed:
+
+- `width: '100%'`
+- `height: '100%'`
+- `resizeMode="cover"`
+- A valid `aspectRatio`
+
+The placeholder must only appear when:
+
+1. No valid image URL exists, or
+2. The real image triggers `onError`.
+
+The placeholder must not cover successfully loaded images.
+
+TASK 4 — CREATE A SHARED IMAGE URL RESOLVER
+
+Create one reusable and safe image URL resolver and use it for both:
+
+- Animal status cards
+- The “My Pet / Evcilim” section
+
+The resolver must safely support:
+
+- Complete HTTP/HTTPS URLs
+- Supabase Storage paths
+- A single string
+- An array of strings
+- A JSON-encoded string
+- `{ url: string }`
+- `{ uri: string }`
+- `{ path: string }`
+- Arrays containing objects
+
+Expected behavior:
+
+1. Extract the first valid image value.
+2. Parse JSON only when appropriate.
+3. Return complete HTTPS URLs unchanged.
+4. Convert Supabase Storage paths using the correct bucket.
+5. Reject invalid local device URLs on WEB.
+6. Return `null` safely when no valid image exists.
+7. Never crash because of malformed image data.
+
+Do not duplicate URL conversion logic across multiple components.
+
+TASK 5 — INSPECT THE UPLOAD FLOW
+
+The fix must also prevent new broken records.
+
+Test the photo upload flow for:
+
+- Creating a new status report
+- Adding or updating a pet
+
+Verify that:
+
+1. The selected file is uploaded to Supabase Storage.
+2. A real file is created in the correct bucket.
+3. The database stores a permanent storage path or public URL.
+4. The database does not store a temporary browser or device URI.
+5. Web file conversion uses the correct `File`, `Blob`, MIME type, and extension.
+6. The file remains accessible after refreshing the page.
+7. Existing Android and iOS upload behavior is preserved.
+
+Do not store these as permanent database values:
+
+- `file://`
+- `content://`
+- Temporary `blob:` URLs
+- Base64 previews unless the current architecture explicitly requires them
+
+TASK 6 — MAINTAIN BACKWARD COMPATIBILITY
+
+Existing records may use different image formats or older field names.
+
+Support old records whenever safely possible.
+
+Do not:
+
+- Delete existing records
+- Remove existing images
+- Overwrite valid image data
+- Perform a destructive database migration
+
+If a migration is required:
+
+- Create a separate migration file.
+- Make it non-destructive.
+- Explain exactly what it changes.
+- Do not execute destructive SQL.
+
+WEB TEST AND VERIFICATION REQUIREMENTS
+
+Do not mark the task as PASS based only on code inspection.
+
+WEB can only be marked as PASS if all of the following are completed:
+
+1. Run the application in a real web environment.
+2. Open the Animals page.
+3. Confirm that at least one real status card image is visible.
+4. Open the “My Pet / Evcilim” page.
+5. Confirm that at least one real pet photo is visible.
+6. Upload a new test photo through the web interface.
+7. Confirm that the file exists in Supabase Storage.
+8. Confirm that the database contains a permanent storage path or public URL.
+9. Refresh the page.
+10. Confirm that the photo remains visible.
+11. Log out and log back in.
+12. Confirm that the photo remains visible.
+13. Inspect the browser console.
+14. Inspect the browser network requests.
+15. Confirm there are no unexpected image-related:
+    - 401 errors
+    - 403 errors
+    - 404 errors
+    - CORS errors
+    - CSP errors
+    - Mixed-content errors
+16. Re-read the persisted database record after testing.
+
+TEST STATUS RULES
+
+Use only these statuses:
+
+- `PASS`: The feature was actually run, the user action was performed, the expected UI result was visually confirmed, Storage and database persistence were confirmed, and console/network checks passed.
+- `STATIC REVIEW`: Only the source code was inspected.
+- `BLOCKED`: The platform or required service could not be run or accessed.
+- `NOT TESTED`: No test was performed.
+
+Do not mark Android or iOS as PASS unless each platform was independently tested.
+
+Expo Web preview is not a native Android or iOS test.
+
+FINAL REPORT
+
+Provide:
+
+1. The proven root cause
+2. The affected database tables
+3. The exact image column names
+4. The exact Supabase bucket names
+5. An example of a broken stored value
+6. An example of the corrected final image URL
+7. Every modified file
+8. A summary of the changes in each file
+9. Web test steps and results
+10. Supabase Storage verification results
+11. Database persistence verification results
+12. Browser console and network results
+13. Android regression status
+14. iOS regression status
+15. Final status:
+    - PASS
+    - STATIC REVIEW
+    - BLOCKED
+    - NOT TESTED
+
+IMPORTANT RULES
+
+- Do not only redesign or replace the placeholder.
+- The real images must become visible.
+- Do not use fake URLs or mock data to claim success.
+- Do not hardcode Supabase secret keys.
+- Do not delete existing records.
+- Do not damage working Android or iOS behavior.
+- First prove the root cause, then apply a permanent shared fix.

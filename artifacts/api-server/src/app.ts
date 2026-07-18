@@ -146,6 +146,15 @@ app.use(express.json({ limit: "10mb" }));
 app.use(express.urlencoded({ extended: true, limit: "10mb" }));
 
 const uploadsDir = path.resolve(__dirname, "../../uploads");
+/* Override Helmet's default CORP header for publicly-served upload files.
+   Without this, browsers block cross-origin image loading when the expo web
+   app (expo.janeway.replit.dev) tries to load images served from the API
+   server domain (janeway.replit.dev). Images are user-uploaded and intended
+   to be publicly embeddable, so "cross-origin" is correct here. */
+app.use("/api/uploads", (_req, res, next) => {
+  res.setHeader("Cross-Origin-Resource-Policy", "cross-origin");
+  next();
+});
 app.use("/api/uploads", express.static(uploadsDir));
 
 app.use("/api", router);
