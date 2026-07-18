@@ -85,6 +85,19 @@ async function safeJson<T>(res: Response): Promise<T> {
   return res.json() as Promise<T>;
 }
 
+const TR_TO_EN_STATUS: Record<string, AnimalStatus> = {
+  aç: "hungry", ac: "hungry",
+  yaralı: "injured", yarali: "injured",
+  sağlıklı: "healthy", saglikli: "healthy",
+  bilinmiyor: "unknown",
+};
+
+function normalizeStatus(raw: unknown): AnimalStatus {
+  if (!raw) return "unknown";
+  const s = String(raw).toLowerCase().trim();
+  return TR_TO_EN_STATUS[s] ?? (["hungry","injured","healthy","unknown"].includes(s) ? (s as AnimalStatus) : "unknown");
+}
+
 function mapFromApi(raw: Record<string, unknown>): StrayAnimal {
   const interactions = (raw.interactions as string[] | undefined) ?? [];
   const comments = (raw.comments as Array<Record<string, unknown>> | undefined) ?? [];
@@ -96,7 +109,7 @@ function mapFromApi(raw: Record<string, unknown>): StrayAnimal {
     locationName:     raw.locationName ? String(raw.locationName) : undefined,
     latitude:         Number(raw.latitude ?? 0),
     longitude:        Number(raw.longitude ?? 0),
-    status:           (raw.status as AnimalStatus) ?? "unknown",
+    status:           normalizeStatus(raw.status),
     notes:            String(raw.notes ?? ""),
     timestamp:        raw.createdAt ? String(raw.createdAt) : new Date().toISOString(),
     userId:           String(raw.userId ?? ""),
@@ -143,7 +156,7 @@ export function AnimalsProvider({ children }: { children: React.ReactNode }) {
           locationName:     raw.locationName ? String(raw.locationName) : undefined,
           latitude:         Number(raw.latitude ?? 0),
           longitude:        Number(raw.longitude ?? 0),
-          status:           (raw.status as AnimalStatus) ?? "unknown",
+          status:           normalizeStatus(raw.status),
           notes:            String(raw.notes ?? ""),
           timestamp:        raw.createdAt ? String(raw.createdAt) : new Date().toISOString(),
           userId:           String(raw.userId ?? ""),

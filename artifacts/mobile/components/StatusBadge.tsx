@@ -25,7 +25,7 @@ interface Props {
 }
 
 export function StatusBadge({ status, size = "md" }: Props) {
-  const config = STATUS_CONFIG[status];
+  const config = STATUS_CONFIG[status] ?? STATUS_CONFIG.unknown;
   const isSmall = size === "sm";
   return (
     <View
