@@ -155,3 +155,9 @@ id = "ZWc-GqWqGYvLMsi28gPtU"
 uri = "file://CanYoldasi_Master_Audit_Raporu.txt"
 type = "text"
 title = "CanYoldaşı Master Production Readiness Audit Raporu"
+
+[[outputs]]
+id = "1cCbhXIiqn0bz8a9bZgec"
+uri = "file://CanYoldasi_Durum_Raporu_18Temmuz2026.txt"
+type = "text"
+title = "CanYoldaşı — Genel Durum ve Son 48 Saat Raporu"
