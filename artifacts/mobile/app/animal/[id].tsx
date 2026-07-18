@@ -1024,7 +1024,7 @@ export default function AnimalDetailScreen() {
           accessibilityRole="button"
           accessibilityLabel="Yardım et"
         >
-          <Animated.View style={{ transform: [{ scale: helpScale }], flex: 1 }}>
+          <Animated.View style={{ transform: [{ scale: helpScale }], width: "100%", height: 56 }}>
             <LinearGradient
               colors={["#9C7FE0", "#5B3FD6"]}
               start={{ x: 0, y: 0 }}
@@ -1168,7 +1168,7 @@ const D = StyleSheet.create({
 
   /* Sticky action bar */
   actionBar:      { position: "absolute", left: 0, right: 0, bottom: 0, paddingHorizontal: 20, paddingTop: 12, backgroundColor: C.white, borderTopWidth: 1, borderTopColor: "rgba(30,20,50,0.06)" },
-  helpButton:     { width: "100%", height: 56, minHeight: 56, borderRadius: 18, overflow: "hidden", alignItems: "center", justifyContent: "center" },
+  helpButton:     { width: "100%", height: 56, minHeight: 56, borderRadius: 18, overflow: "hidden" },
   actionFill:     { flex: 1, borderRadius: 18, flexDirection: "row", alignItems: "center", justifyContent: "center", gap: 8 },
   actionFillText: { fontSize: 15, fontFamily: "Inter_700Bold", color: "#FFF" },
 });
