@@ -585,7 +585,7 @@ export default function MapScreen() {
           style={styles.emergencyGradient}
         >
           <Icon name="warning" size={14} color="#FFF" />
-          <Text style={styles.emergencyText}>Acil Durum Bildir</Text>
+          <Text style={styles.emergencyText}>Hayvan Durumu Bildir</Text>
         </LinearGradient>
       </Pressable>
 
