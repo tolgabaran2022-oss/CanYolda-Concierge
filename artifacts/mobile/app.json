@@ -59,7 +59,7 @@
         ],
         "NSLocationWhenInUseUsageDescription": "CanYoldasi, sokak hayvanlarinin konumunu haritada gostermek ve yakinindaki veterinerleri listelemek icin konumunuzu kullanir.",
         "NSPhotoLibraryUsageDescription": "CanYoldasi, sokak hayvani fotograflari yuklemenizi ve profil fotografinizi ayarlamanizi saglamak icin fotograf kitapliginiza erisir.",
-        "NSCameraUsageDescription": "CanYoldasi, sokak hayvani fotograflari cekmenizi ve profil fotografinizi guncellemenizi saglamak icin kameraniza erisir."
+        "NSCameraUsageDescription": "Yakındaki sokak hayvanlarının durumunu fotoğraflayarak bildirebilmeniz için kamera erişimi gereklidir."
       },
       "entitlements": {
         "aps-environment": "production"
@@ -106,7 +106,7 @@
         "expo-image-picker",
         {
           "photosPermission": "CanYoldasi, hayvan fotografi eklemek icin fotograf kitapliginiza erisir.",
-          "cameraPermission": "CanYoldasi, hayvan fotografi cekmek icin kameraniza erisir."
+          "cameraPermission": "Yakındaki sokak hayvanlarının durumunu fotoğraflayarak bildirebilmeniz için kamera erişimi gereklidir."
         }
       ],
       [

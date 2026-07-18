@@ -1,0 +1,254 @@
+Fix the camera functionality on the “Report Animal Condition / Hayvan Durumu Bildir” form in the CanYoldaşı application.
+
+CURRENT BEHAVIOR
+
+1. The “Hayvan Durumu Bildir” button correctly opens the “Sokak Hayvanı Bildir” page.
+2. The form contains a required “Fotoğraf Çek” area.
+3. Clicking or tapping this area does not open the camera.
+4. On WEB, the form displays:
+   “iOS veya Android uygulamasını kullanın.”
+5. The feature currently prevents web users from capturing the required photo and completing the report.
+
+EXPECTED BEHAVIOR
+
+The “Fotoğraf Çek” area must open the device camera on:
+
+- Web browsers
+- Android
+- iOS
+
+This report requires a current photo taken at the scene. Do not silently replace the camera-only rule with unrestricted gallery selection.
+
+TASK 1 — FIND THE ROOT CAUSE
+
+Inspect the current implementation and determine:
+
+- Whether the photo area has a working `onPress` handler.
+- Whether a transparent view or disabled state blocks clicks.
+- Whether camera access is intentionally disabled through `Platform.OS === 'web'`.
+- Whether the camera function returns early on web.
+- Whether `expo-image-picker`, `expo-camera`, an HTML file input, or another camera library is being used.
+- Whether required camera permissions are declared and requested.
+- Whether the application is running in a secure context required by browsers.
+- Whether an error is being caught without being shown or logged.
+
+Do not apply a visual-only change. Prove why the camera is not opening.
+
+TASK 2 — IMPLEMENT WEB CAMERA CAPTURE
+
+Make camera capture work on the web.
+
+Use the most reliable approach compatible with the existing Expo/React Native Web architecture.
+
+Preferred behavior:
+
+1. When the user clicks “Fotoğraf Çek,” request camera permission.
+2. Open the available device camera.
+3. Prefer the rear/environment-facing camera on supported devices.
+4. Allow the user to take one current photo.
+5. Return the captured file to the form.
+6. Display a preview inside the photo area.
+7. Allow the user to retake the photo before submitting.
+
+A valid web implementation may use:
+
+- A web-compatible existing Expo camera implementation, or
+- `navigator.mediaDevices.getUserMedia()`, or
+- A hidden HTML file input configured with:
+  - `type="file"`
+  - `accept="image/*"`
+  - `capture="environment"`
+
+Do not use a normal unrestricted gallery picker if camera-only capture can be enforced by the browser.
+
+Web camera access requires HTTPS or localhost. Detect insecure contexts and show a clear user-facing message instead of failing silently.
+
+TASK 3 — IMPLEMENT NATIVE CAMERA CAPTURE
+
+For Android and iOS:
+
+1. Request camera permission at runtime.
+2. If permission is granted, launch the native camera.
+3. If permission is denied, show a clear Turkish explanation.
+4. Provide a button that allows the user to retry the permission request.
+5. If permission is permanently blocked, provide an “Ayarları Aç” action that opens the application settings.
+6. Prefer the rear camera.
+7. Do not open the gallery from the “Fotoğraf Çek” action.
+8. Do not break the existing navigation or form state.
+
+Confirm the required native permission configuration exists:
+
+Android:
+
+- Camera permission in the application configuration.
+- Correct Expo config/plugin settings if Expo is used.
+
+iOS:
+
+- A valid camera usage description.
+- Correct Expo config/plugin settings if Expo is used.
+
+Use a Turkish permission description suitable for App Store review, for example:
+
+“Yakındaki sokak hayvanlarının durumunu fotoğraflayarak bildirebilmeniz için kamera erişimi gereklidir.”
+
+TASK 4 — HANDLE THE CAPTURED IMAGE CORRECTLY
+
+After capture:
+
+- Show the real photo preview.
+- Preserve the correct image orientation.
+- Do not stretch or distort the image.
+- Use `resizeMode="cover"` where appropriate.
+- Store the correct URI/File/Blob according to the platform.
+- Do not lose the photo when another form field is changed.
+- Allow “Yeniden Çek.”
+- Prevent multiple rapid clicks from opening multiple camera sessions.
+- Canceling the camera must return safely to the form.
+- Canceling must not crash the application or erase other form fields.
+
+The submit button must remain disabled when no valid photo has been captured.
+
+TASK 5 — UPLOAD AND PERSIST THE PHOTO
+
+When the report is submitted:
+
+1. Upload the captured photo to the correct Supabase Storage bucket.
+2. Verify that a real file is created.
+3. Save a permanent storage path or public URL in the report record.
+4. Never save a temporary value such as:
+   - `file://`
+   - `content://`
+   - `blob:`
+   - A temporary browser preview URL
+5. Confirm that the saved image appears on the animal status card after submission.
+6. Refresh the page and verify that the image remains visible.
+7. Re-read the saved database record and verify persistence.
+
+On web, correctly convert the captured image into a `File` or `Blob` with:
+
+- A valid MIME type
+- A valid extension
+- A unique safe filename
+
+Revoke temporary object URLs when they are no longer required, but not before upload or preview has completed.
+
+TASK 6 — USER-FACING ERROR STATES
+
+Show clear Turkish messages for these conditions:
+
+Camera permission denied:
+
+“Kamera erişimi olmadan hayvan durumu bildirilemez. Lütfen kamera izni verin.”
+
+No camera available:
+
+“Bu cihazda kullanılabilir bir kamera bulunamadı.”
+
+Insecure web context:
+
+“Kamerayı kullanabilmek için uygulamayı güvenli HTTPS bağlantısı üzerinden açın.”
+
+Camera already in use:
+
+“Kamera başka bir uygulama tarafından kullanılıyor. Lütfen diğer uygulamayı kapatıp tekrar deneyin.”
+
+Capture failed:
+
+“Fotoğraf çekilemedi. Lütfen tekrar deneyin.”
+
+Upload failed:
+
+“Fotoğraf yüklenemedi. İnternet bağlantınızı kontrol edip tekrar deneyin.”
+
+Do not expose technical stack traces, Supabase details, or secret information to users.
+
+TASK 7 — UPDATE THE CURRENT WEB TEXT
+
+Remove this message when web camera capture is supported:
+
+“iOS veya Android uygulamasını kullanın.”
+
+Replace it with platform-neutral Turkish guidance:
+
+“Hayvanın olay yerindeki güncel ve net fotoğrafını çekin.”
+
+Keep the “Zorunlu” indicator.
+
+TEST AND VERIFICATION REQUIREMENTS
+
+Do not mark this task as PASS based only on code inspection.
+
+WEB can only be marked PASS if:
+
+1. The application is run in a real supported web browser.
+2. “Hayvan Durumu Bildir” is clicked.
+3. The correct report form opens.
+4. “Fotoğraf Çek” is clicked.
+5. The browser requests camera permission.
+6. The camera opens.
+7. A real photo is captured.
+8. The photo preview appears in the form.
+9. The report is submitted.
+10. The file is verified in Supabase Storage.
+11. The permanent image path or URL is verified in the database.
+12. The new report card displays the captured image.
+13. The page is refreshed.
+14. The image remains visible.
+15. Browser console and network are checked.
+16. No unexpected permission, CORS, CSP, 401, 403, 404, or upload errors exist.
+
+Also test these web cases:
+
+- Permission granted
+- Permission denied
+- Camera canceled
+- No available camera
+- Capture and retake
+- Double-click protection
+- Page refresh after submission
+- Mobile browser rear camera where available
+- Desktop browser webcam
+
+ANDROID can only be marked PASS after a real Android build or emulator test with camera capability.
+
+iOS can only be marked PASS after a real iOS build, simulator-supported flow, or physical device test as appropriate.
+
+Expo Web must not be counted as Android or iOS testing.
+
+STATUS RULES
+
+- `PASS`: The flow was actually executed and verified in UI, Storage, database, console, and network.
+- `STATIC REVIEW`: Only the code was inspected.
+- `BLOCKED`: The required platform, camera, build, or service could not be accessed.
+- `NOT TESTED`: The test was not performed.
+
+FINAL REPORT
+
+Provide:
+
+1. Proven root cause
+2. Camera library or API used
+3. Modified files
+4. Changes made in each file
+5. Permission configuration changes
+6. Web test result
+7. Android test result
+8. iOS test result
+9. Supabase Storage verification
+10. Database persistence verification
+11. Report-card image verification
+12. Console and network results
+13. Any remaining browser limitations
+14. Final status for each platform
+
+IMPORTANT RULES
+
+- Do not only make the photo area clickable without verifying the camera opens.
+- Do not claim PASS using mock data or a placeholder image.
+- Do not automatically use an unrestricted photo gallery for this camera-only report.
+- Do not store temporary local image URIs in the database.
+- Do not delete existing reports or images.
+- Do not hardcode Supabase secret keys.
+- Preserve all other form fields and existing navigation behavior.
+- Fix the complete capture → preview → upload → database → card display flow.

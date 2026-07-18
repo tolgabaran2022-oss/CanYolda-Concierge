@@ -10,7 +10,7 @@ import { Image } from "expo-image";
 import * as ImagePicker from "expo-image-picker";
 import * as Location from "expo-location";
 import { useLocalSearchParams, useRouter } from "expo-router";
-import React, { useEffect, useState } from "react";
+import React, { useEffect, useRef, useState } from "react";
 import {
   ActivityIndicator,
   Alert,
@@ -106,16 +106,24 @@ async function checkNearbyAnimals(lat: number, lng: number): Promise<NearbyAnima
 }
 
 async function uploadImage(localUri: string, token: string | null): Promise<string> {
-  const filename = localUri.split("/").pop() ?? "photo.jpg";
-  const match = /\.(\w+)$/.exec(filename);
-  const type = match ? `image/${match[1].toLowerCase().replace("jpg", "jpeg")}` : "image/jpeg";
-
   const formData = new FormData();
+
   if (Platform.OS === "web") {
     const response = await fetch(localUri);
     const blob = await response.blob();
+    const mimeType = blob.type || "image/jpeg";
+    const ext = mimeType === "image/png" ? "png"
+      : mimeType === "image/webp" ? "webp"
+      : mimeType === "image/gif"  ? "gif"
+      : "jpg";
+    const filename = localUri.startsWith("blob:") || localUri.startsWith("data:")
+      ? `capture-${Date.now()}.${ext}`
+      : (localUri.split("/").pop() ?? `photo.${ext}`);
     formData.append("image", blob, filename);
   } else {
+    const filename = localUri.split("/").pop() ?? "photo.jpg";
+    const match = /\.(\w+)$/.exec(filename);
+    const type = match ? `image/${match[1].toLowerCase().replace("jpg", "jpeg")}` : "image/jpeg";
     formData.append("image", { uri: localUri, name: filename, type } as unknown as Blob);
   }
 
@@ -144,6 +152,12 @@ export default function AddAnimalScreen() {
   const [photoStatus, setPhotoStatus]       = useState<PhotoStatus>("idle");
   const [photoStatusReason, setPhotoStatusReason] = useState<string | undefined>();
 
+  // Track web blob URLs so we can revoke them when no longer needed
+  const webBlobUrlRef = useRef<string | null>(null);
+  useEffect(() => () => {
+    if (webBlobUrlRef.current) { URL.revokeObjectURL(webBlobUrlRef.current); }
+  }, []);
+
   const [animalType, setAnimalType]         = useState<AnimalType>("diger");
   const [status, setStatus]               = useState<AnimalStatus>("unknown");
   const [notes, setNotes]                 = useState("");
@@ -165,14 +179,55 @@ export default function AddAnimalScreen() {
   const [isSaving, setIsSaving]           = useState(false);
   const [locPermission, requestLocPermission] = Location.useForegroundPermissions();
 
+  /* ── Helpers ─────────────────────────────────────────────────── */
+  const revokeWebBlob = () => {
+    if (webBlobUrlRef.current) {
+      URL.revokeObjectURL(webBlobUrlRef.current);
+      webBlobUrlRef.current = null;
+    }
+  };
+
   /* ── Actions ─────────────────────────────────────────────────── */
   const openCamera = async () => {
     if (Platform.OS === "web") {
-      Alert.alert(
-        "Kamera Desteklenmiyor",
-        "Sokak hayvanı bildirimi oluşturmak için iOS veya Android uygulamasını kullanın.",
-        [{ text: "Tamam" }]
-      );
+      // Secure context check (camera requires HTTPS or localhost)
+      if (typeof window !== "undefined" && !window.isSecureContext) {
+        Alert.alert(
+          "Güvenli Bağlantı Gerekli",
+          "Kamerayı kullanabilmek için uygulamayı güvenli HTTPS bağlantısı üzerinden açın."
+        );
+        return;
+      }
+
+      // Use a hidden file input with capture="environment" — opens rear camera on
+      // mobile browsers; falls back to webcam/file picker on desktop.
+      const input = document.createElement("input");
+      input.type = "file";
+      input.accept = "image/*";
+      // 'capture' is not in the standard TS lib for HTMLInputElement but is valid HTML
+      (input as HTMLInputElement & { capture: string }).capture = "environment";
+      input.style.cssText = "position:fixed;top:-9999px;left:-9999px;opacity:0;";
+      document.body.appendChild(input);
+
+      const cleanup = () => {
+        try { document.body.removeChild(input); } catch { /* already removed */ }
+      };
+
+      input.onchange = () => {
+        const file = input.files?.[0];
+        if (file) {
+          revokeWebBlob(); // revoke any previous blob URL
+          const objectUrl = URL.createObjectURL(file);
+          webBlobUrlRef.current = objectUrl;
+          setPendingImage(objectUrl);
+        }
+        cleanup();
+      };
+
+      // Some browsers fire 'cancel' when user dismisses without selecting
+      input.addEventListener("cancel", cleanup);
+
+      input.click();
       return;
     }
 
@@ -224,6 +279,7 @@ export default function AddAnimalScreen() {
   };
 
   const retakePhoto = () => {
+    revokeWebBlob();
     setPendingImage(undefined);
     setImage(undefined);
     setConfirmedImageUrl(undefined);
@@ -233,6 +289,7 @@ export default function AddAnimalScreen() {
   };
 
   const removeImage = () => {
+    revokeWebBlob();
     setImage(undefined);
     setPendingImage(undefined);
     setConfirmedImageUrl(undefined);
@@ -463,9 +520,7 @@ export default function AddAnimalScreen() {
                   </View>
                   <Text style={[S.photoAddTitle, { color: C.text }]}>Fotoğraf Çek</Text>
                   <Text style={[S.photoAddSub, { color: C.textMuted }]}>
-                    {Platform.OS === "web"
-                      ? "iOS veya Android uygulamasını kullanın"
-                      : "Kamera ile olay yerinde fotoğraf çekin"}
+                    Kamera ile olay yerinde fotoğraf çekin
                   </Text>
                   <View style={[S.requiredPill, { backgroundColor: "#FEE2E2" }]}>
                     <Text style={[S.requiredPillText, { color: "#DC2626" }]}>Zorunlu</Text>
