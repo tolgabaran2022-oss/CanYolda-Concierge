@@ -542,58 +542,57 @@ export default function MapScreen() {
             { backgroundColor: colors.background },
           ]}
         />
-        <Icon name="paw" size={17} color={colors.primary} />
-        <Text style={[styles.topTitle, { color: colors.foreground }]}>
-          CanYoldaşı
-        </Text>
-        <View style={{ flex: 1 }} />
-        <View
-          style={[
-            styles.countPill,
-            { backgroundColor: `${colors.primary}18` },
-          ]}
-        >
-          <Text style={[styles.countText, { color: colors.primary }]}>
-            {animals.length} hayvan
+        {/* Row 1: title + count */}
+        <View style={styles.topBarRow}>
+          <Icon name="paw" size={17} color={colors.primary} />
+          <Text style={[styles.topTitle, { color: colors.foreground }]}>
+            CanYoldaşı
           </Text>
+          <View style={{ flex: 1 }} />
+          <View
+            style={[
+              styles.countPill,
+              { backgroundColor: `${colors.primary}18` },
+            ]}
+          >
+            <Text style={[styles.countText, { color: colors.primary }]}>
+              {animals.length} hayvan
+            </Text>
+          </View>
         </View>
-      </View>
-
-      {/* Emergency report button — right side, below top bar */}
-      <Pressable
-        style={({ pressed }) => [
-          styles.emergencyBtn,
-          { top: topPad + 62, opacity: pressed ? 0.85 : 1 },
-        ]}
-        onPress={() => {
-          const coords = userLocation ?? { latitude: region.latitude, longitude: region.longitude };
-          router.push({
-            pathname: "/add-animal",
-            params: {
-              initialLat: String(coords.latitude),
-              initialLng: String(coords.longitude),
-            },
-          });
-          Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
-        }}
-        hitSlop={4}
-      >
-        <LinearGradient
-          colors={["#FF6B35", "#EF4444"]}
-          start={{ x: 0, y: 0 }}
-          end={{ x: 1, y: 0 }}
-          style={styles.emergencyGradient}
+        {/* Row 2: report button */}
+        <Pressable
+          style={({ pressed }) => [{ opacity: pressed ? 0.82 : 1 }, styles.emergencyBtn]}
+          onPress={() => {
+            const coords = userLocation ?? { latitude: region.latitude, longitude: region.longitude };
+            router.push({
+              pathname: "/add-animal",
+              params: {
+                initialLat: String(coords.latitude),
+                initialLng: String(coords.longitude),
+              },
+            });
+            Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
+          }}
+          hitSlop={4}
         >
-          <Icon name="warning" size={14} color="#FFF" />
-          <Text style={styles.emergencyText}>Hayvan Durumu Bildir</Text>
-        </LinearGradient>
-      </Pressable>
+          <LinearGradient
+            colors={["#FF6B35", "#EF4444"]}
+            start={{ x: 0, y: 0 }}
+            end={{ x: 1, y: 0 }}
+            style={styles.emergencyGradient}
+          >
+            <Icon name="warning" size={14} color="#FFF" />
+            <Text style={styles.emergencyText}>Hayvan Durumu Bildir</Text>
+          </LinearGradient>
+        </Pressable>
+      </View>
 
       {/* Location button — fixed right side, below emergency button */}
       <Pressable
         style={({ pressed }) => [
           styles.locateBtn,
-          { top: topPad + 112, opacity: pressed ? 0.85 : 1 },
+          { top: topPad + 148, opacity: pressed ? 0.85 : 1 },
         ]}
         onPress={() => {
           locateMe();
@@ -734,11 +733,11 @@ const styles = StyleSheet.create({
     position: "absolute",
     left: 16,
     right: 16,
-    flexDirection: "row",
-    alignItems: "center",
-    gap: 8,
+    flexDirection: "column",
     paddingHorizontal: 14,
-    paddingVertical: 11,
+    paddingTop: 11,
+    paddingBottom: 10,
+    gap: 8,
     borderRadius: 22,
     overflow: "hidden",
     borderWidth: 0.5,
@@ -748,6 +747,11 @@ const styles = StyleSheet.create({
     shadowOpacity: 0.1,
     shadowRadius: 16,
     elevation: 6,
+  },
+  topBarRow: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 8,
   },
   topTitle: {
     fontSize: 17,
@@ -764,8 +768,6 @@ const styles = StyleSheet.create({
   },
 
   emergencyBtn: {
-    position: "absolute",
-    right: 12,
     borderRadius: 20,
     overflow: "hidden",
     shadowColor: "#EF4444",
@@ -777,6 +779,7 @@ const styles = StyleSheet.create({
   emergencyGradient: {
     flexDirection: "row",
     alignItems: "center",
+    justifyContent: "center",
     gap: 6,
     paddingHorizontal: 14,
     paddingVertical: 9,
