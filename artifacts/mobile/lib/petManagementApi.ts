@@ -84,6 +84,101 @@ export type ApiNutrition = {
   updatedAt: string;
 };
 
+export type ApiPetPremiumStatus = {
+  isPremium: boolean;
+  status: string;
+  expiresAt: string | null;
+  productId: string;
+  petLimit: number;
+  existingPetCount: number;
+  canAddPet: boolean;
+};
+
+export type ApiMedication = {
+  id: string;
+  petId: string;
+  userId: string;
+  name: string;
+  dosage: string;
+  instructions: string;
+  startDate: string;
+  endDate: string;
+  scheduleTimes: string;
+  recurrenceRule: string;
+  reminderEnabled: boolean;
+  isActive: boolean;
+  createdAt: string;
+  updatedAt: string;
+};
+
+export type ApiPetDocument = {
+  id: string;
+  petId: string;
+  userId: string;
+  title: string;
+  category: string;
+  fileUrl: string;
+  fileName: string;
+  mimeType: string;
+  fileSize: number;
+  documentDate: string;
+  notes: string;
+  createdAt: string;
+  updatedAt: string;
+};
+
+export async function apiGetPetPremiumStatus(): Promise<ApiPetPremiumStatus> {
+  const res = await apiFetch("/pet-premium/status");
+  if (!res.ok) throw new Error("premium status failed");
+  return res.json() as Promise<ApiPetPremiumStatus>;
+}
+
+export async function apiRefreshPetPremium(): Promise<ApiPetPremiumStatus> {
+  const res = await apiFetch("/pet-premium/refresh", { method: "POST" });
+  if (!res.ok) throw new Error("premium refresh failed");
+  return res.json() as Promise<ApiPetPremiumStatus>;
+}
+
+export async function apiGetMedications(petId: string): Promise<ApiMedication[]> {
+  const res = await apiFetch(`/pets/${petId}/medications`);
+  if (!res.ok) return [];
+  return res.json() as Promise<ApiMedication[]>;
+}
+
+export async function apiCreateMedication(
+  petId: string,
+  data: Omit<ApiMedication, "id" | "petId" | "userId" | "createdAt" | "updatedAt" | "scheduleTimes"> & { scheduleTimes: string[] },
+): Promise<ApiMedication> {
+  const res = await apiFetch(`/pets/${petId}/medications`, { method: "POST", body: JSON.stringify(data) });
+  if (!res.ok) throw new Error(res.status === 402 ? "premium_required" : "create medication failed");
+  return res.json() as Promise<ApiMedication>;
+}
+
+export async function apiDeleteMedication(petId: string, id: string): Promise<void> {
+  const res = await apiFetch(`/pets/${petId}/medications/${id}`, { method: "DELETE" });
+  if (!res.ok) throw new Error("delete medication failed");
+}
+
+export async function apiGetPetDocuments(petId: string): Promise<ApiPetDocument[]> {
+  const res = await apiFetch(`/pets/${petId}/documents`);
+  if (!res.ok) return [];
+  return res.json() as Promise<ApiPetDocument[]>;
+}
+
+export async function apiCreatePetDocument(
+  petId: string,
+  data: Omit<ApiPetDocument, "id" | "petId" | "userId" | "createdAt" | "updatedAt">,
+): Promise<ApiPetDocument> {
+  const res = await apiFetch(`/pets/${petId}/documents`, { method: "POST", body: JSON.stringify(data) });
+  if (!res.ok) throw new Error(res.status === 402 ? "premium_required" : "create document failed");
+  return res.json() as Promise<ApiPetDocument>;
+}
+
+export async function apiDeletePetDocument(petId: string, id: string): Promise<void> {
+  const res = await apiFetch(`/pets/${petId}/documents/${id}`, { method: "DELETE" });
+  if (!res.ok) throw new Error("delete document failed");
+}
+
 /* ── Vaccinations ────────────────────────────────────────────────────── */
 
 export async function apiGetVaccinations(petId: string): Promise<ApiVaccination[]> {

@@ -8,6 +8,7 @@ import notificationsRouter from "./notifications.js";
 import usersRouter from "./users.js";
 import petsRouter from "./pets.js";
 import petManagementRouter from "./petManagement.js";
+import petPremiumRouter from "./petPremium.js";
 import messagesRouter from "./messages.js";
 import listingsRouter from "./listings.js";
 import animalsRouter from "./animals.js";
@@ -35,6 +36,7 @@ router.use(notificationsRouter);
 router.use(usersRouter);
 router.use(petsRouter);
 router.use(petManagementRouter);
+router.use(petPremiumRouter);
 
 /* Chat / messaging endpoints */
 router.use("/messages",    chatLimiter, messagesRouter);

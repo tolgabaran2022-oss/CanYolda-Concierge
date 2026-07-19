@@ -19,6 +19,7 @@ import { AnimalsProvider } from "@/contexts/AnimalsContext";
 import { AuthProvider, useAuth } from "@/contexts/AuthContext";
 import { BoostProvider } from "@/contexts/BoostContext";
 import { PetsProvider } from "@/contexts/PetsContext";
+import { PetPremiumProvider } from "@/contexts/PetPremiumContext";
 import { ThemeProvider } from "@/contexts/ThemeContext";
 
 SplashScreen.preventAutoHideAsync();
@@ -40,7 +41,7 @@ function RootLayoutNav() {
   useEffect(() => {
     if (isLoading) return;
     const inAuthGroup = segments[0] === "(auth)";
-    const currentScreen = segments[1] as string | undefined;
+    const currentScreen = (segments as readonly string[])[1];
     const openScreens   = ["forgot-password", "reset-password"];
     const isOpenScreen  = openScreens.includes(currentScreen ?? "");
 
@@ -86,6 +87,9 @@ function RootLayoutNav() {
       <Stack.Screen name="evcilim/[petId]/identification" />
       <Stack.Screen name="evcilim/[petId]/nutrition" />
       <Stack.Screen name="evcilim/[petId]/notes" />
+      <Stack.Screen name="evcilim/[petId]/medications" />
+      <Stack.Screen name="evcilim/[petId]/documents" />
+      <Stack.Screen name="evcilim-premium" options={{ presentation: "modal", headerShown: false }} />
       <Stack.Screen name="add-adoption" />
       <Stack.Screen name="adoption/edit/[id]" />
       <Stack.Screen name="user-profile/[userId]" />
@@ -130,6 +134,7 @@ export default function RootLayout() {
           <AuthProvider>
             <AnimalsProvider>
               <PetsProvider>
+                <PetPremiumProvider>
                 <AdoptionProvider>
                   <BoostProvider>
                     <QueryClientProvider client={queryClient}>
@@ -153,6 +158,7 @@ export default function RootLayout() {
                     </QueryClientProvider>
                   </BoostProvider>
                 </AdoptionProvider>
+                </PetPremiumProvider>
               </PetsProvider>
             </AnimalsProvider>
           </AuthProvider>

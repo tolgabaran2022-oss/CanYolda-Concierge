@@ -105,6 +105,7 @@ import {
   Trophy,
   Award,
   Crown,
+  Gem,
 } from "lucide-react-native";
 
 type LucideIcon = React.ComponentType<{
@@ -263,6 +264,8 @@ const ICON_MAP: Record<string, LucideIcon> = {
   "award-outline":            Award,
   "crown":                    Crown,
   "crown-outline":            Crown,
+  "diamond":                  Gem,
+  "diamond-outline":          Gem,
 
   // ── Misc additions ───────────────────────────────────
   "bag-handle-outline":       ShoppingBag,

@@ -18,6 +18,7 @@ import {
 } from "react-native";
 import { useAuth } from "@/contexts/AuthContext";
 import { usePets, type Pet } from "@/contexts/PetsContext";
+import { usePetPremium } from "@/contexts/PetPremiumContext";
 import {
   apiGetVaccinations,
   apiGetAppointments,
@@ -622,17 +623,20 @@ type GridItem = {
   icon:  string;
   route: string;
   badge?: number;
+  premium?: boolean;
 };
 
 function ManagementGrid({
   petId,
   vaccinations,
   appointments,
+  isPremium,
   onNav,
 }: {
   petId: string;
   vaccinations: ApiVaccination[];
   appointments: ApiAppointment[];
+  isPremium: boolean;
   onNav: (route: string) => void;
 }) {
   const overdueVacc  = vaccinations.filter((v) => v.status === "overdue").length;
@@ -644,8 +648,8 @@ function ManagementGrid({
     { key: "vaccinations", label: "Aşılar",    icon: "shield-checkmark-outline", route: `/evcilim/${petId}/vaccinations`, badge: overdueVacc || undefined },
     { key: "appointments", label: "Randevular", icon: "calendar-outline",         route: `/evcilim/${petId}/appointments`, badge: upcomingAppt || undefined },
     { key: "nutrition",    label: "Beslenme",   icon: "nutrition-outline",        route: `/evcilim/${petId}/nutrition` },
-    { key: "documents",    label: "Belgeler",   icon: "document-text-outline",   route: `/evcilim/${petId}/notes` },
-    { key: "medications",  label: "İlaçlar",    icon: "medical-outline",          route: `/evcilim/${petId}/notes` },
+    { key: "documents",    label: "Belgeler",   icon: "document-text-outline",   route: `/evcilim/${petId}/documents`, premium: true },
+    { key: "medications",  label: "İlaçlar",    icon: "medical-outline",          route: `/evcilim/${petId}/medications`, premium: true },
     { key: "notes",        label: "Notlar",     icon: "pencil-outline",           route: `/evcilim/${petId}/notes` },
   ];
 
@@ -666,6 +670,11 @@ function ManagementGrid({
               {item.badge !== undefined && item.badge > 0 && (
                 <View style={mg.badge}>
                   <Text style={mg.badgeTxt}>{item.badge}</Text>
+                </View>
+              )}
+              {item.premium && !isPremium && (
+                <View style={mg.premiumBadge}>
+                  <Icon name="diamond" size={9} color="#fff" />
                 </View>
               )}
             </View>
@@ -701,6 +710,7 @@ const mg = StyleSheet.create({
     position: "relative",
   },
   badge:     { position: "absolute", top: -3, right: -3, width: 16, height: 16, borderRadius: 8, backgroundColor: C.red, alignItems: "center", justifyContent: "center", borderWidth: 2, borderColor: C.card },
+  premiumBadge: { position: "absolute", top: -4, right: -4, width: 18, height: 18, borderRadius: 9, backgroundColor: C.purple, alignItems: "center", justifyContent: "center", borderWidth: 2, borderColor: C.card },
   badgeTxt:  { fontSize: 9, fontFamily: "Inter_700Bold", color: "#fff" },
   cellLabel: { fontSize: 11, fontFamily: "Inter_500Medium", color: C.text, textAlign: "center", lineHeight: 15, paddingHorizontal: 4 },
 });
@@ -866,6 +876,7 @@ function LoadingSkeleton() {
 export function EvcilimTab({ botPad }: { botPad: number }) {
   const { pets, isLoading: petsLoading, error: petsError, refresh: refreshPets, deletePet } = usePets();
   const { user } = useAuth();
+  const { status: premiumStatus, isPremium } = usePetPremium();
   const router   = useRouter();
 
   const [selectedPetId, setSelectedPetId] = useState<string | null>(null);
@@ -896,6 +907,14 @@ export function EvcilimTab({ botPad }: { botPad: number }) {
     (route: string) => router.push(route as Parameters<typeof router.push>[0]),
     [router]
   );
+
+  const handleAddPet = useCallback(() => {
+    if (premiumStatus && !premiumStatus.canAddPet) {
+      nav("/evcilim-premium");
+      return;
+    }
+    nav("/evcilim/add");
+  }, [premiumStatus, nav]);
 
   const handleDeletePet = useCallback(async (id: string) => {
     setDeletingPetId(id);
@@ -968,7 +987,7 @@ export function EvcilimTab({ botPad }: { botPad: number }) {
   }
 
   if (pets.length === 0) {
-    return <NoPetsState onAdd={() => nav("/evcilim/add")} />;
+    return <NoPetsState onAdd={handleAddPet} />;
   }
 
   const reminders = selectedPet ? buildReminders(vaccinations, appointments, nutrition) : [];
@@ -987,7 +1006,7 @@ export function EvcilimTab({ botPad }: { botPad: number }) {
           pets={pets}
           selectedIndex={selectedIndex}
           onSelectIndex={(i) => setSelectedPetId(pets[i]!.id)}
-          onAdd={() => nav("/evcilim/add")}
+          onAdd={handleAddPet}
           onEdit={() => selectedPet && nav(`/evcilim/${selectedPet.id}`)}
           onOpenSelector={() => setPetSelectorOpen(true)}
         />
@@ -1009,6 +1028,7 @@ export function EvcilimTab({ botPad }: { botPad: number }) {
             petId={selectedPet.id}
             vaccinations={vaccinations}
             appointments={appointments}
+            isPremium={isPremium}
             onNav={nav}
           />
           <UpcomingReminders
@@ -1024,7 +1044,7 @@ export function EvcilimTab({ botPad }: { botPad: number }) {
         pets={pets}
         selectedPetId={selectedPetId}
         onSelect={(id) => setSelectedPetId(id)}
-        onAdd={() => nav("/evcilim/add")}
+        onAdd={handleAddPet}
         onClose={() => setPetSelectorOpen(false)}
         onDelete={handleDeletePet}
         deletingPetId={deletingPetId}

@@ -2,6 +2,7 @@ import { Router } from "express";
 import { db } from "@workspace/db";
 import { petProfiles, petPosts, petHealth, petFollowers } from "@workspace/db";
 import { eq, and, desc, sql } from "drizzle-orm";
+import { getPetPremiumStatus } from "../services/petPremiumAccess.js";
 
 import { extractUserId } from "../lib/jwtAuth.js";
 
@@ -48,6 +49,15 @@ router.post("/pets", async (req, res) => {
   const { name, type, breed, age, gender, birthDate, weight, color, avatarUrl, bio, location, vaccinationInfo, feedingNotes } = req.body as Record<string, string>;
   if (!name?.trim()) { res.status(400).json({ error: "name required" }); return; }
   try {
+    const premium = await getPetPremiumStatus(userId);
+    if (!premium.canAddPet) {
+      res.status(402).json({
+        error: "premium_required",
+        message: "İkinci ve sonraki evcil hayvanlar için Evcilim Premium gereklidir.",
+        premium,
+      });
+      return;
+    }
     const [pet] = await db.insert(petProfiles).values({
       ownerId: userId, name, type: type ?? "cat",
       breed: breed ?? "", age: age ?? "", gender: gender ?? "", birthDate: birthDate ?? "",

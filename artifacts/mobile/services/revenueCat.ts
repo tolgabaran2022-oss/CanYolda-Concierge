@@ -178,6 +178,8 @@ export function isRevenueCatInitialized(): boolean {
 
 /** Expected offering identifier for CanYoldaşı boost feature */
 const EXPECTED_OFFERING_ID = "canyoldasi_boost";
+export const PET_PREMIUM_OFFERING_ID = "evcilim_premium";
+export const PET_PREMIUM_ENTITLEMENT_ID = "evcilim_premium";
 
 /**
  * Fetch boost packages from RevenueCat.
@@ -210,6 +212,32 @@ export async function fetchOfferings(): Promise<PurchasesPackage[]> {
   }
 
   return offering.availablePackages as PurchasesPackage[];
+}
+
+/** Fetch the subscription packages dedicated to Evcilim Premium. */
+export async function fetchPetPremiumOfferings(): Promise<PurchasesPackage[]> {
+  if (Platform.OS === "web") return [];
+  const sdk = await getPurchases();
+  if (!sdk) throw new Error("RevenueCat SDK unavailable");
+  if (!_initialized) throw new Error("RevenueCat SDK not yet initialized");
+  const offerings = await sdk.Purchases.getOfferings();
+  const offering = offerings.all[PET_PREMIUM_OFFERING_ID] ?? null;
+  if (!offering) throw new Error("Evcilim Premium offering unavailable");
+  return offering.availablePackages as PurchasesPackage[];
+}
+
+export async function purchasePetPremium(pkg: PurchasesPackage) {
+  if (Platform.OS === "web") throw new Error("native_purchase_required");
+  const sdk = await getPurchases();
+  if (!sdk || !_initialized) throw new Error("RevenueCat SDK unavailable");
+  return sdk.Purchases.purchasePackage(pkg);
+}
+
+export async function getPetPremiumCustomerInfo() {
+  if (Platform.OS === "web") return null;
+  const sdk = await getPurchases();
+  if (!sdk || !_initialized) return null;
+  return sdk.Purchases.getCustomerInfo();
 }
 
 /* ──────────────────────────────────────────────────────────────
