@@ -262,19 +262,6 @@ export default function HelpUpdateScreen() {
                     <Text style={S.photoBtnText}>Fotoğraf Çek</Text>
                   </Pressable>
                 )}
-                <Pressable
-                  style={({ pressed }) => [
-                    S.photoBtn,
-                    Platform.OS === "web" && S.photoBtnFull,
-                    pressed && { opacity: 0.75 },
-                  ]}
-                  onPress={handleGallery}
-                >
-                  <View style={S.photoBtnIcon}>
-                    <Icon name="images-outline" size={22} color={C.purple} />
-                  </View>
-                  <Text style={S.photoBtnText}>Galeriden Seç</Text>
-                </Pressable>
               </View>
             )}
           </View>
