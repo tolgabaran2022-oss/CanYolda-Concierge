@@ -256,10 +256,6 @@ export default function HelpUpdateScreen() {
                   transition={200}
                 />
                 <View style={S.photoOverlay}>
-                  <Pressable style={S.changeBtn} onPress={handleGallery} hitSlop={8}>
-                    <Icon name="images-outline" size={13} color={C.white} />
-                    <Text style={S.changeBtnText}>Değiştir</Text>
-                  </Pressable>
                   <Pressable style={S.removeBtn} onPress={clearPhoto} hitSlop={8}>
                     <Icon name="close" size={15} color={C.white} />
                   </Pressable>
