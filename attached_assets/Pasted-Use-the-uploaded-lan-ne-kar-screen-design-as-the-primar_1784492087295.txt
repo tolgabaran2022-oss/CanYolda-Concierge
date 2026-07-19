@@ -1,0 +1,272 @@
+Use the uploaded “İlanı Öne Çıkar” screen design as the primary visual reference.
+
+Rebuild the existing featured-listing purchase screen to match the uploaded reference image as closely as possible while preserving and correctly connecting the real RevenueCat purchase functionality.
+
+This task includes:
+
+1. Rebuilding the complete interface
+2. Loading the selected listing’s real data
+3. Connecting the real 1-day, 3-day, and 7-day products
+4. Confirming purchases securely
+5. Activating the featured period in Supabase
+6. Adding the purple featured badge
+7. Moving active featured listings to the top of “Tüm İlanlar”
+8. Handling expiration and purchase restoration
+9. Testing the complete purchase-to-featured flow
+
+Do not use the uploaded design as a background image. Build it with real React Native/Expo components.
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+1. REFERENCE IMAGE IS THE VISUAL SOURCE OF TRUTH
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+Reproduce the uploaded reference image using the project’s existing:
+
+- React Native/Expo architecture
+- Theme system
+- Typography
+- Icon library
+- Safe-area handling
+- Navigation
+- RevenueCat integration
+- Supabase backend
+
+Match the reference image’s:
+
+- Purple gradient hero
+- Warm cream page background
+- White rounded cards
+- Lavender accents
+- Soft shadows
+- Spacing
+- Typography hierarchy
+- Listing-preview card
+- Benefit cards
+- Package-selection cards
+- Trust information
+- Sticky purchase area
+
+Use:
+
+- Warm cream/off-white background
+- Deep purple: approximately `#4C2A85`
+- Main purple: approximately `#7C3AED`
+- Purple gradient: approximately `#7C3AED → #A855F7`
+- Pale lavender selected states
+- Restrained gold only for premium accents
+
+Do not retain the current large orange header.
+
+Do not redesign unrelated application screens.
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+2. FOCUSED PAGE STRUCTURE
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+Implement this exact visual order:
+
+1. Purple gradient hero
+2. Listing preview overlapping the hero
+3. “Öne Çıkarma Avantajları”
+4. Three benefit cards
+5. “Paketini Seç”
+6. Three selectable package cards
+7. Secure-payment and expiration notes
+8. Sticky selected-package and purchase area
+
+This is a focused purchase flow.
+
+Do not display the application’s main bottom-tab navigation on this screen.
+
+The page must support vertical scrolling, but the purchase area must remain fixed above the safe area.
+
+Add enough bottom content padding so the fixed purchase area does not cover the 7-day package or trust information.
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+3. HERO HEADER
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+Use a premium purple gradient hero with soft decorative star shapes.
+
+Header content:
+
+Small uppercase label:
+
+“İLANINI GÜÇLENDİR”
+
+Main title:
+
+“Daha Fazla Kişiye Ulaş”
+
+Subtitle:
+
+“İlanını öne çıkar, yeni yuvasına daha hızlı ulaşsın.”
+
+Add a circular translucent back button in the top-left corner.
+
+Requirements:
+
+- Respect the iOS Dynamic Island and Android status bar.
+- Use the real safe-area inset.
+- Back navigation must work.
+- Avoid excessive hero height.
+- Decorative stars must not block text.
+- Do not use confetti or a game-like design.
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+4. REAL LISTING PREVIEW
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+Create a floating white listing-preview card overlapping the lower edge of the hero.
+
+Load the real selected listing using its route/listing ID.
+
+Display:
+
+- Real primary listing photo
+- Real listing title
+- Real location
+- Purple star pill:
+  “Öne Çıkarılacak”
+- Visibility transformation:
+  “Normal → Listenin Üstü”
+
+Example data visible in the reference image, such as “pamuk” and “Beypazarı, Ankara,” must not be hardcoded.
+
+Handle missing data safely:
+
+- Missing photo: show the application’s animal-image placeholder.
+- Missing location: show “Konum belirtilmedi.”
+- Missing title: show a safe fallback.
+- Invalid/deleted listing: show a controlled error state and disable purchasing.
+
+Do not invent numerical reach or performance claims.
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+5. BENEFIT CARDS
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+Section title:
+
+“Öne Çıkarma Avantajları”
+
+Create three horizontally aligned cards on suitable screen widths.
+
+Card 1:
+
+- Star or upward-list icon
+- Title: “Listenin En Üstünde”
+- Subtitle: “Daha görünür ol”
+
+Card 2:
+
+- Eye icon
+- Title: “Daha Fazla Görüntülenme”
+- Subtitle: “Daha çok kişiye ulaş”
+
+Card 3:
+
+- Purple sparkle/star icon
+- Title: “Mor Yıldız Etiketi”
+- Subtitle: “İlanın hemen fark edilsin”
+
+On narrow mobile devices:
+
+- Preserve three compact cards if readable, or
+- Use a responsive arrangement without clipping text.
+
+Do not allow cards to extend outside the screen.
+
+Use real vector icons from the existing icon library. Do not use emoji.
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+6. PACKAGE SELECTION
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+Section title:
+
+“Paketini Seç”
+
+Display three selectable package cards.
+
+Package 1:
+
+- Duration: “1 Gün”
+- Subtitle: “Hızlı destek”
+- Price: load from the real store product
+- Expected displayed price if configured: `$0.99`
+
+Package 2:
+
+- Duration: “3 Gün”
+- Subtitle: “Daha fazla görünürlük”
+- Badge: “POPÜLER”
+- Price: load from the real store product
+- Expected displayed price if configured: `$1.99`
+
+Package 3:
+
+- Duration: “7 Gün”
+- Subtitle: “Maksimum erişim”
+- Badge: “EN AVANTAJLI”
+- Price: load from the real store product
+- Expected displayed price if configured: `$2.99`
+
+Important:
+
+- Store-provided localized price is authoritative.
+- Do not hardcode the displayed currency or final price.
+- The examples above are only expected catalog values.
+- Do not show a 7-day description with a 1-day product.
+- Map each package to its exact RevenueCat product/package identifier.
+- Verify the existing product configuration before changing identifiers.
+
+Selected-package design:
+
+- Purple outline
+- Very pale lavender background
+- Filled purple circular checkmark
+- Clear selected state
+- Selection reflected immediately in the sticky purchase summary
+
+Default selection:
+
+- Select the 3-day package after product data loads, unless existing business logic requires otherwise.
+
+Do not auto-start a purchase merely because the package is selected.
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+7. REVENUECAT PRODUCT MAPPING
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+Inspect the currently installed RevenueCat configuration.
+
+The project previously used:
+
+- `react-native-purchases`
+- Version previously identified: `10.4.2`
+
+Do not assume product IDs.
+
+Confirm:
+
+- RevenueCat offering
+- Entitlement or purchase model
+- 1-day package identifier
+- 3-day package identifier
+- 7-day package identifier
+- App Store product identifiers
+- Google Play product identifiers
+- Package durations
+- Localized prices
+- Platform availability
+
+Use the active RevenueCat offering as the source of the available packages.
+
+Create a centralized mapping equivalent to:
+
+```text
+RevenueCat package/product
+→ duration in days
+→ display label
+→ badge
