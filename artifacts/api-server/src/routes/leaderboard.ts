@@ -12,15 +12,22 @@ const router = Router();
 /* ── Shared point system ─────────────────────────────────────────
    Source of truth for point values — never trust client-supplied values.
    ──────────────────────────────────────────────────────────────── */
+/* Keys match the enum values sent by the client (HELP_STATUSES[].key) */
 export const POINT_MAP: Record<string, number> = {
-  "Aynı Bölgede":          1,
-  "Yaralı":                2,
-  "Acil Yardım Gerekli":   2,
-  "Su Verildi":            3,
-  "Beslendi":              3,
-  "Güvende":               5,
-  "Veteriner Kontrolünde": 7,
-  "Tedaviye Götürüldü":    10,
+  "same_location": 1,   // Aynı Bölgede
+  "injured":       2,   // Yaralı
+  "emergency":     2,   // Acil Yardım Gerekli
+  "watered":       3,   // Su Verildi
+  "fed":           3,   // Beslendi
+  "safe":          5,   // Güvende
+  "at_vet":        7,   // Veteriner Kontrolünde
+  "taken_to_vet":  10,  // Tedaviye Götürüldü
+  /* Legacy/alternative spellings — keep for backfill safety */
+  "same_area":     1,
+  "urgent_help":   2,
+  "water_given":   3,
+  "vet_check":     7,
+  "taken_to_treatment": 10,
 };
 
 export function getAchievementLevel(points: number): string {

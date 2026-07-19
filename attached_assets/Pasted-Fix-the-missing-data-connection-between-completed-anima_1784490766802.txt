@@ -1,0 +1,436 @@
+Fix the missing data connection between completed animal-help updates and the “Ayın Kahramanları” monthly leaderboard.
+
+CURRENT BUG
+
+The real user flow is:
+
+1. A user opens a reported street-animal condition.
+2. The user taps “Yardım Et.”
+3. The “Hayvanın Güncel Durumunu Bildir” form opens.
+4. The user adds a current photo.
+5. The user selects the help action performed.
+6. The user submits the update successfully.
+7. The help update may appear to be saved.
+8. However, the user’s help count and points do not appear or update in “Ayın Kahramanları.”
+
+The leaderboard is not receiving, aggregating, or refreshing the completed help data.
+
+Do not fix this using mock users, hardcoded scores, or local frontend state.
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+1. TRACE THE COMPLETE DATA FLOW
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+Trace one real submission through the complete system:
+
+Help form submission
+→ photo upload
+→ help-update database insert
+→ point eligibility validation
+→ point transaction creation
+→ monthly aggregation
+→ leaderboard query/RPC
+→ leaderboard UI refresh
+
+For one real test submission, record safely:
+
+- Authenticated user ID presence
+- Animal/report ID
+- Help-update ID
+- Selected action/status
+- Photo upload result
+- Help-update insert result
+- Point eligibility result
+- Point-transaction insert result
+- Calculated `month_key`
+- Leaderboard query result
+
+Do not expose complete tokens, secret keys, or private user information.
+
+Find the exact layer where the data disappears.
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+2. CHECK THE HELP FORM SUBMISSION
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+Inspect the real submit handler on:
+
+“Hayvanın Güncel Durumunu Bildir”
+
+Confirm that it:
+
+1. Waits for the current-photo upload.
+2. Receives a permanent Storage path or URL.
+3. Inserts the help update successfully.
+4. Receives the newly inserted help-update ID.
+5. Calls the server-side point-award operation.
+6. Waits for the point-award response.
+7. Handles failures instead of silently ignoring them.
+8. Does not navigate away before required operations complete.
+
+Do not award points if the help update or photo upload fails.
+
+If the help update succeeds but point creation fails:
+
+- Preserve the valid help update.
+- Show a controlled error.
+- Log the point-award failure safely.
+- Provide an idempotent server-side retry mechanism.
+- Never create duplicate points during retry.
+
+Do not use an unhandled background Promise.
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+3. VERIFY FIELD AND ID MAPPINGS
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+Compare the actual database columns with the values sent by the frontend.
+
+Check for mismatches involving:
+
+- `user_id`
+- `helper_id`
+- `reporter_id`
+- `animal_id`
+- `animal_report_id`
+- `report_id`
+- `help_update_id`
+- `status`
+- `action_type`
+- `points`
+- `earned_at`
+- `created_at`
+- `month_key`
+- `is_valid`
+- `verification_status`
+
+The helper must be the authenticated user who submitted the help update.
+
+Do not accidentally award points to:
+
+- The original animal-report creator
+- The listing owner
+- An anonymous user
+- A profile ID that does not match the authentication user
+- A missing or stale user session
+
+Confirm the authenticated user has a matching profile record.
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+4. CREATE THE POINT TRANSACTION SERVER-SIDE
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+After an eligible help update is persisted, create exactly one point transaction.
+
+The backend/database must determine points from the submitted action.
+
+Point rules:
+
+- `Aynı Bölgede`: 1
+- `Yaralı`: 2
+- `Acil Yardım Gerekli`: 2
+- `Su Verildi`: 3
+- `Beslendi`: 3
+- `Güvende`: 5
+- `Veteriner Kontrolünde`: 7
+- `Tedaviye Götürüldü`: 10
+
+Normalize differences between UI labels and stored enum values.
+
+For example, safely map actual stored values equivalent to:
+
+- `same_area`
+- `injured`
+- `urgent_help`
+- `water_given`
+- `fed`
+- `safe`
+- `vet_check`
+- `taken_to_treatment`
+
+Do not compare localized UI labels if the database uses enum keys.
+
+If multiple actions are submitted, award only the highest eligible score.
+
+Requirements:
+
+- One transaction per help-update ID
+- Unique database constraint on `help_update_id`
+- Server-generated timestamp
+- Correct authenticated helper ID
+- Correct animal-report ID
+- Correct action type
+- Correct points
+- `is_valid = true` only when eligible
+- Idempotent behavior
+
+Do not trust a point value received from the client.
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+5. VERIFY COOLDOWN LOGIC
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+The intended cooldown is a maximum of one scored update per user, per animal, per 24 hours.
+
+Check whether the cooldown query is incorrectly blocking every submission.
+
+Verify it filters by:
+
+- Same authenticated user
+- Same animal/report
+- Valid point transactions only
+- Correct rolling 24-hour period
+- Server-generated timestamps
+
+Do not block a user because another user helped the same animal.
+
+If no points are awarded because of cooldown, return an explicit response:
+
+- `awarded: false`
+- `reason: "cooldown"`
+- `points: 0`
+
+Show:
+
+“Güncellemen paylaşıldı. Bu hayvan için son 24 saat içinde puan kazandığın için ek puan verilmedi.”
+
+Do not silently fail.
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+6. VERIFY MONTH AND TIMEZONE LOGIC
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+Check whether the point transaction and leaderboard use different month calculations.
+
+Required behavior:
+
+- Store timestamps in UTC.
+- Group monthly leaderboard data using the documented `Europe/Istanbul` month.
+- Use the same calculation for inserting and querying `month_key`.
+- Use `YYYY-MM` format if `month_key` is stored.
+- Do not generate the month from an incorrectly parsed local date.
+- Do not compare a date string against a timestamp incorrectly.
+
+For every tested point transaction, confirm its month matches the month selected on the leaderboard.
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+7. FIX THE LEADERBOARD QUERY
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+The “Ayın Kahramanları” query must aggregate real valid point transactions.
+
+For the selected month, return:
+
+- User/profile ID
+- Permitted profile photo
+- First and last name
+- Total valid points
+- Number of distinct animal reports helped
+- Number of valid help updates
+- Monthly rank
+- Achievement level
+
+Include only:
+
+- `is_valid = true`
+- Transactions inside the selected month
+- Existing permitted profiles
+- Eligible help updates
+
+Do not accidentally exclude users because of an incorrect inner join to an optional profile-photo or name field.
+
+A missing profile photo must not remove the user from the leaderboard.
+
+Use a safe profile fallback instead.
+
+Inspect:
+
+- Incorrect table/view name
+- Wrong schema
+- Incorrect foreign-key join
+- Wrong month filter
+- Incorrect RLS behavior
+- Null profile join
+- Stale materialized view
+- RPC returning the wrong field names
+- Frontend expecting camelCase while RPC returns snake_case
+
+Do not calculate trusted rankings only in local component state.
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+8. CHECK SUPABASE RLS AND FUNCTION SECURITY
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+Verify the real user can:
+
+- Insert their permitted help update
+- Upload the required photo
+- Invoke the secure point-award operation
+- Read the public monthly leaderboard
+- Read their personal monthly summary
+
+Verify users cannot:
+
+- Submit arbitrary point totals
+- Insert point transactions directly from the client
+- Edit their own points
+- Read private profile information
+- Award points for another user
+
+If using a `SECURITY DEFINER` database function:
+
+- Set a safe `search_path`.
+- Validate `auth.uid()`.
+- Derive the helper ID from `auth.uid()`.
+- Do not accept a trusted helper ID from the client.
+- Grant execution only to the intended role.
+- Prevent SQL injection.
+- Preserve idempotency.
+
+Report the exact RLS policy or permission that caused the failure, if applicable.
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+9. REFRESH THE UI AFTER SUCCESS
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+After a successful scored help update:
+
+1. Invalidate the leaderboard query cache.
+2. Invalidate the current-user monthly-summary cache.
+3. Refetch both queries.
+4. Update the UI without requiring an app restart.
+5. Also ensure a manual refresh reads the persisted score.
+6. Do not maintain a separate fake local score.
+
+If the project uses React Query/TanStack Query, invalidate the exact leaderboard query keys, including the selected month.
+
+If it uses another state system, apply its correct cache invalidation mechanism.
+
+Returning to the leaderboard must show the latest persisted score.
+
+Also confirm that:
+
+- Pull-to-refresh updates the list.
+- Logout/login preserves the points.
+- App restart preserves the points.
+- Opening the app on another device shows the same score.
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+10. USER-FACING SUCCESS RESULT
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+After a scored update, show:
+
+“Yardım güncellemen paylaşıldı. Bu ay +{points} puan kazandın!”
+
+If saved without points because of cooldown:
+
+“Güncellemen paylaşıldı. Bu hayvan için son 24 saat içinde puan kazandığın için ek puan verilmedi.”
+
+If the update is saved but scoring must be retried:
+
+“Güncellemen kaydedildi ancak puanın şu anda işlenemedi. Sistem tekrar deneyecek.”
+
+Do not display a points-success message unless the point transaction actually exists.
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+11. REPAIR EXISTING MISSING SCORES SAFELY
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+After fixing new submissions, inspect existing legitimate help updates that did not receive point transactions.
+
+If eligible historical records exist:
+
+1. Create a non-destructive, idempotent backfill migration or administrative script.
+2. Process only eligible persisted help updates.
+3. Require a valid user, animal report, action, photo, and timestamp.
+4. Respect duplicate-prevention rules.
+5. Do not award points twice.
+6. Preserve original timestamps/month attribution.
+7. Produce a dry-run report before executing.
+8. Do not execute the backfill destructively.
+9. Do not delete or overwrite existing valid transactions.
+
+Report:
+
+- Eligible missing records
+- Skipped records and reasons
+- Transactions that would be created
+- Duplicate records prevented
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+12. MANDATORY REAL TEST
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+Do not mark this as PASS based only on code inspection.
+
+Perform this real test:
+
+1. Log in with a real test user.
+2. Record the user’s current monthly score and distinct-animal count.
+3. Open a real eligible animal report not helped by that user within the previous 24 hours.
+4. Tap “Yardım Et.”
+5. Add a real current photo.
+6. Select “Beslendi.”
+7. Submit the update.
+8. Confirm the photo exists in Supabase Storage.
+9. Confirm the help update exists in the database.
+10. Confirm exactly one point transaction exists.
+11. Confirm the transaction belongs to the authenticated helper.
+12. Confirm it awards exactly 3 points.
+13. Confirm the correct month is stored/calculated.
+14. Open “Ayın Kahramanları.”
+15. Confirm the score increased by exactly 3.
+16. Confirm the distinct-animal count increased by exactly 1.
+17. Confirm the user’s rank is recalculated.
+18. Refresh the screen.
+19. Confirm the updated score remains.
+20. Log out and log back in.
+21. Confirm the updated score remains.
+22. Submit the same request again.
+23. Confirm no duplicate transaction is created.
+24. Confirm the cooldown message appears.
+25. Inspect console and network logs.
+26. Re-read all persisted records after testing.
+
+Also test “Tedaviye Götürüldü” with a separate eligible animal and confirm exactly 10 points are awarded.
+
+TEST STATUS RULES
+
+- `PASS`: The complete real flow from help submission to visible persistent leaderboard score was executed and verified.
+- `STATIC REVIEW`: Only the code was inspected.
+- `BLOCKED`: The platform, Supabase, Storage, authentication, or database could not be tested.
+- `NOT TESTED`: No real test was performed.
+
+Test Web, Android, and iOS independently. Expo Web is not a native-platform PASS.
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+13. FINAL REPORT
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+Provide:
+
+1. Proven root cause
+2. Exact broken stage in the data flow
+3. Modified files
+4. Database migration/function changes
+5. Field and ID mappings
+6. RLS findings
+7. Point transaction verification
+8. Month/timezone verification
+9. Leaderboard query result
+10. Cache invalidation/refetch changes
+11. Historical missing-score findings
+12. Web result
+13. Android result
+14. iOS result
+15. Final status for each platform
+
+IMPORTANT
+
+- Do not only force a frontend refresh.
+- Do not insert fake ranking data.
+- Do not hardcode point totals.
+- Do not award points before the photo and help update persist.
+- Do not create duplicate point transactions.
+- Do not claim PASS without checking the database and visible leaderboard.
