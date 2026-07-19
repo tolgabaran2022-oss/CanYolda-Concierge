@@ -299,14 +299,6 @@ export default function AccountScreen() {
             <Text style={[S.headerName, { color: T.purpleDark }]}>{user.name}</Text>
             <Text style={[S.headerEmail, { color: T.textMuted }]}>{user.email}</Text>
           </View>
-          <Pressable
-            style={({ pressed }) => [S.headerSearchBtn, { opacity: pressed ? 0.7 : 1, backgroundColor: T.purpleFaint }]}
-            onPress={() => { Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light); router.push("/search" as any); }}
-            accessibilityLabel="Kullanıcı ara"
-            accessibilityRole="button"
-          >
-            <Icon name="search-outline" size={20} color={T.purple} />
-          </Pressable>
         </View>
       </LinearGradient>
 
