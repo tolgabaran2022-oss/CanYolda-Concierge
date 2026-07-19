@@ -4,11 +4,11 @@ import { Image, StyleSheet, View } from "react-native";
 const BANNER = require("@/assets/images/business-profiles-banner.png");
 
 const BusinessProfilesComingSoonBanner = React.memo(() => (
-  <View style={s.root}>
+  <View style={s.container}>
     <Image
       source={BANNER}
       style={s.image}
-      resizeMode="contain"
+      resizeMode="cover"
       accessibilityLabel="Veteriner & Petshop İşletme Profilleri - Çok Yakında"
     />
   </View>
@@ -18,13 +18,15 @@ BusinessProfilesComingSoonBanner.displayName = "BusinessProfilesComingSoonBanner
 export default BusinessProfilesComingSoonBanner;
 
 const s = StyleSheet.create({
-  root: {
-    width:     "100%",
-    maxWidth:  720,
-    alignSelf: "stretch",
+  container: {
+    width:           "100%",
+    height:          170,
+    borderRadius:    20,
+    overflow:        "hidden",
+    backgroundColor: "#F6F0FF",
   },
   image: {
-    width:       "100%",
-    aspectRatio: 2.35,
+    width:  "100%",
+    height: "100%",
   },
 });
