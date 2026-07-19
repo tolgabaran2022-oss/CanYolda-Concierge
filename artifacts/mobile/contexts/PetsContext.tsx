@@ -128,6 +128,11 @@ export function PetsProvider({ children }: { children: React.ReactNode }) {
         }),
       });
       const data = await safeJson<Record<string, unknown>>(res);
+      if (res.status === 402 && data.code === "PET_PREMIUM_REQUIRED") {
+        const err = new Error("PET_PREMIUM_REQUIRED") as Error & { code: string };
+        err.code = "PET_PREMIUM_REQUIRED";
+        throw err;
+      }
       if (!res.ok) throw new Error(String(data.error ?? "Evcil hayvan eklenemedi"));
       const newPet = mapFromApi(data);
       setPets((prev) => [newPet, ...prev]);

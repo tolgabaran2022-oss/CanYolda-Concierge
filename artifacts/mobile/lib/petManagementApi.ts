@@ -89,8 +89,11 @@ export type ApiPetPremiumStatus = {
   status: string;
   expiresAt: string | null;
   productId: string;
-  petLimit: number;
-  existingPetCount: number;
+  petLimit: number;         // -1 if premium
+  petCount: number;         // current pet count
+  existingPetCount: number; // alias of petCount (backward compat)
+  freePetLimit: number;     // always 1
+  effectivePetLimit: number; // enforced limit (may differ for grandfathered users)
   canAddPet: boolean;
 };
 

@@ -20,7 +20,6 @@ import { useAuth } from "@/contexts/AuthContext";
 import { usePets, type Pet } from "@/contexts/PetsContext";
 import { usePetPremium } from "@/contexts/PetPremiumContext";
 import {
-  apiGetPetPremiumStatus,
   apiGetVaccinations,
   apiGetAppointments,
   apiGetNutrition,
@@ -827,7 +826,7 @@ function AIAssistantCard({ petId, isPremium, onNav }: { petId: string; isPremium
           <Text style={ai.premiumTxt}>Premium</Text>
         </View>
       )}
-      <Icon name="chevron-forward-outline" size={18} color={C.purple} />
+      <Icon name="chevron-forward" size={18} color={C.purple} />
     </Pressable>
   );
 }
@@ -1002,7 +1001,7 @@ function LoadingSkeleton() {
 export function EvcilimTab({ botPad }: { botPad: number }) {
   const { pets, isLoading: petsLoading, error: petsError, refresh: refreshPets, deletePet } = usePets();
   const { user } = useAuth();
-  const { status: premiumStatus, isPremium } = usePetPremium();
+  const { status: premiumStatus, isPremium, refresh: refreshPetPremiumStatus } = usePetPremium();
   const router   = useRouter();
 
   const [selectedPetId, setSelectedPetId] = useState<string | null>(null);
@@ -1037,33 +1036,24 @@ export function EvcilimTab({ botPad }: { botPad: number }) {
 
   const handleAddPet = useCallback(async () => {
     if (addingPet) return;
-
-    if (pets.length === 0) {
-      Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
-      nav("/evcilim/add");
-      return;
-    }
-
     setAddingPet(true);
     try {
-      const fresh = await apiGetPetPremiumStatus();
-      const canAddPet = fresh.isPremium === true || fresh.canAddPet === true;
-      if (canAddPet) {
+      const fresh = await refreshPetPremiumStatus(false);
+      if (fresh?.canAddPet) {
+        Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
         nav("/evcilim/add");
       } else {
-        nav("/evcilim-premium?context=second_pet&returnTo=%2Fevcilim%2Fadd");
+        router.push({
+          pathname: "/evcilim-premium",
+          params: { source: "add_pet", returnTo: "/evcilim/add" },
+        } as Parameters<typeof router.push>[0]);
       }
     } catch {
-      const canAddPet = isPremium || premiumStatus?.canAddPet === true;
-      if (canAddPet) {
-        nav("/evcilim/add");
-      } else {
-        nav("/evcilim-premium?context=second_pet&returnTo=%2Fevcilim%2Fadd");
-      }
+      Alert.alert("Hata", "Premium durumu kontrol edilemedi. Lütfen tekrar deneyin.");
     } finally {
       setAddingPet(false);
     }
-  }, [pets.length, isPremium, premiumStatus, addingPet, nav]);
+  }, [addingPet, refreshPetPremiumStatus, nav, router]);
 
   const handleDeletePet = useCallback(async (id: string) => {
     setDeletingPetId(id);

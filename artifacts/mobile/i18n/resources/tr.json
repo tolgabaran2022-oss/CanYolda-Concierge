@@ -496,5 +496,11 @@
     "confirm": "Tamam",
     "cancel": "İptal",
     "noDateKnown": "Tarih bilinmiyor"
+  },
+  "evcilimPremium": {
+    "addPetTitle": "Yeni bir dost daha ekle",
+    "addPetDescription": "İlk evcil hayvanın ücretsiz. İkinci ve sonraki dostlarını eklemek için Evcilim Premium'a geç.",
+    "defaultTitle": "Evcilim Premium",
+    "defaultDescription": "Dostunun bakımını eksiksiz ve birlikte yönet."
   }
 }

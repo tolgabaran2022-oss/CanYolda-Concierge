@@ -1,0 +1,587 @@
+Fix ONLY the Evcilim pet-addition Premium rule.
+
+Do not implement unrelated features.
+Do not redesign the application.
+Do not modify AI Assistant, medications, documents or reminders in this task.
+Do not delete or reset existing data.
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+EXACT BUSINESS RULE
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+The first pet is free.
+
+The second and every additional pet require an active Evcilim Premium entitlement.
+
+This means:
+
+- User has 0 pets → Add Pet screen opens.
+- User has 1 pet and no Premium → Evcilim Premium paywall opens.
+- User has 1 pet and active Premium → Add Pet screen opens.
+- User has multiple pets and active Premium → Add Pet screen opens.
+
+The limit applies when the user ATTEMPTS to create another pet.
+
+Use one shared constant:
+
+const FREE_PET_LIMIT = 1;
+
+Do not change this value to 2.
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+STEP 1 — INSPECT BEFORE EDITING
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+First inspect and report:
+
+- Every “Evcil Hayvan Ekle” button
+- Empty-state add button
+- Pet-selector add button
+- Main Evcilim add button
+- Add-pet route
+- Premium context
+- Premium-status API
+- Pet-creation API
+- RevenueCat Evcilim entitlement ID
+- Existing grandfathered-limit logic
+- Database table used for pets
+- Database table used for Premium access
+
+Find the exact reason why a free user with one pet can still open the add-pet form.
+
+Do not make changes until the relevant flow is understood.
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+STEP 2 — ONE SHARED ACCESS DECISION
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+Create or reuse one shared function for every add-pet entry point.
+
+The server-authoritative status should contain:
+
+type PetPremiumStatus = {
+  isPremium: boolean;
+  petCount: number;
+  freePetLimit: 1;
+  effectivePetLimit: number;
+  canAddPet: boolean;
+};
+
+For a normal user:
+
+effectivePetLimit = 1;
+
+For a protected existing user:
+
+effectivePetLimit = Math.max(
+  1,
+  grandfatheredPetLimit
+);
+
+The server must calculate:
+
+canAddPet =
+  isPremium ||
+  petCount < effectivePetLimit;
+
+Do not calculate the standard free limit differently in different components.
+
+Do not trust:
+
+- Client-provided pet count
+- Client-provided isPremium
+- A hidden button
+- Only cached local state
+- AsyncStorage as proof of Premium
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+STEP 3 — FRONTEND BUTTON BEHAVIOR
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+Create one handler and use it for every add-pet button.
+
+Required flow:
+
+async function handleAddPet() {
+  if (isCheckingPetAccess) return;
+
+  setIsCheckingPetAccess(true);
+
+  try {
+    const status = await refreshPetPremiumStatus();
+
+    if (status.canAddPet) {
+      router.push("/evcilim/add");
+    } else {
+      router.push({
+        pathname: "/evcilim-premium",
+        params: {
+          source: "add_pet",
+          returnTo: "/evcilim/add"
+        }
+      });
+    }
+  } finally {
+    setIsCheckingPetAccess(false);
+  }
+}
+
+Important:
+
+- The access check must finish before navigation.
+- Disable repeated taps while checking.
+- Do not briefly open the add-pet form before the paywall.
+- Do not use stale Premium status.
+- Do not check only whether `pets.length === 0`.
+- Use the refreshed server status.
+
+Use this same handler for:
+
+- Main “Evcil Hayvan Ekle” button
+- Empty-state “İlk Dostumu Ekle” button
+- Pet-selector add button
+- Any header add-pet action
+- Any other route that starts pet creation
+
+Expected routes:
+
+0 pets, free:
+
+/evcilim/add
+
+1 pet, free:
+
+/evcilim-premium
+
+1+ pets, Premium:
+
+/evcilim/add
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+STEP 4 — PROTECT THE ADD-PET SCREEN
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+Do not protect only the buttons.
+
+A user may manually open:
+
+/evcilim/add
+
+When the add-pet screen opens:
+
+1. Load server-authoritative Premium/pet-limit status.
+2. Show a loading state while checking.
+3. If `canAddPet === true`, show the form.
+4. If `canAddPet === false`, replace the route with the Premium paywall.
+5. Do not render the form before the check completes.
+
+Required behavior:
+
+router.replace({
+  pathname: "/evcilim-premium",
+  params: {
+    source: "add_pet",
+    returnTo: "/evcilim/add"
+  }
+});
+
+This prevents route bypass.
+
+Do not create an infinite redirect loop.
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+STEP 5 — SERVER-SIDE PET CREATION RULE
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+The API must enforce the rule before inserting a pet.
+
+Required server flow:
+
+1. Authenticate the request.
+2. Get the authenticated user ID from the verified session/token.
+3. Count pets owned by that user directly in PostgreSQL.
+4. Get server-authoritative Evcilim Premium status.
+5. Get the user’s effective/grandfathered limit.
+6. Reject the request when Premium is required.
+7. Insert only when access is allowed.
+
+Pseudo code:
+
+const FREE_PET_LIMIT = 1;
+
+const petCount = await countPetsForUser(authenticatedUserId);
+const isPremium = await getServerVerifiedEvcilimPremiumStatus(
+  authenticatedUserId
+);
+
+const effectivePetLimit = Math.max(
+  FREE_PET_LIMIT,
+  grandfatheredPetLimit ?? FREE_PET_LIMIT
+);
+
+const canAddPet =
+  isPremium ||
+  petCount < effectivePetLimit;
+
+if (!canAddPet) {
+  return res.status(402).json({
+    code: "PET_PREMIUM_REQUIRED",
+    message: "Evcilim Premium is required to add another pet.",
+    petCount,
+    freePetLimit: FREE_PET_LIMIT,
+    effectivePetLimit,
+    canAddPet: false
+  });
+}
+
+Only after this check may the API insert the pet.
+
+The check and insert should be transaction-safe.
+
+Prevent two simultaneous requests from bypassing the limit and creating duplicate second pets.
+
+Do not use a count provided by the mobile application.
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+STEP 6 — CORRECT EXPECTED API RESULTS
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+FREE USER WITH 0 PETS
+
+GET Premium status:
+
+{
+  "isPremium": false,
+  "petCount": 0,
+  "freePetLimit": 1,
+  "effectivePetLimit": 1,
+  "canAddPet": true
+}
+
+Pet creation:
+
+- Allowed
+- Database count becomes 1
+
+FREE USER WITH 1 PET
+
+GET Premium status:
+
+{
+  "isPremium": false,
+  "petCount": 1,
+  "freePetLimit": 1,
+  "effectivePetLimit": 1,
+  "canAddPet": false
+}
+
+Second-pet creation:
+
+- Rejected
+- HTTP 402
+- code: PET_PREMIUM_REQUIRED
+- Database count remains 1
+
+PREMIUM USER WITH 1 PET
+
+GET Premium status:
+
+{
+  "isPremium": true,
+  "petCount": 1,
+  "freePetLimit": 1,
+  "canAddPet": true
+}
+
+Second-pet creation:
+
+- Allowed
+- Database count becomes 2
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+STEP 7 — GRANDFATHERED EXISTING USERS
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+Never delete or hide existing pets.
+
+If an existing free user already has two or more protected pets:
+
+- Every existing pet remains visible.
+- Every existing pet remains manageable.
+- Existing health, vaccination, medication, document and reminder records remain accessible.
+- Do not reduce the user’s existing protected limit.
+- Require Premium only when the user attempts to exceed that protected limit.
+
+Example:
+
+Existing protected user:
+
+- petCount: 2
+- grandfatheredPetLimit: 2
+- isPremium: false
+- effectivePetLimit: 2
+- canAddPet: false
+
+The two existing pets remain accessible.
+
+Attempting to add a third pet opens Premium.
+
+Premium expiration must never delete any existing pet.
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+STEP 8 — REVENUECAT ENTITLEMENT
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+Use the real Evcilim Premium entitlement.
+
+Verify the exact existing identifier before editing.
+
+Expected identifier if already configured:
+
+evcilim_premium
+
+Do not confuse it with:
+
+- Featured listing entitlement
+- Boost entitlement
+- Advertisement entitlement
+- Any other purchase product
+
+The mobile app may use RevenueCat CustomerInfo for immediate UI updates, but the API must verify Premium server-side.
+
+After purchase or restore:
+
+1. Refresh RevenueCat CustomerInfo.
+2. Refresh server Premium status.
+3. Confirm `isPremium === true`.
+4. Confirm `canAddPet === true`.
+5. If the paywall was opened from add-pet flow, navigate to:
+   /evcilim/add
+
+Do not navigate to the add-pet form when the purchase failed, was cancelled or remains pending.
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+STEP 9 — PAYWALL TEXT
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+When a user attempts to add the second pet, show:
+
+Turkish title:
+
+“Yeni bir dost daha ekle”
+
+Turkish description:
+
+“İlk evcil hayvanın ücretsiz. İkinci ve sonraki dostlarını eklemek için Evcilim Premium’a geç.”
+
+English title:
+
+“Add another companion”
+
+English description:
+
+“Your first pet is free. Upgrade to Evcilim Premium to add a second pet and beyond.”
+
+Do not show:
+
+- “İlk 2 evcil hayvan ücretsiz”
+- “Your first 2 pets are free”
+
+Use the existing global i18n system.
+
+Do not hardcode inconsistent text in multiple screens.
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+STEP 10 — ERROR HANDLING
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+When the API returns:
+
+PET_PREMIUM_REQUIRED
+
+The mobile application must:
+
+- Stop the create-pet loading state.
+- Not display a generic server error.
+- Not retry pet creation automatically.
+- Open the Evcilim Premium paywall.
+- Preserve the user’s unsaved form values when safely possible.
+- Never create a duplicate pet.
+
+If Premium status cannot be checked:
+
+- Do not assume the user is Premium.
+- Show a localized retryable error.
+- Do not open the add-pet form.
+- Provide “Tekrar Dene / Retry”.
+
+Fail closed for additional-pet creation.
+
+The first pet must still be allowed when the authoritative server status confirms `canAddPet: true`.
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+STEP 11 — REQUIRED EXECUTED TESTS
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+Use isolated test users and a non-production database.
+
+Do not mark PASS through code inspection only.
+
+TEST A — First pet is free
+
+1. Create/use a free test user with 0 pets.
+2. Verify database pet count = 0.
+3. Open Evcilim.
+4. Tap the add-pet button.
+5. Verify /evcilim/add opens.
+6. Verify the Premium paywall does not open.
+7. Create the first pet.
+8. Verify successful API response.
+9. Verify database pet count = 1.
+10. Fetch pets again.
+11. Verify the first pet persists.
+12. Verify console/network logs.
+
+TEST B — Second pet requires Premium
+
+1. Use the same free user with exactly 1 pet.
+2. Verify database pet count = 1.
+3. Tap “Evcil Hayvan Ekle”.
+4. Verify /evcilim-premium opens.
+5. Verify /evcilim/add does not open.
+6. Manually attempt to open /evcilim/add.
+7. Verify the route is replaced by the paywall.
+8. Send a direct API request to create a second pet.
+9. Verify HTTP 402.
+10. Verify code PET_PREMIUM_REQUIRED.
+11. Verify database pet count remains 1.
+12. Fetch pets again.
+13. Verify no second pet exists.
+14. Verify console/network logs.
+
+TEST C — Premium user adds second pet
+
+1. Use a test user with exactly 1 pet.
+2. Activate a real RevenueCat test entitlement.
+3. Refresh CustomerInfo.
+4. Refresh server Premium status.
+5. Verify isPremium = true.
+6. Verify canAddPet = true.
+7. Tap “Evcil Hayvan Ekle”.
+8. Verify /evcilim/add opens.
+9. Create the second pet.
+10. Verify API success.
+11. Verify database pet count = 2.
+12. Fetch pets again.
+13. Verify both pets remain visible.
+14. Verify no existing pet was replaced.
+
+TEST D — Restore purchase
+
+1. Use a test account with a valid existing entitlement.
+2. Start with locally missing/stale Premium state.
+3. Tap Restore Purchases.
+4. Verify CustomerInfo entitlement.
+5. Verify server status refresh.
+6. Verify canAddPet = true.
+7. Verify add-pet form opens.
+
+TEST E — Purchase cancellation
+
+1. Start from a free user with one pet.
+2. Open paywall.
+3. Begin a test purchase.
+4. Cancel the purchase.
+5. Verify the paywall remains open.
+6. Verify /evcilim/add does not open.
+7. Verify database pet count remains 1.
+
+TEST F — Simultaneous API bypass
+
+1. Use a free user with 0 pets.
+2. Send two concurrent create-pet requests.
+3. Verify no more than one pet is created.
+4. Verify the other request is rejected.
+5. Verify final database count = 1.
+
+TEST G — Existing protected user
+
+1. Use a grandfathered user with multiple existing pets.
+2. Verify every existing pet remains visible.
+3. Verify every existing pet remains manageable.
+4. Attempt to exceed the protected limit.
+5. Verify Premium is required.
+6. Verify no existing record is deleted.
+
+TEST H — Every add-pet entry point
+
+Test:
+
+- Empty-state add button
+- Main Evcilim add button
+- Pet-selector add button
+- Direct add-pet route
+- Any other add action
+
+Verify all use the exact same rule.
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+STEP 12 — RESULT CLASSIFICATION
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+Use only:
+
+PASS:
+The feature was actually executed, the UI result was observed, API response was checked, database was verified, data was fetched again and logs were clean.
+
+FAIL:
+The feature was executed but behaved incorrectly.
+
+BLOCKED:
+The test could not run because the required platform, credentials, RevenueCat product or environment was unavailable.
+
+STATIC REVIEW:
+Code or configuration was inspected but not executed.
+
+NOT TESTED:
+The test was not performed.
+
+Do not report Web results as Android or iOS PASS.
+
+Do not mark RevenueCat purchase PASS without a real test/sandbox transaction.
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+STEP 13 — FINAL REPORT
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+Create:
+
+audit-results/EVCILIM_SECOND_PET_PREMIUM_REPORT.md
+
+Report:
+
+- Root cause
+- Previous incorrect behavior
+- Correct final behavior
+- Files changed
+- Shared frontend handler
+- Add-route guard
+- API enforcement
+- Transaction/concurrency protection
+- Premium entitlement identifier
+- Grandfathering behavior
+- Paywall return flow
+- Tests actually executed
+- Database counts before and after each test
+- PASS / FAIL / BLOCKED / STATIC REVIEW / NOT TESTED
+- Remaining blockers
+
+At the top state explicitly:
+
+“First pet: FREE”
+
+“Second and additional pets: EVCILIM PREMIUM REQUIRED”
+
+Do not implement unrelated features in this task.
+Do not delete existing users or pets.
+Do not claim completion without executed evidence.

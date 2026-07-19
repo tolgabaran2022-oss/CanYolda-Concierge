@@ -2,14 +2,18 @@ import { db, petPremiumAccess, petProfiles } from "@workspace/db";
 import { count, eq, sql } from "drizzle-orm";
 
 export const PET_PREMIUM_ENTITLEMENT = "evcilim_premium";
+export const FREE_PET_LIMIT = 1;
 
 export type PetPremiumStatus = {
   isPremium: boolean;
   status: string;
   expiresAt: string | null;
   productId: string;
-  petLimit: number;
-  existingPetCount: number;
+  petLimit: number;         // -1 if premium (unlimited), otherwise effectivePetLimit
+  petCount: number;         // current pet count
+  existingPetCount: number; // alias of petCount (backward compat)
+  freePetLimit: number;     // always FREE_PET_LIMIT
+  effectivePetLimit: number; // enforced limit for this user (grandfathering)
   canAddPet: boolean;
 };
 
@@ -45,15 +49,19 @@ export async function ensurePetAccessRow(userId: string) {
 export async function getPetPremiumStatus(userId: string): Promise<PetPremiumStatus> {
   const { row, petCount } = await ensurePetAccessRow(userId);
   const isPremium = active(row.status, row.expiresAt);
-  const petLimit = isPremium ? -1 : Math.max(1, row.grandfatheredPetLimit);
+  const effectivePetLimit = Math.max(FREE_PET_LIMIT, row.grandfatheredPetLimit);
+  const petLimit = isPremium ? -1 : effectivePetLimit;
   return {
     isPremium,
     status: isPremium ? row.status : "inactive",
     expiresAt: row.expiresAt?.toISOString() ?? null,
     productId: row.productId,
     petLimit,
+    petCount,
     existingPetCount: petCount,
-    canAddPet: isPremium || petCount === 0 || petCount < petLimit,
+    freePetLimit: FREE_PET_LIMIT,
+    effectivePetLimit,
+    canAddPet: isPremium || petCount < effectivePetLimit,
   };
 }
 

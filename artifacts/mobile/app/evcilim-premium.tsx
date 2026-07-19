@@ -4,6 +4,7 @@ import { fetchPetPremiumOfferings, purchasePetPremium, restorePurchases } from "
 import { LinearGradient } from "expo-linear-gradient";
 import { useLocalSearchParams, useRouter } from "expo-router";
 import React, { useEffect, useState } from "react";
+import { useTranslation } from "react-i18next";
 import { ActivityIndicator, Alert, Platform, Pressable, ScrollView, StyleSheet, Text, View } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 import type { PurchasesPackage } from "react-native-purchases";
@@ -12,17 +13,18 @@ const PURPLE = "#7C45D9";
 
 const features: [string, string, string?][] = [
   ["paw", "İkinci ve sonraki evcil hayvanlar", "İlk evcil hayvanın her zaman ücretsiz."],
-  ["sparkles-outline", "AI Hayvan Asistanı", "Beslenme, sağlık ve bakım sorularına anlık yanıt."],
-  ["notifications-outline", "Sınırsız hatırlatıcı", "Aşı, randevu, ilaç ve özel hatırlatıcılar."],
-  ["medical-outline", "İlaç ve doz takibi", "Aktif/pasif durum ve sıklık yönetimi."],
-  ["document-text-outline", "Belge kasası", "Aşı karnesi, reçete ve laboratuvar sonuçları."],
-  ["people-outline", "Aile ve bakıcı paylaşımı", "Birlikte bakım için davetiye sistemi."],
+  ["sparkles", "AI Hayvan Asistanı", "Beslenme, sağlık ve bakım sorularına anlık yanıt."],
+  ["bell", "Sınırsız hatırlatıcı", "Aşı, randevu, ilaç ve özel hatırlatıcılar."],
+  ["stethoscope", "İlaç ve doz takibi", "Aktif/pasif durum ve sıklık yönetimi."],
+  ["file-text", "Belge kasası", "Aşı karnesi, reçete ve laboratuvar sonuçları."],
+  ["users", "Aile ve bakıcı paylaşımı", "Birlikte bakım için davetiye sistemi."],
 ];
 
 export default function EvcilimPremiumScreen() {
   const router = useRouter();
-  const { context, returnTo } = useLocalSearchParams<{ context?: string; returnTo?: string }>();
-  const isSecondPet = context === "second_pet";
+  const { t } = useTranslation();
+  const { source, returnTo } = useLocalSearchParams<{ source?: string; returnTo?: string }>();
+  const isSecondPet = source === "add_pet";
 
   const { refresh } = usePetPremium();
   const [packages, setPackages] = useState<PurchasesPackage[]>([]);
@@ -85,10 +87,8 @@ export default function EvcilimPremiumScreen() {
     } catch { Alert.alert("Geri Yüklenemedi", "Lütfen daha sonra tekrar deneyin."); }
   }
 
-  const heroTitle = isSecondPet ? "Yeni bir dost daha ekle" : "Evcilim Premium";
-  const heroSub = isSecondPet
-    ? "İlk evcil hayvanın ücretsiz. İkinci ve sonraki dostlarını eklemek için Evcilim Premium'a geç."
-    : "Dostunun bakımını eksiksiz ve birlikte yönet.";
+  const heroTitle = isSecondPet ? t("evcilimPremium.addPetTitle") : t("evcilimPremium.defaultTitle");
+  const heroSub   = isSecondPet ? t("evcilimPremium.addPetDescription") : t("evcilimPremium.defaultDescription");
 
   return (
     <SafeAreaView style={s.safe} edges={["top", "bottom"]}>

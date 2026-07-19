@@ -6,7 +6,7 @@ type PetPremiumContextValue = {
   status: ApiPetPremiumStatus | null;
   isPremium: boolean;
   isLoading: boolean;
-  refresh: (verifyStore?: boolean) => Promise<void>;
+  refresh: (verifyStore?: boolean) => Promise<ApiPetPremiumStatus | null>;
 };
 
 const PetPremiumContext = createContext<PetPremiumContextValue | null>(null);
@@ -16,11 +16,13 @@ export function PetPremiumProvider({ children }: { children: React.ReactNode }) 
   const [status, setStatus] = useState<ApiPetPremiumStatus | null>(null);
   const [isLoading, setIsLoading] = useState(true);
 
-  const refresh = useCallback(async (verifyStore = false) => {
-    if (!user?.id) { setStatus(null); setIsLoading(false); return; }
+  const refresh = useCallback(async (verifyStore = false): Promise<ApiPetPremiumStatus | null> => {
+    if (!user?.id) { setStatus(null); setIsLoading(false); return null; }
     setIsLoading(true);
     try {
-      setStatus(verifyStore ? await apiRefreshPetPremium() : await apiGetPetPremiumStatus());
+      const next = verifyStore ? await apiRefreshPetPremium() : await apiGetPetPremiumStatus();
+      setStatus(next);
+      return next;
     } finally {
       setIsLoading(false);
     }

@@ -1,14 +1,12 @@
 import { Router } from "express";
 import { db } from "@workspace/db";
-import { petProfiles, petPosts, petHealth, petFollowers } from "@workspace/db";
-import { eq, and, desc, sql } from "drizzle-orm";
-import { getPetPremiumStatus } from "../services/petPremiumAccess.js";
+import { petProfiles, petPosts, petHealth, petFollowers, petPremiumAccess } from "@workspace/db";
+import { count, eq, and, desc, sql } from "drizzle-orm";
+import { ensurePetAccessRow, FREE_PET_LIMIT } from "../services/petPremiumAccess.js";
 
 import { extractUserId } from "../lib/jwtAuth.js";
 
 const router = Router();
-
-const FREE_PET_LIMIT = 1;
 
 function uid(req: Parameters<Parameters<typeof router.get>[1]>[0]): string {
   return extractUserId(req);
@@ -51,25 +49,52 @@ router.post("/pets", async (req, res) => {
   const { name, type, breed, age, gender, birthDate, weight, color, avatarUrl, bio, location, vaccinationInfo, feedingNotes } = req.body as Record<string, string>;
   if (!name?.trim()) { res.status(400).json({ error: "name required" }); return; }
   try {
-    const premium = await getPetPremiumStatus(userId);
-    if (!premium.canAddPet) {
+    // Ensure the premium access row exists (grandfathers any pre-existing pets)
+    await ensurePetAccessRow(userId);
+
+    // Serialize concurrent add-pet requests: lock the access row, count fresh, check, insert
+    const result = await db.transaction(async (tx) => {
+      // Lock the user's premium access row to prevent race conditions
+      await tx.execute(sql`SELECT id FROM pet_premium_access WHERE user_id = ${userId} FOR UPDATE`);
+      const [accessRow] = await tx.select().from(petPremiumAccess).where(eq(petPremiumAccess.userId, userId));
+      if (!accessRow) throw new Error("access_row_missing");
+
+      // Fresh count inside the transaction
+      const [{ value: rawCount }] = await tx.select({ value: count() }).from(petProfiles).where(eq(petProfiles.ownerId, userId));
+      const petCount = Number(rawCount);
+
+      const isPremiumActive = (accessRow.status === "active" || accessRow.status === "trialing") &&
+        (!accessRow.expiresAt || new Date(accessRow.expiresAt).getTime() > Date.now());
+      const effectivePetLimit = Math.max(FREE_PET_LIMIT, accessRow.grandfatheredPetLimit);
+      const canAddPet = isPremiumActive || petCount < effectivePetLimit;
+
+      if (!canAddPet) {
+        return { denied: true as const, petCount, effectivePetLimit };
+      }
+
+      const [pet] = await tx.insert(petProfiles).values({
+        ownerId: userId, name: name.trim(), type: type ?? "cat",
+        breed: breed ?? "", age: age ?? "", gender: gender ?? "", birthDate: birthDate ?? "",
+        weight: weight ?? "", color: color ?? "", avatarUrl: avatarUrl ?? "",
+        bio: bio ?? "", location: location ?? "",
+        vaccinationInfo: vaccinationInfo ?? "", feedingNotes: feedingNotes ?? "",
+      }).returning();
+      return { denied: false as const, pet };
+    });
+
+    if (result.denied) {
       res.status(402).json({
         code: "PET_PREMIUM_REQUIRED",
         message: "Evcilim Premium is required to add another pet.",
-        petCount: premium.existingPetCount,
+        petCount: result.petCount,
         freePetLimit: FREE_PET_LIMIT,
+        effectivePetLimit: result.effectivePetLimit,
         canAddPet: false,
       });
       return;
     }
-    const [pet] = await db.insert(petProfiles).values({
-      ownerId: userId, name, type: type ?? "cat",
-      breed: breed ?? "", age: age ?? "", gender: gender ?? "", birthDate: birthDate ?? "",
-      weight: weight ?? "", color: color ?? "", avatarUrl: avatarUrl ?? "",
-      bio: bio ?? "", location: location ?? "",
-      vaccinationInfo: vaccinationInfo ?? "", feedingNotes: feedingNotes ?? "",
-    }).returning();
-    res.status(201).json(pet);
+
+    res.status(201).json(result.pet);
   } catch { res.status(500).json({ error: "Failed to create pet" }); }
 });
 

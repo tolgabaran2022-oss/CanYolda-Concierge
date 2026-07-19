@@ -496,5 +496,11 @@
     "confirm": "OK",
     "cancel": "Cancel",
     "noDateKnown": "Date unknown"
+  },
+  "evcilimPremium": {
+    "addPetTitle": "Add another companion",
+    "addPetDescription": "Your first pet is free. Upgrade to Evcilim Premium to add a second pet and beyond.",
+    "defaultTitle": "Evcilim Premium",
+    "defaultDescription": "Manage your pet's care together, completely."
   }
 }
