@@ -287,14 +287,24 @@ export default function AccountScreen() {
         style={[S.header, { paddingTop: topPad + 8 }]}
       >
         <View style={S.headerInner}>
-          <UserAvatar
-            uri={user.avatar}
-            name={user.name}
-            size={52}
-            editable
-            uploading={avatarUploading}
-            onPress={handleAvatarPress}
-          />
+          <View style={{ position: "relative" }}>
+            <UserAvatar
+              uri={user.avatar}
+              name={user.name}
+              size={52}
+              uploading={avatarUploading}
+            />
+            {!avatarUploading && (
+              <Pressable
+                onPress={handleAvatarPress}
+                accessibilityRole="button"
+                accessibilityLabel="Profil fotoğrafını değiştir"
+                style={({ pressed }) => [S.cameraBadge, { opacity: pressed ? 0.8 : 1 }]}
+              >
+                <Icon name="camera" size={11} color="#FFF" />
+              </Pressable>
+            )}
+          </View>
           <View style={{ flex: 1 }}>
             <Text style={[S.headerName, { color: T.purpleDark }]}>{user.name}</Text>
             <Text style={[S.headerEmail, { color: T.textMuted }]}>{user.email}</Text>
@@ -561,12 +571,21 @@ const S = StyleSheet.create({
     width: 38, height: 38, borderRadius: 12,
     alignItems: "center", justifyContent: "center",
   },
-  avatarCircle: {
-    width: 52, height: 52, borderRadius: 26,
-    alignItems: "center", justifyContent: "center",
+  cameraBadge: {
+    position: "absolute",
+    bottom: -2,
+    right: -2,
+    width: 22,
+    height: 22,
+    borderRadius: 11,
+    backgroundColor: "#7B5EA7",
+    alignItems: "center",
+    justifyContent: "center",
+    borderWidth: 2,
+    borderColor: "#FFF",
     ...Platform.select({
-      ios:     { shadowColor: "#7B5EA7", shadowOffset: { width: 0, height: 4 }, shadowOpacity: 0.3, shadowRadius: 8 },
-      android: { elevation: 4 },
+      ios:     { shadowColor: "#000", shadowOffset: { width: 0, height: 1 }, shadowOpacity: 0.18, shadowRadius: 3 },
+      android: { elevation: 3 },
     }),
   },
   headerName: {

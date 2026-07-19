@@ -70,24 +70,6 @@ export function UserAvatar({
           <ActivityIndicator color="#FFF" size="small" />
         </View>
       )}
-
-      {/* Editable badge */}
-      {editable && !uploading && (
-        <View
-          style={[
-            styles.badge,
-            {
-              width: badgeSize,
-              height: badgeSize,
-              borderRadius: badgeSize / 2,
-              bottom: 0,
-              right: 0,
-            },
-          ]}
-        >
-          <Icon name="camera" size={Math.round(badgeSize * 0.55)} color="#FFF" />
-        </View>
-      )}
     </View>
   );
 
