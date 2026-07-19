@@ -85,7 +85,7 @@ function formatDateShort(dateStr: string): string {
 /* ══════════════════════════════════════════════════════════════════════════════
    1. EMPTY STATE (no pets)
 ══════════════════════════════════════════════════════════════════════════════ */
-const HERO_IMAGE = require("../assets/images/hero-pets-empty-state.png");
+const HERO_IMAGE = require("../assets/images/hero-pets-animals.png");
 const FEATURE_CARDS = [
   { icon: "vaccine",           label: "Aşı Takibi" },
   { icon: "calendar",          label: "Randevular" },
@@ -93,11 +93,11 @@ const FEATURE_CARDS = [
   { icon: "clipboard-outline", label: "Sağlık Kayıtları" },
 ] as const;
 
-function NoPetsState({ onAdd }: { onAdd: () => void }) {
+function NoPetsState({ onAdd, botPad }: { onAdd: () => void; botPad: number }) {
   return (
     <ScrollView
       style={{ flex: 1 }}
-      contentContainerStyle={np.container}
+      contentContainerStyle={[np.container, { paddingBottom: botPad + 24 }]}
       showsVerticalScrollIndicator={false}
       bounces={false}
     >
@@ -171,10 +171,10 @@ function NoPetsState({ onAdd }: { onAdd: () => void }) {
   );
 }
 const np = StyleSheet.create({
-  container:  { paddingHorizontal: 20, paddingBottom: 28, paddingTop: 4, alignItems: "center" },
-  heroWrap:   { width: "100%", alignItems: "center", justifyContent: "center", marginBottom: 2, position: "relative", height: 260 },
-  glow:       { position: "absolute", width: 240, height: 240, borderRadius: 120, backgroundColor: "#ECE2FF", opacity: 0.72 },
-  heroImg:    { width: "90%", height: 250, zIndex: 1 },
+  container:  { paddingHorizontal: 20, paddingTop: 4, alignItems: "center" },
+  heroWrap:   { width: "100%", alignItems: "center", justifyContent: "center", marginBottom: 4, position: "relative", height: 230 },
+  glow:       { position: "absolute", width: 210, height: 210, borderRadius: 105, backgroundColor: "#ECE2FF", opacity: 0.72 },
+  heroImg:    { width: 260, height: 220, alignSelf: "center", zIndex: 1 },
   sparkle:    { position: "absolute", fontSize: 11, color: C.purple, opacity: 0.55, zIndex: 2 },
   sparkleSm:  { fontSize: 7, opacity: 0.38 },
   headline:   { fontSize: 23, fontFamily: "Inter_700Bold", color: C.text, textAlign: "center", letterSpacing: -0.5, lineHeight: 32, marginBottom: 10, marginTop: 6 },
@@ -1060,7 +1060,7 @@ export function EvcilimTab({ botPad }: { botPad: number }) {
   }
 
   if (pets.length === 0) {
-    return <NoPetsState onAdd={handleAddPet} />;
+    return <NoPetsState onAdd={handleAddPet} botPad={botPad} />;
   }
 
   const reminders = selectedPet ? buildReminders(vaccinations, appointments, nutrition) : [];
