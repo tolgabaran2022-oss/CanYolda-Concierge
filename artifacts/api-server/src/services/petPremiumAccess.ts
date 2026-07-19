@@ -53,7 +53,7 @@ export async function getPetPremiumStatus(userId: string): Promise<PetPremiumSta
     productId: row.productId,
     petLimit,
     existingPetCount: petCount,
-    canAddPet: isPremium || petCount < petLimit,
+    canAddPet: isPremium || petCount === 0 || petCount < petLimit,
   };
 }
 

@@ -909,12 +909,14 @@ export function EvcilimTab({ botPad }: { botPad: number }) {
   );
 
   const handleAddPet = useCallback(() => {
-    if (premiumStatus && !premiumStatus.canAddPet) {
+    if (pets.length === 0) {
+      nav("/evcilim/add");
+    } else if (isPremium || premiumStatus?.canAddPet) {
+      nav("/evcilim/add");
+    } else {
       nav("/evcilim-premium");
-      return;
     }
-    nav("/evcilim/add");
-  }, [premiumStatus, nav]);
+  }, [pets.length, isPremium, premiumStatus, nav]);
 
   const handleDeletePet = useCallback(async (id: string) => {
     setDeletingPetId(id);
