@@ -872,18 +872,10 @@ export default function AnimalDetailScreen() {
 
             {/* Durum Güncellemeleri */}
             <View style={D.section}>
-              <View style={{ flexDirection: "row", justifyContent: "space-between", alignItems: "center", marginBottom: 14 }}>
+              <View style={{ marginBottom: 14 }}>
                 <Text style={D.sectionTitle}>
                   {uniqueHelperCount > 0 ? `Durum Güncellemeleri (${uniqueHelperCount})` : "Durum Güncellemeleri"}
                 </Text>
-                <Pressable
-                  onPress={handleHelp}
-                  style={{ backgroundColor: `${C.purple}12`, paddingHorizontal: 12, paddingVertical: 6, borderRadius: 12 }}
-                >
-                  <Text style={{ fontSize: 12, fontFamily: "Inter_600SemiBold", color: C.purple }}>
-                    + Güncelle
-                  </Text>
-                </Pressable>
               </View>
               {helpUpdatesLoading ? (
                 <View style={{ alignItems: "center", paddingVertical: 20 }}>
