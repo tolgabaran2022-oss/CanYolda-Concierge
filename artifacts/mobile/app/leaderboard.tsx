@@ -199,19 +199,26 @@ function PodiumSkeleton() {
   );
 }
 
-function RankRow({ entry }: { entry: LeaderboardEntry }) {
+function RankRow({ entry, isMe }: { entry: LeaderboardEntry; isMe?: boolean }) {
   return (
-    <View style={st.rankRow}>
-      <Text style={st.rankNumber}>{entry.rank}</Text>
+    <View style={[st.rankRow, isMe && st.rankRowMe]}>
+      <Text style={[st.rankNumber, isMe && st.rankNumberMe]}>{entry.rank}</Text>
       <UserAvatar uri={entry.avatarUrl} size={44} name={entry.name} />
       <View style={{ flex: 1, minWidth: 0, gap: 3 }}>
-        <Text style={st.rankName} numberOfLines={1}>{entry.name}</Text>
+        <View style={{ flexDirection: "row", alignItems: "center", gap: 6 }}>
+          <Text style={[st.rankName, isMe && st.rankNameMe]} numberOfLines={1}>{entry.name}</Text>
+          {isMe && (
+            <View style={st.senPill}>
+              <Text style={st.senText}>Sen</Text>
+            </View>
+          )}
+        </View>
         <AchievementBadge level={entry.level} />
       </View>
       <View style={{ alignItems: "flex-end", gap: 2 }}>
         <Text style={st.rankAnimals}>{entry.distinctAnimals} hayvan</Text>
         <View style={{ flexDirection: "row", alignItems: "baseline", gap: 2 }}>
-          <Text style={st.rankPoints}>{entry.totalPoints}</Text>
+          <Text style={[st.rankPoints, isMe && st.rankPointsMe]}>{entry.totalPoints}</Text>
           <Text style={st.rankPointsLabel}>Puan</Text>
         </View>
       </View>
@@ -404,20 +411,24 @@ export default function LeaderboardScreen() {
               ) : <View style={{ flex: 1 }} />}
             </View>
 
-            {/* Remaining list */}
+            {/* Full ranking list — same source as podium, includes top 3 */}
             {data.ranking.length > 0 && (
               <View style={st.section}>
                 <Text style={st.sectionTitle}>Bu Ayın Sıralaması</Text>
-                {data.ranking.map(entry => (
-                  <RankRow key={entry.userId} entry={entry} />
-                ))}
+                {data.ranking.map(entry => {
+                  const isMe = !!user && entry.userId === user.id;
+                  return (
+                    <RankRow key={entry.userId} entry={entry} isMe={isMe} />
+                  );
+                })}
               </View>
             )}
           </>
         )}
 
-        {/* Current user summary */}
-        {!loading && !error && data?.myRank !== null && data?.myRank !== undefined && (
+        {/* Current user summary — only shown when user has 0 points (not in ranking list) */}
+        {!loading && !error && data?.myRank !== null && data?.myRank !== undefined &&
+          data.myRank.totalPoints === 0 && (
           <View style={st.myRankCard}>
             <View style={{ flexDirection: "row", alignItems: "center", gap: 12 }}>
               <UserAvatar
@@ -431,41 +442,20 @@ export default function LeaderboardScreen() {
                     <Text style={st.senText}>Sen</Text>
                   </View>
                 </View>
-                {data.myRank.totalPoints > 0 ? (
-                  <>
-                    <Text style={st.myRankLine}>
-                      Bu ayki sıran: {data.myRank.rank !== null ? data.myRank.rank : "—"}
-                    </Text>
-                    <Text style={st.myRankSub}>
-                      {data.myRank.distinctAnimals} farklı hayvana destek oldun
-                    </Text>
-                  </>
-                ) : (
-                  <>
-                    <Text style={st.myRankLine}>Bu ay henüz puan kazanmadın.</Text>
-                    <Text style={st.myRankSub}>
-                      Yardım bekleyen bir dosta destek olarak başlayabilirsin.
-                    </Text>
-                  </>
-                )}
+                <Text style={st.myRankLine}>Bu ay henüz puan kazanmadın.</Text>
+                <Text style={st.myRankSub}>
+                  Yardım bekleyen bir dosta destek olarak başlayabilirsin.
+                </Text>
               </View>
-              {data.myRank.totalPoints > 0 && (
-                <View style={{ alignItems: "flex-end" }}>
-                  <Text style={st.myRankPoints}>{data.myRank.totalPoints}</Text>
-                  <Text style={st.myRankPointsLabel}>Puan</Text>
-                </View>
-              )}
             </View>
-            {data.myRank.totalPoints === 0 && (
-              <Pressable
-                style={st.goHelpBtn}
-                onPress={() => { router.push("/(tabs)"); }}
-                accessibilityRole="button"
-              >
-                <Icon name="paw" size={14} color={C.white} />
-                <Text style={st.goHelpText}>Hayvanları Gör</Text>
-              </Pressable>
-            )}
+            <Pressable
+              style={st.goHelpBtn}
+              onPress={() => { router.push("/(tabs)"); }}
+              accessibilityRole="button"
+            >
+              <Icon name="paw" size={14} color={C.white} />
+              <Text style={st.goHelpText}>Hayvanları Gör</Text>
+            </Pressable>
           </View>
         )}
 
@@ -669,6 +659,9 @@ const st = StyleSheet.create({
     borderTopWidth: 1,
     borderTopColor: "rgba(0,0,0,0.04)",
   },
+  rankRowMe: {
+    backgroundColor: "#EDE9FE",
+  },
   rankNumber: {
     fontSize: 15,
     fontFamily: "Inter_700Bold",
@@ -676,10 +669,16 @@ const st = StyleSheet.create({
     width: 24,
     textAlign: "center",
   },
+  rankNumberMe: {
+    color: C.purpleDark,
+  },
   rankName: {
     fontSize: 14,
     fontFamily: "Inter_600SemiBold",
     color: C.text,
+  },
+  rankNameMe: {
+    color: C.purpleDark,
   },
   rankAnimals: {
     fontSize: 12,
@@ -690,6 +689,9 @@ const st = StyleSheet.create({
     fontSize: 16,
     fontFamily: "Inter_700Bold",
     color: C.purpleDark,
+  },
+  rankPointsMe: {
+    fontSize: 17,
   },
   rankPointsLabel: {
     fontSize: 11,

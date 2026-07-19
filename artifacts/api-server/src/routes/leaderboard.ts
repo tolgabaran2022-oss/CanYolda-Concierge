@@ -115,7 +115,8 @@ router.get("/leaderboard", async (req, res) => {
     });
 
     const top3    = ranked.slice(0, 3);
-    const ranking = ranked.slice(3);
+    // ranking includes ALL users (1st place onwards) so podium and list share one source
+    const ranking = ranked;
 
     /* Current user summary — always present when authenticated */
     let myRank: object | null = null;
