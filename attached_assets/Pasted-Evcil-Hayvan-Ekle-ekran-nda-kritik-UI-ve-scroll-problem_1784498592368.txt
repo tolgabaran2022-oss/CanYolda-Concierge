@@ -1,0 +1,136 @@
+Evcil Hayvan Ekle ekranında kritik UI ve scroll problemlerini düzelt.
+
+MEVCUT SORUNLAR
+
+1. Sayfa aşağı kaydırılamıyor.
+2. Formun alt bölümleri ekran dışında kalıyor.
+3. Sabit “Kaydet” butonu içerik kartının üstüne biniyor.
+4. “Kimlik Bilgileri” kartı yarım görünüyor.
+5. Üst bölümde gereğinden fazla dikey boşluk var.
+6. Fotoğraf yükleme alanı ve hayvan türü kartları fazla büyük.
+7. Küçük ekranlarda ve klavye açıldığında inputlara erişilemiyor.
+8. iPhone safe area alanları doğru yönetilmiyor.
+
+İSTENEN YAPI
+
+Ekranı aşağıdaki component yapısıyla yeniden düzenle:
+
+SafeAreaView
+ └── KeyboardAvoidingView
+      └── View flex: 1
+           ├── Sabit Header
+           ├── ScrollView / KeyboardAwareScrollView
+           │    └── Tüm form içeriği
+           └── Sabit Bottom Action Area
+                └── Kaydet butonu
+
+SCROLL DÜZELTMESİ
+
+- Tüm form alanlarını dikey ScrollView içine al.
+- ScrollView mutlaka `flex: 1` kullanmalı.
+- `contentContainerStyle` içinde:
+  - paddingHorizontal: 20
+  - paddingTop: 8
+  - paddingBottom: bottomButtonHeight + safeAreaBottom + 32
+  kullan.
+- `showsVerticalScrollIndicator={false}` yap.
+- `keyboardShouldPersistTaps="handled"` ekle.
+- `keyboardDismissMode="interactive"` kullan.
+- Ana içerikte sabit height veya ekran yüksekliğine bağlı height kullanma.
+- Form container üzerinde `overflow: hidden` kullanma.
+- ScrollView parent bileşenlerinin tamamında doğru `flex: 1` zinciri oluştur.
+
+KLAVYE DAVRANIŞI
+
+- iOS için KeyboardAvoidingView:
+  `behavior="padding"`
+- Android için uygun şekilde:
+  `behavior={undefined}` veya gerekiyorsa `height`
+- Header yüksekliğini dikkate alan doğru `keyboardVerticalOffset` kullan.
+- Klavye açıldığında aktif input görünür alana taşınmalı.
+- Gerekirse `react-native-keyboard-aware-scroll-view` kullan.
+
+BOTTOM KAYDET ALANI
+
+- Kaydet butonu ekranın altında sabit kalabilir.
+- Ancak doğrudan formun üstüne bindirilmemeli.
+- Alt bölüm:
+  - beyaz veya çok açık lavender arka plan
+  - üstte hafif blur ya da ince border
+  - paddingHorizontal: 20
+  - paddingTop: 10
+  - paddingBottom: safeAreaBottom + 10
+- Buton yüksekliği yaklaşık 54 px olsun.
+- Buton aktif değilse okunabilir bir disabled tasarım kullan.
+- Disabled durumda mevcut tasarımdaki gibi yazı ve arka plan birbirine karışmasın.
+- ScrollView alt padding’i, butonun hiçbir form alanını kapatmayacağı kadar büyük olsun.
+
+HEADER
+
+- Header daha kompakt olsun.
+- Geri butonu ve başlık aynı yatay hizada bulunsun.
+- Header yüksekliği yaklaşık 56–64 px olsun.
+- Başlık ekranın gerçek merkezinde kalmalı.
+- Header ile fotoğraf alanı arasındaki boşluğu azalt.
+
+FOTOĞRAF ALANI
+
+- Fotoğraf alanının toplam yüksekliğini azalt.
+- Büyük boş daire yerine yaklaşık 104–120 px çapında bir fotoğraf seçici kullan.
+- Seçili fotoğraf yoksa:
+  - ortada hayvan/pati ikonu
+  - sağ altta küçük kamera rozeti
+- “Fotoğraf Ekle” metni ikonun hemen altında olsun.
+- Alt açıklama daha küçük ve düşük kontrastlı olsun.
+- Fotoğraf alanı ile “Hayvan Türü” başlığı arasında yaklaşık 20–24 px boşluk bırak.
+
+HAYVAN TÜRÜ SEÇİMİ
+
+- Grid iki sütun olarak devam etsin.
+- Kart yüksekliğini yaklaşık 72–78 px yap.
+- Kartlar arasındaki boşluk 10–12 px olsun.
+- Seçili kart:
+  - mor border
+  - çok hafif lavender fill
+  - sağ üstte küçük check icon
+- Seçili kartta ikon, yazı ve check hizalarını düzelt.
+- “Kedi” metni kartın alt sınırına çok yakın durmamalı.
+- Seçili ve seçili olmayan kartların gölge yoğunluğu tutarlı olsun.
+
+FORM KARTLARI
+
+- “Kimlik Bilgileri” dahil tüm bölümler ScrollView içinde eksiksiz görünmeli.
+- Kartların üst ve alt boşluklarını azalt.
+- Kart borderRadius yaklaşık 20–22 px olsun.
+- Kart içi padding 16 px civarında olsun.
+- Form section başlıkları tutarlı tipografi kullansın.
+- Input satırları arasında yeterli dokunma alanı bırak.
+- Son inputtan sonra da uygun alt boşluk bırak.
+
+RESPONSIVE DAVRANIŞ
+
+Şu ekranlarda kontrol et:
+
+- Küçük iPhone ekranı
+- Dynamic Island bulunan iPhone
+- Android küçük ekran
+- Android büyük ekran
+- Klavye açık durum
+- Uzun metin / büyük accessibility font durumu
+
+TEST KRİTERLERİ
+
+PASS vermeden önce gerçekten çalıştır:
+
+1. Ekranı aç.
+2. Sayfanın en altına kadar kaydır.
+3. Tüm form alanlarının erişilebilir olduğunu doğrula.
+4. Kaydet butonunun hiçbir içeriği kapatmadığını doğrula.
+5. Her inputa tıkla ve klavye açıkken inputun görünür kaldığını doğrula.
+6. Fotoğraf seçiciye tıkla.
+7. Hayvan türlerini sırayla seç.
+8. iOS ve Android’de ayrı ayrı test et.
+9. Console’da scroll, layout veya keyboard hatası olmadığını doğrula.
+10. Sadece kod incelemesi yaptıysan PASS değil, STATIC REVIEW yaz.
+
+Mevcut business logic, form validation, fotoğraf seçme işlemi ve backend kayıt sistemi korunacak. Yalnızca layout, scroll, keyboard handling ve responsive UI düzeltilecek.
