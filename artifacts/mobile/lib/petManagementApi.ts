@@ -339,6 +339,84 @@ export async function apiUpsertNutrition(
   return res.json() as Promise<ApiNutrition>;
 }
 
+/* ── Pet Reminders (DB-backed) ───────────────────────────────────────── */
+export type ApiPetReminder = {
+  id: string;
+  petId: string;
+  userId: string;
+  title: string;
+  reminderType: "vaccination" | "appointment" | "medication" | "nutrition" | "general" | "custom";
+  date: string;
+  time: string;
+  repeatRule: string;
+  isEnabled: boolean;
+  relatedId: string;
+  notes: string;
+  createdAt: string;
+  updatedAt: string;
+};
+
+export async function apiGetPetReminders(petId: string): Promise<ApiPetReminder[]> {
+  const res = await apiFetch(`/pets/${petId}/reminders`);
+  if (!res.ok) return [];
+  return res.json() as Promise<ApiPetReminder[]>;
+}
+
+export async function apiCreatePetReminder(
+  petId: string,
+  data: Omit<ApiPetReminder, "id" | "petId" | "userId" | "createdAt" | "updatedAt">
+): Promise<ApiPetReminder> {
+  const res = await apiFetch(`/pets/${petId}/reminders`, { method: "POST", body: JSON.stringify(data) });
+  if (!res.ok) throw new Error("create reminder failed");
+  return res.json() as Promise<ApiPetReminder>;
+}
+
+export async function apiUpdatePetReminder(
+  petId: string,
+  reminderId: string,
+  data: Partial<Omit<ApiPetReminder, "id" | "petId" | "userId" | "createdAt" | "updatedAt">>
+): Promise<ApiPetReminder> {
+  const res = await apiFetch(`/pets/${petId}/reminders/${reminderId}`, { method: "PATCH", body: JSON.stringify(data) });
+  if (!res.ok) throw new Error("update reminder failed");
+  return res.json() as Promise<ApiPetReminder>;
+}
+
+export async function apiDeletePetReminder(petId: string, reminderId: string): Promise<void> {
+  const res = await apiFetch(`/pets/${petId}/reminders/${reminderId}`, { method: "DELETE" });
+  if (!res.ok) throw new Error("delete reminder failed");
+}
+
+export async function apiUpdateMedication(
+  petId: string,
+  medicationId: string,
+  data: Partial<Omit<ApiMedication, "id" | "petId" | "userId" | "createdAt" | "updatedAt">>
+): Promise<ApiMedication> {
+  const res = await apiFetch(`/pets/${petId}/medications/${medicationId}`, { method: "PATCH", body: JSON.stringify(data) });
+  if (!res.ok) throw new Error("update medication failed");
+  return res.json() as Promise<ApiMedication>;
+}
+
+export async function apiUpdatePetDocument(
+  petId: string,
+  documentId: string,
+  data: Partial<Omit<ApiPetDocument, "id" | "petId" | "userId" | "createdAt" | "updatedAt">>
+): Promise<ApiPetDocument> {
+  const res = await apiFetch(`/pets/${petId}/documents/${documentId}`, { method: "PATCH", body: JSON.stringify(data) });
+  if (!res.ok) throw new Error("update document failed");
+  return res.json() as Promise<ApiPetDocument>;
+}
+
+export async function apiSendAssistantMessage(petId: string, message: string): Promise<{ reply: string; unavailable?: boolean }> {
+  const res = await apiFetch(`/pets/${petId}/assistant/messages`, {
+    method: "POST",
+    body: JSON.stringify({ message }),
+  });
+  if (res.status === 402) throw new Error("premium_required");
+  if (res.status === 503) return { reply: "", unavailable: true };
+  if (!res.ok) throw new Error("assistant_failed");
+  return res.json() as Promise<{ reply: string }>;
+}
+
 /* ── Reminders (derived from appointments + vaccinations) ────────────── */
 export type ApiReminder = {
   id: string;

@@ -83,8 +83,25 @@ export const petNutrition = pgTable("pet_nutrition", {
   updatedAt:            timestamp("updated_at", { withTimezone: true }).defaultNow(),
 });
 
+export const petReminders = pgTable("pet_reminders", {
+  id:          text("id").primaryKey().default(sql`gen_random_uuid()::text`),
+  petId:       text("pet_id").notNull(),
+  userId:      text("user_id").notNull(),
+  title:       text("title").notNull(),
+  reminderType:text("reminder_type").notNull().default("general"),
+  date:        text("date").notNull(),
+  time:        text("time").notNull().default(""),
+  repeatRule:  text("repeat_rule").notNull().default("never"),
+  isEnabled:   boolean("is_enabled").notNull().default(true),
+  relatedId:   text("related_id").notNull().default(""),
+  notes:       text("notes").notNull().default(""),
+  createdAt:   timestamp("created_at", { withTimezone: true }).defaultNow(),
+  updatedAt:   timestamp("updated_at", { withTimezone: true }).defaultNow(),
+});
+
 export type PetVaccination    = typeof petVaccinations.$inferSelect;
 export type PetAppointment    = typeof petAppointments.$inferSelect;
 export type PetIdentification = typeof petIdentification.$inferSelect;
 export type PetNote           = typeof petNotes.$inferSelect;
 export type PetNutrition      = typeof petNutrition.$inferSelect;
+export type PetReminder       = typeof petReminders.$inferSelect;

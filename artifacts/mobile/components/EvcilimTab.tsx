@@ -715,7 +715,7 @@ function ManagementGrid({
 
   const GRID: GridItem[] = [
     { key: "id",           label: "Kimlik",    icon: "id-card-outline",          route: `/evcilim/${petId}/identification` },
-    { key: "health",       label: "Sağlık",    icon: "heart-outline",            route: `/evcilim/${petId}/vaccinations` },
+    { key: "health",       label: "Sağlık",    icon: "heart-outline",            route: `/evcilim/${petId}/health` },
     { key: "vaccinations", label: "Aşılar",    icon: "shield-checkmark-outline", route: `/evcilim/${petId}/vaccinations`, badge: overdueVacc || undefined },
     { key: "appointments", label: "Randevular", icon: "calendar-outline",         route: `/evcilim/${petId}/appointments`, badge: upcomingAppt || undefined },
     { key: "nutrition",    label: "Beslenme",   icon: "nutrition-outline",        route: `/evcilim/${petId}/nutrition` },
@@ -787,6 +787,47 @@ const mg = StyleSheet.create({
 });
 
 /* ══════════════════════════════════════════════════════════════════════════════
+   4b. AI ASSISTANT CARD
+══════════════════════════════════════════════════════════════════════════════ */
+function AIAssistantCard({ petId, isPremium, onNav }: { petId: string; isPremium: boolean; onNav: (r: string) => void }) {
+  return (
+    <Pressable
+      style={({ pressed }) => [ai.card, pressed && { opacity: 0.85 }]}
+      onPress={() => {
+        Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
+        onNav(isPremium ? `/evcilim/${petId}/assistant` : "/evcilim-premium");
+      }}
+      accessibilityRole="button"
+      accessibilityLabel="AI Hayvan Asistanı"
+    >
+      <View style={ai.iconWrap}>
+        <Icon name="sparkles-outline" size={22} color="#fff" />
+      </View>
+      <View style={ai.body}>
+        <Text style={ai.title}>AI Hayvan Asistanı</Text>
+        <Text style={ai.sub}>Evcil hayvanın hakkında anlık sorular sor.</Text>
+      </View>
+      {!isPremium && (
+        <View style={ai.premiumPill}>
+          <Icon name="diamond" size={10} color="#fff" />
+          <Text style={ai.premiumTxt}>Premium</Text>
+        </View>
+      )}
+      <Icon name="chevron-forward-outline" size={18} color={C.purple} />
+    </Pressable>
+  );
+}
+const ai = StyleSheet.create({
+  card:       { marginHorizontal: 20, marginTop: 24, flexDirection: "row", alignItems: "center", gap: 12, backgroundColor: `${C.purple}10`, borderRadius: 20, padding: 14, borderWidth: 1, borderColor: `${C.purple}28`, ...SHADOW_SM },
+  iconWrap:   { width: 44, height: 44, borderRadius: 14, backgroundColor: C.purple, alignItems: "center", justifyContent: "center", flexShrink: 0 },
+  body:       { flex: 1 },
+  title:      { fontSize: 15, fontFamily: "Inter_700Bold", color: C.purple },
+  sub:        { fontSize: 12, fontFamily: "Inter_400Regular", color: C.textSec, marginTop: 2 },
+  premiumPill:{ flexDirection: "row", alignItems: "center", gap: 3, paddingHorizontal: 8, paddingVertical: 3, borderRadius: 50, backgroundColor: C.purple },
+  premiumTxt: { fontSize: 10, fontFamily: "Inter_700Bold", color: "#fff" },
+});
+
+/* ══════════════════════════════════════════════════════════════════════════════
    5. UPCOMING REMINDERS
 ══════════════════════════════════════════════════════════════════════════════ */
 function UpcomingReminders({
@@ -814,7 +855,7 @@ function UpcomingReminders({
           hitSlop={12}
           accessibilityRole="button"
           accessibilityLabel="Tüm hatırlatmaları görüntüle"
-          onPress={() => { Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light); onNav(`/evcilim/${petId}/notes`); }}
+          onPress={() => { Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light); onNav(`/evcilim/${petId}/reminders`); }}
         >
           <Text style={ur.seeAll}>Tümünü Gör</Text>
         </Pressable>
@@ -833,7 +874,7 @@ function UpcomingReminders({
             hitSlop={8}
             style={ur.emptyBtn}
             accessibilityRole="button"
-            onPress={() => onNav(`/evcilim/${petId}/vaccinations`)}
+            onPress={() => onNav(`/evcilim/${petId}/reminders`)}
           >
             <Text style={ur.emptyBtnTxt}>Hatırlatıcı Ekle</Text>
           </Pressable>
@@ -1104,6 +1145,7 @@ export function EvcilimTab({ botPad }: { botPad: number }) {
             isPremium={isPremium}
             onNav={nav}
           />
+          <AIAssistantCard petId={selectedPet.id} isPremium={isPremium} onNav={nav} />
           <UpcomingReminders
             reminders={reminders}
             petId={selectedPet.id}

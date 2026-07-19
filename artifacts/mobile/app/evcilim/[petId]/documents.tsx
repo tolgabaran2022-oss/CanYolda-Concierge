@@ -1,45 +1,384 @@
-import { Icon } from "@/components/Icon";
-import { usePetPremium } from "@/contexts/PetPremiumContext";
-import { apiCreatePetDocument, apiDeletePetDocument, apiGetPetDocuments, type ApiPetDocument } from "@/lib/petManagementApi";
-import AsyncStorage from "@react-native-async-storage/async-storage";
-import * as ImagePicker from "expo-image-picker";
-import { Image } from "expo-image";
-import { useLocalSearchParams, useRouter } from "expo-router";
 import React, { useCallback, useEffect, useState } from "react";
-import { ActivityIndicator, Alert, FlatList, Pressable, StyleSheet, Text, View } from "react-native";
-import { useSafeAreaInsets } from "react-native-safe-area-context";
+import {
+  ActivityIndicator, Alert, Pressable, RefreshControl,
+  ScrollView, StyleSheet, Text, TextInput, View,
+} from "react-native";
+import { Image } from "expo-image";
+import * as ImagePicker from "expo-image-picker";
+import { Stack, useLocalSearchParams, useRouter } from "expo-router";
+import * as Haptics from "expo-haptics";
+import { Linking } from "react-native";
+import { SafeAreaView } from "react-native-safe-area-context";
+import AsyncStorage from "@react-native-async-storage/async-storage";
+import { Icon } from "@/components/Icon";
+import { useColors } from "@/hooks/useColors";
+import {
+  apiGetPetDocuments, apiCreatePetDocument, apiDeletePetDocument,
+  apiUpdatePetDocument, type ApiPetDocument,
+} from "@/lib/petManagementApi";
+import { usePetPremium } from "@/contexts/PetPremiumContext";
 
-const P="#7C45D9",BG="#F6F1FF",DARK="#211733",MUTED="#8C8699";
-const API_BASE=process.env.EXPO_PUBLIC_DOMAIN?`https://${process.env.EXPO_PUBLIC_DOMAIN}/api`:"http://localhost:8080/api";
+const SHADOW = {
+  shadowColor: "#7B5EA7", shadowOffset: { width: 0, height: 2 },
+  shadowOpacity: 0.08, shadowRadius: 8, elevation: 3,
+};
 
-async function upload(uri:string,name:string,mime:string){
-  const token=await AsyncStorage.getItem("@canyoldasi:jwt");
-  const body=new FormData();
-  if (typeof File!=="undefined"&&uri.startsWith("blob:")){const blob=await fetch(uri).then(r=>r.blob());body.append("file",new File([blob],name,{type:mime}));}
-  else body.append("file",{uri,name,type:mime} as unknown as Blob);
-  const res=await fetch(`${API_BASE}/upload`,{method:"POST",body,headers:token?{Authorization:`Bearer ${token}`}:{}});
-  if(!res.ok)throw new Error("upload_failed");
-  const data=await res.json() as {url?:string};
-  if(!data.url)throw new Error("upload_failed");
+const CATEGORIES = [
+  { key: "vaccination_card", label: "Aşı Kartı", icon: "shield-checkmark-outline", color: "#FF9500" },
+  { key: "prescription", label: "Reçete", icon: "medical-outline", color: "#E55D6F" },
+  { key: "lab_results", label: "Lab Sonuçları", icon: "flask-outline", color: "#7B5EA7" },
+  { key: "health_record", label: "Sağlık Kaydı", icon: "document-text-outline", color: "#34C759" },
+  { key: "insurance", label: "Sigorta", icon: "shield-outline", color: "#5856D6" },
+  { key: "identification", label: "Kimlik", icon: "id-card-outline", color: "#FF9500" },
+  { key: "other", label: "Diğer", icon: "folder-outline", color: "#8C8699" },
+] as const;
+
+type CatKey = typeof CATEGORIES[number]["key"];
+
+function catInfo(key: string) {
+  return CATEGORIES.find(c => c.key === key) ?? CATEGORIES[CATEGORIES.length - 1]!;
+}
+
+const API_BASE = process.env.EXPO_PUBLIC_DOMAIN
+  ? `https://${process.env.EXPO_PUBLIC_DOMAIN}/api`
+  : "http://localhost:8080/api";
+
+async function uploadFile(uri: string, name: string, mime: string): Promise<string> {
+  const token = await AsyncStorage.getItem("@canyoldasi:jwt");
+  const body = new FormData();
+  if (typeof File !== "undefined" && uri.startsWith("blob:")) {
+    const blob = await fetch(uri).then(r => r.blob());
+    body.append("file", new File([blob], name, { type: mime }));
+  } else {
+    body.append("file", { uri, name, type: mime } as unknown as Blob);
+  }
+  const res = await fetch(`${API_BASE}/upload`, {
+    method: "POST", body,
+    headers: token ? { Authorization: `Bearer ${token}` } : {},
+  });
+  if (!res.ok) throw new Error("upload_failed");
+  const data = await res.json() as { url?: string };
+  if (!data.url) throw new Error("upload_failed");
   return data.url;
 }
 
-export default function DocumentsScreen(){
-  const {petId}=useLocalSearchParams<{petId:string}>(),router=useRouter(),insets=useSafeAreaInsets();
-  const {isPremium}=usePetPremium();
-  const [items,setItems]=useState<ApiPetDocument[]>([]),[loading,setLoading]=useState(true),[uploading,setUploading]=useState(false);
-  const load=useCallback(async()=>{if(!petId)return;setLoading(true);try{setItems(await apiGetPetDocuments(petId));}finally{setLoading(false)}},[petId]);
-  useEffect(()=>{load()},[load]);
-  const add=async()=>{
-    if(!isPremium){router.push("/evcilim-premium");return}
-    const perm=await ImagePicker.requestMediaLibraryPermissionsAsync();if(!perm.granted){Alert.alert("İzin Gerekli","Belge fotoğrafı seçmek için fotoğraf izni vermelisin.");return}
-    const result=await ImagePicker.launchImageLibraryAsync({mediaTypes:["images"],quality:.85});if(result.canceled||!result.assets[0]||!petId)return;
-    const a=result.assets[0],name=a.fileName||`pet-document-${Date.now()}.jpg`,mime=a.mimeType||"image/jpeg";
-    setUploading(true);try{const url=await upload(a.uri,name,mime);const row=await apiCreatePetDocument(petId,{title:name.replace(/\.[^.]+$/,"")||"Evcil Hayvan Belgesi",category:"other",fileUrl:url,fileName:name,mimeType:mime,fileSize:a.fileSize||0,documentDate:new Date().toISOString().slice(0,10),notes:""});setItems(v=>[row,...v]);}catch{Alert.alert("Yüklenemedi","Belge yüklenemedi. Lütfen tekrar deneyin.")}finally{setUploading(false)}
+function isImage(mime: string) { return mime.startsWith("image/"); }
+
+export default function DocumentsScreen() {
+  const { petId } = useLocalSearchParams<{ petId: string }>();
+  const C = useColors();
+  const router = useRouter();
+  const { isPremium } = usePetPremium();
+
+  const [documents, setDocuments] = useState<ApiPetDocument[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [refreshing, setRefreshing] = useState(false);
+  const [uploading, setUploading] = useState(false);
+
+  const [editingDoc, setEditingDoc] = useState<ApiPetDocument | null>(null);
+  const [editTitle, setEditTitle] = useState("");
+  const [editCategory, setEditCategory] = useState<CatKey>("other");
+  const [editDate, setEditDate] = useState("");
+  const [editNotes, setEditNotes] = useState("");
+  const [editSaving, setEditSaving] = useState(false);
+
+  const [selectedCategory, setSelectedCategory] = useState<CatKey | "all">("all");
+
+  const load = useCallback(async () => {
+    if (!petId) return;
+    try { setDocuments(await apiGetPetDocuments(petId)); }
+    catch { /* silent */ }
+    finally { setLoading(false); setRefreshing(false); }
+  }, [petId]);
+
+  useEffect(() => { load(); }, [load]);
+
+  const handleAdd = async () => {
+    if (!isPremium) { router.push("/evcilim-premium"); return; }
+    const perm = await ImagePicker.requestMediaLibraryPermissionsAsync();
+    if (!perm.granted) { Alert.alert("İzin Gerekli", "Belge eklemek için fotoğraf izni gereklidir."); return; }
+    const result = await ImagePicker.launchImageLibraryAsync({ mediaTypes: ["images"], quality: 0.85 });
+    if (result.canceled || !result.assets[0] || !petId) return;
+    const a = result.assets[0];
+    const name = a.fileName ?? `pet-doc-${Date.now()}.jpg`;
+    const mime = a.mimeType ?? "image/jpeg";
+    setUploading(true);
+    try {
+      const url = await uploadFile(a.uri, name, mime);
+      const doc = await apiCreatePetDocument(petId, {
+        title: name.replace(/\.[^.]+$/, "") || "Belge",
+        category: "other",
+        fileUrl: url, fileName: name, mimeType: mime,
+        fileSize: a.fileSize ?? 0,
+        documentDate: new Date().toISOString().slice(0, 10),
+        notes: "",
+      });
+      setDocuments(prev => [doc, ...prev]);
+      Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
+    } catch (err: unknown) {
+      const msg = err instanceof Error ? err.message : "";
+      if (msg === "premium_required") { router.push("/evcilim-premium"); return; }
+      Alert.alert("Yüklenemedi", "Belge yüklenirken bir hata oluştu.");
+    } finally { setUploading(false); }
   };
-  return <View style={s.root}><View style={[s.header,{paddingTop:insets.top+12}]}><Pressable style={s.circle} onPress={()=>router.back()}><Icon name="chevron-back" size={22} color={DARK}/></Pressable><View style={{flex:1}}><Text style={s.title}>Belge Kasası</Text><Text style={s.sub}>Aşı karnesi, reçete ve sonuçlar</Text></View><Pressable style={s.add} onPress={add} disabled={uploading}>{uploading?<ActivityIndicator color="#FFF"/>:<Icon name={isPremium?"add":"lock-closed"} size={21} color="#FFF"/>}</Pressable></View>
-    {!isPremium&&<Pressable style={s.premium} onPress={()=>router.push("/evcilim-premium")}><Icon name="diamond-outline" size={20} color={P}/><View style={{flex:1}}><Text style={s.premiumTitle}>Premium belge kasası</Text><Text style={s.premiumSub}>Mevcut belgelerin görünür kalır. Yeni belge yüklemek için Premium’a geç.</Text></View><Icon name="chevron-forward" size={18} color={P}/></Pressable>}
-    {loading?<ActivityIndicator style={{flex:1}} color={P}/>:<FlatList data={items} keyExtractor={x=>x.id} numColumns={2} columnWrapperStyle={items.length?{gap:12}:undefined} contentContainerStyle={items.length?s.list:s.empty} ListEmptyComponent={<><Icon name="document-text-outline" size={50} color={P}/><Text style={s.emptyTitle}>Henüz belge yok</Text><Text style={s.emptySub}>Aşı karnesi, reçete ve veteriner belgelerini güvenle sakla.</Text></>} renderItem={({item})=><Pressable style={s.card} onLongPress={()=>Alert.alert("Belgeyi Sil",`${item.title} silinsin mi?`,[{text:"Vazgeç",style:"cancel"},{text:"Sil",style:"destructive",onPress:async()=>{if(!petId)return;await apiDeletePetDocument(petId,item.id);setItems(v=>v.filter(x=>x.id!==item.id))}}])}><Image source={{uri:item.fileUrl}} style={s.image} contentFit="cover"/><View style={s.cardBody}><Text style={s.docTitle} numberOfLines={1}>{item.title}</Text><Text style={s.docDate}>{item.documentDate||"Tarih yok"}</Text></View></Pressable>}/>} 
-  </View>
+
+  const openEdit = (doc: ApiPetDocument) => {
+    setEditingDoc(doc);
+    setEditTitle(doc.title);
+    setEditCategory(doc.category as CatKey || "other");
+    setEditDate(doc.documentDate);
+    setEditNotes(doc.notes);
+  };
+
+  const handleEditSave = async () => {
+    if (!petId || !editingDoc) return;
+    setEditSaving(true);
+    try {
+      const updated = await apiUpdatePetDocument(petId, editingDoc.id, {
+        title: editTitle, category: editCategory, documentDate: editDate, notes: editNotes,
+      });
+      setDocuments(prev => prev.map(d => d.id === editingDoc.id ? updated : d));
+      Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
+      setEditingDoc(null);
+    } catch { Alert.alert("Hata", "Değişiklikler kaydedilemedi."); }
+    finally { setEditSaving(false); }
+  };
+
+  const handleDelete = (doc: ApiPetDocument) => {
+    Alert.alert("Belge Sil", `"${doc.title}" belgesi silinsin mi?`, [
+      { text: "İptal", style: "cancel" },
+      { text: "Sil", style: "destructive", onPress: async () => {
+        if (!petId) return;
+        try {
+          await apiDeletePetDocument(petId, doc.id);
+          setDocuments(prev => prev.filter(d => d.id !== doc.id));
+          Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
+        } catch { Alert.alert("Hata", "Belge silinemedi."); }
+      }},
+    ]);
+  };
+
+  const S = makeStyles(C);
+
+  const filteredDocs = selectedCategory === "all"
+    ? documents
+    : documents.filter(d => d.category === selectedCategory);
+
+  if (loading) {
+    return (
+      <SafeAreaView style={S.flex} edges={["bottom"]}>
+        <Stack.Screen options={{ title: "Belge Kasası", headerBackTitle: "Geri" }} />
+        <View style={S.center}><ActivityIndicator color={C.purple} size="large" /></View>
+      </SafeAreaView>
+    );
+  }
+
+  return (
+    <SafeAreaView style={S.flex} edges={["bottom"]}>
+      <Stack.Screen options={{ title: "Belge Kasası", headerBackTitle: "Geri",
+        headerRight: () => (
+          <Pressable hitSlop={12} onPress={handleAdd} style={S.addBtn} disabled={uploading}>
+            {uploading
+              ? <ActivityIndicator size="small" color={C.purple} />
+              : <Icon name="add-outline" size={22} color={C.purple} />
+            }
+          </Pressable>
+        ),
+      }} />
+
+      {!isPremium && documents.length > 0 && (
+        <Pressable style={S.premiumBanner} onPress={() => router.push("/evcilim-premium")}>
+          <Icon name="diamond-outline" size={16} color={C.purple} />
+          <Text style={S.premiumBannerTxt}>Yeni belge yüklemek için Premium'a geç.</Text>
+          <Icon name="chevron-forward-outline" size={14} color={C.purple} />
+        </Pressable>
+      )}
+
+      {/* Category filter */}
+      {documents.length > 0 && (
+        <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={S.catRow}>
+          <Pressable
+            style={[S.catChip, selectedCategory === "all" && S.catChipActive]}
+            onPress={() => setSelectedCategory("all")}
+          >
+            <Text style={[S.catChipTxt, selectedCategory === "all" && S.catChipTxtActive]}>Tümü</Text>
+          </Pressable>
+          {CATEGORIES.filter(c => documents.some(d => d.category === c.key)).map(c => (
+            <Pressable
+              key={c.key}
+              style={[S.catChip, selectedCategory === c.key && { backgroundColor: c.color, borderColor: c.color }]}
+              onPress={() => setSelectedCategory(c.key)}
+            >
+              <Icon name={c.icon} size={13} color={selectedCategory === c.key ? "#fff" : C.textMuted} />
+              <Text style={[S.catChipTxt, selectedCategory === c.key && S.catChipTxtActive]}>{c.label}</Text>
+            </Pressable>
+          ))}
+        </ScrollView>
+      )}
+
+      <ScrollView
+        contentContainerStyle={documents.length === 0 ? S.emptyContainer : S.gridContainer}
+        showsVerticalScrollIndicator={false}
+        refreshControl={<RefreshControl refreshing={refreshing} onRefresh={() => { setRefreshing(true); load(); }} tintColor={C.purple} />}
+      >
+        {documents.length === 0 ? (
+          <View style={S.empty}>
+            {!isPremium ? (
+              <>
+                <View style={S.lockIcon}><Icon name="lock-closed-outline" size={36} color={C.purple} /></View>
+                <Text style={S.emptyTitle}>Premium Özellik</Text>
+                <Text style={S.emptySub}>Belge kasası Evcilim Premium üyelerine özeldir.</Text>
+                <Pressable style={S.uploadBtn} onPress={() => router.push("/evcilim-premium")}>
+                  <Text style={S.uploadBtnTxt}>Premium'a Geç</Text>
+                </Pressable>
+              </>
+            ) : (
+              <>
+                <Icon name="document-text-outline" size={42} color={C.purple} />
+                <Text style={S.emptyTitle}>Belge yok</Text>
+                <Text style={S.emptySub}>Aşı karnesi, reçete ve sağlık belgelerini güvenle saklayın.</Text>
+                <Pressable style={S.uploadBtn} onPress={handleAdd} disabled={uploading}>
+                  {uploading
+                    ? <ActivityIndicator color="#fff" size="small" />
+                    : <Text style={S.uploadBtnTxt}>Belge Yükle</Text>
+                  }
+                </Pressable>
+              </>
+            )}
+          </View>
+        ) : (
+          <View style={S.grid}>
+            {filteredDocs.map(doc => {
+              const cat = catInfo(doc.category);
+              return (
+                <Pressable
+                  key={doc.id}
+                  style={S.docCard}
+                  onPress={() => openEdit(doc)}
+                  onLongPress={() => handleDelete(doc)}
+                >
+                  <View style={[S.docThumb, { backgroundColor: `${cat.color}10` }]}>
+                    {isImage(doc.mimeType) ? (
+                      <Image source={{ uri: doc.fileUrl }} style={S.docImage} contentFit="cover" />
+                    ) : (
+                      <Icon name={cat.icon} size={32} color={cat.color} />
+                    )}
+                  </View>
+                  <View style={S.docInfo}>
+                    <View style={[S.catPill, { backgroundColor: `${cat.color}14` }]}>
+                      <Text style={[S.catPillTxt, { color: cat.color }]}>{cat.label}</Text>
+                    </View>
+                    <Text style={S.docTitle} numberOfLines={2}>{doc.title}</Text>
+                    <Text style={S.docDate}>{doc.documentDate || "Tarih yok"}</Text>
+                  </View>
+                  <Pressable
+                    style={S.viewBtn}
+                    hitSlop={8}
+                    onPress={() => Linking.openURL(doc.fileUrl)}
+                  >
+                    <Icon name="open-outline" size={16} color={C.purple} />
+                  </Pressable>
+                </Pressable>
+              );
+            })}
+          </View>
+        )}
+      </ScrollView>
+
+      {/* Edit sheet */}
+      {editingDoc && (
+        <View style={S.sheet}>
+          <View style={S.sheetHandle} />
+          <Text style={S.sheetTitle}>Belge Düzenle</Text>
+          <Text style={S.label}>Başlık</Text>
+          <TextInput
+            style={S.input}
+            value={editTitle}
+            onChangeText={setEditTitle}
+            placeholder="Belge adı"
+            placeholderTextColor={C.textMuted}
+          />
+          <Text style={S.label}>Kategori</Text>
+          <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={{ flexDirection: "row", gap: 8, paddingBottom: 4 }}>
+            {CATEGORIES.map(c => (
+              <Pressable
+                key={c.key}
+                style={[S.catChip, editCategory === c.key && { backgroundColor: c.color, borderColor: c.color }]}
+                onPress={() => setEditCategory(c.key)}
+              >
+                <Text style={[S.catChipTxt, editCategory === c.key && S.catChipTxtActive]}>{c.label}</Text>
+              </Pressable>
+            ))}
+          </ScrollView>
+          <Text style={S.label}>Belge Tarihi</Text>
+          <TextInput
+            style={S.input}
+            value={editDate}
+            onChangeText={setEditDate}
+            placeholder="YYYY-AA-GG"
+            placeholderTextColor={C.textMuted}
+          />
+          <Text style={S.label}>Not</Text>
+          <TextInput
+            style={[S.input, { minHeight: 60, textAlignVertical: "top" }]}
+            value={editNotes}
+            onChangeText={setEditNotes}
+            placeholder="Açıklama..."
+            placeholderTextColor={C.textMuted}
+            multiline
+          />
+          <View style={{ flexDirection: "row", gap: 10, marginTop: 16 }}>
+            <Pressable style={[S.cancelBtn]} onPress={() => setEditingDoc(null)}>
+              <Text style={S.cancelTxt}>İptal</Text>
+            </Pressable>
+            <Pressable style={[S.saveBtn, editSaving && { opacity: 0.7 }]} onPress={handleEditSave} disabled={editSaving}>
+              {editSaving ? <ActivityIndicator color="#fff" size="small" /> : <Text style={S.saveTxt}>Kaydet</Text>}
+            </Pressable>
+          </View>
+        </View>
+      )}
+    </SafeAreaView>
+  );
 }
-const s=StyleSheet.create({root:{flex:1,backgroundColor:BG},header:{flexDirection:"row",alignItems:"center",gap:12,paddingHorizontal:20,paddingBottom:14},circle:{width:40,height:40,borderRadius:20,backgroundColor:"#FFF",alignItems:"center",justifyContent:"center"},title:{fontSize:19,fontFamily:"Inter_700Bold",color:DARK},sub:{fontSize:12,fontFamily:"Inter_400Regular",color:MUTED},add:{width:40,height:40,borderRadius:20,backgroundColor:P,alignItems:"center",justifyContent:"center"},premium:{marginHorizontal:20,marginBottom:12,padding:14,borderRadius:18,backgroundColor:"#F0E6FF",flexDirection:"row",alignItems:"center",gap:10},premiumTitle:{fontSize:14,fontFamily:"Inter_700Bold",color:DARK},premiumSub:{fontSize:11,fontFamily:"Inter_400Regular",color:MUTED,lineHeight:16,marginTop:2},list:{padding:20,paddingBottom:30,gap:12},empty:{flexGrow:1,alignItems:"center",justifyContent:"center",padding:40},emptyTitle:{fontSize:18,fontFamily:"Inter_700Bold",color:DARK,marginTop:12},emptySub:{fontSize:13,fontFamily:"Inter_400Regular",color:MUTED,textAlign:"center",marginTop:6},card:{flex:1,maxWidth:"48.5%",backgroundColor:"#FFF",borderRadius:18,overflow:"hidden",marginBottom:12},image:{width:"100%",height:130,backgroundColor:"#EDE5F7"},cardBody:{padding:11},docTitle:{fontSize:13,fontFamily:"Inter_700Bold",color:DARK},docDate:{fontSize:11,fontFamily:"Inter_400Regular",color:MUTED,marginTop:4}});
+
+function makeStyles(C: ReturnType<typeof useColors>) {
+  return StyleSheet.create({
+    flex:           { flex: 1, backgroundColor: C.bg },
+    center:         { flex: 1, alignItems: "center", justifyContent: "center" },
+    addBtn:         { width: 34, height: 34, borderRadius: 12, backgroundColor: `${C.purple}14`, alignItems: "center", justifyContent: "center" },
+    premiumBanner:  { flexDirection: "row", alignItems: "center", gap: 8, paddingHorizontal: 16, paddingVertical: 10, backgroundColor: `${C.purple}10`, borderBottomWidth: 1, borderColor: `${C.purple}20` },
+    premiumBannerTxt: { flex: 1, fontSize: 13, fontFamily: "Inter_400Regular", color: C.purple },
+    catRow:         { paddingHorizontal: 14, paddingVertical: 10, gap: 8, flexDirection: "row" },
+    catChip:        { flexDirection: "row", alignItems: "center", gap: 5, paddingHorizontal: 12, paddingVertical: 6, borderRadius: 20, borderWidth: 1, borderColor: C.border, backgroundColor: C.card },
+    catChipActive:  { backgroundColor: C.purple, borderColor: C.purple },
+    catChipTxt:     { fontSize: 12, fontFamily: "Inter_500Medium", color: C.textMuted },
+    catChipTxtActive: { color: "#fff" },
+    emptyContainer: { flexGrow: 1 },
+    empty:          { flex: 1, alignItems: "center", justifyContent: "center", gap: 12, paddingHorizontal: 32, paddingTop: 40 },
+    lockIcon:       { width: 72, height: 72, borderRadius: 36, backgroundColor: `${C.purple}14`, alignItems: "center", justifyContent: "center" },
+    emptyTitle:     { fontSize: 17, fontFamily: "Inter_600SemiBold", color: C.text },
+    emptySub:       { fontSize: 14, fontFamily: "Inter_400Regular", color: C.textMuted, textAlign: "center", lineHeight: 20 },
+    uploadBtn:      { marginTop: 8, paddingHorizontal: 24, paddingVertical: 12, backgroundColor: C.purple, borderRadius: 14 },
+    uploadBtnTxt:   { fontSize: 14, fontFamily: "Inter_700Bold", color: "#fff" },
+    gridContainer:  { padding: 14 },
+    grid:           { flexDirection: "row", flexWrap: "wrap", gap: 10 },
+    docCard:        { width: "47.5%", backgroundColor: C.card, borderRadius: 16, borderWidth: 1, borderColor: C.border, overflow: "hidden", ...SHADOW },
+    docThumb:       { width: "100%", height: 120, alignItems: "center", justifyContent: "center" },
+    docImage:       { width: "100%", height: "100%" },
+    docInfo:        { padding: 10 },
+    catPill:        { alignSelf: "flex-start", paddingHorizontal: 8, paddingVertical: 2, borderRadius: 8, marginBottom: 4 },
+    catPillTxt:     { fontSize: 10, fontFamily: "Inter_600SemiBold" },
+    docTitle:       { fontSize: 12, fontFamily: "Inter_600SemiBold", color: C.text, lineHeight: 17 },
+    docDate:        { fontSize: 11, fontFamily: "Inter_400Regular", color: C.textMuted, marginTop: 3 },
+    viewBtn:        { position: "absolute", top: 8, right: 8, width: 28, height: 28, borderRadius: 14, backgroundColor: `${C.purple}14`, alignItems: "center", justifyContent: "center" },
+    sheet:          { position: "absolute", bottom: 0, left: 0, right: 0, backgroundColor: C.card, borderTopLeftRadius: 24, borderTopRightRadius: 24, paddingHorizontal: 20, paddingBottom: 32, paddingTop: 12, borderTopWidth: 1, borderColor: C.border },
+    sheetHandle:    { width: 40, height: 4, borderRadius: 2, backgroundColor: C.border, alignSelf: "center", marginBottom: 16 },
+    sheetTitle:     { fontSize: 18, fontFamily: "Inter_700Bold", color: C.text, marginBottom: 12 },
+    label:          { fontSize: 13, fontFamily: "Inter_600SemiBold", color: C.textMuted, marginBottom: 6, marginTop: 12 },
+    input:          { backgroundColor: C.bg, borderRadius: 12, borderWidth: 1, borderColor: C.border, paddingHorizontal: 14, paddingVertical: 11, fontSize: 15, fontFamily: "Inter_400Regular", color: C.text },
+    cancelBtn:      { flex: 1, paddingVertical: 13, borderRadius: 14, borderWidth: 1, borderColor: C.border, alignItems: "center" },
+    cancelTxt:      { fontSize: 15, fontFamily: "Inter_600SemiBold", color: C.textMuted },
+    saveBtn:        { flex: 2, paddingVertical: 13, borderRadius: 14, backgroundColor: C.purple, alignItems: "center" },
+    saveTxt:        { fontSize: 15, fontFamily: "Inter_700Bold", color: "#fff" },
+  });
+}

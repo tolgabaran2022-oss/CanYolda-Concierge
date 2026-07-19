@@ -8,6 +8,7 @@ import {
   petNotes,
   petNutrition,
   petProfiles,
+  petReminders,
 } from "@workspace/db";
 
 import { extractUserId } from "../lib/jwtAuth.js";
@@ -290,6 +291,64 @@ router.put("/pets/:petId/nutrition", async (req, res) => {
       }).returning();
       res.status(201).json(row);
     }
+  } catch { res.status(500).json({ error: "Failed" }); }
+});
+
+/* ═══════════════════════════════════════════
+   REMINDERS
+═══════════════════════════════════════════ */
+
+router.get("/pets/:petId/reminders", async (req, res) => {
+  const userId = uid(req);
+  if (!userId) { res.status(401).json({ error: "Unauthorized" }); return; }
+  try {
+    const rows = await db.select().from(petReminders)
+      .where(and(eq(petReminders.petId, req.params.petId), eq(petReminders.userId, userId)))
+      .orderBy(petReminders.date);
+    res.json(rows);
+  } catch { res.status(500).json({ error: "Failed" }); }
+});
+
+router.post("/pets/:petId/reminders", async (req, res) => {
+  const userId = uid(req);
+  if (!userId) { res.status(401).json({ error: "Unauthorized" }); return; }
+  try {
+    const [row] = await db.insert(petReminders).values({
+      petId:       req.params.petId,
+      userId,
+      title:       req.body.title ?? "",
+      reminderType:req.body.reminderType ?? "general",
+      date:        req.body.date ?? "",
+      time:        req.body.time ?? "",
+      repeatRule:  req.body.repeatRule ?? "never",
+      isEnabled:   req.body.isEnabled !== false,
+      relatedId:   req.body.relatedId ?? "",
+      notes:       req.body.notes ?? "",
+    }).returning();
+    res.status(201).json(row);
+  } catch { res.status(500).json({ error: "Failed" }); }
+});
+
+router.patch("/pets/:petId/reminders/:id", async (req, res) => {
+  const userId = uid(req);
+  if (!userId) { res.status(401).json({ error: "Unauthorized" }); return; }
+  try {
+    const [existing] = await db.select().from(petReminders).where(eq(petReminders.id, req.params.id));
+    if (!existing || existing.userId !== userId) { res.status(403).json({ error: "Forbidden" }); return; }
+    const updates: Partial<typeof petReminders.$inferInsert> = { updatedAt: new Date() };
+    const fields = ["title","reminderType","date","time","repeatRule","isEnabled","relatedId","notes"] as const;
+    for (const f of fields) { if (req.body[f] !== undefined) (updates as Record<string, unknown>)[f] = req.body[f]; }
+    const [row] = await db.update(petReminders).set(updates).where(eq(petReminders.id, req.params.id)).returning();
+    res.json(row);
+  } catch { res.status(500).json({ error: "Failed" }); }
+});
+
+router.delete("/pets/:petId/reminders/:id", async (req, res) => {
+  const userId = uid(req);
+  if (!userId) { res.status(401).json({ error: "Unauthorized" }); return; }
+  try {
+    await db.delete(petReminders).where(and(eq(petReminders.id, req.params.id), eq(petReminders.userId, userId)));
+    res.json({ ok: true });
   } catch { res.status(500).json({ error: "Failed" }); }
 });
 

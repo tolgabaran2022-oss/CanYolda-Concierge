@@ -10,11 +10,12 @@ import type { PurchasesPackage } from "react-native-purchases";
 
 const PURPLE = "#7C45D9";
 const features: [string, string, string?][] = [
-  ["paw", "Birden fazla evcil hayvan", "İlk evcil hayvanın her zaman ücretsiz."],
-  ["notifications-outline", "Sınırsız akıllı hatırlatıcı"],
-  ["medical-outline", "İlaç ve doz takibi"],
-  ["document-text-outline", "Belge kasası ve sağlık raporu"],
-  ["people-outline", "Aile ve bakıcı paylaşımı"],
+  ["paw", "İkinci ve sonraki evcil hayvanlar", "İlk evcil hayvanın her zaman ücretsiz."],
+  ["sparkles-outline", "AI Hayvan Asistanı", "Beslenme, sağlık ve bakım sorularına anlık yanıt."],
+  ["notifications-outline", "Sınırsız hatırlatıcı", "Aşı, randevu, ilaç ve özel hatırlatıcılar."],
+  ["medical-outline", "İlaç ve doz takibi", "Aktif/pasif durum ve sıklık yönetimi."],
+  ["document-text-outline", "Belge kasası", "Aşı karnesi, reçete ve laboratuvar sonuçları."],
+  ["people-outline", "Aile ve bakıcı paylaşımı", "Birlikte bakım için davetiye sistemi."],
 ];
 
 export default function EvcilimPremiumScreen() {
