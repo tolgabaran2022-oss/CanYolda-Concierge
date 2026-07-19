@@ -85,38 +85,109 @@ function formatDateShort(dateStr: string): string {
 /* ══════════════════════════════════════════════════════════════════════════════
    1. EMPTY STATE (no pets)
 ══════════════════════════════════════════════════════════════════════════════ */
+const HERO_IMAGE = require("../assets/images/hero-pets-empty-state.png");
+const FEATURE_CARDS = [
+  { icon: "vaccine",           label: "Aşı Takibi" },
+  { icon: "calendar",          label: "Randevular" },
+  { icon: "nutrition-outline", label: "Beslenme" },
+  { icon: "clipboard-outline", label: "Sağlık Kayıtları" },
+] as const;
+
 function NoPetsState({ onAdd }: { onAdd: () => void }) {
   return (
-    <View style={np.root}>
-      <LinearGradient colors={["#EDE5FF", "#F5F0FF"]} style={np.circle}>
-        <Icon name="paw" size={48} color={C.purple} />
-      </LinearGradient>
-      <Text style={np.title}>Evcil dostunu ekle</Text>
-      <Text style={np.sub}>
-        Aşılarını, randevularını, sağlık ve beslenme{"\n"}bilgilerini tek yerden yönet.
+    <ScrollView
+      style={{ flex: 1 }}
+      contentContainerStyle={np.container}
+      showsVerticalScrollIndicator={false}
+      bounces={false}
+    >
+      {/* ── Hero: lavender glow + animals ── */}
+      <View style={np.heroWrap}>
+        <View style={np.glow} />
+        {/* sparkles */}
+        <Text style={[np.sparkle, { top: 18, right: "18%" }]}>✦</Text>
+        <Text style={[np.sparkle, { top: 28, left: "14%" }]}>✦</Text>
+        <Text style={[np.sparkle, { bottom: 14, left: "22%" }]}>✦</Text>
+        <Text style={[np.sparkle, np.sparkleSm, { top: 48, right: "30%" }]}>✦</Text>
+        <Image
+          source={HERO_IMAGE}
+          style={np.heroImg}
+          contentFit="contain"
+          accessibilityLabel="Sevimli kedi ve köpek"
+        />
+      </View>
+
+      {/* ── Headline ── */}
+      <Text style={np.headline}>Dostunun bakım yolculuğu{"\n"}burada başlasın</Text>
+
+      {/* ── Description ── */}
+      <Text style={np.desc}>
+        Aşılarını, randevularını, beslenme ve sağlık bilgilerini tek yerden kolayca yönet.
       </Text>
+
+      {/* ── 2×2 feature cards ── */}
+      <View style={np.grid}>
+        {FEATURE_CARDS.map(({ icon, label }) => (
+          <View key={label} style={[np.card, SHADOW_SM]}>
+            <View style={np.cardIcon}>
+              <Icon name={icon} size={20} color={C.purple} />
+            </View>
+            <Text style={np.cardTxt}>{label}</Text>
+          </View>
+        ))}
+      </View>
+
+      {/* ── Trust badge ── */}
+      <View style={np.badge} accessibilityRole="text">
+        <Icon name="checkmark-circle" size={16} color="#2a7a47" />
+        <Text style={np.badgeTxt}>İlk evcil hayvanın ücretsiz</Text>
+      </View>
+
+      {/* ── CTA ── */}
       <Pressable
         accessibilityRole="button"
-        accessibilityLabel="Yeni evcil hayvan ekle"
-        style={({ pressed }) => [np.btn, { opacity: pressed ? 0.85 : 1 }]}
-        onPress={() => { Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium); onAdd(); }}
+        accessibilityLabel="İlk dostunu ekle"
+        style={({ pressed }) => [
+          np.cta,
+          SHADOW_MD,
+          { opacity: pressed ? 0.88 : 1, transform: [{ scale: pressed ? 0.97 : 1 }] },
+        ]}
+        onPress={() => {
+          Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
+          onAdd();
+        }}
       >
-        <LinearGradient colors={["#9B6EE8", C.purple]} start={{ x: 0, y: 0 }} end={{ x: 1, y: 0 }} style={np.btnGrad}>
-          <Icon name="add-circle-outline" size={18} color="#fff" />
-          <Text style={np.btnTxt}>Evcil Hayvan Ekle</Text>
+        <LinearGradient
+          colors={["#9B6EE8", C.purple]}
+          start={{ x: 0, y: 0 }}
+          end={{ x: 1, y: 0 }}
+          style={np.ctaGrad}
+        >
+          <Icon name="add-circle-outline" size={20} color="#fff" />
+          <Text style={np.ctaTxt}>İlk Dostumu Ekle</Text>
         </LinearGradient>
       </Pressable>
-    </View>
+    </ScrollView>
   );
 }
 const np = StyleSheet.create({
-  root:    { flex: 1, alignItems: "center", justifyContent: "center", paddingHorizontal: 40, gap: 16, paddingBottom: 80 },
-  circle:  { width: 120, height: 120, borderRadius: 60, alignItems: "center", justifyContent: "center", marginBottom: 8 },
-  title:   { fontSize: 22, fontFamily: "Inter_700Bold", color: C.text, textAlign: "center", letterSpacing: -0.4 },
-  sub:     { fontSize: 14, fontFamily: "Inter_400Regular", color: C.textSec, textAlign: "center", lineHeight: 22 },
-  btn:     { borderRadius: 50, overflow: "hidden", marginTop: 8 },
-  btnGrad: { flexDirection: "row", alignItems: "center", gap: 8, paddingVertical: 15, paddingHorizontal: 32 },
-  btnTxt:  { fontSize: 15, fontFamily: "Inter_700Bold", color: "#fff" },
+  container:  { paddingHorizontal: 20, paddingBottom: 28, paddingTop: 4, alignItems: "center" },
+  heroWrap:   { width: "100%", alignItems: "center", justifyContent: "center", marginBottom: 2, position: "relative", height: 260 },
+  glow:       { position: "absolute", width: 240, height: 240, borderRadius: 120, backgroundColor: "#ECE2FF", opacity: 0.72 },
+  heroImg:    { width: "90%", height: 250, zIndex: 1 },
+  sparkle:    { position: "absolute", fontSize: 11, color: C.purple, opacity: 0.55, zIndex: 2 },
+  sparkleSm:  { fontSize: 7, opacity: 0.38 },
+  headline:   { fontSize: 23, fontFamily: "Inter_700Bold", color: C.text, textAlign: "center", letterSpacing: -0.5, lineHeight: 32, marginBottom: 10, marginTop: 6 },
+  desc:       { fontSize: 14, fontFamily: "Inter_400Regular", color: C.textSec, textAlign: "center", lineHeight: 22, paddingHorizontal: 6, marginBottom: 18 },
+  grid:       { flexDirection: "row", flexWrap: "wrap", gap: 10, justifyContent: "center", width: "100%", marginBottom: 16 },
+  card:       { width: "47%", backgroundColor: "#fff", borderRadius: 16, borderWidth: 1, borderColor: "#E5D8F5", padding: 13, flexDirection: "row", alignItems: "center", gap: 10 },
+  cardIcon:   { width: 36, height: 36, borderRadius: 10, backgroundColor: "#F3ECFF", alignItems: "center", justifyContent: "center" },
+  cardTxt:    { fontSize: 13, fontFamily: "Inter_600SemiBold", color: C.text, flex: 1 },
+  badge:      { flexDirection: "row", alignItems: "center", gap: 6, backgroundColor: "#E8FFF1", paddingVertical: 8, paddingHorizontal: 16, borderRadius: 50, marginBottom: 16 },
+  badgeTxt:   { fontSize: 13, fontFamily: "Inter_600SemiBold", color: "#1d6a38" },
+  cta:        { width: "100%", borderRadius: 50, overflow: "hidden" },
+  ctaGrad:    { flexDirection: "row", alignItems: "center", justifyContent: "center", gap: 8, height: 52, paddingHorizontal: 24 },
+  ctaTxt:     { fontSize: 16, fontFamily: "Inter_700Bold", color: "#fff" },
 });
 
 /* ══════════════════════════════════════════════════════════════════════════════

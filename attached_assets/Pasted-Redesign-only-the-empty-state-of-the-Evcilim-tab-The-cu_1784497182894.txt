@@ -1,0 +1,71 @@
+Redesign only the empty state of the Evcilim tab.
+
+The current screen looks too empty and visually unfinished. Preserve the existing CanYoldaşı navigation bar, header, routes, business logic, fonts, and purple design system.
+
+Create a premium Apple-quality empty-state layout.
+
+DESIGN STRUCTURE
+
+1. Keep the existing “Evcilim” header and purple underline.
+
+2. Add a large central hero illustration:
+- A friendly premium 3D kitten and puppy sitting together.
+- Soft Pixar-quality appearance.
+- Place them inside a subtle lavender circular glow.
+- Add very faint decorative paw prints and small purple sparkles.
+- The illustration must not cover or overlap the header or bottom navigation.
+
+3. Under the illustration add:
+
+Title:
+“Dostunun bakım yolculuğu burada başlasın”
+
+Description:
+“Aşılarını, randevularını, beslenme ve sağlık bilgilerini tek yerden kolayca yönet.”
+
+4. Add four compact feature chips in a 2×2 layout:
+
+- Aşı Takibi
+- Randevular
+- Beslenme
+- Sağlık Kayıtları
+
+Each chip should have:
+- A small purple line icon
+- White background
+- 14–16px corner radius
+- Subtle lavender border and shadow
+- Compact dimensions
+
+5. Add a small trust badge above the main button:
+
+“İlk evcil hayvanın ücretsiz”
+
+Use a light green or lavender background with a check icon.
+
+6. Main CTA button:
+
+“İlk Dostumu Ekle”
+
+Use the existing CanYoldaşı purple gradient.
+Make it approximately 280px wide and 52px high.
+Use an add-circle icon.
+Add a subtle press animation and light haptic feedback.
+
+7. Business logic must remain:
+
+- User with 0 pets → open /evcilim/add
+- Free user with 1 pet → open /evcilim-premium
+- Premium user → open /evcilim/add
+
+LAYOUT REQUIREMENTS
+
+- Everything must fit between the header and bottom navigation.
+- Reduce unnecessary empty vertical space.
+- Use balanced spacing and clear visual hierarchy.
+- Respect iOS and Android safe areas.
+- Do not create a second navigation bar.
+- Do not modify the populated Evcilim dashboard.
+- Do not change backend or Premium logic while redesigning this empty state.
+- Reuse the project’s existing Icon, LinearGradient, typography and color tokens.
+- Add proper accessibility labels.

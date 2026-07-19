@@ -1,0 +1,281 @@
+I uploaded a reference image for the CanYoldaşı “Evcilim” empty-state screen.
+
+Use the uploaded image as the PRIMARY VISUAL REFERENCE and redesign only the empty state shown when the user has no registered pets.
+
+IMPORTANT:
+The reference image is only a design reference. Do not place it as a full-screen background or screenshot. Recreate the interface using native React Native/Expo components.
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+1. VISUAL DESIGN
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+Recreate the following elements closely:
+
+- Existing “Evcilim” title aligned left.
+- Thin purple underline below the title.
+- Premium-quality 3D kitten and golden puppy hero illustration.
+- Soft circular lavender glow behind the animals.
+- Very subtle paw prints and small purple sparkles.
+- Balanced spacing without large empty areas.
+- Premium CanYoldaşı purple/lavender visual language.
+- Apple-quality clean mobile interface.
+- Soft shadows, rounded corners and clear typography hierarchy.
+
+Use the uploaded kitten-and-puppy artwork as a separate local image asset.
+
+Do not generate the animals with CSS or icons.
+Do not use the complete reference image as the screen background.
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+2. SCREEN CONTENT
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+Show this exact Turkish headline:
+
+“Dostunun bakım yolculuğu burada başlasın”
+
+Show this exact description:
+
+“Aşılarını, randevularını, beslenme ve sağlık bilgilerini tek yerden kolayca yönet.”
+
+Under the description, create four compact feature cards in a 2×2 layout:
+
+1. Aşı Takibi
+2. Randevular
+3. Beslenme
+4. Sağlık Kayıtları
+
+Each feature card must have:
+
+- A relevant purple line icon.
+- White background.
+- Subtle lavender border.
+- Soft shadow.
+- Approximately 16–18px corner radius.
+- Compact dimensions.
+- Proper vertical and horizontal alignment.
+
+Under the feature cards, add a compact trust badge:
+
+“İlk evcil hayvanın ücretsiz”
+
+Trust badge styling:
+
+- Pale green background.
+- Green check-circle icon.
+- Rounded pill shape.
+- Dark green readable text.
+- It must not look like a clickable button.
+
+Add the primary CTA button:
+
+“İlk Dostumu Ekle”
+
+CTA styling:
+
+- Wide purple gradient.
+- Add-circle icon.
+- White bold text.
+- Approximately 52px height.
+- Rounded pill shape.
+- Subtle shadow.
+- Press animation.
+- Light haptic feedback on supported native devices.
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+3. EXISTING APP ELEMENTS
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+Preserve the existing:
+
+- Evcilim tab route.
+- Header structure.
+- Safe-area handling.
+- Bottom navigation.
+- Existing fonts.
+- Icon component.
+- Color tokens.
+- Authentication system.
+- Pets context.
+- API integration.
+
+Do not create a second header.
+
+Do not create or duplicate the bottom navigation inside the empty-state component.
+
+The existing bottom navigation must stay in this exact order:
+
+- Harita
+- Hayvanlar
+- Sahiplendirme
+- Evcilim
+- Hesap
+
+The “Evcilim” tab must remain active in purple.
+
+Do not modify the populated Evcilim dashboard shown after a pet has been added.
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+4. CRITICAL PREMIUM BUSINESS LOGIC
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+There is currently a critical gating bug:
+
+A user with zero pets taps “Evcil Hayvan Ekle”, but the Evcilim Premium paywall opens.
+
+Fix this behavior.
+
+Required rules:
+
+- The first pet is always free.
+- A user with 0 pets must open the pet creation form.
+- The Premium paywall must only open when a non-Premium user already has at least one pet and tries to add another pet.
+- Premium users can add additional pets.
+- Existing pets must remain accessible.
+- Premium expiration must never delete existing pet data.
+
+Use this frontend decision logic:
+
+if (petCount === 0) {
+  router.push("/evcilim/add");
+} else if (isPremium || canAddPet) {
+  router.push("/evcilim/add");
+} else {
+  router.push("/evcilim-premium");
+}
+
+The “İlk Dostumu Ekle” button must use this logic.
+
+Do not route a user with zero pets to:
+
+/evcilim-premium
+
+A user with zero pets must be routed to:
+
+/evcilim/add
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+5. BACKEND VALIDATION
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+Do not enforce the pet limit only in the frontend.
+
+The API must return:
+
+- User with 0 pets:
+  canAddPet: true
+
+- Free user with 1 pet:
+  canAddPet: false
+
+- Premium user:
+  canAddPet: true, regardless of pet count
+
+The API must:
+
+- Allow the first pet creation for a free user.
+- Reject the second pet creation for a non-Premium user.
+- Allow additional pet creation for a Premium user.
+- Preserve previously created pets.
+- Never delete records when Premium expires.
+
+Do not delete, reset or modify existing user or pet data while fixing this logic.
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+6. RESPONSIVE LAYOUT
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+Everything must fit between the header and bottom navigation.
+
+Requirements:
+
+- No large dead vertical space.
+- No clipped content.
+- No overlap with the bottom navigation.
+- Respect iOS and Android safe areas.
+- Support small and large phone screens.
+- Use responsive width values instead of fixed screen dimensions.
+- If necessary, use a ScrollView while keeping the CTA comfortably accessible.
+- The animal hero must scale proportionally.
+- Do not stretch or crop the animals incorrectly.
+- Do not display a scroll indicator.
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+7. ACCESSIBILITY
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+Add:
+
+- accessibilityRole="button" to the CTA.
+- A clear accessibilityLabel.
+- Sufficient text contrast.
+- Adequate touch target size.
+- Proper screen-reader order.
+- Reduced-motion-safe press animation.
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+8. VERIFICATION RULES
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+Do not report PASS based only on code review.
+
+Test these scenarios separately:
+
+1. New user with 0 pets:
+   - Open Evcilim.
+   - New empty-state design appears.
+   - Tap “İlk Dostumu Ekle”.
+   - /evcilim/add opens.
+   - Premium paywall does not open.
+
+2. Free user with 1 pet:
+   - Tap add-another-pet.
+   - /evcilim-premium opens.
+
+3. Premium user with one or more pets:
+   - Tap add-another-pet.
+   - /evcilim/add opens.
+
+4. Direct API request:
+   - First pet creation for a free user succeeds.
+   - Second pet creation without Premium is rejected.
+
+5. Persistent data:
+   - Existing pets remain visible.
+   - Refresh and re-read the data from the database.
+   - Confirm no existing records were deleted.
+
+6. Platform verification:
+   - Test Web, Android and iOS separately.
+   - Do not treat Expo Web as a native Android or iOS test.
+   - If a platform cannot be run, mark it BLOCKED.
+   - Code inspection only must be marked STATIC REVIEW.
+
+Also run:
+
+- Mobile TypeScript check.
+- API TypeScript check.
+- Existing relevant tests.
+
+Check console and network logs for unexpected errors.
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+9. FINAL REPORT
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+After completing the work, report:
+
+- Files changed.
+- Empty-state component updated.
+- Premium gating bug root cause.
+- Frontend logic correction.
+- Backend logic correction.
+- Database changes, if any.
+- Tests actually executed.
+- Results per Web, Android and iOS.
+- Any remaining configuration or testing blockers.
+
+Do not redesign unrelated screens.
+Do not remove existing functionality.
+Do not delete existing user data.
+Do not make unrelated refactors.
