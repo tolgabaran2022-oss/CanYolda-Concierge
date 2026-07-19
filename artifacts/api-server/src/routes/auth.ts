@@ -480,26 +480,36 @@ router.post("/auth/forgot-password", passwordResetLimiter, validateBody(ForgotPa
     req.log.info({ tokenId: inserted.rows[0].id }, "Reset token generated");
 
     // Build reset link — never expose rawToken in logs.
-    // Priority: explicit env var > REPLIT_DOMAINS (production deployment) > dev domain > fail.
+    //
+    // Priority (highest → lowest):
+    //   1. APP_URL env var (explicit override, set this in production secrets)
+    //   2. REPLIT_DOMAINS (automatically set by Replit in production deployments)
+    //   3. REPLIT_EXPO_DEV_DOMAIN (automatically set in development previews)
+    //   4. → 503 error (fail loudly instead of using a wrong/hardcoded domain)
+    //
+    // Do NOT add a hardcoded fallback domain here — it will silently send broken links.
     const firstReplitDomain = process.env.REPLIT_DOMAINS?.split(",")[0]?.trim();
-    const baseUrl = (
-      process.env.PASSWORD_RESET_BASE_URL
-      ?? (firstReplitDomain
-        ? `https://${firstReplitDomain}/reset-password`
-        : process.env.REPLIT_EXPO_DEV_DOMAIN
-          ? `https://${process.env.REPLIT_EXPO_DEV_DOMAIN}/reset-password`
-          : null)
-    );
-    if (!baseUrl) {
-      // Mark token as used so user can retry cleanly
+    const rawBaseUrl =
+      process.env.APP_URL?.trim() ||
+      (firstReplitDomain ? `https://${firstReplitDomain}` : null) ||
+      (process.env.REPLIT_EXPO_DEV_DOMAIN ? `https://${process.env.REPLIT_EXPO_DEV_DOMAIN}` : null);
+
+    if (!rawBaseUrl) {
+      // Mark token as used so user can retry cleanly after the env var is set
       await pool.query(
         `UPDATE password_reset_tokens SET used_at = now() WHERE id = $1`,
         [inserted.rows[0].id]
       ).catch(() => {});
-      req.log.error("Cannot build reset link: PASSWORD_RESET_BASE_URL is not set and neither REPLIT_DOMAINS nor REPLIT_EXPO_DEV_DOMAIN is available");
+      req.log.error(
+        "Cannot build reset link: APP_URL is not set and neither REPLIT_DOMAINS " +
+        "nor REPLIT_EXPO_DEV_DOMAIN is available. Set APP_URL in Replit Secrets."
+      );
       res.status(503).json({ error: "Şifre sıfırlama e-postası şu anda gönderilemedi. Lütfen biraz sonra tekrar deneyin." });
       return;
     }
+
+    // Strip trailing slash then append /reset-password
+    const baseUrl = rawBaseUrl.replace(/\/+$/, "") + "/reset-password";
     const resetLink = `${baseUrl}?token=${encodeURIComponent(rawToken)}`;
 
     try {

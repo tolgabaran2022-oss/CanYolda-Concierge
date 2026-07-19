@@ -35,7 +35,7 @@ const OPTIONAL_WARNINGS: { key: string; description: string }[] = [
   { key: "REVENUECAT_WEBHOOK_AUTH_TOKEN", description: "RevenueCat webhook auth — webhook endpoint rejects all requests without this" },
   { key: "RESEND_API_KEY",                description: "Resend API key — password reset emails will fail without this" },
   { key: "PASSWORD_RESET_FROM_EMAIL",     description: "Sender address for password reset emails (e.g. 'CanYoldaşı <noreply@yourdomain.com>')" },
-  { key: "PASSWORD_RESET_BASE_URL",       description: "Base URL for password reset links (e.g. 'https://canyoldasimapp.com/reset-password')" },
+  { key: "APP_URL",                       description: "Production base URL used in password reset links (e.g. 'https://yourapp.replit.app'). Highest priority; falls back to REPLIT_DOMAINS in production." },
 ];
 
 export function validateEnv(): void {
