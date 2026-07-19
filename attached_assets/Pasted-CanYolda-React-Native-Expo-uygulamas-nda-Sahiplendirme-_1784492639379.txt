@@ -1,0 +1,473 @@
+CanYoldaşı React Native (Expo) uygulamasında, “Sahiplendirme” ana sayfasında bulunan “İlan verirken dikkat et” kartını kaldır ve yerine aynı alanı kaplayan, premium ve animasyonlu bir “Çok Yakında” banner bileşeni oluştur.
+
+ÖNEMLİ:
+- Mevcut sayfanın geri kalan tasarımını, navigasyonunu, işlevlerini veya veri akışını değiştirme.
+- Sadece “İlan verirken dikkat et” kartını bu yeni banner ile değiştir.
+- Banner hem iOS hem Android’de sorunsuz çalışmalı.
+- Expo Web görünümü de responsive olmalı.
+- Uygulamanın mevcut mor/lila CanYoldaşı tasarım dili korunmalı.
+- Banner ekran dışına taşmamalı ve altındaki istatistik kartlarını aşağı doğru gereksiz şekilde itmemeli.
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+1. BANNER İÇERİĞİ
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+Banner şu özelliği duyuracak:
+
+Üst rozet:
+“🚀 ÇOK YAKINDA!”
+
+Ana başlık:
+“Veteriner & Petshop
+İşletme Profilleri”
+
+Açıklama:
+“Veteriner klinikleri ve petshoplar doğrulanmış işletme profilleriyle CanYoldaşı’nda yerini alacak.”
+
+Buton:
+“İlk Sen Haberdar Ol”
+
+Butonun solunda beyaz outline bildirim zili ikonu bulunmalı.
+
+Banner’ın sağ üst kısmında küçük bir rozet daha bulunmalı:
+
+“✨ COMING SOON”
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+2. YERLEŞİM
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+Banner mevcut “İlan verirken dikkat et” kartının bulunduğu konumda yer almalı.
+
+Dış kapsayıcı:
+
+- width: "100%"
+- minHeight: 128
+- borderRadius: 18
+- borderWidth: 1
+- borderColor: "rgba(124, 58, 237, 0.10)"
+- padding: 16
+- overflow: "hidden"
+- position: "relative"
+- backgroundColor: "#F8F5FF"
+
+Kartın mevcut yatay dış boşluklarını koru.
+
+İçerik yatay iki alana ayrılmalı:
+
+Sol alan:
+- Genişliğin yaklaşık %55’i
+- Rozet
+- Başlık
+- Açıklama
+- Buton
+
+Sağ alan:
+- Genişliğin yaklaşık %45’i
+- 3D veteriner köpek
+- Küçük kedi
+- Mor veteriner kliniği veya petshop illüstrasyonu
+
+Mobil ekran dar olduğunda başlık ve açıklama kesilmemeli. Gerekirse font boyutları ekran genişliğine göre kontrollü şekilde küçültülmeli.
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+3. GÖRSEL KULLANIMI
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+Sağ tarafta verilen banner görselindeki 3D hayvan ve klinik tasarımına uygun bir PNG/WebP asset kullan.
+
+Asset’i şu şekilde projeye ekle:
+
+assets/images/business-profiles-coming-soon.webp
+
+Görsel:
+- transparent background olmalı
+- resizeMode: "contain"
+- position: "absolute"
+- right: -4
+- bottom: -4
+- width: "48%"
+- height: "95%"
+
+Görsel metinlerin üzerine gelmemeli.
+
+Eğer tek parça hazırlanan banner görseli kullanılacaksa bunu doğrudan arka plan resmi yapma. Metinleri ve butonu React Native bileşenleriyle ayrı olarak oluştur. Böylece içerik farklı ekranlarda bulanıklaşmasın ve erişilebilir kalsın.
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+4. RENK PALETİ
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+Ana mor:
+#7C3AED
+
+Açık mor:
+#A78BFA
+
+Koyu mor metin:
+#28105E
+
+Arka plan:
+#FFFFFF
+
+Yumuşak arka plan:
+#F8F5FF
+
+Normal açıklama metni:
+#5E6175
+
+Gradient:
+
+- başlangıç: #A855F7
+- bitiş: #6D28D9
+
+Arka planda çok yumuşak bir lila gradient kullan:
+
+["#FFFFFF", "#F8F5FF", "#EEE7FF"]
+
+Gradient soldan sağa doğru ilerlesin.
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+5. TİPOGRAFİ
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+Font olarak uygulamadaki mevcut font ailesini kullan. Uygulamada özel font yoksa sistem fontu kullan.
+
+Üst rozet:
+- fontSize: 9
+- fontWeight: "700"
+- color: "#FFFFFF"
+
+Ana başlık:
+- fontSize: 17
+- lineHeight: 20
+- fontWeight: "800"
+- color: "#28105E"
+- maxWidth: "58%"
+
+Açıklama:
+- fontSize: 10.5
+- lineHeight: 14
+- fontWeight: "400"
+- color: "#5E6175"
+- numberOfLines: 3
+
+Buton yazısı:
+- fontSize: 11
+- fontWeight: "700"
+- color: "#FFFFFF"
+
+“COMING SOON” rozeti:
+- fontSize: 8
+- fontWeight: "700"
+- color: "#FFFFFF"
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+6. DEKORATİF DETAYLAR
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+Arka planda çok düşük opaklıkta pati izleri yer alsın:
+
+- opacity: 0.04
+- color: "#7C3AED"
+- 2 veya 3 adet
+- farklı boyutlarda
+- absolute position
+
+Sol üstte, mor gradient daire içerisinde beyaz bir “işletme/petshop” ikonu bulunmalı.
+
+İkon dairesi:
+
+- width: 42
+- height: 42
+- borderRadius: 21
+- background gradient: ["#A855F7", "#7C3AED"]
+- alignItems: "center"
+- justifyContent: "center"
+
+İkonlar için projede zaten kullanılan ikon kütüphanesini kullan. Tercih sırası:
+
+1. lucide-react-native
+2. @expo/vector-icons
+
+Yeni ve gereksiz ikon paketi kurma.
+
+Kullanılabilecek ikonlar:
+
+- Store
+- PawPrint
+- Bell
+- Rocket
+- Sparkles
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+7. BUTON
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+Buton yatay gradient olmalı:
+
+- minWidth: 145
+- height: 34
+- borderRadius: 12
+- paddingHorizontal: 14
+- flexDirection: "row"
+- alignItems: "center"
+- justifyContent: "center"
+- gap: 7
+
+Gradient:
+["#A855F7", "#6D28D9"]
+
+Butona basıldığında:
+
+1. Hafif küçülme animasyonu çalışsın:
+   scale: 1 → 0.96 → 1
+
+2. Kullanıcıya aşağıdaki mesaj gösterilsin:
+
+“Veteriner ve petshop işletme profilleri kullanıma açıldığında sana haber vereceğiz.”
+
+Projede mevcut Toast/Snackbar sistemi varsa onu kullan.
+
+Mevcut sistem yoksa React Native Alert kullan:
+
+Alert.alert(
+  "Bildirim Talebin Alındı",
+  "Veteriner ve petshop işletme profilleri kullanıma açıldığında sana haber vereceğiz."
+)
+
+Butona tekrar tekrar basıldığında aynı işlem gereksiz yere tetiklenmemeli.
+
+İlk tıklamadan sonra buton şu duruma geçsin:
+
+İkon:
+CheckCircle
+
+Metin:
+“Bildirim Açıldı”
+
+Butonun seçili hali:
+- background veya gradient daha yumuşak mor
+- opacity: 0.92
+
+Bu durum component state’i ile yönetilebilir.
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+8. ANİMASYONLAR
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+Animasyonlar için öncelikle projede kurulu olan sistemi kullan.
+
+Tercih:
+- react-native-reanimated
+
+Eğer Reanimated projede yoksa yalnızca bu özellik için ağır bağımlılık ekleme. React Native Animated API kullan.
+
+A. Hayvan ve klinik görseli floating animasyonu
+
+Görsel çok yavaş şekilde yukarı-aşağı hareket etsin:
+
+Başlangıç:
+translateY: 0
+
+Hedef:
+translateY: -3
+
+Son:
+translateY: 0
+
+Süre:
+3000 ms
+
+Easing:
+Easing.inOut(Easing.ease)
+
+Loop:
+sonsuz
+
+Animasyon çok hafif olmalı. Görsel zıplamamalı.
+
+Örnek mantık:
+
+Animated.loop(
+  Animated.sequence([
+    Animated.timing(floatValue, {
+      toValue: -3,
+      duration: 1500,
+      easing: Easing.inOut(Easing.ease),
+      useNativeDriver: true,
+    }),
+    Animated.timing(floatValue, {
+      toValue: 0,
+      duration: 1500,
+      easing: Easing.inOut(Easing.ease),
+      useNativeDriver: true,
+    }),
+  ])
+).start();
+
+B. “ÇOK YAKINDA” rozet animasyonu
+
+Rozet çok hafif pulse animasyonu yapmalı:
+
+scale:
+1 → 1.04 → 1
+
+opacity:
+0.92 → 1 → 0.92
+
+Toplam süre:
+2200 ms
+
+Loop:
+sonsuz
+
+C. “COMING SOON” rozeti
+
+Rozet üzerinde küçük sparkle ikonu hafifçe dönsün:
+
+rotate:
+0deg → 12deg → 0deg → -12deg → 0deg
+
+Toplam süre:
+3000 ms
+
+Loop:
+sonsuz
+
+D. Buton parıltı animasyonu
+
+Butonun üzerinden soldan sağa doğru çok hafif bir ışık geçişi olsun.
+
+- Parıltı genişliği: 35
+- opacity: 0.10
+- Renk: #FFFFFF
+- Süre: 3500 ms
+- Geçişler arasında yaklaşık 1500 ms bekleme
+- overflow: hidden
+
+Parıltı kullanıcıyı rahatsız edecek kadar güçlü olmamalı.
+
+E. Giriş animasyonu
+
+Banner sayfa açıldığında:
+
+- opacity: 0 → 1
+- translateY: 8 → 0
+- duration: 450 ms
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+9. PERFORMANS VE ERİŞİLEBİLİRLİK
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+- Sürekli animasyonlarda useNativeDriver: true kullan.
+- Component unmount olduğunda animation loop’larını temizle.
+- Gereksiz yeniden render oluşmasını engelle.
+- Bileşeni React.memo ile sarmala.
+- Görseli optimize edilmiş WebP formatında kullan.
+- Büyük ve ağır bir 4K görseli doğrudan runtime’da yükleme.
+- Görselin mobil için optimize edilmiş bir kopyasını kullan.
+- Erişilebilirlik etiketlerini ekle.
+
+Banner accessibilityLabel:
+
+“Çok yakında veteriner ve petshop işletme profilleri”
+
+Buton accessibilityLabel:
+
+“İşletme profilleri özelliği kullanıma açıldığında bildirim al”
+
+Animasyon azaltma tercihi aktif olan kullanıcılarda sürekli animasyonları kapat veya minimum seviyeye indir.
+
+AccessibilityInfo.isReduceMotionEnabled() kontrolünü kullan.
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+10. COMPONENT YAPISI
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+Yeni reusable component oluştur:
+
+components/adoption/BusinessProfilesComingSoonBanner.tsx
+
+Component TypeScript ile yazılmalı.
+
+Önerilen yapı:
+
+BusinessProfilesComingSoonBanner
+ ├── Animated background decorations
+ ├── Left content
+ │    ├── Store icon
+ │    ├── Coming soon badge
+ │    ├── Title
+ │    ├── Description
+ │    └── Notification button
+ ├── Animated animal illustration
+ └── Top-right coming soon badge
+
+Expo LinearGradient projede mevcutsa onu kullan:
+
+import { LinearGradient } from "expo-linear-gradient";
+
+Projede yoksa önce package.json kontrol et. Paket zaten yoksa ve Expo sürümüyle uyumluysa expo-linear-gradient ekle.
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+11. RESPONSIVE DAVRANIŞ
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+Dimensions veya useWindowDimensions kullan.
+
+Ekran genişliği 360 px altında olduğunda:
+
+- Ana başlık fontSize: 15
+- Açıklama fontSize: 9.5
+- Sol içerik genişliği: %60
+- Sağ görsel genişliği: %43
+- Üst sağ “COMING SOON” rozeti küçültülebilir
+- İçerik kesinlikle taşmamalı
+
+390 px ve üzeri ekranlarda:
+
+- Başlık fontSize: 17
+- Açıklama fontSize: 10.5
+- Standart ölçüler kullanılmalı
+
+Tabletlerde banner sonsuz şekilde büyütülmemeli:
+
+- maxWidth: 720
+- alignSelf: "center"
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+12. TEST VE DOĞRULAMA
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+İşlem bittikten sonra yalnızca kodu inceleyerek tamamlandı deme.
+
+Şunları gerçekten test et:
+
+1. Sahiplendirme sayfasını aç.
+2. Eski “İlan verirken dikkat et” kartının kaldırıldığını doğrula.
+3. Yeni bannerın aynı konumda görüntülendiğini doğrula.
+4. Küçük ekranlarda metin taşması olmadığını kontrol et.
+5. Hayvan görselinin metinlerin üzerine gelmediğini kontrol et.
+6. Floating animasyonunun çalıştığını doğrula.
+7. Rozet pulse animasyonunun çalıştığını doğrula.
+8. Butona bas.
+9. Bildirim mesajının gösterildiğini doğrula.
+10. Butonun “Bildirim Açıldı” durumuna geçtiğini doğrula.
+11. Sayfadan çıkıp geri gelindiğinde crash olmadığını kontrol et.
+12. Console’da hata veya warning olmadığını kontrol et.
+13. Android ve iOS davranışlarını ayrı ayrı raporla.
+14. Expo Web testini native mobil PASS olarak kabul etme.
+
+Raporlama:
+
+- Gerçekten çalıştırılıp doğrulandıysa: PASS
+- Yalnızca kod incelemesi yapıldıysa: STATIC REVIEW
+- Platform çalıştırılamadıysa: BLOCKED
+- Test yapılmadıysa: NOT TESTED
+
+Sonuç olarak:
+- Değiştirilen dosyaları listele.
+- Eklenen component’i belirt.
+- Kullanılan asset yolunu belirt.
+- Android, iOS ve Web test sonuçlarını ayrı ayrı yaz.
+- Uygulamanın diğer alanlarında değişiklik yapılmadığını doğrula.

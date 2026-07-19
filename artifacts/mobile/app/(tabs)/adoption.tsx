@@ -1,4 +1,5 @@
 import { Icon } from "@/components/Icon";
+import BusinessProfilesComingSoonBanner from "@/components/adoption/BusinessProfilesComingSoonBanner";
 import {
   AdoptionFilterSheet,
   countActiveFilters,
@@ -583,18 +584,7 @@ function CreateSection({ onPress, botPad }: { onPress: () => void; botPad: numbe
         </View>
       </View>
 
-      <View style={[cr.card, { backgroundColor: T.card, borderColor: T.border }]}>
-        <View style={{ flexDirection: "row", alignItems: "center", gap: 8, marginBottom: 12 }}>
-          <Icon name="information-circle-outline" size={16} color={P} />
-          <Text style={[cr.tipsTitle, { color: T.text }]}>İlan verirken dikkat et</Text>
-        </View>
-        {TIPS.map((tip, i) => (
-          <View key={i} style={{ flexDirection: "row", alignItems: "flex-start", gap: 10, marginBottom: i < TIPS.length - 1 ? 10 : 0 }}>
-            <View style={cr.dot} />
-            <Text style={[cr.tipTxt, { color: T.textMuted }]}>{tip}</Text>
-          </View>
-        ))}
-      </View>
+      <BusinessProfilesComingSoonBanner />
 
       <View style={{ flexDirection: "row", gap: 10 }}>
         {([
