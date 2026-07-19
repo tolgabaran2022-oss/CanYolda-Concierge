@@ -1,6 +1,5 @@
 import AsyncStorage from "@react-native-async-storage/async-storage";
 import * as Haptics from "expo-haptics";
-import { Image } from "expo-image";
 import { useRouter } from "expo-router";
 import React, { useCallback, useEffect, useState } from "react";
 import {
@@ -15,6 +14,7 @@ import {
 } from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { Icon } from "@/components/Icon";
+import { UserAvatar } from "@/components/UserAvatar";
 import { useAuth } from "@/contexts/AuthContext";
 
 /* ── API ───────────────────────────────────────────────────────── */
@@ -119,35 +119,6 @@ const MEDAL = [
 
 /* ── Sub-components ─────────────────────────────────────────────── */
 
-function AvatarCircle({ uri, size, name }: { uri: string | null; size: number; name: string }) {
-  const initials = name
-    .split(" ")
-    .filter(Boolean)
-    .slice(0, 2)
-    .map(w => w[0]?.toUpperCase() ?? "")
-    .join("");
-
-  if (uri) {
-    return (
-      <Image
-        source={{ uri }}
-        style={{ width: size, height: size, borderRadius: size / 2, backgroundColor: C.purpleFaint }}
-        contentFit="cover"
-        accessibilityLabel={`${name} profil fotoğrafı`}
-      />
-    );
-  }
-  return (
-    <View style={[
-      { width: size, height: size, borderRadius: size / 2 },
-      { backgroundColor: C.purpleFaint, alignItems: "center", justifyContent: "center" },
-    ]}>
-      <Text style={{ fontSize: size * 0.38, fontFamily: "Inter_700Bold", color: C.purpleDark }}>
-        {initials || "?"}
-      </Text>
-    </View>
-  );
-}
 
 function AchievementBadge({ level }: { level: string }) {
   const s = getLevelStyle(level);
@@ -184,7 +155,7 @@ function PodiumCard({ entry, rank }: { entry: LeaderboardEntry; rank: number }) 
       isFirst ? st.podiumCardFirst : st.podiumCardOther,
     ]}>
       <MedalBadge rank={rank} />
-      <AvatarCircle uri={entry.avatarUrl} size={avatarSize} name={entry.name} />
+      <UserAvatar uri={entry.avatarUrl} size={avatarSize} name={entry.name} />
       <Text style={[st.podiumName, isFirst && { fontSize: 14 }]} numberOfLines={1}>
         {entry.name}
       </Text>
@@ -232,7 +203,7 @@ function RankRow({ entry }: { entry: LeaderboardEntry }) {
   return (
     <View style={st.rankRow}>
       <Text style={st.rankNumber}>{entry.rank}</Text>
-      <AvatarCircle uri={entry.avatarUrl} size={44} name={entry.name} />
+      <UserAvatar uri={entry.avatarUrl} size={44} name={entry.name} />
       <View style={{ flex: 1, minWidth: 0, gap: 3 }}>
         <Text style={st.rankName} numberOfLines={1}>{entry.name}</Text>
         <AchievementBadge level={entry.level} />
@@ -449,7 +420,7 @@ export default function LeaderboardScreen() {
         {!loading && !error && data?.myRank !== null && data?.myRank !== undefined && (
           <View style={st.myRankCard}>
             <View style={{ flexDirection: "row", alignItems: "center", gap: 12 }}>
-              <AvatarCircle
+              <UserAvatar
                 uri={data.myRank.avatarUrl}
                 size={50}
                 name={data.myRank.name}

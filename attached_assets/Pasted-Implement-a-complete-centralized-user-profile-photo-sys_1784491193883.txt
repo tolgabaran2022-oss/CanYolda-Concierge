@@ -1,0 +1,384 @@
+Implement a complete, centralized user profile-photo system in the CanYoldaşı application.
+
+CURRENT STATE
+
+On the “Hesap” screen, the top-left profile area currently displays a generic user icon inside a purple circular avatar.
+
+REQUIRED RESULT
+
+1. The user can tap the avatar to add or change a profile photo.
+2. The photo is uploaded permanently to Supabase Storage.
+3. The stored profile record is updated.
+4. The same photo automatically appears everywhere that user’s avatar is shown.
+5. Refreshing, restarting, logging out/in, or using another device must not remove the photo.
+
+Do not implement this using local component state only.
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+1. ACCOUNT-SCREEN INTERACTION
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+Make the circular avatar in the top-left area of the “Hesap” screen pressable.
+
+Add a small edit/camera badge at the bottom-right edge of the avatar so users understand it can be changed.
+
+When tapped, open a Turkish action sheet:
+
+Title:
+“Profil Fotoğrafı”
+
+Actions:
+
+- “Fotoğraf Çek”
+- “Galeriden Seç”
+- “Mevcut Fotoğrafı Kaldır” — show only if a photo exists
+- “İptal”
+
+Expected behavior:
+
+- “Fotoğraf Çek” opens the camera.
+- “Galeriden Seç” opens the image library.
+- “Mevcut Fotoğrafı Kaldır” asks for confirmation.
+- “İptal” closes the sheet without changing anything.
+
+If running in a simulator without a camera, handle the error gracefully. Do not show an uncaught Promise or red error screen.
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+2. PHOTO SELECTION AND EDITING
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+After selecting or taking a photo:
+
+1. Allow square cropping.
+2. Center the face where possible.
+3. Use a 1:1 aspect ratio.
+4. Compress and resize the image before upload.
+5. Preserve sufficient quality for avatars.
+6. Show a circular preview.
+7. Ask the user to confirm with:
+   “Profil Fotoğrafını Kaydet”
+
+Recommended processed size:
+
+- 800×800 or 1000×1000
+- JPEG/WebP where supported
+- Reasonable compression without visible quality loss
+
+Correct image orientation using metadata when necessary.
+
+Reject unsupported or excessively large files with a clear Turkish message.
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+3. CAMERA AND GALLERY PERMISSIONS
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+Request permissions only when the related action is selected.
+
+Turkish camera permission explanation:
+
+“Profil fotoğrafı çekebilmeniz için kamera erişimi gereklidir.”
+
+Turkish gallery permission explanation:
+
+“Profil fotoğrafı seçebilmeniz için fotoğraf arşivinize erişim gereklidir.”
+
+If permission is denied, show:
+
+“İzin verilmedi. Profil fotoğrafı eklemek için uygulama ayarlarından gerekli izni açabilirsiniz.”
+
+Include an “Ayarları Aç” action when permission is permanently blocked.
+
+Handle Web, Android, and iOS separately without breaking another platform.
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+4. SUPABASE STORAGE
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+Inspect the existing Supabase schema and Storage buckets before creating anything new.
+
+Reuse the existing avatar/profile-photo bucket if one already exists.
+
+Otherwise create or document a bucket equivalent to:
+
+`avatars`
+
+Recommended path structure:
+
+`{authenticated_user_id}/avatar-{unique_version}.jpg`
+
+Requirements:
+
+- Only authenticated users can upload their own avatar.
+- Users cannot upload into another user’s folder.
+- Users cannot modify another user’s avatar.
+- Profile photos must be readable wherever public user avatars are intended to appear.
+- Add appropriate Storage policies.
+- Validate file type and file size.
+- Use unique filenames or controlled versioning to avoid stale browser and CDN cache.
+- Do not store temporary `file://`, `content://`, or `blob:` URLs in the database.
+- Store a permanent Storage path or valid permanent URL.
+- Never expose a Supabase service-role key to the client.
+
+Do not delete the current avatar before the new upload and database update succeed.
+
+After a successful replacement, safely remove the old owned avatar when appropriate. Never delete another user’s file.
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+5. PROFILE DATABASE FIELD
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+Inspect the existing profile table before adding duplicate fields.
+
+Use the project’s existing profile-photo field if present, such as:
+
+- `avatar_url`
+- `avatar_path`
+- `photo_url`
+- `profile_photo`
+
+Choose one authoritative field.
+
+The profile record must belong to the authenticated user.
+
+After upload:
+
+1. Update the authoritative profile-photo field.
+2. Verify the update succeeded.
+3. Re-read the profile record.
+4. Update the centralized user-profile state/cache.
+5. Refresh all avatar components.
+
+Do not use the authentication metadata and profile table as two conflicting sources of truth unless they are intentionally synchronized.
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+6. CREATE ONE SHARED AVATAR COMPONENT
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+Create or update one reusable component equivalent to:
+
+`UserAvatar`
+
+It should accept parameters such as:
+
+- `userId`
+- `avatarUrl` or `avatarPath`
+- `displayName`
+- `size`
+- `editable`
+- `onPress`
+
+Use this shared component everywhere rather than duplicating avatar URL logic.
+
+Required behavior:
+
+1. Display the user’s real profile photo when available.
+2. Display initials when the photo is missing and a name exists.
+3. Display the current generic user icon only as the final fallback.
+4. Show a loading state without flickering.
+5. Fall back safely if image loading fails.
+6. Render as a circular image.
+7. Use `resizeMode="cover"`.
+8. Never stretch the photo.
+9. Support multiple sizes.
+10. Include an accessibility label.
+
+Example fallback for “Tolga”:
+
+“T”
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+7. SHOW THE PHOTO EVERYWHERE
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+Audit the complete application for every location that shows a user icon, placeholder avatar, profile photo, or account identity.
+
+Use the same authoritative profile photo in all relevant locations, including:
+
+- Account/Hesap header
+- User’s own profile
+- Other users’ profiles
+- “Ayın Kahramanları” leaderboard
+- Top-three leaderboard cards
+- Current-user monthly summary
+- Messages/conversations
+- Message headers
+- Adoption listing owner information
+- Street-animal help updates
+- Reporter/helper identity
+- Followers/following lists
+- Any comments or user activity that still exists
+- Any other page containing a user-avatar icon
+
+Do not replace unrelated animal photos, listing photos, or pet photos.
+
+Search the codebase for:
+
+- Generic user icons
+- Avatar placeholders
+- Profile-image components
+- `avatar_url`
+- `photo_url`
+- Hardcoded avatar images
+- Repeated avatar URL resolvers
+
+Replace duplicated implementations with the shared component where safe.
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+8. GLOBAL REFRESH AND CACHE INVALIDATION
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+After changing the profile photo:
+
+- Update the account header immediately.
+- Invalidate/refetch the authenticated profile query.
+- Invalidate/refetch any currently visible leaderboard or profile data containing the user.
+- Update message and listing-owner avatars when those screens reload.
+- Do not require the user to log out.
+- Do not use a permanent stale cached URL.
+
+If React Query/TanStack Query is used, invalidate the exact related query keys.
+
+If the same Storage filename is reused, add safe versioning/cache busting. Prefer unique versioned filenames over random query parameters added on every render.
+
+The image must still appear after:
+
+- Pull-to-refresh
+- Page refresh
+- App restart
+- Logout/login
+- Another device login
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+9. REMOVE PROFILE PHOTO
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+When “Mevcut Fotoğrafı Kaldır” is selected, show:
+
+“Profil fotoğrafını kaldırmak istediğine emin misin?”
+
+Buttons:
+
+- “Vazgeç”
+- “Fotoğrafı Kaldır”
+
+After confirmation:
+
+1. Clear the authoritative profile-photo field.
+2. Verify the database update.
+3. Delete the owned Storage object where safe.
+4. Refresh centralized profile data.
+5. Display the initials or generic icon everywhere.
+
+If Storage deletion fails after the database is safely updated, do not crash. Log the cleanup failure safely.
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+10. USER-FACING STATES
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+Uploading:
+
+“Profil fotoğrafı yükleniyor…”
+
+Success:
+
+“Profil fotoğrafın güncellendi.”
+
+Upload failure:
+
+“Profil fotoğrafı yüklenemedi. Lütfen tekrar deneyin.”
+
+Unsupported format:
+
+“Lütfen geçerli bir JPG, PNG veya WebP görseli seçin.”
+
+Photo too large:
+
+“Seçilen fotoğraf çok büyük. Lütfen başka bir fotoğraf deneyin.”
+
+Camera unavailable:
+
+“Bu cihazda kamera kullanılamıyor.”
+
+Do not expose Storage paths, stack traces, or technical errors to users.
+
+Disable repeated actions during upload.
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+11. REAL TEST AND VERIFICATION
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+Do not mark this feature PASS based only on code inspection.
+
+PASS requires:
+
+1. Log in with a real user.
+2. Open “Hesap.”
+3. Tap the top-left avatar.
+4. Select a real image.
+5. Crop and confirm it.
+6. Verify the file exists in Supabase Storage.
+7. Verify the profile record contains the permanent avatar path/URL.
+8. Re-read the profile record.
+9. Confirm the real photo appears in the Account header.
+10. Open “Ayın Kahramanları.”
+11. Confirm the same photo appears there.
+12. Open another page containing that user’s avatar.
+13. Confirm the same photo appears.
+14. Refresh the page.
+15. Confirm the photo remains.
+16. Restart the application.
+17. Confirm the photo remains.
+18. Log out and log back in.
+19. Confirm the photo remains.
+20. Replace the photo with a second photo.
+21. Confirm all visible avatar locations update.
+22. Remove the photo.
+23. Confirm the fallback appears everywhere.
+24. Test camera permission denied.
+25. Test gallery permission denied.
+26. Test cancel behavior.
+27. Test invalid file format.
+28. Inspect console and network logs.
+29. Confirm no unexpected Storage, RLS, 401, 403, or 404 errors exist.
+
+Also test whether another authenticated user is prevented from changing the first user’s avatar.
+
+STATUS RULES
+
+- `PASS`: Selection, upload, database persistence, global display, replacement, removal, and permissions were actually verified.
+- `STATIC REVIEW`: Only code was inspected.
+- `BLOCKED`: Platform, camera, gallery, Storage, or database could not be tested.
+- `NOT TESTED`: No test was performed.
+
+Do not use Web testing as Android or iOS PASS. Test every platform independently.
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+12. FINAL REPORT
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+Provide:
+
+1. Modified files
+2. Shared avatar component
+3. Profile table and authoritative column
+4. Storage bucket and path format
+5. Storage/RLS policy changes
+6. Upload and processing logic
+7. Every page updated to use the shared avatar
+8. Cache invalidation logic
+9. Storage verification
+10. Database verification
+11. Web result
+12. Android result
+13. iOS result
+14. Final status for each platform
+
+IMPORTANT
+
+- Do not only change the avatar on the Account screen.
+- Do not store the image only in local state.
+- Do not store temporary device URLs in the database.
+- Do not hardcode profile photos.
+- Do not expose service-role keys.
+- Do not delete the old photo before the replacement succeeds.
+- Do not claim PASS without verifying Storage, database persistence, and multiple avatar locations.

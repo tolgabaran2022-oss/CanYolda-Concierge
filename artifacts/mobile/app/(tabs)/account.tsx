@@ -1,11 +1,14 @@
 import { Icon } from "@/components/Icon";
+import { UserAvatar } from "@/components/UserAvatar";
 import * as Haptics from "expo-haptics";
+import * as ImagePicker from "expo-image-picker";
 import { LinearGradient } from "expo-linear-gradient";
 import { useRouter } from "expo-router";
 import React, { useState } from "react";
 import {
   ActivityIndicator,
   Alert,
+  ActionSheetIOS,
   KeyboardAvoidingView,
   Modal,
   Platform,
@@ -20,7 +23,29 @@ import {
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { useAuth } from "@/contexts/AuthContext";
 import { useTheme } from "@/hooks/useTheme";
-import { apiFetch } from "@/lib/apiClient";
+import { apiFetch, API_BASE } from "@/lib/apiClient";
+import AsyncStorage from "@react-native-async-storage/async-storage";
+
+async function uploadAvatarPhoto(localUri: string): Promise<string> {
+  const filename = localUri.split("/").pop() ?? "avatar.jpg";
+  const match = /\.(\w+)$/.exec(filename);
+  const mimeType = match ? `image/${match[1].toLowerCase().replace("jpg", "jpeg")}` : "image/jpeg";
+  const formData = new FormData();
+  if (Platform.OS === "web") {
+    const response = await fetch(localUri);
+    const blob = await response.blob();
+    formData.append("image", blob, filename);
+  } else {
+    formData.append("image", { uri: localUri, name: filename, type: mimeType } as unknown as Blob);
+  }
+  const token = await AsyncStorage.getItem("@canyoldasi:jwt");
+  const headers: Record<string, string> = {};
+  if (token) headers["Authorization"] = `Bearer ${token}`;
+  const res = await fetch(`${API_BASE}/upload`, { method: "POST", body: formData, headers });
+  if (!res.ok) throw new Error("Profil fotoğrafı yüklenemedi. Lütfen tekrar deneyin.");
+  const data = await res.json() as { url: string };
+  return data.url;
+}
 
 
 const TAB_FLOAT_H    = 64;
@@ -29,7 +54,7 @@ const TAB_BOTTOM_GAP = Platform.OS === "web" ? 12 : 10;
 export default function AccountScreen() {
   const insets        = useSafeAreaInsets();
   const { width: SW } = useWindowDimensions();
-  const { user, logout, changePassword } = useAuth();
+  const { user, logout, changePassword, updateProfile } = useAuth();
   const router        = useRouter();
   const T             = useTheme();
 
@@ -37,6 +62,116 @@ export default function AccountScreen() {
   const tabClearance = Platform.OS === "web" ? (SW < 1024 ? 100 : 24) : (insets.bottom + TAB_BOTTOM_GAP + TAB_FLOAT_H);
 
   /* ── Change password modal state ───────────────────────────── */
+  const [avatarUploading, setAvatarUploading] = useState(false);
+
+  const pickFromSource = async (source: "camera" | "gallery") => {
+    if (source === "camera") {
+      if (Platform.OS === "web") {
+        Alert.alert("Bu cihazda kamera kullanılamıyor.");
+        return;
+      }
+      const { status } = await ImagePicker.requestCameraPermissionsAsync();
+      if (status !== "granted") {
+        Alert.alert(
+          "İzin verilmedi",
+          "Profil fotoğrafı eklemek için uygulama ayarlarından kamera iznini açabilirsiniz."
+        );
+        return;
+      }
+      const result = await ImagePicker.launchCameraAsync({
+        mediaTypes: ["images"] as unknown as ImagePicker.MediaType[],
+        allowsEditing: true,
+        aspect: [1, 1],
+        quality: 0.8,
+      });
+      if (result.canceled || !result.assets[0]) return;
+      await doUpload(result.assets[0].uri);
+    } else {
+      const { status } = await ImagePicker.requestMediaLibraryPermissionsAsync();
+      if (status !== "granted") {
+        Alert.alert(
+          "İzin verilmedi",
+          "Profil fotoğrafı seçmek için uygulama ayarlarından fotoğraf erişimini açabilirsiniz."
+        );
+        return;
+      }
+      const result = await ImagePicker.launchImageLibraryAsync({
+        mediaTypes: ["images"] as unknown as ImagePicker.MediaType[],
+        allowsEditing: true,
+        aspect: [1, 1],
+        quality: 0.8,
+      });
+      if (result.canceled || !result.assets[0]) return;
+      await doUpload(result.assets[0].uri);
+    }
+  };
+
+  const doUpload = async (localUri: string) => {
+    setAvatarUploading(true);
+    try {
+      const url = await uploadAvatarPhoto(localUri);
+      await updateProfile({ avatar: url });
+      Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
+      Alert.alert("Başarılı", "Profil fotoğrafın güncellendi.");
+    } catch (e) {
+      const msg = e instanceof Error ? e.message : "Profil fotoğrafı yüklenemedi. Lütfen tekrar deneyin.";
+      Alert.alert("Hata", msg);
+      Haptics.notificationAsync(Haptics.NotificationFeedbackType.Error);
+    } finally {
+      setAvatarUploading(false);
+    }
+  };
+
+  const handleAvatarPress = () => {
+    const hasPhoto = !!user?.avatar;
+
+    if (Platform.OS === "ios") {
+      const options = ["Fotoğraf Çek", "Galeriden Seç", ...(hasPhoto ? ["Mevcut Fotoğrafı Kaldır"] : []), "İptal"];
+      const destructiveIdx = hasPhoto ? options.indexOf("Mevcut Fotoğrafı Kaldır") : -1;
+      const cancelIdx = options.length - 1;
+      ActionSheetIOS.showActionSheetWithOptions(
+        { title: "Profil Fotoğrafı", options, cancelButtonIndex: cancelIdx, destructiveButtonIndex: destructiveIdx >= 0 ? destructiveIdx : undefined },
+        (idx) => {
+          if (idx === 0) pickFromSource("camera");
+          else if (idx === 1) pickFromSource("gallery");
+          else if (hasPhoto && idx === 2) confirmRemovePhoto();
+        }
+      );
+    } else {
+      const btns: { text: string; style?: "cancel" | "destructive"; onPress?: () => void }[] = [
+        { text: "Fotoğraf Çek",    onPress: () => pickFromSource("camera") },
+        { text: "Galeriden Seç",   onPress: () => pickFromSource("gallery") },
+        ...(hasPhoto ? [{ text: "Mevcut Fotoğrafı Kaldır", style: "destructive" as const, onPress: confirmRemovePhoto }] : []),
+        { text: "İptal", style: "cancel" as const },
+      ];
+      Alert.alert("Profil Fotoğrafı", undefined, btns);
+    }
+  };
+
+  const confirmRemovePhoto = () => {
+    Alert.alert(
+      "Fotoğrafı Kaldır",
+      "Profil fotoğrafını kaldırmak istediğine emin misin?",
+      [
+        { text: "Vazgeç", style: "cancel" },
+        {
+          text: "Fotoğrafı Kaldır", style: "destructive",
+          onPress: async () => {
+            setAvatarUploading(true);
+            try {
+              await updateProfile({ avatar: null });
+              Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
+            } catch {
+              Alert.alert("Hata", "Fotoğraf kaldırılamadı.");
+            } finally {
+              setAvatarUploading(false);
+            }
+          },
+        },
+      ]
+    );
+  };
+
   const [pwModalVisible, setPwModalVisible] = useState(false);
   const [currentPw,   setCurrentPw]   = useState("");
   const [newPw,       setNewPw]       = useState("");
@@ -152,9 +287,14 @@ export default function AccountScreen() {
         style={[S.header, { paddingTop: topPad + 8 }]}
       >
         <View style={S.headerInner}>
-          <View style={[S.avatarCircle, { backgroundColor: T.purple }]}>
-            <Icon name="person" size={28} color="#FFF" />
-          </View>
+          <UserAvatar
+            uri={user.avatar}
+            name={user.name}
+            size={52}
+            editable
+            uploading={avatarUploading}
+            onPress={handleAvatarPress}
+          />
           <View style={{ flex: 1 }}>
             <Text style={[S.headerName, { color: T.purpleDark }]}>{user.name}</Text>
             <Text style={[S.headerEmail, { color: T.textMuted }]}>{user.email}</Text>

@@ -219,7 +219,9 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       if (updates.username !== undefined) apiUpdates.username = updates.username;
       if (updates.bio      !== undefined) apiUpdates.bio      = updates.bio;
       if (updates.location !== undefined) apiUpdates.location = updates.location;
-      if (updates.avatar && updates.avatar.startsWith("http")) {
+      if (updates.avatar === null) {
+        apiUpdates.avatarUrl = "";
+      } else if (updates.avatar && updates.avatar.startsWith("http")) {
         apiUpdates.avatarUrl = updates.avatar;
       }
       if (Object.keys(apiUpdates).length > 0) {
