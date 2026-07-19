@@ -49,15 +49,15 @@ interface BoostPackageMeta {
 
 const BOOST_PACKAGE_CONFIG: Record<string, BoostPackageMeta> = {
   boost_1_day:  {
-    durationDays: 1, label: "1 Gün",  subtitle: "Hızlı destek",
+    durationDays: 1, label: "1 Gün",  subtitle: "Hızlı Destek",
     badge: null,           badgeColor: P,    sortOrder: 0,
   },
   boost_3_days: {
-    durationDays: 3, label: "3 Gün",  subtitle: "Daha fazla görünürlük",
-    badge: "POPÜLER",      badgeColor: P,    sortOrder: 1,
+    durationDays: 3, label: "3 Gün",  subtitle: "Daha Fazla Görünürlük",
+    badge: "EN POPÜLER",   badgeColor: P,    sortOrder: 1,
   },
   boost_7_days: {
-    durationDays: 7, label: "7 Gün",  subtitle: "Maksimum erişim",
+    durationDays: 7, label: "7 Gün",  subtitle: "Maksimum Erişim",
     badge: "EN AVANTAJLI", badgeColor: GOLD, sortOrder: 2,
   },
 };
@@ -431,9 +431,13 @@ export default function BoostPackagesScreen() {
           )}
 
           {/* Price */}
-          <Text style={[s.pkgPrice, isSelected && { color: P }]}>
-            {pkg.product.priceString}
-          </Text>
+          {pkg.product.priceString ? (
+            <Text style={[s.pkgPrice, isSelected && { color: P }]}>
+              {pkg.product.priceString}
+            </Text>
+          ) : (
+            <Text style={s.pkgPriceUnavailable}>Fiyat yüklenemedi</Text>
+          )}
         </Pressable>
       );
     });
@@ -750,7 +754,8 @@ const s = StyleSheet.create({
   pkgBadge:  { borderRadius: 6, paddingHorizontal: 7, paddingVertical: 3 },
   pkgBadgeSpacer: { width: 0 },
   pkgBadgeText:   { fontSize: 9, fontFamily: "Inter_700Bold", color: "white", letterSpacing: 0.4 },
-  pkgPrice:  { fontSize: 16, fontFamily: "Inter_700Bold", color: "#1A1A2E", minWidth: 44, textAlign: "right" },
+  pkgPrice:            { fontSize: 16, fontFamily: "Inter_700Bold", color: "#1A1A2E", minWidth: 44, textAlign: "right" },
+  pkgPriceUnavailable: { fontSize: 11, fontFamily: "Inter_400Regular", color: "#999", minWidth: 44, textAlign: "right" },
 
   /* Trust */
   trustBox: { gap: 12 },

@@ -1,0 +1,211 @@
+Configure and implement the final featured-listing package structure for the CanYoldaşı application.
+
+PRODUCT PURPOSE
+
+These are one-time featured-listing purchases.
+
+They are used only to:
+
+- Move an adoption listing above normal listings
+- Give the listing a purple “Öne Çıkarılmış” star badge
+- Increase the listing’s visibility opportunity for a limited time
+
+These products are not subscriptions.
+
+They must not unlock permanent premium features.
+
+Do not promise guaranteed views, guaranteed adoption, or a specific number of impressions.
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+1. FINAL PACKAGE ORDER AND PRICING
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+Display the packages in this exact order:
+
+PACKAGE 1
+
+Duration:
+“1 Gün”
+
+Subtitle:
+“Hızlı Destek”
+
+Turkish storefront price:
+“₺24,99”
+
+Featured duration:
+24 hours
+
+PACKAGE 2
+
+Duration:
+“3 Gün”
+
+Subtitle:
+“Daha Fazla Görünürlük”
+
+Badge:
+“EN POPÜLER”
+
+Turkish storefront price:
+“₺49,99”
+
+Featured duration:
+72 hours
+
+PACKAGE 3
+
+Duration:
+“7 Gün”
+
+Subtitle:
+“Maksimum Erişim”
+
+Badge:
+“EN AVANTAJLI”
+
+Turkish storefront price:
+“₺89,99”
+
+Featured duration:
+168 hours
+
+Display durations as:
+
+- `1 Gün`
+- `3 Gün`
+- `7 Gün`
+
+Do not display the generic title “Paket” for all three products.
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+2. STORE PRICE IS AUTHORITATIVE
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+Do not hardcode `₺24,99`, `₺49,99`, or `₺89,99` as the final displayed purchase price in production UI.
+
+These values are the required Turkish storefront configuration targets.
+
+The application must display the real localized price returned by the native store through RevenueCat.
+
+Use the RevenueCat package/product localized price string, equivalent to:
+
+- `priceString`
+- `localizedPriceString`
+- Or the correct property available in the installed RevenueCat SDK
+
+Adapt to the project’s actual RevenueCat API and installed version.
+
+Expected behavior:
+
+- Turkish App Store/Google Play account: Turkish lira
+- United States storefront: USD
+- European storefront: relevant local currency
+- Other storefronts: their configured local currency
+
+Do not:
+
+- Convert currencies manually
+- Use a live currency API
+- Prefix every price with `$`
+- Replace commas with decimal points manually
+- Infer currency from the device language
+- Infer currency from the user’s GPS location
+- Show a hardcoded fallback price as if it were a real purchasable price
+
+If the native product price cannot be loaded, show:
+
+“Fiyat yüklenemedi”
+
+and disable that package’s purchase action.
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+3. APP STORE CONNECT CONFIGURATION
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+Inspect the actual existing iOS In-App Purchase products.
+
+Confirm or create the correct mapping for three one-time In-App Purchase products equivalent to:
+
+- 1-day featured listing
+- 3-day featured listing
+- 7-day featured listing
+
+Configure the Türkiye storefront target prices:
+
+- 1 day: ₺24,99
+- 3 days: ₺49,99
+- 7 days: ₺89,99
+
+If Replit cannot directly change App Store Connect:
+
+1. Do not pretend the configuration was completed.
+2. Report the exact existing product IDs.
+3. Report their current Türkiye prices.
+4. Provide the exact manual App Store Connect steps required.
+5. Mark store-configuration verification as `BLOCKED` until the user completes it.
+
+Do not change unrelated App Store products or subscriptions.
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+4. GOOGLE PLAY CONFIGURATION
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+Inspect the actual existing Google Play one-time products.
+
+Confirm or create the correct mapping for:
+
+- 1-day featured listing
+- 3-day featured listing
+- 7-day featured listing
+
+Configure the Türkiye regional prices:
+
+- 1 day: ₺24,99
+- 3 days: ₺49,99
+- 7 days: ₺89,99
+
+If Replit cannot directly modify Google Play Console:
+
+1. Do not claim success.
+2. Report the exact product IDs.
+3. Report their current state.
+4. Provide the exact manual Google Play Console steps.
+5. Mark this part as `BLOCKED`.
+
+Do not convert these products into auto-renewing subscriptions.
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+5. REVENUECAT PACKAGE MAPPING
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+Inspect the existing RevenueCat project and current offering.
+
+Do not guess product IDs or package identifiers.
+
+Create or verify one centralized mapping equivalent to:
+
+```ts
+{
+  oneDay: {
+    durationDays: 1,
+    durationHours: 24,
+    title: '1 Gün',
+    subtitle: 'Hızlı Destek',
+    badge: null
+  },
+  threeDays: {
+    durationDays: 3,
+    durationHours: 72,
+    title: '3 Gün',
+    subtitle: 'Daha Fazla Görünürlük',
+    badge: 'EN POPÜLER'
+  },
+  sevenDays: {
+    durationDays: 7,
+    durationHours: 168,
+    title: '7 Gün',
+    subtitle: 'Maksimum Erişim',
+    badge: 'EN AVANTAJLI'
+  }
+}
