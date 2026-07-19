@@ -1,0 +1,177 @@
+Fix the Evcilim empty-state design implementation.
+
+There is a major implementation mistake.
+
+CURRENT ERROR:
+
+The complete uploaded reference screenshot has been inserted into the hero area as an image. This creates a miniature screen inside the actual screen.
+
+The reference screenshot must NEVER be rendered inside the application.
+
+The uploaded reference is for visual guidance only.
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+1. REMOVE THE WRONG IMAGE
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+Immediately remove the miniature full-screen reference screenshot from the hero section.
+
+Search the Evcilim empty-state component and asset imports for the uploaded reference screenshot.
+
+Do not render:
+
+- The complete reference screenshot
+- A phone screenshot
+- An image containing text, cards, buttons or bottom navigation
+- Any duplicated interface inside the hero area
+
+Do not delete the reference file if it is still needed for design comparison, but remove it from the React Native render tree.
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+2. CORRECT HERO IMAGE
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+The hero area must contain only:
+
+- One kitten
+- One golden puppy
+- A transparent or clean-background animal illustration
+- A soft lavender circular glow behind the animals
+- A few subtle decorative paw prints and sparkles
+
+The animal asset must not contain:
+
+- Text
+- Header
+- Feature cards
+- CTA button
+- Bottom navigation
+- Phone frame
+- Screenshot background
+
+If a separate kitten-and-puppy asset is not available, create or import a separate transparent PNG/WebP animal artwork.
+
+Do not crop the animals’ faces, ears or paws.
+
+Use:
+
+resizeMode="contain"
+
+Recommended responsive hero dimensions:
+
+- Container width: 100%
+- Hero height: approximately 210–240px
+- Animal image width: approximately 230–270px
+- Animal image height: approximately 200–230px
+- alignSelf: "center"
+
+Do not use fixed absolute coordinates that break on different screen sizes.
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+3. FIX VERTICAL LAYOUT
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+The screen currently feels compressed at the bottom.
+
+Use a ScrollView for the empty-state content:
+
+- showsVerticalScrollIndicator={false}
+- contentContainerStyle with responsive horizontal padding
+- sufficient bottom padding based on the real bottom-navigation height
+- respect iOS and Android safe-area insets
+
+Recommended structure:
+
+SafeArea/Header
+→ ScrollView
+   → Hero artwork
+   → Headline
+   → Description
+   → 2×2 feature cards
+   → Free-first-pet badge
+   → CTA button
+   → Safe bottom spacing
+→ Existing bottom navigation
+
+Do not put the bottom navigation inside the ScrollView.
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+4. FIX CTA AND BOTTOM-NAV OVERLAP
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+The “İlk Dostumu Ekle” button currently overlaps the existing bottom navigation.
+
+This must be fixed.
+
+Requirements:
+
+- CTA must remain completely above the bottom navigation.
+- Leave at least 16px visible space between the CTA and navigation.
+- Include the real navigation height and bottom safe-area inset in ScrollView padding.
+- Do not solve this with an arbitrary negative margin.
+- Do not use absolute positioning for the CTA.
+- Do not create a duplicate navigation.
+- The button must remain fully tappable.
+- No part of the button may be hidden by the navigation blur/background.
+
+Use a calculation similar to:
+
+paddingBottom: bottomNavigationHeight + safeAreaBottom + 24
+
+If the tab layout already provides a botPad value, use that existing value instead of hardcoding a second navigation height.
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+5. VISUAL SPACING
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+Create a balanced vertical hierarchy:
+
+- Header-to-hero spacing: 16–20px
+- Hero-to-headline spacing: 12–16px
+- Headline-to-description spacing: 8–10px
+- Description-to-feature-grid spacing: 18–20px
+- Feature card row gap: 10–12px
+- Grid-to-free-badge spacing: 14–16px
+- Badge-to-CTA spacing: 14–16px
+- CTA-to-bottom-navigation visible gap: minimum 16px
+
+Do not leave excessive empty space above the animals.
+
+Do not compress the cards and CTA into the bottom-navigation area.
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+6. FEATURE CARDS
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+Keep the four feature cards:
+
+- Aşı Takibi
+- Randevular
+- Beslenme
+- Sağlık Kayıtları
+
+Use a responsive 2×2 grid.
+
+Each card should have:
+
+- Equal width
+- Equal height
+- Consistent icon container
+- Correct text alignment
+- 16–18px border radius
+- White background
+- Subtle lavender border
+- Very soft shadow
+
+Do not allow one card to become wider or taller than the others.
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+7. PRESERVE BUSINESS LOGIC
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+Do not break the corrected first-pet logic.
+
+Required behavior:
+
+- User with 0 pets:
+  “İlk Dostumu Ekle”...
