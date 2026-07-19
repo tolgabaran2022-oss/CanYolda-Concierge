@@ -9,6 +9,7 @@ import { WebhookHandlers } from "./webhookHandlers.js";
 import { handleRcWebhook } from "./routes/rcWebhook.js";
 import { logger } from "./lib/logger.js";
 import { generalLimiter } from "./lib/rateLimiter.js";
+import { buildResetPasswordHtml } from "./resetPasswordPage.js";
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 
@@ -156,6 +157,22 @@ app.use("/api/uploads", (_req, res, next) => {
   next();
 });
 app.use("/api/uploads", express.static(uploadsDir));
+
+/* ── Password-reset web page ─────────────────────────────────────────────────
+   Served at GET /reset-password so email links work in both development
+   (REPLIT_EXPO_DEV_DOMAIN) and production (REPLIT_DOMAINS).
+   The page is a fully self-contained HTML form — no external dependencies.
+   It reads ?token=... from the query string, verifies it via
+   GET /api/auth/reset-password/verify, then POSTs to /api/auth/reset-password.
+   The token is stripped from the browser history immediately on load.
+──────────────────────────────────────────────────────────────────────────── */
+const resetPasswordHtml = buildResetPasswordHtml();
+app.get("/reset-password", (_req: Request, res: Response) => {
+  res.setHeader("Content-Type", "text/html; charset=utf-8");
+  res.setHeader("Cache-Control", "no-store");
+  res.setHeader("X-Content-Type-Options", "nosniff");
+  res.send(resetPasswordHtml);
+});
 
 app.use("/api", router);
 

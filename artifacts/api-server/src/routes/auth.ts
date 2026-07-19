@@ -479,12 +479,28 @@ router.post("/auth/forgot-password", passwordResetLimiter, validateBody(ForgotPa
     );
     req.log.info({ tokenId: inserted.rows[0].id }, "Reset token generated");
 
-    // Build reset link — never expose rawToken in logs
-    const baseUrl = process.env.PASSWORD_RESET_BASE_URL
-      ?? (process.env.REPLIT_EXPO_DEV_DOMAIN
-        ? `https://${process.env.REPLIT_EXPO_DEV_DOMAIN}/(auth)/reset-password`
-        : "https://canyoldasimapp.com/reset-password");
-    const resetLink = `${baseUrl}?token=${rawToken}`;
+    // Build reset link — never expose rawToken in logs.
+    // Priority: explicit env var > REPLIT_DOMAINS (production deployment) > dev domain > fail.
+    const firstReplitDomain = process.env.REPLIT_DOMAINS?.split(",")[0]?.trim();
+    const baseUrl = (
+      process.env.PASSWORD_RESET_BASE_URL
+      ?? (firstReplitDomain
+        ? `https://${firstReplitDomain}/reset-password`
+        : process.env.REPLIT_EXPO_DEV_DOMAIN
+          ? `https://${process.env.REPLIT_EXPO_DEV_DOMAIN}/reset-password`
+          : null)
+    );
+    if (!baseUrl) {
+      // Mark token as used so user can retry cleanly
+      await pool.query(
+        `UPDATE password_reset_tokens SET used_at = now() WHERE id = $1`,
+        [inserted.rows[0].id]
+      ).catch(() => {});
+      req.log.error("Cannot build reset link: PASSWORD_RESET_BASE_URL is not set and neither REPLIT_DOMAINS nor REPLIT_EXPO_DEV_DOMAIN is available");
+      res.status(503).json({ error: "Şifre sıfırlama e-postası şu anda gönderilemedi. Lütfen biraz sonra tekrar deneyin." });
+      return;
+    }
+    const resetLink = `${baseUrl}?token=${encodeURIComponent(rawToken)}`;
 
     try {
       await sendResetLinkEmail(normalizedEmail, resetLink);
