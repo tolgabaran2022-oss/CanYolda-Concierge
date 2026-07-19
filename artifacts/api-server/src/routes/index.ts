@@ -11,6 +11,7 @@ import petManagementRouter from "./petManagement.js";
 import messagesRouter from "./messages.js";
 import listingsRouter from "./listings.js";
 import animalsRouter from "./animals.js";
+import leaderboardRouter from "./leaderboard.js";
 import adoptionRouter from "./adoption.js";
 import adoptionRequestsRouter from "./adoptionRequests.js";
 import uploadRouter from "./upload.js";
@@ -40,6 +41,7 @@ router.use("/messages",    chatLimiter, messagesRouter);
 
 router.use(listingsRouter);
 router.use(animalsRouter);
+router.use(leaderboardRouter);
 router.use(adoptionRouter);
 router.use(adoptionRequestsRouter);
 

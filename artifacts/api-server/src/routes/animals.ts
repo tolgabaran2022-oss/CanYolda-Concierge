@@ -1,12 +1,13 @@
 import { Router } from "express";
 import { z } from "zod";
-import { and, desc, eq, sql, ne } from "drizzle-orm";
+import { and, desc, eq, sql, ne, lt, gt } from "drizzle-orm";
 import {
   db,
   strayAnimals,
   animalInteractions,
   animalComments,
   animalHelpUpdates,
+  helperPointTransactions,
   reportConfirmations,
   volunteerClaims,
   reportStatusHistory,
@@ -16,6 +17,7 @@ import {
   socialProfiles,
   localUsers,
 } from "@workspace/db";
+import { POINT_MAP, getIstanbulMonthKey } from "./leaderboard.js";
 import { logger } from "../lib/logger.js";
 import { extractUserId } from "../lib/jwtAuth.js";
 import { validateBody } from "../lib/validate.js";
@@ -973,7 +975,52 @@ router.post("/animals/:id/help-updates", validateBody(HelpUpdateSchema), async (
       count: sql<number>`COUNT(DISTINCT ${animalHelpUpdates.userId})::int`,
     }).from(animalHelpUpdates).where(eq(animalHelpUpdates.animalId, id));
 
-    res.status(201).json({ update: inserted, uniqueHelperCount: countRow?.count ?? 1 });
+    /* ── Award points (server-side only) ──────────────────────── */
+    let pointsEarned = 0;
+    let cooldownActive = false;
+
+    /* Calculate the highest-value point from the status.
+       Status may be comma-separated if multiple were selected. */
+    const statuses = status.split(",").map((s: string) => s.trim()).filter(Boolean);
+    const pts = statuses.reduce((max: number, s: string) => Math.max(max, POINT_MAP[s] ?? 0), 0);
+
+    if (pts > 0) {
+      /* Check 24-hour cooldown: one scored update per user per animal per 24h */
+      const cooldownCutoff = new Date(Date.now() - 24 * 60 * 60 * 1000);
+      const [cooldownRow] = await db
+        .select({ id: helperPointTransactions.id })
+        .from(helperPointTransactions)
+        .where(and(
+          eq(helperPointTransactions.userId,   userId),
+          eq(helperPointTransactions.animalId, id),
+          eq(helperPointTransactions.isValid,  true),
+          gt(helperPointTransactions.earnedAt, cooldownCutoff),
+        ))
+        .limit(1);
+
+      if (cooldownRow) {
+        cooldownActive = true;
+      } else {
+        const monthKey = getIstanbulMonthKey();
+        /* Unique constraint on help_update_id prevents duplicate transactions */
+        await db.insert(helperPointTransactions).values({
+          userId,
+          animalId:     id,
+          helpUpdateId: inserted.id,
+          actionType:   statuses[0] ?? status,
+          points:       pts,
+          monthKey,
+        }).onConflictDoNothing();
+        pointsEarned = pts;
+      }
+    }
+
+    res.status(201).json({
+      update:            inserted,
+      uniqueHelperCount: countRow?.count ?? 1,
+      pointsEarned,
+      cooldownActive,
+    });
   } catch (err) {
     req.log.error({ err }, "POST /animals/:id/help-updates failed");
     res.status(500).json({ error: "Yardım güncellemesi eklenemedi" });

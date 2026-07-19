@@ -98,6 +98,9 @@ import {
   HeartOff,
   Type,
   Zap,
+  Trophy,
+  Award,
+  Crown,
 } from "lucide-react-native";
 
 type LucideIcon = React.ComponentType<{
@@ -248,6 +251,14 @@ const ICON_MAP: Record<string, LucideIcon> = {
   "help-circle-outline":      HelpCircle,
   "help-circle":              HelpCircle,
   "open":                     AlertCircle,
+
+  // ── Leaderboard / Achievement ────────────────────────
+  "trophy":                   Trophy,
+  "trophy-outline":           Trophy,
+  "award":                    Award,
+  "award-outline":            Award,
+  "crown":                    Crown,
+  "crown-outline":            Crown,
 
   // ── Misc additions ───────────────────────────────────
   "bag-handle-outline":       ShoppingBag,

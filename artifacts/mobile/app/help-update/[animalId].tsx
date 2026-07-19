@@ -176,10 +176,26 @@ export default function HelpUpdateScreen() {
         throw new Error(errMsg);
       }
 
+      let pointsEarned = 0;
+      let cooldownActive = false;
+      try {
+        const data = await res.json() as { pointsEarned?: number; cooldownActive?: boolean };
+        pointsEarned = data.pointsEarned ?? 0;
+        cooldownActive = data.cooldownActive ?? false;
+      } catch { /* ignore */ }
+
       Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
+
+      let alertMsg = "Güncel durum bilgisi eklendi. Desteğin için teşekkürler!";
+      if (pointsEarned > 0) {
+        alertMsg = `Yardım güncellemen paylaşıldı. Bu ay +${pointsEarned} puan kazandın!`;
+      } else if (cooldownActive) {
+        alertMsg = "Güncellemen paylaşıldı. Bu hayvan için son 24 saat içinde puan kazandığın için ek puan verilmedi.";
+      }
+
       Alert.alert(
         "Teşekkürler! 🐾",
-        "Güncel durum bilgisi eklendi. Desteğin için teşekkürler!",
+        alertMsg,
         [{ text: "Tamam", onPress: () => router.back() }]
       );
     } catch (err) {

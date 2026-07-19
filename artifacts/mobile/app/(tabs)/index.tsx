@@ -560,32 +560,56 @@ export default function MapScreen() {
             </Text>
           </View>
         </View>
-        {/* Row 2: report button */}
-        <Pressable
-          style={({ pressed }) => [{ opacity: pressed ? 0.82 : 1 }, styles.emergencyBtn]}
-          onPress={() => {
-            const coords = userLocation ?? { latitude: region.latitude, longitude: region.longitude };
-            router.push({
-              pathname: "/add-animal",
-              params: {
-                initialLat: String(coords.latitude),
-                initialLng: String(coords.longitude),
-              },
-            });
-            Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
-          }}
-          hitSlop={4}
-        >
-          <LinearGradient
-            colors={["#FF6B35", "#EF4444"]}
-            start={{ x: 0, y: 0 }}
-            end={{ x: 1, y: 0 }}
-            style={styles.emergencyGradient}
+        {/* Row 2: action buttons */}
+        <View style={{ flexDirection: "row", gap: 8 }}>
+          {/* Ayın Kahramanları */}
+          <Pressable
+            style={({ pressed }) => [{ opacity: pressed ? 0.82 : 1, flex: 1 }, styles.emergencyBtn]}
+            onPress={() => {
+              router.push("/leaderboard");
+              Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+            }}
+            hitSlop={4}
+            accessibilityLabel="Ayın Kahramanları liderlik tablosu"
           >
-            <Icon name="warning" size={14} color="#FFF" />
-            <Text style={styles.emergencyText}>Hayvan Durumu Bildir</Text>
-          </LinearGradient>
-        </Pressable>
+            <LinearGradient
+              colors={["#7C3AED", "#6D28D9"]}
+              start={{ x: 0, y: 0 }}
+              end={{ x: 1, y: 0 }}
+              style={styles.emergencyGradient}
+            >
+              <Icon name="trophy" size={14} color="#FFF" />
+              <Text style={styles.emergencyText} numberOfLines={1}>Kahramanlar</Text>
+            </LinearGradient>
+          </Pressable>
+          {/* Durum Bildir */}
+          <Pressable
+            style={({ pressed }) => [{ opacity: pressed ? 0.82 : 1, flex: 1 }, styles.emergencyBtn]}
+            onPress={() => {
+              const coords = userLocation ?? { latitude: region.latitude, longitude: region.longitude };
+              router.push({
+                pathname: "/add-animal",
+                params: {
+                  initialLat: String(coords.latitude),
+                  initialLng: String(coords.longitude),
+                },
+              });
+              Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
+            }}
+            hitSlop={4}
+            accessibilityLabel="Hayvan durumu bildir"
+          >
+            <LinearGradient
+              colors={["#FF6B35", "#EF4444"]}
+              start={{ x: 0, y: 0 }}
+              end={{ x: 1, y: 0 }}
+              style={styles.emergencyGradient}
+            >
+              <Icon name="warning" size={14} color="#FFF" />
+              <Text style={styles.emergencyText} numberOfLines={1}>Durum Bildir</Text>
+            </LinearGradient>
+          </Pressable>
+        </View>
       </View>
 
       {/* Location button — fixed right side, below emergency button */}

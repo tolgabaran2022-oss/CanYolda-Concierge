@@ -151,6 +151,23 @@ export const animalHelpUpdates = pgTable("animal_help_updates", {
   createdAt: timestamp("created_at", { withTimezone: true }).defaultNow(),
 });
 
+export const helperPointTransactions = pgTable("helper_point_transactions", {
+  id:           text("id").primaryKey().default(sql`gen_random_uuid()::text`),
+  userId:       text("user_id").notNull(),
+  animalId:     text("animal_id").notNull().references(() => strayAnimals.id, { onDelete: "cascade" }),
+  helpUpdateId: text("help_update_id").notNull().references(() => animalHelpUpdates.id, { onDelete: "cascade" }),
+  actionType:   text("action_type").notNull(),
+  points:       integer("points").notNull(),
+  earnedAt:     timestamp("earned_at", { withTimezone: true }).defaultNow(),
+  monthKey:     text("month_key").notNull(),
+  isValid:      boolean("is_valid").notNull().default(true),
+}, (t) => [
+  unique("helper_point_transactions_help_update_unique").on(t.helpUpdateId),
+  index("idx_helper_point_transactions_month_key").on(t.monthKey),
+  index("idx_helper_point_transactions_user_month").on(t.userId, t.monthKey),
+  index("idx_helper_point_transactions_animal_user").on(t.animalId, t.userId),
+]);
+
 /* ═══════════════════════════════════════════════════════════════════════════
    ADOPTION
 ═══════════════════════════════════════════════════════════════════════════ */

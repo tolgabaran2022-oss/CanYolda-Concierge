@@ -1,0 +1,664 @@
+Use the uploaded “Ayın Kahramanları” UI image as the primary visual reference.
+
+Implement the complete “Ayın Kahramanları” monthly helper leaderboard feature in the CanYoldaşı application.
+
+This task includes:
+
+1. Adding the new entry button
+2. Building the screen to match the reference image
+3. Connecting it to the existing help-report flow
+4. Creating the real monthly points system
+5. Creating the medal, rank, and achievement-level logic
+6. Persisting all activity securely in Supabase
+7. Testing the complete feature
+
+Do not create a static mockup. The interface must use real application and Supabase data.
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+1. REFERENCE IMAGE IS THE UI SOURCE OF TRUTH
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+Reproduce the uploaded reference image as closely as possible using the project’s existing React Native/Expo components and design system.
+
+Match:
+
+- Page composition
+- Spacing and alignment
+- Typography hierarchy
+- Cream/off-white background
+- Purple and lavender color palette
+- White rounded cards
+- Border radiuses
+- Soft shadows
+- Profile-photo sizes
+- Medal positions
+- Top-three layout
+- Ranking-row layout
+- Current-user summary card
+- Month selector
+- Bottom navigation
+- Responsive mobile proportions
+
+Do not place the reference image as a background.
+
+Build the interface using real native components.
+
+Do not redesign the screen or replace it with a generic leaderboard.
+
+Reuse the existing CanYoldaşı:
+
+- Theme colors
+- Font system
+- Icon library
+- Header conventions
+- Safe-area behavior
+- Bottom navigation
+- Profile image component
+- Loading and error components
+
+Use real vector icons from the installed icon library. Do not use emoji medals or stars.
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+2. ADD THE NEW ENTRY BUTTON
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+On the “Sokak Hayvanları” page, add a new compact button immediately to the LEFT of the existing:
+
+“+ Durum Bildir”
+
+New button label:
+
+“Ayın Kahramanları”
+
+Use a small purple trophy, medal, or star icon.
+
+Requirements:
+
+- Both buttons must remain visible.
+- They must not overlap.
+- They must not extend beyond the screen.
+- Keep the existing “Durum Bildir” action unchanged.
+- Match the existing premium purple design.
+- Use responsive sizing on smaller screens.
+- Pressing “Ayın Kahramanları” must open the new leaderboard screen.
+- Android back, iOS back gesture, header back button, and web navigation must work correctly.
+
+If the complete text cannot fit on a small screen, use a compact icon-and-label layout without making the button unreadable.
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+3. BUILD THE REFERENCE SCREEN
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+Screen title:
+
+“Ayın Kahramanları”
+
+Subtitle:
+
+“Bu ay sokaktaki dostlara en çok destek olan gönüllüler.”
+
+Add a month selector beneath the subtitle.
+
+Example:
+
+“Temmuz 2026”
+
+The current month must be selected by default using the `Europe/Istanbul` monthly calendar experience while timestamps remain stored in UTC.
+
+The user may view:
+
+- Current month
+- Previous months with available data
+
+Do not allow future months.
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+4. TOP-THREE SECTION
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+Reproduce the reference image’s top-three arrangement.
+
+First place:
+
+- Positioned in the center
+- Larger and elevated card
+- Gold medal
+- Larger circular profile photo
+- Full name
+- Distinct animals helped
+- Monthly score
+
+Second place:
+
+- Positioned on the left
+- Silver medal
+- Circular profile photo
+- Full name
+- Distinct animals helped
+- Monthly score
+
+Third place:
+
+- Positioned on the right
+- Bronze medal
+- Circular profile photo
+- Full name
+- Distinct animals helped
+- Monthly score
+
+Example format:
+
+“Ahmet Can”
+
+“20 farklı hayvana destek oldu”
+
+“70 Puan”
+
+Use real data. The names and scores visible in the design image are examples only and must not be hardcoded.
+
+If fewer than three eligible users exist, render only the available users without broken or empty podium cards.
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+5. MONTHLY RANKING LIST
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+Below the top three, display:
+
+“Bu Ayın Sıralaması”
+
+Each row must contain:
+
+- Monthly rank
+- Circular profile photo
+- First and last name
+- Achievement-level badge
+- Number of distinct animals helped
+- Monthly point total
+
+Example:
+
+Rank: 4  
+Name: Zeynep Demir  
+Level: Sokak Kahramanı  
+Distinct animals: 11  
+Score: 38 Puan
+
+Requirements:
+
+- Use real profile data.
+- Use a safe placeholder avatar when no photo exists.
+- Do not expose email addresses, phone numbers, user IDs, or private information.
+- Load the list efficiently.
+- Support pagination or incremental loading.
+- Do not download every point transaction to calculate ranking on the client.
+- Ensure deterministic ordering.
+- Avoid duplicated users.
+- Include pull-to-refresh on supported platforms.
+- Include loading skeletons matching the final card layout.
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+6. CURRENT USER SUMMARY
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+Reproduce the highlighted lavender card from the bottom section of the reference image.
+
+Display:
+
+- Current user’s profile photo
+- “Sen” pill
+- Monthly rank
+- Number of distinct animals helped
+- Monthly score
+
+Example:
+
+“Bu ayki sıran: 8”
+
+“6 farklı hayvana destek oldun”
+
+“24 Puan”
+
+Display this personal summary even when the current user is outside the currently loaded ranking page.
+
+If the current user has no monthly activity, display:
+
+“Bu ay henüz puan kazanmadın.”
+
+“Yardım bekleyen bir dosta destek olarak başlayabilirsin.”
+
+Include a safe navigation action back to the street-animal list.
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+7. EMPTY, LOADING, AND ERROR STATES
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+Loading:
+
+- Use premium skeleton cards.
+- Preserve the reference screen layout while data loads.
+- Do not show fake names or fake points.
+
+Empty state:
+
+“Bu ay henüz puan kazanan bir gönüllü yok.”
+
+“İlk yardımı sen yap!”
+
+Error state:
+
+“Sıralama şu anda yüklenemiyor. Lütfen tekrar deneyin.”
+
+Button:
+
+“Tekrar Dene”
+
+The screen must not crash because of:
+
+- Missing profile photo
+- Missing profile name
+- Empty ranking
+- Deleted user
+- Malformed legacy data
+- Network interruption
+- Supabase timeout
+
+Name fallback:
+
+“CanYoldaşı Gönüllüsü”
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+8. CONNECT TO THE EXISTING HELP FLOW
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+The existing flow is:
+
+1. User opens a street-animal status card.
+2. User taps “Yardım Et.”
+3. The “Hayvanın Güncel Durumunu Bildir” screen opens.
+4. User selects the animal’s updated condition/help action.
+5. User adds a current photo.
+6. User submits with “Güncellemeyi Kaydet.”
+
+Existing help options include:
+
+- Aynı Bölgede
+- Yaralı
+- Acil Yardım Gerekli
+- Beslendi
+- Su Verildi
+- Tedaviye Götürüldü
+- Veteriner Kontrolünde
+- Güvende
+
+Do not award points when the “Yardım Et” button is merely tapped.
+
+Award points only when:
+
+- An authenticated user submits a valid update.
+- The required current photo is successfully uploaded.
+- The update is successfully persisted.
+- Server-side validation confirms eligibility.
+- A unique point transaction is successfully created.
+
+After a scored update, show:
+
+“Yardım güncellemen paylaşıldı. Bu ay +7 puan kazandın!”
+
+Use the actual awarded score.
+
+If the update is saved but is not eligible for new points because of a cooldown, show:
+
+“Güncellemen paylaşıldı. Bu hayvan için son 24 saat içinde puan kazandığın için ek puan verilmedi.”
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+9. POINT SYSTEM
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+Use the following initial point rules:
+
+- Aynı Bölgede: 1 point
+- Yaralı: 2 points
+- Acil Yardım Gerekli: 2 points
+- Su Verildi: 3 points
+- Beslendi: 3 points
+- Güvende: 5 points
+- Veteriner Kontrolünde: 7 points
+- Tedaviye Götürüldü: 10 points
+
+If one update contains multiple eligible statuses:
+
+- Award only the highest eligible score.
+- Do not sum every selected status.
+- Create only one point transaction for one help update.
+
+Keep the point configuration centralized so administrators or developers can change it later without editing multiple screens.
+
+Never trust a point number sent by the frontend.
+
+The backend/database must calculate and persist the awarded points.
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+10. DISTINCT ANIMALS HELPED
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+The statistic:
+
+“20 farklı hayvana destek oldu”
+
+must count unique animal reports helped during the selected month.
+
+It must not count:
+
+- Button taps
+- Form openings
+- Canceled submissions
+- Failed uploads
+- Duplicate submissions
+- Multiple updates for the same animal as separate animals
+
+If a user helps the same animal several times:
+
+- Count that animal once in `distinct animals helped`.
+- Award further points only when anti-abuse and cooldown rules allow it.
+
+Use the real animal/report ID as the unique identity.
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+11. DATABASE AND BACKEND
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+Inspect the existing schema before creating new tables.
+
+Reuse existing help-update, animal-report, and profile structures where appropriate.
+
+Do not create duplicate tables if equivalent structures already exist.
+
+Create or adapt a secure structure equivalent to:
+
+`help_updates`
+
+- `id`
+- `animal_report_id`
+- `user_id`
+- `status`
+- `photo_path`
+- `notes`
+- `created_at`
+- `verification_status`
+
+`helper_point_transactions`
+
+- `id`
+- `user_id`
+- `animal_report_id`
+- `help_update_id`
+- `action_type`
+- `points`
+- `earned_at`
+- `month_key`
+- `is_valid`
+
+Requirements:
+
+- Use UUIDs or existing project ID conventions.
+- Create foreign keys.
+- Create safe indexes for monthly queries.
+- Add a unique constraint for `help_update_id`.
+- Store timestamps in UTC.
+- Use server-generated timestamps.
+- Preserve all historical records.
+- Do not reset scores by deleting rows.
+- Use a non-destructive migration.
+- Do not modify unrelated data.
+
+Preferred `month_key` format:
+
+`YYYY-MM`
+
+Use the documented `Europe/Istanbul` month boundary consistently for leaderboard grouping.
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+12. MONTHLY LEADERBOARD QUERY
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+Calculate on the server/database:
+
+- Valid monthly points per user
+- Distinct animals helped per user
+- Valid help-update count
+- Monthly rank
+- Achievement level
+
+Do not calculate the complete leaderboard only in React Native local state.
+
+Use an efficient solution such as:
+
+- A secure Supabase RPC
+- A database view with appropriate access
+- A backend endpoint
+- A safe server-side query
+
+Ranking order:
+
+1. Highest monthly points
+2. Highest number of distinct animals helped
+3. Earliest time reaching the current score
+4. Stable user ID as final tie-breaker
+
+Return:
+
+- Top three
+- Paginated remaining users
+- Current user’s personal monthly rank and score
+
+Avoid N+1 profile queries.
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+13. MEDAL SYSTEM
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+Position medals:
+
+- Rank 1: Gold
+- Rank 2: Silver
+- Rank 3: Bronze
+
+These medals represent monthly rank only.
+
+Achievement levels based on monthly score:
+
+- 0–9: “İyilik Başlangıcı”
+- 10–29: “Can Dostu”
+- 30–59: “Sokak Kahramanı”
+- 60–99: “Umut Elçisi”
+- 100+: “CanYoldaşı Efsanesi”
+
+Position medal and achievement level are different:
+
+- Medal = leaderboard position
+- Level = monthly points
+
+Do not give a gold medal based only on reaching a point threshold.
+
+Display achievement levels as compact pills consistent with the uploaded reference.
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+14. ANTI-ABUSE AND SECURITY
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+Implement these protections:
+
+- Only authenticated users can earn points.
+- No points for tapping “Yardım Et.”
+- No points for canceled forms.
+- No points for failed uploads.
+- No points for failed database inserts.
+- No duplicate transaction for one help-update ID.
+- Do not accept client-provided point values.
+- Calculate scores server-side.
+- Maximum one scored update per user, per animal, per 24 hours.
+- A valid update may still be published during the cooldown, but it earns zero additional points.
+- Deleted, rejected, or invalidated updates must not count.
+- If an update is invalidated later, safely exclude or reverse its points.
+- Users must not directly insert arbitrary point records.
+- Users must not update their own point totals.
+- Protect data with appropriate Supabase Row Level Security.
+- Maintain an immutable audit trail.
+- Do not expose service-role keys to the client.
+
+Do not maintain a freely editable `total_points` field in the user profile as the only source of truth.
+
+The source of truth must be valid point transactions.
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+15. MONTHLY HISTORY
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+At the beginning of a new month:
+
+- Start a new ranking automatically.
+- Do not delete previous point transactions.
+- Do not overwrite previous scores.
+- Preserve historical leaderboard data.
+- Select the current month by default.
+- Allow previous months to be viewed through the month selector.
+
+Future months must not be selectable.
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+16. PROFILE PRIVACY
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+Display only:
+
+- Permitted profile photo
+- First and last name
+- Monthly public help statistics
+- Achievement level
+
+Never display:
+
+- Email
+- Phone number
+- Exact address
+- Authentication ID
+- Private account information
+
+Respect the application’s existing profile-privacy rules.
+
+If the product currently allows hidden profiles, use a privacy-safe leaderboard representation without exposing protected profile content.
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+17. RESPONSIVE AND PLATFORM REQUIREMENTS
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+Implement the screen for:
+
+- Web
+- Android
+- iOS
+
+Requirements:
+
+- Respect safe areas.
+- Support smaller mobile screens.
+- Do not allow top-three cards to overlap.
+- Prevent Turkish text from clipping.
+- Bottom navigation must not cover the personal summary.
+- Screen content must scroll when required.
+- Preserve the reference composition on common phone widths.
+- Keep touch targets accessible.
+- Add accessibility labels.
+- Support dynamic content without breaking card heights.
+- Use the actual existing bottom-tab system instead of creating a second fake navigation bar.
+
+Do not use the uploaded design image inside the application.
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+18. REAL TEST AND VERIFICATION
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+Do not mark the feature as PASS based only on code inspection.
+
+PASS requires the following real actions:
+
+1. Log in with a real test user.
+2. Open “Sokak Hayvanları.”
+3. Confirm “Ayın Kahramanları” appears to the left of “Durum Bildir.”
+4. Open the leaderboard.
+5. Confirm the design matches the uploaded reference.
+6. Open a real animal report.
+7. Tap “Yardım Et.”
+8. Add a real current photo.
+9. Select a scored help action.
+10. Submit the update.
+11. Verify the photo exists in Supabase Storage.
+12. Verify the help update exists in the database.
+13. Verify exactly one point transaction exists.
+14. Confirm the server awarded the correct score.
+15. Reopen the leaderboard.
+16. Confirm the user’s real name appears.
+17. Confirm the monthly score is correct.
+18. Confirm the distinct-animal count is correct.
+19. Confirm the current user’s rank is correct.
+20. Verify top-three ordering using multiple users.
+21. Verify gold, silver, and bronze medals.
+22. Verify achievement levels.
+23. Submit a duplicate request and verify duplicate points are blocked.
+24. Test the 24-hour cooldown.
+25. Test a failed upload and confirm no points are awarded.
+26. Test a canceled form and confirm no points are awarded.
+27. Test current and previous month selection.
+28. Refresh the app.
+29. Log out and log back in.
+30. Re-read persisted database values.
+31. Check browser/device console and network logs.
+32. Confirm no unexpected errors exist.
+
+TEST STATUS RULES
+
+- `PASS`: The real help, Storage, database, points, aggregation, ranking, persistence, and UI flow were executed and verified.
+- `STATIC REVIEW`: Only source code was inspected.
+- `BLOCKED`: The platform, authentication, Storage, database, or backend could not be run.
+- `NOT TESTED`: No test was performed.
+
+Do not treat Expo Web as an Android or iOS PASS.
+
+Test and report Web, Android, and iOS independently.
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+19. FINAL REPORT
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+Provide:
+
+1. Modified source files
+2. Created routes/screens/components
+3. Database migration files
+4. Tables, views, RPC functions, or endpoints used
+5. Supabase RLS policies
+6. Point calculation logic
+7. Cooldown and duplicate-prevention logic
+8. Monthly timezone behavior
+9. Ranking query
+10. Medal and level logic
+11. UI differences from the uploaded reference, if any
+12. Storage verification
+13. Database verification
+14. Web result
+15. Android result
+16. iOS result
+17. Final status for each platform
+
+IMPORTANT RULES
+
+- The uploaded image is the visual reference.
+- Do not insert the reference image into the application.
+- Do not build only a static UI.
+- Do not ship hardcoded example users or scores.
+- Do not award points for a button tap.
+- Do not calculate trusted points on the client.
+- Do not delete historical monthly scores.
+- Do not expose private user data.
+- Do not break the existing “Durum Bildir” or “Yardım Et” flows.
+- Do not report PASS without real UI, Storage, database, and persistence verification.
