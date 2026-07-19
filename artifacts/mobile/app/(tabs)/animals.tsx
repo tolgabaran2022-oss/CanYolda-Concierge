@@ -180,12 +180,12 @@ export default function AnimalsScreen() {
             <Animated.View style={{ transform: [{ scale: addBtnScale }] }}>
               <Pressable onPress={handleAdd} hitSlop={8}>
                 <LinearGradient
-                  colors={["#9C7FE0", "#5B3FD6"]}
+                  colors={["#FF6B35", "#EF4444"]}
                   start={{ x: 0, y: 0 }}
-                  end={{ x: 1, y: 1 }}
+                  end={{ x: 1, y: 0 }}
                   style={H.addBtn}
                 >
-                  <Icon name="add" size={15} color="#FFF" />
+                  <Icon name="warning" size={15} color="#FFF" />
                   <Text style={H.addBtnText}>Durum Bildir</Text>
                 </LinearGradient>
               </Pressable>
