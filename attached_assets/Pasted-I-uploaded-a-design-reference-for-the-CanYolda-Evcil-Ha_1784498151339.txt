@@ -1,0 +1,422 @@
+I uploaded a design reference for the CanYoldaşı “Evcil Hayvan Ekle” screen.
+
+Redesign the existing add-pet screen by closely following the uploaded reference image.
+
+IMPORTANT:
+The uploaded image is a VISUAL REFERENCE ONLY.
+
+Do not display the complete reference screenshot inside the application.
+Do not use it as a background image.
+Recreate the interface using native React Native/Expo components.
+Do not modify unrelated screens or business logic.
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+1. HEADER
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+Preserve the existing safe-area structure.
+
+Create:
+
+- Circular back button on the left.
+- Centered title: “Evcil Hayvan Ekle”
+- Clean white/lavender background.
+- Proper iOS and Android safe-area spacing.
+
+The back button must return to the previous screen.
+
+Do not create a second header.
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+2. PET PHOTO SECTION
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+Create a centered, clearly tappable photo-selection area:
+
+- Approximately 116px circular image container.
+- Pale lavender background.
+- Purple paw placeholder icon.
+- Small purple camera button overlapping the lower-right edge.
+- Text: “Fotoğraf Ekle”
+- Helper text: “Kamera veya galeriden seç”
+
+When tapped, open an action sheet or modal with:
+
+- Fotoğraf Çek
+- Galeriden Seç
+- İptal
+
+Required behavior:
+
+- Request camera permission only when “Fotoğraf Çek” is selected.
+- Request media-library permission only when “Galeriden Seç” is selected.
+- Show the selected image immediately.
+- Use resizeMode="cover" for the selected photo.
+- Keep the photo circular.
+- Show upload/loading progress.
+- Show a proper error message when upload fails.
+- Allow the user to replace the selected image.
+- Do not save a local temporary URI as the permanent database image URL.
+- Upload the image and store the final remote URL.
+
+On Web:
+
+- Use a file picker.
+- Do not attempt to open a native camera API that is unavailable.
+- Support JPG, JPEG, PNG and WebP.
+- Validate file size and MIME type.
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+3. ANIMAL TYPE
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+Add the label:
+
+“Hayvan Türü *”
+
+Create a responsive 2×2 selection grid:
+
+- Kedi
+- Köpek
+- Kuş
+- Tavşan
+
+Each card must have:
+
+- Relevant purple line icon.
+- Equal width and height.
+- White background.
+- Lavender border.
+- Approximately 16–18px corner radius.
+- Soft shadow.
+- Minimum accessible touch target.
+
+Selected state:
+
+- Pale lavender background.
+- Strong purple border.
+- Purple check indicator in the upper-right corner.
+- Clear visual contrast.
+
+Default selection may be “Kedi”.
+
+Do not allow the cards to overflow horizontally.
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+4. IDENTITY INFORMATION CARD
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+Create a white rounded card titled:
+
+“Kimlik Bilgileri”
+
+Inside it add:
+
+A. Name
+
+Label:
+“İsim *”
+
+Placeholder:
+“Örn. Pamuk”
+
+Requirements:
+
+- Left user/pet icon.
+- Required validation.
+- Trim leading and trailing spaces.
+- Show inline validation message when empty.
+
+B. Breed
+
+Label:
+“Irk / Cins”
+
+Placeholder:
+“Örn. British Shorthair”
+
+Requirements:
+
+- Left paw icon.
+- Optional unless the existing schema requires it.
+- Preserve existing API field mapping.
+
+C. Gender
+
+Label:
+“Cinsiyet”
+
+Create three equal segmented choices:
+
+- Erkek
+- Dişi
+- Bilinmiyor
+
+Selected state:
+
+- Pale lavender background.
+- Purple outline.
+- Purple check icon.
+- Accessible selection state.
+
+Do not force a default gender unless existing business rules require one.
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+5. BASIC INFORMATION CARD
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+Create a second white rounded card titled:
+
+“Temel Bilgiler”
+
+Add a date field:
+
+Label:
+“Doğum Tarihi”
+
+Placeholder:
+“Doğum tarihini seç”
+
+Requirements:
+
+- Calendar icon.
+- Open the native date picker on Android and iOS.
+- Use a suitable Web date input or compatible picker on Web.
+- Prevent future dates.
+- Save the date in the format expected by the existing API.
+- Display it using Turkish locale formatting.
+
+Add an outlined option:
+
+“Doğum tarihini bilmiyorum”
+
+When selected:
+
+- Clear the birth-date value.
+- Disable or visually deactivate the date field.
+- Do not submit a fake date.
+- Save null/undefined according to the existing API schema.
+
+Do not show raw “YYYY-AA-GG” as the main user experience.
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+6. REASSURANCE MESSAGE
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+Above the save area add a small centered message:
+
+“İlk dostunu ekliyorsun”
+
+Use:
+
+- Small purple heart/paw icon.
+- Subtle styling.
+- Do not make it look like a button.
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+7. SAVE BUTTON
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+Create a bottom action area with a large button:
+
+“Kaydet”
+
+Button design:
+
+- Full-width purple gradient.
+- White bold text.
+- Check-circle icon.
+- Approximately 52–56px height.
+- 16–18px corner radius.
+- Soft purple shadow.
+- Proper safe-area spacing.
+
+Behavior:
+
+- Disabled until required fields are completed.
+- Disabled state must be visually clear.
+- Active state uses the purple gradient.
+- Show spinner and “Kaydediliyor…” during submission.
+- Prevent duplicate taps and duplicate pet creation.
+- Keep the button accessible when the keyboard opens.
+- Do not allow it to overlap or hide form content.
+
+This modal screen must not contain the application’s bottom tab navigation.
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+8. KEYBOARD AND SCROLLING
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+Use an appropriate keyboard-safe structure:
+
+- SafeAreaView
+- KeyboardAvoidingView
+- ScrollView
+- showsVerticalScrollIndicator={false}
+- keyboardShouldPersistTaps="handled"
+
+The content must scroll when the keyboard is open.
+
+Add enough bottom padding so the final field and reassurance message can move fully above the action area.
+
+Do not use negative margins.
+
+Do not hide inputs behind the keyboard or save button.
+
+Dismiss the keyboard appropriately when tapping outside fields.
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+9. RESPONSIVE DESIGN
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+Match the uploaded reference image’s:
+
+- Visual hierarchy
+- Purple/lavender color language
+- Rounded cards
+- Input styling
+- 2×2 animal-type grid
+- Gender segmented control
+- Photo-selection hierarchy
+- Spacing and soft shadows
+
+Support:
+
+- 320px width
+- 375px width
+- 390px width
+- 430px width
+
+Requirements:
+
+- No horizontal overflow.
+- No clipped labels.
+- No overlapping components.
+- No excessive empty areas.
+- Cards remain equal in size.
+- Turkish text remains readable.
+- Respect Android and iOS safe-area insets.
+
+Reuse the project’s existing:
+
+- Icon component
+- LinearGradient
+- Font family
+- Design tokens
+- Upload service
+- API client
+- Pets context
+- Authentication context
+
+Do not add another visual system.
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+10. PRESERVE DATA AND BUSINESS LOGIC
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+Preserve the existing pet-creation API contract.
+
+Confirm the correct mapping for:
+
+- User ID
+- Pet name
+- Pet type
+- Breed
+- Gender
+- Birth date
+- Unknown birth-date state
+- Image URL
+
+Do not rename database columns unnecessarily.
+Do not delete existing pet records.
+Do not reset the database.
+Do not replace real user data.
+Do not create duplicate pets.
+
+Preserve the Premium rules:
+
+- A user’s first pet is free.
+- A user with zero pets can open this form.
+- A free user attempting to add a second pet is directed to the Premium screen.
+- A Premium user can add additional pets.
+- Existing pets remain accessible when Premium expires.
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+11. ACCESSIBILITY
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+Add:
+
+- accessibilityRole for buttons.
+- accessibilityLabel for photo selection.
+- Selected state for animal type and gender.
+- Minimum 44×44 touch targets.
+- Proper screen-reader order.
+- Sufficient text contrast.
+- Clear validation messages.
+- Reduced-motion-safe press feedback.
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+12. REQUIRED TESTING
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+Do not mark PASS based only on code review.
+
+Test these scenarios:
+
+1. Open the add-pet screen.
+2. Select each animal type.
+3. Enter a pet name.
+4. Enter a breed.
+5. Select each gender option.
+6. Select a valid birth date.
+7. Select “Doğum tarihini bilmiyorum”.
+8. Take a photo on a supported native device.
+9. Select a photo from the gallery.
+10. Deny camera permission.
+11. Deny gallery permission.
+12. Upload a valid image.
+13. Attempt an invalid file upload.
+14. Submit the form.
+15. Verify the API response.
+16. Verify the database record.
+17. Fetch the created pet again.
+18. Confirm the pet appears in Evcilim.
+19. Confirm the uploaded image remains visible after reload.
+20. Confirm duplicate taps do not create duplicate pets.
+21. Confirm the first free pet flow does not open Premium.
+22. Confirm the second free-user pet attempt opens Premium.
+
+Test Web, Android and iOS independently.
+
+Result rules:
+
+- PASS: Actually executed and verified.
+- FAIL: Executed and incorrect.
+- BLOCKED: Platform or permission unavailable.
+- STATIC REVIEW: Code inspected only.
+- NOT TESTED: Test was not performed.
+
+Do not count Expo Web as Android or iOS testing.
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+13. FINAL REPORT
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+After implementation report:
+
+- Files changed.
+- Components reused.
+- Photo upload implementation.
+- Validation rules.
+- API field mapping.
+- Keyboard/safe-area solution.
+- Premium gating behavior.
+- Tests actually executed.
+- Results for Web, Android and iOS.
+- Any BLOCKED tests.
+- Remaining issues.
+
+Do not redesign unrelated pages.
+Do not insert the uploaded reference screenshot into the screen.
+Do not use the reference image as a background.
