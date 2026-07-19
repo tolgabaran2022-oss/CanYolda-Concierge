@@ -175,7 +175,22 @@ export default function AnimalsScreen() {
             <Text style={[H.logoText, { color: T.text }]}>canyoldaşı</Text>
           </View>
 
-          <View style={{ flexDirection: "row", alignItems: "center", gap: 8 }}>
+          <View style={{ flexDirection: "column", alignItems: "flex-end", gap: 6 }}>
+            {/* Durum Bildir */}
+            <Animated.View style={{ transform: [{ scale: addBtnScale }] }}>
+              <Pressable onPress={handleAdd} hitSlop={8}>
+                <LinearGradient
+                  colors={["#9C7FE0", "#5B3FD6"]}
+                  start={{ x: 0, y: 0 }}
+                  end={{ x: 1, y: 1 }}
+                  style={H.addBtn}
+                >
+                  <Icon name="add" size={15} color="#FFF" />
+                  <Text style={H.addBtnText}>Durum Bildir</Text>
+                </LinearGradient>
+              </Pressable>
+            </Animated.View>
+
             {/* Kahramanlar */}
             <Pressable
               onPress={() => router.push("/leaderboard")}
@@ -192,21 +207,6 @@ export default function AnimalsScreen() {
                 <Text style={H.addBtnText}>Kahramanlar</Text>
               </LinearGradient>
             </Pressable>
-
-            {/* Durum Bildir */}
-            <Animated.View style={{ transform: [{ scale: addBtnScale }] }}>
-              <Pressable onPress={handleAdd} hitSlop={8}>
-                <LinearGradient
-                  colors={["#9C7FE0", "#5B3FD6"]}
-                  start={{ x: 0, y: 0 }}
-                  end={{ x: 1, y: 1 }}
-                  style={H.addBtn}
-                >
-                  <Icon name="add" size={15} color="#FFF" />
-                  <Text style={H.addBtnText}>Durum Bildir</Text>
-                </LinearGradient>
-              </Pressable>
-            </Animated.View>
           </View>
         </View>
 
