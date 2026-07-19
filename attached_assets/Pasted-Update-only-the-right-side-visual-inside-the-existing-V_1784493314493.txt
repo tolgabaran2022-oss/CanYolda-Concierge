@@ -1,0 +1,79 @@
+Update only the right-side visual inside the existing “Veteriner & Petshop İşletme Profilleri” coming-soon banner.
+
+Use the newly uploaded veterinarian dog-and-cat image as the exact replacement asset.
+
+CURRENT PROBLEM
+
+The right side of the banner currently contains a tiny duplicate promotional banner with unreadable text. It creates an incorrect “banner inside another banner” appearance.
+
+REQUIRED CHANGE
+
+1. Completely remove the current small nested banner from the right side.
+2. Replace it with the newly uploaded reference image showing:
+   - A 3D veterinarian dog holding a purple tablet
+   - A gray kitten
+   - A purple veterinary clinic in the background
+3. Do not regenerate, redraw, reinterpret, or replace the uploaded visual.
+4. Use the uploaded file as the actual image asset.
+5. Do not show any text, button, or mini-banner inside the right-side image area.
+
+PRESERVE THE EXISTING BANNER
+
+Do not modify:
+
+- Main banner dimensions
+- Main banner background
+- Rounded corners
+- Left store icon
+- “ÇOK YAKINDA!” badge
+- “Veteriner & Petshop İşletme Profilleri” title
+- Description
+- “İlk Sen Haberdar Ol” button
+- Top-right “COMING SOON” badge
+- Existing typography
+- Existing colors
+- Existing button functionality
+- Existing outer spacing
+
+Change only the right-side image.
+
+IMAGE PLACEMENT
+
+Place the new image on the right side of the banner.
+
+Requirements:
+
+- Keep the important subjects visible:
+  - Veterinarian dog’s face
+  - Purple tablet
+  - Kitten’s face
+  - Veterinary clinic cross
+- Do not stretch or distort the image.
+- Preserve its original aspect ratio.
+- Use `resizeMode="contain"` initially.
+- If the existing image area is too narrow, carefully increase its width without covering the title, description, or button.
+- The visual may extend softly toward the bottom-right edge if necessary.
+- Keep adequate padding from the banner edges.
+- Align it vertically with the main banner content.
+- Do not place a white rectangular frame around the image.
+- Integrate it naturally into the pale lavender banner background.
+- Keep the characters large enough to remain recognizable on a phone screen.
+- Do not reduce the image until the characters become too small.
+
+RESPONSIVE LAYOUT
+
+On common phone widths:
+
+- Left text area must remain readable.
+- Right illustration must remain visible.
+- The title must not overlap the characters.
+- The button must remain fully accessible.
+- Nothing may overflow outside the rounded banner.
+- No content may be clipped incorrectly.
+
+Recommended conceptual layout:
+
+```text
+Main banner
+├── Left content: approximately 56–60%
+└── Right visual: approximately 40–44%

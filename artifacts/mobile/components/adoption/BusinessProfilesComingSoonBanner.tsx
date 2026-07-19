@@ -164,20 +164,6 @@ const BusinessProfilesComingSoonBanner = React.memo(() => {
           <Icon name="paw" size={20} color={PURPLE} />
         </View>
 
-        {/* ── Right: illustration (absolute) ── */}
-        <Animated.View
-          style={[s.illustrationWrap, { transform: [{ translateY: floatY }] }]}
-          pointerEvents="none"
-        >
-          <Image
-            source={ILLUSTRATION}
-            style={s.illustration}
-            resizeMode="contain"
-            accessibilityElementsHidden
-            importantForAccessibility="no"
-          />
-        </Animated.View>
-
         {/* ── Top-right COMING SOON badge ── */}
         <View style={s.comingSoonWrap}>
           <LinearGradient
@@ -193,8 +179,11 @@ const BusinessProfilesComingSoonBanner = React.memo(() => {
           </LinearGradient>
         </View>
 
+        {/* ── Row: left content + right illustration ── */}
+        <View style={s.row}>
+
         {/* ── Left: content ── */}
-        <View style={[s.leftContent, { width: narrow ? "62%" : "56%" }]}>
+        <View style={[s.leftContent, { flex: narrow ? 58 : 56 }]}>
 
           {/* Store icon circle */}
           <LinearGradient colors={[PURPLE_LIGHT, PURPLE]} style={s.iconCircle}>
@@ -250,6 +239,22 @@ const BusinessProfilesComingSoonBanner = React.memo(() => {
             )}
           </Pressable>
         </View>
+
+        {/* ── Right: illustration ── */}
+        <Animated.View
+          style={[s.illustrationWrap, { flex: narrow ? 42 : 44, transform: [{ translateY: floatY }] }]}
+          pointerEvents="none"
+        >
+          <Image
+            source={ILLUSTRATION}
+            style={s.illustration}
+            resizeMode="contain"
+            accessibilityElementsHidden
+            importantForAccessibility="no"
+          />
+        </Animated.View>
+
+        </View>{/* end row */}
       </LinearGradient>
     </Animated.View>
   );
@@ -269,20 +274,24 @@ const s = StyleSheet.create({
     alignSelf:    "stretch",
   },
   gradient: {
-    padding:       16,
-    minHeight:     128,
-    flexDirection: "row",
-    alignItems:    "flex-start",
+    padding:        12,
+    paddingBottom:  0,
+    flexDirection:  "column",
   },
   deco: { position: "absolute" },
 
+  /* row wrapping left content + right illustration */
+  row: {
+    flexDirection: "row",
+    alignItems:    "flex-end",
+  },
+
   /* illustration */
   illustrationWrap: {
-    position: "absolute",
-    right:    -4,
-    bottom:   -4,
-    width:    "48%",
-    height:   "95%",
+    alignSelf:      "flex-end",
+    aspectRatio:    1,
+    minHeight:      140,
+    maxHeight:      190,
   },
   illustration: { width: "100%", height: "100%" },
 
@@ -304,7 +313,7 @@ const s = StyleSheet.create({
   },
 
   /* left content */
-  leftContent: { gap: 7, zIndex: 1 },
+  leftContent: { gap: 7, zIndex: 1, paddingBottom: 14 },
 
   /* icon circle */
   iconCircle: {
