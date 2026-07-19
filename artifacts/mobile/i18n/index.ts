@@ -43,7 +43,7 @@ function getDeviceLocale(): string {
   }
 }
 
-/** Load saved language or detect from device; returns "tr" | "en" */
+/** Load saved language; defaults to "tr" (this is a Turkish community app). */
 export async function detectLanguage(): Promise<LangCode> {
   try {
     const saved = await AsyncStorage.getItem(LANGUAGE_KEY);
@@ -51,7 +51,7 @@ export async function detectLanguage(): Promise<LangCode> {
   } catch {
     // AsyncStorage unavailable — continue
   }
-  return normalize(getDeviceLocale());
+  return "tr";
 }
 
 /** Persist and apply a language change */

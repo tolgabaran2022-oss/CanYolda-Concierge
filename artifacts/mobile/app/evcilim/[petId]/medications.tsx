@@ -159,7 +159,7 @@ export default function MedicationsScreen() {
       <Stack.Screen options={{ title: "İlaçlar", headerBackTitle: "Geri",
         headerRight: () => (
           <Pressable hitSlop={12} onPress={openAdd} style={S.addBtn}>
-            <Icon name="add-outline" size={22} color={C.purple} />
+            <Icon name="add" size={22} color={C.purple} />
           </Pressable>
         ),
       }} />
@@ -168,7 +168,7 @@ export default function MedicationsScreen() {
         <Pressable style={S.premiumBanner} onPress={() => router.push("/evcilim-premium")}>
           <Icon name="diamond-outline" size={16} color={C.purple} />
           <Text style={S.premiumBannerTxt}>Yeni ilaç eklemek için Premium'a geç.</Text>
-          <Icon name="chevron-forward-outline" size={14} color={C.purple} />
+          <Icon name="chevron-forward" size={14} color={C.purple} />
         </Pressable>
       )}
 

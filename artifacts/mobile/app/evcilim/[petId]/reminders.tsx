@@ -150,7 +150,7 @@ export default function RemindersScreen() {
       <Stack.Screen options={{ title: "Hatırlatıcılar", headerBackTitle: "Geri",
         headerRight: () => (
           <Pressable hitSlop={12} onPress={openAdd} style={S.addBtn}>
-            <Icon name="add-outline" size={22} color={C.purple} />
+            <Icon name="add" size={22} color={C.purple} />
           </Pressable>
         ),
       }} />

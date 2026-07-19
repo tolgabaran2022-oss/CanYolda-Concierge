@@ -8,6 +8,8 @@ import { extractUserId } from "../lib/jwtAuth.js";
 
 const router = Router();
 
+const FREE_PET_LIMIT = 1;
+
 function uid(req: Parameters<Parameters<typeof router.get>[1]>[0]): string {
   return extractUserId(req);
 }
@@ -52,9 +54,11 @@ router.post("/pets", async (req, res) => {
     const premium = await getPetPremiumStatus(userId);
     if (!premium.canAddPet) {
       res.status(402).json({
-        error: "premium_required",
-        message: "İkinci ve sonraki evcil hayvanlar için Evcilim Premium gereklidir.",
-        premium,
+        code: "PET_PREMIUM_REQUIRED",
+        message: "Evcilim Premium is required to add another pet.",
+        petCount: premium.existingPetCount,
+        freePetLimit: FREE_PET_LIMIT,
+        canAddPet: false,
       });
       return;
     }

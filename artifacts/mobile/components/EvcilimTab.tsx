@@ -20,6 +20,7 @@ import { useAuth } from "@/contexts/AuthContext";
 import { usePets, type Pet } from "@/contexts/PetsContext";
 import { usePetPremium } from "@/contexts/PetPremiumContext";
 import {
+  apiGetPetPremiumStatus,
   apiGetVaccinations,
   apiGetAppointments,
   apiGetNutrition,
@@ -93,7 +94,7 @@ const FEATURE_CARDS = [
   { icon: "clipboard-outline", label: "Sağlık Kayıtları" },
 ] as const;
 
-function NoPetsState({ onAdd, botPad }: { onAdd: () => void; botPad: number }) {
+function NoPetsState({ onAdd, addingPet, botPad }: { onAdd: () => void; addingPet: boolean; botPad: number }) {
   return (
     <ScrollView
       style={{ flex: 1 }}
@@ -147,10 +148,11 @@ function NoPetsState({ onAdd, botPad }: { onAdd: () => void; botPad: number }) {
       <Pressable
         accessibilityRole="button"
         accessibilityLabel="İlk dostunu ekle"
+        disabled={addingPet}
         style={({ pressed }) => [
           np.cta,
           SHADOW_MD,
-          { opacity: pressed ? 0.88 : 1, transform: [{ scale: pressed ? 0.97 : 1 }] },
+          { opacity: addingPet ? 0.7 : pressed ? 0.88 : 1, transform: [{ scale: pressed ? 0.97 : 1 }] },
         ]}
         onPress={() => {
           Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
@@ -163,8 +165,10 @@ function NoPetsState({ onAdd, botPad }: { onAdd: () => void; botPad: number }) {
           end={{ x: 1, y: 0 }}
           style={np.ctaGrad}
         >
-          <Icon name="add-circle-outline" size={20} color="#fff" />
-          <Text style={np.ctaTxt}>İlk Dostumu Ekle</Text>
+          {addingPet
+            ? <ActivityIndicator size="small" color="#fff" />
+            : <><Icon name="add-circle-outline" size={20} color="#fff" /><Text style={np.ctaTxt}>İlk Dostumu Ekle</Text></>
+          }
         </LinearGradient>
       </Pressable>
     </ScrollView>
@@ -198,6 +202,7 @@ function PetProfileCard({
   selectedIndex,
   onSelectIndex,
   onAdd,
+  addingPet,
   onEdit,
   onOpenSelector,
 }: {
@@ -205,6 +210,7 @@ function PetProfileCard({
   selectedIndex: number;
   onSelectIndex: (i: number) => void;
   onAdd: () => void;
+  addingPet: boolean;
   onEdit: () => void;
   onOpenSelector: () => void;
 }) {
@@ -291,11 +297,14 @@ function PetProfileCard({
       <Pressable
         accessibilityRole="button"
         accessibilityLabel="Yeni evcil hayvan ekle"
-        style={({ pressed }) => [pc.addBtn, { opacity: pressed ? 0.82 : 1 }]}
+        disabled={addingPet}
+        style={({ pressed }) => [pc.addBtn, { opacity: addingPet ? 0.55 : pressed ? 0.82 : 1 }]}
         onPress={() => { Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light); onAdd(); }}
       >
-        <Icon name="add-circle-outline" size={18} color={C.purple} />
-        <Text style={pc.addTxt}>Evcil Hayvan Ekle</Text>
+        {addingPet
+          ? <ActivityIndicator size="small" color={C.purple} />
+          : <><Icon name="add-circle-outline" size={18} color={C.purple} /><Text style={pc.addTxt}>Evcil Hayvan Ekle</Text></>
+        }
       </Pressable>
     </View>
   );
@@ -350,6 +359,7 @@ function PetSelectorSheet({
   selectedPetId,
   onSelect,
   onAdd,
+  addingPet,
   onClose,
   onDelete,
   deletingPetId,
@@ -359,6 +369,7 @@ function PetSelectorSheet({
   selectedPetId: string | null;
   onSelect: (id: string) => void;
   onAdd: () => void;
+  addingPet: boolean;
   onClose: () => void;
   onDelete: (id: string) => Promise<void>;
   deletingPetId: string | null;
@@ -470,11 +481,14 @@ function PetSelectorSheet({
             })}
           </ScrollView>
           <Pressable
-            style={({ pressed }) => [ss.addBtn, { opacity: pressed ? 0.82 : 1 }]}
+            disabled={addingPet}
+            style={({ pressed }) => [ss.addBtn, { opacity: addingPet ? 0.55 : pressed ? 0.82 : 1 }]}
             onPress={() => { onClose(); onAdd(); }}
           >
-            <Icon name="add-circle-outline" size={20} color={C.purple} />
-            <Text style={ss.addBtnTxt}>Evcil Hayvan Ekle</Text>
+            {addingPet
+              ? <ActivityIndicator size="small" color={C.purple} />
+              : <><Icon name="add-circle-outline" size={20} color={C.purple} /><Text style={ss.addBtnTxt}>Evcil Hayvan Ekle</Text></>
+            }
           </Pressable>
         </View>
       </View>
@@ -999,6 +1013,7 @@ export function EvcilimTab({ botPad }: { botPad: number }) {
   const [dataLoading, setDataLoading]     = useState(false);
   const [refreshing, setRefreshing]       = useState(false);
   const [deletingPetId, setDeletingPetId] = useState<string | null>(null);
+  const [addingPet, setAddingPet]         = useState(false);
 
   // Validate/initialize selectedPetId whenever pets list changes.
   // If the current selection still exists → keep it (this prevents
@@ -1020,15 +1035,35 @@ export function EvcilimTab({ botPad }: { botPad: number }) {
     [router]
   );
 
-  const handleAddPet = useCallback(() => {
+  const handleAddPet = useCallback(async () => {
+    if (addingPet) return;
+
     if (pets.length === 0) {
+      Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
       nav("/evcilim/add");
-    } else if (isPremium || premiumStatus?.canAddPet) {
-      nav("/evcilim/add");
-    } else {
-      nav("/evcilim-premium");
+      return;
     }
-  }, [pets.length, isPremium, premiumStatus, nav]);
+
+    setAddingPet(true);
+    try {
+      const fresh = await apiGetPetPremiumStatus();
+      const canAddPet = fresh.isPremium === true || fresh.canAddPet === true;
+      if (canAddPet) {
+        nav("/evcilim/add");
+      } else {
+        nav("/evcilim-premium?context=second_pet&returnTo=%2Fevcilim%2Fadd");
+      }
+    } catch {
+      const canAddPet = isPremium || premiumStatus?.canAddPet === true;
+      if (canAddPet) {
+        nav("/evcilim/add");
+      } else {
+        nav("/evcilim-premium?context=second_pet&returnTo=%2Fevcilim%2Fadd");
+      }
+    } finally {
+      setAddingPet(false);
+    }
+  }, [pets.length, isPremium, premiumStatus, addingPet, nav]);
 
   const handleDeletePet = useCallback(async (id: string) => {
     setDeletingPetId(id);
@@ -1101,7 +1136,7 @@ export function EvcilimTab({ botPad }: { botPad: number }) {
   }
 
   if (pets.length === 0) {
-    return <NoPetsState onAdd={handleAddPet} botPad={botPad} />;
+    return <NoPetsState onAdd={handleAddPet} addingPet={addingPet} botPad={botPad} />;
   }
 
   const reminders = selectedPet ? buildReminders(vaccinations, appointments, nutrition) : [];
@@ -1121,6 +1156,7 @@ export function EvcilimTab({ botPad }: { botPad: number }) {
           selectedIndex={selectedIndex}
           onSelectIndex={(i) => setSelectedPetId(pets[i]!.id)}
           onAdd={handleAddPet}
+          addingPet={addingPet}
           onEdit={() => selectedPet && nav(`/evcilim/${selectedPet.id}`)}
           onOpenSelector={() => setPetSelectorOpen(true)}
         />
@@ -1160,6 +1196,7 @@ export function EvcilimTab({ botPad }: { botPad: number }) {
         selectedPetId={selectedPetId}
         onSelect={(id) => setSelectedPetId(id)}
         onAdd={handleAddPet}
+        addingPet={addingPet}
         onClose={() => setPetSelectorOpen(false)}
         onDelete={handleDeletePet}
         deletingPetId={deletingPetId}

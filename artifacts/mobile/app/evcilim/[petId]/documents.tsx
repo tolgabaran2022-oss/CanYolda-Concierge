@@ -180,7 +180,7 @@ export default function DocumentsScreen() {
           <Pressable hitSlop={12} onPress={handleAdd} style={S.addBtn} disabled={uploading}>
             {uploading
               ? <ActivityIndicator size="small" color={C.purple} />
-              : <Icon name="add-outline" size={22} color={C.purple} />
+              : <Icon name="add" size={22} color={C.purple} />
             }
           </Pressable>
         ),
@@ -190,7 +190,7 @@ export default function DocumentsScreen() {
         <Pressable style={S.premiumBanner} onPress={() => router.push("/evcilim-premium")}>
           <Icon name="diamond-outline" size={16} color={C.purple} />
           <Text style={S.premiumBannerTxt}>Yeni belge yüklemek için Premium'a geç.</Text>
-          <Icon name="chevron-forward-outline" size={14} color={C.purple} />
+          <Icon name="chevron-forward" size={14} color={C.purple} />
         </Pressable>
       )}
 

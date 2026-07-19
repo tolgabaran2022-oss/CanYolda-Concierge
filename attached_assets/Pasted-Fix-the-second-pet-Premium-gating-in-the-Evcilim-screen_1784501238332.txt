@@ -1,0 +1,336 @@
+Fix the second-pet Premium gating in the Evcilim screen.
+
+CURRENT STATE:
+
+The authenticated user already has one pet named “Pamela”.
+
+When this user taps “Evcil Hayvan Ekle”, the application must check the active Evcilim Premium entitlement before opening the add-pet form.
+
+CORRECT BUSINESS RULE:
+
+- First pet is free.
+- Second and every additional pet require active Evcilim Premium.
+- Existing pets and their records must never be deleted or hidden.
+- Premium expiration restricts only new Premium actions.
+
+Use one shared constant:
+
+const FREE_PET_LIMIT = 1;
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+FRONTEND GATING
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+When “Evcil Hayvan Ekle” is tapped:
+
+1. Refresh/retrieve the current authenticated user’s Premium status.
+2. Retrieve the current pet count.
+3. Apply:
+
+const canAddPet =
+  premiumStatus.isPremium === true ||
+  premiumStatus.canAddPet === true;
+
+if (petCount === 0) {
+  router.push("/evcilim/add");
+} else if (canAddPet) {
+  router.push("/evcilim/add");
+} else {
+  router.push("/evcilim-premium");
+}
+
+Expected behavior:
+
+- 0 pets + no Premium → /evcilim/add
+- 1 pet + no Premium → /evcilim-premium
+- 1 pet + Premium → /evcilim/add
+- Multiple pets + Premium → /evcilim/add
+
+Do not navigate before Premium status finishes loading.
+
+Prevent repeated taps while the status is loading.
+
+Show a small loading indicator if verification takes time.
+
+Apply this same handler to every add-pet entry point:
+
+- Main “Evcil Hayvan Ekle” button
+- Pet-selector add button
+- Empty-state CTA
+- Any header or modal add-pet action
+
+Do not maintain different rules in different components.
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+SERVER-SIDE ENFORCEMENT
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+Do not enforce this only in the UI.
+
+Before inserting a new pet:
+
+1. Authenticate the user.
+2. Count pets owned by the authenticated user directly from the database.
+3. Retrieve server-authoritative Premium status.
+4. Apply the effective/grandfathered limit.
+5. Reject unauthorized creation before the insert.
+
+For a normal new user:
+
+freePetLimit = 1
+
+If:
+
+petCount >= freePetLimit && !isPremium
+
+return:
+
+HTTP 402
+
+{
+  "code": "PET_PREMIUM_REQUIRED",
+  "message": "Evcilim Premium is required to add another pet.",
+  "petCount": 1,
+  "freePetLimit": 1,
+  "canAddPet": false
+}
+
+The database count must remain unchanged after rejection.
+
+Never trust:
+
+- petCount supplied by the client
+- isPremium supplied by the client
+- hidden buttons as security
+- only cached local Premium status
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+GRANDFATHERED USERS
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+Do not delete or hide existing pets.
+
+If an existing non-Premium user already has more pets than the standard free limit:
+
+- Keep every existing pet visible and manageable.
+- Preserve the existing grandfathered limit.
+- Do not reduce the user’s protected limit.
+- Require Premium only when adding another pet beyond that protected limit.
+
+Use:
+
+effectivePetLimit = Math.max(
+  FREE_PET_LIMIT,
+  grandfatheredPetLimit
+);
+
+Non-Premium user:
+
+canAddPet = petCount < effectivePetLimit
+
+Premium user:
+
+canAddPet = true
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+PREMIUM PAYWALL
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+When the second-pet attempt opens the paywall, show clear contextual copy:
+
+Turkish title:
+
+“Yeni bir dost daha ekle”
+
+Turkish description:
+
+“İlk evcil hayvanın ücretsiz. İkinci ve sonraki dostlarını eklemek için Evcilim Premium’a geç.”
+
+English title:
+
+“Add another companion”
+
+English description:
+
+“Your first pet is free. Upgrade to Evcilim Premium to add a second pet and beyond.”
+
+The paywall must:
+
+- Load real RevenueCat packages.
+- Display store-provided localized `priceString`.
+- Never hardcode currency.
+- Support purchase.
+- Support restore purchases.
+- Refresh Premium context after success.
+- Return to /evcilim/add after a successful purchase initiated from this flow.
+- Keep the CTA disabled if packages cannot be loaded.
+- Show Retry when offering loading fails.
+
+Do not fabricate product prices.
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+REVENUECAT VERIFICATION
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+Verify:
+
+- Evcilim offering ID
+- Evcilim entitlement ID
+- Available packages
+- CustomerInfo
+- Active entitlement
+- Restore purchases
+- Server-side verification
+- Premium-context refresh
+- Persistence after app restart
+
+Do not confuse the Featured Listing entitlement with the Evcilim Premium entitlement.
+
+Use separate identifiers and separate access checks.
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+LANGUAGE CONSISTENCY BUG
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+The screenshot also shows a mixed-language UI:
+
+- Main screen is Turkish.
+- Bottom navigation is English:
+  Map, Animals, Adoption, My Pets, Account.
+
+Fix the bottom navigation so it uses the same global i18n language as the rest of the app.
+
+Turkish labels:
+
+- Harita
+- Hayvanlar
+- Sahiplendirme
+- Evcilim
+- Hesap
+
+English labels:
+
+- Map
+- Animals
+- Adoption
+- My Pets
+- Account
+
+Do not create a separate navigation language state.
+
+Use the global i18next language and semantic translation keys.
+
+Changing language must update the navigation immediately.
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+REQUIRED EXECUTED TESTS
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+Do not mark PASS through code review only.
+
+TEST 1 — First pet
+
+- Use a free test user with 0 pets.
+- Verify database count = 0.
+- Tap add pet.
+- Confirm /evcilim/add opens.
+- Create first pet.
+- Confirm API success.
+- Confirm database count = 1.
+- Fetch pets again.
+- Confirm persistence.
+
+TEST 2 — Second pet without Premium
+
+- Use the same free user with 1 pet.
+- Verify database count = 1.
+- Tap “Evcil Hayvan Ekle”.
+- Confirm /evcilim-premium opens.
+- Confirm /evcilim/add does not open.
+- Attempt direct API pet creation.
+- Confirm HTTP 402.
+- Confirm code PET_PREMIUM_REQUIRED.
+- Confirm database count remains 1.
+
+TEST 3 — Successful Premium purchase
+
+- Use RevenueCat test products.
+- Start from the second-pet paywall.
+- Complete a test purchase.
+- Confirm entitlement becomes active.
+- Refresh Premium context.
+- Confirm /evcilim/add opens.
+- Create second pet.
+- Confirm database count = 2.
+- Fetch pets again.
+
+TEST 4 — Restore
+
+- Use a test account with an existing entitlement.
+- Tap Restore Purchases.
+- Confirm entitlement is restored.
+- Confirm add-pet form becomes accessible.
+
+TEST 5 — Premium expiration
+
+- Use a user with 2 existing pets.
+- Expire/remove the test entitlement.
+- Confirm both pets remain visible and manageable.
+- Attempt a third pet.
+- Confirm the paywall opens.
+- Confirm direct API creation is rejected.
+- Confirm no existing record is deleted.
+
+TEST 6 — All add buttons
+
+Test every add-pet entry point and confirm all use the same rule.
+
+TEST 7 — Language
+
+- Select Turkish.
+- Confirm the entire screen and bottom navigation are Turkish.
+- Select English.
+- Confirm the entire screen and bottom navigation are English.
+- Confirm no mixed-language state remains.
+
+For each test verify:
+
+- UI result
+- Route
+- API status
+- Sanitized response
+- Database count
+- Persistence re-read
+- Console log
+- Network log
+
+Use only:
+
+PASS
+FAIL
+BLOCKED
+STATIC REVIEW
+NOT TESTED
+
+Do not report Web testing as Android or iOS PASS.
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+FINAL REPORT
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+Report:
+
+- Root cause of the second-pet bypass
+- Every file changed
+- Shared gating function/location
+- API enforcement
+- Grandfathering behavior
+- RevenueCat entitlement used
+- Paywall return flow
+- Language consistency correction
+- Tests actually executed
+- Database count before and after every test
+- Remaining blockers
+
+Do not delete existing users or pets.
+Do not modify unrelated Premium features.
