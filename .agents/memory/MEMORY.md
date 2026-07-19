@@ -17,3 +17,4 @@
 - [reportCode RIGHT fix](reportcode-right-fix.md) — SUBSTRING(col FROM $n) in Drizzle sql`` hits PostgreSQL regex overload; use RIGHT(report_code, 6) instead; COUNT-based seq also breaks after deletes — use MAX
 - [Feed/social cleanup](feed-social-cleanup.md) — Instagram feed system fully removed; social.ts now uses socialProfiles for user search; follows/feedPosts tables dropped; x-user-id dual auth (extractUserIdDual) is still in jwtAuth.ts — security cleanup deferred
 - [Metro watcher ENOENT fix](metro-watcher-enoent.md) — Metro crashes if a watched directory disappears; fix with mkdir -p on the missing path then restart the workflow
+- [i18n architecture](i18n-arch.md) — i18next + react-i18next, NO expo-localization (version mismatch kills Metro); locale via NativeModules; init before render in _layout.tsx; Globe icon added to ICON_MAP

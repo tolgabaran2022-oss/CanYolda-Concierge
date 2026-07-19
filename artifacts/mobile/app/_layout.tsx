@@ -8,26 +8,29 @@ import {
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { Stack, useRouter, useSegments } from "expo-router";
 import * as SplashScreen from "expo-splash-screen";
-import React, { useEffect } from "react";
+import React, { useEffect, useState } from "react";
 import { Platform, View } from "react-native";
 import { GestureHandlerRootView } from "react-native-gesture-handler";
 import { SafeAreaProvider } from "react-native-safe-area-context";
+import { I18nextProvider } from "react-i18next";
 
 import { ErrorBoundary } from "@/components/ErrorBoundary";
 import { AdoptionProvider } from "@/contexts/AdoptionContext";
 import { AnimalsProvider } from "@/contexts/AnimalsContext";
 import { AuthProvider, useAuth } from "@/contexts/AuthContext";
 import { BoostProvider } from "@/contexts/BoostContext";
+import { LanguageProvider } from "@/contexts/LanguageContext";
 import { PetsProvider } from "@/contexts/PetsContext";
 import { PetPremiumProvider } from "@/contexts/PetPremiumContext";
 import { ThemeProvider } from "@/contexts/ThemeContext";
+import i18n, { initI18n } from "@/i18n";
 
 SplashScreen.preventAutoHideAsync();
 const queryClient = new QueryClient({
   defaultOptions: {
     queries: {
-      staleTime:          30 * 1000,
-      retry:              2,
+      staleTime:            30 * 1000,
+      retry:                2,
       refetchOnWindowFocus: false,
     },
   },
@@ -112,6 +115,7 @@ function RootLayoutNav() {
 }
 
 export default function RootLayout() {
+  const [i18nReady, setI18nReady] = useState(false);
   const [fontsLoaded, fontError] = useFonts({
     Inter_400Regular,
     Inter_500Medium,
@@ -120,50 +124,58 @@ export default function RootLayout() {
   });
 
   useEffect(() => {
-    if (fontsLoaded || fontError) {
+    initI18n().then(() => setI18nReady(true)).catch(() => setI18nReady(true));
+  }, []);
+
+  useEffect(() => {
+    if ((fontsLoaded || fontError) && i18nReady) {
       SplashScreen.hideAsync();
     }
-  }, [fontsLoaded, fontError]);
+  }, [fontsLoaded, fontError, i18nReady]);
 
-  if (!fontsLoaded && !fontError) return null;
+  if ((!fontsLoaded && !fontError) || !i18nReady) return null;
 
   return (
-    <SafeAreaProvider>
-      <ThemeProvider>
-        <ErrorBoundary>
-          <AuthProvider>
-            <AnimalsProvider>
-              <PetsProvider>
-                <PetPremiumProvider>
-                <AdoptionProvider>
-                  <BoostProvider>
-                    <QueryClientProvider client={queryClient}>
-                      <GestureHandlerRootView style={{ flex: 1 }}>
-                        {Platform.OS === "web" ? (
-                          <View
-                            style={{
-                              flex: 1,
-                              width: "100%",
-                              maxWidth: 430,
-                              alignSelf: "center",
-                              overflow: "hidden",
-                            }}
-                          >
-                            <RootLayoutNav />
-                          </View>
-                        ) : (
-                          <RootLayoutNav />
-                        )}
-                      </GestureHandlerRootView>
-                    </QueryClientProvider>
-                  </BoostProvider>
-                </AdoptionProvider>
-                </PetPremiumProvider>
-              </PetsProvider>
-            </AnimalsProvider>
-          </AuthProvider>
-        </ErrorBoundary>
-      </ThemeProvider>
-    </SafeAreaProvider>
+    <I18nextProvider i18n={i18n}>
+      <SafeAreaProvider>
+        <ThemeProvider>
+          <ErrorBoundary>
+            <LanguageProvider>
+              <AuthProvider>
+                <AnimalsProvider>
+                  <PetsProvider>
+                    <PetPremiumProvider>
+                    <AdoptionProvider>
+                      <BoostProvider>
+                        <QueryClientProvider client={queryClient}>
+                          <GestureHandlerRootView style={{ flex: 1 }}>
+                            {Platform.OS === "web" ? (
+                              <View
+                                style={{
+                                  flex: 1,
+                                  width: "100%",
+                                  maxWidth: 430,
+                                  alignSelf: "center",
+                                  overflow: "hidden",
+                                }}
+                              >
+                                <RootLayoutNav />
+                              </View>
+                            ) : (
+                              <RootLayoutNav />
+                            )}
+                          </GestureHandlerRootView>
+                        </QueryClientProvider>
+                      </BoostProvider>
+                    </AdoptionProvider>
+                    </PetPremiumProvider>
+                  </PetsProvider>
+                </AnimalsProvider>
+              </AuthProvider>
+            </LanguageProvider>
+          </ErrorBoundary>
+        </ThemeProvider>
+      </SafeAreaProvider>
+    </I18nextProvider>
   );
 }

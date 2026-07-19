@@ -1,0 +1,843 @@
+Implement a complete, production-ready internationalization system for the entire CanYoldaşı application.
+
+The language selector must first appear on the Login screen, but the selected language must change the language of the ENTIRE application.
+
+Start with:
+
+- Turkish: tr
+- English: en
+
+IMPORTANT:
+
+- Do not translate only the Login screen.
+- Do not create a screen-specific language state.
+- Build one global language system shared by all screens.
+- Do not redesign unrelated screens.
+- Do not remove or break existing functionality.
+- Do not reset or delete existing database data.
+- Do not translate user-generated content automatically.
+- Preserve all existing routes, API integrations and business logic.
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+1. INSPECT THE CURRENT PROJECT
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+Before making changes, inspect and report:
+
+- Existing localization or i18n packages
+- Existing language-related code
+- Current React Native and Expo versions
+- Current state-management structure
+- Root provider structure
+- Authentication flow
+- AsyncStorage usage
+- Hardcoded Turkish strings
+- Hardcoded English strings
+- API error-message structure
+- Date, time, number and currency formatting
+- RevenueCat localized-price usage
+
+Reuse existing localization infrastructure if it is correct.
+
+Do not install duplicate localization libraries.
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+2. REQUIRED PACKAGES
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+Use a global i18n architecture based on packages compatible with the project’s Expo SDK:
+
+- i18next
+- react-i18next
+- expo-localization
+- @react-native-async-storage/async-storage
+
+Check whether these packages already exist before installing them.
+
+Use pnpm only.
+
+Install versions compatible with the existing Expo SDK and React Native version.
+
+Do not upgrade Expo, React Native or unrelated dependencies.
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+3. TRANSLATION ARCHITECTURE
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+Create a clean structure similar to:
+
+artifacts/mobile/i18n/
+  index.ts
+  resources/
+    tr.json
+    en.json
+
+If the project structure requires a different location, follow the existing alias and folder conventions.
+
+The i18n system must:
+
+- Initialize before the main application UI is shown.
+- Avoid displaying translation keys during startup.
+- Use Turkish as the fallback language.
+- Support runtime language switching.
+- Persist the selected language.
+- Restore the persisted language after app restart.
+- Use the device language on the first launch.
+- Fall back to Turkish if the device language is unsupported.
+- Normalize language codes such as:
+  - tr-TR → tr
+  - en-US → en
+  - en-GB → en
+- Support adding more languages later.
+- Never crash because of a missing translation.
+- Log missing development translations without exposing them to users.
+
+Recommended configuration:
+
+fallbackLng: "tr"
+supportedLngs: ["tr", "en"]
+load: "languageOnly"
+interpolation.escapeValue: false
+returnNull: false
+
+Use complete natural translations, not machine-like word-for-word text.
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+4. LANGUAGE PERSISTENCE
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+Store the selected language in AsyncStorage using one stable key, for example:
+
+@canyoldasi/language
+
+Language priority:
+
+1. User’s saved language selection
+2. Device language
+3. Turkish fallback
+
+When the language changes:
+
+- Call i18n.changeLanguage(languageCode).
+- Save the selection to AsyncStorage.
+- Update the entire visible UI immediately.
+- Do not require logout.
+- Do not require an application restart.
+- Do not navigate the user away from the current screen.
+
+Avoid a visible flash from Turkish to English during startup.
+
+Show the app only after language initialization is complete, or coordinate it with the existing splash/loading system.
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+5. GLOBAL LANGUAGE CONTEXT
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+Create a reusable language context or hook integrated with i18next.
+
+It should expose:
+
+- currentLanguage
+- supportedLanguages
+- changeLanguage
+- isLanguageReady
+
+Example supported-language metadata:
+
+tr:
+- code: "tr"
+- nativeLabel: "Türkçe"
+- shortLabel: "TR"
+
+en:
+- code: "en"
+- nativeLabel: "English"
+- shortLabel: "EN"
+
+Do not duplicate language state in individual screens.
+
+The i18next language value must remain the single source of truth.
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+6. LOGIN SCREEN LANGUAGE SELECTOR
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+Add a compact language selector to the upper-right area of the existing Login screen.
+
+Preserve the current Login design and safe-area layout.
+
+Suggested appearance:
+
+- Globe icon
+- Current short language label: TR or EN
+- Small downward chevron
+- White or translucent rounded pill
+- Subtle lavender border
+- Soft shadow
+- Minimum 44px touch target
+- Must not overlap the logo, status bar or form
+
+Example collapsed state:
+
+🌐 TR ⌄
+
+When tapped, open a polished language-selection modal, popover or bottom sheet.
+
+Options:
+
+- Türkçe
+- English
+
+Selected language must show:
+
+- Purple check icon
+- Pale lavender selected background
+- Clear accessibility state
+
+Do not use the complete screen as a dropdown.
+
+Close the selector after choosing a language.
+
+The Login screen must update immediately when the language is selected.
+
+Add accessibility labels in the currently selected language.
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+7. ACCOUNT/SETTINGS LANGUAGE OPTION
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+Add a “Language / Dil” option to the Account or Settings screen.
+
+Turkish:
+
+Title:
+“Dil”
+
+Current value:
+“Türkçe” or “English”
+
+English:
+
+Title:
+“Language”
+
+Current value:
+“Turkish” or “English”
+
+Tapping this option must open the same reusable language-selection component used on the Login screen.
+
+Do not implement two different language-selection systems.
+
+The user must be able to change the language while logged in.
+
+The change must update all active screens immediately.
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+8. TRANSLATE THE COMPLETE APPLICATION
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+Search the entire mobile project for every user-visible hardcoded string.
+
+Move system/interface text into translation resources.
+
+Translate all existing screens and components, including but not limited to:
+
+AUTHENTICATION
+
+- Welcome
+- Login
+- Registration
+- Email
+- Password
+- Confirm password
+- Forgot password
+- Reset password
+- Change password
+- Google login
+- Apple login
+- Validation messages
+- Authentication errors
+- Terms acceptance
+- Loading text
+
+BOTTOM NAVIGATION
+
+- Harita / Map
+- Hayvanlar / Animals
+- Sahiplendirme / Adoption
+- Evcilim / My Pets
+- Hesap / Account
+
+MAP
+
+- Nearby Animals
+- View All
+- Heroes
+- Report Status
+- Filters
+- Open Location
+- Empty states
+- Location permission messages
+- Loading and error states
+
+STREET ANIMALS
+
+- Status labels
+- Hungry
+- Injured
+- Healthy
+- Urgent
+- Waiting for Help
+- Help button
+- Report form
+- Animal types
+- Camera
+- Gallery
+- Notes
+- Submit
+- Validation
+- Detail screen
+- Heroes leaderboard
+- Monthly score
+- Rankings
+
+ADOPTION
+
+- Create Listing
+- My Listings
+- Messages
+- All Listings
+- Preview
+- Edit
+- Delete
+- Featured
+- Listing details
+- Animal information
+- Adoption request
+- Filters
+- Empty states
+- Validation and errors
+
+EVCİLİM
+
+- Empty state
+- Add Pet
+- Edit Pet
+- Delete Pet
+- Pet selector
+- Identification
+- Health
+- Vaccinations
+- Appointments
+- Nutrition
+- Documents
+- Medications
+- Notes
+- Reminders
+- Premium
+- Paywall
+- Package names
+- Restore Purchases
+- Premium-expiration messages
+- All empty/loading/error states
+
+PROFILE AND ACCOUNT
+
+- Profile
+- Edit Profile
+- Followers
+- Following
+- Messages
+- Search
+- Notifications
+- Change Password
+- Forgot Password
+- Logout
+- Delete Account
+- Privacy Policy
+- Terms of Service
+- Language
+
+COMMON COMPONENTS
+
+- Save
+- Cancel
+- Delete
+- Edit
+- Continue
+- Back
+- Close
+- Retry
+- Loading
+- Success
+- Error
+- Yes
+- No
+- Unknown
+- Optional
+- Required
+- Date/time expressions
+- Confirmation dialogs
+- Toast messages
+- Modal text
+- Empty states
+- Network errors
+
+Do not leave mixed Turkish and English UI on the same screen.
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+9. TRANSLATION-KEY RULES
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+Use semantic, structured translation keys.
+
+Good examples:
+
+common.save
+common.cancel
+common.loading
+auth.login.title
+auth.login.emailPlaceholder
+auth.errors.invalidCredentials
+navigation.map
+navigation.animals
+map.nearbyAnimals
+streetAnimals.status.hungry
+adoption.createListing
+pets.add.title
+pets.empty.title
+premium.restorePurchases
+account.language
+
+Do not use Turkish sentences as keys.
+
+Bad:
+
+t("Kaydet")
+t("Evcil hayvan ekle")
+
+Good:
+
+t("common.save")
+t("pets.add.title")
+
+Use interpolation for dynamic values:
+
+t("pets.count", { count: petCount })
+t("heroes.monthlyScore", { score })
+t("time.minutesAgo", { count: minutes })
+
+Use i18next pluralization for singular/plural content.
+
+Do not build translated sentences by concatenating fragments.
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+10. USER-GENERATED CONTENT
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+Do not translate:
+
+- User names
+- Pet names
+- Listing titles
+- Listing descriptions
+- User notes
+- Messages
+- User-entered status descriptions
+- Addresses returned as real location data
+- Custom breed text
+
+Only translate application-controlled interface labels.
+
+If a status or animal type is stored as a stable enum, translate its display label but do not modify the stored database value.
+
+Example:
+
+Database:
+status = "hungry"
+
+Turkish UI:
+“Aç”
+
+English UI:
+“Hungry”
+
+Do not migrate stored values just to support translations.
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+11. API ERROR LOCALIZATION
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+Do not depend exclusively on Turkish error sentences returned by the API.
+
+Where practical, standardize API errors using stable codes, for example:
+
+AUTH_INVALID_CREDENTIALS
+AUTH_EMAIL_EXISTS
+PET_PREMIUM_REQUIRED
+UPLOAD_FAILED
+UNAUTHORIZED
+FORBIDDEN
+VALIDATION_ERROR
+NETWORK_ERROR
+
+The mobile app must map these codes to localized messages.
+
+Example:
+
+errors.PET_PREMIUM_REQUIRED
+
+Turkish:
+“Birden fazla evcil hayvan eklemek için Premium gereklidir.”
+
+English:
+“Premium is required to add more than one pet.”
+
+Preserve backward compatibility with existing API responses.
+
+Do not expose raw database, server or stack-trace messages to users.
+
+Do not unnecessarily rewrite the entire backend.
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+12. DATES, TIMES AND NUMBERS
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+Localize:
+
+- Dates
+- Month names
+- Relative time
+- Appointment dates
+- Vaccination dates
+- Leaderboard month
+- Numbers
+- Score labels
+- Animal counts
+
+Turkish examples:
+
+- 20 Temmuz 2026
+- 5 dakika önce
+- Bu ay
+- 7 hayvan
+
+English examples:
+
+- July 20, 2026
+- 5 minutes ago
+- This month
+- 7 animals
+
+Use Intl APIs or an existing compatible localization utility.
+
+Do not hardcode “tr-TR” throughout components.
+
+Derive locale from the current application language:
+
+tr → tr-TR
+en → en-US
+
+Keep database date values language-independent.
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+13. REVENUECAT AND CURRENCY
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+Do not manually convert store prices.
+
+For RevenueCat products, display the localized store-provided:
+
+priceString
+
+This means:
+
+- Turkish storefront may display TRY.
+- Other storefronts display their own localized currency.
+- Language selection must not fabricate a different currency.
+- Do not hardcode ₺, $, € or numeric prices.
+- Package titles and descriptions may be translated.
+- Actual purchase price must come from RevenueCat.
+
+Translate purchase errors and restore-purchase messages.
+
+Preserve existing entitlement and offering identifiers.
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+14. CAMERA, LOCATION AND PERMISSION TEXT
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+Translate in-app explanations and permission-denied messages.
+
+Review native permission descriptions:
+
+iOS:
+
+- Camera usage description
+- Photo library usage description
+- Location usage description
+- Notifications explanation
+
+Android:
+
+- Relevant permission rationale shown inside the application
+
+Native OS permission-dialog text may require static Info.plist/app configuration.
+
+Provide Turkish and English localization where the platform supports localized permission resources.
+
+If full native permission localization cannot be completed in the current environment, report it clearly as STATIC REVIEW or BLOCKED.
+
+Do not claim that native permission dialogs were tested without a native build.
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+15. RTL AND FUTURE LANGUAGE SUPPORT
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+Only Turkish and English are required now.
+
+However:
+
+- Avoid hardcoding language checks throughout the application.
+- Keep language metadata extensible.
+- Do not implement RTL unless an RTL language is added.
+- Avoid layout decisions that would make future RTL support impossible.
+- Keep translation files organized.
+
+Do not add unfinished Arabic or German translations.
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+16. PERFORMANCE
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+Avoid:
+
+- Reinitializing i18next on every render
+- Re-reading AsyncStorage on every screen
+- Reloading the entire application when language changes
+- Duplicating translation resources
+- Excessive component re-renders
+- Blocking navigation unnecessarily
+
+Initialize i18n once.
+
+Memoize language metadata where appropriate.
+
+Language switching must feel immediate.
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+17. ACCESSIBILITY
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+Localize:
+
+- accessibilityLabel
+- accessibilityHint
+- Dialog labels
+- Button labels
+- Image descriptions where appropriate
+
+Do not leave Turkish accessibility labels when the application is in English.
+
+Language-selector requirements:
+
+- accessibilityRole="button"
+- Clearly announce current language
+- Selected option must expose selected state
+- Minimum 44×44 touch target
+- Sufficient color contrast
+- Screen-reader-friendly option order
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+18. REQUIRED TESTS
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+Do not mark PASS based only on code inspection.
+
+Test the following:
+
+FIRST LAUNCH
+
+1. Clear only the test app’s saved language preference.
+2. Set device/browser language to Turkish.
+3. Launch application.
+4. Verify Turkish is selected.
+5. Repeat with English.
+6. Repeat with an unsupported device language.
+7. Verify fallback to Turkish.
+
+LOGIN SCREEN
+
+1. Open the language selector.
+2. Select English.
+3. Verify the Login screen changes immediately.
+4. Select Turkish.
+5. Verify the Login screen changes immediately.
+6. Verify layout, buttons and validation messages.
+7. Verify no status-bar or logo overlap.
+
+PERSISTENCE
+
+1. Select English.
+2. Close and restart the application.
+3. Verify English remains selected.
+4. Log in.
+5. Verify the authenticated application remains English.
+6. Log out.
+7. Verify Login remains English.
+
+AUTHENTICATED LANGUAGE CHANGE
+
+1. Open Account/Settings.
+2. Change language to Turkish.
+3. Verify the current screen changes immediately.
+4. Navigate through all main tabs.
+5. Verify every tab uses Turkish.
+6. Restart and verify persistence.
+
+FULL APPLICATION
+
+Test every major screen in both languages:
+
+- Authentication
+- Map
+- Street Animals
+- Heroes
+- Adoption
+- Evcilim
+- Premium
+- Profile
+- Account
+- Messages
+- Notifications
+- Forms
+- Modals
+- Toasts
+- Errors
+- Empty states
+- Loading states
+
+Check:
+
+- Missing translation keys
+- Translation keys visible to users
+- Mixed-language screens
+- Clipped English labels
+- Button overflow
+- Modal overflow
+- Incorrect plurals
+- Incorrect dates
+- Incorrect relative time
+- Currency hardcoding
+- Untranslated validation messages
+- Untranslated accessibility labels
+
+Test responsive Web widths:
+
+- 320px
+- 375px
+- 390px
+- 430px
+- Tablet
+- Desktop
+
+Test Android and iOS separately if native runtimes are available.
+
+Expo Web is not an Android or iOS test.
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+19. RESULT CLASSIFICATION
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+Use only:
+
+PASS:
+Actually executed and verified.
+
+FAIL:
+Actually executed and incorrect.
+
+BLOCKED:
+Could not execute because the platform, credentials, device or environment was unavailable.
+
+STATIC REVIEW:
+Code or configuration inspected but not executed.
+
+NOT TESTED:
+Not tested.
+
+Do not mark Android or iOS PASS using Web results.
+
+Do not mark native permission localization PASS without a native build and real interaction.
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+20. REQUIRED QUALITY CHECKS
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+Run:
+
+- pnpm install
+- Mobile TypeScript check
+- API TypeScript check if backend changes were necessary
+- Existing tests
+- Expo Doctor
+- Existing lint command if configured
+- Production Web build if supported
+
+Search the project again after implementation for user-visible hardcoded strings.
+
+Create a remaining-hardcoded-strings report.
+
+Do not automatically translate:
+
+- Test fixtures
+- Database seed data
+- Debug logs
+- Developer comments
+- User-generated content
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+21. FINAL REPORT
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+Create:
+
+audit-results/CANYOLDASI_I18N_REPORT.md
+
+Include:
+
+1. Architecture implemented
+2. Packages installed
+3. Files created
+4. Files changed
+5. Translation-key organization
+6. Login selector implementation
+7. Account selector implementation
+8. Language persistence behavior
+9. Device-language behavior
+10. Date/time formatting
+11. RevenueCat price behavior
+12. API error localization
+13. Native permission localization status
+14. Hardcoded strings remaining
+15. Tests actually executed
+16. Web results
+17. Android results
+18. iOS results
+19. PASS / FAIL / BLOCKED / STATIC REVIEW / NOT TESTED counts
+20. Remaining issues
+
+After implementation, show me:
+
+- The Login screen in Turkish
+- The Login screen in English
+- The Account language selector
+- At least one authenticated main screen in Turkish
+- The same screen in English
+
+Do not claim the entire application is translated until every user-visible application-controlled string has been audited.
+
+Do not redesign unrelated interfaces.
+Do not modify user-generated content.
+Do not delete existing records.
+Do not change RevenueCat product identifiers.

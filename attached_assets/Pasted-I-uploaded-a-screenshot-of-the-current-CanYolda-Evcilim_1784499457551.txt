@@ -1,0 +1,1107 @@
+I uploaded a screenshot of the current CanYoldaşı “Evcilim” screen.
+
+Perform a complete functional repair and visual cleanup of the Evcilim and Evcilim Premium system.
+
+IMPORTANT:
+
+- The screenshot is a visual and bug reference only.
+- Do not render the uploaded screenshot inside the application.
+- Do not use it as a background image.
+- Preserve the existing CanYoldaşı purple/lavender visual identity.
+- Do not redesign unrelated screens.
+- Do not delete or reset existing users, pets or pet-management data.
+- Do not replace real data with mock data.
+- Do not claim a feature works until it has actually been executed and verified.
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+1. CORRECT PREMIUM BUSINESS MODEL
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+The correct pet-limit rule is:
+
+- The first pet is free.
+- The second and every additional pet require Evcilim Premium.
+- Existing pets must always remain accessible.
+- Premium expiration must never delete or hide existing pets or records.
+- Premium expiration restricts only new Premium actions.
+
+Use one shared constant:
+
+FREE_PET_LIMIT = 1
+
+Required behavior:
+
+Free user with 0 pets:
+
+- canAddPet: true
+- Add-pet screen opens.
+- First-pet creation succeeds.
+- Premium paywall does not open.
+
+Free user with 1 pet:
+
+- canAddPet: false
+- Attempting to add a second pet opens the Premium paywall.
+- Direct API creation of a second pet is rejected.
+
+Premium user:
+
+- canAddPet: true
+- Can add additional pets.
+
+Frontend logic:
+
+const canAddPet = isPremium || petCount < FREE_PET_LIMIT;
+
+if (canAddPet) {
+  router.push("/evcilim/add");
+} else {
+  router.push("/evcilim-premium");
+}
+
+Do not rely only on frontend state.
+
+Before creating a pet, the API must calculate the authenticated user’s current pet count directly from the database.
+
+Suggested API rejection:
+
+HTTP 402
+
+{
+  "code": "PET_PREMIUM_REQUIRED",
+  "message": "Premium is required to add another pet.",
+  "petCount": 1,
+  "freePetLimit": 1,
+  "canAddPet": false
+}
+
+Do not trust a pet count supplied by the client.
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+2. GRANDFATHERING AND DATA PROTECTION
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+Preserve existing users’ pets.
+
+If a free user already has multiple pets:
+
+- Keep all existing pets visible.
+- Allow viewing and managing all existing pets.
+- Do not delete, hide or lock existing pet records.
+- Do not reduce an existing protected/grandfathered limit.
+- Require Premium only for adding another pet beyond the user’s protected existing limit.
+
+If grandfathering already exists, preserve it.
+
+Recommended effective limit:
+
+effectivePetLimit = Math.max(1, grandfatheredPetLimit);
+
+Non-Premium creation rule:
+
+petCount < effectivePetLimit
+
+Premium creation rule:
+
+always allowed
+
+Do not change ownership values or move pet records between users.
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+3. CORRECT PREMIUM TEXT
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+Use these messages:
+
+Turkish:
+
+“İlk evcil hayvanın ücretsiz”
+
+“İkinci ve sonraki dostların için Evcilim Premium’a geç.”
+
+English:
+
+“Your first pet is free”
+
+“Upgrade to Evcilim Premium to add a second pet and beyond.”
+
+Remove any text stating that the first two pets are free.
+
+Do not use conflicting limits in different screens.
+
+Update all Turkish and English translation resources.
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+4. AUDIT EVERY CURRENT EVCİLİM BUTTON
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+Inspect every visible button and determine its current route, screen, API endpoint and database integration.
+
+QUICK STATUS
+
+- Sonraki Aşı / Aşı ekle
+- Yaklaşan Randevu / Randevu oluştur
+- Mama Durumu / Beslenme ekle
+
+MANAGEMENT
+
+- Kimlik
+- Sağlık
+- Aşılar
+- Randevular
+- Beslenme
+- Belgeler
+- İlaçlar
+- Notlar
+
+OTHER ACTIONS
+
+- Pet selector
+- Pet dropdown
+- Add pet
+- Edit pet
+- Delete pet
+- Add reminder
+- View all reminders
+- Premium paywall
+- Purchase
+- Restore purchases
+
+Fix:
+
+- Buttons that do nothing
+- Incorrect routes
+- Multiple buttons accidentally opening the same screen
+- Missing routes
+- Missing route registration
+- Placeholder screens
+- Screens disconnected from the API
+- Incorrect petId parameters
+- Data from one pet appearing under another pet
+- Buttons hidden behind navigation
+- Unhandled promise errors
+- Missing loading, empty and failure states
+
+Do not consider navigation alone sufficient. Each screen must load and persist real data.
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+5. REQUIRED ROUTE BEHAVIOR
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+Verify that each management card opens its own correct screen.
+
+Suggested route structure:
+
+- Kimlik:
+  /evcilim/[petId]/identification
+
+- Sağlık:
+  /evcilim/[petId]/health
+
+- Aşılar:
+  /evcilim/[petId]/vaccinations
+
+- Randevular:
+  /evcilim/[petId]/appointments
+
+- Beslenme:
+  /evcilim/[petId]/nutrition
+
+- Belgeler:
+  /evcilim/[petId]/documents
+
+- İlaçlar:
+  /evcilim/[petId]/medications
+
+- Notlar:
+  /evcilim/[petId]/notes
+
+- Hatırlatıcılar:
+  /evcilim/[petId]/reminders
+
+- AI Hayvan Asistanı:
+  /evcilim/[petId]/assistant
+
+Adapt these paths only if the existing Expo Router structure requires it.
+
+Do not point Documents or Medications to the Notes screen.
+
+Every screen must receive and validate the correct `petId`.
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+6. FREE AND PREMIUM FEATURE MATRIX
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+FREE FEATURES
+
+- First pet
+- Pet profile
+- Pet photo
+- Identity information
+- Basic health information
+- Vaccination records
+- Appointments
+- Nutrition
+- Notes
+- Basic reminder visibility
+
+PREMIUM FEATURES
+
+- Second and additional pets
+- Unlimited reminders
+- Medication and dosage tracking
+- Document vault
+- Health summary/PDF report
+- Family/caregiver sharing
+- AI Pet Assistant
+
+Free users must be able to open and manage free features.
+
+Premium-only buttons must show a small consistent Premium indicator.
+
+Do not completely hide Premium features.
+
+When a free user taps a Premium-only feature:
+
+- Explain the feature’s value.
+- Open the existing Evcilim Premium paywall.
+- Do not silently fail.
+- Do not display an empty screen.
+
+Existing Premium-created records remain readable after expiration.
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+7. FIX THE CURRENT EVCİLİM SCREEN LAYOUT
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+The screenshot shows content near the bottom being covered by the fixed bottom navigation.
+
+Fix this.
+
+Requirements:
+
+- Keep only one bottom navigation.
+- Keep the bottom navigation fixed.
+- The Evcilim ScrollView must include bottom padding equal to:
+  navigation height + safe-area bottom + at least 24px.
+- If the project already provides `botPad`, use it instead of hardcoding a second navigation height.
+- “Yaklaşan Hatırlatmalar” must not appear behind the navigation.
+- “Tümünü Gör” must remain visible and tappable.
+- The final reminder card must scroll fully above the navigation.
+- Do not use negative margins.
+- Do not place the navigation inside the ScrollView.
+- Do not use arbitrary absolute positioning.
+
+Also fix:
+
+- Unequal card dimensions
+- Misaligned icons
+- Premium badges covering icons
+- Truncated labels
+- Inconsistent vertical spacing
+- Low text contrast
+- Cards without pressed feedback
+- Missing accessibility labels
+
+Test at:
+
+- 320px
+- 375px
+- 390px
+- 430px
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+8. PET PROFILE CARD
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+Fix and verify the pet-profile card:
+
+- Real pet photo appears when available.
+- Paw placeholder appears only when no photo exists.
+- Selected pet name appears.
+- Breed/species and gender appear correctly.
+- Edit action works.
+- Dropdown opens.
+- Pet selector switches the active pet.
+- Data updates when the selected pet changes.
+- Selection remains stable after refresh.
+- Adding a pet does not replace or delete the current pet.
+- Deleting one pet does not delete another pet’s data.
+- Loading and broken-image fallbacks work.
+
+Do not show a local temporary image URI after application restart.
+
+Use the persisted remote image URL.
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+9. QUICK STATUS CARDS
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+Correct the three cards:
+
+A. Sonraki Aşı
+
+- Show nearest future vaccination.
+- Show overdue state correctly.
+- “Aşı ekle” opens the vaccination screen.
+- Do not show stale data belonging to another pet.
+
+B. Yaklaşan Randevu
+
+- Show nearest upcoming appointment.
+- “Randevu oluştur” opens the appointment flow.
+- Ignore cancelled/completed appointments where appropriate.
+
+C. Mama Durumu
+
+- Show current food stock/daily amount.
+- Display calculated remaining days correctly.
+- “Beslenme ekle” opens Nutrition.
+- Avoid negative-day values.
+
+Refresh these cards immediately after a record is created, edited or deleted.
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+10. MEDICATION TRACKING
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+Complete the Premium medication feature.
+
+Each medication must support:
+
+- Pet ID
+- User/owner ID
+- Medication name
+- Dosage text
+- Frequency
+- Selected administration times
+- Start date
+- Optional end date
+- Instructions/notes
+- Active/inactive state
+- Created/updated timestamps
+
+Required actions:
+
+- List medications
+- Add medication
+- Edit medication
+- Mark inactive/completed
+- Delete medication with confirmation
+- View existing records after Premium expiration
+- Restrict new creation/editing according to the approved Premium rule
+
+Do not calculate or recommend medication doses.
+
+The application may record a veterinarian-provided dose but must not generate a dose as medical advice.
+
+Validate authorization server-side.
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+11. DOCUMENT VAULT
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+Complete the Premium document feature.
+
+Support:
+
+- Camera image
+- Gallery image
+- PDF/file selection where platform support exists
+- Document title
+- Category
+- Optional date
+- Optional note
+- Pet ID
+- Owner ID
+- Remote file URL
+- MIME type
+- File size
+- Created timestamp
+
+Suggested categories:
+
+- Veteriner Raporu
+- Tahlil
+- Reçete
+- Aşı Karnesi
+- Sigorta
+- Diğer
+
+Required behavior:
+
+- Upload progress
+- File validation
+- Size limit
+- Secure remote URL
+- List
+- Preview/open
+- Delete confirmation
+- Reload persistence
+- Authorization
+- Existing records remain readable after Premium expiration
+
+Do not store temporary local URIs as permanent database URLs.
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+12. REMINDERS
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+Create or repair the real reminder system.
+
+A reminder must belong to:
+
+- Authenticated user
+- Selected pet
+
+Support reminder types:
+
+- Vaccination
+- Appointment
+- Medication
+- Nutrition
+- General care
+- Custom
+
+Each reminder should support:
+
+- Title
+- Date
+- Time
+- Optional repeat rule
+- Enabled state
+- Related record ID
+- Created/updated timestamps
+
+Requirements:
+
+- Reminder list
+- Add
+- Edit
+- Delete
+- Enable/disable
+- Sorted upcoming reminders
+- Past reminder handling
+- Selected-pet isolation
+- App restart persistence
+
+Do not create duplicate reminders when the user taps twice.
+
+Request native notification permission only when enabling notifications.
+
+If push/local notification setup is unavailable in the current environment, persist the reminder and mark delivery testing BLOCKED rather than pretending notifications work.
+
+Free/Premium rule:
+
+- Preserve the existing approved basic/free reminder allowance if one already exists.
+- Premium unlocks unlimited reminders.
+- Use one server-authoritative limit.
+- Do not invent conflicting limits in different screens.
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+13. HEALTH REPORT / PDF
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+Implement or complete a Premium health-summary report.
+
+Report content may include:
+
+- Pet identity
+- Species/breed
+- Gender
+- Birth date
+- Vaccination history
+- Upcoming vaccination
+- Appointments
+- Medication records
+- Nutrition information
+- Notes
+- Document list
+- Report generation date
+
+Requirements:
+
+- Generate from real persisted data.
+- Do not include another pet’s records.
+- Allow preview.
+- Export/share as PDF where supported.
+- Protect private information.
+- Do not claim this is a veterinary diagnosis.
+- Show:
+  “Bu rapor bilgilendirme amaçlıdır ve veteriner muayenesinin yerine geçmez.”
+
+English:
+
+“This report is for informational purposes and does not replace a veterinary examination.”
+
+If PDF tooling is unavailable, mark PDF export BLOCKED and do not label a plain HTML screen as a verified PDF export.
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+14. FAMILY AND CAREGIVER SHARING
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+Implement or complete Premium family/caregiver sharing.
+
+Roles:
+
+- Owner
+- Caregiver
+
+Owner can:
+
+- Invite caregiver
+- View caregivers
+- Revoke access
+
+Caregiver can access only the explicitly shared pet.
+
+Caregiver must not:
+
+- Delete the owner
+- Transfer ownership
+- Delete the pet unless explicitly supported
+- Access unrelated pets
+- Access unrelated private user information
+
+Use secure invitation tokens with expiration.
+
+Do not grant access using only a guessed email or client-side flag.
+
+All authorization must be enforced server-side.
+
+If email invitation delivery is unavailable, persist the safe invitation state and mark email delivery BLOCKED.
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+15. AI PET ASSISTANT
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+Add a new Premium feature:
+
+Turkish name:
+
+“AI Hayvan Asistanı”
+
+English name:
+
+“AI Pet Assistant”
+
+Add a visually prominent Premium card below the Management grid and above Upcoming Reminders.
+
+Suggested Turkish content:
+
+Title:
+“AI Hayvan Asistanı”
+
+Description:
+“Dostunun kayıtlarına göre bakım, aşı ve rutin sorularına yardımcı olur.”
+
+Button:
+“Asistana Sor”
+
+English:
+
+Title:
+“AI Pet Assistant”
+
+Description:
+“Get help with care, vaccinations and routines using your pet’s records.”
+
+Button:
+“Ask the Assistant”
+
+Design:
+
+- Premium purple/lavender gradient card
+- Sparkle/assistant icon
+- Selected pet’s name
+- Small Premium badge
+- Clear CTA
+- Rounded 20–24px corners
+- Soft shadow
+- No overlap with bottom navigation
+- Responsive layout
+- Press animation and accessibility label
+
+Free user:
+
+- Can see the card.
+- Tapping it opens the Premium explanation/paywall.
+- It must not silently fail.
+
+Premium user:
+
+- Opens:
+  /evcilim/[petId]/assistant
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+16. AI ASSISTANT CONTEXT
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+The AI Assistant must be scoped to the currently selected pet.
+
+It may use only data the authenticated user is authorized to access:
+
+- Pet name
+- Type/species
+- Breed
+- Gender
+- Birth date/age
+- Vaccinations
+- Appointments
+- Nutrition
+- Medications
+- Notes
+- Reminder data
+- Document metadata
+
+Do not mix data between pets.
+
+Do not send unrelated user records to the AI provider.
+
+Do not send raw document files automatically.
+
+If document content analysis is later added, require explicit user action and authorization.
+
+Before every assistant request:
+
+- Validate user authentication.
+- Validate pet ownership or valid caregiver access.
+- Validate Premium entitlement server-side.
+- Load current pet context server-side.
+- Apply data minimization.
+- Do not trust pet context supplied only by the client.
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+17. AI PROVIDER IMPLEMENTATION
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+Inspect the existing project for an approved AI provider or Replit AI integration.
+
+If an existing provider is configured, reuse it.
+
+If no provider exists:
+
+- Create a provider-agnostic server-side AI service interface.
+- Keep API keys in Replit Secrets/server environment only.
+- Never expose an AI secret key through `EXPO_PUBLIC_*`.
+- Never call the private AI provider directly from the mobile client.
+- Add a documented environment variable.
+- Show a friendly “Asistan şu anda kullanılamıyor” state when not configured.
+- Mark live AI tests BLOCKED until valid credentials are available.
+- Do not create fake AI answers.
+
+Use a secure API endpoint similar to:
+
+POST /pets/:petId/assistant/messages
+
+Request:
+
+{
+  "message": "..."
+}
+
+Server responsibilities:
+
+- Authenticate user.
+- Authorize pet access.
+- Verify Premium status.
+- Rate-limit requests.
+- Validate length.
+- Load minimized pet context.
+- Apply safety system instructions.
+- Call the configured AI provider.
+- Save conversation safely if conversation history is implemented.
+- Return a structured response.
+- Avoid exposing provider errors or stack traces.
+
+Add rate limits and maximum input/output lengths.
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+18. AI ASSISTANT SCREEN
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+Create a polished conversation screen.
+
+Header:
+
+- Back button
+- Selected pet avatar
+- Pet name
+- “AI Hayvan Asistanı”
+- Small informational badge
+
+Suggested starter prompts:
+
+- “Yaklaşan aşısı var mı?”
+- “Bugünkü bakım rutinini göster.”
+- “Kayıtlı ilaçları neler?”
+- “Veteriner randevusuna nasıl hazırlanmalıyım?”
+- “Beslenme kayıtlarını özetle.”
+
+Requirements:
+
+- Empty state
+- Starter prompt chips
+- Message list
+- User and assistant bubbles
+- Loading/typing state
+- Retry state
+- Network failure
+- Keyboard-safe input
+- Send-button disabled state
+- Duplicate-send prevention
+- Selected pet context indicator
+- Clear-chat confirmation if chat persistence exists
+- Turkish and English support
+- No bottom-navigation overlap
+- Accessible message input and send button
+
+Old conversations may remain readable after Premium expires, but new messages must require active Premium.
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+19. AI MEDICAL SAFETY
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+The AI Assistant is not a veterinarian.
+
+It must not:
+
+- Diagnose disease
+- Confirm a diagnosis
+- Prescribe medication
+- Determine medication dosage
+- Tell the user to stop veterinarian-prescribed treatment
+- Guarantee an outcome
+- Replace emergency care
+
+It may:
+
+- Summarize existing pet records
+- Explain general pet-care information
+- Suggest questions to ask a veterinarian
+- Help organize routines
+- Recommend seeking professional care
+
+Show a persistent, non-alarming disclaimer:
+
+Turkish:
+
+“AI Asistan genel bilgilendirme sağlar; veteriner muayenesinin yerine geçmez.”
+
+English:
+
+“The AI Assistant provides general information and does not replace a veterinary examination.”
+
+Emergency symptoms must trigger a safety response recommending immediate veterinary help.
+
+Examples include:
+
+- Difficulty breathing
+- Loss of consciousness
+- Severe bleeding
+- Poisoning
+- Seizure
+- Inability to urinate
+- Serious trauma
+- Rapid deterioration
+
+Do not present an AI response as confirmed medical advice.
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+20. AI ACTION CONFIRMATION
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+The assistant may suggest actions such as:
+
+- Create reminder
+- Open vaccination screen
+- Open appointment screen
+- Open medications
+- Open nutrition
+
+It must never mutate data automatically.
+
+Required flow:
+
+1. Assistant suggests an action.
+2. User taps a structured action button.
+3. Show a confirmation screen/modal.
+4. User reviews the exact values.
+5. User explicitly confirms.
+6. Use the normal API endpoint.
+7. Verify persisted data.
+8. Show success or failure.
+
+Never let free-form AI text directly execute a database mutation.
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+21. PREMIUM ENTITLEMENT AND REVENUECAT
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+Verify:
+
+- Evcilim offering ID
+- Evcilim entitlement ID
+- Product list
+- Localized `priceString`
+- Purchase
+- Cancellation
+- Failure
+- Restore purchases
+- CustomerInfo
+- Server verification
+- Entitlement refresh
+- App restart persistence
+- Expiration behavior
+
+Never hardcode price or currency.
+
+If packages cannot be loaded:
+
+- Show a retry action.
+- Show a clear localized error.
+- Keep purchase CTA disabled.
+- Record the exact configuration issue.
+- Do not fabricate packages.
+- Do not mark purchasing PASS.
+
+Premium restrictions must also be verified server-side for:
+
+- Additional pets
+- Medication writes
+- Document writes
+- Unlimited reminders
+- Report generation
+- Caregiver sharing
+- AI Assistant messages
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+22. LOCALIZATION
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+Add complete Turkish and English translations for all new or repaired features.
+
+Include:
+
+- Premium messages
+- Pet-limit messages
+- Medications
+- Documents
+- Reminders
+- Health report
+- Caregiver sharing
+- AI Assistant
+- AI safety messages
+- Loading, empty and error states
+- Accessibility labels
+
+Do not leave mixed-language UI.
+
+Do not translate:
+
+- Pet names
+- User names
+- User notes
+- Messages
+- User-created document titles
+
+Use semantic i18n keys.
+
+Do not hardcode Turkish UI strings directly in components.
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+23. AUTHORIZATION AND SECURITY
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+Test that User A cannot:
+
+- View User B’s private pet records
+- Edit User B’s pet
+- Delete User B’s pet
+- View User B’s medications
+- View User B’s documents
+- Generate User B’s report
+- Use AI with User B’s petId
+- Add themselves as User B’s caregiver
+- Bypass Premium by calling APIs directly
+
+Test IDOR protection using changed pet IDs and record IDs.
+
+Never rely only on hidden UI buttons.
+
+Do not reveal secret keys, provider prompts, tokens or stack traces.
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+24. REQUIRED FUNCTIONAL TESTS
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+Use dedicated audit users and safe test data.
+
+PET LIMIT
+
+Test 1:
+
+- Free user has 0 pets.
+- Add first pet.
+- Form opens.
+- Creation succeeds.
+- Database count becomes 1.
+- Re-fetch confirms persistence.
+
+Test 2:
+
+- Same free user has 1 pet.
+- Attempt second pet.
+- Premium paywall opens.
+- Direct API creation is rejected.
+- Database count remains 1.
+
+Test 3:
+
+- Premium user has 1 pet.
+- Add second pet.
+- Creation succeeds.
+- Database count becomes 2.
+
+Test 4:
+
+- Premium user has multiple pets.
+- Expire entitlement.
+- Existing pets remain visible.
+- New pet creation is restricted.
+- No data is deleted.
+
+MANAGEMENT CARDS
+
+For every management card:
+
+- Tap button.
+- Verify route.
+- Verify correct petId.
+- Verify screen renders.
+- Create a record where supported.
+- Verify API response.
+- Verify database.
+- Re-fetch.
+- Edit.
+- Delete where supported.
+- Verify data isolation.
+
+AI ASSISTANT
+
+- Free user sees card.
+- Free user tap opens Premium paywall.
+- Premium user opens Assistant.
+- Correct pet name/context appears.
+- Ask about vaccination record.
+- Confirm response matches persisted record.
+- Switch pet.
+- Confirm previous pet data is not exposed.
+- Try another user’s petId.
+- Confirm request is rejected.
+- Test emergency message.
+- Confirm veterinary escalation.
+- Test medication-dose request.
+- Confirm assistant refuses to prescribe a dose.
+- Test network failure.
+- Test missing AI configuration.
+- Test duplicate send.
+- Test expired Premium.
+- Confirm old chat remains readable if persisted.
+- Confirm new messages are blocked after expiration.
+
+LAYOUT
+
+Test the Evcilim screen at:
+
+- 320px
+- 375px
+- 390px
+- 430px
+
+Confirm:
+
+- No navigation overlap.
+- Upcoming reminders remain visible.
+- AI Assistant card is fully visible.
+- Premium badges do not cover icons.
+- All labels fit.
+- The final content scrolls above navigation.
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+25. TEST RESULT RULES
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+Use only:
+
+PASS:
+Actually executed and verified through the required UI/API/database layers.
+
+FAIL:
+Actually executed but incorrect.
+
+BLOCKED:
+Could not execute due to missing platform, device, credentials or service.
+
+STATIC REVIEW:
+Code or configuration inspected but behavior not executed.
+
+NOT TESTED:
+Not tested.
+
+Do not mark code inspection PASS.
+
+Do not use Web results as Android or iOS PASS.
+
+If an AI key is not available, AI live responses are BLOCKED, not PASS.
+
+If RevenueCat test products are not available, purchase execution is BLOCKED, not PASS.
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+26. FINAL REPORT
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+Create:
+
+audit-results/EVCILIM_PREMIUM_AI_REPAIR_REPORT.md
+
+Include:
+
+1. Files changed
+2. Previous pet-limit bug
+3. Correct first-pet-free logic
+4. Grandfathering behavior
+5. Every Evcilim button and route
+6. Screens repaired
+7. APIs repaired/created
+8. Database changes and migrations
+9. Medication implementation
+10. Document-vault implementation
+11. Reminder implementation
+12. Report/PDF status
+13. Caregiver-sharing status
+14. AI Assistant architecture
+15. AI provider/configuration
+16. AI medical-safety controls
+17. RevenueCat status
+18. Turkish/English translations
+19. Security tests
+20. Tests actually executed
+21. PASS/FAIL/BLOCKED/STATIC REVIEW/NOT TESTED counts
+22. Remaining blockers
+
+For every unfinished feature state exactly what is missing:
+
+- UI
+- Route
+- API
+- Database
+- Authorization
+- External configuration
+- Native testing
+
+Do not report a UI-only placeholder as a completed feature.
+
+Do not delete existing data.
+
+After implementation and testing, stop and provide the report.

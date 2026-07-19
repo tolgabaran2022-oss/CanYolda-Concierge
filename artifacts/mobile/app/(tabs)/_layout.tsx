@@ -16,6 +16,7 @@ import {
   View,
 } from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
+import { useTranslation } from "react-i18next";
 import { useTheme } from "@/hooks/useTheme";
 
 const PURPLE     = "#7B5EA7";
@@ -25,16 +26,16 @@ const BP_DESKTOP = 1024;
 type TabItem = {
   name: string;
   path: string;
-  title: string;
+  labelKey: string;
   Icon: React.ComponentType<{ size?: number; color?: string; strokeWidth?: number }>;
 };
 
-const TABS: TabItem[] = [
-  { name: "index",    path: "/",          title: "Harita",        Icon: Map      },
-  { name: "animals",  path: "/animals",   title: "Hayvanlar",     Icon: PawPrint },
-  { name: "adoption", path: "/adoption",  title: "Sahiplendirme", Icon: Home     },
-  { name: "pets",     path: "/pets",      title: "Evcilim",       Icon: Heart    },
-  { name: "account",  path: "/account",   title: "Hesap",         Icon: User     },
+const TAB_DEFS: TabItem[] = [
+  { name: "index",    path: "/",          labelKey: "navigation.map",       Icon: Map      },
+  { name: "animals",  path: "/animals",   labelKey: "navigation.animals",   Icon: PawPrint },
+  { name: "adoption", path: "/adoption",  labelKey: "navigation.adoption",  Icon: Home     },
+  { name: "pets",     path: "/pets",      labelKey: "navigation.pets",      Icon: Heart    },
+  { name: "account",  path: "/account",   labelKey: "navigation.account",   Icon: User     },
 ];
 
 /* ── Desktop sidebar (web ≥ 1024 px) ────────────────────────── */
@@ -42,6 +43,7 @@ function DesktopSidebar() {
   const pathname = usePathname();
   const router   = useRouter();
   const T        = useTheme();
+  const { t }    = useTranslation();
   const inactive = T.textFaint;
 
   return (
@@ -51,7 +53,7 @@ function DesktopSidebar() {
         <Text style={[DS.logoText, { color: T.purpleDark }]}>canyoldaşı</Text>
       </View>
 
-      {TABS.map((tab) => {
+      {TAB_DEFS.map((tab) => {
         const active = tab.path === "/"
           ? pathname === "/" || pathname === ""
           : pathname.startsWith(tab.path);
@@ -63,12 +65,12 @@ function DesktopSidebar() {
             style={[DS.item, active && DS.itemActive]}
             onPress={() => router.navigate(tab.path as any)}
             accessibilityRole="link"
-            accessibilityLabel={tab.title}
+            accessibilityLabel={t(tab.labelKey)}
           >
             <View style={[DS.iconWrap, active && DS.iconWrapActive]}>
               <tab.Icon size={20} color={color} strokeWidth={2} />
             </View>
-            <Text style={[DS.label, { color }]}>{tab.title}</Text>
+            <Text style={[DS.label, { color }]}>{t(tab.labelKey)}</Text>
           </Pressable>
         );
       })}
@@ -84,6 +86,7 @@ function CustomTabBar() {
   const pathname  = usePathname();
   const router    = useRouter();
   const T         = useTheme();
+  const { t }     = useTranslation();
 
   if (isWeb && width >= BP_DESKTOP) return null;
 
@@ -94,7 +97,7 @@ function CustomTabBar() {
   return (
     <View style={barOuterStyle as any}>
       <View style={[styles.barInner, { backgroundColor: T.tabBar, borderColor: T.tabBarBorder }]}>
-        {TABS.map((tab) => {
+        {TAB_DEFS.map((tab) => {
           const active = tab.path === "/"
             ? pathname === "/" || pathname === ""
             : pathname.startsWith(tab.path);
@@ -105,7 +108,7 @@ function CustomTabBar() {
               key={tab.name}
               style={styles.tabBtn}
               android_ripple={{ color: `${T.purple}20`, borderless: true, radius: 32 }}
-              accessibilityLabel={tab.title}
+              accessibilityLabel={t(tab.labelKey)}
               accessibilityRole="tab"
               accessibilityState={{ selected: active }}
               onPress={() => router.navigate(tab.path as any)}
@@ -115,7 +118,7 @@ function CustomTabBar() {
                 <tab.Icon size={20} color={color} strokeWidth={2} />
               </View>
               <Text style={[styles.label, { color }]} numberOfLines={1}>
-                {tab.title}
+                {t(tab.labelKey)}
               </Text>
             </Pressable>
           );
@@ -131,11 +134,12 @@ export default function TabLayout() {
   const isWeb     = Platform.OS === "web";
   const isDesktop = isWeb && width >= BP_DESKTOP;
   const T         = useTheme();
+  const { t }     = useTranslation();
 
   const screens = (
     <Tabs screenOptions={{ headerShown: false, tabBarStyle: { display: "none" } }}>
-      {TABS.map((tab) => (
-        <Tabs.Screen key={tab.name} name={tab.name} options={{ title: tab.title }} />
+      {TAB_DEFS.map((tab) => (
+        <Tabs.Screen key={tab.name} name={tab.name} options={{ title: t(tab.labelKey) }} />
       ))}
     </Tabs>
   );

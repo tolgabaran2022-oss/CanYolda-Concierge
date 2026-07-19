@@ -5,6 +5,7 @@
  *          "bir tık uzağında" bold mor, hero görseli fade-in.
  */
 import { Icon } from "@/components/Icon";
+import { useLanguage } from "@/contexts/LanguageContext";
 import * as Haptics from "expo-haptics";
 import { LinearGradient } from "expo-linear-gradient";
 import { useRouter } from "expo-router";
@@ -14,9 +15,10 @@ import {
   Quicksand_700Bold,
   useFonts,
 } from "@expo-google-fonts/quicksand";
-import React from "react";
+import React, { useState } from "react";
 import {
   Image,
+  Modal,
   Pressable,
   StatusBar,
   StyleSheet,
@@ -24,6 +26,8 @@ import {
   View,
 } from "react-native";
 import { SafeAreaView, useSafeAreaInsets } from "react-native-safe-area-context";
+import { useTranslation } from "react-i18next";
+import type { LangCode } from "@/i18n";
 
 /* ── Renk paleti ───────────────────────────────────────────────────── */
 const C = {
@@ -38,15 +42,73 @@ const C = {
   white:     "#FFFFFF",
 };
 
-/* Arkaplan rengi rgba (hero fade için) */
 const BG_RGBA0 = "rgba(237,232,255,0)";
 const BG_SOLID = C.lavender;
 
 const HERO_IMAGE = require("@/assets/images/login-hero.jpg");
 
+/* ── Language Selector Modal ──────────────────────────────────────── */
+function LanguageModal({
+  visible,
+  onClose,
+}: {
+  visible: boolean;
+  onClose: () => void;
+}) {
+  const { t } = useTranslation();
+  const { currentLanguage, supportedLanguages, changeLanguage } = useLanguage();
+
+  const handleSelect = async (code: LangCode) => {
+    await changeLanguage(code);
+    onClose();
+  };
+
+  return (
+    <Modal
+      visible={visible}
+      transparent
+      animationType="fade"
+      onRequestClose={onClose}
+    >
+      <Pressable style={LS.overlay} onPress={onClose}>
+        <View style={LS.sheet}>
+          <Text style={LS.title}>{t("language.select")}</Text>
+          {supportedLanguages.map((lang) => {
+            const selected = currentLanguage === lang.code;
+            return (
+              <Pressable
+                key={lang.code}
+                onPress={() => handleSelect(lang.code)}
+                style={({ pressed }) => [
+                  LS.option,
+                  selected && LS.optionSelected,
+                  pressed && { opacity: 0.75 },
+                ]}
+                accessibilityRole="radio"
+                accessibilityState={{ checked: selected }}
+                accessibilityLabel={lang.nativeLabel}
+              >
+                <Text style={[LS.optionLabel, selected && LS.optionLabelSelected]}>
+                  {lang.nativeLabel}
+                </Text>
+                {selected && (
+                  <Icon name="checkmark" size={18} color={C.purple500} />
+                )}
+              </Pressable>
+            );
+          })}
+        </View>
+      </Pressable>
+    </Modal>
+  );
+}
+
 export default function WelcomeScreen() {
   const router  = useRouter();
   const insets  = useSafeAreaInsets();
+  const { t }   = useTranslation();
+  const { currentLanguage, supportedLanguages } = useLanguage();
+  const [langModalVisible, setLangModalVisible] = useState(false);
 
   const [fontsLoaded] = useFonts({
     Quicksand_500Medium,
@@ -56,9 +118,28 @@ export default function WelcomeScreen() {
 
   if (!fontsLoaded) return null;
 
+  const currentLangMeta = supportedLanguages.find((l) => l.code === currentLanguage)
+    ?? supportedLanguages[0];
+
   return (
     <View style={styles.container}>
       <StatusBar barStyle="dark-content" backgroundColor={BG_SOLID} />
+
+      {/* ── Dil seçici (sağ üst) ──────────────────────────────────── */}
+      <Pressable
+        onPress={() => {
+          Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+          setLangModalVisible(true);
+        }}
+        style={[styles.langPill, { top: insets.top + 10 }]}
+        accessibilityRole="button"
+        accessibilityLabel={t("language.select")}
+        hitSlop={8}
+      >
+        <Icon name="globe" size={14} color={C.purple600} />
+        <Text style={styles.langPillText}>{currentLangMeta.shortLabel}</Text>
+        <Icon name="chevron-down" size={12} color={C.purple600} />
+      </Pressable>
 
       {/* ── Sağ alt dekoratif blob + pati ─────────────────────────── */}
       <View style={styles.decoBlob} pointerEvents="none">
@@ -74,15 +155,13 @@ export default function WelcomeScreen() {
           style={styles.heroImage}
           resizeMode="cover"
           accessible
-          accessibilityLabel="canyoldaşı — köpek ve kedi ile karşılama görseli"
+          accessibilityLabel={t("auth.welcome.heroAlt")}
         />
-        {/* Üstten lavanta geçiş */}
         <LinearGradient
           colors={[BG_SOLID, BG_RGBA0]}
           style={styles.heroTopFade}
           pointerEvents="none"
         />
-        {/* Alttan lavanta geçiş */}
         <LinearGradient
           colors={[BG_RGBA0, BG_SOLID]}
           style={styles.heroFade}
@@ -100,7 +179,7 @@ export default function WelcomeScreen() {
           }}
           style={({ pressed }) => [pressed && styles.pressed]}
           accessibilityRole="button"
-          accessibilityLabel="Giriş Yap"
+          accessibilityLabel={t("auth.welcome.login")}
         >
           <LinearGradient
             colors={[C.purple500, C.purple600]}
@@ -109,7 +188,7 @@ export default function WelcomeScreen() {
             style={[styles.btn, styles.btnPrimary]}
           >
             <Text style={styles.btnPrimaryText} maxFontSizeMultiplier={1.2}>
-              Giriş Yap
+              {t("auth.welcome.login")}
             </Text>
           </LinearGradient>
         </Pressable>
@@ -126,10 +205,10 @@ export default function WelcomeScreen() {
             pressed && styles.pressed,
           ]}
           accessibilityRole="button"
-          accessibilityLabel="Kayıt Ol"
+          accessibilityLabel={t("auth.welcome.register")}
         >
           <Text style={styles.btnSecondaryText} maxFontSizeMultiplier={1.2}>
-            Kayıt Ol
+            {t("auth.welcome.register")}
           </Text>
         </Pressable>
 
@@ -143,29 +222,33 @@ export default function WelcomeScreen() {
           hitSlop={8}
         >
           <Text style={styles.forgot} maxFontSizeMultiplier={1.2}>
-            Şifremi Unuttum?
+            {t("auth.login.forgotPassword")}
           </Text>
         </Pressable>
 
         {/* Yasal metin */}
         <Text style={styles.terms}>
-          {"Devam ederek "}
+          {t("auth.register.termsPart1")}
           <Text
             style={styles.termsLink}
             onPress={() => router.push("/terms-of-service" as any)}
             accessibilityRole="link"
-            accessibilityLabel="Kullanım Koşulları"
-          >Kullanım Koşulları</Text>
-          {" ve "}
+          >{t("account.termsOfService")}</Text>
+          {t("auth.register.termsAnd")}
           <Text
             style={styles.termsLink}
             onPress={() => router.push("/privacy-policy" as any)}
             accessibilityRole="link"
-            accessibilityLabel="Gizlilik Politikası"
-          >Gizlilik Politikası</Text>
-          {"'nı kabul etmiş olursunuz."}
+          >{t("account.privacyPolicy")}</Text>
+          {t("auth.register.termsPart2")}
         </Text>
       </SafeAreaView>
+
+      {/* ── Dil seçimi modal ─────────────────────────────────────────── */}
+      <LanguageModal
+        visible={langModalVisible}
+        onClose={() => setLangModalVisible(false)}
+      />
     </View>
   );
 }
@@ -174,6 +257,34 @@ const styles = StyleSheet.create({
   container: {
     flex: 1,
     backgroundColor: C.lavender,
+  },
+
+  /* ── Dil pill ─── */
+  langPill: {
+    position:        "absolute",
+    right:           16,
+    zIndex:          10,
+    flexDirection:   "row",
+    alignItems:      "center",
+    gap:             4,
+    backgroundColor: C.white,
+    borderWidth:     1,
+    borderColor:     C.purple200,
+    borderRadius:    20,
+    paddingHorizontal: 10,
+    paddingVertical:   6,
+    minHeight:       36,
+    shadowColor:     C.purple600,
+    shadowOpacity:   0.12,
+    shadowRadius:    8,
+    shadowOffset:    { width: 0, height: 2 },
+    elevation:       3,
+  },
+  langPillText: {
+    fontSize:   13,
+    fontFamily: "Quicksand_700Bold",
+    color:      C.purple600,
+    letterSpacing: 0.5,
   },
 
   /* ── Dekoratif blob (sağ alt) ─── */
@@ -308,6 +419,58 @@ const styles = StyleSheet.create({
   },
   termsLink: {
     color:      C.purple600,
+    fontFamily: "Quicksand_700Bold",
+  },
+});
+
+/* ── Language Modal Styles ──────────────────────────────────────────── */
+const LS = StyleSheet.create({
+  overlay: {
+    flex:            1,
+    backgroundColor: "rgba(0,0,0,0.35)",
+    justifyContent:  "center",
+    alignItems:      "center",
+    padding:         24,
+  },
+  sheet: {
+    backgroundColor: C.white,
+    borderRadius:    20,
+    padding:         20,
+    width:           "100%",
+    maxWidth:        320,
+    gap:             8,
+    shadowColor:     "#000",
+    shadowOpacity:   0.15,
+    shadowRadius:    20,
+    shadowOffset:    { width: 0, height: 8 },
+    elevation:       12,
+  },
+  title: {
+    fontSize:     17,
+    fontFamily:   "Quicksand_700Bold",
+    color:        C.purple900,
+    marginBottom: 4,
+    textAlign:    "center",
+  },
+  option: {
+    flexDirection:  "row",
+    alignItems:     "center",
+    justifyContent: "space-between",
+    paddingVertical:   14,
+    paddingHorizontal: 16,
+    borderRadius:   12,
+    backgroundColor: "transparent",
+  },
+  optionSelected: {
+    backgroundColor: C.purple100,
+  },
+  optionLabel: {
+    fontSize:   16,
+    fontFamily: "Quicksand_600SemiBold",
+    color:      C.purple900,
+  },
+  optionLabelSelected: {
+    color:      C.purple500,
     fontFamily: "Quicksand_700Bold",
   },
 });

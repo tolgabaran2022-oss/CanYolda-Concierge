@@ -106,6 +106,7 @@ import {
   Award,
   Crown,
   Gem,
+  Globe,
 } from "lucide-react-native";
 
 type LucideIcon = React.ComponentType<{
@@ -172,6 +173,8 @@ const ICON_MAP: Record<string, LucideIcon> = {
   "location-sharp":      MapPin,
   "map-pin":             MapPin,
   "map":                 Map,
+  "globe":               Globe,
+  "globe-outline":       Globe,
   "map-outline":         Map,
 
   // ── Edit / Actions ───────────────────────────────────

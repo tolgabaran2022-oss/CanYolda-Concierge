@@ -1,5 +1,6 @@
 import { Icon } from "@/components/Icon";
 import { UserAvatar } from "@/components/UserAvatar";
+import { useLanguage } from "@/contexts/LanguageContext";
 import * as Haptics from "expo-haptics";
 import * as ImagePicker from "expo-image-picker";
 import { LinearGradient } from "expo-linear-gradient";
@@ -21,10 +22,13 @@ import {
   View,
 } from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
+import { useTranslation } from "react-i18next";
 import { useAuth } from "@/contexts/AuthContext";
 import { useTheme } from "@/hooks/useTheme";
 import { apiFetch, API_BASE } from "@/lib/apiClient";
 import AsyncStorage from "@react-native-async-storage/async-storage";
+import type { LangCode } from "@/i18n";
+import { SUPPORTED_LANGUAGES } from "@/i18n";
 
 async function uploadAvatarPhoto(localUri: string): Promise<string> {
   const filename = localUri.split("/").pop() ?? "avatar.jpg";
@@ -42,14 +46,66 @@ async function uploadAvatarPhoto(localUri: string): Promise<string> {
   const headers: Record<string, string> = {};
   if (token) headers["Authorization"] = `Bearer ${token}`;
   const res = await fetch(`${API_BASE}/upload`, { method: "POST", body: formData, headers });
-  if (!res.ok) throw new Error("Profil fotoğrafı yüklenemedi. Lütfen tekrar deneyin.");
+  if (!res.ok) throw new Error("upload_failed");
   const data = await res.json() as { url: string };
   return data.url;
 }
 
-
 const TAB_FLOAT_H    = 64;
 const TAB_BOTTOM_GAP = Platform.OS === "web" ? 12 : 10;
+
+/* ── Language selection modal (reusable) ──────────────────────────── */
+function LanguageModal({ visible, onClose }: { visible: boolean; onClose: () => void }) {
+  const { t } = useTranslation();
+  const { currentLanguage, changeLanguage } = useLanguage();
+  const T = useTheme();
+
+  const handleSelect = async (code: LangCode) => {
+    await changeLanguage(code);
+    onClose();
+  };
+
+  return (
+    <Modal
+      visible={visible}
+      transparent
+      animationType="slide"
+      onRequestClose={onClose}
+    >
+      <KeyboardAvoidingView
+        behavior={Platform.OS === "ios" ? "padding" : "height"}
+        style={[S.modalOverlay, { backgroundColor: T.overlay }]}
+      >
+        <Pressable style={StyleSheet.absoluteFill} onPress={onClose} />
+        <View style={[S.modalSheet, { backgroundColor: T.card, paddingBottom: 32 }]}>
+          <View style={[S.modalHandle, { backgroundColor: T.border }]} />
+          <Text style={[S.modalTitle, { color: T.text }]}>{t("language.select")}</Text>
+          {SUPPORTED_LANGUAGES.map((lang) => {
+            const selected = currentLanguage === lang.code;
+            return (
+              <Pressable
+                key={lang.code}
+                onPress={() => handleSelect(lang.code)}
+                style={({ pressed }) => [
+                  S.langOption,
+                  selected && { backgroundColor: T.purpleFaint },
+                  pressed && { opacity: 0.75 },
+                ]}
+                accessibilityRole="radio"
+                accessibilityState={{ checked: selected }}
+              >
+                <Text style={[S.langOptionLabel, { color: selected ? T.purple : T.text }]}>
+                  {lang.nativeLabel}
+                </Text>
+                {selected && <Icon name="checkmark" size={18} color={T.purple} />}
+              </Pressable>
+            );
+          })}
+        </View>
+      </KeyboardAvoidingView>
+    </Modal>
+  );
+}
 
 export default function AccountScreen() {
   const insets        = useSafeAreaInsets();
@@ -57,25 +113,24 @@ export default function AccountScreen() {
   const { user, logout, changePassword, updateProfile } = useAuth();
   const router        = useRouter();
   const T             = useTheme();
+  const { t }         = useTranslation();
+  const { currentLanguage, supportedLanguages } = useLanguage();
 
   const topPad       = Platform.OS === "web" ? (SW < 1024 ? 54 : 16) : insets.top;
   const tabClearance = Platform.OS === "web" ? (SW < 1024 ? 100 : 24) : (insets.bottom + TAB_BOTTOM_GAP + TAB_FLOAT_H);
 
-  /* ── Change password modal state ───────────────────────────── */
+  /* ── Avatar ──────────────────────────────────────────────────── */
   const [avatarUploading, setAvatarUploading] = useState(false);
 
   const pickFromSource = async (source: "camera" | "gallery") => {
     if (source === "camera") {
       if (Platform.OS === "web") {
-        Alert.alert("Bu cihazda kamera kullanılamıyor.");
+        Alert.alert(t("account.avatar.cameraNotAvailable"));
         return;
       }
       const { status } = await ImagePicker.requestCameraPermissionsAsync();
       if (status !== "granted") {
-        Alert.alert(
-          "İzin verilmedi",
-          "Profil fotoğrafı eklemek için uygulama ayarlarından kamera iznini açabilirsiniz."
-        );
+        Alert.alert(t("common.permissionDenied"), t("account.avatar.cameraPermission"));
         return;
       }
       const result = await ImagePicker.launchCameraAsync({
@@ -89,10 +144,7 @@ export default function AccountScreen() {
     } else {
       const { status } = await ImagePicker.requestMediaLibraryPermissionsAsync();
       if (status !== "granted") {
-        Alert.alert(
-          "İzin verilmedi",
-          "Profil fotoğrafı seçmek için uygulama ayarlarından fotoğraf erişimini açabilirsiniz."
-        );
+        Alert.alert(t("common.permissionDenied"), t("account.avatar.galleryPermission"));
         return;
       }
       const result = await ImagePicker.launchImageLibraryAsync({
@@ -112,10 +164,9 @@ export default function AccountScreen() {
       const url = await uploadAvatarPhoto(localUri);
       await updateProfile({ avatar: url });
       Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
-      Alert.alert("Başarılı", "Profil fotoğrafın güncellendi.");
-    } catch (e) {
-      const msg = e instanceof Error ? e.message : "Profil fotoğrafı yüklenemedi. Lütfen tekrar deneyin.";
-      Alert.alert("Hata", msg);
+      Alert.alert(t("common.success"), t("account.avatar.uploadSuccess"));
+    } catch {
+      Alert.alert(t("common.error"), t("account.avatar.uploadError"));
       Haptics.notificationAsync(Haptics.NotificationFeedbackType.Error);
     } finally {
       setAvatarUploading(false);
@@ -126,11 +177,11 @@ export default function AccountScreen() {
     const hasPhoto = !!user?.avatar;
 
     if (Platform.OS === "ios") {
-      const options = ["Fotoğraf Çek", "Galeriden Seç", ...(hasPhoto ? ["Mevcut Fotoğrafı Kaldır"] : []), "İptal"];
-      const destructiveIdx = hasPhoto ? options.indexOf("Mevcut Fotoğrafı Kaldır") : -1;
+      const options = [t("common.takePhoto"), t("common.chooseFromGallery"), ...(hasPhoto ? [t("common.removePhoto")] : []), t("common.cancel")];
+      const destructiveIdx = hasPhoto ? options.indexOf(t("common.removePhoto")) : -1;
       const cancelIdx = options.length - 1;
       ActionSheetIOS.showActionSheetWithOptions(
-        { title: "Profil Fotoğrafı", options, cancelButtonIndex: cancelIdx, destructiveButtonIndex: destructiveIdx >= 0 ? destructiveIdx : undefined },
+        { title: t("account.avatar.title"), options, cancelButtonIndex: cancelIdx, destructiveButtonIndex: destructiveIdx >= 0 ? destructiveIdx : undefined },
         (idx) => {
           if (idx === 0) pickFromSource("camera");
           else if (idx === 1) pickFromSource("gallery");
@@ -139,30 +190,30 @@ export default function AccountScreen() {
       );
     } else {
       const btns: { text: string; style?: "cancel" | "destructive"; onPress?: () => void }[] = [
-        { text: "Fotoğraf Çek",    onPress: () => pickFromSource("camera") },
-        { text: "Galeriden Seç",   onPress: () => pickFromSource("gallery") },
-        ...(hasPhoto ? [{ text: "Mevcut Fotoğrafı Kaldır", style: "destructive" as const, onPress: confirmRemovePhoto }] : []),
-        { text: "İptal", style: "cancel" as const },
+        { text: t("common.takePhoto"),        onPress: () => pickFromSource("camera") },
+        { text: t("common.chooseFromGallery"), onPress: () => pickFromSource("gallery") },
+        ...(hasPhoto ? [{ text: t("common.removePhoto"), style: "destructive" as const, onPress: confirmRemovePhoto }] : []),
+        { text: t("common.cancel"), style: "cancel" as const },
       ];
-      Alert.alert("Profil Fotoğrafı", undefined, btns);
+      Alert.alert(t("account.avatar.title"), undefined, btns);
     }
   };
 
   const confirmRemovePhoto = () => {
     Alert.alert(
-      "Fotoğrafı Kaldır",
-      "Profil fotoğrafını kaldırmak istediğine emin misin?",
+      t("common.removePhoto"),
+      "",
       [
-        { text: "Vazgeç", style: "cancel" },
+        { text: t("common.cancel"), style: "cancel" },
         {
-          text: "Fotoğrafı Kaldır", style: "destructive",
+          text: t("common.removePhoto"), style: "destructive",
           onPress: async () => {
             setAvatarUploading(true);
             try {
               await updateProfile({ avatar: null });
               Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
             } catch {
-              Alert.alert("Hata", "Fotoğraf kaldırılamadı.");
+              Alert.alert(t("common.error"), t("account.avatar.removeError"));
             } finally {
               setAvatarUploading(false);
             }
@@ -172,6 +223,7 @@ export default function AccountScreen() {
     );
   };
 
+  /* ── Change password modal ───────────────────────────────────── */
   const [pwModalVisible, setPwModalVisible] = useState(false);
   const [currentPw,   setCurrentPw]   = useState("");
   const [newPw,       setNewPw]       = useState("");
@@ -181,11 +233,14 @@ export default function AccountScreen() {
   const [showConfirm, setShowConfirm] = useState(false);
   const [pwLoading,   setPwLoading]   = useState(false);
 
-  /* ── Delete account modal state ────────────────────────────── */
+  /* ── Delete account modal ────────────────────────────────────── */
   const [deleteModalVisible, setDeleteModalVisible] = useState(false);
-  const [deletePw,     setDeletePw]     = useState("");
-  const [showDeletePw, setShowDeletePw] = useState(false);
+  const [deletePw,      setDeletePw]      = useState("");
+  const [showDeletePw,  setShowDeletePw]  = useState(false);
   const [deleteLoading, setDeleteLoading] = useState(false);
+
+  /* ── Language modal ──────────────────────────────────────────── */
+  const [langModalVisible, setLangModalVisible] = useState(false);
 
   const openPwModal = () => {
     setCurrentPw(""); setNewPw(""); setConfirmPw("");
@@ -199,23 +254,23 @@ export default function AccountScreen() {
 
   const handleChangePassword = async () => {
     if (!currentPw || !newPw || !confirmPw) {
-      Alert.alert("Hata", "Lütfen tüm alanları doldurun."); return;
+      Alert.alert(t("common.error"), t("account.passwordModal.errorFillAll")); return;
     }
     if (newPw.length < 6) {
-      Alert.alert("Hata", "Yeni şifre en az 6 karakter olmalıdır."); return;
+      Alert.alert(t("common.error"), t("account.passwordModal.errorTooShort")); return;
     }
     if (newPw !== confirmPw) {
-      Alert.alert("Hata", "Yeni şifreler eşleşmiyor."); return;
+      Alert.alert(t("common.error"), t("account.passwordModal.errorMismatch")); return;
     }
     setPwLoading(true);
     try {
       await changePassword(currentPw, newPw);
       Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
       setPwModalVisible(false);
-      Alert.alert("Başarılı", "Şifreniz güncellendi.");
+      Alert.alert(t("common.success"), t("account.passwordModal.successMsg"));
     } catch (e: unknown) {
-      const msg = e instanceof Error ? e.message : "Şifre değiştirilemedi.";
-      Alert.alert("Hata", msg);
+      const msg = e instanceof Error ? e.message : t("errors.generic");
+      Alert.alert(t("common.error"), msg);
       Haptics.notificationAsync(Haptics.NotificationFeedbackType.Error);
     } finally {
       setPwLoading(false);
@@ -224,15 +279,15 @@ export default function AccountScreen() {
 
   const handleLogout = () => {
     if (Platform.OS === "web") {
-      if (window.confirm("Hesabından çıkmak istiyor musun?")) {
+      if (window.confirm(t("account.logoutConfirm"))) {
         logout().then(() => Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success));
       }
       return;
     }
-    Alert.alert("Çıkış Yap", "Hesabından çıkmak istiyor musun?", [
-      { text: "İptal", style: "cancel" },
+    Alert.alert(t("account.logout"), t("account.logoutConfirm"), [
+      { text: t("common.cancel"), style: "cancel" },
       {
-        text: "Çıkış Yap", style: "destructive",
+        text: t("account.logoutConfirmYes"), style: "destructive",
         onPress: async () => {
           await logout();
           Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
@@ -243,7 +298,7 @@ export default function AccountScreen() {
 
   const handleDeleteAccount = async () => {
     if (!deletePw) {
-      Alert.alert("Hata", "Şifrenizi girin."); return;
+      Alert.alert(t("common.error"), t("account.deleteModal.passwordRequired")); return;
     }
     setDeleteLoading(true);
     try {
@@ -252,8 +307,8 @@ export default function AccountScreen() {
       setDeleteModalVisible(false);
       await logout();
     } catch (e: unknown) {
-      const msg = e instanceof Error ? e.message : "Hesap silinemedi.";
-      Alert.alert("Hata", msg);
+      const msg = e instanceof Error ? e.message : t("errors.generic");
+      Alert.alert(t("common.error"), msg);
       Haptics.notificationAsync(Haptics.NotificationFeedbackType.Error);
     } finally {
       setDeleteLoading(false);
@@ -262,22 +317,24 @@ export default function AccountScreen() {
 
   const confirmDeleteAccount = () => {
     if (Platform.OS === "web") {
-      if (window.confirm("Hesabınızı kalıcı olarak silmek istediğinizden emin misiniz? Bu işlem geri alınamaz.")) {
+      if (window.confirm(t("account.deleteAccountConfirm"))) {
         openDeleteModal();
       }
       return;
     }
     Alert.alert(
-      "Hesabı Sil",
-      "Bu işlem geri alınamaz. Tüm kişisel verileriniz silinecek. Devam etmek istiyor musunuz?",
+      t("account.deleteAccount"),
+      t("account.deleteAccountWarning"),
       [
-        { text: "İptal", style: "cancel" },
-        { text: "Evet, Sil", style: "destructive", onPress: openDeleteModal },
+        { text: t("common.cancel"), style: "cancel" },
+        { text: t("common.yes"), style: "destructive", onPress: openDeleteModal },
       ],
     );
   };
 
   if (!user) return null;
+
+  const currentLangMeta = supportedLanguages.find((l) => l.code === currentLanguage) ?? supportedLanguages[0];
 
   return (
     <View style={[S.root, { backgroundColor: T.bg }]}>
@@ -298,7 +355,7 @@ export default function AccountScreen() {
               <Pressable
                 onPress={handleAvatarPress}
                 accessibilityRole="button"
-                accessibilityLabel="Profil fotoğrafını değiştir"
+                accessibilityLabel={t("account.avatar.title")}
                 style={({ pressed }) => [S.cameraBadge, { opacity: pressed ? 0.8 : 1 }]}
               >
                 <Icon name="camera" size={11} color="#FFF" />
@@ -319,7 +376,7 @@ export default function AccountScreen() {
 
         {/* ── Hesap Ayarları ─────────────────────────────── */}
         <View style={S.section}>
-          <Text style={[S.sectionTitle, { color: T.textFaint }]}>Hesap Ayarları</Text>
+          <Text style={[S.sectionTitle, { color: T.textFaint }]}>{t("account.settings")}</Text>
           <View style={[S.card, { backgroundColor: T.card, borderColor: T.border }]}>
             <Pressable
               style={({ pressed }) => [S.row, { opacity: pressed ? 0.75 : 1 }]}
@@ -328,7 +385,7 @@ export default function AccountScreen() {
               <View style={[S.iconBadge, { backgroundColor: T.purpleFaint }]}>
                 <Icon name="lock-closed-outline" size={18} color={T.purple} />
               </View>
-              <Text style={[S.rowLabel, { flex: 1, color: T.text }]}>Şifre Değiştir</Text>
+              <Text style={[S.rowLabel, { flex: 1, color: T.text }]}>{t("account.changePassword")}</Text>
               <Icon name="chevron-forward" size={16} color={T.textFaint} />
             </Pressable>
 
@@ -341,7 +398,22 @@ export default function AccountScreen() {
               <View style={[S.iconBadge, { backgroundColor: T.purpleFaint }]}>
                 <Icon name="key-outline" size={18} color={T.purple} />
               </View>
-              <Text style={[S.rowLabel, { flex: 1, color: T.text }]}>Şifremi Unuttum</Text>
+              <Text style={[S.rowLabel, { flex: 1, color: T.text }]}>{t("account.forgotPassword")}</Text>
+              <Icon name="chevron-forward" size={16} color={T.textFaint} />
+            </Pressable>
+
+            <View style={[S.divider, { backgroundColor: T.divider }]} />
+
+            {/* ── Dil / Language ────────────────────────── */}
+            <Pressable
+              style={({ pressed }) => [S.row, { opacity: pressed ? 0.75 : 1 }]}
+              onPress={() => setLangModalVisible(true)}
+            >
+              <View style={[S.iconBadge, { backgroundColor: T.purpleFaint }]}>
+                <Icon name="globe" size={18} color={T.purple} />
+              </View>
+              <Text style={[S.rowLabel, { flex: 1, color: T.text }]}>{t("account.language")}</Text>
+              <Text style={[S.rowValueText, { color: T.textMuted }]}>{currentLangMeta.nativeLabel}</Text>
               <Icon name="chevron-forward" size={16} color={T.textFaint} />
             </Pressable>
           </View>
@@ -349,7 +421,7 @@ export default function AccountScreen() {
 
         {/* ── Oturum ─────────────────────────────────────── */}
         <View style={S.section}>
-          <Text style={[S.sectionTitle, { color: T.textFaint }]}>Oturum</Text>
+          <Text style={[S.sectionTitle, { color: T.textFaint }]}>{t("account.session")}</Text>
           <View style={[S.card, { backgroundColor: T.card, borderColor: T.border }]}>
             <Pressable
               style={({ pressed }) => [S.row, { opacity: pressed ? 0.75 : 1 }]}
@@ -358,7 +430,7 @@ export default function AccountScreen() {
               <View style={[S.iconBadge, S.iconBadgeDanger]}>
                 <Icon name="log-out-outline" size={18} color="#D94040" />
               </View>
-              <Text style={[S.rowLabel, { flex: 1, color: "#D94040" }]}>Çıkış Yap</Text>
+              <Text style={[S.rowLabel, { flex: 1, color: "#D94040" }]}>{t("account.logout")}</Text>
               <Icon name="chevron-forward" size={16} color="#D94040" />
             </Pressable>
           </View>
@@ -366,7 +438,7 @@ export default function AccountScreen() {
 
         {/* ── Hukuki ─────────────────────────────────────── */}
         <View style={S.section}>
-          <Text style={[S.sectionTitle, { color: T.textFaint }]}>Hukuki</Text>
+          <Text style={[S.sectionTitle, { color: T.textFaint }]}>{t("account.legal")}</Text>
           <View style={[S.card, { backgroundColor: T.card, borderColor: T.border }]}>
             <Pressable
               style={({ pressed }) => [S.row, { opacity: pressed ? 0.75 : 1 }]}
@@ -375,7 +447,7 @@ export default function AccountScreen() {
               <View style={[S.iconBadge, { backgroundColor: T.purpleFaint }]}>
                 <Icon name="shield-checkmark-outline" size={18} color={T.purple} />
               </View>
-              <Text style={[S.rowLabel, { flex: 1, color: T.text }]}>Gizlilik Politikası</Text>
+              <Text style={[S.rowLabel, { flex: 1, color: T.text }]}>{t("account.privacyPolicy")}</Text>
               <Icon name="chevron-forward" size={16} color={T.textFaint} />
             </Pressable>
             <View style={[S.divider, { backgroundColor: T.divider }]} />
@@ -386,7 +458,7 @@ export default function AccountScreen() {
               <View style={[S.iconBadge, { backgroundColor: T.purpleFaint }]}>
                 <Icon name="document-text-outline" size={18} color={T.purple} />
               </View>
-              <Text style={[S.rowLabel, { flex: 1, color: T.text }]}>Kullanım Koşulları</Text>
+              <Text style={[S.rowLabel, { flex: 1, color: T.text }]}>{t("account.termsOfService")}</Text>
               <Icon name="chevron-forward" size={16} color={T.textFaint} />
             </Pressable>
           </View>
@@ -394,7 +466,7 @@ export default function AccountScreen() {
 
         {/* ── Tehlikeli Alan ──────────────────────────────── */}
         <View style={S.section}>
-          <Text style={[S.sectionTitle, { color: T.textFaint }]}>Tehlikeli Alan</Text>
+          <Text style={[S.sectionTitle, { color: T.textFaint }]}>{t("account.dangerZone")}</Text>
           <View style={[S.card, { backgroundColor: T.card, borderColor: "#D94040" }]}>
             <Pressable
               style={({ pressed }) => [S.row, { opacity: pressed ? 0.75 : 1 }]}
@@ -404,8 +476,8 @@ export default function AccountScreen() {
                 <Icon name="trash-outline" size={18} color="#D94040" />
               </View>
               <View style={{ flex: 1 }}>
-                <Text style={[S.rowLabel, { color: "#D94040" }]}>Hesabı Sil</Text>
-                <Text style={[S.rowDesc, { color: T.textFaint }]}>Tüm veriler kalıcı olarak silinir</Text>
+                <Text style={[S.rowLabel, { color: "#D94040" }]}>{t("account.deleteAccount")}</Text>
+                <Text style={[S.rowDesc, { color: T.textFaint }]}>{t("account.deleteAccountDesc")}</Text>
               </View>
               <Icon name="chevron-forward" size={16} color="#D94040" />
             </Pressable>
@@ -431,25 +503,25 @@ export default function AccountScreen() {
             { backgroundColor: T.card, paddingBottom: Math.max(insets.bottom, 24) },
           ]}>
             <View style={[S.modalHandle, { backgroundColor: T.border }]} />
-            <Text style={[S.modalTitle, { color: T.text }]}>Şifre Değiştir</Text>
+            <Text style={[S.modalTitle, { color: T.text }]}>{t("account.passwordModal.title")}</Text>
             <Text style={[S.modalSubtitle, { color: T.textMuted }]}>
-              Güvenliğin için güçlü bir şifre seç
+              {t("account.passwordModal.subtitle")}
             </Text>
 
             {[
-              { label: "Mevcut Şifre",       icon: "lock-closed-outline" as const, val: currentPw, set: setCurrentPw, show: showCurrent, toggleShow: () => setShowCurrent((v) => !v) },
-              { label: "Yeni Şifre",          icon: "key-outline"         as const, val: newPw,      set: setNewPw,      show: showNew,     toggleShow: () => setShowNew((v) => !v)     },
-              { label: "Yeni Şifre (Tekrar)", icon: "key-outline"         as const, val: confirmPw, set: setConfirmPw, show: showConfirm, toggleShow: () => setShowConfirm((v) => !v)  },
-            ].map(({ label, icon, val, set, show, toggleShow }) => (
-              <View key={label} style={S.modalInputGroup}>
-                <Text style={[S.modalLabel, { color: T.textMuted }]}>{label}</Text>
+              { labelKey: "account.passwordModal.currentPassword", icon: "lock-closed-outline" as const, val: currentPw, set: setCurrentPw, show: showCurrent, toggleShow: () => setShowCurrent((v) => !v) },
+              { labelKey: "account.passwordModal.newPassword",     icon: "key-outline"         as const, val: newPw,      set: setNewPw,      show: showNew,     toggleShow: () => setShowNew((v) => !v)     },
+              { labelKey: "account.passwordModal.newPasswordRepeat", icon: "key-outline"       as const, val: confirmPw, set: setConfirmPw, show: showConfirm, toggleShow: () => setShowConfirm((v) => !v)  },
+            ].map(({ labelKey, icon, val, set, show, toggleShow }) => (
+              <View key={labelKey} style={S.modalInputGroup}>
+                <Text style={[S.modalLabel, { color: T.textMuted }]}>{t(labelKey)}</Text>
                 <View style={[S.modalInputWrap, { backgroundColor: T.input, borderColor: T.inputBorder }]}>
                   <Icon name={icon} size={18} color={T.purple} />
                   <TextInput
                     style={[S.modalInput, { color: T.text }]}
                     value={val}
                     onChangeText={set}
-                    placeholder={label}
+                    placeholder={t(labelKey)}
                     placeholderTextColor={T.placeholder}
                     secureTextEntry={!show}
                     autoCapitalize="none"
@@ -469,7 +541,7 @@ export default function AccountScreen() {
                 ]}
                 onPress={() => setPwModalVisible(false)}
               >
-                <Text style={[S.modalCancelText, { color: T.purpleDark }]}>İptal</Text>
+                <Text style={[S.modalCancelText, { color: T.purpleDark }]}>{t("common.cancel")}</Text>
               </Pressable>
               <Pressable
                 style={({ pressed }) => [
@@ -481,7 +553,7 @@ export default function AccountScreen() {
               >
                 {pwLoading
                   ? <ActivityIndicator color="#FFF" size="small" />
-                  : <Text style={S.modalSaveText}>Kaydet</Text>
+                  : <Text style={S.modalSaveText}>{t("account.passwordModal.save")}</Text>
                 }
               </Pressable>
             </View>
@@ -506,20 +578,20 @@ export default function AccountScreen() {
             { backgroundColor: T.card, paddingBottom: Math.max(insets.bottom, 24) },
           ]}>
             <View style={[S.modalHandle, { backgroundColor: T.border }]} />
-            <Text style={[S.modalTitle, { color: "#D94040" }]}>Hesabı Kalıcı Sil</Text>
+            <Text style={[S.modalTitle, { color: "#D94040" }]}>{t("account.deleteModal.title")}</Text>
             <Text style={[S.modalSubtitle, { color: T.textMuted }]}>
-              Bu işlem geri alınamaz. Onaylamak için şifrenizi girin.
+              {t("account.deleteModal.subtitle")}
             </Text>
 
             <View style={S.modalInputGroup}>
-              <Text style={[S.modalLabel, { color: T.textMuted }]}>Şifreniz</Text>
+              <Text style={[S.modalLabel, { color: T.textMuted }]}>{t("account.deleteModal.passwordLabel")}</Text>
               <View style={[S.modalInputWrap, { backgroundColor: T.input, borderColor: "#D94040" }]}>
                 <Icon name="lock-closed-outline" size={18} color="#D94040" />
                 <TextInput
                   style={[S.modalInput, { color: T.text }]}
                   value={deletePw}
                   onChangeText={setDeletePw}
-                  placeholder="Şifrenizi girin"
+                  placeholder={t("account.deleteModal.passwordPlaceholder")}
                   placeholderTextColor={T.placeholder}
                   secureTextEntry={!showDeletePw}
                   autoCapitalize="none"
@@ -538,7 +610,7 @@ export default function AccountScreen() {
                 ]}
                 onPress={() => setDeleteModalVisible(false)}
               >
-                <Text style={[S.modalCancelText, { color: T.purpleDark }]}>İptal</Text>
+                <Text style={[S.modalCancelText, { color: T.purpleDark }]}>{t("common.cancel")}</Text>
               </Pressable>
               <Pressable
                 style={({ pressed }) => [
@@ -551,13 +623,19 @@ export default function AccountScreen() {
               >
                 {deleteLoading
                   ? <ActivityIndicator color="#FFF" size="small" />
-                  : <Text style={S.modalSaveText}>Hesabı Sil</Text>
+                  : <Text style={S.modalSaveText}>{t("account.deleteModal.submit")}</Text>
                 }
               </Pressable>
             </View>
           </View>
         </KeyboardAvoidingView>
       </Modal>
+
+      {/* ── Dil Seçimi Modal ─────────────────────────── */}
+      <LanguageModal
+        visible={langModalVisible}
+        onClose={() => setLangModalVisible(false)}
+      />
     </View>
   );
 }
@@ -567,10 +645,6 @@ const S = StyleSheet.create({
 
   header:      { paddingHorizontal: 20, paddingBottom: 20 },
   headerInner: { flexDirection: "row", alignItems: "center", gap: 14 },
-  headerSearchBtn: {
-    width: 38, height: 38, borderRadius: 12,
-    alignItems: "center", justifyContent: "center",
-  },
   cameraBadge: {
     position: "absolute",
     bottom: -2,
@@ -637,16 +711,28 @@ const S = StyleSheet.create({
     fontFamily: "Inter_400Regular",
     marginTop: 1,
   },
+  rowValueText: {
+    fontSize: 13,
+    fontFamily: "Inter_400Regular",
+  },
   iconBadge: {
     width: 34, height: 34, borderRadius: 10,
     alignItems: "center", justifyContent: "center",
   },
   iconBadgeDanger: { backgroundColor: "rgba(217,64,64,0.10)" },
 
-  radioOuter: {
-    width: 22, height: 22, borderRadius: 11,
-    borderWidth: 1.5,
-    alignItems: "center", justifyContent: "center",
+  /* ── Language option ─── */
+  langOption: {
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "space-between",
+    paddingVertical: 14,
+    paddingHorizontal: 4,
+    borderRadius: 10,
+  },
+  langOptionLabel: {
+    fontSize: 16,
+    fontFamily: "Inter_500Medium",
   },
 
   modalOverlay: {
