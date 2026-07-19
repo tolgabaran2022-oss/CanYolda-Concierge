@@ -1034,8 +1034,23 @@ export function EvcilimTab({ botPad }: { botPad: number }) {
     [router]
   );
 
+  const toPremium = useCallback(() => {
+    router.push({
+      pathname: "/evcilim-premium",
+      params: { source: "add_pet", returnTo: "/evcilim/add" },
+    } as Parameters<typeof router.push>[0]);
+  }, [router]);
+
   const handleAddPet = useCallback(async () => {
     if (addingPet) return;
+
+    // Fast path: if cached status already says blocked, go directly to premium
+    if (premiumStatus !== null && !premiumStatus.canAddPet) {
+      Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+      toPremium();
+      return;
+    }
+
     setAddingPet(true);
     try {
       const fresh = await refreshPetPremiumStatus(false);
@@ -1043,17 +1058,18 @@ export function EvcilimTab({ botPad }: { botPad: number }) {
         Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
         nav("/evcilim/add");
       } else {
-        router.push({
-          pathname: "/evcilim-premium",
-          params: { source: "add_pet", returnTo: "/evcilim/add" },
-        } as Parameters<typeof router.push>[0]);
+        // includes fresh === null (not authenticated) — fail-closed
+        Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+        toPremium();
       }
     } catch {
-      Alert.alert("Hata", "Premium durumu kontrol edilemedi. Lütfen tekrar deneyin.");
+      // API error — fail-closed: send to premium rather than silent failure
+      Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+      toPremium();
     } finally {
       setAddingPet(false);
     }
-  }, [addingPet, refreshPetPremiumStatus, nav, router]);
+  }, [addingPet, premiumStatus, refreshPetPremiumStatus, nav, toPremium]);
 
   const handleDeletePet = useCallback(async (id: string) => {
     setDeletingPetId(id);
