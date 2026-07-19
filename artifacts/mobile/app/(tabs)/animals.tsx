@@ -166,15 +166,23 @@ export default function AnimalsScreen() {
       {/* ── Hero header ───────────────────────── */}
       <View style={[H.hero, { paddingTop: topPad + 16, backgroundColor: T.bg }]}>
 
-        {/* Top row */}
-        <View style={H.topRow}>
-          <View style={H.logoRow}>
-            <View style={H.logoPill}>
-              <Icon name="paw" size={14} color={PURPLE} />
+        {/* Header row: left = logo + title, right = buttons */}
+        <View style={{ flexDirection: "row", alignItems: "center", justifyContent: "space-between" }}>
+          {/* Left: logo + title */}
+          <View style={{ gap: 2 }}>
+            <View style={H.logoRow}>
+              <View style={H.logoPill}>
+                <Icon name="paw" size={14} color={PURPLE} />
+              </View>
+              <Text style={[H.logoText, { color: T.text }]}>canyoldaşı</Text>
             </View>
-            <Text style={[H.logoText, { color: T.text }]}>canyoldaşı</Text>
+            <View style={H.titleBlock}>
+              <Text style={[H.title, { color: T.text }]}>Sokak Hayvanları</Text>
+              <Text style={[H.subtitle, { color: T.textMuted }]}>Yakınındaki canlı durumları keşfet</Text>
+            </View>
           </View>
 
+          {/* Right: buttons */}
           <View style={{ flexDirection: "column", alignItems: "flex-end", gap: 6 }}>
             {/* Durum Bildir */}
             <Animated.View style={{ transform: [{ scale: addBtnScale }] }}>
@@ -208,12 +216,6 @@ export default function AnimalsScreen() {
               </LinearGradient>
             </Pressable>
           </View>
-        </View>
-
-        {/* Title block */}
-        <View style={H.titleBlock}>
-          <Text style={[H.title, { color: T.text }]}>Sokak Hayvanları</Text>
-          <Text style={[H.subtitle, { color: T.textMuted }]}>Yakınındaki canlı durumları keşfet</Text>
         </View>
 
         {/* Status summary row — Acil + Bekleyen + Sağlıklı + Toplam */}
