@@ -1,0 +1,112 @@
+Update the featured-listing behavior and UI in the CanYoldaşı application.
+
+REQUIRED RESULT
+
+When a listing is successfully featured:
+
+1. Display a purple star badge with the Turkish text:
+   “Öne Çıkarılmış”
+
+2. Move the listing to the top of the “Tüm İlanlar” list.
+
+3. Keep featured listings above all normal listings for the entire valid featured period.
+
+4. When the featured period expires:
+   - Remove the purple featured badge.
+   - Return the listing to the normal chronological ordering.
+   - Show the “Öne Çıkar” action again where appropriate.
+
+TASK 1 — PURPLE FEATURED BADGE
+
+Create a premium badge containing:
+
+- A filled purple star icon
+- Text: “Öne Çıkarılmış”
+- Purple/lavender background
+- Dark purple text
+- Rounded pill shape
+- Compact spacing consistent with the existing CanYoldaşı design
+
+Suggested styling:
+
+- Background: `#F1E9FF`
+- Star: `#7C3AED` or the application’s primary purple
+- Text: `#6D28D9`
+- Border radius: full pill
+- Font weight: `600`
+
+Use a real star icon from the project’s existing icon library. Do not use an emoji or a broken text glyph.
+
+Display the badge on:
+
+- The owner’s listing card in “İlanlarım”
+- The listing card in “Tüm İlanlar”
+- The listing-detail screen if that screen displays listing status
+
+Do not show the badge merely because the user opened the payment screen. Show it only after the featured purchase is confirmed and persisted.
+
+TASK 2 — UPDATE THE OWNER CARD
+
+After the listing is successfully featured, replace or hide the current promotional panel:
+
+“İlanını öne çıkar / Öne Çıkar”
+
+Do not continue showing an active “Öne Çıkar” button for an already featured listing.
+
+Instead show:
+
+- Purple star badge: “Öne Çıkarılmış”
+- Remaining featured period where available, for example:
+  - “2 gün kaldı”
+  - “6 saat kaldı”
+
+Do not allow the user to purchase the same active featured period multiple times unless an explicit extension feature exists.
+
+TASK 3 — PERSIST FEATURED STATE
+
+Use real persistent backend fields. Inspect the existing database schema before adding duplicate columns.
+
+The listing must have an authoritative featured state equivalent to:
+
+- `is_featured`
+- `featured_at`
+- `featured_until`
+
+Use the project’s actual naming conventions.
+
+Important rules:
+
+- `featured_until` must be stored as a timezone-safe timestamp.
+- The client device clock must not be the only authority.
+- A listing is actively featured only when:
+  - Payment/purchase confirmation succeeded
+  - Featured state exists in the database
+  - `featured_until` is later than the current server/database time
+  - The listing itself is active and visible
+- A failed or canceled purchase must never activate featured status.
+- Refreshing, logging out, or using another device must not remove the status.
+
+TASK 4 — SORT “TÜM İLANLAR” CORRECTLY
+
+Update the real query or backend sorting logic for “Tüm İlanlar.”
+
+Required sorting priority:
+
+1. Currently active featured listings first
+2. Among featured listings, use a deterministic order
+3. Normal listings after featured listings
+4. Normal listings ordered by newest first
+
+Preferred deterministic ordering:
+
+- Active featured listings:
+  - `featured_at DESC`
+- Normal listings:
+  - `created_at DESC`
+
+Equivalent logical ordering:
+
+```text
+active_featured DESC,
+featured_at DESC NULLS LAST,
+created_at DESC

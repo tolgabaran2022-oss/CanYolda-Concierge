@@ -445,10 +445,10 @@ function ListingCard({ listing }: { listing: AdoptionListing }) {
           />
 
           {isFeatured && (
-            <LinearGradient colors={[P2, DARK]} start={{ x: 0, y: 0 }} end={{ x: 1, y: 1 }} style={lc.featuredBadge}>
-              <Icon name="star" size={9} color={WHITE} />
-              <Text style={lc.featuredTxt}>ÖNE ÇIKAN</Text>
-            </LinearGradient>
+            <View style={lc.featuredBadge}>
+              <Icon name="star" size={9} color="#7C3AED" />
+              <Text style={lc.featuredTxt}>Öne Çıkarılmış</Text>
+            </View>
           )}
 
           <View style={lc.typeTag}>
@@ -508,8 +508,8 @@ const lc = StyleSheet.create({
   imgFallback:  { flex: 1, alignItems: "center", justifyContent: "center" },
   imgScrim:     { position: "absolute", bottom: 0, left: 0, right: 0, height: 56 },
 
-  featuredBadge:{ position: "absolute", top: 9, left: 9, flexDirection: "row", alignItems: "center", gap: 3, borderRadius: 7, paddingHorizontal: 8, paddingVertical: 4, overflow: "hidden" },
-  featuredTxt:  { fontSize: 10, fontFamily: "Inter_700Bold", color: WHITE },
+  featuredBadge:{ position: "absolute", top: 9, left: 9, flexDirection: "row", alignItems: "center", gap: 3, borderRadius: 20, paddingHorizontal: 8, paddingVertical: 4, backgroundColor: "#F1E9FF" },
+  featuredTxt:  { fontSize: 10, fontFamily: "Inter_700Bold", color: "#6D28D9" },
 
   typeTag:    { position: "absolute", bottom: 8, left: 9, backgroundColor: "rgba(255,255,255,0.2)", borderRadius: 7, paddingHorizontal: 8, paddingVertical: 3, borderWidth: 1, borderColor: "rgba(255,255,255,0.32)" },
   typeTagTxt: { fontSize: 10, fontFamily: "Inter_700Bold", color: WHITE },
@@ -923,10 +923,10 @@ function MyListingCard({
 
         <View style={ml.statusRow}>
           {isFeatured ? (
-            <LinearGradient colors={[P2, DARK]} start={{ x: 0, y: 0 }} end={{ x: 1, y: 1 }} style={ml.featBadge}>
-              <Icon name="star" size={10} color={WHITE} />
-              <Text style={ml.featBadgeTxt}>ÖNE ÇIKAN</Text>
-            </LinearGradient>
+            <View style={ml.featBadge}>
+              <Icon name="star" size={10} color="#7C3AED" />
+              <Text style={ml.featBadgeTxt}>Öne Çıkarılmış</Text>
+            </View>
           ) : (
             <View style={[ml.statusBadge, { backgroundColor: cfg.bg }]}>
               <Icon name={cfg.icon} size={11} color={cfg.color} />
@@ -964,8 +964,8 @@ function MyListingCard({
                   : "Öne çıkarılıyor"
               }
             >
-              <Icon name="sparkles" size={12} color={P} />
-              <Text style={ml.featuredBannerTxt}>Öne çıkarılıyor</Text>
+              <Icon name="star" size={12} color="#7C3AED" />
+              <Text style={ml.featuredBannerTxt}>Öne Çıkarılmış</Text>
               {remainingLabel && (
                 <View style={ml.featuredTimeChip}>
                   <Icon name="time-outline" size={10} color={P} />
@@ -1037,7 +1037,7 @@ function MyListingCard({
             </View>
           )}
 
-          {canBoost && (
+          {canBoost && !isFeatured && (
             <View style={ml.promoteBanner}>
               <View style={ml.promoteLeft}>
                 <View style={ml.rocketCircle}>
@@ -1239,8 +1239,8 @@ const ml = StyleSheet.create({
   card: { backgroundColor: WHITE, borderRadius: 20, borderWidth: 1, borderColor: BORDER, ...CARD_SHADOW },
   cardFeatured: { borderColor: P, borderWidth: 2 },
   statusRow: { flexDirection: "row", alignItems: "center", justifyContent: "space-between", paddingHorizontal: 14, paddingTop: 14, paddingBottom: 10 },
-  featBadge: { flexDirection: "row", alignItems: "center", gap: 4, borderRadius: 10, overflow: "hidden", paddingHorizontal: 10, paddingVertical: 6 },
-  featBadgeTxt: { fontSize: 11, fontFamily: "Inter_700Bold", color: WHITE },
+  featBadge: { flexDirection: "row", alignItems: "center", gap: 4, borderRadius: 20, paddingHorizontal: 10, paddingVertical: 6, backgroundColor: "#F1E9FF" },
+  featBadgeTxt: { fontSize: 11, fontFamily: "Inter_700Bold", color: "#6D28D9" },
   statusBadge: { flexDirection: "row", alignItems: "center", gap: 5, borderRadius: 10, paddingHorizontal: 10, paddingVertical: 6 },
   statusTxt: { fontSize: 12, fontFamily: "Inter_700Bold" },
   agePill: { backgroundColor: "rgba(100,100,120,0.12)", borderRadius: 10, paddingHorizontal: 10, paddingVertical: 6 },
