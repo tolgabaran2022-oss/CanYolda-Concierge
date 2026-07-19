@@ -1,0 +1,89 @@
+Make the complete veterinarian/petshop coming-soon banner pressable and open a premium informational modal.
+
+REQUIRED INTERACTION
+
+When the user taps anywhere on the banner:
+
+1. Open a centered modal card.
+2. Dim and softly blur the page behind it.
+3. Display a short coming-soon message.
+4. Do not navigate to another page.
+5. Do not trigger multiple modals from repeated rapid taps.
+
+The complete banner area must be pressable, not only a small button or icon.
+
+MODAL CONTENT
+
+Use the following exact Turkish text:
+
+Small badge:
+
+“ÇOK YAKINDA”
+
+Title:
+
+“Veteriner ve Petshop Profilleri”
+
+Message:
+
+“Bu özellik üzerinde çalışıyoruz. Kullanıma sunulduğunda en kısa sürede bilgilendirileceksiniz.”
+
+Primary button:
+
+“Tamam”
+
+Optional secondary action:
+
+“Bana Haber Ver”
+
+Only show “Bana Haber Ver” if a real notification-subscription system will be implemented. Do not show a non-functional button.
+
+MODAL DESIGN
+
+Match the premium CanYoldaşı design language:
+
+- Centered white card
+- Warm white background
+- Width: approximately 88% of the mobile screen
+- Maximum width: approximately 380px
+- Border radius: 24px
+- Internal padding: 24px
+- Soft shadow
+- Thin pale-lavender border
+- Purple veterinarian/store icon at the top
+- Small lavender “ÇOK YAKINDA” pill
+- Dark-purple title
+- Gray centered description
+- Purple gradient “Tamam” button
+- Balanced spacing
+- No excessive decorations
+
+Add a small close button in the top-right corner:
+
+- Circular pale-lavender background
+- Clear “X” icon
+- Accessibility label: “Pencereyi kapat”
+
+BACKDROP
+
+When the modal opens:
+
+- Add a dark translucent overlay, approximately 25–35% opacity.
+- Use background blur only if supported safely.
+- Tapping the backdrop may close the modal.
+- Android hardware back must close the modal.
+- The modal must respect device safe areas.
+- Do not allow touches to pass through to the page.
+
+BANNER PRESSABLE
+
+Wrap the entire existing compact banner:
+
+```tsx
+<Pressable
+  onPress={openComingSoonModal}
+  accessibilityRole="button"
+  accessibilityLabel="Veteriner ve Petshop profilleri hakkında bilgi al"
+>
+  <Image ... />
+</Pressable>
