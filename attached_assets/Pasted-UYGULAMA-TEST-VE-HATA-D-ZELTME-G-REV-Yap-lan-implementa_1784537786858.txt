@@ -1,0 +1,401 @@
+UYGULAMA TESTİ VE HATA DÜZELTME GÖREVİ
+
+Yapılan implementasyonu yalnızca kod üzerinden inceleme. Uygulamayı gerçekten çalıştır ve “Evcil Hayvan Ekle” akışını test et.
+
+ÖNEMLİ OLASI RACE CONDITION
+
+React state güncellemeleri anlık olmadığı için şu kontrol tek başına hızlı çift dokunmayı kesin olarak engellemeyebilir:
+
+if (addingPet) return;
+
+Aynı render döngüsündeki iki hızlı dokunmada her iki çağrı da `addingPet === false` görebilir.
+
+Bunu `useRef` tabanlı senkron kilitle güvenceye al:
+
+```tsx
+const addingPetLockRef = useRef(false);
+
+const handleAddPet = async () => {
+  if (addingPetLockRef.current) return;
+
+  addingPetLockRef.current = true;
+  setAddingPet(true);
+
+  try {
+    // Mevcut karar ve yönlendirme mantığı
+  } catch (error) {
+    // Mevcut hata yönetimi
+  } finally {
+    addingPetLockRef.current = false;
+    setAddingPet(false);
+  }
+};
+
+Modal açıldığında ve forma yönlendirme tamamlandığında kilidin doğru zamanda kaldırıldığını doğrula. Kilidin kalıcı olarak takılı kalmasına izin verme.
+
+GERÇEK TEST SENARYOLARI
+
+Testler için mümkünse ayrı test kullanıcıları veya geri alınabilir test verileri kullan.
+
+ÜCRETSİZ KULLANICI — HİÇ EVCİL HAYVANI YOK
+Kullanıcıyla giriş yap.
+Veritabanında bu kullanıcıya ait evcil hayvan sayısının 0 olduğunu doğrula.
+“Evcil Hayvan Ekle” butonuna dokun.
+/evcilim/add formunun açıldığını UI üzerinde doğrula.
+Premium modalın açılmadığını doğrula.
+ÜCRETSİZ KULLANICI — 1 EVCİL HAYVANI VAR
+Veritabanında kullanıcıya ait en az 1 evcil hayvan olduğunu doğrula.
+pet_premium_access üzerinden Premium hakkının aktif olmadığını doğrula.
+Butona dokun.
+EvcilimPremiumModal kartının açıldığını UI üzerinde doğrula.
+/evcilim/add formuna geçilmediğini doğrula.
+PREMIUM KULLANICI — 1 EVCİL HAYVANI VAR
+Veritabanında kullanıcıya ait en az 1 evcil hayvan olduğunu doğrula.
+Premium hakkının gerçekten aktif olduğunu doğrula.
+Butona dokun.
+/evcilim/add formunun açıldığını doğrula.
+Premium modalın açılmadığını doğrula.
+MODAL DAVRANIŞI
+
+Ayrı ayrı test et:
+
+Kapatma butonu
+Karartılmış dış alana dokunma
+Android fiziksel/sistem geri tuşu
+Modal içeriğine dokununca yanlışlıkla kapanmaması
+İçerik taşarsa dikey kaydırma
+Safe area görünümü
+Klavye veya alt navigasyonla çakışma
+Modal kapandıktan sonra tekrar açılabilmesi
+HIZLI DOKUNMA TESTİ
+
+“Evcil Hayvan Ekle” butonuna çok hızlı biçimde art arda en az 5 kez dokun.
+
+Doğrula:
+
+Yalnızca bir modal açılıyor.
+Yalnızca bir navigation işlemi gerçekleşiyor.
+Birden fazla API isteği oluşmuyor.
+“Action already handled” veya navigation stack hatası oluşmuyor.
+
+Yalnızca addingPet state kontrolüne güvenme. Gerekirse useRef kilidini uygula.
+
+API HATASI
+
+GET /api/pet-premium/status isteğinin başarısız olduğu durumu kontrollü olarak test et.
+
+Doğrula:
+
+Açıklayıcı Alert gösteriliyor.
+Premium modal açılmıyor.
+Ekleme formu açılmıyor.
+Kullanıcı tekrar deneyebiliyor.
+Loading/kilit durumu takılı kalmıyor.
+PREMIUM MODAL CTA TESTİ
+
+Premium modal içindeki satın alma/yükseltme butonuna dokun.
+
+Doğrula:
+
+Doğru Premium satın alma akışı açılıyor.
+source="add_pet" analitik kaynağı korunuyor.
+Satın alma tamamlanınca Premium durumu yeniden okunuyor.
+Başarılı satın alma sonrasında kullanıcı returnTo="/evcilim/add" hedefine gidebiliyor.
+Satın alma iptal edilirse modal ve mevcut sayfa tutarlı kalıyor.
+TEKNİK KONTROLLER
+TypeScript kontrolünü çalıştır.
+Lint kontrolünü çalıştır.
+Console hatalarını kontrol et.
+Network isteklerini kontrol et.
+Aynı API isteğinin gereksiz tekrar edilmediğini doğrula.
+Var olan Evcilim ekranı, hayvan seçimi ve alt navigasyonun bozulmadığını doğrula.
+
+PLATFORM RAPORLAMASI
+
+Web üzerinde yapılan testi Android veya iOS PASS olarak raporlama.
+
+Her platformu ayrı raporla:
+
+Web
+Android
+iOS
+
+Sonuç durumları yalnızca şunlar olabilir:
+
+PASS: Gerçekten çalıştırıldı, kullanıcı aksiyonu yapıldı ve sonuç gözlemlendi.
+FAIL: Çalıştırıldı fakat beklenen sonuç alınmadı.
+STATIC REVIEW: Yalnızca kod incelendi.
+BLOCKED: Platform çalıştırılamadı.
+NOT TESTED: Test edilmedi.
+
+Bulduğun hataları doğrudan düzelt, ardından ilgili testi yeniden çalıştır.
+
+SON RAPOR
+
+Aşağıdaki tabloyu doldur:
+
+Platform	Senaryo	Sonuç	UI kanıtı	DB/API kanıtı	Console/Network
+
+Ayrıca raporla:
+
+Değiştirilen dosyalar
+Uygulanan race-condition düzeltmesi
+Çalıştırılan komutlar
+Bulunan ve düzeltilen hatalar
+Test edilemeyen platformlar ve kesin sebepleri
+
+Gerçek çalıştırma yapılmadan hiçbir senaryoya PASS verme.
+
+
+Özellikle `addingPet` state kilidine dikkat etmek gerekiyor; Replit’in mevcut açıklamasındaki guard teorik olarak çok hızlı çift dokunmada yarış durumuna açık olabilir. Bu testten sonra gerçek sonuçları bana gönder, FAIL çıkanları beraber düzelteceğiz.
+Sorun ne biliyonmu kanka biz ilk evcil hayvanı eklerken çıkan evcil hayvan oluşturma kartı ikinci evcil hayvanıda eklerken çıkıyor ben bu ikinciyi eklemek isteyen insanlara önce premium alıp sonra tekrar evcil hayvan kartı oluşturabilmesini istiyorum
+
+Aynen kanka, sorun net: İkinci hayvan ekleme butonuna basınca doğrudan evcil hayvan oluşturma formu açılıyor. Oysa ücretsiz kullanıcı önce Premium satın almalı; satın alma doğrulanmadan form kesinlikle açılmamalı.
+
+Replit’e bunu gönder:
+
+KRİTİK HATA DÜZELTME — İKİNCİ EVCİL HAYVAN PREMIUM KİLİDİ
+
+Mevcut sistemde kullanıcı ikinci evcil hayvanını eklemek istediğinde, ilk hayvan eklenirken kullanılan `/evcilim/add` oluşturma formu doğrudan açılıyor.
+
+BU DAVRANIŞ YANLIŞTIR.
+
+İSTENEN KESİN KURAL
+
+1. Kullanıcının ilk evcil hayvanı tamamen ücretsizdir.
+2. Kullanıcının veritabanında en az 1 evcil hayvanı varsa ikinci evcil hayvan oluşturma formu ücretsiz kullanıcıya kesinlikle açılmamalıdır.
+3. Kullanıcı ikinci evcil hayvan eklemek istediğinde önce:
+
+`artifacts/mobile/app/evcilim-premium.tsx`
+
+içindeki Premium satın alma kartı açılmalıdır.
+
+4. Kullanıcı Premium satın alma işlemini gerçekten tamamladıktan ve Premium hakkı backend üzerinden doğrulandıktan sonra evcil hayvan oluşturma formu açılmalıdır.
+5. Premium satın alma işlemi iptal edilirse, başarısız olursa veya doğrulanamazsa oluşturma formu açılmamalıdır.
+6. Zaten aktif Premium sahibi olan kullanıcı doğrudan evcil hayvan oluşturma formuna geçebilir.
+
+DOĞRU AKIŞ
+
+```text
+“Evcil Hayvan Ekle” butonuna basıldı
+           ↓
+Backend’den gerçek evcil hayvan sayısını oku
+           ↓
+Evcil hayvan sayısı 0 mı?
+     ├─ EVET → /evcilim/add formunu aç
+     └─ HAYIR → Backend’den Premium durumunu doğrula
+                         ↓
+                 Premium aktif mi?
+              ├─ EVET → /evcilim/add formunu aç
+              └─ HAYIR → EvcilimPremiumModal aç
+
+SATIN ALMA SONRASI AKIŞ
+
+Premium kartı açılır
+        ↓
+Kullanıcı satın alma işlemini tamamlar
+        ↓
+RevenueCat / backend satın alma sonucunu doğrular
+        ↓
+GET /api/pet-premium/status yeniden çağrılır
+        ↓
+pet_premium_access tablosundan Premium aktifliği doğrulanır
+        ↓
+Premium gerçekten aktifse modal kapanır
+        ↓
+/evcilim/add formu açılır
+
+Satın alma doğrulanmadan yalnızca butona basıldığı, ödeme ekranının açıldığı veya istemci state’i değiştiği için /evcilim/add formunu açma.
+
+TEMEL HATA ARAŞTIRMASI
+
+Önce “Evcil Hayvan Ekle” butonunun bütün onPress bağlantılarını bul.
+
+Şunları kontrol et:
+
+Butonda doğrudan router.push('/evcilim/add') var mı?
+Butonu saran Link, Pressable veya TouchableOpacity içinde doğrudan route bağlantısı var mı?
+Parent component üzerinde ikinci bir onPress var mı?
+pets.length yalnızca ekrandaki geçici/local state’ten mi okunuyor?
+İlk hayvan oluşturulduktan sonra pets listesi yeniden çekiliyor mu?
+Kullanıcı Evcilim ekranına geri döndüğünde evcil hayvan sayısı güncelleniyor mu?
+canAddPet yanlışlıkla ücretsiz kullanıcı için true mu dönüyor?
+Premium API sonucu gelmeden varsayılan olarak form açılıyor mu?
+returnTo="/evcilim/add" modal açılır açılmaz yanlışlıkla navigation yapıyor mu?
+
+Butonda formu açan bütün paralel ve doğrudan navigation yollarını kaldır. Karar yalnızca tek bir merkezi fonksiyon üzerinden verilmeli.
+
+ÖRNEK KARAR FONKSİYONU
+
+const addPetLockRef = useRef(false);
+
+const handleAddPetPress = async () => {
+  if (addPetLockRef.current) return;
+
+  addPetLockRef.current = true;
+  setAddingPet(true);
+
+  try {
+    // Local pets.length değerine güvenme.
+    // Backend’den bu kullanıcıya ait gerçek aktif hayvan sayısını al.
+    const petCount = await fetchCurrentUserPetCount();
+
+    if (petCount === 0) {
+      router.push('/evcilim/add');
+      return;
+    }
+
+    // Kullanıcının en az bir hayvanı varsa Premium durumunu
+    // backend üzerinden güncel olarak doğrula.
+    const premiumStatus = await refreshPetPremiumStatus();
+
+    if (premiumStatus?.isActive === true) {
+      router.push('/evcilim/add');
+      return;
+    }
+
+    // Ücretsiz kullanıcı: form açılmayacak.
+    setPremiumModalOpen(true);
+  } catch (error) {
+    Alert.alert(
+      'İşlem gerçekleştirilemedi',
+      'Evcil hayvan ve Premium bilgilerin kontrol edilemedi. Lütfen tekrar dene.'
+    );
+  } finally {
+    addPetLockRef.current = false;
+    setAddingPet(false);
+  }
+};
+
+Buradaki fonksiyon ve dönüş değerlerini projedeki gerçek API/hook yapısına göre düzenle. Örnek kodu körü körüne kopyalama.
+
+ÖNEMLİ: GERÇEK HAYVAN SAYISI
+
+İkinci hayvan kontrolünü yalnızca pets.length ile yapma.
+
+Backend’de mevcut kullanıcı kimliğine göre gerçek kayıt sayısını sorgula. Yalnızca kullanıcıya ait, silinmemiş/aktif evcil hayvanları say.
+
+Örnek mantık:
+
+SELECT COUNT(*)
+FROM pets
+WHERE user_id = authenticated_user_id
+AND deleted_at IS NULL;
+
+Projede tablo veya kolon adları farklıysa gerçek şemayı kullan.
+
+Güvenlik açısından kullanıcı kimliğini client tarafından gönderilen rastgele bir ID’den alma. Authenticated session kullanıcı kimliğini kullan.
+
+EVcilim EKRANINA GERİ DÖNÜŞ
+
+İlk hayvan oluşturulduktan sonra kullanıcı Evcilim ekranına döndüğünde:
+
+Hayvan listesini yeniden getir.
+Backend pet count bilgisini yenile.
+Eski cache nedeniyle sayının 0 görünmesini engelle.
+Gerekirse ekran focus olduğunda refetch yap.
+İlk hayvan oluşturulduktan sonra ikinci dokunuşta sistemin kesinlikle petCount >= 1 gördüğünü doğrula.
+
+PREMIUM MODAL KURALI
+
+<EvcilimPremiumModal
+  visible={premiumModalOpen}
+  source="add_second_pet"
+  returnTo="/evcilim/add"
+  onClose={() => setPremiumModalOpen(false)}
+  onPurchaseVerified={handlePremiumPurchaseVerified}
+/>
+
+Satın alma doğrulama mantığı:
+
+const handlePremiumPurchaseVerified = async () => {
+  const updatedStatus = await refreshPetPremiumStatus();
+
+  if (updatedStatus?.isActive !== true) {
+    Alert.alert(
+      'Satın alma doğrulanamadı',
+      'Premium üyeliğin henüz aktif görünmüyor. Lütfen tekrar dene.'
+    );
+    return;
+  }
+
+  setPremiumModalOpen(false);
+  router.push('/evcilim/add');
+};
+
+Mevcut bileşen farklı prop kullanıyorsa aynı davranışı mevcut mimariye uygun biçimde uygula.
+
+KRİTİK GÜVENLİK KURALI
+
+Sadece UI butonunu kilitlemek yeterli değildir.
+
+Evcil hayvan oluşturma API endpoint’inde de server-side kontrol ekle:
+
+Kullanıcının mevcut evcil hayvan sayısı 0
+→ Oluşturmaya izin ver
+
+Mevcut hayvan sayısı >= 1 ve Premium aktif
+→ Oluşturmaya izin ver
+
+Mevcut hayvan sayısı >= 1 ve Premium aktif değil
+→ 403 PET_PREMIUM_REQUIRED döndür
+
+Böylece kullanıcı /evcilim/add adresini doğrudan açsa bile Premium olmadan ikinci hayvanı kaydedemez.
+
+403 yanıtında:
+
+Oluşturma işlemini durdur.
+“İkinci evcil hayvan için Evcilim Premium gereklidir.” mesajını göster.
+Kullanıcıyı Premium karta yönlendir.
+Form verilerini mümkünse kaybetme.
+
+TESTLER
+
+Ücretsiz ve 0 hayvan:
+Butona bas.
+Oluşturma formu açılmalı.
+Ücretsiz ve 1 hayvan:
+Butona bas.
+Oluşturma formu açılmamalı.
+Premium kart açılmalı.
+Premium kartı kapatma:
+Form açılmamalı.
+Satın almayı iptal etme:
+Form açılmamalı.
+Başarısız satın alma:
+Form açılmamalı.
+Başarılı satın alma:
+Premium backend üzerinden yeniden doğrulanmalı.
+Sonra oluşturma formu açılmalı.
+Aktif Premium ve 1+ hayvan:
+Doğrudan form açılmalı.
+Ücretsiz kullanıcı /evcilim/add adresini doğrudan açıp ikinci hayvanı kaydetmeye çalışmalı:
+Backend 403 PET_PREMIUM_REQUIRED döndürmeli.
+İkinci kayıt oluşmamalı.
+İlk hayvan oluşturulduktan sonra Evcilim ekranına dön:
+Tekrar “Evcil Hayvan Ekle”ye bas.
+Cache güncel olmalı ve Premium kart açılmalı.
+
+TEST RAPORU
+
+Yalnızca kod inceleyerek PASS verme.
+
+Her senaryo için şu sonuçlardan birini kullan:
+
+PASS
+FAIL
+STATIC REVIEW
+BLOCKED
+NOT TESTED
+
+Sonunda şunları yaz:
+
+Hatanın kesin nedeni
+Değiştirilen dosyalar
+Kaldırılan doğrudan navigation bağlantıları
+Hayvan sayısının hangi backend sorgusundan alındığı
+Server-side Premium kontrolünün bulunduğu endpoint
+Satın alma sonrası Premium doğrulama yöntemi
+Gerçek test sonuçları
+
+Buradaki en kritik bölüm yalnızca kartı açmak değil: **ücretsiz kullanıcı formun adresine başka yoldan ulaşsa bile backend ikinci hayvan kaydını reddetmeli.** Böylece Premium kilidi gerçekten sağlam olur.

@@ -3,7 +3,7 @@ import { EvcilimPremiumModal } from "@/app/evcilim-premium";
 import * as Haptics from "expo-haptics";
 import { Image } from "expo-image";
 import { LinearGradient } from "expo-linear-gradient";
-import { useRouter } from "expo-router";
+import { useFocusEffect, useRouter } from "expo-router";
 import React, { useCallback, useEffect, useRef, useState } from "react";
 import {
   ActivityIndicator,
@@ -1031,6 +1031,15 @@ export function EvcilimTab({ botPad }: { botPad: number }) {
 
   const selectedPet  = pets.find((p) => p.id === selectedPetId) ?? null;
   const selectedIndex = Math.max(0, pets.findIndex((p) => p.id === selectedPetId));
+
+  // Refresh premium status whenever the Evcilim tab gains focus.
+  // This ensures the cached status is never stale after the user adds/deletes
+  // a pet or navigates away and back.
+  useFocusEffect(
+    useCallback(() => {
+      refreshPetPremiumStatus(false).catch(() => {});
+    }, [refreshPetPremiumStatus])
+  );
 
   const nav = useCallback(
     (route: string) => router.push(route as Parameters<typeof router.push>[0]),
