@@ -3,9 +3,19 @@ import { usePetPremium } from "@/contexts/PetPremiumContext";
 import { fetchPetPremiumOfferings, purchasePetPremium, restorePurchases } from "@/services/revenueCat";
 import { LinearGradient } from "expo-linear-gradient";
 import { useLocalSearchParams, useRouter } from "expo-router";
-import React, { useEffect, useState } from "react";
+import React, { useEffect, useRef, useState } from "react";
 import { useTranslation } from "react-i18next";
-import { ActivityIndicator, Alert, Platform, Pressable, ScrollView, StyleSheet, Text, View } from "react-native";
+import {
+  ActivityIndicator,
+  Alert,
+  Modal,
+  Platform,
+  Pressable,
+  ScrollView,
+  StyleSheet,
+  Text,
+  View,
+} from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 import type { PurchasesPackage } from "react-native-purchases";
 
@@ -20,10 +30,20 @@ const features: [string, string, string?][] = [
   ["users", "Aile ve bakıcı paylaşımı", "Birlikte bakım için davetiye sistemi."],
 ];
 
-export default function EvcilimPremiumScreen() {
+/* ─────────────────────────────────────────────────────────────────────────────
+   Inner content — shared between full-screen route and modal overlay
+───────────────────────────────────────────────────────────────────────────── */
+function PremiumInner({
+  source,
+  returnTo,
+  onClose,
+}: {
+  source?: string;
+  returnTo?: string;
+  onClose: () => void;
+}) {
   const router = useRouter();
   const { t } = useTranslation();
-  const { source, returnTo } = useLocalSearchParams<{ source?: string; returnTo?: string }>();
   const isSecondPet = source === "add_pet";
 
   const { refresh } = usePetPremium();
@@ -65,10 +85,9 @@ export default function EvcilimPremiumScreen() {
         [{
           text: "Devam Et",
           onPress: () => {
+            onClose();
             if (destination) {
-              router.replace(destination as Parameters<typeof router.replace>[0]);
-            } else {
-              router.back();
+              router.push(destination as Parameters<typeof router.push>[0]);
             }
           },
         }]
@@ -91,97 +110,154 @@ export default function EvcilimPremiumScreen() {
   const heroSub   = isSecondPet ? t("evcilimPremium.addPetDescription") : t("evcilimPremium.defaultDescription");
 
   return (
-    <SafeAreaView style={s.safe} edges={["top", "bottom"]}>
-      <ScrollView contentContainerStyle={s.content}>
-        <Pressable onPress={() => router.back()} style={s.close} accessibilityLabel="Kapat">
-          <Icon name="close" size={22} color="#4E3B66" />
-        </Pressable>
+    <ScrollView contentContainerStyle={s.content}>
+      <Pressable onPress={onClose} style={s.close} accessibilityLabel="Kapat">
+        <Icon name="close" size={22} color="#4E3B66" />
+      </Pressable>
 
-        <LinearGradient colors={["#9B6EE8", PURPLE]} style={s.hero}>
-          <Icon name="diamond-outline" size={36} color="#FFF" />
-          <Text style={s.heroTitle}>{heroTitle}</Text>
-          <Text style={s.heroSub}>{heroSub}</Text>
-        </LinearGradient>
+      <LinearGradient colors={["#9B6EE8", PURPLE]} style={s.hero}>
+        <Icon name="diamond-outline" size={36} color="#FFF" />
+        <Text style={s.heroTitle}>{heroTitle}</Text>
+        <Text style={s.heroSub}>{heroSub}</Text>
+      </LinearGradient>
 
-        <View style={s.features}>
-          {features.map(([icon, label, sub]) => (
-            <View key={label} style={s.feature}>
-              <View style={s.icon}><Icon name={icon} size={19} color={PURPLE} /></View>
-              <View style={{ flex: 1 }}>
-                <Text style={s.featureText}>{label}</Text>
-                {sub ? <Text style={s.featureSub}>{sub}</Text> : null}
-              </View>
-              <Icon name="checkmark-circle" size={20} color="#42B96B" />
+      <View style={s.features}>
+        {features.map(([icon, label, sub]) => (
+          <View key={label} style={s.feature}>
+            <View style={s.icon}><Icon name={icon} size={19} color={PURPLE} /></View>
+            <View style={{ flex: 1 }}>
+              <Text style={s.featureText}>{label}</Text>
+              {sub ? <Text style={s.featureSub}>{sub}</Text> : null}
             </View>
-          ))}
+            <Icon name="checkmark-circle" size={20} color="#42B96B" />
+          </View>
+        ))}
+      </View>
+
+      <Text style={s.sectionTitle}>Paketini Seç</Text>
+
+      {Platform.OS === "web" ? (
+        <View style={s.notice}>
+          <Text style={s.noticeText}>Premium satın alma işlemi iOS veya Android uygulamasından yapılabilir.</Text>
         </View>
-
-        <Text style={s.sectionTitle}>Paketini Seç</Text>
-
-        {Platform.OS === "web" ? (
-          <View style={s.notice}>
-            <Text style={s.noticeText}>Premium satın alma işlemi iOS veya Android uygulamasından yapılabilir.</Text>
-          </View>
-        ) : loading ? (
-          <ActivityIndicator color={PURPLE} style={{ marginVertical: 16 }} />
-        ) : loadError ? (
-          <View style={s.notice}>
-            <Text style={s.noticeText}>Paketler şu anda yüklenemiyor.</Text>
-            <Pressable onPress={loadOfferings} style={s.retryBtn}>
-              <Icon name="refresh-outline" size={15} color={PURPLE} />
-              <Text style={s.retryTxt}>Tekrar Dene</Text>
-            </Pressable>
-          </View>
-        ) : packages.length === 0 ? (
-          <View style={s.notice}>
-            <Text style={s.noticeText}>Şu anda aktif paket bulunmuyor.</Text>
-          </View>
-        ) : (
-          packages.map((pkg) => {
-            const active = selected?.identifier === pkg.identifier;
-            return (
-              <Pressable
-                key={pkg.identifier}
-                onPress={() => setSelected(pkg)}
-                style={[s.package, active && s.packageActive]}
-              >
-                <View style={[s.radio, active && s.radioActive]}>
-                  {active && <Icon name="checkmark" size={14} color="#FFF" />}
-                </View>
-                <View style={{ flex: 1 }}>
-                  <Text style={s.packageName}>{pkg.product.title || pkg.identifier}</Text>
-                  <Text style={s.packageSub}>{pkg.product.description || "Evcilim Premium erişimi"}</Text>
-                </View>
-                <Text style={s.price}>{pkg.product.priceString}</Text>
-              </Pressable>
-            );
-          })
-        )}
-
-        <Pressable
-          disabled={!selected || buying || Platform.OS === "web" || loadError}
-          onPress={buy}
-          style={[s.buy, (!selected || buying || Platform.OS === "web" || loadError) && { opacity: 0.45 }]}
-        >
-          <LinearGradient colors={["#9B55ED", PURPLE]} style={s.buyInner}>
-            {buying ? <ActivityIndicator color="#FFF" /> : <Text style={s.buyText}>Premium'a Geç</Text>}
-          </LinearGradient>
-        </Pressable>
-
-        {Platform.OS !== "web" && (
-          <Pressable onPress={restore}>
-            <Text style={s.restore}>Satın Alımları Geri Yükle</Text>
+      ) : loading ? (
+        <ActivityIndicator color={PURPLE} style={{ marginVertical: 16 }} />
+      ) : loadError ? (
+        <View style={s.notice}>
+          <Text style={s.noticeText}>Paketler şu anda yüklenemiyor.</Text>
+          <Pressable onPress={loadOfferings} style={s.retryBtn}>
+            <Icon name="refresh-outline" size={15} color={PURPLE} />
+            <Text style={s.retryTxt}>Tekrar Dene</Text>
           </Pressable>
-        )}
+        </View>
+      ) : packages.length === 0 ? (
+        <View style={s.notice}>
+          <Text style={s.noticeText}>Şu anda aktif paket bulunmuyor.</Text>
+        </View>
+      ) : (
+        packages.map((pkg) => {
+          const active = selected?.identifier === pkg.identifier;
+          return (
+            <Pressable
+              key={pkg.identifier}
+              onPress={() => setSelected(pkg)}
+              style={[s.package, active && s.packageActive]}
+            >
+              <View style={[s.radio, active && s.radioActive]}>
+                {active && <Icon name="checkmark" size={14} color="#FFF" />}
+              </View>
+              <View style={{ flex: 1 }}>
+                <Text style={s.packageName}>{pkg.product.title || pkg.identifier}</Text>
+                <Text style={s.packageSub}>{pkg.product.description || "Evcilim Premium erişimi"}</Text>
+              </View>
+              <Text style={s.price}>{pkg.product.priceString}</Text>
+            </Pressable>
+          );
+        })
+      )}
 
-        <Text style={s.foot}>
-          Premium sona erdiğinde mevcut kayıtların silinmez. Aboneliğini mağaza hesabından yönetebilirsin.
-        </Text>
-      </ScrollView>
+      <Pressable
+        disabled={!selected || buying || Platform.OS === "web" || loadError}
+        onPress={buy}
+        style={[s.buy, (!selected || buying || Platform.OS === "web" || loadError) && { opacity: 0.45 }]}
+      >
+        <LinearGradient colors={["#9B55ED", PURPLE]} style={s.buyInner}>
+          {buying ? <ActivityIndicator color="#FFF" /> : <Text style={s.buyText}>Premium'a Geç</Text>}
+        </LinearGradient>
+      </Pressable>
+
+      {Platform.OS !== "web" && (
+        <Pressable onPress={restore}>
+          <Text style={s.restore}>Satın Alımları Geri Yükle</Text>
+        </Pressable>
+      )}
+
+      <Text style={s.foot}>
+        Premium sona erdiğinde mevcut kayıtların silinmez. Aboneliğini mağaza hesabından yönetebilirsin.
+      </Text>
+    </ScrollView>
+  );
+}
+
+/* ─────────────────────────────────────────────────────────────────────────────
+   Named export: modal overlay (used programmatically from other screens)
+───────────────────────────────────────────────────────────────────────────── */
+export function EvcilimPremiumModal({
+  visible,
+  onClose,
+  source,
+  returnTo,
+}: {
+  visible: boolean;
+  onClose: () => void;
+  source?: string;
+  returnTo?: string;
+}) {
+  const openingRef = useRef(false);
+
+  useEffect(() => {
+    if (visible) { openingRef.current = false; }
+  }, [visible]);
+
+  return (
+    <Modal
+      visible={visible}
+      transparent
+      animationType="slide"
+      statusBarTranslucent
+      onRequestClose={onClose}
+    >
+      <View style={m.container}>
+        <Pressable style={m.backdrop} onPress={onClose} accessible={false} />
+        <SafeAreaView style={m.sheet} edges={["bottom"]}>
+          <PremiumInner source={source} returnTo={returnTo} onClose={onClose} />
+        </SafeAreaView>
+      </View>
+    </Modal>
+  );
+}
+
+/* ─────────────────────────────────────────────────────────────────────────────
+   Default export: full-screen route (unchanged behaviour)
+───────────────────────────────────────────────────────────────────────────── */
+export default function EvcilimPremiumScreen() {
+  const router = useRouter();
+  const { source, returnTo } = useLocalSearchParams<{ source?: string; returnTo?: string }>();
+
+  return (
+    <SafeAreaView style={s.safe} edges={["top", "bottom"]}>
+      <PremiumInner
+        source={source}
+        returnTo={returnTo}
+        onClose={() => router.back()}
+      />
     </SafeAreaView>
   );
 }
 
+/* ─────────────────────────────────────────────────────────────────────────────
+   Styles
+───────────────────────────────────────────────────────────────────────────── */
 const s = StyleSheet.create({
   safe:         { flex: 1, backgroundColor: "#F7F3FD" },
   content:      { padding: 20, paddingBottom: 36 },
@@ -211,4 +287,16 @@ const s = StyleSheet.create({
   buyText:      { fontSize: 16, fontFamily: "Inter_700Bold", color: "#FFF" },
   restore:      { textAlign: "center", fontSize: 13, fontFamily: "Inter_600SemiBold", color: PURPLE, marginTop: 18 },
   foot:         { fontSize: 11, fontFamily: "Inter_400Regular", color: "#9992A4", textAlign: "center", lineHeight: 17, marginTop: 16 },
+});
+
+const m = StyleSheet.create({
+  container: { flex: 1, justifyContent: "flex-end" },
+  backdrop:  { ...StyleSheet.absoluteFillObject, backgroundColor: "rgba(0,0,0,0.50)" },
+  sheet:     {
+    backgroundColor: "#F7F3FD",
+    borderTopLeftRadius: 28,
+    borderTopRightRadius: 28,
+    maxHeight: "92%",
+    overflow: "hidden",
+  },
 });

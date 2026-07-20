@@ -1,0 +1,108 @@
+GÖREV: “Evcil Hayvan Ekle” butonunu mevcut Premium kartına bağla
+
+Mevcut “Evcilim” sayfasında bulunan:
+
+“+ Evcil Hayvan Ekle”
+
+butonuna tıklandığında yeni bir ekran, form veya farklı bir premium bileşeni oluşturma.
+
+Projede zaten bulunan şu dosyayı kullan:
+
+artifacts/mobile/app/evcilim-premium.tsx
+
+İSTENEN DAVRANIŞ
+
+1. Kullanıcı “Evcil Hayvan Ekle” butonuna dokunduğunda `artifacts/mobile/app/evcilim-premium.tsx` içindeki mevcut Premium kartı/modalı açılmalı.
+
+2. Bu Premium kart:
+   - Mevcut sayfanın üzerinde modal veya bottom sheet olarak görünmeli.
+   - Arka planı karartmalı.
+   - Kapatma butonu ve dış alana dokunarak kapatma çalışmalı.
+   - Android geri tuşuyla kapatılabilmeli.
+   - Açılış ve kapanış animasyonu düzgün çalışmalı.
+   - Safe area sınırlarına uymalı.
+   - İçerik uzunsa kaydırılabilmeli.
+
+3. “Evcil Hayvan Ekle” butonunun mevcut tasarımını değiştirme.
+
+4. `evcilim-premium.tsx` dosyasındaki mevcut tasarımı yeniden oluşturma, kopyalama veya değiştirme. Doğrudan mevcut bileşeni import ederek kullan.
+
+5. Eğer `evcilim-premium.tsx` şu anda yalnızca route/screen olarak yazılmışsa:
+   - Tasarımı bozmadan yeniden kullanılabilir bir component export et.
+   - Gerekirse `visible`, `onClose` ve `source` prop’larını ekle.
+   - Mevcut route kullanımını bozma.
+
+Örnek kullanım mantığı:
+
+```tsx
+const [premiumVisible, setPremiumVisible] = useState(false);
+
+<EvcilHayvanEkleButton
+  onPress={() => setPremiumVisible(true)}
+/>
+
+<EvcilimPremium
+  visible={premiumVisible}
+  source="add_second_pet"
+  onClose={() => setPremiumVisible(false)}
+/>
+
+PREMIUM KURALI
+
+İlk evcil hayvan ücretsizdir.
+Kullanıcının hiç evcil hayvanı yoksa “Evcil Hayvan Ekle” butonu normal ekleme formunu açmalıdır.
+Kullanıcının zaten en az 1 evcil hayvanı varsa aynı buton evcilim-premium.tsx kartını açmalıdır.
+Bu kontrol yalnızca ekrandaki geçici state üzerinden yapılmamalı; kullanıcının Supabase/veritabanındaki gerçek evcil hayvan kayıtları okunarak belirlenmelidir.
+Premium üyeliği aktif olan kullanıcı ikinci veya sonraki evcil hayvanı ekleyebilmelidir.
+Premium üyeliği olmayan kullanıcıya Premium kart gösterilmelidir.
+Yükleme sırasında art arda dokunmayla iki ekran/modal açılmasını engelle.
+Veri sorgusu başarısız olursa kullanıcıyı yanlışlıkla Premium kabul etme veya doğrudan forma geçirme; anlaşılır bir hata mesajı göster.
+
+KARAR MANTIĞI
+
+Evcil hayvan sayısı = 0
+→ Evcil hayvan ekleme formunu aç
+
+Evcil hayvan sayısı >= 1 ve Premium aktif
+→ Evcil hayvan ekleme formunu aç
+
+Evcil hayvan sayısı >= 1 ve Premium aktif değil
+→ artifacts/mobile/app/evcilim-premium.tsx kartını aç
+
+DİKKAT
+
+Yeni Premium ekran tasarlama.
+Mevcut Premium kartı yerine Alert kullanma.
+Butona ikinci bir görünmez katman ekleme.
+Navigasyonda çift açılma oluşturma.
+Mevcut evcil hayvan verilerini, Evcilim ekranını ve alt menüyü bozma.
+TypeScript hatası bırakma.
+Expo Web sonucunu Android/iOS testi olarak raporlama.
+
+TESTLER
+
+Aşağıdaki senaryoları gerçekten çalıştır:
+
+Evcil hayvanı olmayan ücretsiz kullanıcı:
+Butona dokunur.
+Ekleme formu açılır.
+Bir evcil hayvanı olan ücretsiz kullanıcı:
+Butona dokunur.
+evcilim-premium.tsx Premium kartı açılır.
+Bir evcil hayvanı olan Premium kullanıcı:
+Butona dokunur.
+Ekleme formu açılır.
+Premium kartın kapatma butonu, dış alana dokunma ve Android geri tuşu test edilir.
+Hızlı şekilde art arda dokunulduğunda yalnızca bir modal veya ekran açıldığı doğrulanır.
+Console ve network hataları kontrol edilir.
+
+İşlem sonunda şunları raporla:
+
+Değiştirilen dosyalar
+Butonun bulunduğu dosya
+evcilim-premium.tsx import ve kullanım şekli
+Evcil hayvan sayısının hangi tablo/sorgudan alındığı
+Premium durumunun hangi kaynaktan doğrulandığı
+Her test için ayrı sonuç: PASS, STATIC REVIEW, BLOCKED veya NOT TESTED
+
+Bir senaryoyu yalnızca kodu okuyarak PASS olarak işaretleme.

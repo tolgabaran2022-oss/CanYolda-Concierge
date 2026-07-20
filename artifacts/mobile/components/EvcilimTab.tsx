@@ -1,4 +1,5 @@
 import { Icon } from "@/components/Icon";
+import { EvcilimPremiumModal } from "@/app/evcilim-premium";
 import * as Haptics from "expo-haptics";
 import { Image } from "expo-image";
 import { LinearGradient } from "expo-linear-gradient";
@@ -1006,6 +1007,7 @@ export function EvcilimTab({ botPad }: { botPad: number }) {
 
   const [selectedPetId, setSelectedPetId] = useState<string | null>(null);
   const [petSelectorOpen, setPetSelectorOpen] = useState(false);
+  const [premiumModalOpen, setPremiumModalOpen] = useState(false);
   const [vaccinations, setVaccinations]   = useState<ApiVaccination[]>([]);
   const [appointments, setAppointments]   = useState<ApiAppointment[]>([]);
   const [nutrition, setNutrition]         = useState<ApiNutrition | null>(null);
@@ -1034,20 +1036,13 @@ export function EvcilimTab({ botPad }: { botPad: number }) {
     [router]
   );
 
-  const toPremium = useCallback(() => {
-    router.push({
-      pathname: "/evcilim-premium",
-      params: { source: "add_pet", returnTo: "/evcilim/add" },
-    } as Parameters<typeof router.push>[0]);
-  }, [router]);
-
   const handleAddPet = useCallback(async () => {
     if (addingPet) return;
 
-    // Fast path: if cached status already says blocked, go directly to premium
+    // Fast path: if cached status already says blocked, open premium modal
     if (premiumStatus !== null && !premiumStatus.canAddPet) {
       Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
-      toPremium();
+      setPremiumModalOpen(true);
       return;
     }
 
@@ -1057,19 +1052,24 @@ export function EvcilimTab({ botPad }: { botPad: number }) {
       if (fresh?.canAddPet) {
         Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
         nav("/evcilim/add");
+      } else if (fresh === null) {
+        // Not authenticated — fail gracefully with error
+        Alert.alert("Oturum Gerekli", "Evcil hayvan eklemek için lütfen giriş yapın.");
       } else {
-        // includes fresh === null (not authenticated) — fail-closed
+        // canAddPet === false — open premium modal
         Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
-        toPremium();
+        setPremiumModalOpen(true);
       }
     } catch {
-      // API error — fail-closed: send to premium rather than silent failure
-      Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
-      toPremium();
+      // API error — show clear error, do not silently send to premium or form
+      Alert.alert(
+        "Bağlantı Hatası",
+        "Evcil hayvan bilgileri şu anda alınamadı. Lütfen internet bağlantınızı kontrol edip tekrar deneyin."
+      );
     } finally {
       setAddingPet(false);
     }
-  }, [addingPet, premiumStatus, refreshPetPremiumStatus, nav, toPremium]);
+  }, [addingPet, premiumStatus, refreshPetPremiumStatus, nav]);
 
   const handleDeletePet = useCallback(async (id: string) => {
     setDeletingPetId(id);
@@ -1206,6 +1206,13 @@ export function EvcilimTab({ botPad }: { botPad: number }) {
         onClose={() => setPetSelectorOpen(false)}
         onDelete={handleDeletePet}
         deletingPetId={deletingPetId}
+      />
+
+      <EvcilimPremiumModal
+        visible={premiumModalOpen}
+        onClose={() => setPremiumModalOpen(false)}
+        source="add_pet"
+        returnTo="/evcilim/add"
       />
     </>
   );
