@@ -161,3 +161,9 @@ id = "1cCbhXIiqn0bz8a9bZgec"
 uri = "file://CanYoldasi_Durum_Raporu_18Temmuz2026.txt"
 type = "text"
 title = "CanYoldaşı — Genel Durum ve Son 48 Saat Raporu"
+
+[[outputs]]
+id = "Dcdab-KfXRGKk7v0vkZoE"
+uri = "file://evcilim_sayfasi.zip"
+type = "unspecified"
+title = "Evcilim Sayfası — Tüm Dosyalar"
