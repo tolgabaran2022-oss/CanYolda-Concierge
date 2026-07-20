@@ -22,11 +22,23 @@ const SUGGESTIONS = [
 
 function mkId() { return `${Date.now()}-${Math.random().toString(36).slice(2)}`; }
 
+function redirectToPremiumModal(router: ReturnType<typeof useRouter>, petId: string, feature: string) {
+  router.replace({
+    pathname: "/pets",
+    params: {
+      openPremium: "true",
+      premiumSource: feature,
+      premiumReturnTo: encodeURIComponent(`/evcilim/${petId}/${feature}`),
+    },
+  } as Parameters<typeof router.replace>[0]);
+}
+
 export default function AssistantScreen() {
   const { petId } = useLocalSearchParams<{ petId: string }>();
   const C = useColors();
   const router = useRouter();
-  const { isPremium } = usePetPremium();
+  const { isPremium, isLoading: premiumLoading } = usePetPremium();
+  const gateChecked = useRef(false);
 
   const [messages, setMessages] = useState<Message[]>([]);
   const [input, setInput] = useState("");
@@ -40,6 +52,15 @@ export default function AssistantScreen() {
       content: "Merhaba! Ben CanYoldaşı AI Asistanı. Evcil hayvanınızla ilgili sorularınızı yanıtlamaktan mutluluk duyarım. Beslenme, bakım, sağlık veya davranış konusunda soru sorabilirsiniz. ⚠️ Ciddi sağlık durumlarında lütfen veterinerinize başvurun.",
     }]);
   }, []);
+
+  // Gate: redirect non-premium users back to /pets to open the premium modal.
+  useEffect(() => {
+    if (premiumLoading || gateChecked.current) return;
+    gateChecked.current = true;
+    if (!isPremium && petId) {
+      redirectToPremiumModal(router, petId, "assistant");
+    }
+  }, [premiumLoading, isPremium, petId, router]);
 
   const sendMessage = useCallback(async (text: string) => {
     const msg = text.trim();
@@ -61,7 +82,7 @@ export default function AssistantScreen() {
     } catch (err: unknown) {
       const msg2 = err instanceof Error ? err.message : "";
       if (msg2 === "premium_required") {
-        router.replace("/evcilim-premium");
+        if (petId) redirectToPremiumModal(router, petId, "assistant");
         return;
       }
       setMessages(prev => [...prev, { id: mkId(), role: "assistant", content: "Bir hata oluştu. Lütfen tekrar deneyin." }]);
@@ -72,25 +93,6 @@ export default function AssistantScreen() {
   }, [petId, sending, router]);
 
   const S = makeStyles(C);
-
-  if (!isPremium) {
-    return (
-      <SafeAreaView style={S.flex} edges={["bottom"]}>
-        <Stack.Screen options={{ title: "AI Asistan", headerBackTitle: "Geri" }} />
-        <View style={S.center}>
-          <View style={S.lockIcon}>
-            <Icon name="sparkles-outline" size={36} color={C.purple} />
-          </View>
-          <Text style={S.lockTitle}>Premium Özellik</Text>
-          <Text style={S.lockSub}>AI Hayvan Asistanı Evcilim Premium üyelerine özeldir.</Text>
-          <Pressable style={S.premiumBtn} onPress={() => router.push("/evcilim-premium")}>
-            <Icon name="diamond-outline" size={16} color="#fff" />
-            <Text style={S.premiumBtnTxt}>Premium'a Geç</Text>
-          </Pressable>
-        </View>
-      </SafeAreaView>
-    );
-  }
 
   return (
     <SafeAreaView style={S.flex} edges={["bottom"]}>

@@ -17,6 +17,7 @@ import {
   apiUpdatePetDocument, type ApiPetDocument,
 } from "@/lib/petManagementApi";
 import { usePetPremium } from "@/contexts/PetPremiumContext";
+import { useRef } from "react";
 
 const SHADOW = {
   shadowColor: "#7B5EA7", shadowOffset: { width: 0, height: 2 },
@@ -64,11 +65,23 @@ async function uploadFile(uri: string, name: string, mime: string): Promise<stri
 
 function isImage(mime: string) { return mime.startsWith("image/"); }
 
+function redirectToPremiumModal(router: ReturnType<typeof useRouter>, petId: string, feature: string) {
+  router.replace({
+    pathname: "/pets",
+    params: {
+      openPremium: "true",
+      premiumSource: feature,
+      premiumReturnTo: encodeURIComponent(`/evcilim/${petId}/${feature}`),
+    },
+  } as Parameters<typeof router.replace>[0]);
+}
+
 export default function DocumentsScreen() {
   const { petId } = useLocalSearchParams<{ petId: string }>();
   const C = useColors();
   const router = useRouter();
-  const { isPremium } = usePetPremium();
+  const { isPremium, isLoading: premiumLoading } = usePetPremium();
+  const gateChecked = useRef(false);
 
   const [documents, setDocuments] = useState<ApiPetDocument[]>([]);
   const [loading, setLoading] = useState(true);
@@ -93,8 +106,21 @@ export default function DocumentsScreen() {
 
   useEffect(() => { load(); }, [load]);
 
+  // Gate: redirect non-premium users back to /pets to open the premium modal.
+  // Wait until premium status has finished loading to avoid false redirects.
+  useEffect(() => {
+    if (premiumLoading || gateChecked.current) return;
+    gateChecked.current = true;
+    if (!isPremium && petId) {
+      redirectToPremiumModal(router, petId, "documents");
+    }
+  }, [premiumLoading, isPremium, petId, router]);
+
   const handleAdd = async () => {
-    if (!isPremium) { router.push("/evcilim-premium"); return; }
+    if (!isPremium) {
+      if (petId) redirectToPremiumModal(router, petId, "documents");
+      return;
+    }
     const perm = await ImagePicker.requestMediaLibraryPermissionsAsync();
     if (!perm.granted) { Alert.alert("İzin Gerekli", "Belge eklemek için fotoğraf izni gereklidir."); return; }
     const result = await ImagePicker.launchImageLibraryAsync({ mediaTypes: ["images"], quality: 0.85 });
@@ -117,7 +143,10 @@ export default function DocumentsScreen() {
       Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
     } catch (err: unknown) {
       const msg = err instanceof Error ? err.message : "";
-      if (msg === "premium_required") { router.push("/evcilim-premium"); return; }
+      if (msg === "premium_required") {
+        if (petId) redirectToPremiumModal(router, petId, "documents");
+        return;
+      }
       Alert.alert("Yüklenemedi", "Belge yüklenirken bir hata oluştu.");
     } finally { setUploading(false); }
   };
@@ -186,13 +215,6 @@ export default function DocumentsScreen() {
         ),
       }} />
 
-      {!isPremium && documents.length > 0 && (
-        <Pressable style={S.premiumBanner} onPress={() => router.push("/evcilim-premium")}>
-          <Icon name="diamond-outline" size={16} color={C.purple} />
-          <Text style={S.premiumBannerTxt}>Yeni belge yüklemek için Premium'a geç.</Text>
-          <Icon name="chevron-forward" size={14} color={C.purple} />
-        </Pressable>
-      )}
 
       {/* Category filter */}
       {documents.length > 0 && (
@@ -223,28 +245,15 @@ export default function DocumentsScreen() {
       >
         {documents.length === 0 ? (
           <View style={S.empty}>
-            {!isPremium ? (
-              <>
-                <View style={S.lockIcon}><Icon name="lock-closed-outline" size={36} color={C.purple} /></View>
-                <Text style={S.emptyTitle}>Premium Özellik</Text>
-                <Text style={S.emptySub}>Belge kasası Evcilim Premium üyelerine özeldir.</Text>
-                <Pressable style={S.uploadBtn} onPress={() => router.push("/evcilim-premium")}>
-                  <Text style={S.uploadBtnTxt}>Premium'a Geç</Text>
-                </Pressable>
-              </>
-            ) : (
-              <>
-                <Icon name="document-text-outline" size={42} color={C.purple} />
-                <Text style={S.emptyTitle}>Belge yok</Text>
-                <Text style={S.emptySub}>Aşı karnesi, reçete ve sağlık belgelerini güvenle saklayın.</Text>
-                <Pressable style={S.uploadBtn} onPress={handleAdd} disabled={uploading}>
-                  {uploading
-                    ? <ActivityIndicator color="#fff" size="small" />
-                    : <Text style={S.uploadBtnTxt}>Belge Yükle</Text>
-                  }
-                </Pressable>
-              </>
-            )}
+            <Icon name="document-text-outline" size={42} color={C.purple} />
+            <Text style={S.emptyTitle}>Belge yok</Text>
+            <Text style={S.emptySub}>Aşı karnesi, reçete ve sağlık belgelerini güvenle saklayın.</Text>
+            <Pressable style={S.uploadBtn} onPress={handleAdd} disabled={uploading}>
+              {uploading
+                ? <ActivityIndicator color="#fff" size="small" />
+                : <Text style={S.uploadBtnTxt}>Belge Yükle</Text>
+              }
+            </Pressable>
           </View>
         ) : (
           <View style={S.grid}>

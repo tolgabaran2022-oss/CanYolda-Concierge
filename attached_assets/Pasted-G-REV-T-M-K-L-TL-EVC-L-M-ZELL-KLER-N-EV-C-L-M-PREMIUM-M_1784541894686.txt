@@ -1,0 +1,155 @@
+GÖREV — TÜM KİLİTLİ EVCİLİM ÖZELLİKLERİNİ EVİCİLİM PREMIUM MODALINA BAĞLA
+
+Evcilim ekranındaki Premium kilitli yönetim öğelerine basıldığında şu anda eski bir ekran açılıyor:
+
+- Kilit simgesi
+- “Premium Özellik” başlığı
+- Özelliğin Premium üyelere özel olduğunu söyleyen açıklama
+- “Premium’a Geç” butonu
+- Beyaz tam sayfa tasarım
+
+Bu eski ara ekranı artık kullanmak istemiyorum.
+
+İSTENEN DAVRANIŞ
+
+Kullanıcı Evcilim ekranındaki Premium kilitli bir özelliğe bastığında doğrudan projede mevcut olan Evcilim Premium kartı/modalı açılmalı:
+
+`artifacts/mobile/app/evcilim-premium.tsx`
+
+Mevcut named export’u kullan:
+
+```tsx
+EvcilimPremiumModal
+
+Yeni Premium ekran veya yeni tasarım oluşturma. Mevcut modalı import ederek kullan.
+
+BAĞLANACAK KİLİTLİ ÖZELLİKLER
+
+Öncelikle projeyi tarayıp Premium kilidi bulunan bütün Evcilim özelliklerini tespit et. Görselde bulunanlar:
+
+Belgeler
+İlaçlar
+
+Ayrıca Premium kilidi olan diğer Evcilim özellikleri varsa onları da aynı merkezi davranışa bağla:
+
+AI Hayvan Asistanı
+Sınırsız hatırlatıcı
+Belge kasası
+İlaç ve doz takibi
+Aile ve bakıcı paylaşımı
+İkinci ve sonraki evcil hayvanlar
+
+Ancak zaten çalışan “İkinci evcil hayvan ekleme” Premium akışını bozma.
+
+DOĞRU TIKLAMA MANTIĞI
+
+Kullanıcı kilitli özelliğe dokunur
+              ↓
+Premium durumu güncel olarak kontrol edilir
+              ↓
+Premium aktif mi?
+     ├─ EVET → İlgili özellik sayfasını aç
+     └─ HAYIR → EvcilimPremiumModal aç
+
+Örnek merkezi fonksiyon:
+
+const [premiumModalOpen, setPremiumModalOpen] = useState(false);
+const [premiumSource, setPremiumSource] = useState<string | undefined>();
+const [premiumReturnTo, setPremiumReturnTo] = useState<string | undefined>();
+
+const openPremiumFeature = async (
+  source: string,
+  destination: string
+) => {
+  const latestStatus = await refreshPetPremiumStatus(false);
+
+  if (latestStatus?.isPremium === true) {
+    router.push(destination);
+    return;
+  }
+
+  setPremiumSource(source);
+  setPremiumReturnTo(destination);
+  setPremiumModalOpen(true);
+};
+
+Projede Premium durum alanının adı isPremium değilse gerçek API/hook alanını kullan. Tahmini alan adıyla yeni mantık oluşturma.
+
+KART BAĞLANTILARI
+
+Örnek:
+
+onPress={() =>
+  openPremiumFeature(
+    "documents",
+    `/evcilim/${selectedPetId}/documents`
+  )
+}
+onPress={() =>
+  openPremiumFeature(
+    "medications",
+    `/evcilim/${selectedPetId}/medications`
+  )
+}
+
+Projede gerçek route yapısı farklıysa mevcut çalışan route’ları koru.
+
+MODAL
+
+Evcilim ekranında tek bir ortak modal instance kullan:
+
+<EvcilimPremiumModal
+  visible={premiumModalOpen}
+  source={premiumSource}
+  returnTo={premiumReturnTo}
+  onClose={() => {
+    setPremiumModalOpen(false);
+    setPremiumSource(undefined);
+    setPremiumReturnTo(undefined);
+  }}
+/>
+
+Mevcut component prop tipleri farklıysa mevcut yapıya uygun şekilde düzenle.
+
+SATIN ALMA SONRASI
+
+Kullanıcı Premium satın almayı başarıyla tamamladığında:
+
+RevenueCat satın alma sonucunu doğrula.
+Backend Premium durumunu yeniden çek.
+Premium gerçekten aktifse modalı kapat.
+Kullanıcıyı bastığı asıl özellik sayfasına yönlendir:
+Belgelerden geldiyse Belgeler
+İlaçlardan geldiyse İlaçlar
+Diğer özellikten geldiyse ilgili hedef
+Satın alma iptal edilirse veya doğrulanamazsa ilgili özellik sayfasını açma.
+
+KALDIRILACAK ESKİ AKIŞ
+
+Projeyi tarayıp eski “Premium Özellik” ekranını açan tüm bağlantıları bul:
+
+router.push(...)
+router.replace(...)
+<Link>
+ortak premium gate
+PremiumFeatureScreen
+“Premium'a Geç”
+“Belge kasası Evcilim Premium üyelerine özeldir.”
+benzer eski placeholder ekranlar
+
+Kilitli özellik kartlarından eski Premium ekranına yapılan yönlendirmeleri kaldır.
+
+Eski dosya başka yerlerde kullanılıyorsa dosyayı hemen silme. Önce tüm referanslarını bul ve yalnızca bu görev kapsamındaki yönlendirmeleri değiştir.
+
+KRİTİK KURALLAR
+
+Premium olmayan kullanıcı kilitli özellik sayfasına girememeli.
+Premium kullanıcı eski Premium ekranını veya modalı görmemeli.
+Premium API kontrolü sırasında çift dokunmayı engelle.
+Kontrol tamamlanmadan hedef sayfayı açma.
+API hatasında kullanıcıyı Premium kabul etme.
+API hatasında hedef route’a geçme.
+Açıklayıcı bir Alert göster.
+Seçili hayvan ID’sini ve mevcut özelliğin route parametrelerini kaybetme.
+İkinci hayvan ekleme için daha önce tamamlanan Premium modal akışını bozma.
+Tekrarlanan modal ve navigation işlemi oluşturma.

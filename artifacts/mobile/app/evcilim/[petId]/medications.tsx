@@ -14,6 +14,7 @@ import {
   apiDeleteMedication, type ApiMedication,
 } from "@/lib/petManagementApi";
 import { usePetPremium } from "@/contexts/PetPremiumContext";
+import { useRef } from "react";
 
 const SHADOW = {
   shadowColor: "#7B5EA7", shadowOffset: { width: 0, height: 2 },
@@ -37,11 +38,23 @@ const EMPTY_FORM: FormState = {
   reminderEnabled: true,
 };
 
+function redirectToPremiumModal(router: ReturnType<typeof useRouter>, petId: string, feature: string) {
+  router.replace({
+    pathname: "/pets",
+    params: {
+      openPremium: "true",
+      premiumSource: feature,
+      premiumReturnTo: encodeURIComponent(`/evcilim/${petId}/${feature}`),
+    },
+  } as Parameters<typeof router.replace>[0]);
+}
+
 export default function MedicationsScreen() {
   const { petId } = useLocalSearchParams<{ petId: string }>();
   const C = useColors();
   const router = useRouter();
-  const { isPremium } = usePetPremium();
+  const { isPremium, isLoading: premiumLoading } = usePetPremium();
+  const gateChecked = useRef(false);
 
   const [medications, setMedications] = useState<ApiMedication[]>([]);
   const [loading, setLoading] = useState(true);
@@ -61,8 +74,20 @@ export default function MedicationsScreen() {
 
   useEffect(() => { load(); }, [load]);
 
+  // Gate: redirect non-premium users back to /pets to open the premium modal.
+  useEffect(() => {
+    if (premiumLoading || gateChecked.current) return;
+    gateChecked.current = true;
+    if (!isPremium && petId) {
+      redirectToPremiumModal(router, petId, "medications");
+    }
+  }, [premiumLoading, isPremium, petId, router]);
+
   const openAdd = () => {
-    if (!isPremium) { router.push("/evcilim-premium"); return; }
+    if (!isPremium) {
+      if (petId) redirectToPremiumModal(router, petId, "medications");
+      return;
+    }
     setEditingId(null); setForm(EMPTY_FORM); setShowForm(true);
   };
 
@@ -94,7 +119,10 @@ export default function MedicationsScreen() {
       setShowForm(false);
     } catch (err: unknown) {
       const msg = err instanceof Error ? err.message : "";
-      if (msg === "premium_required") { router.push("/evcilim-premium"); return; }
+      if (msg === "premium_required") {
+        if (petId) redirectToPremiumModal(router, petId, "medications");
+        return;
+      }
       Alert.alert("Hata", "İlaç kaydedilemedi.");
     } finally { setSaving(false); }
   };
@@ -138,21 +166,6 @@ export default function MedicationsScreen() {
     );
   }
 
-  if (!isPremium && medications.length === 0) {
-    return (
-      <SafeAreaView style={S.flex} edges={["bottom"]}>
-        <Stack.Screen options={{ title: "İlaçlar", headerBackTitle: "Geri" }} />
-        <View style={S.center}>
-          <View style={S.lockIcon}><Icon name="lock-closed-outline" size={36} color={C.purple} /></View>
-          <Text style={S.lockTitle}>Premium Özellik</Text>
-          <Text style={S.lockSub}>İlaç takibi Evcilim Premium üyelerine özeldir.</Text>
-          <Pressable style={S.premiumBtn} onPress={() => router.push("/evcilim-premium")}>
-            <Text style={S.premiumBtnTxt}>Premium'a Geç</Text>
-          </Pressable>
-        </View>
-      </SafeAreaView>
-    );
-  }
 
   return (
     <SafeAreaView style={S.flex} edges={["bottom"]}>
@@ -164,13 +177,6 @@ export default function MedicationsScreen() {
         ),
       }} />
 
-      {!isPremium && medications.length > 0 && (
-        <Pressable style={S.premiumBanner} onPress={() => router.push("/evcilim-premium")}>
-          <Icon name="diamond-outline" size={16} color={C.purple} />
-          <Text style={S.premiumBannerTxt}>Yeni ilaç eklemek için Premium'a geç.</Text>
-          <Icon name="chevron-forward" size={14} color={C.purple} />
-        </Pressable>
-      )}
 
       <ScrollView
         contentContainerStyle={S.list}
