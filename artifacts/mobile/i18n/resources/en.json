@@ -191,6 +191,19 @@
       "uploadSuccess": "Profile photo updated.",
       "uploadError": "Could not upload photo. Please try again.",
       "removeError": "Could not remove photo."
+    },
+    "subscription": "Subscription",
+    "manageSubscription": "Manage Subscription",
+    "manageSubscriptionIosInfo": "Managed via App Store",
+    "manageSubscriptionAndroidInfo": "Managed via Google Play",
+    "manageSubscriptionWebInfo": "Subscriptions can only be managed via the App Store or Google Play.",
+    "notifications": "Notifications",
+    "pushNotifications": {
+      "general": "All Notifications",
+      "messages": "Messages",
+      "adoption": "Adoption Requests",
+      "reminders": "Reminders (Vaccine / Appointment)",
+      "emergency": "Emergency Stray Animal Alerts"
     }
   },
   "map": {

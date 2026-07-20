@@ -191,6 +191,19 @@
       "uploadSuccess": "Profil fotoğrafın güncellendi.",
       "uploadError": "Fotoğraf yüklenemedi. Lütfen tekrar deneyin.",
       "removeError": "Fotoğraf kaldırılamadı."
+    },
+    "subscription": "Abonelik",
+    "manageSubscription": "Aboneliği Yönet",
+    "manageSubscriptionIosInfo": "App Store üzerinden yönetilir",
+    "manageSubscriptionAndroidInfo": "Google Play üzerinden yönetilir",
+    "manageSubscriptionWebInfo": "Abonelikler yalnızca App Store veya Google Play üzerinden yönetilebilir.",
+    "notifications": "Bildirimler",
+    "pushNotifications": {
+      "general": "Tüm Bildirimler",
+      "messages": "Mesajlar",
+      "adoption": "Sahiplendirme Talepleri",
+      "reminders": "Hatırlatıcılar (Aşı / Randevu)",
+      "emergency": "Acil Sokak Hayvanı Bildirimleri"
     }
   },
   "map": {

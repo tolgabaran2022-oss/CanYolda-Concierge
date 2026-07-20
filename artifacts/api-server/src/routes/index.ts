@@ -5,6 +5,7 @@ import promotionsRouter from "./promotions.js";
 import authRouter from "./auth.js";
 import socialRouter from "./social.js";
 import notificationsRouter from "./notifications.js";
+import pushTokensRouter from "./pushTokens.js";
 import usersRouter from "./users.js";
 import petsRouter from "./pets.js";
 import petManagementRouter from "./petManagement.js";
@@ -33,6 +34,7 @@ router.use("/promotions",  promotionLimiter, promotionsRouter);
 
 router.use(socialRouter);
 router.use(notificationsRouter);
+router.use(pushTokensRouter);
 router.use(usersRouter);
 router.use(petsRouter);
 router.use(petManagementRouter);

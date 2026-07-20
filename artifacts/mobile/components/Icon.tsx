@@ -233,6 +233,8 @@ const ICON_MAP: Record<string, LucideIcon> = {
   "notifications-outline":    Bell,
   "alarm-outline":            Bell,
   "notification":             Bell,
+  "bell":                     Bell,
+  "bell-outline":             Bell,
   "happy-outline":            Smile,
 
   // ── Status / Info ────────────────────────────────────
@@ -331,6 +333,8 @@ const ICON_MAP: Record<string, LucideIcon> = {
   "barcode-outline":          Barcode,
   "card-outline":             CreditCard,
   "document-text-outline":    FileText,
+  "file-text":                FileText,
+  "file-text-outline":        FileText,
   "rocket":                   Rocket,
   "rocket-outline":           Rocket,
   "sparkles":                 Sparkles,

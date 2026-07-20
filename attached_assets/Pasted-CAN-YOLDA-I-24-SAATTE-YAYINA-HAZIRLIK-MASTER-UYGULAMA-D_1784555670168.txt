@@ -1,0 +1,1374 @@
+CAN YOLDAŞI — 24 SAATTE YAYINA HAZIRLIK MASTER UYGULAMA, DÜZELTME, TEST VE RELEASE PROMPTU
+
+ROLÜN
+
+CanYoldaşı uygulamasının kıdemli:
+
+- React Native/Expo geliştiricisi
+- Backend/Supabase geliştiricisi
+- QA mühendisi
+- Mobil güvenlik uzmanı
+- RevenueCat/IAP entegrasyon uzmanı
+- App Store ve Google Play release mühendisi
+
+olarak çalış.
+
+Bu görev yalnızca audit veya raporlama görevi değildir.
+
+Bulduğun bütün güvenli ve proje kapsamında kalan hataları doğrudan düzelt, ardından uygulamayı çalıştırıp tekrar test et.
+
+HEDEF
+
+CanYoldaşı uygulamasını:
+
+- iOS
+- Android
+- Web
+- Apple App Store
+- Google Play Store
+
+için mümkün olan en kısa sürede yayınlanabilir hâle getir.
+
+İstenen nihai sonuç:
+
+```text
+READY FOR SUBMISSION
+
+Ancak gerçek kanıt bulunmadan bu sonucu verme.
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+MEVCUT AUDIT SONUCU
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+Mevcut karar:
+
+NOT READY
+
+Doğrulanan API testleri:
+
+Register PASS
+Login PASS
+Auth/me PASS
+İkinci hayvan Premium backend kilidi PASS
+Auth olmadan pet DELETE → 401 PASS
+Auth olmadan adoption DELETE → 401 PASS
+API health PASS
+
+Mevcut engeller:
+
+P0:
+
+expo-notifications kurulmamış.
+Push notification sistemi bulunmuyor.
+Native notification config eksik.
+Android notification permission/config eksik.
+Aşı, randevu, ilaç, mesaj ve sahiplenme bildirimleri çalışmıyor.
+
+P1:
+
+10+ ekranda hardcoded Türkçe metin bulunuyor.
+iOS fiziksel cihaz testi yapılmadı.
+Android fiziksel cihaz testi yapılmadı.
+Apple Sandbox ve Google Play test satın alma akışı doğrulanmadı.
+
+P2:
+
+Abonelik yönetim bağlantısı eksik.
+Web production build test edilmedi.
+Kullanılmayan FACEBOOK_APP_ID yapılandırması bulunuyor.
+iOS privacy manifest doğrulanmadı.
+Tablet UI test edilmedi.
+
+Bu listeyle sınırlı kalma. Yeni sorunlar bulursan önem seviyesine göre düzelt.
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+ÇALIŞMA KURALI
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+Bu görevi yarıda bırakıp yalnızca “şunları yapmalısınız” raporu verme.
+
+Şu sırayla ilerle:
+
+Mevcut sistemi incele.
+Geri döndürülebilir checkpoint oluştur.
+P0 sorunlarını düzelt.
+P1 sorunlarını düzelt.
+P2 sorunlarını düzelt.
+Ana uygulama akışlarını test et.
+Güvenlik ve RLS denetimini yap.
+Production buildleri doğrula.
+Store hazırlığını tamamla.
+Nihai release raporunu oluştur.
+
+Kullanıcıdan bilgi gerektirmeyen hiçbir aşamada durma.
+
+Yalnızca aşağıdakiler gerçekten gerekliyse BLOCKED olarak raporla:
+
+Apple Developer hesabına giriş
+Google Play Console hesabına giriş
+EAS credentials
+Fiziksel iOS/Android cihaz
+Apple Sandbox tester
+Google Play license tester
+RevenueCat dashboard değişikliği
+Production migration onayı
+Gerçek mağaza gönderimi
+
+Bu dış işlemler diğer kod işlerini durdurmamalı. Kalan görevleri tamamlamaya devam et.
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+DEĞİŞİKLİK GÜVENLİĞİ
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+İşe başlamadan önce:
+
+Mevcut Git durumunu kontrol et.
+Kullanıcıya ait değişiklikleri koru.
+Geri döndürülebilir checkpoint oluştur.
+Mevcut çalışan sistemleri belgeleyerek ilerle.
+Production verisini silme.
+Test için ayrı kullanıcılar kullan.
+Secret değerleri rapora yazma.
+.env içeriğini console’a basma.
+Supabase service-role key’i clienta koyma.
+RevenueCat secret key’i mobil uygulamaya koyma.
+Mağazalara kullanıcı onayı olmadan gönderim yapma.
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+TEST SONUCU SINIFLANDIRMASI
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+Her test için yalnızca:
+
+PASS
+FAIL
+STATIC REVIEW
+BLOCKED
+NOT TESTED
+
+kullan.
+
+PASS için:
+
+Özellik gerçekten çalıştırılmalı.
+Kullanıcı aksiyonu uygulanmalı.
+Beklenen UI sonucu görülmeli.
+Backend işlemi varsa API ve DB doğrulanmalı.
+Kalıcı veri yeniden okunmalı.
+Console/network temiz olmalı.
+Platform ve test ortamı yazılmalı.
+Kanıt belirtilmeli.
+
+Şunları PASS kabul etme:
+
+Sadece kod incelemesi
+TypeScript’in başarılı olması
+Expo Web testini native test kabul etmek
+Emülatörü fiziksel cihaz diye raporlamak
+Expo Go’yu production native build kabul etmek
+RevenueCat Test Store’u Apple/Google Sandbox kabul etmek
+Backend kaydını kontrol etmeden UI sonucuna güvenmek
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+AŞAMA 1 — ENVANTER VE STATIC AUDIT
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+Projeyi tara ve envanter çıkar:
+
+Expo SDK
+React Native
+React
+Expo Router
+Supabase
+RevenueCat
+Native paketler
+Environment değişkenleri
+API endpoint’leri
+Veritabanı tabloları
+RLS politikaları
+Storage bucket’ları
+Auth sağlayıcıları
+Push notification sistemi
+E-posta sistemi
+Harita sistemi
+EAS build profilleri
+App config
+Store identifiers
+Version/build numaraları
+
+Ara:
+
+TODO
+FIXME
+HACK
+mock
+fake
+placeholder
+localhost
+127.0.0.1
+test key
+hardcoded user
+hardcoded token
+console.log
+dev bypass
+premium bypass
+empty catch
+ts-ignore
+any
+FACEBOOK_APP_ID
+
+Gereksiz ve kullanılmayan FACEBOOK_APP_ID yapılandırmasını referanslarıyla birlikte doğrula. Gerçekten kullanılmıyorsa:
+
+Koddan kaldır.
+.env.example içinden kaldır.
+App config içinden kaldır.
+Dokümantasyondan kaldır.
+
+Gerçek Facebook login sistemi varsa kaldırma; doğru kullanımını raporla.
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+AŞAMA 2 — PUSH NOTIFICATION SİSTEMİ
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+Expo SDK sürümüyle uyumlu paketleri kur:
+
+npx expo install expo-notifications expo-device expo-constants
+
+Mevcut paket yöneticisine uyum sağla.
+
+App config’e expo-notifications plugin ekle.
+
+Android notification icon oluştur veya mevcut uygun asset’i kullan:
+
+Tamamen beyaz foreground
+Şeffaf arka plan
+Android notification standardı
+Launcher icon doğrudan kullanılmamalı
+
+Örnek config:
+
+[
+  "expo-notifications",
+  {
+    "icon": "./assets/notification-icon.png",
+    "color": "#7C45D9",
+    "defaultChannel": "default"
+  }
+]
+
+Gerçek proje yolunu kullan.
+
+Kontrol et:
+
+Android 13+ notification permission
+Default channel
+Mesaj channel
+Hatırlatıcı channel
+Acil durum channel
+Sound davranışı
+Badge davranışı
+iOS notification capability
+EAS project ID
+Native config generation
+
+Tekrar kullanılabilir servis oluştur:
+
+services/notifications.ts
+
+Servis:
+
+Fiziksel cihaz kontrolü
+Permission sorgulama
+Pre-permission açıklaması
+Permission isteme
+Expo push token alma
+Android channel oluşturma
+Foreground listener
+Notification response listener
+Deep-link handling
+Token yenileme
+Hata yönetimi
+Sistem ayarlarına yönlendirme
+
+özelliklerini içermeli.
+
+İzin ilk açılışta sebepsiz istenmemeli. Kullanıcıya önce bildirimlerin amacı açıklanmalı.
+
+İzin reddedilirse uygulama çalışmaya devam etmeli.
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+PUSH TOKEN VERİTABANI
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+Migration oluştur:
+
+push_tokens
+
+Önerilen kolonlar:
+
+id
+user_id
+expo_push_token
+platform
+installation_id
+app_version
+enabled
+created_at
+updated_at
+last_seen_at
+
+Kurallar:
+
+expo_push_token unique olmalı.
+Bir kullanıcı birden fazla cihaz kullanabilmeli.
+Aynı token tekrar eklenmemeli.
+Login sonrası doğru kullanıcıya bağlanmalı.
+Logout sonrası eski kullanıcıdan ayrılmalı veya pasifleştirilmeli.
+Geçersiz token pasifleştirilmeli.
+Başka kullanıcı tokenları client tarafından okunamamalı.
+Service-role key yalnız backend’de kullanılmalı.
+
+RLS:
+
+Kullanıcı yalnızca kendi tokenını ekleyebilmeli/güncelleyebilmeli.
+Kullanıcı bütün kullanıcı tokenlarını listeleyememeli.
+Notification sender service-role üzerinden gerekli erişimi sağlamalı.
+Başka user_id göndererek token sahipliği ele geçirilememeli.
+
+Migration dosyasını oluştur fakat production DB’ye uygulamak ayrı yetki gerektiriyorsa BLOCKED olarak raporla ve diğer işlere devam et.
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+PUSH BACKEND
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+Push bildirim başka kullanıcıya clienttan gönderilmemeli.
+
+Güvenli backend notification servisi oluştur:
+
+Hedef kullanıcının aktif tokenlarını getir.
+Kullanıcı bildirim tercihlerini kontrol et.
+Payload doğrulaması yap.
+Expo Push API’ye gönder.
+Ticket/receipt işle.
+Retry edilebilir hataları ayır.
+DeviceNotRegistered tokenlarını pasifleştir.
+Duplicate bildirimi engelle.
+event_id ile idempotency uygula.
+Secret veya tokenları loglama.
+Hassas mesaj içeriğini lock screen’de sınırlı göster.
+
+Notification event tablosu gerekiyorsa migration oluştur:
+
+notification_events
+
+Amaç:
+
+Idempotency
+Teslimat durumu
+Retry sayısı
+Hata kodu
+Oluşturulma/gönderilme zamanı
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+PUSH OLAYLARI
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+Bağla:
+
+Yeni mesaj
+Mesaj DB’ye başarıyla yazıldı
+→ Gönderen dışındaki alıcıya push
+→ Dokununca doğru konuşma
+Sahiplenme talebi
+Talep oluşturuldu
+→ İlan sahibine push
+→ Dokununca ilgili talep/ilan
+Talep kabul/reddetme
+DB durumu değişti
+→ Talep sahibine push
+Aşı hatırlatıcısı
+Randevu hatırlatıcısı
+İlaç hatırlatıcısı
+Acil/sokak hayvanı bildirimi gerekiyorsa ilgili kullanıcı tercihine göre
+
+Hatırlatıcıların uygulama kapalıyken çalışması gerekiyorsa client setTimeout kullanma.
+
+Mevcut backend scheduler/cron sistemini kullan veya güvenilir scheduled job mimarisi oluştur.
+
+Saatleri UTC sakla, kullanıcı saat dilimine göre göster.
+
+Güncellenen veya silinen kaydın eski hatırlatıcısını iptal et.
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+PUSH DEEP LINK
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+Payload:
+
+{
+  type:
+    | "message"
+    | "adoption_request"
+    | "vaccination"
+    | "appointment"
+    | "medication"
+    | "emergency",
+  entityId: string
+}
+
+Client tarafından gelen keyfi route’a körü körüne navigation yapma.
+
+Notification type için allowlist ve route resolver kullan.
+
+Test et:
+
+Foreground
+Background
+Terminated
+Login olunmamış
+İçerik silinmiş
+Yetkisiz içerik
+Aynı bildirime iki kez dokunma
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+AŞAMA 3 — BİLDİRİM AYARLARI
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+Ayarlar ekranına ekle:
+
+Genel bildirimler
+Mesaj bildirimleri
+Sahiplenme bildirimleri
+Aşı/randevu/ilaç hatırlatıcıları
+Acil durum bildirimleri
+Sistem bildirim ayarlarını aç
+
+Backend sender bu tercihlere uymalı.
+
+Sistem izni kapalıysa uygulama içindeki toggle yanlışlıkla aktif görünmemeli.
+
+Privacy ve Data Safety raporuna push token/installation bilgisini ekle.
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+AŞAMA 4 — TAM i18n DÜZELTMESİ
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+Bütün projeyi hardcoded kullanıcı metinleri için tara.
+
+Özellikle:
+
+add-adoption.tsx
+add-animal.tsx
+boost-packages.tsx
+Evcilim
+Premium
+Belgeler
+İlaçlar
+AI Asistan
+Auth
+Profil
+Ayarlar
+Mesajlar
+Harita
+Sokak hayvanları
+Sahiplendirme
+Error/loading/empty state
+Alert metinleri
+Form validation mesajları
+
+Tüm kullanıcıya görünen metinleri i18n sistemine taşı.
+
+Desteklenen diller:
+
+tr
+en
+
+Kurallar:
+
+Translation key’ler anlamlı ve gruplandırılmış olsun.
+Aynı metin için duplicate key üretme.
+Route, API kodu, DB enum veya product identifier çevrilmemeli.
+Runtime error mesajını doğrudan kullanıcıya gösterme.
+Türkçe fallback korunmalı.
+Eksik translation key ekranda görünmemeli.
+Dil değişikliği tüm açık uygulamaya yansımalı.
+Dil tercihi kalıcı olmalı.
+Uygulama yeniden açılınca korunmalı.
+Uzun İngilizce metinlerde UI taşmamalı.
+Tarih/saat/sayı formatları dile uygun olmalı.
+
+Test et:
+
+Türkçe
+İngilizce
+Dil değişimi
+Restart sonrası kalıcılık
+Uzun metin
+Alert
+Validation
+Premium ekran
+Alt navigasyon
+Empty/error state
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+AŞAMA 5 — ABONELİK YÖNETİMİ
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+Ayarlar veya Premium yönetimi bölümüne ekle:
+
+Aboneliği Yönet
+Satın Alımları Geri Yükle
+
+Platform:
+
+iOS:
+
+Apple abonelik yönetimi
+
+Android:
+
+Google Play abonelik yönetimi
+
+Web:
+
+Aboneliğin iOS veya Android mağaza hesabından yönetildiğini açıkla.
+
+Yanlış platform linki açma.
+
+Aktif abonelik yoksa kullanıcıya doğru bilgi ver.
+
+Restore işleminde:
+
+RevenueCat restore
+CustomerInfo
+pet_premium entitlement
+Backend refresh
+isPremium
+UI refresh
+
+kontrol edilmeli.
+
+Entitlement aktif değilse yanıltıcı başarı mesajı gösterme.
+
+Aylık/yıllık plan, otomatik yenileme, fiyat ve iptal bilgisini satın alma ekranında açıkça göster.
+
+Fiyatı sabit yazma; mağaza/RevenueCat priceString kullan.
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+AŞAMA 6 — REVENUECAT TAM DÜZELTME
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+Evcilim Premium:
+
+Offering: canyoldasi_pet_premium
+Packages:
+$rc_monthly
+$rc_annual
+Entitlement:
+pet_premium
+
+İlan öne çıkarma:
+
+Offering: canyoldasi_boost
+
+İki sistemi birbirine karıştırma.
+
+Evcilim Premium için:
+
+offerings.all["canyoldasi_pet_premium"]
+
+kullan.
+
+İlan boost için:
+
+offerings.all["canyoldasi_boost"]
+
+kullan.
+
+offerings.current nedeniyle karışıklık oluşturma.
+
+Kontrol et:
+
+iOS public SDK key
+Android public SDK key
+Test Store key release buildde yok
+Secret key clientta yok
+Purchases.configure tek sefer
+Auth user ID ile RevenueCat App User ID eşleşiyor
+Login/logout doğru
+Anonymous alias problemi yok
+Aylık/yıllık paketler görünüyor
+Yıllık varsayılan seçiliyor
+Satın alma iptali
+Hata
+Başarı
+Restore
+Expiration
+Revoke
+Backend webhook
+Webhook signature
+Idempotency
+
+Satın alma sonrası:
+
+purchasePackage
+→ CustomerInfo
+→ pet_premium aktif
+→ backend refresh
+→ isPremium true
+→ modal kapanır
+→ returnTo route
+
+pet_premium doğrulanmadan Premium özelliği açma.
+
+İlk hayvan ücretsiz, ikinci hayvan Premium kuralını koru:
+
+0 hayvan + ücretsiz → form
+1+ hayvan + ücretsiz → Premium modal
+1+ hayvan + Premium → form
+
+Backend bypass testi korunmalı.
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+AŞAMA 7 — AUTH VE HESAP
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+Düzelt ve test et:
+
+Kayıt
+E-posta doğrulama
+Login
+Logout
+Session restore
+Refresh token
+Şifremi unuttum
+Reset deep link
+Google login
+Apple login
+OAuth iptali
+Network hatası
+Hesap silme
+
+Hesap silme:
+
+Ayarlar içinde görünür olmalı.
+Sadece devre dışı bırakma olmamalı.
+Kullanıcı hesabı ve bağlı kişisel veri politikasına uygun işlenmeli.
+Aktif aboneliğin mağazadan ayrıca iptal edilmesi gerektiği açıklanmalı.
+Google Play için çalışan web deletion URL’si bulunmalı.
+Başkasının hesabı silinememeli.
+Silme sonrası session/token temizlenmeli.
+Push token pasifleştirilmeli.
+RevenueCat kullanıcı davranışı güvenli olmalı.
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+AŞAMA 8 — FOTOĞRAF VE KAMERA
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+Bütün fotoğraf akışlarını düzelt ve test et:
+
+Profil fotoğrafı
+Evcil hayvan fotoğrafı
+Sahiplendirme fotoğrafları
+Sokak hayvanı/acil durum fotoğrafı
+Belge yükleme
+
+Her biri:
+
+Kamera
+Galeri
+İzin kabul
+İzin reddet
+Kalıcı ret
+Ayarlara yönlendirme
+JPEG
+PNG
+HEIC
+Büyük dosya
+Sıkıştırma
+Orientation
+Upload progress
+Upload retry
+Network kesintisi
+DB kayıt
+Storage kayıt
+RLS
+Başkasının dosyasına erişim
+Silme sonrası cleanup
+
+Android’in güncel medya izinlerini ve iOS usage description metinlerini doğrula.
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+AŞAMA 9 — EVCİLİM
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+Test kullanıcıları:
+
+Ücretsiz, 0 hayvan
+Ücretsiz, 1 hayvan
+Premium, 1 hayvan
+Premium, birden fazla hayvan
+Premium süresi dolmuş
+
+Test et:
+
+Hayvan oluşturma
+Düzenleme
+Silme
+Hayvan seçme
+Her hayvanın verisinin ayrılması
+Kimlik
+Sağlık
+Aşılar
+Randevular
+Beslenme
+Belgeler
+İlaçlar
+Notlar
+Hatırlatıcılar
+AI Hayvan Asistanı
+
+Premium olmayan kullanıcı:
+
+Belgeler → Evcilim Premium modal
+İlaçlar → Evcilim Premium modal
+AI Asistan → Evcilim Premium modal
+İkinci hayvan → Evcilim Premium modal
+Doğrudan route → backend reddi
+
+Premium kullanıcı:
+
+İlgili ekran açılır.
+CRUD çalışır.
+Kayıt doğru hayvana bağlıdır.
+Başka hayvana veri sızmaz.
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+AŞAMA 10 — SAHİPLENDİRME
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+Düzelt ve test et:
+
+İlan oluşturma
+Bütün form alanları
+Fotoğraf
+Önizleme
+Önizlemeden düzenleme
+Yayınlama
+DB/storage
+Detay
+İlan sahibi profili
+Mesaj
+Sahiplenme talebi
+Talep kabul/reddetme
+Çift talep engeli
+İlan düzenleme
+İlan silme
+İlanlarım
+Kaydedilenler
+Öne çıkanlar
+Boost satın alma
+Süre bitince normal sıralama
+Başkasının ilanına yetkisiz işlem
+
+Form ve önizlemedeki alanlar birebir eşleşmeli.
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+AŞAMA 11 — HARİTA VE SOKAK HAYVANLARI
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+Düzelt ve test et:
+
+Konum izni kabul
+Ret
+Kalıcı ret
+Manuel konum
+GPS kapalı
+Harita
+Marker
+Detay kartı
+Bottom sheet
+Google Maps
+Apple Maps
+Filtreler
+Durum bildir
+Acil durum bildir
+Kamera
+Galeri
+Konum
+Kullanıcı adı/soyadı
+Anonim hatası
+Yardım sayacı tek tıklamada +1
+Duplicate yardım engeli
+Offline
+Başkasının kaydını değiştirme/silme engeli
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+AŞAMA 12 — MESAJLAŞMA VE PROFİL
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+İki farklı kullanıcıyla test et:
+
+Konuşma oluşturma
+Mesaj gönderme/alma
+Realtime
+İki tarafta görünürlük
+Mesaj sıralaması
+Okundu
+Offline
+Duplicate send
+Uzun mesaj
+Yetkisiz konuşma erişimi
+Mesajlarım
+Notification
+Deep link
+
+Profil:
+
+Profil görüntüleme
+Düzenleme
+Başkasının profili
+Takip
+Takipten çık
+Takipçi/takip edilen sayısı
+Profil gizleme
+Gizli profile erişim
+Fotoğraf
+Kaydedilenler
+Silinmiş kullanıcı
+
+Eski Feed sistemi kaldırıldığı için kalan route, buton, API veya kırık referansları temizle.
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+AŞAMA 13 — SUPABASE VE GÜVENLİK
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+Tüm tablolar ve storage için RLS matrisi çıkar.
+
+Roller:
+
+Anonymous
+Authenticated
+Owner
+Other user
+Premium
+Admin varsa admin
+
+Test et:
+
+IDOR
+Başka user_id
+Başka pet ID
+Premium bypass
+İlan sahipliği bypass
+Mesaj konuşması erişimi
+Storage path manipulation
+SQL injection
+XSS Web
+Rate limiting
+Spam
+Brute force
+Webhook spoof
+Duplicate webhook
+Service-role sızıntısı
+Token/PII logları
+Dosya MIME
+Upload size
+CORS
+Validation
+
+Test production verisini bozmamalı.
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+AŞAMA 14 — PRIVACY MANIFEST VE STORE POLİTİKALARI
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+iOS privacy manifest gereksinimini tüm native SDK’lar için denetle.
+
+Kontrol et:
+
+RevenueCat
+Supabase
+Expo
+Notifications
+SecureStore
+AsyncStorage
+Device identifiers
+Analytics varsa
+Crash reporting varsa
+Kamera
+Fotoğraf
+Konum
+Push token
+Mesajlar
+Kullanıcı içerikleri
+
+App Store Privacy cevapları ve Google Play Data Safety beyanları gerçek veri akışıyla eşleşmeli.
+
+Güncelle:
+
+reports/PRIVACY_DATA_INVENTORY.md
+reports/STORE_CHECKLIST_IOS.md
+reports/STORE_CHECKLIST_ANDROID.md
+
+Privacy Policy ve Terms URL’leri:
+
+HTTPS olmalı.
+Herkese açık olmalı.
+Login istememeli.
+Boş/placeholder olmamalı.
+App Store reviewer tarafından erişilebilir olmalı.
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+AŞAMA 15 — RESPONSIVE VE TABLET
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+Test boyutları:
+
+iPhone SE
+Standart iPhone
+Büyük iPhone
+Dynamic Island
+Küçük Android
+Büyük Android
+Android gesture navigation
+Android 3-button navigation
+iPad/tablet
+Web 320 px
+Web 375 px
+Web 390 px
+Tablet Web
+Desktop Web
+
+Kontrol et:
+
+Safe area
+Alt navigasyon
+Klavye
+Scroll
+Modal
+Bottom sheet
+Kesilen buton
+Taşan metin
+Büyük font
+İngilizce metin
+Landscape davranışı
+Loading
+Error
+Empty state
+Android ikonları
+Dark mode sistem ayarı
+
+Tablet desteklenmiyorsa app config ve store metadata bunu doğru yansıtmalı. Yanlışlıkla tablet desteği ilan etme.
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+AŞAMA 16 — WEB PRODUCTION
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+Web production build oluştur.
+
+Test et:
+
+Chrome
+Edge
+Safari mümkünse
+Mobile viewport
+Desktop
+Auth
+OAuth callback
+Deep-link refresh
+Route 404
+Premium modal
+Kamera/galeri
+Konum
+Harita
+Mesajlar
+Responsive
+Console
+Network
+HTTPS
+CORS
+CSP
+Session/cookie güvenliği
+Production environment
+Native satın alma açıklaması
+
+Web’de native IAP yoksa native satın alma PASS verme.
+
+Build çıktısında secret bulunmadığını kontrol et.
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+AŞAMA 17 — BUILD CONFIG
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+Doğrula ve düzelt:
+
+app.json / app.config.*
+eas.json
+iOS bundle identifier
+Android package
+Version
+iOS buildNumber
+Android versionCode
+Auto increment
+Production environment
+App icons
+Adaptive icon
+Notification icon
+Splash
+URL schemes
+OAuth callback
+Deep links
+Permissions
+RevenueCat platform keys
+Supabase production URL
+EAS project ID
+
+Production buildde:
+
+localhost
+test backend
+Test Store key
+debug bypass
+mock data
+service-role key
+secret RevenueCat key
+
+bulunmamalı.
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+AŞAMA 18 — PRODUCTION BUILD
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+Önce:
+
+npx expo-doctor
+
+Sonra:
+
+TypeScript
+Lint
+Unit test
+Integration test
+Web production build
+
+çalıştır.
+
+Credentials varsa:
+
+Android production AAB
+iOS production build
+
+oluştur.
+
+Credentials eksikse BLOCKED yaz ancak build config dosyalarını tamamla.
+
+EAS build kullanıcı onayı veya giriş gerektiriyorsa neye ihtiyaç olduğunu kesin olarak raporla.
+
+Mağazaya otomatik gönderim yapma.
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+AŞAMA 19 — NATIVE TEST
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+Ayrı test matrisi:
+
+Android emulator
+Android fiziksel cihaz
+Play internal/closed test
+iOS simulator
+iOS fiziksel cihaz
+TestFlight
+
+Gerçek cihaz gerektirenler:
+
+Kamera
+Galeri
+Konum
+Harita
+Push
+Background notification
+Terminated notification
+Apple login
+Google login native
+RevenueCat purchase
+Restore
+Deep link
+
+Fiziksel cihaz yoksa BLOCKED.
+
+Emülatör sonucunu fiziksel cihaz PASS olarak gösterme.
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+AŞAMA 20 — MAĞAZA SATIN ALMA TESTİ
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+Apple:
+
+Platform-specific RevenueCat key
+App Store gerçek subscription ürünleri
+Sandbox tester
+Aylık/yıllık paket
+Satın alma
+İptal
+Restore
+Entitlement
+Backend Premium
+Expiration/revoke
+TestFlight
+
+Google:
+
+Platform-specific RevenueCat key
+Play subscription/base plan
+Internal/closed track
+License tester
+Satın alma
+İptal
+Restore
+Entitlement
+Backend Premium
+Expiration/revoke
+
+Test Store sonucu Apple/Google Sandbox PASS değildir.
+
+RevenueCat dashboard’da:
+
+Doğru App User ID
+Transaction
+Entitlement
+Alias
+Webhook
+Hata
+
+kontrol edilmeli.
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+AŞAMA 21 — APP STORE HAZIRLIĞI
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+Hazırla/kontrol et:
+
+App name
+Subtitle
+Description
+Keywords
+Category
+Age rating
+Support URL
+Privacy Policy URL
+Terms
+Screenshots
+Icon
+App Privacy
+Content rights
+Export compliance
+Review demo account
+Review notes
+IAP açıklamaları
+Restore yolu
+Aboneliği yönetme yolu
+Hesap silme yolu
+Kamera/konum açıklaması
+Sign in with Apple
+Aboneliklerin ilk app submission’a eklenmesi
+Ürünlerin Ready to Submit olması
+Backend’in review sırasında açık olması
+
+TR ve EN review notes üret.
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+AŞAMA 22 — GOOGLE PLAY HAZIRLIĞI
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+Hazırla/kontrol et:
+
+App name
+Short description
+Full description
+App icon
+Feature graphic
+Screenshots
+Category
+Content rating
+Target audience
+Ads declaration
+Data Safety
+Privacy Policy
+Account deletion web URL
+App access/demo user
+Production AAB
+Play App Signing
+Package name
+Version code
+Target API
+Subscriptions/base plans
+License tester
+Closed/internal test
+Ülke/bölge
+RevenueCat credentials
+Real-time developer notifications
+Subscription cancellation link
+
+TR ve EN review notes üret.
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+HATA ÖNCELİĞİ
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+P0:
+
+Crash
+Auth tamamen bozuk
+Veri kaybı
+Yetki açığı
+Production build başarısız
+Temel fotoğraf/kamera akışı bozuk
+IAP tamamen bozuk
+Hesap silme yok
+Push sistemi hiç yok ve özellik vaat ediliyor
+
+P1:
+
+Ana özellik bozuk
+Mesajlaşma bozuk
+İkinci hayvan Premium bypass
+Restore bozuk
+Konum/harita bozuk
+Yanlış kullanıcı verisi
+Native temel akış test edilmemiş
+
+P2:
+
+UI taşması
+Stale cache
+Hata/loading eksikliği
+Tablet sorunu
+Eksik çeviri
+
+P3:
+
+Küçük kozmetik sorun
+
+Önce P0, sonra P1, ardından P2 düzelt.
+
+Her düzeltme sonrası aynı testi yeniden çalıştır ve komşu akışlarda regresyon testi yap.
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+RELEASE GATE
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+Aşağıdaki şartlar sağlanmadan READY verme:
+
+Açık P0 = 0
+Açık P1 = 0
+TypeScript PASS
+Lint PASS
+Expo Doctor kritik hata = 0
+Web production build PASS
+Android production AAB PASS
+iOS production build PASS
+Android fiziksel cihaz ana akış PASS
+iOS fiziksel cihaz ana akış PASS
+Auth PASS
+Hesap silme PASS
+Kamera/galeri PASS
+Upload + DB PASS
+Sahiplendirme PASS
+Mesajlaşma PASS
+Harita/konum PASS
+Push foreground/background/terminated PASS
+İkinci hayvan Premium gate PASS
+Belgeler/İlaçlar Premium PASS
+Apple Sandbox IAP PASS
+Google Play test IAP PASS
+Restore PASS
+RevenueCat + backend PASS
+RLS kritik güvenlik PASS
+Privacy/Terms erişilebilir
+Store metadata hazır
+Demo account hazır
+
+Nihai karar:
+
+READY FOR SUBMISSION
+CONDITIONALLY READY
+NOT READY
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+RAPORLAR
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+Güncelle veya oluştur:
+
+reports/RELEASE_READINESS_REPORT.md
+reports/TEST_MATRIX.md
+reports/OPEN_BLOCKERS.md
+reports/STORE_CHECKLIST_IOS.md
+reports/STORE_CHECKLIST_ANDROID.md
+reports/PRIVACY_DATA_INVENTORY.md
+reports/SECURITY_RLS_AUDIT.md
+reports/REVENUECAT_AUDIT.md
+reports/PUSH_NOTIFICATION_AUDIT.md
+reports/I18N_AUDIT.md
+reports/WEB_PRODUCTION_AUDIT.md
+reports/NATIVE_BUILD_AUDIT.md
+reports/APP_REVIEW_NOTES_TR.md
+reports/APP_REVIEW_NOTES_EN.md
+reports/PLAY_REVIEW_NOTES_TR.md
+reports/PLAY_REVIEW_NOTES_EN.md
+reports/24_HOUR_RELEASE_PLAN.md
+
+Ana tablo:
+
+ID	Alan	Platform	Ortam/Cihaz	Senaryo	Sonuç	UI Kanıtı	API Kanıtı	DB Kanıtı	Console/Network	Sorun
+
+Nihai özet:
+
+Nihai karar:
+P0:
+P1:
+P2:
+P3:
+
+Web:
+Android:
+iOS:
+App Store:
+Google Play:
+
+Tamamlanan düzeltmeler:
+Değiştirilen dosyalar:
+Migrationlar:
+Çalıştırılan komutlar:
+Gerçek PASS testleri:
+BLOCKED testler:
+Kullanıcıdan gereken işlemler:
+Gönderime kalan kesin adımlar:
+Tahmini kalan süre:
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+SON KURAL
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+Kod değişikliği yapılabilecek bir sorunda yalnızca öneri verme; düzelt.
+
+Dış hesap veya fiziksel cihaz gerektiren bir işte:
+
+BLOCKED olarak kaydet.
+Kullanıcıdan gereken tek işlemi açıkça belirt.
+Bağımsız diğer işlere devam et.
+
+Gerçek kanıt olmadan PASS veya READY verme.
+
+Kullanıcı açıkça onaylamadan:
+
+Production migration uygulama
+App Store’a gönderme
+Google Play’e gönderme
+Production veri silme
+Ücretli servis açma
+
+işlemi yapma.
+
+Görev sonunda yalnız rapor üretme; yapılan bütün kod değişikliklerini, test kanıtlarını ve hâlâ kullanıcı müdahalesi gerektiren engelleri net biçimde teslim et.

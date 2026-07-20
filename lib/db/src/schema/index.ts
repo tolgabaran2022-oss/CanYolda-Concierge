@@ -1,4 +1,4 @@
-import { integer, pgTable, text, timestamp } from "drizzle-orm/pg-core";
+import { boolean, integer, pgTable, text, timestamp } from "drizzle-orm/pg-core";
 import { sql } from "drizzle-orm";
 export * from "./social.js";
 export * from "./pets.js";
@@ -55,3 +55,38 @@ export type OAuthUser = typeof oauthUsers.$inferSelect;
 export type InsertOAuthUser = typeof oauthUsers.$inferInsert;
 export type LocalUser = typeof localUsers.$inferSelect;
 export type InsertLocalUser = typeof localUsers.$inferInsert;
+
+export const pushTokens = pgTable("push_tokens", {
+  id: text("id")
+    .primaryKey()
+    .default(sql`gen_random_uuid()::text`),
+  userId:         text("user_id").notNull(),
+  expoPushToken:  text("expo_push_token").notNull(),
+  platform:       text("platform").notNull(),
+  installationId: text("installation_id"),
+  appVersion:     text("app_version"),
+  enabled:        boolean("enabled").notNull().default(true),
+  createdAt:      timestamp("created_at", { withTimezone: true }).defaultNow(),
+  updatedAt:      timestamp("updated_at", { withTimezone: true }).defaultNow(),
+  lastSeenAt:     timestamp("last_seen_at",  { withTimezone: true }).defaultNow(),
+}, (t) => [
+  uniqueIndex("push_tokens_token_unique").on(t.expoPushToken),
+]);
+
+export type PushToken = typeof pushTokens.$inferSelect;
+export type InsertPushToken = typeof pushTokens.$inferInsert;
+
+export const notificationPreferences = pgTable("notification_preferences", {
+  id:              text("id").primaryKey().default(sql`gen_random_uuid()::text`),
+  userId:          text("user_id").notNull().unique(),
+  generalEnabled:  boolean("general_enabled").notNull().default(true),
+  messagesEnabled: boolean("messages_enabled").notNull().default(true),
+  adoptionEnabled: boolean("adoption_enabled").notNull().default(true),
+  remindersEnabled: boolean("reminders_enabled").notNull().default(true),
+  emergencyEnabled: boolean("emergency_enabled").notNull().default(true),
+  createdAt:       timestamp("created_at", { withTimezone: true }).defaultNow(),
+  updatedAt:       timestamp("updated_at", { withTimezone: true }).defaultNow(),
+});
+
+export type NotificationPreferences = typeof notificationPreferences.$inferSelect;
+export type InsertNotificationPreferences = typeof notificationPreferences.$inferInsert;

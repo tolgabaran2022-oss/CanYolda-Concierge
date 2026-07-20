@@ -5,18 +5,20 @@ import * as Haptics from "expo-haptics";
 import * as ImagePicker from "expo-image-picker";
 import { LinearGradient } from "expo-linear-gradient";
 import { useRouter } from "expo-router";
-import React, { useState } from "react";
+import React, { useCallback, useEffect, useState } from "react";
 import {
   ActivityIndicator,
   Alert,
   ActionSheetIOS,
   KeyboardAvoidingView,
+  Linking,
   Modal,
   Platform,
   useWindowDimensions,
   Pressable,
   ScrollView,
   StyleSheet,
+  Switch,
   Text,
   TextInput,
   View,
@@ -242,6 +244,65 @@ export default function AccountScreen() {
   /* ── Language modal ──────────────────────────────────────────── */
   const [langModalVisible, setLangModalVisible] = useState(false);
 
+  /* ── Notification preferences ────────────────────────────────── */
+  type NotifPrefs = {
+    generalEnabled:   boolean;
+    messagesEnabled:  boolean;
+    adoptionEnabled:  boolean;
+    remindersEnabled: boolean;
+    emergencyEnabled: boolean;
+  };
+  const defaultPrefs: NotifPrefs = {
+    generalEnabled:   true,
+    messagesEnabled:  true,
+    adoptionEnabled:  true,
+    remindersEnabled: true,
+    emergencyEnabled: true,
+  };
+  const [notifPrefs,   setNotifPrefs]   = useState<NotifPrefs>(defaultPrefs);
+  const [notifLoading, setNotifLoading] = useState(false);
+
+  useEffect(() => {
+    if (!user) return;
+    apiFetch("/push-tokens/preferences")
+      .then((r) => r.json() as Promise<NotifPrefs>)
+      .then((data) => setNotifPrefs(data))
+      .catch(() => {/* silently keep defaults */});
+  }, [user]);
+
+  const saveNotifPref = useCallback(async (key: keyof NotifPrefs, value: boolean) => {
+    const updated = { ...notifPrefs, [key]: value };
+    setNotifPrefs(updated);
+    setNotifLoading(true);
+    try {
+      await apiFetch("/push-tokens/preferences", {
+        method: "PATCH",
+        body: JSON.stringify({ [key]: value }),
+      });
+    } catch {
+      /* revert on failure */
+      setNotifPrefs(notifPrefs);
+    } finally {
+      setNotifLoading(false);
+    }
+  }, [notifPrefs]);
+
+  /* ── Subscription management ─────────────────────────────────── */
+  const handleManageSubscription = useCallback(() => {
+    const iosUrl     = "https://apps.apple.com/account/subscriptions";
+    const androidUrl = "https://play.google.com/store/account/subscriptions";
+    if (Platform.OS === "ios") {
+      Linking.openURL(iosUrl);
+    } else if (Platform.OS === "android") {
+      Linking.openURL(androidUrl);
+    } else {
+      Alert.alert(
+        t("account.manageSubscription"),
+        t("account.manageSubscriptionWebInfo")
+      );
+    }
+  }, [t]);
+
   const openPwModal = () => {
     setCurrentPw(""); setNewPw(""); setConfirmPw("");
     setPwModalVisible(true);
@@ -416,6 +477,122 @@ export default function AccountScreen() {
               <Text style={[S.rowValueText, { color: T.textMuted }]}>{currentLangMeta.nativeLabel}</Text>
               <Icon name="chevron-forward" size={16} color={T.textFaint} />
             </Pressable>
+          </View>
+        </View>
+
+        {/* ── Abonelik ───────────────────────────────────── */}
+        <View style={S.section}>
+          <Text style={[S.sectionTitle, { color: T.textFaint }]}>{t("account.subscription")}</Text>
+          <View style={[S.card, { backgroundColor: T.card, borderColor: T.border }]}>
+            <Pressable
+              style={({ pressed }) => [S.row, { opacity: pressed ? 0.75 : 1 }]}
+              onPress={handleManageSubscription}
+            >
+              <View style={[S.iconBadge, { backgroundColor: T.purpleFaint }]}>
+                <Icon name="card-outline" size={18} color={T.purple} />
+              </View>
+              <View style={{ flex: 1 }}>
+                <Text style={[S.rowLabel, { color: T.text }]}>{t("account.manageSubscription")}</Text>
+                <Text style={[S.rowDesc, { color: T.textFaint }]}>
+                  {Platform.OS === "ios"
+                    ? t("account.manageSubscriptionIosInfo")
+                    : Platform.OS === "android"
+                    ? t("account.manageSubscriptionAndroidInfo")
+                    : t("account.manageSubscriptionWebInfo")}
+                </Text>
+              </View>
+              <Icon name="chevron-forward" size={16} color={T.textFaint} />
+            </Pressable>
+          </View>
+        </View>
+
+        {/* ── Bildirimler ─────────────────────────────────── */}
+        <View style={S.section}>
+          <Text style={[S.sectionTitle, { color: T.textFaint }]}>{t("account.notifications")}</Text>
+          <View style={[S.card, { backgroundColor: T.card, borderColor: T.border }]}>
+
+            {/* General / Ana toggle */}
+            <View style={S.row}>
+              <View style={[S.iconBadge, { backgroundColor: T.purpleFaint }]}>
+                <Icon name="notifications-outline" size={18} color={T.purple} />
+              </View>
+              <Text style={[S.rowLabel, { flex: 1, color: T.text }]}>{t("account.pushNotifications.general")}</Text>
+              <Switch
+                value={notifPrefs.generalEnabled}
+                onValueChange={(v) => saveNotifPref("generalEnabled", v)}
+                trackColor={{ false: T.border, true: T.purple }}
+                thumbColor="#FFF"
+                disabled={notifLoading}
+              />
+            </View>
+
+            <View style={[S.divider, { backgroundColor: T.divider }]} />
+
+            {/* Messages */}
+            <View style={[S.row, { opacity: notifPrefs.generalEnabled ? 1 : 0.45 }]}>
+              <View style={[S.iconBadge, { backgroundColor: T.purpleFaint }]}>
+                <Icon name="chatbubble-outline" size={18} color={T.purple} />
+              </View>
+              <Text style={[S.rowLabel, { flex: 1, color: T.text }]}>{t("account.pushNotifications.messages")}</Text>
+              <Switch
+                value={notifPrefs.messagesEnabled && notifPrefs.generalEnabled}
+                onValueChange={(v) => saveNotifPref("messagesEnabled", v)}
+                trackColor={{ false: T.border, true: T.purple }}
+                thumbColor="#FFF"
+                disabled={notifLoading || !notifPrefs.generalEnabled}
+              />
+            </View>
+
+            <View style={[S.divider, { backgroundColor: T.divider }]} />
+
+            {/* Adoption */}
+            <View style={[S.row, { opacity: notifPrefs.generalEnabled ? 1 : 0.45 }]}>
+              <View style={[S.iconBadge, { backgroundColor: T.purpleFaint }]}>
+                <Icon name="heart-outline" size={18} color={T.purple} />
+              </View>
+              <Text style={[S.rowLabel, { flex: 1, color: T.text }]}>{t("account.pushNotifications.adoption")}</Text>
+              <Switch
+                value={notifPrefs.adoptionEnabled && notifPrefs.generalEnabled}
+                onValueChange={(v) => saveNotifPref("adoptionEnabled", v)}
+                trackColor={{ false: T.border, true: T.purple }}
+                thumbColor="#FFF"
+                disabled={notifLoading || !notifPrefs.generalEnabled}
+              />
+            </View>
+
+            <View style={[S.divider, { backgroundColor: T.divider }]} />
+
+            {/* Reminders */}
+            <View style={[S.row, { opacity: notifPrefs.generalEnabled ? 1 : 0.45 }]}>
+              <View style={[S.iconBadge, { backgroundColor: T.purpleFaint }]}>
+                <Icon name="alarm-outline" size={18} color={T.purple} />
+              </View>
+              <Text style={[S.rowLabel, { flex: 1, color: T.text }]}>{t("account.pushNotifications.reminders")}</Text>
+              <Switch
+                value={notifPrefs.remindersEnabled && notifPrefs.generalEnabled}
+                onValueChange={(v) => saveNotifPref("remindersEnabled", v)}
+                trackColor={{ false: T.border, true: T.purple }}
+                thumbColor="#FFF"
+                disabled={notifLoading || !notifPrefs.generalEnabled}
+              />
+            </View>
+
+            <View style={[S.divider, { backgroundColor: T.divider }]} />
+
+            {/* Emergency */}
+            <View style={[S.row, { opacity: notifPrefs.generalEnabled ? 1 : 0.45 }]}>
+              <View style={[S.iconBadge, { backgroundColor: "#FEF2F2" }]}>
+                <Icon name="warning-outline" size={18} color="#D94040" />
+              </View>
+              <Text style={[S.rowLabel, { flex: 1, color: T.text }]}>{t("account.pushNotifications.emergency")}</Text>
+              <Switch
+                value={notifPrefs.emergencyEnabled && notifPrefs.generalEnabled}
+                onValueChange={(v) => saveNotifPref("emergencyEnabled", v)}
+                trackColor={{ false: T.border, true: "#D94040" }}
+                thumbColor="#FFF"
+                disabled={notifLoading || !notifPrefs.generalEnabled}
+              />
+            </View>
           </View>
         </View>
 

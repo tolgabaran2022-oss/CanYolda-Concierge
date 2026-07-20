@@ -18,3 +18,4 @@
 - [Feed/social cleanup](feed-social-cleanup.md) — Instagram feed system fully removed; social.ts now uses socialProfiles for user search; follows/feedPosts tables dropped; x-user-id dual auth (extractUserIdDual) is still in jwtAuth.ts — security cleanup deferred
 - [Metro watcher ENOENT fix](metro-watcher-enoent.md) — Metro crashes if a watched directory disappears; fix with mkdir -p on the missing path then restart the workflow
 - [i18n architecture](i18n-arch.md) — i18next + react-i18next, NO expo-localization (version mismatch kills Metro); locale via NativeModules; init before render in _layout.tsx; Globe icon added to ICON_MAP
+- [Push notification system](push-notification-system.md) — expo-notifications@57 + expo-device@57 installed (SDK54 expects 0.32/8.0 but 57 works); push_tokens + notification_preferences tables; /api/push-tokens routes; services/notifications.ts; registered in AuthContext login/register/logout; expo-device Metro ENOENT needs mkdir -p fix
