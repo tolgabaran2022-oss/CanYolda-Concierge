@@ -1,0 +1,800 @@
+CAN YOLDAŞI — FINAL RELEASE CANDIDATE FULL AUDIT v1.0
+
+ROL
+
+Sen artık sadece geliştirici değil;
+
+- Senior QA Engineer
+- Mobile Release Engineer
+- React Native Expert
+- Supabase Security Auditor
+- RevenueCat IAP Tester
+- App Store / Google Play Release Specialist
+
+olarak çalış.
+
+AMAÇ
+
+CanYoldaşı uygulamasının:
+
+- iOS
+- Android
+- Web
+- Apple App Store
+- Google Play Store
+
+yayına hazır olup olmadığını kesin olarak belirlemek.
+
+Bu görev:
+
+❌ Kod kalitesi raporu değildir.
+❌ Sadece static code review değildir.
+❌ Sadece TypeScript kontrolü değildir.
+
+Gerçek kullanıcı akışları, backend doğrulaması, DB doğrulaması ve mümkün olan tüm platform testleri yapılacaktır.
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+TEST SONUÇ KURALI
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+Her test yalnızca:
+
+PASS
+
+FAIL
+
+STATIC REVIEW
+
+BLOCKED
+
+NOT TESTED
+
+olarak işaretlenecek.
+
+PASS şartları:
+
+1. Uygulama gerçekten çalıştırıldı.
+2. Kullanıcı aksiyonu uygulandı.
+3. UI sonucu görüldü.
+4. Backend sonucu doğrulandı.
+5. DB sonucu doğrulandı.
+6. Console/network hatası kontrol edildi.
+7. Kalıcı veri tekrar okundu.
+
+Sadece kod incelemesi:
+
+STATIC REVIEW
+
+Platform çalışmıyorsa:
+
+BLOCKED
+
+Test yapılmadıysa:
+
+NOT TESTED
+
+
+Şunları PASS kabul etme:
+
+- Kod doğru görünüyor.
+- TypeScript başarılı.
+- Expo Web çalışıyor.
+- API 200 döndü.
+- Mock data görünüyor.
+- Emülatör testi fiziksel cihaz testi değildir.
+- Expo Go native test değildir.
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+AŞAMA 1
+BUILD VE ENVIRONMENT AUDIT
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+Kontrol et:
+
+- Expo SDK
+- React Native
+- React
+- Expo Router
+- Node version
+- Package manager
+- Dependencies
+- Deprecated paketler
+- Native module uyumluluğu
+
+Çalıştır:
+
+```bash
+npm install
+npx expo-doctor
+npm run lint
+npm run typecheck
+
+Kontrol:
+
+Build error
+Warning
+Dependency conflict
+Metro error
+Bundle error
+
+Ara:
+
+TODO
+FIXME
+HACK
+mock
+fake
+placeholder
+localhost
+127.0.0.1
+test
+debug
+bypass
+console.log
+service-role
+secret key
+
+Production ortamında:
+
+Olmamalı:
+
+Debug bypass
+Fake premium
+Fake data
+Test API
+Secret key
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+AŞAMA 2
+WEB PRODUCTION TEST
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+Gerçek production web build al.
+
+Kontrol:
+
+Build başarı
+Deploy output
+Bundle hatası
+Console hatası
+Network hatası
+
+Browser test:
+
+Chrome:
+
+Açılış
+Register
+Login
+Logout
+Session restore
+Forgot password
+Profile
+Settings
+Evcilim
+Sahiplendirme
+Mesajlar
+Premium
+Account
+
+Responsive:
+
+Test:
+
+320px
+
+375px
+
+390px
+
+Tablet
+
+Desktop
+
+Kontrol:
+
+Scroll
+Modal
+Bottom sheet
+Keyboard
+Overflow
+Font
+Translation
+Error state
+
+Sonuç:
+
+WEB:
+
+PASS / FAIL / BLOCKED
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+AŞAMA 3
+AUTH FULL TEST
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+Test:
+
+Register:
+
+Geçerli kayıt
+Aynı email
+Hatalı email
+Zayıf şifre
+Eksik alan
+
+Login:
+
+Doğru şifre
+Yanlış şifre
+Session restore
+Logout
+
+Password:
+
+Forgot password
+Reset link
+Yeni şifre
+
+OAuth:
+
+Google login
+Apple login
+
+Account:
+
+Hesap silme
+Silinen hesap tekrar giriş
+
+Kontrol:
+
+Session
+Token
+Database
+User data
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+AŞAMA 4
+EVCİLİM FULL TEST
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+Test kullanıcıları:
+
+Ücretsiz + 0 hayvan
+
+Ücretsiz + 1 hayvan
+
+Premium + 1 hayvan
+
+Premium + çoklu hayvan
+
+Kurallar:
+
+0 hayvan:
+
+→ ücretsiz ekleme
+
+1+ hayvan ücretsiz:
+
+→ Premium modal
+
+Premium:
+
+→ ekleme
+
+Test:
+
+Hayvan ekleme
+Fotoğraf
+Kamera
+Galeri
+Düzenleme
+Silme
+Seçme
+
+Veri:
+
+Her hayvan ayrı olmalı.
+
+Kontrol:
+
+Aşı
+Randevu
+İlaç
+Belgeler
+Sağlık
+Notlar
+AI Asistan
+
+Premium olmayan:
+
+Belgeler:
+
+→ Premium
+
+İlaçlar:
+
+→ Premium
+
+AI:
+
+→ Premium
+
+Direct route bypass:
+
+Test et.
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+AŞAMA 5
+REVENUECAT PREMIUM TEST
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+Kontrol:
+
+Offering:
+
+canyoldasi_pet_premium
+
+Packages:
+
+$rc_monthly
+$rc_annual
+
+Entitlement:
+
+pet_premium
+
+Test:
+
+Paket yükleniyor mu
+Fiyat doğru mu
+Yıllık seçili mi
+Satın alma
+İptal
+Başarısız ödeme
+Restore
+
+Satın alma sonrası:
+
+Kontrol:
+
+RevenueCat:
+
+↓
+
+CustomerInfo
+
+↓
+
+Entitlement
+
+↓
+
+Backend
+
+↓
+
+isPremium
+
+Test:
+
+Premium açılıyor mu
+Modal kapanıyor mu
+ReturnTo çalışıyor mu
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+AŞAMA 6
+PUSH NOTIFICATION FULL TEST
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+Kontrol:
+
+Permission:
+
+İlk giriş
+Kullanıcı butonu
+Kabul
+Red
+Ayarlardan açma
+
+Token:
+
+Register
+Refresh
+Logout
+Multi device
+
+Database:
+
+push_tokens
+
+Kontrol:
+
+Duplicate yok
+RLS
+User isolation
+
+Event test:
+
+Mesaj:
+
+A → B
+
+Kontrol:
+
+DB kayıt
+Notification event
+Worker
+Push
+
+Sahiplenme:
+
+Talep oluştur
+
+↓
+
+İlan sahibi bildirim
+
+Kabul:
+
+↓
+
+Talep sahibi bildirim
+
+Red:
+
+↓
+
+Talep sahibi bildirim
+
+Hatırlatıcı:
+
+Aşı
+Randevu
+İlaç
+
+Kontrol:
+
+Scheduler
+Duplicate
+Retry
+Timezone
+
+Push durum:
+
+Foreground
+Background
+Terminated
+
+Deep link:
+
+Bildirim tıklanınca:
+
+Mesaj ekranı
+İlan ekranı
+Hatırlatıcı ekranı
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+AŞAMA 7
+SUPABASE DATABASE SECURITY TEST
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+Tüm tablolar:
+
+pets
+adoption
+messages
+push_tokens
+premium
+reminders
+
+Kontrol:
+
+Anonymous:
+
+Okuma
+Yazma
+
+User:
+
+Kendi verisi
+
+Other user:
+
+Yetkisiz erişim
+
+Test:
+
+IDOR
+
+Başkasının ID'si
+
+Başkasının pet'i
+
+Başkasının mesajı
+
+Storage:
+
+Fotoğraf erişimi
+Dosya silme
+URL güvenliği
+
+Kontrol:
+
+RLS
+Auth
+Validation
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+AŞAMA 8
+SAHİPLENDİRME TEST
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+Test:
+
+İlan oluştur
+Fotoğraf
+Form
+Önizleme
+Yayınlama
+Düzenleme
+Silme
+Mesaj
+Talep gönderme
+
+Kontrol:
+
+DB
+Storage
+Permission
+
+Boost:
+
+Offering:
+
+canyoldasi_boost
+
+Test:
+
+Paketler
+Satın alma
+Süre
+Sıralama
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+AŞAMA 9
+MESAJLAŞMA TEST
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+İki kullanıcı:
+
+Test:
+
+Mesaj gönderme
+Alma
+Realtime
+Offline
+Background
+Bildirim
+Deep link
+
+Kontrol:
+
+Yetkisiz erişim
+Duplicate
+Sıralama
+Silinen kullanıcı
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+AŞAMA 10
+HARİTA VE KONUM TEST
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+Test:
+
+Konum izin
+Red
+GPS kapalı
+Harita
+Marker
+Detay
+Google Maps
+Apple Maps
+
+Durum bildir:
+
+Fotoğraf
+Konum
+Kullanıcı bilgisi
+Yardım sayacı
+
+Kontrol:
+
+Duplicate yardım
+Yetkisiz değişiklik
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+AŞAMA 11
+KAMERA VE STORAGE TEST
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+Test:
+
+Kamera
+Galeri
+İzin
+Ret
+Büyük dosya
+HEIC
+JPG
+PNG
+
+Kontrol:
+
+Upload
+Compression
+Orientation
+Storage
+RLS
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+AŞAMA 12
+iOS RELEASE AUDIT
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+Kontrol:
+
+Bundle ID
+Version
+Build number
+Icon
+Splash
+Permissions
+Camera usage
+Location usage
+Photo usage
+Push capability
+Sign in Apple
+IAP capability
+Privacy manifest
+
+Gerçek cihaz:
+
+Login
+Kamera
+Konum
+Push
+IAP
+Deep link
+
+Test edilmediyse:
+
+BLOCKED
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+AŞAMA 13
+ANDROID RELEASE AUDIT
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+Kontrol:
+
+Package name
+Version code
+App bundle
+Icon
+Notification icon
+Permissions
+Billing
+Deep link
+
+Gerçek cihaz:
+
+Android 13+
+Push
+Kamera
+Konum
+IAP
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+AŞAMA 14
+PERFORMANCE TEST
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+Kontrol:
+
+App açılış süresi
+Memory
+Large list
+Images
+Multiple pets
+Messages
+API latency
+Crash
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+AŞAMA 15
+STORE READY CHECKLIST
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+Apple:
+
+App description
+Screenshots
+Privacy policy
+Terms
+Review account
+Review notes
+IAP
+
+Google:
+
+Screenshots
+Data safety
+Privacy
+Account deletion URL
+Subscription
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+FINAL RAPOR
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+Oluştur:
+
+FINAL_RELEASE_REPORT.md
+
+TEST_MATRIX_FINAL.md
+
+OPEN_BLOCKERS_FINAL.md
+
+IOS_RELEASE_CHECKLIST.md
+
+ANDROID_RELEASE_CHECKLIST.md
+
+WEB_RELEASE_CHECKLIST.md
+
+SECURITY_FINAL_AUDIT.md
+
+REVENUECAT_FINAL_AUDIT.md
+
+PUSH_FINAL_AUDIT.md
+
+Tablo:
+
+Alan	Platform	Test	Sonuç	Kanıt
+
+Final karar:
+
+Sadece:
+
+READY FOR SUBMISSION
+
+veya
+
+NOT READY
+
+Kurallar:
+
+Gerçek cihaz yoksa:
+
+BLOCKED
+
+Gerçek mağaza testi yoksa:
+
+BLOCKED
+
+Kod incelemesi:
+
+STATIC REVIEW
+
+Sahte PASS verme.
+
+Görev sonunda:
+
+Açık P0
+Açık P1
+Açık P2
+Mağazaya kalan işler
+Kullanıcıdan gereken işlemler
+Tahmini yayın zamanı
+
+raporla.

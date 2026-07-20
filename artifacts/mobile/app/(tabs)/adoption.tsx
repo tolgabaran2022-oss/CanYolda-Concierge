@@ -853,21 +853,6 @@ const STATUS_CFG: Record<ListStatus, { color: string; bg: string; icon: string }
 
 /* remainingTime replaced by formatRemainingTime from @/utils/promotionHelpers */
 
-function mockViews(id: string): number {
-  let h = 0;
-  for (let i = 0; i < id.length; i++) h = ((h << 5) - h + id.charCodeAt(i)) | 0;
-  return 12 + Math.abs(h % 289);
-}
-function mockFavs(id: string): number {
-  let h = 0;
-  for (let i = 0; i < id.length; i++) h = ((h << 3) + id.charCodeAt(i)) | 0;
-  return 1 + Math.abs(h % 47);
-}
-function mockMsgs(id: string): number {
-  let h = 0;
-  for (let i = 0; i < id.length; i++) h = ((h << 2) ^ id.charCodeAt(i)) | 0;
-  return Math.abs(h % 19);
-}
 
 function pkgFormatPrice(unitAmount: number): string {
   return (unitAmount / 100).toFixed(0);
@@ -876,9 +861,6 @@ function pkgFormatPrice(unitAmount: number): string {
 interface MyCard {
   listing: AdoptionListing;
   status:  ListStatus;
-  views:   number;
-  favs:    number;
-  msgs:    number;
 }
 
 function MyListingCard({
@@ -895,7 +877,9 @@ function MyListingCard({
   now: Date;
 }) {
   const T = useTheme();
-  const { listing, status, views, favs, msgs } = card;
+  const { listing, status } = card;
+  const views = listing.viewsCount ?? 0;
+  const favs  = listing.favoriteCount ?? 0;
   const cfg = STATUS_CFG[status];
   const [perfOpen, setPerfOpen] = useState(false);
   const [imgError, setImgError] = useState(false);
@@ -982,10 +966,6 @@ function MyListingCard({
               <Icon name="heart-outline" size={12} color="#DC2626" />
               <Text style={[ml.statChipTxt, { color: "#DC2626" }]}>{favs}</Text>
             </View>
-            <View style={[ml.statChip, ml.statChipMsg]}>
-              <Icon name="chatbubble-outline" size={12} color="#0070F3" />
-              <Text style={[ml.statChipTxt, { color: "#0070F3" }]}>{msgs}</Text>
-            </View>
             <Pressable
               style={ml.perfBtn}
               onPress={() => { Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light); setPerfOpen((v) => !v); }}
@@ -1009,12 +989,6 @@ function MyListingCard({
                   <Icon name="heart" size={16} color="#DC2626" />
                   <Text style={[ml.perfVal, { color: "#DC2626" }]}>{favs}</Text>
                   <Text style={ml.perfLbl}>Favori</Text>
-                </View>
-                <View style={ml.perfDivV} />
-                <View style={ml.perfItem}>
-                  <Icon name="chatbubble" size={16} color="#0070F3" />
-                  <Text style={[ml.perfVal, { color: "#0070F3" }]}>{msgs}</Text>
-                  <Text style={ml.perfLbl}>Mesaj</Text>
                 </View>
               </View>
             </View>
@@ -1126,7 +1100,7 @@ function MyListingsSection({
   }, [router]);
 
   const myListings = useMemo(() => listings.filter((l) => l.userId === userId), [listings, userId]);
-  const cards: MyCard[] = useMemo(() => myListings.map((l) => ({ listing: l, status: getStatus(l.id), views: mockViews(l.id), favs: mockFavs(l.id), msgs: mockMsgs(l.id) })), [myListings, statusMap]);
+  const cards: MyCard[] = useMemo(() => myListings.map((l) => ({ listing: l, status: getStatus(l.id) })), [myListings, statusMap]);
 
   const FILTER_MAP: Record<MyFilter, (c: MyCard) => boolean> = {
     all: () => true, active: (c) => c.status === "Aktif", passive: (c) => c.status === "Pasif",
