@@ -134,16 +134,16 @@ function verifyHmacSignature(req: Request, rawBody: Buffer): string | null {
 
 // ── Main handler (exported — NOT a Router, registered in app.ts with raw body) ─
 export async function handleRcWebhook(rawBody: Buffer, req: Request, res: Response): Promise<void> {
-  /* ── 1. Validate raw body is a Buffer ── */
-  if (!Buffer.isBuffer(rawBody)) {
-    logger.error("RC WEBHOOK: req.body is not a Buffer — check middleware order");
-    res.status(500).json({ error: "Internal configuration error" });
+  /* ── 1. Authorization header check (always first — reveals nothing about body state) ── */
+  if (!verifyAuthHeader(req)) {
+    res.status(401).json({ error: "Unauthorized" });
     return;
   }
 
-  /* ── 2. Authorization header check ── */
-  if (!verifyAuthHeader(req)) {
-    res.status(401).json({ error: "Unauthorized" });
+  /* ── 2. Validate raw body is a Buffer (middleware misconfiguration) ── */
+  if (!Buffer.isBuffer(rawBody)) {
+    logger.error("RC WEBHOOK: req.body is not a Buffer — check middleware order");
+    res.status(400).json({ error: "Invalid request body" });
     return;
   }
 

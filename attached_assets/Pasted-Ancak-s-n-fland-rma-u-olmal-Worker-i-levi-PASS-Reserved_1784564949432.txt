@@ -1,0 +1,159 @@
+Ancak sınıflandırma şu olmalı:
+
+Worker işlevi: PASS
+Reserved VM sürekliliği: BLOCKED — panelden seçilmedi
+Production secret’ları: BLOCKED
+RevenueCat IAP: BLOCKED
+Native cihaz testleri: BLOCKED
+Genel karar: NOT READY
+
+Önemli: RevenueCat webhook tokenı push bildirimleri için değil, abonelik durumunun backend’e aktarılması içindir.
+
+1. Reserved VM’i seç
+
+Replit’te:
+
+Publishing
+→ Deployment Type
+→ Reserved VM
+→ Web Server
+
+Run command:
+
+pnpm --filter @workspace/api-server run start
+
+Deployment sonrası /api/healthz üzerinden worker ve scheduler döngülerini yeniden doğrula. Development ortamındaki PASS’i production PASS olarak kopyalama.
+
+2. RevenueCat mobil anahtarlarını al
+
+RevenueCat:
+
+Project Settings
+→ API Keys
+→ App-specific public SDK keys
+
+İki ayrı anahtar almalısın:
+
+Apple App Store uygulamasının public SDK key’i
+Google Play uygulamasının public SDK key’i
+
+Test Store anahtarı olmamalı. RevenueCat hibrit uygulamalarda her platform için ayrı public anahtar kullanılmasını istiyor. RevenueCat SDK yapılandırması
+
+Değerleri bana veya Replit Agent sohbetine yazma.
+
+3. EAS Environment’a ekle
+
+Bu iki anahtarı yalnızca Replit Published Secrets’a koymak yetmez. Mobil uygulama EAS sunucusunda derlenirken değişkenlerin EAS environment içinde bulunması gerekir.
+
+Expo Dashboard:
+
+expo.dev
+→ CanYoldaşı projesi
+→ Project Settings
+→ Environment Variables
+→ Add Variable
+
+Ekle:
+
+EXPO_PUBLIC_REVENUECAT_IOS_API_KEY
+EXPO_PUBLIC_REVENUECAT_ANDROID_API_KEY
+
+Environment:
+
+development
+preview
+production
+
+En azından development ve production’a ekle.
+
+Visibility:
+
+Sensitive
+
+Bu anahtarlar uygulama bundle’ına gömülen public SDK anahtarlarıdır; “Sensitive” yalnızca dashboard/log görünürlüğünü azaltır, onları gerçek secret yapmaz.
+
+eas.json kontrolü:
+
+{
+  "build": {
+    "development": {
+      "developmentClient": true,
+      "environment": "development"
+    },
+    "preview": {
+      "environment": "preview"
+    },
+    "production": {
+      "environment": "production"
+    }
+  }
+}
+
+EAS cloud build, yerel .env dosyalarına güvenmemelidir. Expo EAS environment değişkenleri
+
+4. Webhook tokenını oluştur
+
+Bilgisayarında güçlü, rastgele bir değer oluştur. Örneğin PowerShell:
+
+-join ((1..64) | ForEach-Object { '{0:x}' -f (Get-Random -Maximum 16) })
+
+Bunu yalnız Replit’in backend Published App Secrets bölümüne ekle:
+
+REVENUECAT_WEBHOOK_AUTH_TOKEN
+
+Şuralara koyma:
+
+EXPO_PUBLIC_*
+Mobil .env
+GitHub
+Kod
+Rapor
+Replit Agent mesajı
+
+RevenueCat Dashboard’da:
+
+Integrations
+→ Webhooks
+→ Add configuration
+
+Webhook URL olarak projedeki gerçek endpoint’i kullan. Authorization header değeri backend’in beklediği formatla birebir aynı olmalı. RevenueCat ayrıca HMAC imzalamayı destekliyorsa etkinleştir. RevenueCat Webhooks
+
+5. Replit’e son secret doğrulama promptu
+REVENUECAT VE DEPLOYMENT SECRET DOĞRULAMASI
+
+Secret değerlerini hiçbir çıktıda gösterme.
+
+Kontrol et:
+
+1. Production Reserved VM deployment kullanılıyor mu?
+2. API run command doğru mu?
+3. Production /api/healthz:
+   - worker loopCount artıyor
+   - scheduler loopCount artıyor
+   - lastSuccessAt güncel
+   - status ok
+4. Mobil kod iOS’ta yalnız:
+   EXPO_PUBLIC_REVENUECAT_IOS_API_KEY
+   kullanıyor mu?
+5. Android’de yalnız:
+   EXPO_PUBLIC_REVENUECAT_ANDROID_API_KEY
+   kullanıyor mu?
+6. Test Store anahtarı release buildde bulunuyor mu?
+7. Anahtar yoksa Purchases.configure çağırmadan açıklayıcı hata veriliyor mu?
+8. Purchases.configure yalnız bir kez çalışıyor mu?
+9. REVENUECAT_WEBHOOK_AUTH_TOKEN yalnız backend’de mi?
+10. Mobil/Web bundle içinde webhook token bulunuyor mu?
+11. Webhook auth olmadan istek → 401
+12. Yanlış auth → 401
+13. Doğru auth + geçerli payload → 200
+14. Aynı webhook event ID iki kez → tek DB işlemi
+15. Webhook hızlı cevap veriyor ve ağır işlemi idempotent şekilde kuyruğa alıyor mu?
+
+Secret değerlerini loglama veya rapora yazma.
+
+Sonuçları PASS / FAIL / STATIC REVIEW / BLOCKED olarak raporla.
+
+Bunlar tamamlanınca sıradaki adım doğrudan:
+
+eas build --platform android --profile development
+eas build --platform ios --profile development
