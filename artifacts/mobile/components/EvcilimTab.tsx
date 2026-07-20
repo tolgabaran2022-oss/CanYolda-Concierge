@@ -3,7 +3,7 @@ import { EvcilimPremiumModal } from "@/app/evcilim-premium";
 import * as Haptics from "expo-haptics";
 import { Image } from "expo-image";
 import { LinearGradient } from "expo-linear-gradient";
-import { useFocusEffect, useRouter } from "expo-router";
+import { useFocusEffect, useLocalSearchParams, useRouter } from "expo-router";
 import React, { useCallback, useEffect, useRef, useState } from "react";
 import {
   ActivityIndicator,
@@ -1017,6 +1017,19 @@ export function EvcilimTab({ botPad }: { botPad: number }) {
   const [addingPet, setAddingPet]         = useState(false);
   const addingPetLockRef                  = useRef(false);
 
+  // Read navigation params — add.tsx sends openPremium="true" when it detects
+  // the user cannot add a second pet, so the modal opens automatically.
+  const { openPremium } = useLocalSearchParams<{ openPremium?: string }>();
+
+  // Open the premium modal when we arrive from add.tsx with openPremium="true".
+  // We do NOT call router.replace here — doing so remounts the component and
+  // resets premiumModalOpen to false before React can paint the modal.
+  // The param is cleared instead when the modal closes (see onClose below).
+  useEffect(() => {
+    if (openPremium !== "true") return;
+    setPremiumModalOpen(true);
+  }, [openPremium]);
+
   // Validate/initialize selectedPetId whenever pets list changes.
   // If the current selection still exists → keep it (this prevents
   // the dashboard jumping to a newly-added pet that gets prepended).
@@ -1223,7 +1236,14 @@ export function EvcilimTab({ botPad }: { botPad: number }) {
 
       <EvcilimPremiumModal
         visible={premiumModalOpen}
-        onClose={() => setPremiumModalOpen(false)}
+        onClose={() => {
+          setPremiumModalOpen(false);
+          // Clear the openPremium param so re-focus does not re-open the modal.
+          // Setting to "" (not undefined) is sufficient — the guard checks for "true".
+          if (openPremium === "true") {
+            router.setParams({ openPremium: "" } as Record<string, string>);
+          }
+        }}
         source="add_pet"
         returnTo="/evcilim/add"
       />

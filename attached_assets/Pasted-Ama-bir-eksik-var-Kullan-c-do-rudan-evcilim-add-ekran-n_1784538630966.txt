@@ -1,0 +1,130 @@
+Ama bir eksik var: Kullanıcı doğrudan /evcilim/add ekranına girerse veya kayıt sırasında 402 PET_PREMIUM_REQUIRED alırsa sadece geri gönderiliyor; Premium modal otomatik açılmıyor. Kullanıcının tekrar butona basması gerekiyor. Bunu da tamamlat:
+
+SON AKIŞ DÜZELTMESİ — PREMIUM MODAL OTOMATİK AÇILMALI
+
+Mevcut düzeltmede ana “Evcil Hayvan Ekle” butonunun stale-cache sorunu giderilmiş görünüyor. Ancak defensif akışta eksik davranış var.
+
+Şu anda:
+
+1. `/evcilim/add` gate kontrolünde `canAddPet === false` olunca yalnızca `router.back()` çalışıyor.
+2. POST `/api/pets` isteği `402 PET_PREMIUM_REQUIRED` döndürünce Alert sonrası yalnızca `router.back()` çalışıyor.
+
+Bu durumda kullanıcı Evcilim ekranına dönüyor fakat Premium modal otomatik açılmıyor. Kullanıcının yeniden “Evcil Hayvan Ekle” butonuna basması gerekiyor.
+
+İSTENEN DAVRANIŞ
+
+Ücretsiz kullanıcının zaten bir evcil hayvanı varsa, hangi yoldan tespit edilirse edilsin:
+
+- Form gösterilmemeli veya kayıt tamamlanmamalı.
+- Kullanıcı Evcilim ekranına dönmeli.
+- `EvcilimPremiumModal` otomatik olarak açılmalı.
+- Kullanıcı ikinci kez butona basmak zorunda kalmamalı.
+
+Bunu güvenilir bir navigation parametresiyle uygula.
+
+Örnek:
+
+```tsx
+router.replace({
+  pathname: "/evcilim",
+  params: {
+    openPremium: "true",
+    premiumSource: "add_second_pet",
+  },
+});
+
+EvcilimTab tarafında ilgili route parametresini dinle:
+
+useEffect(() => {
+  if (
+    params.openPremium === "true" &&
+    params.premiumSource === "add_second_pet"
+  ) {
+    setPremiumModalOpen(true);
+
+    // Aynı modalın her focus/render işleminde tekrar açılmasını önlemek için
+    // parametreyi tüketildikten sonra temizle.
+  }
+}, [params.openPremium, params.premiumSource]);
+
+Projede /evcilim gerçek route değilse mevcut Evcilim tab route’unu kullan. Route yapısını incelemeden tahmini pathname kullanma.
+
+PARAMETRE TEMİZLİĞİ
+
+Premium modal açıldıktan sonra openPremium parametresini temizle. Aksi hâlde:
+
+Modal kapatıldıktan sonra yeniden açılabilir.
+Tab focus olduğunda tekrar tetiklenebilir.
+Geri/ileri navigasyonda eski parametre kalabilir.
+
+Mevcut Expo Router mimarisine uygun olarak setParams, replace veya tek kullanımlık navigation state yöntemi uygula.
+
+GATE DAVRANIŞI
+
+app/evcilim/add.tsx açıldığında:
+
+Premium durumu yükleniyor
+→ Formu henüz gösterme, loading göster
+
+canAddPet = true
+→ Formu göster
+
+canAddPet = false
+→ Evcilim ekranına openPremium parametresiyle dön
+→ Premium modal otomatik açılsın
+
+API kontrolü başarısız
+→ Hata göster
+→ Formu varsayılan olarak açma
+
+402 DAVRANIŞI
+
+POST /api/pets şu cevabı döndürürse:
+
+402 PET_PREMIUM_REQUIRED
+
+Şunları yap:
+
+İkinci evcil hayvan kaydının oluşmadığını doğrula.
+Kullanıcıya kısa bir açıklama göster.
+Alert onaylandıktan sonra Evcilim ekranına dön.
+Premium modalı otomatik aç.
+Form verilerini mümkünse geçici state içinde koru; fakat Premium olmadan kayıt oluşturma.
+
+ANA BUTON AKIŞINI BOZMA
+
+Ana Evcilim ekranında:
+
+0 hayvan + ücretsiz → form
+1+ hayvan + ücretsiz → Premium modal
+1+ hayvan + Premium → form
+
+davranışı aynen korunmalı.
+
+refreshPetPremiumStatus(false) sonucunu beklemeden eski context değerine göre navigation yapma. Kararı fonksiyonun döndürdüğü güncel sonuç üzerinden ver.
+
+GERÇEK TEST
+
+STATIC REVIEW ile yetinme. Web uygulamasını çalıştırarak test et:
+
+İlk hayvanı oluştur.
+Evcilim ekranına dön.
+“Evcil Hayvan Ekle” butonuna bas.
+Form yerine Premium modalın açıldığını görsel olarak doğrula.
+Modalı kapat ve tekrar dene.
+/evcilim/add route’una doğrudan git.
+Evcilim ekranına dönüldüğünü ve Premium modalın otomatik açıldığını doğrula.
+Kontrollü şekilde 402 PET_PREMIUM_REQUIRED oluştur.
+Alert sonrasında Premium modalın otomatik açıldığını doğrula.
+Modalın parametre temizlendikten sonra kendiliğinden tekrar açılmadığını doğrula.
+Network üzerinde güncel /api/pet-premium/status cevabını kontrol et.
+Veritabanında ikinci hayvan kaydının Premium olmadan oluşmadığını doğrula.
+
+RAPORLAMA KURALI
+
+Gerçek UI aksiyonu ve sonucu görülmeden PASS verme.
+TypeScript PASS yalnızca TypeScript derlemesinin başarılı olduğunu gösterir; özellik testinin PASS olduğu anlamına gelmez.
+Web testini Android/iOS PASS olarak raporlama.
+Her senaryoyu PASS, FAIL, STATIC REVIEW, BLOCKED veya NOT TESTED şeklinde ayrı raporla.
+
+Şu anki düzeltme **mantıksal olarak doğru ama yalnızca kod incelemesi yapılmış**. Özellikle “ilk hayvanı ekle → geri dön → ikinci kez ekle” akışını Web’de gerçekten çalıştırmadan tamamlandı saymayalım.

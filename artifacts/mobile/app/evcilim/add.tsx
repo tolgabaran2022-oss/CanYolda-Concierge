@@ -197,14 +197,17 @@ export default function AddPetScreen() {
         if (status.canAddPet) {
           setIsGateChecking(false);
         } else {
-          // Cannot add another pet — go back; handleAddPet in EvcilimTab
-          // is responsible for showing the premium modal before navigating here.
-          router.back();
+          // Cannot add another pet — return to Evcilim tab and auto-open
+          // the premium modal via the openPremium navigation param.
+          router.replace({
+            pathname: "/pets",
+            params: { openPremium: "true" },
+          } as Parameters<typeof router.replace>[0]);
         }
       })
       .catch(() => {
-        // Fail closed: cannot verify access — go back rather than show the form
-        router.back();
+        // Fail closed: cannot verify — send back to Evcilim without opening form
+        router.replace("/pets" as Parameters<typeof router.replace>[0]);
       });
   }, [router]);
 
@@ -293,13 +296,19 @@ export default function AddPetScreen() {
       router.back();
     } catch (err: unknown) {
       if (err instanceof Error && (err as Error & { code?: string }).code === "PET_PREMIUM_REQUIRED") {
-        // Server-side gate blocked the creation — go back so the Evcilim tab
-        // can show the premium modal on the next button press.
+        // Server-side gate blocked the creation — return to Evcilim and
+        // auto-open the premium modal via the openPremium navigation param.
         Haptics.notificationAsync(Haptics.NotificationFeedbackType.Warning);
         Alert.alert(
           "Premium Gerekli",
           "İkinci evcil hayvan için Evcilim Premium gereklidir.",
-          [{ text: "Tamam", onPress: () => router.back() }]
+          [{
+            text: "Tamam",
+            onPress: () => router.replace({
+              pathname: "/pets",
+              params: { openPremium: "true" },
+            } as Parameters<typeof router.replace>[0]),
+          }]
         );
         return;
       }
