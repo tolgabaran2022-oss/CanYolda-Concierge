@@ -1,6 +1,12 @@
 import { Icon } from "@/components/Icon";
 import { usePetPremium } from "@/contexts/PetPremiumContext";
-import { fetchPetPremiumOfferings, purchasePetPremium, restorePurchases } from "@/services/revenueCat";
+import {
+  fetchPetPremiumOfferings,
+  getPetPremiumCustomerInfo,
+  purchasePetPremium,
+  restorePurchases,
+  PET_PREMIUM_ENTITLEMENT_ID,
+} from "@/services/revenueCat";
 import { LinearGradient } from "expo-linear-gradient";
 import { useLocalSearchParams, useRouter } from "expo-router";
 import React, { useEffect, useRef, useState } from "react";
@@ -20,6 +26,30 @@ import { SafeAreaView } from "react-native-safe-area-context";
 import type { PurchasesPackage } from "react-native-purchases";
 
 const PURPLE = "#7C45D9";
+
+/** Maps RC package identifier to user-friendly Turkish presentation. */
+function getPackagePresentation(pkg: PurchasesPackage): { title: string; description: string } {
+  switch (pkg.identifier) {
+    case "$rc_monthly":
+      return { title: "Evcilim Premium Aylık", description: "Her ay yenilenir" };
+    case "$rc_annual":
+      return { title: "Evcilim Premium Yıllık", description: "Her yıl yenilenir" };
+    default:
+      return {
+        title: pkg.product.title || pkg.identifier,
+        description: pkg.product.description || "Evcilim Premium erişimi",
+      };
+  }
+}
+
+/** Maps a thrown error message to a user-facing Turkish string. */
+function packageLoadErrorMessage(err: unknown): string {
+  const msg = err instanceof Error ? err.message : "";
+  if (msg.startsWith("offering_not_found:")) return "Evcilim Premium paketleri yapılandırılmamış.";
+  if (msg.startsWith("no_packages:")) return "Evcilim Premium paketleri henüz hazır değil.";
+  if (msg.includes("not yet initialized") || msg.includes("SDK not available")) return "Satın alma sistemi başlatılamadı.";
+  return "Paketler şu anda yüklenemiyor. Lütfen tekrar dene.";
+}
 
 const features: [string, string, string?][] = [
   ["paw", "İkinci ve sonraki evcil hayvanlar", "İlk evcil hayvanın her zaman ücretsiz."],
@@ -52,22 +82,23 @@ function PremiumInner({
   const [packages, setPackages] = useState<PurchasesPackage[]>([]);
   const [selected, setSelected] = useState<PurchasesPackage | null>(null);
   const [loading, setLoading] = useState(Platform.OS !== "web");
-  const [loadError, setLoadError] = useState(false);
+  const [loadError, setLoadError] = useState<string | null>(null);
   const [buying, setBuying] = useState(false);
 
   const loadOfferings = () => {
     if (Platform.OS === "web") return;
     setLoading(true);
-    setLoadError(false);
+    setLoadError(null);
     fetchPetPremiumOfferings()
       .then((items) => {
         setPackages(items);
-        const annual = items.find((p) => /annual|year/i.test(p.identifier));
+        // Default to $rc_annual (exact match); fall back to first item.
+        const annual = items.find((p) => p.identifier === "$rc_annual");
         setSelected(annual ?? items[0] ?? null);
       })
-      .catch(() => {
+      .catch((err: unknown) => {
         setPackages([]);
-        setLoadError(true);
+        setLoadError(packageLoadErrorMessage(err));
       })
       .finally(() => setLoading(false));
   };
@@ -78,7 +109,27 @@ function PremiumInner({
     if (!selected || buying) return;
     setBuying(true);
     try {
-      await purchasePetPremium(selected);
+      // Step 1: Purchase via RevenueCat
+      const purchaseResult = await purchasePetPremium(selected);
+
+      // Step 2: Verify entitlement is active in RevenueCat CustomerInfo
+      const activeEntitlement = purchaseResult.customerInfo.entitlements.active[PET_PREMIUM_ENTITLEMENT_ID];
+      if (!activeEntitlement) {
+        if (__DEV__) {
+          console.warn(
+            "[PetPremium] Entitlement aktifleşmedi — RC dashboard'da '" + PET_PREMIUM_ENTITLEMENT_ID +
+            "' entitlement oluşturulmalı ve Monthly/Yearly ürünleri bağlanmalıdır.",
+            { activeEntitlements: Object.keys(purchaseResult.customerInfo.entitlements.active) }
+          );
+        }
+        Alert.alert(
+          "Satın Alma Doğrulanamadı",
+          "Ödemen alındı ancak Evcilim Premium erişimi aktifleşmedi. RevenueCat'te '" + PET_PREMIUM_ENTITLEMENT_ID + "' entitlement yapılandırılmalı ve ürünlere bağlanmalıdır."
+        );
+        return;
+      }
+
+      // Step 3: Verify via backend (triggers webhook / manual check)
       const verifiedStatus = await refresh(true);
       if (verifiedStatus?.isPremium !== true) {
         Alert.alert(
@@ -87,6 +138,8 @@ function PremiumInner({
         );
         return;
       }
+
+      // Step 4: Navigate to destination
       const destination = returnTo ? decodeURIComponent(returnTo) : null;
       Alert.alert(
         "Evcilim Premium Aktif",
@@ -109,10 +162,37 @@ function PremiumInner({
 
   async function restore() {
     try {
-      await restorePurchases();
-      await refresh(true);
-      Alert.alert("Kontrol Tamamlandı", "Satın alımların güncellendi.");
-    } catch { Alert.alert("Geri Yüklenemedi", "Lütfen daha sonra tekrar deneyin."); }
+      // Step 1: Restore from App Store / Google Play
+      const customerInfo = await restorePurchases();
+      if (!customerInfo) {
+        Alert.alert("Geri Yüklenemedi", "Satın alımlar kontrol edilemedi.");
+        return;
+      }
+
+      // Step 2: Check RC entitlement
+      const activeEntitlement = customerInfo.entitlements.active[PET_PREMIUM_ENTITLEMENT_ID];
+      if (!activeEntitlement) {
+        Alert.alert(
+          "Aktif Abonelik Bulunamadı",
+          "Geri yüklenecek aktif bir Evcilim Premium aboneliği bulunamadı."
+        );
+        return;
+      }
+
+      // Step 3: Verify with backend
+      const verifiedStatus = await refresh(true);
+      if (verifiedStatus?.isPremium !== true) {
+        Alert.alert(
+          "Satın Alma Doğrulanamadı",
+          "Abonelik mağazada bulundu ancak Premium erişimi henüz doğrulanamadı. Lütfen daha sonra tekrar deneyin."
+        );
+        return;
+      }
+
+      Alert.alert("Premium Aktif", "Evcilim Premium aboneliğin başarıyla geri yüklendi.");
+    } catch {
+      Alert.alert("Geri Yüklenemedi", "Lütfen daha sonra tekrar deneyin.");
+    }
   }
 
   const heroTitle = isSecondPet ? t("evcilimPremium.addPetTitle") : t("evcilimPremium.defaultTitle");
@@ -151,9 +231,9 @@ function PremiumInner({
         </View>
       ) : loading ? (
         <ActivityIndicator color={PURPLE} style={{ marginVertical: 16 }} />
-      ) : loadError ? (
+      ) : loadError !== null ? (
         <View style={s.notice}>
-          <Text style={s.noticeText}>Paketler şu anda yüklenemiyor.</Text>
+          <Text style={s.noticeText}>{loadError}</Text>
           <Pressable onPress={loadOfferings} style={s.retryBtn}>
             <Icon name="refresh-outline" size={15} color={PURPLE} />
             <Text style={s.retryTxt}>Tekrar Dene</Text>
@@ -166,6 +246,7 @@ function PremiumInner({
       ) : (
         packages.map((pkg) => {
           const active = selected?.identifier === pkg.identifier;
+          const { title, description } = getPackagePresentation(pkg);
           return (
             <Pressable
               key={pkg.identifier}
@@ -176,8 +257,8 @@ function PremiumInner({
                 {active && <Icon name="checkmark" size={14} color="#FFF" />}
               </View>
               <View style={{ flex: 1 }}>
-                <Text style={s.packageName}>{pkg.product.title || pkg.identifier}</Text>
-                <Text style={s.packageSub}>{pkg.product.description || "Evcilim Premium erişimi"}</Text>
+                <Text style={s.packageName}>{title}</Text>
+                <Text style={s.packageSub}>{description}</Text>
               </View>
               <Text style={s.price}>{pkg.product.priceString}</Text>
             </Pressable>
@@ -186,9 +267,9 @@ function PremiumInner({
       )}
 
       <Pressable
-        disabled={!selected || buying || Platform.OS === "web" || loadError}
+        disabled={!selected || buying || Platform.OS === "web" || loadError !== null}
         onPress={buy}
-        style={[s.buy, (!selected || buying || Platform.OS === "web" || loadError) && { opacity: 0.45 }]}
+        style={[s.buy, (!selected || buying || Platform.OS === "web" || loadError !== null) && { opacity: 0.45 }]}
       >
         <LinearGradient colors={["#9B55ED", PURPLE]} style={s.buyInner}>
           {buying ? <ActivityIndicator color="#FFF" /> : <Text style={s.buyText}>Premium'a Geç</Text>}

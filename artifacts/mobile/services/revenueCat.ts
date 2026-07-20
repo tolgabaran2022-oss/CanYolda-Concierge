@@ -178,8 +178,15 @@ export function isRevenueCatInitialized(): boolean {
 
 /** Expected offering identifier for CanYoldaşı boost feature */
 const EXPECTED_OFFERING_ID = "canyoldasi_boost";
-export const PET_PREMIUM_OFFERING_ID = "evcilim_premium";
-export const PET_PREMIUM_ENTITLEMENT_ID = "evcilim_premium";
+
+/** Evcilim Premium dedicated Offering — do NOT use offerings.current (canyoldasi_boost may be current) */
+export const PET_PREMIUM_OFFERING_ID = "canyoldasi_pet_premium";
+
+/** RevenueCat entitlement identifier for Evcilim Premium */
+export const PET_PREMIUM_ENTITLEMENT_ID = "pet_premium";
+
+/** The only package identifiers accepted for Evcilim Premium. */
+const SUPPORTED_PET_PREMIUM_PACKAGE_IDS = new Set(["$rc_monthly", "$rc_annual"]);
 
 /**
  * Fetch boost packages from RevenueCat.
@@ -214,16 +221,59 @@ export async function fetchOfferings(): Promise<PurchasesPackage[]> {
   return offering.availablePackages as PurchasesPackage[];
 }
 
-/** Fetch the subscription packages dedicated to Evcilim Premium. */
+/**
+ * Fetch Evcilim Premium subscription packages from RevenueCat.
+ *
+ * Always uses offerings.all["canyoldasi_pet_premium"] — never offerings.current,
+ * because canyoldasi_boost may be set as current for the boost feature.
+ *
+ * Only $rc_monthly and $rc_annual packages are returned, sorted monthly-first.
+ * Throws descriptive errors so the UI can show specific messages per failure type.
+ */
 export async function fetchPetPremiumOfferings(): Promise<PurchasesPackage[]> {
   if (Platform.OS === "web") return [];
+
   const sdk = await getPurchases();
-  if (!sdk) throw new Error("RevenueCat SDK unavailable");
+  if (!sdk) throw new Error("SDK not available");
   if (!_initialized) throw new Error("RevenueCat SDK not yet initialized");
+
   const offerings = await sdk.Purchases.getOfferings();
+
+  if (__DEV__) {
+    console.log("[RevenueCat] fetchPetPremiumOfferings — available offering IDs:", Object.keys(offerings.all));
+  }
+
   const offering = offerings.all[PET_PREMIUM_OFFERING_ID] ?? null;
-  if (!offering) throw new Error("Evcilim Premium offering unavailable");
-  return offering.availablePackages as PurchasesPackage[];
+
+  if (!offering) {
+    if (__DEV__) {
+      console.warn("[PetPremium] Offering yüklenemedi", {
+        requestedOffering: PET_PREMIUM_OFFERING_ID,
+        availableOfferingIds: Object.keys(offerings.all),
+      });
+    }
+    throw new Error(`offering_not_found:${PET_PREMIUM_OFFERING_ID}`);
+  }
+
+  const packages = (offering.availablePackages as PurchasesPackage[])
+    .filter((pkg) => SUPPORTED_PET_PREMIUM_PACKAGE_IDS.has(pkg.identifier))
+    .sort((a, b) => {
+      if (a.identifier === "$rc_monthly") return -1;
+      if (b.identifier === "$rc_monthly") return 1;
+      return 0;
+    });
+
+  if (packages.length === 0) {
+    if (__DEV__) {
+      console.warn("[PetPremium] Offering'de desteklenen paket yok", {
+        offeringId: PET_PREMIUM_OFFERING_ID,
+        allPackageIds: (offering.availablePackages as PurchasesPackage[]).map((p) => p.identifier),
+      });
+    }
+    throw new Error(`no_packages:${PET_PREMIUM_OFFERING_ID}`);
+  }
+
+  return packages;
 }
 
 export async function purchasePetPremium(pkg: PurchasesPackage) {

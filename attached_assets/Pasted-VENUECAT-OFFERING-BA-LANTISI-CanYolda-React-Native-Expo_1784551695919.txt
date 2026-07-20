@@ -1,0 +1,443 @@
+VENUECAT OFFERING BAĞLANTISI
+
+CanYoldaşı React Native/Expo uygulamasındaki Evcilim Premium satın alma ekranını RevenueCat’te oluşturulan gerçek Offering’e bağla.
+
+REVENUECAT YAPISI
+
+Offering:
+
+```text
+Identifier: canyoldasi_pet_premium
+Display Name: Evcilim Premium
+
+Offering içindeki paketler:
+
+Package: $rc_monthly
+Product: Monthly
+Description: Evcilim Premium aylık abonelik
+Package: $rc_annual
+Product: Yearly
+Description: Evcilim Premium yıllık abonelik
+
+Mevcut ilan öne çıkarma Offering’i:
+
+canyoldasi_boost
+
+Bu Offering’e ve ilan öne çıkarma satın alma sistemine kesinlikle dokunma.
+
+AMAÇ
+
+artifacts/mobile/app/evcilim-premium.tsx içindeki “Paketini Seç” bölümünde RevenueCat’in:
+
+canyoldasi_pet_premium
+
+Offering’ine ait aylık ve yıllık paketleri göster.
+
+Uygulamanın global/current Offering değerine güvenme. Çünkü canyoldasi_boost başka bir özellik için kullanılmaktadır.
+
+Offering’i doğrudan identifier ile seç:
+
+const offerings = await Purchases.getOfferings();
+
+const petPremiumOffering =
+  offerings.all["canyoldasi_pet_premium"];
+
+offerings.current kullanarak Evcilim Premium paketlerini getirme.
+
+İNCELENECEK DOSYALAR
+
+Önce aşağıdaki dosyaları bul ve mevcut yapıyı incele:
+
+artifacts/mobile/services/revenueCat.ts
+artifacts/mobile/app/evcilim-premium.tsx
+RevenueCat Purchases.configure(...) çağrısının bulunduğu dosya
+RevenueCat API key/config dosyası
+PetPremiumContext.tsx
+Premium status backend endpoint’i
+RevenueCat webhook/entitlement doğrulama kodu
+İlan öne çıkarma satın alma servisleri
+
+Var olan satın alma sistemini yeniden yazma. Yalnızca Evcilim Premium Offering seçimini ve doğrulamasını düzelt.
+
+REVENUECAT SERVİSİ
+
+fetchPetPremiumOfferings() fonksiyonunu şu mantıkla uygula:
+
+import Purchases, {
+  type PurchasesPackage,
+} from "react-native-purchases";
+
+const PET_PREMIUM_OFFERING_ID =
+  "canyoldasi_pet_premium";
+
+export async function fetchPetPremiumOfferings():
+  Promise<PurchasesPackage[]> {
+
+  const offerings = await Purchases.getOfferings();
+
+  const offering =
+    offerings.all[PET_PREMIUM_OFFERING_ID];
+
+  if (!offering) {
+    throw new Error(
+      `RevenueCat offering bulunamadı: ${PET_PREMIUM_OFFERING_ID}`
+    );
+  }
+
+  const packages = offering.availablePackages;
+
+  if (!packages || packages.length === 0) {
+    throw new Error(
+      `RevenueCat offering içinde paket bulunamadı: ${PET_PREMIUM_OFFERING_ID}`
+    );
+  }
+
+  return packages;
+}
+
+Projede RevenueCat için mevcut wrapper, loglama veya hata sınıfları varsa mevcut mimariye uygun şekilde düzenle.
+
+PAKET FİLTRELEME VE SIRALAMA
+
+Evcilim Premium ekranında yalnızca şu paketleri kabul et:
+
+$rc_monthly
+$rc_annual
+
+Bazı SDK cevaplarında identifier farklı biçimde dönebileceği için gerçek response’u loglayıp kontrol et.
+
+Güvenli filtre:
+
+const supportedIds = new Set([
+  "$rc_monthly",
+  "$rc_annual",
+]);
+
+const packages = offering.availablePackages
+  .filter((pkg) => supportedIds.has(pkg.identifier))
+  .sort((a, b) => {
+    if (a.identifier === "$rc_monthly") return -1;
+    if (b.identifier === "$rc_monthly") return 1;
+    return 0;
+  });
+
+Filtre sonucunda paket yoksa sessizce boş liste döndürme; anlamlı hata üret.
+
+UI GÖSTERİMİ
+
+evcilim-premium.tsx içinde paketleri gerçek RevenueCat verileriyle göster:
+
+Aylık paket:
+
+Başlık: Evcilim Premium Aylık
+Alt bilgi: Her ay yenilenir
+Fiyat: pkg.product.priceString
+
+Yıllık paket:
+
+Başlık: Evcilim Premium Yıllık
+Alt bilgi: Her yıl yenilenir
+Fiyat: pkg.product.priceString
+
+Başlık ve süreyi yalnızca RevenueCat ürün başlığına güvenerek oluşturma. Package identifier’a göre kullanıcı dostu Türkçe metin göster:
+
+function getPackagePresentation(
+  pkg: PurchasesPackage
+) {
+  switch (pkg.identifier) {
+    case "$rc_monthly":
+      return {
+        title: "Evcilim Premium Aylık",
+        description: "Her ay yenilenir",
+      };
+
+    case "$rc_annual":
+      return {
+        title: "Evcilim Premium Yıllık",
+        description: "Her yıl yenilenir",
+      };
+
+    default:
+      return {
+        title: pkg.product.title,
+        description:
+          pkg.product.description ||
+          "Evcilim Premium erişimi",
+      };
+  }
+}
+
+Fiyat kesinlikle RevenueCat’ten gelsin:
+
+pkg.product.priceString
+
+Sahte veya sabit fiyat yazma.
+
+Varsayılan olarak yıllık paketi seç:
+
+const annual =
+  items.find(
+    (pkg) => pkg.identifier === "$rc_annual"
+  );
+
+setSelected(annual ?? items[0] ?? null);
+
+SATIN ALMA
+
+Kullanıcı “Premium’a Geç” butonuna bastığında seçili PurchasesPackage ile mevcut satın alma servisini çağır:
+
+await Purchases.purchasePackage(selectedPackage);
+
+Mevcut purchasePetPremium(selected) wrapper’ı doğru çalışıyorsa onu koru.
+
+Satın alma tamamlandığında yalnızca client cevabına güvenme.
+
+Şu sırayı uygula:
+
+1. RevenueCat purchasePackage başarılı
+2. RevenueCat CustomerInfo alınır
+3. Beklenen entitlement aktifliği kontrol edilir
+4. Backend Premium refresh endpoint’i çağrılır
+5. Backend’den isPremium === true doğrulanır
+6. Modal kapatılır
+7. Kullanıcı geldiği özelliğe yönlendirilir
+
+ENTITLEMENT
+
+Önce RevenueCat dashboard veya mevcut koddan gerçek entitlement identifier’ını tespit et.
+
+Beklenen identifier:
+
+pet_premium
+
+Ancak dashboard/kod farklı bir gerçek identifier kullanıyorsa bunu raporla ve tek bir sabitte standartlaştır.
+
+Örnek:
+
+const PET_PREMIUM_ENTITLEMENT_ID =
+  "pet_premium";
+
+const customerInfo =
+  await Purchases.getCustomerInfo();
+
+const activeEntitlement =
+  customerInfo.entitlements.active[
+    PET_PREMIUM_ENTITLEMENT_ID
+  ];
+
+if (!activeEntitlement) {
+  throw new Error(
+    "Evcilim Premium entitlement aktifleşmedi."
+  );
+}
+
+Entitlement henüz RevenueCat’te tanımlı veya ürünlere bağlı değilse kodla bu eksikliği gizleme. Açıklayıcı hata üret ve raporla:
+
+RevenueCat’te pet_premium entitlement oluşturulmalı ve Monthly/Yearly ürünleri bu entitlement’a bağlanmalıdır.
+
+PREMIUM CONTEXT VE BACKEND DOĞRULAMASI
+
+Satın alma sonrası:
+
+const verifiedStatus =
+  await refreshPetPremiumStatus(true);
+
+if (verifiedStatus?.isPremium !== true) {
+  Alert.alert(
+    "Satın Alma Doğrulanamadı",
+    "Satın alma tamamlandı ancak Premium erişimi henüz doğrulanamadı. Satın alımları geri yüklemeyi deneyebilirsin."
+  );
+  return;
+}
+
+Backend’in RevenueCat kullanıcı kimliğiyle uygulama kullanıcı kimliğini doğru eşleştirdiğini kontrol et:
+
+RevenueCat App User ID
+=
+uygulamadaki authenticated user ID
+
+Anonymous RevenueCat kullanıcı ile satın alma yapıp backend’de farklı kullanıcı arama hatası oluşmamalı.
+
+Kullanıcı giriş yaptığında gerekli ise:
+
+await Purchases.logIn(authenticatedUserId);
+
+çalıştırılmalı.
+
+Çıkışta mevcut mimariye uygun olarak:
+
+await Purchases.logOut();
+
+kullanılmalı.
+
+Mevcut auth/RevenueCat kullanıcı eşlemesini incelemeden körü körüne yeni login/logout çağrısı ekleme.
+
+RESTORE PURCHASES
+
+“Satın Alımları Geri Yükle” işleminde:
+
+1. Purchases.restorePurchases()
+2. CustomerInfo entitlement kontrolü
+3. Backend Premium refresh
+4. isPremium doğrulaması
+5. UI durumunun yenilenmesi
+
+uygula.
+
+Restore sonrası gerçekten Premium aktif değilse “Satın alımların güncellendi” gibi yanıltıcı başarı mesajı gösterme.
+
+WEB DAVRANIŞI
+
+RevenueCat native satın alma paketlerini Expo Web üzerinde gerçek satın alma paketi gibi göstermeye çalışma.
+
+Web’de mevcut açıklama korunabilir:
+
+Premium satın alma işlemi iOS veya Android uygulamasından yapılabilir.
+
+Web testini native satın alma testi olarak raporlama.
+
+EXPO GO UYARISI
+
+RevenueCat native satın alma akışının Expo Go’da tam olarak test edilemeyeceğini kabul et.
+
+Gerçek test için:
+
+Expo development build
+TestFlight
+Internal testing build
+Gerçek/sandbox mağaza hesabı
+
+kullan.
+
+Expo Go testini iOS veya Android satın alma PASS sonucu olarak raporlama.
+
+HATA AYRIŞTIRMA
+
+Bütün hataları tek bir “Paketler yüklenemiyor” mesajına dönüştürme.
+
+Development modunda güvenli loglar ekle:
+
+if (__DEV__) {
+  console.warn("[PetPremium] Offering yüklenemedi", {
+    requestedOffering:
+      PET_PREMIUM_OFFERING_ID,
+    availableOfferingIds:
+      Object.keys(offerings.all),
+  });
+}
+
+API anahtarlarını, receipt verisini veya kullanıcıya ait hassas verileri loglama.
+
+Kullanıcıya hata tipine göre mesaj göster:
+
+Offering bulunamadı
+→ Evcilim Premium paketleri yapılandırılmamış.
+
+Offering var ama paket yok
+→ Evcilim Premium paketleri henüz hazır değil.
+
+RevenueCat bağlantı hatası
+→ Paketler şu anda yüklenemiyor. Lütfen tekrar dene.
+
+SDK yapılandırılmamış
+→ Satın alma sistemi başlatılamadı.
+
+BOOST SİSTEMİNİ KORU
+
+Aşağıdaki sisteme dokunma:
+
+Offering: canyoldasi_boost
+Paketler:
+- 1 günlük öne çıkar
+- 3 günlük öne çıkar
+- 7 günlük öne çıkar
+
+Evcilim Premium fonksiyonu:
+
+canyoldasi_pet_premium
+
+Offering’ini kullanmalı.
+
+İlan öne çıkarma fonksiyonu:
+
+canyoldasi_boost
+
+Offering’ini kullanmaya devam etmeli.
+
+offerings.current kullanarak iki sistemi birbirine bağlama.
+
+ENV VE API KEY KONTROLÜ
+
+RevenueCat yapılandırmasında:
+
+iOS için iOS public SDK key
+Android için Android public SDK key
+
+kullanıldığını doğrula.
+
+Secret API key’i mobil uygulamaya koyma.
+
+API key eksikse sessizce devam etme; development logunda platform ve eksik yapılandırmayı belirt. Gerçek anahtar değerini loglama.
+
+TYPESCRIPT VE REGRESYON
+
+Şunları çalıştır:
+
+TypeScript typecheck
+Lint
+Mevcut testler
+
+Şunları bozma:
+
+İkinci hayvan Premium modalı
+Belgeler Premium modalı
+İlaçlar Premium modalı
+AI Hayvan Asistanı Premium modalı
+Satın alma sonrası returnTo
+İlan öne çıkarma paketleri
+RevenueCat kullanıcı eşlemesi
+Satın alımları geri yükleme
+
+TEST SENARYOLARI
+
+Native development build açılır.
+Evcilim Premium modalı açılır.
+RevenueCat canyoldasi_pet_premium Offering’i bulunur.
+$rc_monthly paketi görünür.
+$rc_annual paketi görünür.
+Aylık ve yıllık fiyat mağazadan gelir.
+Yıllık paket varsayılan seçilir.
+Paket seçimi değiştirilebilir.
+Satın alma iptal edilince modal açık kalır.
+Satın alma başarılı olunca pet_premium entitlement aktifleşir.
+Backend isPremium: true döndürür.
+Modal doğru returnTo hedefine gider.
+Restore işlemi aktif entitlement’ı geri getirir.
+canyoldasi_boost paketleri hâlâ ilan öne çıkarma ekranında görünür.
+Web sonucu native PASS olarak işaretlenmez.
+
+RAPORLAMA KURALI
+
+Yalnızca kod incelemesi yapılan kontrol:
+
+STATIC REVIEW
+
+Uygulama çalıştırılamıyorsa:
+
+BLOCKED
+
+Gerçek native build, kullanıcı aksiyonu, mağaza sandbox sonucu, entitlement ve backend doğrulaması olmadan satın alma testine PASS verme.
+
+İşlem sonunda raporla:
+
+Değiştirilen dosyalar
+Kullanılan Offering identifier
+Bulunan paket identifier’ları
+Kullanılan entitlement identifier
+RevenueCat App User ID eşleme yöntemi
+Backend Premium doğrulama yöntemi
+Boost sisteminin korunma durumu
+TypeScript sonucu
+iOS, Android ve Web test sonuçları ayrı ayrı
+
+En kritik nokta: Replit, Evcilim Premium için `offerings.current` değil doğrudan `offerings.all["canyoldasi_pet_premium"]` kullanmalı. Böylece ilan öne çıkarma Offering’iyle karışmaz
