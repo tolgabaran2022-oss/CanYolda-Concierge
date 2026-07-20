@@ -40,6 +40,14 @@ description: Push notification architecture for CanYoldaşı — packages, DB ta
 - "Abonelik" section: platform-aware link (iOS → apps.apple.com/account/subscriptions, Android → play.google.com, Web → Alert)
 - "Bildirimler" section: 5 Switch toggles backed by GET/PATCH /api/push-tokens/preferences; sub-toggles dim when generalEnabled=false
 
+## Outbox Pattern (notification_events table)
+
+All push delivery now uses a transactional outbox — routes call `enqueueNotification()` (DB INSERT, idempotent via event_key UNIQUE) instead of fire-and-forget. In-process worker polls every 10s, retries with exponential backoff (30s→5min→20min), max 3 attempts. Logs `{eventId, eventType, recipientId, attempt, errorCode}` — never logs secrets.
+
+Reminder scheduler: in-process 5min setInterval, Turkey timezone (UTC+3 fixed), 15min window, covers petReminders/petVaccinations/petAppointments/petMedications. Idempotency key: `{type}:{id}:{date}:{time}`.
+
+**Why:** Node.js persistent server is NOT serverless — event loop continues after res.json(). But explicit await + logging is still better than .catch(()=>{}) which silently drops errors.
+
 ## expo-device Metro ENOENT
 Installing expo-device@57 creates a `_tmp_NNNNN` dir that Metro watches; after install the dir may not exist. Fix: `mkdir -p <missing_path>` then restart the expo workflow.
 

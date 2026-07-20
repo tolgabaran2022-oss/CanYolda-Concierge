@@ -1,7 +1,7 @@
 import { Router } from "express";
 import { and, desc, eq, gt, isNull, or, sql } from "drizzle-orm";
 import { db, pool, conversations, messages } from "@workspace/db";
-import { sendPushNotification } from "../lib/pushService.js";
+import { enqueueNotification } from "../lib/notificationWorker.js";
 
 import { extractUserId } from "../lib/jwtAuth.js";
 
@@ -288,15 +288,24 @@ router.post("/conversations/:id/messages", async (req, res) => {
       createdAt:      inserted.createdAt?.toISOString() ?? new Date().toISOString(),
     });
 
-    /* ── Push notification to the other participant (fire-and-forget) ── */
+    /* ── Enqueue push notification to recipient (outbox — no fire-and-forget) ── */
     const receiverId = conv.userOne === myId ? conv.userTwo : conv.userOne;
     const preview    = inserted.imageUrl ? "📷 Fotoğraf" : (message?.trim().slice(0, 80) ?? "");
-    sendPushNotification(receiverId, {
-      type:     "message",
-      entityId: req.params.id,
-      title:    "Yeni mesaj",
-      body:     preview || "Yeni bir mesaj aldınız.",
-    }).catch(() => {/* non-fatal */});
+    try {
+      await enqueueNotification({
+        eventKey:        `message:${inserted.id}`,
+        eventType:       "message",
+        recipientUserId: receiverId,
+        entityId:        req.params.id,
+        title:           "Yeni mesaj",
+        body:            preview || "Yeni bir mesaj aldınız.",
+      });
+    } catch (enqErr) {
+      req.log.error(
+        { err: enqErr, eventType: "message", recipientId: receiverId },
+        "Failed to enqueue push notification — message delivered but push skipped",
+      );
+    }
   } catch (err) {
     req.log.error(err);
     res.status(500).json({ error: "server error" });

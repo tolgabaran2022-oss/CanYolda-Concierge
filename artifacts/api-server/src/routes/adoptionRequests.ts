@@ -3,7 +3,7 @@ import { and, desc, eq, ne } from "drizzle-orm";
 import { db, adoptionRequests, adoptionListings, notifications } from "@workspace/db";
 import { logger } from "../lib/logger.js";
 import { extractUserId } from "../lib/jwtAuth.js";
-import { sendPushNotification } from "../lib/pushService.js";
+import { enqueueNotification } from "../lib/notificationWorker.js";
 
 const router = Router();
 
@@ -75,14 +75,23 @@ router.post("/adoption-requests", async (req, res) => {
 
     res.status(201).json(request);
 
-    /* ── Push notification to listing owner (fire-and-forget) ── */
+    /* ── Enqueue push notification to listing owner (outbox) ── */
     if (listing.userId) {
-      sendPushNotification(listing.userId, {
-        type:     "adoption_request",
-        entityId: request.id,
-        title:    "Yeni sahiplenme talebi",
-        body:     `${String(requesterName ?? "Biri")}, ${listing.petName} için talep gönderdi.`,
-      }).catch(() => {});
+      try {
+        await enqueueNotification({
+          eventKey:        `adoption_request:${request.id}`,
+          eventType:       "adoption_request",
+          recipientUserId: listing.userId,
+          entityId:        request.id,
+          title:           "Yeni sahiplenme talebi",
+          body:            `${String(requesterName ?? "Biri")}, ${listing.petName} için talep gönderdi.`,
+        });
+      } catch (enqErr) {
+        logger.error(
+          { err: enqErr, eventType: "adoption_request", recipientId: listing.userId },
+          "Failed to enqueue push notification — request saved but push skipped",
+        );
+      }
     }
   } catch (err) {
     req.log.error({ err }, "POST /adoption-requests failed");
@@ -229,7 +238,7 @@ router.patch("/adoption-requests/:id/status", async (req, res) => {
 
     res.json(updated);
 
-    /* ── Push notification to requester on accept/reject (fire-and-forget) ── */
+    /* ── Enqueue push notification to requester on accept/reject (outbox) ── */
     if (status === "accepted" || status === "rejected") {
       const [listing] = await db
         .select({ petName: adoptionListings.petName })
@@ -240,12 +249,21 @@ router.patch("/adoption-requests/:id/status", async (req, res) => {
         ? `${listing?.petName ?? "İlan"} için talebiniz kabul edildi 🎉`
         : `${listing?.petName ?? "İlan"} için talebiniz bu kez kabul edilmedi.`;
 
-      sendPushNotification(request.requesterId, {
-        type:     "adoption_request",
-        entityId: request.id,
-        title:    status === "accepted" ? "Talep Kabul Edildi" : "Talep Güncellendi",
-        body:     pushBody,
-      }).catch(() => {});
+      try {
+        await enqueueNotification({
+          eventKey:        `adoption_status:${request.id}:${status}`,
+          eventType:       "adoption_status",
+          recipientUserId: request.requesterId,
+          entityId:        request.id,
+          title:           status === "accepted" ? "Talep Kabul Edildi" : "Talep Güncellendi",
+          body:            pushBody,
+        });
+      } catch (enqErr) {
+        logger.error(
+          { err: enqErr, eventType: "adoption_status", recipientId: request.requesterId },
+          "Failed to enqueue push notification — status updated but push skipped",
+        );
+      }
     }
   } catch (err) {
     req.log.error({ err }, "PATCH /adoption-requests/:id/status failed");

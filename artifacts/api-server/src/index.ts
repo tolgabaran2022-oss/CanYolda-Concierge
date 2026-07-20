@@ -12,6 +12,8 @@ import { logger } from "./lib/logger.js";
 import { storage } from "./storage.js";
 import { runMigrations } from "stripe-replit-sync";
 import { getStripeSync } from "./stripeClient.js";
+import { startNotificationWorker } from "./lib/notificationWorker.js";
+import { startReminderScheduler } from "./lib/reminderScheduler.js";
 
 /* ── Global unhandled rejection handler ──────────────────────────────────── */
 process.on("unhandledRejection", (reason: unknown) => {
@@ -77,6 +79,10 @@ if (Number.isNaN(port) || port <= 0) {
 
 await initDatabase();
 await initStripe();
+
+/* ── Start in-process background workers ─────────────────────────── */
+startNotificationWorker();
+startReminderScheduler();
 
 const server = app.listen(port, "0.0.0.0", () => {
   logger.info({ port, host: "0.0.0.0" }, "Server listening");

@@ -1,0 +1,385 @@
+İki önemli teknik risk kaldı:
+
+Backend’de .catch(() => {}) ile yapılan tamamen beklenmeyen fire-and-forget çağrılar güvenilir değil. Serverless/request ortamı yanıt sonrası işlemi sonlandırabilir; bildirim hiç gönderilmeyebilir. Hata da tamamen kayboluyor.
+Aşı, randevu ve ilaç hatırlatıcıları uygulama kapalıyken çalışmıyor. Kullanıcıya bu özellik sunulduğu için scheduler kurulmadan P0 kapanmaz.
+
+Web production build ise dış erişim gerektirmiyor; Replit bunu şimdi çalıştırmalı. Şu promptu gönder:
+
+SON P0 KOD AŞAMASI — GÜVENİLİR PUSH TESLİMATI, HATIRLATICI SCHEDULER VE WEB BUILD
+
+Mevcut durum:
+
+- Push permission akışı düzeltildi.
+- Mesaj ve sahiplenme eventleri bağlandı.
+- Native doğrulama fiziksel cihaz bekliyor.
+- Hatırlatıcı scheduler bulunmuyor.
+- Web production build çalıştırılmadı.
+
+Amaç: Fiziksel cihaz dışında tamamlanabilecek bütün P0 işleri şimdi bitir.
+
+1. FIRE-AND-FORGET GÜVENİLİRLİĞİ
+
+Şu yapı güvenilir değildir:
+
+```ts
+sendPushNotification(...).catch(() => {});
+
+Sorunlar:
+
+Promise beklenmiyor.
+Request/serverless işlem tamamlanmadan sonlanabilir.
+Hata tamamen yutuluyor.
+Retry yapılamıyor.
+Teslimat gözlemlenemiyor.
+
+Bunu güvenilir yapıya dönüştür.
+
+Minimum güvenli yöntem:
+
+try {
+  await sendPushNotification(...);
+} catch (error) {
+  logger.error("Push notification failed", {
+    eventId,
+    eventType,
+    recipientId,
+    errorCode,
+  });
+}
+
+Push başarısızlığı ana mesaj/talep işlemini kullanıcıya başarısız göstermemeli fakat backend çağrıyı gerçekten beklemeli ve hatayı kaydetmeli.
+
+Daha sağlam tercih:
+
+Ana DB işlemi
+→ notification_event/outbox kaydı aynı transaction’da
+→ worker pending eventleri gönderir
+→ başarılıysa sent
+→ geçici hatada retry
+→ kalıcı hatada failed
+
+Mevcut altyapıya uygun bir transactional outbox uygula.
+
+Önerilen tablo:
+
+notification_events
+- id
+- event_key UNIQUE
+- event_type
+- recipient_user_id
+- entity_id
+- payload JSONB
+- status: pending | processing | sent | failed
+- attempts
+- next_attempt_at
+- last_error_code
+- created_at
+- processed_at
+
+Kurallar:
+
+Aynı event iki kez bildirim oluşturmasın.
+event_key deterministik/idempotent olsun.
+Mesaj içeriği gibi gereksiz hassas veri payload’a yazılmasın.
+Retry exponential backoff kullansın.
+Maksimum deneme sayısı olsun.
+Worker crash sonrası processing eventler kurtarılabilsin.
+Secret/token loglanmasın.
+Main API işlemi push hatası nedeniyle rollback edilmesin.
+TOKEN SAHİPLİĞİ
+
+Mevcut davranışı doğrula:
+
+Token başka kullanıcıdaysa eski kayıt enabled=false
+→ yeni kullanıcı için yeni kayıt
+
+Eğer expo_push_token üzerinde global UNIQUE constraint varsa bu işlem yeni insert sırasında unique violation oluşturabilir.
+
+Şemayı gerçekten kontrol et.
+
+Güvenli sonuç:
+
+Aynı fiziksel installation/token aynı anda yalnızca bir aktif kullanıcıya bağlı olmalı.
+Logout sonrası eski bağlantı pasif olmalı.
+Yeni login işlemi transaction içinde sahipliği güncellemeli.
+Duplicate aktif kayıt oluşmamalı.
+Unique constraint ile kod davranışı uyumlu olmalı.
+Aynı kullanıcının farklı cihazları korunmalı.
+Bir cihazdaki logout başka cihazın tokenını kapatmamalı.
+
+Gerçek DB testi yap:
+
+Token A → Kullanıcı 1
+Kullanıcı 1 logout
+Aynı cihazda Kullanıcı 2 login
+Token A yalnızca Kullanıcı 2 için aktif
+Unique constraint hatası yok
+Kullanıcı 1’in başka cihaz tokenı aktif kalıyor
+HATIRLATICI SCHEDULER
+
+Aşı, randevu ve ilaç hatırlatıcıları uygulama kapalıyken çalışmalı.
+
+Önce mevcut deploy mimarisini incele:
+
+Supabase Cron/pg_cron var mı?
+Supabase Edge Functions var mı?
+Replit Scheduled Deployment var mı?
+Kalıcı backend worker var mı?
+
+Mevcut sistemle en güvenilir çözümü seç. Aynı iş için birden fazla scheduler kurma.
+
+Tercih sırası:
+
+Mevcut production scheduler
+→ Supabase Cron + güvenli Edge Function/backend endpoint
+→ Güvenilir scheduled worker
+
+Sadece mobil useEffect, setTimeout veya uygulamanın açık kalmasına bağlı çözüm kullanma.
+
+Scheduler çalışma mantığı:
+
+Belirli aralıkla due reminders sorgulanır
+→ kullanıcı bildirim tercihleri kontrol edilir
+→ idempotent notification_event oluşturulur
+→ worker push gönderir
+→ reminder notified_at/send state güncellenir
+
+Desteklenecek olaylar:
+
+Aşı
+Randevu
+İlaç
+
+Kontrol et:
+
+Kullanıcı saat dilimi
+UTC saklama
+Yaz/kış saati
+Geçmiş tarih
+Silinmiş kayıt
+Tamamlanmış kayıt
+Tarihi değiştirilmiş kayıt
+Aynı hatırlatıcının tekrar gönderilmesi
+Premium süresi dolmuş kullanıcı
+Bildirim tercihi kapalı
+Genel bildirim kapalı
+Scheduler aynı anda iki kez çalışırsa duplicate engeli
+Network/Expo Push API hatası
+Retry
+
+Hatırlatıcı politikası tanımla:
+
+Ne kadar önce?
+Hangi saatte?
+Bir kez mi?
+Tekrar var mı?
+
+Projede mevcut kullanıcı tercihi varsa onu kullan. Yoksa mevcut UI ve ürün gereksinimine uygun, açıkça belgelenmiş varsayılan uygula.
+
+SCHEDULER GÜVENLİĞİ
+
+Cron endpoint halka açık olmamalı.
+
+Doğrula:
+
+Secret/header veya platform içi güvenli çağrı
+Auth olmayan istek reddediliyor
+Client cron secret göremiyor
+Service-role key yalnız serverda
+Rate limit
+Idempotency
+Tekrarlı çalışma güvenliği
+SQL sorgusu yalnız gerekli kayıtları alıyor
+
+Production migration/deployment kullanıcı onayı gerektiriyorsa dosyaları hazırla fakat uygulama. Durumu:
+
+IMPLEMENTED — DEPLOYMENT APPROVAL BLOCKED
+
+olarak raporla.
+
+PUSH OBSERVABILITY
+
+Hataları boş catch ile yutma.
+
+Güvenli structured log ekle:
+
+event_id
+event_type
+recipient_id
+status
+attempt
+error_code
+timestamp
+
+Şunları loglama:
+
+Expo token
+Auth token
+E-posta
+Mesaj içeriği
+Service key
+Receipt’ın hassas içeriği
+
+Raporlanabilir metrikler:
+
+pending
+sent
+failed
+retrying
+invalid token
+EXPO PUSH TICKET/RECEIPT
+
+Yalnız Expo API’nin ilk isteğe 200 dönmesini teslimat kabul etme.
+
+Push ticket ID’lerini işle.
+Receipt durumunu kontrol et.
+DeviceNotRegistered tokenını kapat.
+Retry edilebilir hataları yeniden dene.
+Kalıcı hataları failed yap.
+Receipt worker/scheduler oluştur.
+Aynı receipt iki kez işlense de güvenli olsun.
+WEB PRODUCTION BUILD
+
+Web production buildi şimdi gerçekten çalıştır.
+
+Önce package.json scriptlerini incele ve projenin gerçek build komutunu kullan.
+
+Doğrula:
+
+Build exit code 0
+expo-notifications Web buildini bozmuyor
+expo-device import hatası yok
+Server bundle hatası yok
+Client bundle içinde secret yok
+Push token API isteği Web’de yapılmıyor
+Permission prompt Web’de görünmüyor
+Account ekranı açılıyor
+Bildirim tercihleri Web’de kontrollü davranıyor
+Aboneliği yönetme Web açıklaması çalışıyor
+Console’da native module hatası yok
+Deep-link refresh çalışıyor
+Auth çalışıyor
+
+Build alındıktan sonra production output’u gerçekten serve et ve browser üzerinden smoke test yap.
+
+Web için ancak bu durumda PASS ver.
+
+API VE DB TESTLERİ
+
+Gerçek test kullanıcısı ve geri alınabilir test verisiyle çalıştır:
+
+Auth olmadan push token POST → 401
+Auth olmadan DELETE → 401
+Auth olmadan preferences → 401
+Kullanıcı A, B’nin tokenını okuyamaz
+Kullanıcı A, B’nin tokenını silemez
+Kullanıcı A, B’nin tercihlerini değiştiremez
+Geçersiz token → 400
+Duplicate token → duplicate DB kaydı yok
+Aynı event iki kez → tek notification_event
+Worker retry
+Maksimum retry
+Invalid token disable
+Genel preference kapalı → event gönderilmez
+Mesaj preference kapalı → mesaj push gönderilmez
+Hatırlatıcı preference kapalı → reminder gönderilmez
+Cron auth olmadan → reddedilir
+
+Her testte DB’yi yeniden okuyarak kalıcı durumu doğrula.
+
+MEVCUT AKIŞLARDA REGRESYON
+
+Şunları tekrar test et:
+
+Register
+Login
+Auth/me
+Logout
+Mesaj gönderme
+Sahiplenme talebi
+Talep kabul/reddetme
+İkinci hayvan Premium kilidi
+Account ekranı
+Bildirim toggle’ları
+Abonelik yönetim bağlantısı
+RevenueCat Premium modalı
+
+Push hatası ana mesaj/talep işlemini bozmamalı.
+
+TEST SINIFLANDIRMASI
+
+Gerçek olmayan PASS verme.
+
+Beklenen sınıflandırma:
+
+Web production build:
+Gerçekten çalışırsa PASS
+
+Push API/DB güvenliği:
+Gerçek curl + DB doğrulaması varsa PASS
+
+Scheduler kodu:
+Yalnız incelendiyse STATIC REVIEW
+
+Scheduler deployment:
+Deploy edilmediyse BLOCKED
+
+Android fiziksel cihaz:
+BLOCKED
+
+iOS fiziksel cihaz:
+BLOCKED
+
+Foreground/background/terminated:
+BLOCKED
+
+Native deep link:
+BLOCKED
+RAPORLAR
+
+Güncelle:
+
+reports/RELEASE_READINESS_REPORT.md
+reports/TEST_MATRIX.md
+reports/OPEN_BLOCKERS.md
+reports/PUSH_NOTIFICATION_AUDIT.md
+reports/WEB_PRODUCTION_AUDIT.md
+reports/SECURITY_RLS_AUDIT.md
+reports/24_HOUR_RELEASE_PLAN.md
+
+Son rapor:
+
+Nihai karar:
+P0 açık:
+P1 açık:
+P2 açık:
+
+Outbox:
+Worker:
+Receipt kontrolü:
+Scheduler:
+Web build:
+API/RLS:
+Android native:
+iOS native:
+
+Değiştirilen dosyalar:
+Migrationlar:
+Çalıştırılan komutlar:
+Gerçek PASS:
+STATIC REVIEW:
+BLOCKED:
+Kullanıcıdan gereken işlemler:
+
+P0 yalnızca:
+
+Outbox/worker güvenilir
+Scheduler deployment aktif
+Mesaj ve sahiplenme gerçek eventleri çalışıyor
+Hatırlatıcılar uygulama kapalıyken gönderiliyor
+Android fiziksel cihaz PASS
+iOS fiziksel cihaz PASS
+Foreground/background/terminated PASS
+Deep link PASS
+
+olduktan sonra tamamen kapatılabilir.
