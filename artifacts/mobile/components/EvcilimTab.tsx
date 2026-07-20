@@ -1026,8 +1026,7 @@ export function EvcilimTab({ botPad }: { botPad: number }) {
   const [selectedPetId, setSelectedPetId] = useState<string | null>(null);
   const [petSelectorOpen, setPetSelectorOpen] = useState(false);
   const [premiumModalOpen, setPremiumModalOpen] = useState(false);
-  const [premiumSource, setPremiumSource]     = useState<string | undefined>(undefined);
-  const [premiumReturnTo, setPremiumReturnTo] = useState<string | undefined>(undefined);
+  const [premiumEntry, setPremiumEntry] = useState<{ source: string; returnTo?: string } | null>(null);
   const [vaccinations, setVaccinations]   = useState<ApiVaccination[]>([]);
   const [appointments, setAppointments]   = useState<ApiAppointment[]>([]);
   const [nutrition, setNutrition]         = useState<ApiNutrition | null>(null);
@@ -1036,12 +1035,19 @@ export function EvcilimTab({ botPad }: { botPad: number }) {
   const [deletingPetId, setDeletingPetId] = useState<string | null>(null);
   const [addingPet, setAddingPet]         = useState(false);
   const addingPetLockRef                  = useRef(false);
-  const openPremiumLockRef                = useRef(false);
+  const premiumActionLockRef              = useRef(false);
 
   // Read navigation params — add.tsx / feature screens send openPremium="true"
   // when they detect a premium gate, so the modal opens automatically.
   const { openPremium, premiumSource: paramSource, premiumReturnTo: paramReturnTo } =
     useLocalSearchParams<{ openPremium?: string; premiumSource?: string; premiumReturnTo?: string }>();
+
+  // Central helper — sets entry then opens modal.
+  // Using stable state setters → no deps needed → stable identity.
+  const showPremiumModal = useCallback((source: string, returnTo?: string) => {
+    setPremiumEntry({ source, returnTo });
+    setPremiumModalOpen(true);
+  }, []);
 
   // Open the premium modal when we arrive with openPremium="true".
   // We do NOT call router.replace here — doing so remounts the component and
@@ -1049,10 +1055,10 @@ export function EvcilimTab({ botPad }: { botPad: number }) {
   // The param is cleared instead when the modal closes (see onClose below).
   useEffect(() => {
     if (openPremium !== "true") return;
-    if (paramSource) setPremiumSource(paramSource);
-    if (paramReturnTo) setPremiumReturnTo(decodeURIComponent(paramReturnTo));
-    setPremiumModalOpen(true);
-  }, [openPremium, paramSource, paramReturnTo]);
+    const source  = paramSource  || "add_pet";
+    const returnTo = paramReturnTo ? decodeURIComponent(paramReturnTo) : undefined;
+    showPremiumModal(source, returnTo);
+  }, [openPremium, paramSource, paramReturnTo, showPremiumModal]);
 
   // Validate/initialize selectedPetId whenever pets list changes.
   // If the current selection still exists → keep it (this prevents
@@ -1083,63 +1089,49 @@ export function EvcilimTab({ botPad }: { botPad: number }) {
     [router]
   );
 
-  // Centralized premium-feature gate.
-  // Refreshes premium status, then either navigates to the feature (premium)
-  // or opens the modal (non-premium).  A ref lock prevents double-taps.
-  const openPremiumFeature = useCallback(async (source: string, destination: string) => {
-    if (openPremiumLockRef.current) return;
-    openPremiumLockRef.current = true;
+  // Premium-feature gate for Belgeler / İlaçlar / AI Asistan cards.
+  // Always fetches fresh isPremium — never uses stale context value.
+  // Uses a separate lock from handleAddPet.
+  const handlePremiumFeature = useCallback(async (source: string, destination: string) => {
+    if (premiumActionLockRef.current) return;
+    premiumActionLockRef.current = true;
     try {
       const fresh = await refreshPetPremiumStatus(false);
       if (fresh?.isPremium) {
         nav(destination);
         return;
       }
-      setPremiumSource(source);
-      setPremiumReturnTo(destination);
-      setPremiumModalOpen(true);
+      showPremiumModal(source, destination);
     } catch {
       Alert.alert(
         "Bağlantı Hatası",
         "Premium durum kontrol edilemedi. Lütfen internet bağlantınızı kontrol edin."
       );
     } finally {
-      openPremiumLockRef.current = false;
+      premiumActionLockRef.current = false;
     }
-  }, [refreshPetPremiumStatus, nav]);
+  }, [refreshPetPremiumStatus, nav, showPremiumModal]);
 
+  // "Evcil Hayvan Ekle" button handler.
+  // Always fetches fresh canAddPet — never trusts stale context cache.
+  // Decision comes directly from the API return value.
   const handleAddPet = useCallback(async () => {
-    // Synchronous ref guard prevents double-invocation within the same render cycle
     if (addingPetLockRef.current) return;
     addingPetLockRef.current = true;
     setAddingPet(true);
-
     try {
-      // Fast path: cached status already says blocked → open premium modal immediately
-      if (premiumStatus !== null && !premiumStatus.canAddPet) {
-        Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
-        setPremiumSource("add_pet");
-        setPremiumReturnTo("/evcilim/add");
-        setPremiumModalOpen(true);
+      const latestStatus = await refreshPetPremiumStatus(false);
+      if (!latestStatus) {
+        Alert.alert("Oturum Gerekli", "Evcil hayvan eklemek için lütfen giriş yapın.");
         return;
       }
-
-      const fresh = await refreshPetPremiumStatus(false);
-      if (fresh?.canAddPet) {
-        Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+      Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+      if (latestStatus.canAddPet) {
         nav("/evcilim/add");
-      } else if (fresh === null) {
-        // Not authenticated
-        Alert.alert("Oturum Gerekli", "Evcil hayvan eklemek için lütfen giriş yapın.");
       } else {
-        // canAddPet === false
-        Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
-        setPremiumSource("add_pet");
-        setPremiumReturnTo("/evcilim/add");
-        setPremiumModalOpen(true);
+        showPremiumModal("add_second_pet", "/evcilim/add");
       }
     } catch {
-      // API error — show clear error, do not silently redirect to premium or form
       Alert.alert(
         "Bağlantı Hatası",
         "Evcil hayvan bilgileri şu anda alınamadı. Lütfen internet bağlantınızı kontrol edip tekrar deneyin."
@@ -1148,7 +1140,7 @@ export function EvcilimTab({ botPad }: { botPad: number }) {
       addingPetLockRef.current = false;
       setAddingPet(false);
     }
-  }, [premiumStatus, refreshPetPremiumStatus, nav]);
+  }, [refreshPetPremiumStatus, nav, showPremiumModal]);
 
   const handleDeletePet = useCallback(async (id: string) => {
     setDeletingPetId(id);
@@ -1265,9 +1257,9 @@ export function EvcilimTab({ botPad }: { botPad: number }) {
             appointments={appointments}
             isPremium={isPremium}
             onNav={nav}
-            onPremiumNav={openPremiumFeature}
+            onPremiumNav={handlePremiumFeature}
           />
-          <AIAssistantCard petId={selectedPet.id} isPremium={isPremium} onNav={nav} onPremiumNav={openPremiumFeature} />
+          <AIAssistantCard petId={selectedPet.id} isPremium={isPremium} onNav={nav} onPremiumNav={handlePremiumFeature} />
           <UpcomingReminders
             reminders={reminders}
             petId={selectedPet.id}
@@ -1292,15 +1284,16 @@ export function EvcilimTab({ botPad }: { botPad: number }) {
         visible={premiumModalOpen}
         onClose={() => {
           setPremiumModalOpen(false);
-          setPremiumSource(undefined);
-          setPremiumReturnTo(undefined);
+          // Clear entry AFTER navigation (EvcilimPremiumModal reads returnTo on "Devam Et" press).
+          // Use a microtask so the modal's onPress handler fires before we null the entry.
+          setTimeout(() => setPremiumEntry(null), 0);
           // Clear navigation params so re-focus does not re-open the modal.
           if (openPremium === "true") {
             router.setParams({ openPremium: "", premiumSource: "", premiumReturnTo: "" } as Record<string, string>);
           }
         }}
-        source={premiumSource ?? "add_pet"}
-        returnTo={premiumReturnTo ?? "/evcilim/add"}
+        source={premiumEntry?.source}
+        returnTo={premiumEntry?.returnTo}
       />
     </>
   );
