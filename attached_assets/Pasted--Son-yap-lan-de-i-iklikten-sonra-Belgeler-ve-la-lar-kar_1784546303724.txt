@@ -1,0 +1,270 @@
+
+
+Son yapılan değişiklikten sonra Belgeler ve İlaçlar kartları doğru şekilde `EvcilimPremiumModal` açıyor. Fakat daha önce çalışan ikinci evcil hayvan Premium kilidi bozuldu.
+
+Şu anda ücretsiz kullanıcı bir evcil hayvana sahipken “Evcil Hayvan Ekle” butonuna bastığında Evcilim Premium modalı açılmıyor.
+
+Bu bir REGRESYON hatasıdır.
+
+ÇALIŞMASI GEREKEN İKİ AKIŞ
+
+1. İkinci evcil hayvan ekleme:
+
+```text
+0 hayvan + ücretsiz
+→ Evcil hayvan oluşturma formu
+
+1+ hayvan + ücretsiz
+→ Evcilim Premium modalı
+→ Form açılmamalı
+
+1+ hayvan + Premium
+→ Evcil hayvan oluşturma formu
+Premium özellik kartları:
+Belgeler/İlaçlar + ücretsiz
+→ Evcilim Premium modalı
+
+Belgeler/İlaçlar + Premium
+→ İlgili özellik sayfası
+
+Her iki akış aynı anda çalışmalı. Birini düzeltirken diğerini kaldırma veya ezme.
+
+ÖNCE REGRESYONUN KÖK NEDENİNİ BUL
+
+Son değişikliklerde EvcilimTab.tsx dosyasını karşılaştır ve şunları kontrol et:
+
+“Evcil Hayvan Ekle” butonunun onPress fonksiyonu değiştirildi mi?
+handleAddPet veya eşdeğer fonksiyon kaldırıldı mı?
+Buton yanlışlıkla ortak openPremiumFeature fonksiyonuna hatalı parametreyle mi bağlandı?
+Butonda doğrudan router.push('/evcilim/add') yeniden eklendi mi?
+premiumModalOpen için birden fazla state oluşturuldu mu?
+Yeni Belgeler/İlaçlar modal state’i eski ikinci hayvan state’ini ezdi mi?
+source, returnTo veya modal kapanma işlemi ikinci hayvan akışını bozdu mu?
+useFocusEffect ile yapılan refreshPetPremiumStatus(false) kaldırıldı mı?
+Eski cached canAddPet değerine yeniden güveniliyor mu?
+EvcilimPremiumModal render’ı koşullu bir bölümün içine taşındı mı?
+Modal yalnızca premiumSource === "documents" veya "medications" olduğunda mı render ediliyor?
+
+Sorunun kesin nedenini tespit et ve raporla.
+
+TEK ORTAK PREMIUM MODAL KULLAN
+
+Evcilim ekranında tüm Premium giriş noktaları için tek modal kullan:
+
+type PremiumEntry = {
+  source: string;
+  returnTo?: string;
+};
+
+const [premiumModalOpen, setPremiumModalOpen] = useState(false);
+const [premiumEntry, setPremiumEntry] =
+  useState<PremiumEntry | null>(null);
+
+Merkezi açma fonksiyonu:
+
+const showPremiumModal = (
+  source: string,
+  returnTo?: string
+) => {
+  setPremiumEntry({ source, returnTo });
+  setPremiumModalOpen(true);
+};
+
+Tek modal:
+
+<EvcilimPremiumModal
+  visible={premiumModalOpen}
+  source={premiumEntry?.source}
+  returnTo={premiumEntry?.returnTo}
+  onClose={() => {
+    setPremiumModalOpen(false);
+    setPremiumEntry(null);
+  }}
+/>
+
+Mevcut component prop tiplerine göre düzenle. Aynı ekranda Belgeler için ayrı, İlaçlar için ayrı ve ikinci hayvan için ayrı modal instance oluşturma.
+
+İKİNCİ HAYVAN BUTONU
+
+“Evcil Hayvan Ekle” butonunun yalnızca aşağıdaki merkezi fonksiyona bağlı olduğundan emin ol:
+
+onPress={handleAddPet}
+
+Butonda veya onu saran component içinde doğrudan /evcilim/add navigasyonu bulunmamalı.
+
+Mantık:
+
+const handleAddPet = async () => {
+  if (addingPetLockRef.current) return;
+
+  addingPetLockRef.current = true;
+  setAddingPet(true);
+
+  try {
+    const latestStatus = await refreshPetPremiumStatus(false);
+
+    if (!latestStatus) {
+      throw new Error("Premium status could not be loaded");
+    }
+
+    if (latestStatus.canAddPet === true) {
+      router.push("/evcilim/add");
+      return;
+    }
+
+    showPremiumModal(
+      "add_second_pet",
+      "/evcilim/add"
+    );
+  } catch (error) {
+    Alert.alert(
+      "İşlem gerçekleştirilemedi",
+      "Evcil hayvan bilgilerin kontrol edilemedi. Lütfen tekrar dene."
+    );
+  } finally {
+    addingPetLockRef.current = false;
+    setAddingPet(false);
+  }
+};
+
+ÖNEMLİ:
+
+refreshPetPremiumStatus(false) fonksiyonunun gerçek dönüş tipini incele. Eğer fonksiyon güncel status döndürmüyor ve sadece context state’ini güncelliyorsa, hemen ardından eski premiumStatus.canAddPet değerini okumak stale-state hatasına yol açar.
+
+Bu durumda fonksiyonu güncel sonucu döndürecek şekilde düzenle:
+
+const latestStatus = await refreshPetPremiumStatus(false);
+
+ve kararı doğrudan latestStatus.canAddPet üzerinden ver.
+
+Kararı async state güncellemesinden hemen sonra eski context state’i üzerinden verme.
+
+PREMIUM ÖZELLİK KARTLARI
+
+Belgeler ve İlaçlar mevcut çalışan yapısını korusun:
+
+const handlePremiumFeature = async (
+  source: string,
+  destination: string
+) => {
+  if (premiumActionLockRef.current) return;
+
+  premiumActionLockRef.current = true;
+
+  try {
+    const latestStatus = await refreshPetPremiumStatus(false);
+
+    if (latestStatus?.isPremium === true) {
+      router.push(destination);
+      return;
+    }
+
+    showPremiumModal(source, destination);
+  } catch {
+    Alert.alert(
+      "İşlem gerçekleştirilemedi",
+      "Premium üyelik durumun kontrol edilemedi."
+    );
+  } finally {
+    premiumActionLockRef.current = false;
+  }
+};
+
+İkinci hayvan kontrolünde isPremium yerine backend’in hesapladığı canAddPet kullanılmalı.
+
+Belgeler ve İlaçlar kontrolünde ise gerçek Premium alanı kullanılmalı.
+
+Bunları birbirine karıştırma:
+
+İkinci hayvan → canAddPet
+Premium özellikler → isPremium/isActive
+
+SATIN ALMA SONRASI HEDEF
+
+Modalın hangi kaynaktan açıldığını koru:
+
+source = add_second_pet
+→ Satın alma doğrulanınca /evcilim/add
+
+source = documents
+→ Satın alma doğrulanınca Belgeler
+
+source = medications
+→ Satın alma doğrulanınca İlaçlar
+
+Satın alma tamamlandıktan sonra:
+
+RevenueCat sonucu doğrulansın.
+Backend Premium durumu yeniden çekilsin.
+Gerçekten aktif olduğu doğrulansın.
+Modal kapatılsın.
+premiumEntry.returnTo route’una gidilsin.
+premiumEntry yalnızca navigation hedefi alındıktan sonra temizlensin.
+
+REGRESYON KORUMASI
+
+app/evcilim/add.tsx içindeki server-side/defensif gate korunmalı.
+
+Premium olmayan ve bir hayvanı bulunan kullanıcı:
+
+Route’u doğrudan açsa bile ikinci hayvanı kaydedememeli.
+API 402 PET_PREMIUM_REQUIRED döndürmeli.
+Evcilim ekranına dönünce Premium modal otomatik açılmalı.
+
+Önceki çalışan useFocusEffect yenilemesini kaldırma:
+
+Evcilim tab focus
+→ refreshPetPremiumStatus(false)
+→ petCount ve canAddPet güncellenir
+
+TESTLERİ GERÇEKTEN ÇALIŞTIR
+
+Ücretsiz, 0 hayvan:
+“Evcil Hayvan Ekle” → form açılmalı.
+Ücretsiz, 1 hayvan:
+“Evcil Hayvan Ekle” → Evcilim Premium modalı açılmalı.
+Form açılmamalı.
+Premium, 1 hayvan:
+“Evcil Hayvan Ekle” → form açılmalı.
+Ücretsiz kullanıcı → Belgeler:
+Evcilim Premium modalı açılmalı.
+Ücretsiz kullanıcı → İlaçlar:
+Evcilim Premium modalı açılmalı.
+Premium kullanıcı → Belgeler:
+Belgeler açılmalı.
+Premium kullanıcı → İlaçlar:
+İlaçlar açılmalı.
+Sıralı regresyon testi:
+Önce Belgeler kartına bas ve modalı kapat.
+Ardından “Evcil Hayvan Ekle”ye bas.
+Modal bu kez source="add_second_pet" ile açılmalı.
+Eski source="documents" değeri kalmamalı.
+Ters sıralı regresyon testi:
+Önce ikinci hayvan modalını aç ve kapat.
+Ardından İlaçlar kartına bas.
+Modal source="medications" ile açılmalı.
+Hızlı dokunma:
+Tek modal ve tek API isteği oluşmalı.
+TypeScript, console ve network kontrollerini yap.
+
+KRİTİK RAPORLAMA KURALI
+
+Gerçek çalıştırılmayan teste PASS verme.
+
+Sonuçlar:
+
+PASS
+FAIL
+STATIC REVIEW
+BLOCKED
+NOT TESTED
+
+İşlem sonunda raporla:
+
+Regresyonun kesin nedeni
+Değiştirilen dosyalar
+“Evcil Hayvan Ekle” butonunun güncel onPress bağlantısı
+İkinci hayvan kararında kullanılan güncel backend cevabı
+Belgeler/İlaçlar için kullanılan Premium alanı
+Modal source/returnTo eşleştirmeleri
+Gerçek test sonuçları
