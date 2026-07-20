@@ -93,19 +93,21 @@ export type InsertNotificationPreferences = typeof notificationPreferences.$infe
 
 /* ── notification_events — transactional outbox for push delivery ─── */
 export const notificationEvents = pgTable("notification_events", {
-  id:              text("id").primaryKey().default(sql`gen_random_uuid()::text`),
-  eventKey:        text("event_key").notNull(),        /* idempotency key — UNIQUE enforced by index */
-  eventType:       text("event_type").notNull(),
-  recipientUserId: text("recipient_user_id").notNull(),
-  entityId:        text("entity_id").notNull().default(""),
-  payloadJson:     text("payload_json").notNull().default("{}"),
-  status:          text("status").notNull().default("pending"), /* pending | processing | sent | failed */
-  attempts:        integer("attempts").notNull().default(0),
-  maxAttempts:     integer("max_attempts").notNull().default(3),
-  nextAttemptAt:   timestamp("next_attempt_at", { withTimezone: true }).defaultNow(),
-  lastErrorCode:   text("last_error_code"),
-  createdAt:       timestamp("created_at", { withTimezone: true }).defaultNow(),
-  processedAt:     timestamp("processed_at", { withTimezone: true }),
+  id:                  text("id").primaryKey().default(sql`gen_random_uuid()::text`),
+  eventKey:            text("event_key").notNull(),        /* idempotency key — UNIQUE enforced by index */
+  eventType:           text("event_type").notNull(),
+  recipientUserId:     text("recipient_user_id").notNull(),
+  entityId:            text("entity_id").notNull().default(""),
+  payloadJson:         text("payload_json").notNull().default("{}"),
+  status:              text("status").notNull().default("pending"), /* pending | processing | sent | failed */
+  attempts:            integer("attempts").notNull().default(0),
+  maxAttempts:         integer("max_attempts").notNull().default(3),
+  nextAttemptAt:       timestamp("next_attempt_at", { withTimezone: true }).defaultNow(),
+  lastErrorCode:       text("last_error_code"),
+  createdAt:           timestamp("created_at", { withTimezone: true }).defaultNow(),
+  processedAt:         timestamp("processed_at", { withTimezone: true }),
+  processingStartedAt: timestamp("processing_started_at", { withTimezone: true }),
+  ticketId:            text("ticket_id"),               /* Expo push ticket ID (for receipt polling) */
 }, (t) => [
   uniqueIndex("notification_events_key_unique").on(t.eventKey),
 ]);

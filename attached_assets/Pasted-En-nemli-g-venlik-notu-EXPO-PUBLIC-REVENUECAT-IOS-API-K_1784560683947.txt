@@ -1,0 +1,184 @@
+En önemli güvenlik notu:
+
+EXPO_PUBLIC_REVENUECAT_IOS_API_KEY
+EXPO_PUBLIC_REVENUECAT_ANDROID_API_KEY
+
+RevenueCat’in mobil public SDK anahtarları olduğu için uygulamada kullanılabilir.
+
+Fakat:
+
+REVENUECAT_WEBHOOK_AUTH_TOKEN
+
+kesinlikle EXPO_PUBLIC_ olmamalı; sadece backend/deployment secret olarak tutulmalı.
+
+Bir kritik kod riski daha var: Worker’ın “SELECT ardından UPDATE” yapması, production’da birden fazla instance çalışırsa aynı eventi iki worker’ın seçip iki bildirim göndermesine yol açabilir. event_key UNIQUE yalnızca iki event kaydını engeller; aynı eventin iki worker tarafından gönderilmesini engellemez.
+
+Önce Replit’e şu son düzeltmeyi gönder:
+
+PRODUCTION PUSH WORKER — ATOMİK EVENT CLAIM VE DEPLOYMENT DÜZELTMESİ
+
+Mevcut notification worker şu mantığı kullanıyor:
+
+SELECT pending events
+→ UPDATE processing
+→ gönder
+
+Bu yapı birden fazla backend instance/worker aynı anda çalışırsa race condition oluşturabilir:
+
+Worker A aynı pending eventi SELECT eder
+Worker B aynı pending eventi SELECT eder
+İkisi de processing yapar
+İkisi de aynı push bildirimini gönderebilir
+
+`event_key UNIQUE` bu problemi çözmez; yalnızca duplicate event INSERT işlemini engeller.
+
+1. ATOMİK CLAIM
+
+Event seçme ve processing durumuna geçirme işlemini tek transaction içinde atomik yap.
+
+PostgreSQL için güvenli yöntem kullan:
+
+```sql
+WITH claimed AS (
+  SELECT id
+  FROM notification_events
+  WHERE status = 'pending'
+    AND next_attempt_at <= NOW()
+  ORDER BY created_at
+  FOR UPDATE SKIP LOCKED
+  LIMIT 10
+)
+UPDATE notification_events AS events
+SET
+  status = 'processing',
+  processing_started_at = NOW(),
+  attempts = events.attempts + 1
+FROM claimed
+WHERE events.id = claimed.id
+RETURNING events.*;
+
+Gerçek kolon adlarını mevcut şemaya göre düzenle.
+
+Drizzle transaction/raw SQL yapısını mevcut projeye uygun kullan.
+
+Şunları doğrula:
+
+İki worker aynı eventi claim edemiyor.
+Claim edilen event yalnız bir kez dönüyor.
+attempts atomik artıyor.
+next_attempt_at null ise uygun biçimde işleniyor.
+Failed/retry eventleri yeniden claim edilebiliyor.
+Maksimum attempt aşılmış event tekrar alınmıyor.
+Stuck processing recovery aynı anda çalışan workerlarla güvenli.
+Worker crash sonrası event yeniden işlenebiliyor.
+TESLİMAT İDEMPOTENCY
+
+Expo Push API tam olarak once-delivery garantisi sağlamadığı için:
+
+sent event yeniden gönderilmemeli.
+Worker restart sırasında sent event alınmamalı.
+Receipt kontrolü push’u tekrar göndermemeli.
+Ticket ID event kaydına yazılmalı.
+Aynı event processing durumunda normal worker tarafından tekrar alınmamalı.
+Stuck timeout, normal push isteği süresinden daha uzun ve makul olmalı.
+
+60 saniyelik stuck timeout’un Expo API timeout/retry süresine göre güvenli olduğunu doğrula. Gerekirse artır.
+
+ÇOKLU WORKER TESTİ
+
+Aynı DB’ye bağlı iki worker’ı eş zamanlı çalıştır.
+
+Tek pending event oluştur.
+
+Beklenen:
+
+Worker A claim: 1 veya 0
+Worker B claim: 0 veya 1
+Toplam claim: 1
+Toplam push gönderimi: 1
+
+Aynı anda 20 event oluştur:
+
+Her event yalnızca bir worker tarafından claim edilmeli.
+Duplicate delivery oluşmamalı.
+Event kaybı olmamalı.
+Hepsi sent veya açık hata durumuna ulaşmalı.
+
+DB kayıtlarını yeniden okuyarak doğrula.
+
+REMINDER SCHEDULER ÇOKLU INSTANCE
+
+İki scheduler aynı anda çalışırsa:
+
+Aynı reminder için tek notification_event oluşmalı.
+Unique violation beklenen/idempotent sonuç olarak yönetilmeli.
+Unique violation scheduler’ı durdurmamalı.
+Diğer reminderlar işlenmeye devam etmeli.
+
+Timezone:
+
+Sabit matematiksel UTC+3 kullanma.
+IANA timezone Europe/Istanbul kullan.
+DB’de zamanı UTC sakla.
+Kullanıcıya yerel zamanda göster.
+İdempotency key UTC instant veya normalize edilmiş tarih/saat üzerinden deterministik olsun.
+PRODUCTION DEPLOYMENT
+
+Replit development ortamında:
+
+notification_worker: started
+reminder_scheduler: started
+
+logunun görünmesi production deployment kanıtı değildir.
+
+Production’da doğrula:
+
+Worker hangi process içinde başlıyor?
+API deployment scale-to-zero oluyor mu?
+Backend uyurken scheduler çalışıyor mu?
+Birden fazla instance açılırsa atomik claim güvenli mi?
+Deploy/restart sonrası worker yeniden başlıyor mu?
+Health endpoint worker ve scheduler durumunu raporluyor mu?
+Son başarılı worker döngüsü
+Son başarılı scheduler döngüsü
+Pending event sayısı
+Failed event sayısı
+
+Scale-to-zero veya uyuyan deployment kullanılıyorsa in-process setInterval scheduler’a güvenme. Kalıcı scheduler/cron üzerinden worker endpoint’i veya güvenilir scheduled deployment kullan.
+
+SECRETS
+
+Mobil public anahtarlar:
+
+EXPO_PUBLIC_REVENUECAT_IOS_API_KEY
+EXPO_PUBLIC_REVENUECAT_ANDROID_API_KEY
+
+Backend secret:
+
+REVENUECAT_WEBHOOK_AUTH_TOKEN
+
+Kurallar:
+
+Webhook token client bundle’a girmemeli.
+EXPO_PUBLIC_ prefix almamalı.
+Loglanmamalı.
+.env.example içinde yalnız isim/placeholder bulunmalı.
+Production deployment secrets içinde saklanmalı.
+Webhook endpoint token/signature olmadan 401 dönmeli.
+Timing-safe comparison mümkünse kullanılmalı.
+Token rotation desteklenmeli.
+RAPOR
+
+Gerçek test olmadan PASS verme.
+
+Raporla:
+
+Atomik claim sorgusu
+Transaction yöntemi
+İki worker eşzamanlı test sonucu
+Duplicate delivery sonucu
+Scheduler çoklu instance sonucu
+Production worker çalışma modeli
+Scale-to-zero riski
+Secret sınıflandırması
+Değiştirilen dosyalar

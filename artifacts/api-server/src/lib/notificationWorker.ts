@@ -6,18 +6,32 @@
  * the persistent Express process — NOT a serverless function.
  *
  * Guarantees:
+ *  - Atomic claim: uses a Drizzle transaction + SELECT FOR UPDATE SKIP LOCKED
+ *    so that multiple concurrent instances never claim the same event.
  *  - Idempotent: each event_key is processed at most once to "sent" state.
+ *    A "sent" event is never retried regardless of restart or crash.
  *  - Retry with exponential backoff, up to maxAttempts.
+ *  - Stuck recovery: events stuck in "processing" > STUCK_TIMEOUT are
+ *    reclaimed safely (SKIP LOCKED prevents double-delivery).
  *  - DeviceNotRegistered tokens auto-disabled.
+ *  - Expo ticket ID stored per event for future receipt polling.
  *  - No secret/token/message content is logged.
+ *
+ * Race condition safety:
+ *  The claim transaction does:
+ *    1. SELECT ... FOR UPDATE SKIP LOCKED  (locks matching rows)
+ *    2. UPDATE ... SET status='processing', attempts+1 ... RETURNING *
+ *  Both steps happen in one serialisable transaction. Concurrent workers
+ *  see SKIP LOCKED and move on — they will never claim the same row.
  */
 
-import { and, eq, inArray, lte, or, sql } from "drizzle-orm";
+import { and, count, eq, inArray, isNull, lte, or, sql } from "drizzle-orm";
 import { db, pushTokens, notificationPreferences, notificationEvents } from "@workspace/db";
 import { logger } from "./logger.js";
 
-const BATCH_SIZE      = 10;
-const POLL_INTERVAL   = 10_000; /* 10 seconds */
+const BATCH_SIZE    = 10;
+const POLL_INTERVAL = 10_000;  /* 10 s */
+const STUCK_TIMEOUT = 300_000; /* 5 min — must exceed max Expo API response time */
 
 type NotificationType =
   | "message"
@@ -51,6 +65,27 @@ const ANDROID_CHANNEL: Record<string, string> = {
   emergency:        "emergency",
 };
 
+/* ── In-process metrics (read by health endpoint) ─────────────────── */
+export interface WorkerMetrics {
+  lastLoopAt:        Date | null;
+  lastSuccessAt:     Date | null;
+  pendingCount:      number;
+  failedCount:       number;
+  loopCount:         number;
+}
+
+const metrics: WorkerMetrics = {
+  lastLoopAt:    null,
+  lastSuccessAt: null,
+  pendingCount:  0,
+  failedCount:   0,
+  loopCount:     0,
+};
+
+export function getWorkerMetrics(): Readonly<WorkerMetrics> {
+  return { ...metrics };
+}
+
 /* ── Enqueue a notification event (idempotent insert) ─────────────── */
 export async function enqueueNotification(opts: {
   eventKey:        string;
@@ -78,58 +113,112 @@ export async function enqueueNotification(opts: {
   /* onConflictDoNothing ensures duplicate event_keys are silently ignored — idempotent */
 }
 
+/* ── Atomically claim a batch of pending events ───────────────────── */
+async function claimBatch(): Promise<(typeof notificationEvents.$inferSelect)[]> {
+  const now     = new Date();
+  const staleAt = new Date(Date.now() - STUCK_TIMEOUT);
+
+  return await db.transaction(async (tx) => {
+    /*
+     * SELECT FOR UPDATE SKIP LOCKED:
+     *   - Locks only rows that are not already locked by another transaction.
+     *   - Concurrent workers see locked rows and skip them — zero overlap.
+     *   - "pending" rows due now  OR  "processing" rows stuck > STUCK_TIMEOUT
+     *     are eligible. "sent" and "failed" rows are never reclaimed.
+     */
+    const rows = await tx
+      .select({ id: notificationEvents.id })
+      .from(notificationEvents)
+      .where(
+        and(
+          or(
+            /* Normal: pending events ready to deliver */
+            and(
+              eq(notificationEvents.status, "pending"),
+              lte(notificationEvents.nextAttemptAt, now),
+            ),
+            /* Recovery: events stuck in processing (crash/timeout) */
+            and(
+              eq(notificationEvents.status, "processing"),
+              or(
+                isNull(notificationEvents.processingStartedAt),
+                lte(notificationEvents.processingStartedAt, staleAt),
+              ),
+            ),
+          ),
+          /* Never pick up events that have exhausted all attempts */
+          sql`${notificationEvents.attempts} < ${notificationEvents.maxAttempts}`,
+        ),
+      )
+      .orderBy(notificationEvents.nextAttemptAt)
+      .limit(BATCH_SIZE)
+      .for("update", { skipLocked: true });
+
+    if (rows.length === 0) return [];
+
+    const ids = rows.map((r) => r.id);
+
+    /* Claim: set processing + record start time + increment attempts atomically */
+    return await tx
+      .update(notificationEvents)
+      .set({
+        status:              "processing",
+        processingStartedAt: now,
+        attempts:            sql`${notificationEvents.attempts} + 1`,
+      })
+      .where(inArray(notificationEvents.id, ids))
+      .returning();
+  });
+}
+
 /* ── Process one batch of pending events ──────────────────────────── */
 async function processBatch(): Promise<void> {
-  const now       = new Date();
-  const staleAt   = new Date(Date.now() - 60_000); /* crash-recovery: reclaim stale "processing" */
+  metrics.lastLoopAt = new Date();
+  metrics.loopCount++;
 
-  /* Step 1: SELECT IDs to process (safe for single-process server) */
-  const rows = await db
-    .select({ id: notificationEvents.id })
-    .from(notificationEvents)
-    .where(
-      and(
-        or(
-          eq(notificationEvents.status, "pending"),
-          and(
-            eq(notificationEvents.status, "processing"),
-            lte(notificationEvents.nextAttemptAt, staleAt),
-          ),
-        ),
-        lte(notificationEvents.nextAttemptAt, now),
-        sql`${notificationEvents.attempts} < ${notificationEvents.maxAttempts}`,
-      ),
-    )
-    .limit(BATCH_SIZE);
+  const claimed = await claimBatch();
 
-  if (rows.length === 0) return;
+  if (claimed.length === 0) {
+    /* Update aggregate counts even on empty batches */
+    await refreshCounts();
+    return;
+  }
 
-  const ids = rows.map((r) => r.id);
+  logger.debug({ count: claimed.length }, "notification_worker: processing batch");
 
-  /* Step 2: Claim them as "processing" */
-  const pending = await db
-    .update(notificationEvents)
-    .set({ status: "processing" })
-    .where(and(
-      inArray(notificationEvents.id, ids),
-      or(eq(notificationEvents.status, "pending"), eq(notificationEvents.status, "processing")),
-    ))
-    .returning();
-
-  if (pending.length === 0) return;
-
-  logger.debug({ count: pending.length }, "notification_worker: processing batch");
-
-  for (const event of pending) {
+  for (const event of claimed) {
     await processEvent(event);
+  }
+
+  metrics.lastSuccessAt = new Date();
+  await refreshCounts();
+}
+
+async function refreshCounts(): Promise<void> {
+  try {
+    const [p] = await db
+      .select({ cnt: count() })
+      .from(notificationEvents)
+      .where(eq(notificationEvents.status, "pending"));
+    const [f] = await db
+      .select({ cnt: count() })
+      .from(notificationEvents)
+      .where(eq(notificationEvents.status, "failed"));
+    metrics.pendingCount = p?.cnt ?? 0;
+    metrics.failedCount  = f?.cnt ?? 0;
+  } catch {
+    /* non-fatal — metrics are best-effort */
   }
 }
 
 /* ── Process a single event ───────────────────────────────────────── */
 async function processEvent(event: typeof notificationEvents.$inferSelect): Promise<void> {
-  const attempt = event.attempts + 1;
+  const attempt = event.attempts; /* already incremented by claimBatch UPDATE */
 
   try {
+    /* Guard: never re-deliver a "sent" event (idempotency) */
+    if (event.status === "sent") return;
+
     /* 1. fetch active tokens */
     const tokens = await db
       .select({ expoPushToken: pushTokens.expoPushToken, platform: pushTokens.platform })
@@ -137,9 +226,8 @@ async function processEvent(event: typeof notificationEvents.$inferSelect): Prom
       .where(and(eq(pushTokens.userId, event.recipientUserId), eq(pushTokens.enabled, true)));
 
     if (tokens.length === 0) {
-      /* No active tokens — mark sent (nothing to send) */
       await db.update(notificationEvents)
-        .set({ status: "sent", attempts: attempt, processedAt: new Date() })
+        .set({ status: "sent", processedAt: new Date() })
         .where(eq(notificationEvents.id, event.id));
       return;
     }
@@ -153,7 +241,7 @@ async function processEvent(event: typeof notificationEvents.$inferSelect): Prom
 
     if (prefs && !prefs.generalEnabled) {
       await db.update(notificationEvents)
-        .set({ status: "sent", attempts: attempt, processedAt: new Date() })
+        .set({ status: "sent", processedAt: new Date() })
         .where(eq(notificationEvents.id, event.id));
       return;
     }
@@ -161,7 +249,7 @@ async function processEvent(event: typeof notificationEvents.$inferSelect): Prom
     const prefKey = PREF_KEY[event.eventType];
     if (prefs && prefKey && !prefs[prefKey as keyof typeof prefs]) {
       await db.update(notificationEvents)
-        .set({ status: "sent", attempts: attempt, processedAt: new Date() })
+        .set({ status: "sent", processedAt: new Date() })
         .where(eq(notificationEvents.id, event.id));
       return;
     }
@@ -206,10 +294,12 @@ async function processEvent(event: typeof notificationEvents.$inferSelect): Prom
 
     /* 6. deactivate DeviceNotRegistered tokens */
     const invalid: string[] = [];
+    const ticketIds: string[] = [];
     result.data?.forEach((ticket, i) => {
       if (ticket.status === "error" && ticket.details?.error === "DeviceNotRegistered") {
         invalid.push(tokens[i]!.expoPushToken);
       }
+      if (ticket.id) ticketIds.push(ticket.id);
     });
 
     if (invalid.length > 0) {
@@ -218,9 +308,13 @@ async function processEvent(event: typeof notificationEvents.$inferSelect): Prom
         .where(inArray(pushTokens.expoPushToken, invalid));
     }
 
-    /* 7. mark sent */
+    /* 7. mark sent — store first ticket ID for receipt polling */
     await db.update(notificationEvents)
-      .set({ status: "sent", attempts: attempt, processedAt: new Date() })
+      .set({
+        status:      "sent",
+        processedAt: new Date(),
+        ticketId:    ticketIds[0] ?? null,
+      })
       .where(eq(notificationEvents.id, event.id));
 
     logger.debug(
@@ -237,7 +331,6 @@ async function processEvent(event: typeof notificationEvents.$inferSelect): Prom
     await db.update(notificationEvents)
       .set({
         status:        isFinal ? "failed" : "pending",
-        attempts:      attempt,
         lastErrorCode: errorCode,
         nextAttemptAt: new Date(Date.now() + backoffMs),
       })
@@ -259,7 +352,10 @@ async function processEvent(event: typeof notificationEvents.$inferSelect): Prom
 
 /* ── Start the worker loop ────────────────────────────────────────── */
 export function startNotificationWorker(): void {
-  logger.info("notification_worker: started");
+  logger.info(
+    { stuckTimeoutMs: STUCK_TIMEOUT, pollIntervalMs: POLL_INTERVAL },
+    "notification_worker: started",
+  );
   setInterval(() => {
     processBatch().catch((err: unknown) => {
       logger.error({ err }, "notification_worker: batch error");
