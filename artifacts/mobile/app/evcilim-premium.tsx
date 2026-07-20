@@ -44,7 +44,9 @@ function PremiumInner({
 }) {
   const router = useRouter();
   const { t } = useTranslation();
-  const isSecondPet = source === "add_pet";
+  // `add_second_pet` is the canonical source. Keep `add_pet` as a legacy
+  // alias so older deep links still receive the correct copy.
+  const isSecondPet = source === "add_second_pet" || source === "add_pet";
 
   const { refresh } = usePetPremium();
   const [packages, setPackages] = useState<PurchasesPackage[]>([]);
@@ -77,7 +79,14 @@ function PremiumInner({
     setBuying(true);
     try {
       await purchasePetPremium(selected);
-      await refresh(true);
+      const verifiedStatus = await refresh(true);
+      if (verifiedStatus?.isPremium !== true) {
+        Alert.alert(
+          "Satın Alma Doğrulanamadı",
+          "Ödemen tamamlandı ancak Premium üyeliğin henüz doğrulanamadı. Lütfen satın alımlarını geri yüklemeyi dene."
+        );
+        return;
+      }
       const destination = returnTo ? decodeURIComponent(returnTo) : null;
       Alert.alert(
         "Evcilim Premium Aktif",

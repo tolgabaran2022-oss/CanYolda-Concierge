@@ -1055,7 +1055,7 @@ export function EvcilimTab({ botPad }: { botPad: number }) {
   // The param is cleared instead when the modal closes (see onClose below).
   useEffect(() => {
     if (openPremium !== "true") return;
-    const source  = paramSource  || "add_pet";
+    const source  = paramSource  || "add_second_pet";
     const returnTo = paramReturnTo ? decodeURIComponent(paramReturnTo) : undefined;
     showPremiumModal(source, returnTo);
   }, [openPremium, paramSource, paramReturnTo, showPremiumModal]);
@@ -1126,7 +1126,11 @@ export function EvcilimTab({ botPad }: { botPad: number }) {
         return;
       }
       Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
-      if (latestStatus.canAddPet) {
+      // The first pet is always free. Once a pet exists, only a verified
+      // Premium entitlement may open the add form. Do not rely solely on
+      // canAddPet here: a stale/miscomputed server limit must never bypass
+      // the second-pet paywall in the UI.
+      if (pets.length === 0 || latestStatus.isPremium === true) {
         nav("/evcilim/add");
       } else {
         showPremiumModal("add_second_pet", "/evcilim/add");
@@ -1140,7 +1144,7 @@ export function EvcilimTab({ botPad }: { botPad: number }) {
       addingPetLockRef.current = false;
       setAddingPet(false);
     }
-  }, [refreshPetPremiumStatus, nav, showPremiumModal]);
+  }, [pets.length, refreshPetPremiumStatus, nav, showPremiumModal]);
 
   const handleDeletePet = useCallback(async (id: string) => {
     setDeletingPetId(id);
