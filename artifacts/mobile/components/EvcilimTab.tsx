@@ -4,7 +4,7 @@ import * as Haptics from "expo-haptics";
 import { Image } from "expo-image";
 import { LinearGradient } from "expo-linear-gradient";
 import { useRouter } from "expo-router";
-import React, { useCallback, useEffect, useState } from "react";
+import React, { useCallback, useEffect, useRef, useState } from "react";
 import {
   ActivityIndicator,
   Alert,
@@ -1015,6 +1015,7 @@ export function EvcilimTab({ botPad }: { botPad: number }) {
   const [refreshing, setRefreshing]       = useState(false);
   const [deletingPetId, setDeletingPetId] = useState<string | null>(null);
   const [addingPet, setAddingPet]         = useState(false);
+  const addingPetLockRef                  = useRef(false);
 
   // Validate/initialize selectedPetId whenever pets list changes.
   // If the current selection still exists → keep it (this prevents
@@ -1037,39 +1038,42 @@ export function EvcilimTab({ botPad }: { botPad: number }) {
   );
 
   const handleAddPet = useCallback(async () => {
-    if (addingPet) return;
-
-    // Fast path: if cached status already says blocked, open premium modal
-    if (premiumStatus !== null && !premiumStatus.canAddPet) {
-      Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
-      setPremiumModalOpen(true);
-      return;
-    }
-
+    // Synchronous ref guard prevents double-invocation within the same render cycle
+    if (addingPetLockRef.current) return;
+    addingPetLockRef.current = true;
     setAddingPet(true);
+
     try {
+      // Fast path: cached status already says blocked → open premium modal immediately
+      if (premiumStatus !== null && !premiumStatus.canAddPet) {
+        Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+        setPremiumModalOpen(true);
+        return;
+      }
+
       const fresh = await refreshPetPremiumStatus(false);
       if (fresh?.canAddPet) {
         Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
         nav("/evcilim/add");
       } else if (fresh === null) {
-        // Not authenticated — fail gracefully with error
+        // Not authenticated
         Alert.alert("Oturum Gerekli", "Evcil hayvan eklemek için lütfen giriş yapın.");
       } else {
-        // canAddPet === false — open premium modal
+        // canAddPet === false
         Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
         setPremiumModalOpen(true);
       }
     } catch {
-      // API error — show clear error, do not silently send to premium or form
+      // API error — show clear error, do not silently redirect to premium or form
       Alert.alert(
         "Bağlantı Hatası",
         "Evcil hayvan bilgileri şu anda alınamadı. Lütfen internet bağlantınızı kontrol edip tekrar deneyin."
       );
     } finally {
+      addingPetLockRef.current = false;
       setAddingPet(false);
     }
-  }, [addingPet, premiumStatus, refreshPetPremiumStatus, nav]);
+  }, [premiumStatus, refreshPetPremiumStatus, nav]);
 
   const handleDeletePet = useCallback(async (id: string) => {
     setDeletingPetId(id);
