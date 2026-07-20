@@ -167,3 +167,9 @@ id = "Dcdab-KfXRGKk7v0vkZoE"
 uri = "file://evcilim_sayfasi.zip"
 type = "unspecified"
 title = "Evcilim Sayfası — Tüm Dosyalar"
+
+[[outputs]]
+id = "bR2V_zo_NQWX-FwZD-El7"
+uri = "file://revenuecat_dosyalari.zip"
+type = "unspecified"
+title = "RevenueCat Dosyaları"
