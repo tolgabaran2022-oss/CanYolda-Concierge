@@ -203,7 +203,11 @@
       "messages": "Mesajlar",
       "adoption": "Sahiplendirme Talepleri",
       "reminders": "Hatırlatıcılar (Aşı / Randevu)",
-      "emergency": "Acil Sokak Hayvanı Bildirimleri"
+      "emergency": "Acil Sokak Hayvanı Bildirimleri",
+      "enableTitle": "Bildirimleri Etkinleştir",
+      "enableSubtitle": "Mesaj ve sahiplenme bildirimlerini almak için dokunun.",
+      "deniedTitle": "Bildirim İzni",
+      "deniedBody": "Bildirimlere izin verilmedi. Cihaz ayarlarından bildirimleri etkinleştirebilirsiniz."
     }
   },
   "map": {

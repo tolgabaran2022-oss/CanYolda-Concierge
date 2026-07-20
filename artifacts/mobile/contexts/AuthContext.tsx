@@ -8,7 +8,7 @@ import React, {
 } from "react";
 import { apiSyncProfile, apiUpdateProfile } from "@/lib/socialApi";
 import { initializeRevenueCat, loginRevenueCat, logoutRevenueCat } from "@/services/revenueCat";
-import { registerForPushNotifications, deregisterPushToken } from "@/services/notifications";
+import { syncExistingPushToken, deregisterPushToken } from "@/services/notifications";
 
 const API_BASE = process.env.EXPO_PUBLIC_DOMAIN
   ? `https://${process.env.EXPO_PUBLIC_DOMAIN}/api`
@@ -145,8 +145,8 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       apiSyncProfile({ id: safe.id, email: safe.email, name: safe.name }).catch(() => {});
       /* Associate RevenueCat identity with the new user UUID (non-blocking) */
       loginRevenueCat(safe.id).catch(() => {});
-      /* Register device push token (non-blocking; silently skips on web/simulator) */
-      registerForPushNotifications(data.token!).catch(() => {});
+      /* Silently sync push token if permission already granted — never asks user */
+      syncExistingPushToken(data.token!).catch(() => {});
     },
     []
   );
@@ -181,8 +181,8 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     }).catch(() => {});
     /* Associate RevenueCat identity with the authenticated user UUID (non-blocking) */
     loginRevenueCat(safe.id).catch(() => {});
-    /* Register device push token (non-blocking; silently skips on web/simulator) */
-    registerForPushNotifications(data.token!).catch(() => {});
+    /* Silently sync push token if permission already granted — never asks user */
+    syncExistingPushToken(data.token!).catch(() => {});
   }, []);
 
   /* ── Logout ───────────────────────────────────────────── */

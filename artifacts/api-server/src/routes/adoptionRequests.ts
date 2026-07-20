@@ -3,6 +3,7 @@ import { and, desc, eq, ne } from "drizzle-orm";
 import { db, adoptionRequests, adoptionListings, notifications } from "@workspace/db";
 import { logger } from "../lib/logger.js";
 import { extractUserId } from "../lib/jwtAuth.js";
+import { sendPushNotification } from "../lib/pushService.js";
 
 const router = Router();
 
@@ -73,6 +74,16 @@ router.post("/adoption-requests", async (req, res) => {
     }).catch((err) => logger.error({ err }, "Failed to create adoption notification"));
 
     res.status(201).json(request);
+
+    /* ── Push notification to listing owner (fire-and-forget) ── */
+    if (listing.userId) {
+      sendPushNotification(listing.userId, {
+        type:     "adoption_request",
+        entityId: request.id,
+        title:    "Yeni sahiplenme talebi",
+        body:     `${String(requesterName ?? "Biri")}, ${listing.petName} için talep gönderdi.`,
+      }).catch(() => {});
+    }
   } catch (err) {
     req.log.error({ err }, "POST /adoption-requests failed");
     res.status(500).json({ error: "Talep gönderilemedi" });
@@ -217,6 +228,25 @@ router.patch("/adoption-requests/:id/status", async (req, res) => {
     }
 
     res.json(updated);
+
+    /* ── Push notification to requester on accept/reject (fire-and-forget) ── */
+    if (status === "accepted" || status === "rejected") {
+      const [listing] = await db
+        .select({ petName: adoptionListings.petName })
+        .from(adoptionListings)
+        .where(eq(adoptionListings.id, request.listingId));
+
+      const pushBody = status === "accepted"
+        ? `${listing?.petName ?? "İlan"} için talebiniz kabul edildi 🎉`
+        : `${listing?.petName ?? "İlan"} için talebiniz bu kez kabul edilmedi.`;
+
+      sendPushNotification(request.requesterId, {
+        type:     "adoption_request",
+        entityId: request.id,
+        title:    status === "accepted" ? "Talep Kabul Edildi" : "Talep Güncellendi",
+        body:     pushBody,
+      }).catch(() => {});
+    }
   } catch (err) {
     req.log.error({ err }, "PATCH /adoption-requests/:id/status failed");
     res.status(500).json({ error: "Durum güncellenemedi" });

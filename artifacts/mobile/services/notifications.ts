@@ -151,20 +151,50 @@ export async function deregisterPushToken(authToken: string): Promise<void> {
   }
 }
 
-/* ── Full registration flow (call after login) ───────────── */
-export async function registerForPushNotifications(authToken: string): Promise<void> {
+/**
+ * syncExistingPushToken — called silently on login/register.
+ * ONLY syncs if system permission is already granted.
+ * Never opens a permission dialog. Safe to call unconditionally after auth.
+ */
+export async function syncExistingPushToken(authToken: string): Promise<void> {
   if (Platform.OS === "web") return;
   if (!Device.isDevice)       return;
+
+  try {
+    const perm = (await Notifications.getPermissionsAsync()) as _PermResult;
+    const alreadyGranted = perm.granted === true || perm.status === "granted";
+    if (!alreadyGranted) return; /* Not granted yet — user must opt in explicitly */
+
+    await setupAndroidChannels();
+
+    const token = await getExpoPushToken();
+    if (!token) return;
+
+    await registerPushTokenWithBackend(token, authToken);
+  } catch {
+    /* non-fatal */
+  }
+}
+
+/**
+ * requestAndRegisterPushToken — call ONLY after explicit user action
+ * (e.g. user taps "Enable Notifications" in the account screen).
+ * This is the function that may open the OS permission dialog.
+ */
+export async function requestAndRegisterPushToken(authToken: string): Promise<boolean> {
+  if (Platform.OS === "web") return false;
+  if (!Device.isDevice)       return false;
 
   await setupAndroidChannels();
 
   const granted = await requestNotificationPermission();
-  if (!granted) return;
+  if (!granted) return false;
 
   const token = await getExpoPushToken();
-  if (!token) return;
+  if (!token) return false;
 
   await registerPushTokenWithBackend(token, authToken);
+  return true;
 }
 
 /* ── Notification deep-link payload type ────────────────── */

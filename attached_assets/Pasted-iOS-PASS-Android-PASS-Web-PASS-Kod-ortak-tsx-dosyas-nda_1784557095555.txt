@@ -1,0 +1,296 @@
+iOS: PASS | Android: PASS | Web: PASS
+
+“Kod ortak .tsx dosyasında ve Platform.OS kontrollü” olması gerçek platform testi değildir. Bu sonuçlar en fazla STATIC REVIEW olabilir.
+
+Ayrıca üç kritik eksik görüyorum:
+
+AuthContext içinde giriş/kayıt sırasında doğrudan registerForPushNotifications() çağrılması, kullanıcıya açıklama göstermeden izin penceresi açabilir.
+Mesaj, sahiplenme talebi ve hatırlatıcı olaylarının gerçekten pushService.ts servisine bağlandığı belirtilmemiş. Altyapı kurulmuş olabilir ama bildirim üreten olay yoksa uçtan uca sistem çalışmaz.
+Fiziksel cihazda foreground, background, terminated ve deep-link testi yapılmamış.
+
+Replit’e şu doğrulama ve tamamlama promptunu gönder:
+
+PUSH NOTIFICATION REGRESYON, UÇTAN UCA BAĞLANTI VE GERÇEK TEST GÖREVİ
+
+Son rapordaki:
+
+iOS: PASS
+Android: PASS
+Web: PASS
+
+sonucu geçersizdir.
+
+Ortak `.tsx` kodu kullanılması veya `Platform.OS` koşulları gerçek platform testi değildir.
+
+Sonuçları yeniden sınıflandır:
+
+- Fiziksel iOS cihaz testi yoksa iOS: BLOCKED
+- Fiziksel Android cihaz testi yoksa Android: BLOCKED
+- Web production build gerçekten çalıştırılmadıysa Web: NOT TESTED
+- Yalnız kod incelendiyse STATIC REVIEW
+
+1. İZİN AKIŞINI DÜZELT
+
+`AuthContext` içinde giriş veya kayıt tamamlanır tamamlanmaz doğrudan:
+
+```tsx
+registerForPushNotifications()
+
+çağırıp sistem izin penceresi açma.
+
+Doğru akış:
+
+Kullanıcı giriş/kayıt işlemini tamamlar
+→ Uygulama ana ekranı açılır
+→ Bildirimlerin faydasını anlatan uygulama içi açıklama gösterilir
+→ “Bildirimleri Aç” butonuna basılır
+→ Sistem permission penceresi açılır
+→ İzin verilirse token alınır ve kaydedilir
+
+Kullanıcı “Şimdi Değil” derse:
+
+Sistem permission penceresi açılmamalı.
+Ana uygulamayı kullanabilmeli.
+Ayarlar içinden daha sonra bildirimleri açabilmeli.
+Her login işleminde açıklama tekrar gösterilmemeli.
+Kullanıcının seçimi kalıcı saklanmalı.
+
+Eğer sistem izni daha önce verilmişse login sonrasında permission ekranı göstermeden mevcut tokenı senkronize etmek kabul edilebilir.
+
+Akışı iki fonksiyona ayır:
+
+syncExistingPushToken()
+
+Bu fonksiyon mevcut sistem izni zaten granted ise tokenı sessizce senkronize eder; yeni izin istemez.
+
+requestAndRegisterPushToken()
+
+Bu fonksiyon yalnızca kullanıcının “Bildirimleri Aç” aksiyonundan sonra sistem izni ister.
+
+GERÇEK OLAY BAĞLANTILARINI BUL
+
+Projeyi tarayarak pushService.ts fonksiyonlarının nerelerde çağrıldığını raporla.
+
+Aşağıdaki olayların her biri gerçekten backend notification sender’a bağlanmalı:
+
+Yeni mesaj oluşturuldu
+Yeni sahiplenme talebi oluşturuldu
+Sahiplenme talebi kabul edildi
+Sahiplenme talebi reddedildi
+Aşı hatırlatıcısı
+Randevu hatırlatıcısı
+İlaç hatırlatıcısı
+Acil durum bildirimi gerekiyorsa
+
+Yalnızca servis dosyasının bulunması yeterli değildir.
+
+Her olay için raporla:
+
+Olay	Tetikleyen dosya	Kalıcı işlem	Push çağrısı	Alıcı	Deep link
+
+Push çağrısı, ana DB işlemi başarıyla tamamlanmadan yapılmamalı.
+
+Push gönderimi başarısız olduğunda ana kullanıcı işlemi yanlışlıkla başarısız gösterilmemeli; retry/log mekanizması kullanılmalı.
+
+MESAJ BİLDİRİMİ
+
+Gerçek iki kullanıcıyla:
+
+Kullanıcı A → Kullanıcı B’ye mesaj gönderir
+
+Doğrula:
+
+Mesaj DB’ye tek kez yazılır.
+B kullanıcısının bildirim tercihi kontrol edilir.
+A kullanıcısına kendi mesajı için bildirim gönderilmez.
+B’nin aktif tokenlarına push gönderilir.
+Birden fazla cihaz varsa bütün aktif cihazlar dikkate alınır.
+Aynı event iki kez bildirim oluşturmaz.
+Bildirime dokununca doğru konuşma açılır.
+Yetkisiz kullanıcı konuşmayı açamaz.
+SAHİPLENME BİLDİRİMLERİ
+
+Gerçek iki kullanıcıyla test et:
+
+Kullanıcı A ilana talep gönderir
+→ İlan sahibi B bildirim alır
+B talebi kabul eder
+→ A kabul bildirimi alır
+B talebi reddeder
+→ A ret bildirimi alır
+
+Duplicate talep veya duplicate push oluşmamalı.
+
+HATIRLATICILAR
+
+Aşı, randevu ve ilaç kayıtlarında şu soruyu kesin cevapla:
+
+Bildirim hangi scheduler/cron mekanizmasıyla, uygulama tamamen kapalıyken gönderiliyor?
+
+Eğer yalnızca mobil uygulama açıkken çalışan timer/useEffect bulunuyorsa bu sistem yeterli değildir.
+
+Güvenilir backend scheduler veya doğru local notification scheduling uygula.
+
+Her kayıt için:
+
+Oluşturma
+Tarih değiştirme
+Silme
+Tamamlandı işaretleme
+Saat dilimi
+Duplicate schedule
+Süresi geçmiş tarih
+
+davranışını doğrula.
+
+TOKEN YAŞAM DÖNGÜSÜ
+
+Test et:
+
+İlk izin
+Aynı cihazda tekrar login
+Logout
+Başka kullanıcıyla login
+Token refresh
+Bir kullanıcının iki cihazı
+Uygulama silme/yeniden kurma
+DeviceNotRegistered
+Genel bildirim toggle kapalı
+Alt kategori kapalı
+Sistem izni kapalı
+Hesap silme
+
+Logout sırasında başka cihazdaki tokenı silme.
+
+Yalnızca mevcut installation/token bağlantısı pasifleştirilmeli.
+
+Token başka kullanıcıya aitken sahipliği sessizce devralınmamalı.
+
+RLS VE API GÜVENLİĞİ
+
+Gerçek API testleri yap:
+
+Auth olmadan token POST → 401
+Auth olmadan token DELETE → 401
+Auth olmadan preferences GET/PATCH → 401
+Kullanıcı A, B’nin tokenını silemez
+Kullanıcı A, B’nin tercihlerini değiştiremez
+Client bütün tokenları listeleyemez
+Aynı token tekrar kaydedilince duplicate oluşmaz
+Geçersiz Expo token reddedilir
+Keyfi user_id gönderilse bile authenticated kullanıcı kullanılır
+Service-role key client bundle içinde bulunmaz
+
+DB’den sonuçları yeniden okuyarak doğrula.
+
+WEB TESTİ
+
+Gerçek Web production build çalıştır.
+
+Doğrula:
+
+Build tamamlanıyor.
+expo-notifications importu buildi bozmuyor.
+Login/kayıt sırasında permission hatası çıkmıyor.
+Push token API isteği yapılmıyor.
+Account bildirim ayarları Web’de kontrollü davranıyor.
+Console’da native-module hatası yok.
+Network’te başarısız push-token isteği yok.
+
+Bunlar çalıştırılırsa yalnız Web için PASS verilebilir.
+
+NATIVE TEST
+
+Yeni config plugin ve izinler build-time değişikliklerdir. Yeni development build oluşturulmadan test yapılmış sayılmaz.
+
+Android:
+
+Yeni development build
+Fiziksel cihaz
+Android 13+
+İzin kabul
+İzin ret
+Foreground
+Background
+Terminated
+Deep link
+Token DB doğrulaması
+
+iOS:
+
+Yeni development/TestFlight build
+Fiziksel cihaz
+İzin kabul
+İzin ret
+Foreground
+Background
+Terminated
+Deep link
+Token DB doğrulaması
+
+Fiziksel cihaz yoksa BLOCKED yaz.
+
+RECEIVER İZNİ KONTROLÜ
+
+RECEIVE_BOOT_COMPLETED izninin gerçekten hangi özellik için gerekli olduğunu doğrula.
+
+Gereksizse kaldır.
+
+Gerekliyse:
+
+Hangi notification scheduling davranışında kullanıldığını raporla.
+Permission’ın neden gerekli olduğunu belgeleyerek koru.
+ABONELİK YÖNETİMİ
+
+Linkleri gerçek cihazda doğrula:
+
+iOS → Apple abonelik yönetimi
+Android → uygulamanın doğru Google Play abonelik sayfası
+Web → açıklayıcı bilgi
+
+Google Play linkinde mümkünse doğru package name/product bilgisi kullan.
+
+Restore purchases akışını ayrıca test etmeden PASS verme.
+
+RAPORU DÜZELT
+
+Şu ifadeyi kaldır:
+
+iOS: PASS | Android: PASS | Web: PASS
+
+Gerçek sonuçları yaz:
+
+iOS:
+Android:
+Web:
+Push altyapısı:
+Push olay bağlantıları:
+DB/RLS:
+Deep links:
+
+Her biri için:
+
+PASS
+FAIL
+STATIC REVIEW
+BLOCKED
+NOT TESTED
+
+kullan.
+
+P0 yalnızca aşağıdakilerin tamamı kanıtlanınca kapanabilir:
+
+Backend sender çalışıyor
+En az mesaj ve sahiplenme olayı gerçekten bağlı
+Hatırlatıcı teslimat yöntemi doğrulandı
+Token API ve RLS testleri PASS
+Android fiziksel cihaz push PASS
+iOS fiziksel cihaz push PASS
+Foreground/background/terminated PASS
+Deep link PASS
+
+Bunlar yoksa:
+
+IMPLEMENTED — NATIVE VERIFICATION BLOCKED
+
+yaz ve P0’ı tamamen kapatma.

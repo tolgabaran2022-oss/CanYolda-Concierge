@@ -1,6 +1,7 @@
 import { Router } from "express";
 import { and, desc, eq, gt, isNull, or, sql } from "drizzle-orm";
 import { db, pool, conversations, messages } from "@workspace/db";
+import { sendPushNotification } from "../lib/pushService.js";
 
 import { extractUserId } from "../lib/jwtAuth.js";
 
@@ -286,6 +287,16 @@ router.post("/conversations/:id/messages", async (req, res) => {
       isRead:         inserted.isRead,
       createdAt:      inserted.createdAt?.toISOString() ?? new Date().toISOString(),
     });
+
+    /* ── Push notification to the other participant (fire-and-forget) ── */
+    const receiverId = conv.userOne === myId ? conv.userTwo : conv.userOne;
+    const preview    = inserted.imageUrl ? "📷 Fotoğraf" : (message?.trim().slice(0, 80) ?? "");
+    sendPushNotification(receiverId, {
+      type:     "message",
+      entityId: req.params.id,
+      title:    "Yeni mesaj",
+      body:     preview || "Yeni bir mesaj aldınız.",
+    }).catch(() => {/* non-fatal */});
   } catch (err) {
     req.log.error(err);
     res.status(500).json({ error: "server error" });

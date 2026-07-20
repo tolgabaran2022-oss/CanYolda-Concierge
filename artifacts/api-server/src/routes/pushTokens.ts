@@ -24,6 +24,25 @@ router.post("/push-tokens", async (req, res) => {
 
     const validPlatform = ["ios", "android"].includes(platform ?? "") ? platform! : "unknown";
 
+    /* Check if token already exists and belongs to a different user.
+       This happens when a device is wiped/shared and re-registered.
+       We deactivate the old record first, then insert fresh — never silently
+       reassign ownership, which would allow one user to block another's pushes. */
+    const [existing] = await db
+      .select({ userId: pushTokens.userId })
+      .from(pushTokens)
+      .where(eq(pushTokens.expoPushToken, token))
+      .limit(1);
+
+    if (existing && existing.userId !== userId) {
+      /* Different user owned this token — deactivate old record before re-registering */
+      req.log.warn({ oldOwner: existing.userId, newOwner: userId }, "Push token ownership transfer detected — deactivating old record");
+      await db
+        .update(pushTokens)
+        .set({ enabled: false, updatedAt: new Date() })
+        .where(eq(pushTokens.expoPushToken, token));
+    }
+
     await db
       .insert(pushTokens)
       .values({

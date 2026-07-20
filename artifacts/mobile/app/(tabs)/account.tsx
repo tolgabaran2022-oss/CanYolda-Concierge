@@ -31,6 +31,8 @@ import { apiFetch, API_BASE } from "@/lib/apiClient";
 import AsyncStorage from "@react-native-async-storage/async-storage";
 import type { LangCode } from "@/i18n";
 import { SUPPORTED_LANGUAGES } from "@/i18n";
+import * as Notifications from "expo-notifications";
+import { requestAndRegisterPushToken } from "@/services/notifications";
 
 async function uploadAvatarPhoto(localUri: string): Promise<string> {
   const filename = localUri.split("/").pop() ?? "avatar.jpg";
@@ -243,6 +245,34 @@ export default function AccountScreen() {
 
   /* ── Language modal ──────────────────────────────────────────── */
   const [langModalVisible, setLangModalVisible] = useState(false);
+
+  /* ── Push permission status ─────────────────────────────────── */
+  const [pushPermGranted, setPushPermGranted] = useState<boolean | null>(null);
+  const [pushEnabling,    setPushEnabling]    = useState(false);
+
+  useEffect(() => {
+    if (Platform.OS === "web") { setPushPermGranted(false); return; }
+    Notifications.getPermissionsAsync().then((p) => {
+      setPushPermGranted((p as any).granted === true || (p as any).status === "granted");
+    }).catch(() => setPushPermGranted(false));
+  }, []);
+
+  const handleEnableNotifications = useCallback(async () => {
+    const storedToken = await AsyncStorage.getItem("@canyoldasi:jwt").catch(() => null);
+    if (!storedToken) return;
+    setPushEnabling(true);
+    try {
+      const success = await requestAndRegisterPushToken(storedToken);
+      if (success) {
+        setPushPermGranted(true);
+        Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
+      } else {
+        Alert.alert(t("account.pushNotifications.deniedTitle"), t("account.pushNotifications.deniedBody"));
+      }
+    } finally {
+      setPushEnabling(false);
+    }
+  }, [t]);
 
   /* ── Notification preferences ────────────────────────────────── */
   type NotifPrefs = {
@@ -509,6 +539,40 @@ export default function AccountScreen() {
         {/* ── Bildirimler ─────────────────────────────────── */}
         <View style={S.section}>
           <Text style={[S.sectionTitle, { color: T.textFaint }]}>{t("account.notifications")}</Text>
+
+          {/* Enable push notifications prompt — shown only on native when permission not yet granted */}
+          {Platform.OS !== "web" && pushPermGranted === false && (
+            <Pressable
+              onPress={handleEnableNotifications}
+              disabled={pushEnabling}
+              style={({ pressed }) => [{
+                backgroundColor: T.purpleFaint,
+                borderRadius: 12,
+                borderWidth: 1,
+                borderColor: T.purple + "44",
+                padding: 14,
+                flexDirection: "row",
+                alignItems: "center",
+                gap: 10,
+                marginBottom: 10,
+                opacity: pressed ? 0.75 : 1,
+              }]}
+            >
+              <Icon name="notifications-outline" size={20} color={T.purple} />
+              <View style={{ flex: 1 }}>
+                <Text style={{ color: T.purple, fontWeight: "600", fontSize: 14 }}>
+                  {t("account.pushNotifications.enableTitle")}
+                </Text>
+                <Text style={{ color: T.textFaint, fontSize: 12, marginTop: 2 }}>
+                  {t("account.pushNotifications.enableSubtitle")}
+                </Text>
+              </View>
+              {pushEnabling
+                ? <ActivityIndicator size="small" color={T.purple} />
+                : <Icon name="chevron-forward-outline" size={16} color={T.purple} />}
+            </Pressable>
+          )}
+
           <View style={[S.card, { backgroundColor: T.card, borderColor: T.border }]}>
 
             {/* General / Ana toggle */}

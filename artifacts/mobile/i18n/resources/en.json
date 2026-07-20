@@ -203,7 +203,11 @@
       "messages": "Messages",
       "adoption": "Adoption Requests",
       "reminders": "Reminders (Vaccine / Appointment)",
-      "emergency": "Emergency Stray Animal Alerts"
+      "emergency": "Emergency Stray Animal Alerts",
+      "enableTitle": "Enable Notifications",
+      "enableSubtitle": "Tap to receive message and adoption alerts.",
+      "deniedTitle": "Notification Permission",
+      "deniedBody": "Notification permission was denied. You can enable notifications in your device settings."
     }
   },
   "map": {
