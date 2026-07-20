@@ -66,15 +66,20 @@ const ANDROID_CHANNEL: Record<string, string> = {
 };
 
 /* ── In-process metrics (read by health endpoint) ─────────────────── */
+export const WORKER_POLL_MS  = POLL_INTERVAL;
+export const WORKER_GRACE_MS = 60_000; /* 1 min: enough for 6 loops before flagging */
+
 export interface WorkerMetrics {
-  lastLoopAt:        Date | null;
-  lastSuccessAt:     Date | null;
-  pendingCount:      number;
-  failedCount:       number;
-  loopCount:         number;
+  startedAt:     Date | null;
+  lastLoopAt:    Date | null;
+  lastSuccessAt: Date | null;
+  pendingCount:  number;
+  failedCount:   number;
+  loopCount:     number;
 }
 
 const metrics: WorkerMetrics = {
+  startedAt:     null,
   lastLoopAt:    null,
   lastSuccessAt: null,
   pendingCount:  0,
@@ -178,18 +183,14 @@ async function processBatch(): Promise<void> {
 
   const claimed = await claimBatch();
 
-  if (claimed.length === 0) {
-    /* Update aggregate counts even on empty batches */
-    await refreshCounts();
-    return;
+  if (claimed.length > 0) {
+    logger.debug({ count: claimed.length }, "notification_worker: processing batch");
+    for (const event of claimed) {
+      await processEvent(event);
+    }
   }
 
-  logger.debug({ count: claimed.length }, "notification_worker: processing batch");
-
-  for (const event of claimed) {
-    await processEvent(event);
-  }
-
+  /* Mark success on every completed loop — empty queue is healthy, not degraded */
   metrics.lastSuccessAt = new Date();
   await refreshCounts();
 }
@@ -352,10 +353,15 @@ async function processEvent(event: typeof notificationEvents.$inferSelect): Prom
 
 /* ── Start the worker loop ────────────────────────────────────────── */
 export function startNotificationWorker(): void {
+  metrics.startedAt = new Date();
   logger.info(
     { stuckTimeoutMs: STUCK_TIMEOUT, pollIntervalMs: POLL_INTERVAL },
     "notification_worker: started",
   );
+  /* Run once immediately — don't wait for first interval tick */
+  processBatch().catch((err: unknown) => {
+    logger.error({ err }, "notification_worker: initial batch error");
+  });
   setInterval(() => {
     processBatch().catch((err: unknown) => {
       logger.error({ err }, "notification_worker: batch error");

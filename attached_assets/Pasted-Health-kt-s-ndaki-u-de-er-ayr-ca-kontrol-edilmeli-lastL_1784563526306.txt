@@ -1,0 +1,84 @@
+Health çıktısındaki şu değer ayrıca kontrol edilmeli:
+
+"lastLoopAt": null,
+"lastSuccessAt": null,
+"loopCount": 0
+
+Scheduler çalışmış fakat notification worker henüz tek döngü bile tamamlamamış. 10–20 saniye sonra tekrar kontrol edilmeli ve test eventi gerçekten pending → processing → sent olmalı.
+
+Şimdi yapılacaklar
+1. Replit deployment türü
+
+CanYoldaşı API + notification worker için Reserved VM Deployment seçmeni öneriyorum. Reserved VM sürekli çalışmak üzere tasarlanıyor; Autoscale deployment uyuyabileceği için setInterval worker ve scheduler güvenilir olmaz. Replit deployment türleri
+
+Seçim:
+
+Deployment type: Reserved VM
+App type: Web Server
+Run command: Projenin gerçek production API başlatma komutu
+
+Ayrı reminder işi istersen Scheduled Deployment da kullanılabilir; Replit bunu bildirim kontrolü gibi periyodik işler için öneriyor. Ancak gerçek zamanlı mesaj push worker’ı için Reserved VM daha uygun. Replit Scheduled Deployments
+
+2. Production secret’ları ekle
+
+Replit Published App Secrets:
+
+EXPO_PUBLIC_REVENUECAT_IOS_API_KEY
+EXPO_PUBLIC_REVENUECAT_ANDROID_API_KEY
+REVENUECAT_WEBHOOK_AUTH_TOKEN
+JWT_SECRET
+DATABASE_URL
+RESEND_API_KEY
+
+Kurallar:
+
+RevenueCat iOS/Android anahtarları platforma ait public SDK key olmalı.
+Test Store key kullanma.
+Webhook token güçlü ve rastgele oluşturulmalı.
+Webhook token EXPO_PUBLIC_ olmamalı.
+Secret değerlerini bana veya Replit sohbetine düz metin olarak gönderme.
+Development Secrets ile Published App Secrets’ın ayrı olabileceğini unutma.
+3. Production worker doğrulaması
+
+Deployment sonrası Replit’e şunu yaptır:
+
+PRODUCTION DEPLOYMENT VERIFICATION
+
+Reserved VM production deployment üzerinde doğrula:
+
+1. Deployment açıldıktan sonra en az 30 saniye bekle.
+2. /api/healthz endpoint’ini üç kez, 10 saniye arayla çağır.
+3. Şunların arttığını doğrula:
+   - worker.loopCount
+   - scheduler.loopCount
+4. lastLoopAt ve lastSuccessAt null olmamalı.
+5. Test notification_event oluştur.
+6. Event durumunu takip et:
+   pending → processing → sent
+7. ticketId kaydedildiğini doğrula.
+8. Aynı event_key ile ikinci kayıt oluşturmayı dene.
+9. Duplicate event ve duplicate gönderim oluşmadığını doğrula.
+10. Backend process’i yeniden başlat.
+11. Worker ve scheduler’ın otomatik tekrar başladığını doğrula.
+12. Restart sonrası stuck/pending eventlerin işlendiğini doğrula.
+
+Health endpoint şu koşullarda status: degraded dönmeli:
+- Startup grace period sonrasında worker.lastSuccessAt null
+- Scheduler.lastSuccessAt null
+- Worker/scheduler beklenen aralığın iki katından uzun süredir çalışmamış
+- DB bağlantısı yok
+
+Public health endpoint hassas hata veya secret göstermemeli.
+
+Gerçek test yapılmadan production worker’a PASS verme.
+Sonraki release sırası
+Reserved VM deployment ve production worker testi
+RevenueCat anahtarları ve webhook
+EAS Android development build
+Android fiziksel cihaz: push, kamera, konum, IAP
+EAS iOS development/TestFlight build
+iPhone: push, kamera, konum, Apple login, IAP
+Web production build
+App Store ve Play Store metadata
+Production build
+Son GO/NO-GO

@@ -43,14 +43,19 @@ const POLL_INTERVAL   = 5 * 60 * 1_000;   /* 5 minutes */
 const WINDOW_FUTURE   = 15 * 60 * 1_000;  /* notify up to 15 min ahead */
 const WINDOW_PAST     = 30 * 60 * 1_000;  /* ignore if > 30 min overdue */
 
+export const SCHEDULER_POLL_MS  = POLL_INTERVAL;
+export const SCHEDULER_GRACE_MS = 2 * 60_000; /* 2 min: first run is immediate */
+
 /* ── In-process metrics (read by health endpoint) ─────────────────── */
 export interface SchedulerMetrics {
+  startedAt:     Date | null;
   lastLoopAt:    Date | null;
   lastSuccessAt: Date | null;
   loopCount:     number;
 }
 
 const metrics: SchedulerMetrics = {
+  startedAt:     null,
   lastLoopAt:    null,
   lastSuccessAt: null,
   loopCount:     0,
@@ -286,6 +291,7 @@ async function pollDueReminders(): Promise<void> {
 
 /* ── Start the scheduler ─────────────────────────────────────────── */
 export function startReminderScheduler(): void {
+  metrics.startedAt = new Date();
   logger.info(
     { pollIntervalMs: POLL_INTERVAL, windowFutureMs: WINDOW_FUTURE, timezone: "Europe/Istanbul" },
     "reminder_scheduler: started",
