@@ -13,6 +13,7 @@ import {
   View,
 } from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
+import { useTranslation } from "react-i18next";
 import { useAuth } from "@/contexts/AuthContext";
 import { useTheme } from "@/hooks/useTheme";
 import { apiGetOrCreateConversation } from "@/lib/messagesApi";
@@ -21,21 +22,17 @@ import { apiGetFullProfile } from "@/lib/socialApi";
 
 const CAT_FALLBACK = "https://loremflickr.com/300/300/cat?lock=500";
 
-const PET_TYPE_LABELS: Record<string, string> = {
-  cat: "Kedi", dog: "Köpek", bird: "Kuş",
-  rabbit: "Tavşan", hamster: "Hamster", fish: "Balık",
-};
-
 /* ── TopBar ─────────────────────────────────────────────────── */
 function TopBar({ username, onBack }: { username: string; onBack: () => void }) {
   const T = useTheme();
+  const { t } = useTranslation();
   return (
     <View style={[TB.row, { borderBottomColor: T.border }]}>
       <Pressable onPress={onBack} style={TB.back} hitSlop={12}>
         <Icon name="chevron-back" size={22} color={T.text} />
       </Pressable>
       <Text style={[TB.title, { color: T.text }]} numberOfLines={1}>
-        {username ? `@${username}` : "Profil"}
+        {username ? `@${username}` : t("profile.title")}
       </Text>
       <View style={TB.placeholder} />
     </View>
@@ -44,6 +41,7 @@ function TopBar({ username, onBack }: { username: string; onBack: () => void }) 
 
 /* ── Screen ─────────────────────────────────────────────────── */
 export default function UserProfileScreen() {
+  const { t }       = useTranslation();
   const T           = useTheme();
   const insets      = useSafeAreaInsets();
   const router      = useRouter();
@@ -115,14 +113,14 @@ export default function UserProfileScreen() {
   if (notFound) {
     return (
       <View style={[S.root, { backgroundColor: T.bg, paddingTop: topPad }]}>
-        <TopBar username="Profil" onBack={() => router.back()} />
+        <TopBar username={t("profile.notFound")} onBack={() => router.back()} />
         <View style={S.center}>
           <View style={[S.notFoundCircle, { backgroundColor: T.purpleFaint }]}>
             <Icon name="person-outline" size={36} color={T.purple} />
           </View>
-          <Text style={[S.notFoundTitle, { color: T.text }]}>Profil bulunamadı</Text>
+          <Text style={[S.notFoundTitle, { color: T.text }]}>{t("profile.notFound")}</Text>
           <Text style={[S.notFoundSub, { color: T.textMuted }]}>
-            Bu kullanıcı mevcut değil veya hesabını silmiş olabilir.
+            {t("profile.notFoundSub")}
           </Text>
         </View>
       </View>
@@ -172,7 +170,7 @@ export default function UserProfileScreen() {
                 ]}
                 onPress={() => router.push("/profile-edit" as any)}
               >
-                <Text style={[S.btnOutlineTxt, { color: T.text }]}>Profili Düzenle</Text>
+                <Text style={[S.btnOutlineTxt, { color: T.text }]}>{t("profile.editProfile")}</Text>
               </Pressable>
             ) : (
               <Pressable
@@ -189,7 +187,7 @@ export default function UserProfileScreen() {
                 ) : (
                   <>
                     <Icon name="chatbubble-outline" size={15} color={T.purple} style={{ marginRight: 5 }} />
-                    <Text style={[S.btnOutlineTxt, { color: T.purple }]}>Mesaj Gönder</Text>
+                    <Text style={[S.btnOutlineTxt, { color: T.purple }]}>{t("profile.sendMessage")}</Text>
                   </>
                 )}
               </Pressable>
@@ -200,7 +198,7 @@ export default function UserProfileScreen() {
         {/* ── Pets section ─────────────────────────────── */}
         {pets.length > 0 && (
           <View style={S.petsSection}>
-            <Text style={[S.sectionTitle, { color: T.text }]}>Evcil Hayvanları</Text>
+            <Text style={[S.sectionTitle, { color: T.text }]}>{t("profile.pets")}</Text>
             {pets.map((pet) => (
               <Pressable
                 key={pet.id}
@@ -215,7 +213,7 @@ export default function UserProfileScreen() {
                 <View style={S.petInfo}>
                   <Text style={[S.petName, { color: T.text }]}>{pet.name}</Text>
                   <Text style={[S.petType, { color: T.textMuted }]}>
-                    {PET_TYPE_LABELS[pet.type] ?? pet.type}
+                    {t(`animals.type.${pet.type}`, { defaultValue: pet.type })}
                     {pet.breed ? ` · ${pet.breed}` : ""}
                   </Text>
                 </View>

@@ -18,6 +18,7 @@ import {
   Text,
   View,
 } from "react-native";
+import { useTranslation } from "react-i18next";
 import type {
   CustomerInfo,
   MakePurchaseResult,
@@ -37,28 +38,29 @@ const GOLD     = "#F59E0B";
 
 /* ─────────────────────────────────────────────────────────────
    CENTRALIZED BOOST PACKAGE CONFIGURATION
+   label/subtitle/badge fields are i18n keys resolved at render time
 ───────────────────────────────────────────────────────────── */
 interface BoostPackageMeta {
   durationDays: number;
-  label:        string;
-  subtitle:     string;
-  badge:        string | null;
+  labelKey:     string;
+  subtitleKey:  string;
+  badgeKey:     string | null;
   badgeColor:   string;
   sortOrder:    number;
 }
 
 const BOOST_PACKAGE_CONFIG: Record<string, BoostPackageMeta> = {
   boost_1_day:  {
-    durationDays: 1, label: "1 Gün",  subtitle: "Hızlı Destek",
-    badge: null,           badgeColor: P,    sortOrder: 0,
+    durationDays: 1, labelKey: "boost.pkg1dayLabel",  subtitleKey: "boost.pkg1daySub",
+    badgeKey: null,                 badgeColor: P,    sortOrder: 0,
   },
   boost_3_days: {
-    durationDays: 3, label: "3 Gün",  subtitle: "Daha Fazla Görünürlük",
-    badge: "EN POPÜLER",   badgeColor: P,    sortOrder: 1,
+    durationDays: 3, labelKey: "boost.pkg3daysLabel", subtitleKey: "boost.pkg3daysSub",
+    badgeKey: "boost.badgePopular", badgeColor: P,    sortOrder: 1,
   },
   boost_7_days: {
-    durationDays: 7, label: "7 Gün",  subtitle: "Maksimum Erişim",
-    badge: "EN AVANTAJLI", badgeColor: GOLD, sortOrder: 2,
+    durationDays: 7, labelKey: "boost.pkg7daysLabel", subtitleKey: "boost.pkg7daysSub",
+    badgeKey: "boost.badgeBest",    badgeColor: GOLD, sortOrder: 2,
   },
 };
 
@@ -66,8 +68,8 @@ const DEFAULT_PACKAGE_ID = "boost_3_days";
 
 function getMeta(identifier: string): BoostPackageMeta {
   return BOOST_PACKAGE_CONFIG[identifier] ?? {
-    durationDays: 1, label: "Paket", subtitle: "Öne çıkarma",
-    badge: null, badgeColor: P, sortOrder: 99,
+    durationDays: 1, labelKey: "boost.pkgDefault", subtitleKey: "boost.pkgDefaultSub",
+    badgeKey: null, badgeColor: P, sortOrder: 99,
   };
 }
 
@@ -138,20 +140,18 @@ async function callVerifyPurchaseApi(
 ───────────────────────────────────────────────────────────── */
 type PurchaseErrorKind = "cancelled" | "pending" | "unavailable" | "network" | "sdk_unavailable" | "unknown";
 
-function classifyPurchaseError(err: unknown): { kind: PurchaseErrorKind; message: string } {
-  if (typeof err !== "object" || err === null)
-    return { kind: "unknown", message: "Satın alma işlemi tamamlanamadı. Lütfen tekrar deneyin." };
-  if ("userCancelled" in err && err.userCancelled === true)
-    return { kind: "cancelled", message: "Satın alma işlemi iptal edildi." };
+function classifyPurchaseError(err: unknown): { kind: PurchaseErrorKind } {
+  if (typeof err !== "object" || err === null) return { kind: "unknown" };
+  if ("userCancelled" in err && err.userCancelled === true) return { kind: "cancelled" };
   const code = "code" in err && typeof err.code === "number" ? err.code : -1;
-  if (code === 1)  return { kind: "cancelled",   message: "Satın alma işlemi iptal edildi." };
-  if (code === 6)  return { kind: "pending",     message: "Ödemeniz mağaza tarafından işleniyor." };
-  if (code === 3)  return { kind: "unavailable", message: "Bu paket şu anda satın alınamıyor." };
-  if (code === 23) return { kind: "network",     message: "Bağlantı sorunu nedeniyle satın alma tamamlanamadı." };
+  if (code === 1)  return { kind: "cancelled" };
+  if (code === 6)  return { kind: "pending" };
+  if (code === 3)  return { kind: "unavailable" };
+  if (code === 23) return { kind: "network" };
   const rawMsg = "message" in err && typeof err.message === "string" ? err.message.toLowerCase() : "";
   if (rawMsg.includes("native module") || rawMsg.includes("not found") || rawMsg.includes("unavailable") || rawMsg.includes("sdk not configured"))
-    return { kind: "sdk_unavailable", message: "Satın alma testi için Development Build kullanmanız gerekiyor." };
-  return { kind: "unknown", message: "Satın alma işlemi tamamlanamadı. Lütfen tekrar deneyin." };
+    return { kind: "sdk_unavailable" };
+  return { kind: "unknown" };
 }
 
 async function executePurchase(pkg: PurchasesPackage): Promise<MakePurchaseResult> {
@@ -163,6 +163,7 @@ async function executePurchase(pkg: PurchasesPackage): Promise<MakePurchaseResul
    SCREEN
 ───────────────────────────────────────────────────────────── */
 export default function BoostPackagesScreen() {
+  const { t }   = useTranslation();
   const insets  = useSafeAreaInsets();
   const router  = useRouter();
   const { user, token } = useAuth();
@@ -198,27 +199,27 @@ export default function BoostPackagesScreen() {
     } catch (err: unknown) {
       const msg = err instanceof Error ? err.message : String(err);
       if (__DEV__) console.warn("[BoostPackages] Offerings load failed:", msg);
-      setOfferingsError("Öne çıkarma paketleri yüklenemedi.");
+      setOfferingsError(t("boost.loadError"));
     } finally {
       setOfferingsLoading(false);
       fetchingRef.current = false;
     }
-  }, []);
+  }, [t]);
 
   useEffect(() => { loadOfferings(); }, [loadOfferings]);
 
   /* ── Purchase handler ────────────────────────────────────── */
   const handleBoost = async () => {
     if (Platform.OS === "web") {
-      Alert.alert("Uygulama Gerekli", "İlan öne çıkarma satın alma işlemi iOS ve Android uygulamalarında kullanılabilir.", [{ text: "Tamam" }]);
+      Alert.alert(t("boost.webAlertTitle"), t("boost.webAlertMsg"), [{ text: t("common.ok") }]);
       return;
     }
     if (!user) {
-      Alert.alert("Giriş Gerekli", "Satın alma işlemi için giriş yapmanız gerekiyor.", [{ text: "Tamam" }]);
+      Alert.alert(t("boost.loginAlertTitle"), t("boost.loginAlertMsg"), [{ text: t("common.ok") }]);
       return;
     }
     if (!selectedPackage) {
-      Alert.alert("Paket Seçilmedi", "Lütfen bir öne çıkarma paketi seçin.", [{ text: "Tamam" }]);
+      Alert.alert(t("boost.noPackageTitle"), t("boost.noPackageMsg"), [{ text: t("common.ok") }]);
       return;
     }
     if (!listingId) return;
@@ -251,22 +252,22 @@ export default function BoostPackagesScreen() {
           ? new Date(activated.promotedUntil).toLocaleDateString("tr-TR", { day: "numeric", month: "long", year: "numeric" })
           : null;
         const body = activated.alreadyProcessed
-          ? "Bu satın alma daha önce işlenmişti. İlanın zaten öne çıkarılmış durumda."
+          ? t("boost.alreadyActiveMsg")
           : expiresLabel
-            ? `İlanın ${activated.durationDays} gün boyunca daha fazla kişiye ulaşacak.\n\nBitiş: ${expiresLabel}`
-            : `İlanın ${activated.durationDays} gün boyunca öne çıkarıldı.`;
+            ? t("boost.successMsg", { count: activated.durationDays, expires: expiresLabel })
+            : t("boost.successMsgNoExpiry", { count: activated.durationDays });
         Alert.alert(
-          activated.alreadyProcessed ? "Zaten Aktif" : "İlanın Öne Çıkarıldı 🎉",
+          activated.alreadyProcessed ? t("boost.alreadyActiveTitle") : t("boost.successTitle"),
           body,
-          [{ text: "Tamam", onPress: () => { setPurchaseState("idle"); router.back(); } }]
+          [{ text: t("common.ok"), onPress: () => { setPurchaseState("idle"); router.back(); } }]
         );
       } else {
         Alert.alert(
-          "Ödemen Alındı",
-          "Ödemen tamamlandı ancak ilan henüz etkinleştirilemedi. Lütfen tekrar dene — aynı satın alma faturanlandırılmaz.",
+          t("boost.paymentReceivedTitle"),
+          t("boost.paymentReceivedMsg"),
           [
             {
-              text: "Tekrar Dene",
+              text: t("boost.retryActivate"),
               onPress: async () => {
                 const retry = await callVerifyPurchaseApi(completedPurchase, listingId, token);
                 if (retry?.success) {
@@ -276,24 +277,29 @@ export default function BoostPackagesScreen() {
                 router.back();
               },
             },
-            { text: "Tamam", onPress: () => { setPurchaseState("idle"); router.back(); } },
+            { text: t("common.ok"), onPress: () => { setPurchaseState("idle"); router.back(); } },
           ]
         );
       }
     } catch (err: unknown) {
-      const { kind, message } = classifyPurchaseError(err);
+      const { kind } = classifyPurchaseError(err);
       if (kind === "cancelled") {
         setPurchaseState("idle");
-        Alert.alert("İptal", "Satın alma işlemi iptal edildi.", [{ text: "Tamam" }]);
+        Alert.alert(t("boost.cancelTitle"), t("boost.cancelMsg"), [{ text: t("common.ok") }]);
         return;
       }
       if (kind === "pending") {
         setPurchaseState("pending");
-        Alert.alert("İşlem Beklemede", "Ödemeniz mağaza tarafından işleniyor.", [{ text: "Tamam", onPress: () => setPurchaseState("idle") }]);
+        Alert.alert(t("boost.pendingTitle"), t("boost.pendingMsg"), [{ text: t("common.ok"), onPress: () => setPurchaseState("idle") }]);
         return;
       }
+      const msgKey =
+        kind === "unavailable"    ? "boost.errUnavailable"  :
+        kind === "network"        ? "boost.errNetwork"       :
+        kind === "sdk_unavailable"? "boost.errDevBuild"      :
+                                    "boost.errGeneric";
       setPurchaseState("error");
-      Alert.alert("Hata", message, [{ text: "Tamam", onPress: () => setPurchaseState("idle") }]);
+      Alert.alert(t("common.error"), t(msgKey), [{ text: t("common.ok"), onPress: () => setPurchaseState("idle") }]);
     } finally {
       purchasingRef.current = false;
     }
@@ -308,16 +314,16 @@ export default function BoostPackagesScreen() {
     try {
       const customerInfo = await restorePurchases();
       if (!customerInfo) {
-        Alert.alert("Bilgi", "Geri yükleme bu platformda desteklenmiyor.", [{ text: "Tamam" }]);
+        Alert.alert(t("common.info"), t("boost.restoreNoSupport"), [{ text: t("common.ok") }]);
         return;
       }
       const boostProductIds = new Set(["canyoldasi_boost_1_day", "canyoldasi_boost_3_days", "canyoldasi_boost_7_days"]);
       const boostTxns = customerInfo.nonSubscriptionTransactions?.filter(
-        (t) => boostProductIds.has(t.productIdentifier)
+        (tx) => boostProductIds.has(tx.productIdentifier)
       ) ?? [];
 
       if (!token || !listingId || boostTxns.length === 0) {
-        Alert.alert("Geri Yüklendi", "Bu hesapla ilişkili öne çıkarma satın alımı bulunamadı.", [{ text: "Tamam" }]);
+        Alert.alert(t("boost.restoreSuccessTitle"), t("boost.restoreNoPurchase"), [{ text: t("common.ok") }]);
         return;
       }
 
@@ -340,19 +346,19 @@ export default function BoostPackagesScreen() {
       if (restored?.success) {
         try { await refreshAdoption(); } catch { /* non-critical */ }
         Alert.alert(
-          restored.alreadyProcessed ? "Zaten Aktif" : "Satın Alım Geri Yüklendi",
+          restored.alreadyProcessed ? t("boost.alreadyActiveTitle") : t("boost.restoreSuccessTitle"),
           restored.alreadyProcessed
-            ? "Bu satın alma zaten aktif durumda."
-            : `İlanın ${restored.durationDays} gün boyunca tekrar öne çıkarıldı.`,
-          [{ text: "Tamam", onPress: () => { setPurchaseState("idle"); router.back(); } }]
+            ? t("boost.alreadyActiveMsg")
+            : t("boost.restoreSuccessMsg", { count: restored.durationDays }),
+          [{ text: t("common.ok"), onPress: () => { setPurchaseState("idle"); router.back(); } }]
         );
       } else {
-        Alert.alert("Geri Yükleme Tamamlandı", "Hesabınızın satın alma geçmişi güncellendi. Aktif bir öne çıkarma bulunamadı.", [{ text: "Tamam" }]);
+        Alert.alert(t("boost.restoreCompleteTitle"), t("boost.restoreCompleteMsg"), [{ text: t("common.ok") }]);
       }
     } catch (err: unknown) {
       const msg = err instanceof Error ? err.message : String(err);
       if (__DEV__) console.warn("[Boost] Restore failed:", msg);
-      Alert.alert("Hata", "Satın alımlar geri yüklenemedi. Lütfen tekrar deneyin.", [{ text: "Tamam" }]);
+      Alert.alert(t("common.error"), t("boost.restoreErrorMsg"), [{ text: t("common.ok") }]);
     } finally {
       setPurchaseState("idle");
       purchasingRef.current = false;
@@ -365,8 +371,8 @@ export default function BoostPackagesScreen() {
 
   const selectedMeta  = selectedPackage ? getMeta(selectedPackage.identifier) : null;
   const ctaLabel      = isPurchasing
-    ? (purchaseState === "starting" ? "Başlatılıyor…" : "İşleniyor…")
-    : Platform.OS === "web" ? "Uygulama Gerekli" : "Öne Çıkarmayı Satın Al";
+    ? (purchaseState === "starting" ? t("boost.ctaStarting") : t("boost.ctaProcessing"))
+    : Platform.OS === "web" ? t("boost.ctaWebOnly") : t("boost.ctaBuy");
 
   /* ── Render packages ─────────────────────────────────────── */
   function renderPackages() {
@@ -374,7 +380,7 @@ export default function BoostPackagesScreen() {
       return (
         <View style={s.centered}>
           <ActivityIndicator color={P} size="large" />
-          <Text style={s.stateText}>Paketler yükleniyor…</Text>
+          <Text style={s.stateText}>{t("boost.loadingPackages")}</Text>
         </View>
       );
     }
@@ -385,7 +391,7 @@ export default function BoostPackagesScreen() {
           <Text style={s.stateText}>{offeringsError}</Text>
           <Pressable style={s.retryBtn} onPress={loadOfferings}>
             <Icon name="RefreshCw" size={16} color="white" />
-            <Text style={s.retryText}>Tekrar Dene</Text>
+            <Text style={s.retryText}>{t("common.retry")}</Text>
           </Pressable>
         </View>
       );
@@ -393,7 +399,7 @@ export default function BoostPackagesScreen() {
     if (packages.length === 0) {
       return (
         <View style={s.stateBox}>
-          <Text style={s.stateText}>Şu an aktif öne çıkarma paketi bulunmuyor.</Text>
+          <Text style={s.stateText}>{t("boost.noPackages")}</Text>
         </View>
       );
     }
@@ -417,14 +423,14 @@ export default function BoostPackagesScreen() {
 
           {/* Labels */}
           <View style={s.pkgLabels}>
-            <Text style={[s.pkgLabel, isSelected && { color: P_DARK }]}>{meta.label}</Text>
-            <Text style={s.pkgSub}>{meta.subtitle}</Text>
+            <Text style={[s.pkgLabel, isSelected && { color: P_DARK }]}>{t(meta.labelKey)}</Text>
+            <Text style={s.pkgSub}>{t(meta.subtitleKey)}</Text>
           </View>
 
           {/* Badge */}
-          {meta.badge ? (
+          {meta.badgeKey ? (
             <View style={[s.pkgBadge, { backgroundColor: meta.badgeColor }]}>
-              <Text style={s.pkgBadgeText}>{meta.badge}</Text>
+              <Text style={s.pkgBadgeText}>{t(meta.badgeKey)}</Text>
             </View>
           ) : (
             <View style={s.pkgBadgeSpacer} />
@@ -436,7 +442,7 @@ export default function BoostPackagesScreen() {
               {pkg.product.priceString}
             </Text>
           ) : (
-            <Text style={s.pkgPriceUnavailable}>Fiyat yüklenemedi</Text>
+            <Text style={s.pkgPriceUnavailable}>{t("boost.priceUnavailable")}</Text>
           )}
         </Pressable>
       );
@@ -478,9 +484,9 @@ export default function BoostPackagesScreen() {
 
           {/* Text */}
           <View style={s.heroText}>
-            <Text style={s.heroSmall}>İLANINI GÜÇLENDİR</Text>
-            <Text style={s.heroTitle}>Daha Fazla Kişiye Ulaş</Text>
-            <Text style={s.heroSub}>İlanını öne çıkar, yeni yuvasına daha hızlı ulaşsın.</Text>
+            <Text style={s.heroSmall}>{t("boost.heroTag")}</Text>
+            <Text style={s.heroTitle}>{t("boost.heroTitle")}</Text>
+            <Text style={s.heroSub}>{t("boost.heroSub")}</Text>
           </View>
         </LinearGradient>
 
@@ -510,22 +516,22 @@ export default function BoostPackagesScreen() {
               <View style={s.previewLocation}>
                 <Icon name="MapPin" size={12} color="#888" />
                 <Text style={s.previewLocTxt} numberOfLines={1}>
-                  {listing?.location || "Konum belirtilmedi"}
+                  {listing?.location || t("boost.locationUnset")}
                 </Text>
               </View>
-              {/* "Öne Çıkarılacak" pill */}
+              {/* "Will Be Featured" pill */}
               <View style={s.featurePill}>
                 <Icon name="Star" size={11} color={P} />
-                <Text style={s.featurePillTxt}>Öne Çıkarılacak</Text>
+                <Text style={s.featurePillTxt}>{t("boost.featured")}</Text>
               </View>
               {/* Visibility row */}
               <View style={s.visibilityRow}>
                 <Icon name="List" size={13} color="#999" />
-                <Text style={s.visibilityLbl}>Normal</Text>
+                <Text style={s.visibilityLbl}>{t("boost.normal")}</Text>
                 <Icon name="ArrowRight" size={13} color="#999" />
                 <View style={s.visibilityTarget}>
                   <Icon name="TrendingUp" size={13} color={P} />
-                  <Text style={s.visibilityTargetTxt}>Listenin Üstü</Text>
+                  <Text style={s.visibilityTargetTxt}>{t("boost.topOfList")}</Text>
                 </View>
               </View>
             </View>
@@ -535,21 +541,21 @@ export default function BoostPackagesScreen() {
         <View style={s.body}>
           {/* ── Benefits ── */}
           <View style={s.section}>
-            <Text style={s.sectionTitle}>Öne Çıkarma Avantajları</Text>
+            <Text style={s.sectionTitle}>{t("boost.benefitsTitle")}</Text>
             <View style={s.benefitsRow}>
               {(
                 [
-                  { icon: "Star" as const,     title: "Listenin En Üstünde", sub: "Daha görünür ol",          iconColor: GOLD },
-                  { icon: "Eye" as const,      title: "Daha Fazla Görüntülenme", sub: "Daha çok kişiye ulaş", iconColor: P    },
-                  { icon: "Sparkles" as const, title: "Mor Yıldız Etiketi",  sub: "İlanın hemen fark edilsin", iconColor: P    },
+                  { icon: "Star" as const,     titleKey: "boost.benefit1Title", subKey: "boost.benefit1Sub", iconColor: GOLD },
+                  { icon: "Eye" as const,      titleKey: "boost.benefit2Title", subKey: "boost.benefit2Sub", iconColor: P    },
+                  { icon: "Sparkles" as const, titleKey: "boost.benefit3Title", subKey: "boost.benefit3Sub", iconColor: P    },
                 ] as const
               ).map((b) => (
-                <View key={b.title} style={s.benefitCard}>
+                <View key={b.titleKey} style={s.benefitCard}>
                   <View style={s.benefitIconWrap}>
                     <Icon name={b.icon} size={20} color={b.iconColor} />
                   </View>
-                  <Text style={s.benefitTitle}>{b.title}</Text>
-                  <Text style={s.benefitSub}>{b.sub}</Text>
+                  <Text style={s.benefitTitle}>{t(b.titleKey)}</Text>
+                  <Text style={s.benefitSub}>{t(b.subKey)}</Text>
                 </View>
               ))}
             </View>
@@ -559,9 +565,7 @@ export default function BoostPackagesScreen() {
           {Platform.OS === "web" && (
             <View style={s.webNotice}>
               <Icon name="Smartphone" size={16} color={P} />
-              <Text style={s.webNoticeTxt}>
-                İlan öne çıkarma satın alma işlemi iOS ve Android uygulamalarında kullanılabilir.
-              </Text>
+              <Text style={s.webNoticeTxt}>{t("boost.webOnly")}</Text>
             </View>
           )}
 
@@ -569,13 +573,13 @@ export default function BoostPackagesScreen() {
           {purchaseState === "pending" && (
             <View style={s.webNotice}>
               <Icon name="Clock" size={16} color={P} />
-              <Text style={s.webNoticeTxt}>Ödemeniz mağaza tarafından işleniyor.</Text>
+              <Text style={s.webNoticeTxt}>{t("boost.pendingNotice")}</Text>
             </View>
           )}
 
           {/* ── Package Selection ── */}
           <View style={s.section}>
-            <Text style={s.sectionTitle}>Paketini Seç</Text>
+            <Text style={s.sectionTitle}>{t("boost.packageSelect")}</Text>
             <View style={{ gap: 10 }}>{renderPackages()}</View>
           </View>
 
@@ -585,15 +589,13 @@ export default function BoostPackagesScreen() {
               <View style={s.trustIconWrap}>
                 <Icon name="ShieldCheck" size={16} color={P} />
               </View>
-              <Text style={s.trustTxt}>
-                Satın alma işlemin App Store veya Google Play üzerinden güvenle tamamlanır.
-              </Text>
+              <Text style={s.trustTxt}>{t("boost.trustStore")}</Text>
             </View>
             <View style={s.trustRow}>
               <View style={s.trustIconWrap}>
                 <Icon name="RefreshCw" size={16} color={P} />
               </View>
-              <Text style={s.trustTxt}>Süre sonunda ilan normal sıralamasına döner.</Text>
+              <Text style={s.trustTxt}>{t("boost.trustExpiry")}</Text>
             </View>
           </View>
 
@@ -607,7 +609,7 @@ export default function BoostPackagesScreen() {
               {purchaseState === "restoring" ? (
                 <ActivityIndicator size="small" color="#999" />
               ) : (
-                <Text style={s.restoreTxt}>Satın Alımları Geri Yükle</Text>
+                <Text style={s.restoreTxt}>{t("boost.restore")}</Text>
               )}
             </Pressable>
           )}
@@ -619,10 +621,10 @@ export default function BoostPackagesScreen() {
         <View style={s.ctaInner}>
           {/* Left: selected package summary */}
           <View style={s.ctaSummary}>
-            <Text style={s.ctaSummaryLabel}>Seçilen Paket</Text>
+            <Text style={s.ctaSummaryLabel}>{t("boost.selectedPackage")}</Text>
             {selectedMeta && selectedPackage && !offeringsLoading && !offeringsError ? (
               <Text style={s.ctaSummaryValue}>
-                {selectedMeta.label} · {selectedPackage.product.priceString}
+                {t(selectedMeta.labelKey)} · {selectedPackage.product.priceString}
               </Text>
             ) : (
               <Text style={s.ctaSummaryValue}>—</Text>
@@ -647,7 +649,7 @@ export default function BoostPackagesScreen() {
             </LinearGradient>
           </Pressable>
         </View>
-        <Text style={s.ctaDisclaimer}>Satın alarak öne çıkarma süresini onaylarsın.</Text>
+        <Text style={s.ctaDisclaimer}>{t("boost.disclaimer")}</Text>
       </View>
     </View>
   );

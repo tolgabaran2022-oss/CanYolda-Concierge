@@ -27,39 +27,6 @@ import type { PurchasesPackage } from "react-native-purchases";
 
 const PURPLE = "#7C45D9";
 
-/** Maps RC package identifier to user-friendly Turkish presentation. */
-function getPackagePresentation(pkg: PurchasesPackage): { title: string; description: string } {
-  switch (pkg.identifier) {
-    case "$rc_monthly":
-      return { title: "Evcilim Premium Aylık", description: "Her ay yenilenir" };
-    case "$rc_annual":
-      return { title: "Evcilim Premium Yıllık", description: "Her yıl yenilenir" };
-    default:
-      return {
-        title: pkg.product.title || pkg.identifier,
-        description: pkg.product.description || "Evcilim Premium erişimi",
-      };
-  }
-}
-
-/** Maps a thrown error message to a user-facing Turkish string. */
-function packageLoadErrorMessage(err: unknown): string {
-  const msg = err instanceof Error ? err.message : "";
-  if (msg.startsWith("offering_not_found:")) return "Evcilim Premium paketleri yapılandırılmamış.";
-  if (msg.startsWith("no_packages:")) return "Evcilim Premium paketleri henüz hazır değil.";
-  if (msg.includes("not yet initialized") || msg.includes("SDK not available")) return "Satın alma sistemi başlatılamadı.";
-  return "Paketler şu anda yüklenemiyor. Lütfen tekrar dene.";
-}
-
-const features: [string, string, string?][] = [
-  ["paw", "İkinci ve sonraki evcil hayvanlar", "İlk evcil hayvanın her zaman ücretsiz."],
-  ["sparkles", "AI Hayvan Asistanı", "Beslenme, sağlık ve bakım sorularına anlık yanıt."],
-  ["bell", "Sınırsız hatırlatıcı", "Aşı, randevu, ilaç ve özel hatırlatıcılar."],
-  ["stethoscope", "İlaç ve doz takibi", "Aktif/pasif durum ve sıklık yönetimi."],
-  ["file-text", "Belge kasası", "Aşı karnesi, reçete ve laboratuvar sonuçları."],
-  ["users", "Aile ve bakıcı paylaşımı", "Birlikte bakım için davetiye sistemi."],
-];
-
 /* ─────────────────────────────────────────────────────────────────────────────
    Inner content — shared between full-screen route and modal overlay
 ───────────────────────────────────────────────────────────────────────────── */
@@ -85,6 +52,39 @@ function PremiumInner({
   const [loadError, setLoadError] = useState<string | null>(null);
   const [buying, setBuying] = useState(false);
 
+  /** Maps RC package identifier to user-friendly translated presentation. */
+  function getPackagePresentation(pkg: PurchasesPackage): { title: string; description: string } {
+    switch (pkg.identifier) {
+      case "$rc_monthly":
+        return { title: t("premium.monthlyTitle"), description: t("premium.monthlyDesc") };
+      case "$rc_annual":
+        return { title: t("premium.annualTitle"), description: t("premium.annualDesc") };
+      default:
+        return {
+          title: pkg.product.title || pkg.identifier,
+          description: pkg.product.description || t("premium.defaultDesc"),
+        };
+    }
+  }
+
+  /** Maps a thrown error message to a user-facing translated string. */
+  function packageLoadErrorMessage(err: unknown): string {
+    const msg = err instanceof Error ? err.message : "";
+    if (msg.startsWith("offering_not_found:")) return t("premium.errNotConfigured");
+    if (msg.startsWith("no_packages:"))        return t("premium.errNotReady");
+    if (msg.includes("not yet initialized") || msg.includes("SDK not available")) return t("premium.errInit");
+    return t("premium.errLoad");
+  }
+
+  const features: [string, string, string?][] = [
+    ["paw",          t("premium.feat1"), t("premium.feat1Sub")],
+    ["sparkles",     t("premium.feat2"), t("premium.feat2Sub")],
+    ["bell",         t("premium.feat3"), t("premium.feat3Sub")],
+    ["stethoscope",  t("premium.feat4"), t("premium.feat4Sub")],
+    ["file-text",    t("premium.feat5"), t("premium.feat5Sub")],
+    ["users",        t("premium.feat6"), t("premium.feat6Sub")],
+  ];
+
   const loadOfferings = () => {
     if (Platform.OS === "web") return;
     setLoading(true);
@@ -92,7 +92,6 @@ function PremiumInner({
     fetchPetPremiumOfferings()
       .then((items) => {
         setPackages(items);
-        // Default to $rc_annual (exact match); fall back to first item.
         const annual = items.find((p) => p.identifier === "$rc_annual");
         setSelected(annual ?? items[0] ?? null);
       })
@@ -109,10 +108,8 @@ function PremiumInner({
     if (!selected || buying) return;
     setBuying(true);
     try {
-      // Step 1: Purchase via RevenueCat
       const purchaseResult = await purchasePetPremium(selected);
 
-      // Step 2: Verify entitlement is active in RevenueCat CustomerInfo
       const activeEntitlement = purchaseResult.customerInfo.entitlements.active[PET_PREMIUM_ENTITLEMENT_ID];
       if (!activeEntitlement) {
         if (__DEV__) {
@@ -122,30 +119,22 @@ function PremiumInner({
             { activeEntitlements: Object.keys(purchaseResult.customerInfo.entitlements.active) }
           );
         }
-        Alert.alert(
-          "Satın Alma Doğrulanamadı",
-          "Ödemen alındı ancak Evcilim Premium erişimi aktifleşmedi. RevenueCat'te '" + PET_PREMIUM_ENTITLEMENT_ID + "' entitlement yapılandırılmalı ve ürünlere bağlanmalıdır."
-        );
+        Alert.alert(t("premium.verifyFailedTitle"), t("premium.verifyFailedMsg"));
         return;
       }
 
-      // Step 3: Verify via backend (triggers webhook / manual check)
       const verifiedStatus = await refresh(true);
       if (verifiedStatus?.isPremium !== true) {
-        Alert.alert(
-          "Satın Alma Doğrulanamadı",
-          "Ödemen tamamlandı ancak Premium üyeliğin henüz doğrulanamadı. Lütfen satın alımlarını geri yüklemeyi dene."
-        );
+        Alert.alert(t("premium.verifyFailedTitle"), t("premium.verifyBackendMsg"));
         return;
       }
 
-      // Step 4: Navigate to destination
       const destination = returnTo ? decodeURIComponent(returnTo) : null;
       Alert.alert(
-        "Evcilim Premium Aktif",
-        "Premium özelliklerin kullanıma açıldı.",
+        t("premium.activeTitle"),
+        t("premium.activeMsg"),
         [{
-          text: "Devam Et",
+          text: t("premium.continueBtn"),
           onPress: () => {
             onClose();
             if (destination) {
@@ -156,42 +145,33 @@ function PremiumInner({
       );
     } catch (error: unknown) {
       const e = error as { userCancelled?: boolean };
-      if (!e?.userCancelled) Alert.alert("Satın Alma Tamamlanamadı", "Lütfen tekrar deneyin.");
+      if (!e?.userCancelled) Alert.alert(t("premium.buyFailedTitle"), t("premium.buyFailedMsg"));
     } finally { setBuying(false); }
   }
 
   async function restore() {
     try {
-      // Step 1: Restore from App Store / Google Play
       const customerInfo = await restorePurchases();
       if (!customerInfo) {
-        Alert.alert("Geri Yüklenemedi", "Satın alımlar kontrol edilemedi.");
+        Alert.alert(t("premium.restoreFailedTitle"), t("premium.restoreFailedCheckMsg"));
         return;
       }
 
-      // Step 2: Check RC entitlement
       const activeEntitlement = customerInfo.entitlements.active[PET_PREMIUM_ENTITLEMENT_ID];
       if (!activeEntitlement) {
-        Alert.alert(
-          "Aktif Abonelik Bulunamadı",
-          "Geri yüklenecek aktif bir Evcilim Premium aboneliği bulunamadı."
-        );
+        Alert.alert(t("premium.restoreNoActiveTitle"), t("premium.restoreNoActiveMsg"));
         return;
       }
 
-      // Step 3: Verify with backend
       const verifiedStatus = await refresh(true);
       if (verifiedStatus?.isPremium !== true) {
-        Alert.alert(
-          "Satın Alma Doğrulanamadı",
-          "Abonelik mağazada bulundu ancak Premium erişimi henüz doğrulanamadı. Lütfen daha sonra tekrar deneyin."
-        );
+        Alert.alert(t("premium.verifyFailedTitle"), t("premium.restoreVerifyMsg"));
         return;
       }
 
-      Alert.alert("Premium Aktif", "Evcilim Premium aboneliğin başarıyla geri yüklendi.");
+      Alert.alert(t("premium.restoreSuccessTitle"), t("premium.restoreSuccessMsg"));
     } catch {
-      Alert.alert("Geri Yüklenemedi", "Lütfen daha sonra tekrar deneyin.");
+      Alert.alert(t("premium.restoreFailedTitle"), t("premium.restoreErrorMsg"));
     }
   }
 
@@ -200,7 +180,7 @@ function PremiumInner({
 
   return (
     <ScrollView contentContainerStyle={s.content}>
-      <Pressable onPress={onClose} style={s.close} accessibilityLabel="Kapat">
+      <Pressable onPress={onClose} style={s.close} accessibilityLabel={t("common.close")}>
         <Icon name="close" size={22} color="#4E3B66" />
       </Pressable>
 
@@ -223,11 +203,11 @@ function PremiumInner({
         ))}
       </View>
 
-      <Text style={s.sectionTitle}>Paketini Seç</Text>
+      <Text style={s.sectionTitle}>{t("premium.packageSelect")}</Text>
 
       {Platform.OS === "web" ? (
         <View style={s.notice}>
-          <Text style={s.noticeText}>Premium satın alma işlemi iOS veya Android uygulamasından yapılabilir.</Text>
+          <Text style={s.noticeText}>{t("premium.webOnly")}</Text>
         </View>
       ) : loading ? (
         <ActivityIndicator color={PURPLE} style={{ marginVertical: 16 }} />
@@ -236,12 +216,12 @@ function PremiumInner({
           <Text style={s.noticeText}>{loadError}</Text>
           <Pressable onPress={loadOfferings} style={s.retryBtn}>
             <Icon name="refresh-outline" size={15} color={PURPLE} />
-            <Text style={s.retryTxt}>Tekrar Dene</Text>
+            <Text style={s.retryTxt}>{t("common.retry")}</Text>
           </Pressable>
         </View>
       ) : packages.length === 0 ? (
         <View style={s.notice}>
-          <Text style={s.noticeText}>Şu anda aktif paket bulunmuyor.</Text>
+          <Text style={s.noticeText}>{t("premium.noPackages")}</Text>
         </View>
       ) : (
         packages.map((pkg) => {
@@ -272,19 +252,17 @@ function PremiumInner({
         style={[s.buy, (!selected || buying || Platform.OS === "web" || loadError !== null) && { opacity: 0.45 }]}
       >
         <LinearGradient colors={["#9B55ED", PURPLE]} style={s.buyInner}>
-          {buying ? <ActivityIndicator color="#FFF" /> : <Text style={s.buyText}>Premium'a Geç</Text>}
+          {buying ? <ActivityIndicator color="#FFF" /> : <Text style={s.buyText}>{t("premium.buyBtn")}</Text>}
         </LinearGradient>
       </Pressable>
 
       {Platform.OS !== "web" && (
         <Pressable onPress={restore}>
-          <Text style={s.restore}>Satın Alımları Geri Yükle</Text>
+          <Text style={s.restore}>{t("premium.restoreBtn")}</Text>
         </Pressable>
       )}
 
-      <Text style={s.foot}>
-        Premium sona erdiğinde mevcut kayıtların silinmez. Aboneliğini mağaza hesabından yönetebilirsin.
-      </Text>
+      <Text style={s.foot}>{t("premium.footer")}</Text>
     </ScrollView>
   );
 }

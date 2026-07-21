@@ -20,6 +20,7 @@ import {
   View,
 } from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
+import { useTranslation } from "react-i18next";
 import { useAuth } from "@/contexts/AuthContext";
 import type { UserSettings } from "@/contexts/AuthContext";
 import { DEFAULT_SETTINGS } from "@/contexts/AuthContext";
@@ -47,12 +48,13 @@ async function uploadAvatar(localUri: string): Promise<string> {
     formData.append("image", { uri: localUri, name: filename, type: mimeType } as unknown as Blob);
   }
   const res = await fetch(`${API_BASE}/upload`, { method: "POST", body: formData });
-  if (!res.ok) throw new Error("Fotoğraf yüklenemedi");
+  if (!res.ok) throw new Error("upload_failed");
   const data = await res.json() as { url: string };
   return data.url;
 }
 
 export default function ProfileEditScreen() {
+  const { t } = useTranslation();
   const T      = useTheme();
   const insets = useSafeAreaInsets();
   const router = useRouter();
@@ -79,7 +81,6 @@ export default function ProfileEditScreen() {
   const patchSetting = (key: keyof UserSettings, val: boolean) =>
     setSettings((prev) => ({ ...prev, [key]: val }));
 
-
   /* ── Avatar picker ───────────────────────────────────── */
   const pickFromLibrary = async () => {
     const result = await ImagePicker.launchImageLibraryAsync({
@@ -94,7 +95,8 @@ export default function ProfileEditScreen() {
   const pickFromCamera = async () => {
     const perm = await ImagePicker.requestCameraPermissionsAsync();
     if (!perm.granted) {
-      Alert.alert("İzin gerekli", "Kamera iznini ayarlardan etkinleştirin."); return;
+      Alert.alert(t("profile.edit.cameraPermTitle"), t("profile.edit.cameraPermMsg"));
+      return;
     }
     const result = await ImagePicker.launchCameraAsync({
       allowsEditing: true,
@@ -108,7 +110,12 @@ export default function ProfileEditScreen() {
     if (Platform.OS === "ios") {
       ActionSheetIOS.showActionSheetWithOptions(
         {
-          options: ["İptal", "Fotoğraf Seç", "Kameradan Çek", "Fotoğrafı Kaldır"],
+          options: [
+            t("common.cancel"),
+            t("profile.edit.photoActionSelect"),
+            t("profile.edit.photoActionCamera"),
+            t("profile.edit.photoActionRemove"),
+          ],
           cancelButtonIndex: 0,
           destructiveButtonIndex: 3,
         },
@@ -119,11 +126,11 @@ export default function ProfileEditScreen() {
         }
       );
     } else {
-      Alert.alert("Profil Fotoğrafı", "Nasıl değiştirmek istersiniz?", [
-        { text: "İptal", style: "cancel" },
-        { text: "Fotoğraf Seç", onPress: pickFromLibrary },
-        { text: "Kameradan Çek", onPress: pickFromCamera },
-        { text: "Fotoğrafı Kaldır", style: "destructive", onPress: () => setAvatar(null) },
+      Alert.alert(t("profile.edit.photoTitle"), undefined, [
+        { text: t("common.cancel"), style: "cancel" },
+        { text: t("profile.edit.photoActionSelect"), onPress: pickFromLibrary },
+        { text: t("profile.edit.photoActionCamera"), onPress: pickFromCamera },
+        { text: t("profile.edit.photoActionRemove"), style: "destructive", onPress: () => setAvatar(null) },
       ]);
     }
   };
@@ -131,17 +138,19 @@ export default function ProfileEditScreen() {
   /* ── Save ────────────────────────────────────────────── */
   const handleSave = async () => {
     const trimmedName = name.trim();
-    if (!trimmedName) { Alert.alert("Hata", "Ad Soyad boş olamaz."); return; }
+    if (!trimmedName) {
+      Alert.alert(t("profile.edit.saveErrorTitle"), t("profile.edit.nameRequired"));
+      return;
+    }
     const trimmedUsername = username.trim().toLowerCase().replace(/[^a-z0-9_.]/g, "");
     setSaving(true);
     try {
-      /* Upload avatar if user picked a new local photo */
       let resolvedAvatar = avatar;
       if (avatar && (avatar.startsWith("file://") || avatar.startsWith("content://") || avatar.startsWith("ph://"))) {
         try {
           resolvedAvatar = await uploadAvatar(avatar);
         } catch {
-          Alert.alert("Fotoğraf Yüklenemedi", "Profil fotoğrafı yüklenemedi, önceki fotoğraf korunacak.");
+          Alert.alert(t("profile.edit.uploadFailedTitle"), t("profile.edit.uploadFailedMsg"));
           resolvedAvatar = user?.avatar ?? null;
         }
       }
@@ -156,11 +165,11 @@ export default function ProfileEditScreen() {
         updateSettings(settings),
       ]);
       Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
-      Alert.alert("Başarılı", "Profil ayarları kaydedildi.");
+      Alert.alert(t("profile.edit.savedTitle"), t("profile.edit.savedMsg"));
       router.back();
     } catch (e: unknown) {
-      const msg = e instanceof Error ? e.message : "Ayarlar kaydedilemedi. Lütfen tekrar deneyin.";
-      Alert.alert("Hata", msg);
+      const msg = e instanceof Error ? e.message : t("profile.edit.saveErrorMsg");
+      Alert.alert(t("profile.edit.saveErrorTitle"), msg);
       Haptics.notificationAsync(Haptics.NotificationFeedbackType.Error);
     } finally {
       setSaving(false);
@@ -180,7 +189,7 @@ export default function ProfileEditScreen() {
           <Pressable onPress={() => router.back()} hitSlop={12} style={S.topBarBtn}>
             <Icon name="chevron-back" size={24} color={T.text} />
           </Pressable>
-          <Text style={[S.topBarTitle, { color: T.text }]}>Profili Düzenle</Text>
+          <Text style={[S.topBarTitle, { color: T.text }]}>{t("profile.edit.title")}</Text>
           <Pressable
             onPress={handleSave}
             hitSlop={12}
@@ -189,7 +198,7 @@ export default function ProfileEditScreen() {
           >
             {saving
               ? <ActivityIndicator size="small" color={PURPLE} />
-              : <Text style={S.saveBtnText}>Kaydet</Text>
+              : <Text style={S.saveBtnText}>{t("common.save")}</Text>
             }
           </Pressable>
         </View>
@@ -221,24 +230,24 @@ export default function ProfileEditScreen() {
               </View>
             </Pressable>
             <Pressable onPress={handleAvatarPress}>
-              <Text style={S.changePhotoText}>Fotoğrafı Değiştir</Text>
+              <Text style={S.changePhotoText}>{t("profile.edit.changePhoto")}</Text>
             </Pressable>
           </View>
 
-          {/* ── Kişisel Bilgiler ──────────────────── */}
-          <SectionHeader title="Kişisel Bilgiler" />
+          {/* ── Personal Info ─────────────────────── */}
+          <SectionHeader title={t("profile.edit.personalInfo")} />
           <View style={[S.card, { backgroundColor: T.card, borderColor: T.border }]}>
             <Field
               icon="person-outline"
-              label="Ad Soyad"
+              label={t("profile.edit.name")}
               value={name}
               onChange={setName}
-              placeholder="Adınızı girin"
+              placeholder={t("profile.edit.namePlaceholder")}
             />
             <FieldDivider />
             <Field
               icon="at-outline"
-              label="Kullanıcı Adı"
+              label={t("profile.edit.username")}
               value={username}
               onChange={(v) => setUsername(v.toLowerCase().replace(/[^a-z0-9_.]/g, ""))}
               placeholder="kullaniciadi"
@@ -252,12 +261,12 @@ export default function ProfileEditScreen() {
                 <Icon name="text-outline" size={18} color={PURPLE} />
               </View>
               <View style={{ flex: 1, gap: 4 }}>
-                <Text style={S.fieldLabel}>Biyografi</Text>
+                <Text style={S.fieldLabel}>{t("profile.edit.bio")}</Text>
                 <TextInput
                   style={[S.fieldInput, S.bioInput]}
                   value={bio}
                   onChangeText={(v) => setBio(v.slice(0, 150))}
-                  placeholder="Kendinizden bahsedin..."
+                  placeholder={t("profile.edit.bioPlaceholder")}
                   placeholderTextColor="#ABABCC"
                   multiline
                   maxLength={150}
@@ -269,25 +278,25 @@ export default function ProfileEditScreen() {
             <FieldDivider />
             <Field
               icon="mail-outline"
-              label="E-posta"
+              label={t("profile.edit.email")}
               value={user.email}
               onChange={() => {}}
               placeholder={user.email}
               editable={false}
-              hint="E-posta değiştirilemez"
+              hint={t("profile.edit.emailHint")}
             />
             <FieldDivider />
             <Field
               icon="location-outline"
-              label="Şehir / Konum"
+              label={t("profile.edit.location")}
               value={location}
               onChange={setLocation}
-              placeholder="İstanbul"
+              placeholder={t("profile.edit.locationPlaceholder")}
             />
           </View>
 
-          {/* ── Gizlilik ─────────────────────────── */}
-          <SectionHeader title="Gizlilik" />
+          {/* ── Privacy ──────────────────────────── */}
+          <SectionHeader title={t("profile.edit.privacy")} />
           <View style={[S.card, { backgroundColor: T.card, borderColor: T.border }]}>
             {settingsLoading ? (
               <ActivityIndicator color={PURPLE} style={{ margin: 20 }} />
@@ -295,16 +304,16 @@ export default function ProfileEditScreen() {
               <>
                 <ToggleRow
                   icon="earth-outline"
-                  label="Profil herkese açık"
-                  sub="Kapalıysa sadece takipçiler görür"
+                  label={t("profile.edit.profilePublic")}
+                  sub={t("profile.edit.profilePublicSub")}
                   value={settings.isProfilePublic}
                   onChange={(v) => patchSetting("isProfilePublic", v)}
                 />
                 <FieldDivider />
                 <ToggleRow
                   icon="play-circle-outline"
-                  label="Hikayelerim görünür"
-                  sub="Hikayelerini kimin görebileceğini ayarla"
+                  label={t("profile.edit.storiesVisible")}
+                  sub={t("profile.edit.storiesVisibleSub")}
                   value={settings.areStoriesVisible}
                   onChange={(v) => patchSetting("areStoriesVisible", v)}
                 />
@@ -312,8 +321,8 @@ export default function ProfileEditScreen() {
             )}
           </View>
 
-          {/* ── Bildirimler ───────────────────────── */}
-          <SectionHeader title="Bildirimler" />
+          {/* ── Notifications ─────────────────────── */}
+          <SectionHeader title={t("profile.edit.notifications")} />
           <View style={[S.card, { backgroundColor: T.card, borderColor: T.border }]}>
             {settingsLoading ? (
               <ActivityIndicator color={PURPLE} style={{ margin: 20 }} />
@@ -321,21 +330,21 @@ export default function ProfileEditScreen() {
               <>
                 <ToggleRow
                   icon="heart-outline"
-                  label="Beğeni bildirimleri"
+                  label={t("profile.edit.likeNotifs")}
                   value={settings.likeNotificationsEnabled}
                   onChange={(v) => patchSetting("likeNotificationsEnabled", v)}
                 />
                 <FieldDivider />
                 <ToggleRow
                   icon="chatbubble-outline"
-                  label="Yorum bildirimleri"
+                  label={t("profile.edit.commentNotifs")}
                   value={settings.commentNotificationsEnabled}
                   onChange={(v) => patchSetting("commentNotificationsEnabled", v)}
                 />
                 <FieldDivider />
                 <ToggleRow
                   icon="mail-outline"
-                  label="Mesaj bildirimleri"
+                  label={t("profile.edit.messageNotifs")}
                   value={settings.messageNotificationsEnabled}
                   onChange={(v) => patchSetting("messageNotificationsEnabled", v)}
                 />
@@ -357,7 +366,7 @@ export default function ProfileEditScreen() {
             >
               {saving
                 ? <ActivityIndicator color="#FFF" />
-                : <Text style={S.bigSaveBtnText}>Profili Kaydet</Text>
+                : <Text style={S.bigSaveBtnText}>{t("profile.edit.saveProfile")}</Text>
               }
             </LinearGradient>
           </Pressable>
@@ -418,7 +427,6 @@ function Field({
     </View>
   );
 }
-
 
 function ToggleRow({
   icon, label, sub, value, onChange,
