@@ -29,6 +29,7 @@ import {
 } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 import { ChevronLeft, Mail, ArrowLeft, Info, CheckCircle, RefreshCw } from "lucide-react-native";
+import { useTranslation } from "react-i18next";
 
 const API_BASE = process.env.EXPO_PUBLIC_DOMAIN
   ? `https://${process.env.EXPO_PUBLIC_DOMAIN}/api`
@@ -62,6 +63,7 @@ function formatRemaining(ms: number): string {
 
 export default function ForgotPasswordScreen() {
   const router = useRouter();
+  const { t } = useTranslation();
   const [email, setEmail]     = useState("");
   const [focused, setFocused] = useState(false);
   const [loading, setLoading] = useState(false);
@@ -115,16 +117,16 @@ export default function ForgotPasswordScreen() {
       const data = await res.json() as { ok?: boolean; error?: string };
       if (!res.ok) {
         if (res.status === 429) {
-          Alert.alert("Yavaşla", data.error ?? "Lütfen biraz bekleyin.");
+          Alert.alert(t("auth.forgotPassword.rateLimitTitle"), data.error ?? t("auth.forgotPassword.rateLimitMsg"));
         } else {
-          Alert.alert("Hata", data.error ?? "Bağlantı gönderilemedi. Lütfen tekrar deneyin.");
+          Alert.alert(t("common.error"), data.error ?? t("auth.forgotPassword.sendError"));
         }
         return;
       }
       setSent(true);
       startCooldown();
     } catch {
-      Alert.alert("Hata", "İnternet bağlantınızı kontrol edin ve tekrar deneyin.");
+      Alert.alert(t("common.error"), t("common.networkError"));
     } finally {
       setLoading(false);
     }
@@ -142,13 +144,13 @@ export default function ForgotPasswordScreen() {
       });
       const data = await res.json() as { ok?: boolean; error?: string };
       if (!res.ok) {
-        Alert.alert("Hata", data.error ?? "Tekrar gönderilemedi.");
+        Alert.alert(t("common.error"), data.error ?? t("auth.forgotPassword.resendError"));
         return;
       }
       startCooldown();
-      Alert.alert("Gönderildi", "Yeni şifre sıfırlama bağlantısı gönderildi.");
+      Alert.alert(t("auth.forgotPassword.resentTitle"), t("auth.forgotPassword.resentMsg"));
     } catch {
-      Alert.alert("Hata", "İnternet bağlantınızı kontrol edin.");
+      Alert.alert(t("common.error"), t("common.networkError"));
     } finally {
       setLoading(false);
     }
@@ -178,7 +180,7 @@ export default function ForgotPasswordScreen() {
             }}
             style={({ pressed }) => [styles.backBtn, pressed && styles.pressed]}
             accessibilityRole="button"
-            accessibilityLabel="Geri dön"
+            accessibilityLabel={t("common.goBack")}
             hitSlop={8}
           >
             <ChevronLeft size={22} color={C.purple900} strokeWidth={2.5} />
@@ -198,12 +200,10 @@ export default function ForgotPasswordScreen() {
           </View>
 
           <Text style={styles.title} maxFontSizeMultiplier={1.2}>
-            Şifreni mi unuttun?
+            {t("auth.forgotPassword.screenTitle")}
           </Text>
           <Text style={styles.subtitle} maxFontSizeMultiplier={1.3}>
-            {sent
-              ? "E-postanı kontrol et ve bağlantıya tıkla."
-              : "Sorun değil! E-postanı yaz, sana bir sıfırlama bağlantısı gönderelim."}
+            {sent ? t("auth.forgotPassword.subtitleSent") : t("auth.forgotPassword.subtitleDefault")}
           </Text>
 
           {/* Başarı kartı */}
@@ -212,13 +212,13 @@ export default function ForgotPasswordScreen() {
               <View style={styles.successRow}>
                 <CheckCircle size={20} color={C.success} strokeWidth={2} />
                 <Text style={styles.successTitle} maxFontSizeMultiplier={1.2}>
-                  Bağlantı gönderildi!
+                  {t("auth.forgotPassword.linkSentTitle")}
                 </Text>
               </View>
               <Text style={styles.successMsg} maxFontSizeMultiplier={1.3}>
-                <Text style={styles.successEmail}>{email.trim().toLowerCase()}</Text>
-                {" "}adresine şifre sıfırlama bağlantısı gönderdik.
-                E-postanda "Şifremi Sıfırla" butonuna tıkla.
+                {t("auth.forgotPassword.linkSentLine1", { email: email.trim().toLowerCase() })}
+                {"\n"}
+                {t("auth.forgotPassword.linkSentLine2")}
               </Text>
 
               {/* Tekrar Gönder */}
@@ -235,8 +235,8 @@ export default function ForgotPasswordScreen() {
                     <RefreshCw size={14} color={remaining > 0 ? C.muted : C.purple500} strokeWidth={2.5} />
                     <Text style={[styles.resendText, remaining > 0 && styles.resendTextMuted]}>
                       {remaining > 0
-                        ? `Tekrar Gönder (${formatRemaining(remaining)})`
-                        : "Bağlantıyı tekrar gönder"}
+                        ? t("auth.forgotPassword.resendCooldown", { time: formatRemaining(remaining) })
+                        : t("auth.forgotPassword.resend")}
                     </Text>
                   </>
                 )}
@@ -245,7 +245,7 @@ export default function ForgotPasswordScreen() {
           ) : (
             /* Form kartı */
             <View style={styles.card}>
-              <Text style={styles.label}>E-posta</Text>
+              <Text style={styles.label}>{t("auth.forgotPassword.email")}</Text>
               <View style={[styles.inputWrap, focused && styles.inputWrapFocused]}>
                 <Mail
                   size={19}
@@ -259,7 +259,7 @@ export default function ForgotPasswordScreen() {
                   onChangeText={setEmail}
                   onFocus={() => setFocused(true)}
                   onBlur={() => setFocused(false)}
-                  placeholder="ornek@mail.com"
+                  placeholder={t("auth.forgotPassword.emailPlaceholder")}
                   placeholderTextColor={C.muted}
                   keyboardType="email-address"
                   autoCapitalize="none"
@@ -268,7 +268,7 @@ export default function ForgotPasswordScreen() {
                   textContentType="emailAddress"
                   returnKeyType="send"
                   onSubmitEditing={onSend}
-                  accessibilityLabel="E-posta adresi"
+                  accessibilityLabel={t("auth.emailAccessibility")}
                 />
               </View>
 
@@ -292,7 +292,7 @@ export default function ForgotPasswordScreen() {
                       style={[styles.btnText, !valid && styles.btnTextDisabled]}
                       maxFontSizeMultiplier={1.2}
                     >
-                      Sıfırlama Bağlantısı Gönder
+                      {t("auth.forgotPassword.submitBtn")}
                     </Text>
                   )}
                 </LinearGradient>
@@ -312,7 +312,7 @@ export default function ForgotPasswordScreen() {
           >
             <ArrowLeft size={15} color={C.purple600} strokeWidth={2.5} />
             <Text style={styles.backLink} maxFontSizeMultiplier={1.2}>
-              Giriş ekranına dön
+              {t("auth.forgotPassword.backToLoginScreen")}
             </Text>
           </Pressable>
 
@@ -320,7 +320,7 @@ export default function ForgotPasswordScreen() {
           <View style={styles.hint}>
             <Info size={16} color={C.muted} strokeWidth={2} />
             <Text style={styles.hintText} maxFontSizeMultiplier={1.3}>
-              Bağlantı birkaç dakika içinde gelmezse spam klasörünü kontrol etmeyi unutma. Bağlantı 30 dakika geçerlidir.
+              {t("auth.forgotPassword.hint")}
             </Text>
           </View>
         </ScrollView>
@@ -390,7 +390,6 @@ const styles = StyleSheet.create({
     fontSize: 14, lineHeight: 21, color: "#2D6A4F",
     fontFamily: "Quicksand_500Medium",
   },
-  successEmail: { fontFamily: "Quicksand_700Bold", color: "#1B4332" },
   resendBtn: {
     flexDirection: "row", alignItems: "center", gap: 6,
     marginTop: 16, alignSelf: "flex-start",

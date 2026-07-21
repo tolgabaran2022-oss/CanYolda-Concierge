@@ -48,6 +48,7 @@ import Animated, {
 } from "react-native-reanimated";
 import { SafeAreaView } from "react-native-safe-area-context";
 import { useAuth } from "@/contexts/AuthContext";
+import { useTranslation } from "react-i18next";
 
 const C = {
   lavender:     "#EDE8FF",
@@ -263,6 +264,7 @@ function ShimmerBtn({
 export default function RegisterScreen() {
   const router = useRouter();
   const { register } = useAuth();
+  const { t } = useTranslation();
 
   const phoneRef    = useRef<TextInput>(null);
   const emailRef    = useRef<TextInput>(null);
@@ -314,8 +316,8 @@ export default function RegisterScreen() {
       Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
       router.replace("/(tabs)");
     } catch (e: unknown) {
-      const msg = e instanceof Error ? e.message : "Kayıt yapılamadı.";
-      Alert.alert("Hata", msg);
+      const msg = e instanceof Error ? e.message : t("auth.register.registerFailed");
+      Alert.alert(t("common.error"), msg);
       Haptics.notificationAsync(Haptics.NotificationFeedbackType.Error);
     } finally {
       setLoading(false);
@@ -341,7 +343,7 @@ export default function RegisterScreen() {
             <Pressable
               onPress={() => { Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light); router.back(); }}
               style={({ pressed }) => [styles.backBtn, pressed && styles.pressed]}
-              accessibilityRole="button" accessibilityLabel="Geri dön" hitSlop={8}
+              accessibilityRole="button" accessibilityLabel={t("common.goBack")} hitSlop={8}
             >
               <Icon name="chevron-back" size={22} color={C.purple900} />
             </Pressable>
@@ -350,9 +352,9 @@ export default function RegisterScreen() {
           <GlowPaw reduceMotion={reduceMotion} />
 
           <Animated.View entering={FadeIn.delay(200).duration(400)}>
-            <Text style={styles.title} maxFontSizeMultiplier={1.2}>Hesap Oluştur</Text>
+            <Text style={styles.title} maxFontSizeMultiplier={1.2}>{t("auth.register.title")}</Text>
             <Text style={styles.subtitle} maxFontSizeMultiplier={1.3}>
-              Topluluğa katıl, hayvan hayatlarına dokunuş yap.
+              {t("auth.register.subtitle")}
             </Text>
           </Animated.View>
 
@@ -360,7 +362,7 @@ export default function RegisterScreen() {
           <Animated.View entering={FadeIn.delay(280).duration(400)} style={styles.card}>
 
             <AnimatedField
-              label="Ad Soyad" focused={focusedField === "name"} delay={330}
+              label={t("auth.register.name")} focused={focusedField === "name"} delay={330}
               icon={
                 <Icon
                   name="person-outline" size={19}
@@ -372,11 +374,11 @@ export default function RegisterScreen() {
               <TextInput
                 style={styles.input} value={name} onChangeText={setName}
                 onFocus={() => setFocusedField("name")} onBlur={() => setFocusedField(null)}
-                placeholder="Adın Soyadın" placeholderTextColor={C.muted}
+                placeholder={t("auth.register.namePlaceholder")} placeholderTextColor={C.muted}
                 autoCapitalize="words" autoCorrect={false}
                 autoComplete="name" textContentType="name"
                 returnKeyType="next" onSubmitEditing={() => phoneRef.current?.focus()}
-                accessibilityLabel="Ad Soyad"
+                accessibilityLabel={t("auth.register.name")}
               />
             </AnimatedField>
 
@@ -384,7 +386,7 @@ export default function RegisterScreen() {
 
             {/* ── Telefon Numarası ── */}
             <AnimatedField
-              label="Telefon Numarası" focused={focusedField === "phone"} delay={370}
+              label={t("auth.register.phone")} focused={focusedField === "phone"} delay={370}
               icon={
                 <Icon
                   name="call-outline" size={19}
@@ -401,7 +403,7 @@ export default function RegisterScreen() {
                 onChangeText={onPhoneChange}
                 onFocus={() => setFocusedField("phone")}
                 onBlur={() => setFocusedField(null)}
-                placeholder="(5__) ___ __ __"
+                placeholder={t("auth.register.phonePlaceholder")}
                 placeholderTextColor={C.muted}
                 keyboardType="number-pad"
                 autoCorrect={false}
@@ -409,14 +411,14 @@ export default function RegisterScreen() {
                 textContentType="telephoneNumber"
                 returnKeyType="next"
                 onSubmitEditing={() => emailRef.current?.focus()}
-                accessibilityLabel="Telefon numarası"
+                accessibilityLabel={t("auth.register.phoneAccessibility")}
               />
             </AnimatedField>
 
             <View style={styles.fieldGap} />
 
             <AnimatedField
-              label="E-posta" focused={focusedField === "email"} delay={410}
+              label={t("auth.register.email")} focused={focusedField === "email"} delay={410}
               icon={
                 <Icon
                   name="mail-outline" size={19}
@@ -429,18 +431,18 @@ export default function RegisterScreen() {
                 ref={emailRef}
                 style={styles.input} value={email} onChangeText={setEmail}
                 onFocus={() => setFocusedField("email")} onBlur={() => setFocusedField(null)}
-                placeholder="ornek@mail.com" placeholderTextColor={C.muted}
+                placeholder={t("auth.register.emailPlaceholder")} placeholderTextColor={C.muted}
                 keyboardType="email-address" autoCapitalize="none" autoCorrect={false}
                 autoComplete="email" textContentType="emailAddress"
                 returnKeyType="next" onSubmitEditing={() => passwordRef.current?.focus()}
-                accessibilityLabel="E-posta adresi"
+                accessibilityLabel={t("auth.emailAccessibility")}
               />
             </AnimatedField>
 
             <View style={styles.fieldGap} />
 
             <AnimatedField
-              label="Şifre" focused={focusedField === "password"} delay={450}
+              label={t("auth.register.password")} focused={focusedField === "password"} delay={450}
               icon={
                 <Icon
                   name="lock-closed-outline" size={19}
@@ -453,23 +455,23 @@ export default function RegisterScreen() {
                 ref={passwordRef}
                 style={styles.input} value={password} onChangeText={setPassword}
                 onFocus={() => setFocusedField("password")} onBlur={() => setFocusedField(null)}
-                placeholder="En az 6 karakter" placeholderTextColor={C.muted}
+                placeholder={t("auth.register.passwordPlaceholder")} placeholderTextColor={C.muted}
                 secureTextEntry={!showPassword} autoCapitalize="none" autoCorrect={false}
                 autoComplete="new-password" textContentType="newPassword"
                 returnKeyType="go" onSubmitEditing={onRegister}
-                accessibilityLabel="Şifre"
+                accessibilityLabel={t("auth.register.password")}
               />
               <Pressable
                 onPress={() => { Haptics.selectionAsync(); setShowPassword((s) => !s); }}
                 hitSlop={8} accessibilityRole="button"
-                accessibilityLabel={showPassword ? "Şifreyi gizle" : "Şifreyi göster"}
+                accessibilityLabel={showPassword ? t("auth.hidePassword") : t("auth.showPassword")}
               >
                 <Icon name={showPassword ? "eye-off-outline" : "eye-outline"} size={20} color={C.purple600} />
               </Pressable>
             </AnimatedField>
 
             <ShimmerBtn
-              label="Kayıt Ol"
+              label={t("auth.register.submit")}
               valid={valid} loading={loading} onPress={onRegister}
               animStyle={btnAnimStyle} entryDelay={510}
               onPressIn={() => { if (valid) btnScale.value = withSpring(0.97, { damping: 18 }); }}
@@ -477,12 +479,12 @@ export default function RegisterScreen() {
             />
 
             <Animated.View entering={FadeIn.delay(570).duration(350)} style={styles.loginRow}>
-              <Text style={styles.loginText} maxFontSizeMultiplier={1.2}>Zaten hesabın var mı? </Text>
+              <Text style={styles.loginText} maxFontSizeMultiplier={1.2}>{t("auth.register.haveAccount")} </Text>
               <Pressable
                 onPress={() => { Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light); router.replace("/(auth)/login-form"); }}
                 accessibilityRole="link" hitSlop={8}
               >
-                <Text style={styles.loginLink} maxFontSizeMultiplier={1.2}>Giriş Yap</Text>
+                <Text style={styles.loginLink} maxFontSizeMultiplier={1.2}>{t("auth.register.loginLink")}</Text>
               </Pressable>
             </Animated.View>
           </Animated.View>
@@ -490,7 +492,7 @@ export default function RegisterScreen() {
           <Animated.View entering={FadeIn.delay(630).duration(350)} style={styles.hint}>
             <Icon name="shield-checkmark-outline" size={16} color={C.muted} />
             <Text style={styles.hintText} maxFontSizeMultiplier={1.3}>
-              Bilgilerin güvenle şifrelenir; şifreni kimseyle paylaşma.
+              {t("auth.securityHint")}
             </Text>
           </Animated.View>
         </ScrollView>

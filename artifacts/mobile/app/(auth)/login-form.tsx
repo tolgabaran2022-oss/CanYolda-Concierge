@@ -48,6 +48,7 @@ import Animated, {
 } from "react-native-reanimated";
 import { SafeAreaView } from "react-native-safe-area-context";
 import { useAuth } from "@/contexts/AuthContext";
+import { useTranslation } from "react-i18next";
 
 const C = {
   lavender:  "#EDE8FF",
@@ -181,6 +182,7 @@ function GlowPaw({ reduceMotion }: { reduceMotion: boolean }) {
 
 /* ── Buton shimmer süpürmesi ── */
 function ShimmerBtn({
+  label,
   valid,
   loading,
   onPress,
@@ -188,6 +190,7 @@ function ShimmerBtn({
   onPressIn,
   onPressOut,
 }: {
+  label: string;
   valid: boolean;
   loading: boolean;
   onPress: () => void;
@@ -237,7 +240,7 @@ function ShimmerBtn({
             <ActivityIndicator color={C.white} />
           ) : (
             <Text style={[styles.btnText, !valid && styles.btnTextDisabled]} maxFontSizeMultiplier={1.2}>
-              Giriş Yap
+              {label}
             </Text>
           )}
           {valid && (
@@ -252,6 +255,7 @@ function ShimmerBtn({
 export default function LoginScreen() {
   const router = useRouter();
   const { login } = useAuth();
+  const { t } = useTranslation();
   const passwordRef = useRef<TextInput>(null);
 
   const [email, setEmail] = useState("");
@@ -289,8 +293,8 @@ export default function LoginScreen() {
       Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
       router.replace("/(tabs)");
     } catch (e: unknown) {
-      const msg = e instanceof Error ? e.message : "Giriş yapılamadı.";
-      Alert.alert("Hata", msg);
+      const msg = e instanceof Error ? e.message : t("auth.login.loginFailed");
+      Alert.alert(t("common.error"), msg);
       Haptics.notificationAsync(Haptics.NotificationFeedbackType.Error);
     } finally {
       setLoading(false);
@@ -313,7 +317,7 @@ export default function LoginScreen() {
             <Pressable
               onPress={() => { Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light); router.back(); }}
               style={({ pressed }) => [styles.backBtn, pressed && styles.pressed]}
-              accessibilityRole="button" accessibilityLabel="Geri dön" hitSlop={8}
+              accessibilityRole="button" accessibilityLabel={t("common.goBack")} hitSlop={8}
             >
               <Icon name="chevron-back" size={22} color={C.purple900} />
             </Pressable>
@@ -324,9 +328,9 @@ export default function LoginScreen() {
 
           {/* Başlık */}
           <Animated.View entering={FadeIn.delay(200).duration(400)}>
-            <Text style={styles.title} maxFontSizeMultiplier={1.2}>Hoş geldin!</Text>
+            <Text style={styles.title} maxFontSizeMultiplier={1.2}>{t("auth.login.greeting")}</Text>
             <Text style={styles.subtitle} maxFontSizeMultiplier={1.3}>
-              Dostların seni bekliyor, hadi giriş yap.
+              {t("auth.login.greetingSubtitle")}
             </Text>
           </Animated.View>
 
@@ -334,7 +338,7 @@ export default function LoginScreen() {
           <Animated.View entering={FadeIn.delay(280).duration(400)} style={styles.card}>
 
             <AnimatedField
-              label="E-posta"
+              label={t("auth.login.email")}
               focused={focusedField === "email"}
               delay={340}
               icon={
@@ -349,18 +353,18 @@ export default function LoginScreen() {
                 style={styles.input}
                 value={email} onChangeText={setEmail}
                 onFocus={() => setFocusedField("email")} onBlur={() => setFocusedField(null)}
-                placeholder="ornek@mail.com" placeholderTextColor={C.muted}
+                placeholder={t("auth.login.emailPlaceholder")} placeholderTextColor={C.muted}
                 keyboardType="email-address" autoCapitalize="none" autoCorrect={false}
                 autoComplete="email" textContentType="emailAddress"
                 returnKeyType="next" onSubmitEditing={() => passwordRef.current?.focus()}
-                accessibilityLabel="E-posta adresi"
+                accessibilityLabel={t("auth.emailAccessibility")}
               />
             </AnimatedField>
 
             <View style={styles.fieldGap} />
 
             <AnimatedField
-              label="Şifre"
+              label={t("auth.login.password")}
               focused={focusedField === "password"}
               delay={400}
               icon={
@@ -380,12 +384,12 @@ export default function LoginScreen() {
                 secureTextEntry={!showPassword} autoCapitalize="none" autoCorrect={false}
                 autoComplete="password" textContentType="password"
                 returnKeyType="go" onSubmitEditing={onLogin}
-                accessibilityLabel="Şifre"
+                accessibilityLabel={t("auth.login.password")}
               />
               <Pressable
                 onPress={() => { Haptics.selectionAsync(); setShowPassword((s) => !s); }}
                 hitSlop={8} accessibilityRole="button"
-                accessibilityLabel={showPassword ? "Şifreyi gizle" : "Şifreyi göster"}
+                accessibilityLabel={showPassword ? t("auth.hidePassword") : t("auth.showPassword")}
               >
                 <Icon name={showPassword ? "eye-off-outline" : "eye-outline"} size={20} color={C.purple600} />
               </Pressable>
@@ -396,11 +400,12 @@ export default function LoginScreen() {
                 onPress={() => { Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light); router.push("/(auth)/forgot-password"); }}
                 accessibilityRole="link" hitSlop={8} style={styles.forgotWrap}
               >
-                <Text style={styles.forgot} maxFontSizeMultiplier={1.2}>Şifremi unuttum?</Text>
+                <Text style={styles.forgot} maxFontSizeMultiplier={1.2}>{t("auth.login.forgotPasswordQuestion")}</Text>
               </Pressable>
             </Animated.View>
 
             <ShimmerBtn
+              label={t("auth.login.submit")}
               valid={valid} loading={loading} onPress={onLogin}
               animStyle={btnAnimStyle}
               onPressIn={() => { if (valid) btnScale.value = withSpring(0.97, { damping: 18 }); }}
@@ -408,12 +413,12 @@ export default function LoginScreen() {
             />
 
             <Animated.View entering={FadeIn.delay(520).duration(350)} style={styles.registerRow}>
-              <Text style={styles.registerText} maxFontSizeMultiplier={1.2}>Hesabın yok mu? </Text>
+              <Text style={styles.registerText} maxFontSizeMultiplier={1.2}>{t("auth.login.noAccount")} </Text>
               <Pressable
                 onPress={() => { Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light); router.push("/(auth)/register"); }}
                 accessibilityRole="link" hitSlop={8}
               >
-                <Text style={styles.registerLink} maxFontSizeMultiplier={1.2}>Kayıt Ol</Text>
+                <Text style={styles.registerLink} maxFontSizeMultiplier={1.2}>{t("auth.login.registerLink")}</Text>
               </Pressable>
             </Animated.View>
           </Animated.View>
@@ -421,7 +426,7 @@ export default function LoginScreen() {
           <Animated.View entering={FadeIn.delay(580).duration(350)} style={styles.hint}>
             <Icon name="shield-checkmark-outline" size={16} color={C.muted} />
             <Text style={styles.hintText} maxFontSizeMultiplier={1.3}>
-              Bilgilerin güvenle şifrelenir; şifreni kimseyle paylaşma.
+              {t("auth.securityHint")}
             </Text>
           </Animated.View>
         </ScrollView>

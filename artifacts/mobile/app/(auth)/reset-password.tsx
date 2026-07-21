@@ -45,6 +45,7 @@ import {
   Lock, LockOpen, Eye, EyeOff, ChevronLeft,
   CheckCircle, XCircle, AlertCircle,
 } from "lucide-react-native";
+import { useTranslation } from "react-i18next";
 
 const API_BASE = process.env.EXPO_PUBLIC_DOMAIN
   ? `https://${process.env.EXPO_PUBLIC_DOMAIN}/api`
@@ -63,15 +64,26 @@ const C = {
   success:   "#38A169",
 };
 
-type PasswordRule = { label: string; test: (p: string) => boolean };
-const PWD_RULES: PasswordRule[] = [
-  { label: "En az 8 karakter",     test: (p) => p.length >= 8 },
-  { label: "Büyük harf (A-Z)",     test: (p) => /[A-Z]/.test(p) },
-  { label: "Küçük harf (a-z)",     test: (p) => /[a-z]/.test(p) },
-  { label: "Rakam (0-9)",          test: (p) => /[0-9]/.test(p) },
-  { label: "Özel karakter (!@#…)", test: (p) => /[^A-Za-z0-9]/.test(p) },
+/* Module-level rule tests (no t() needed here) */
+const PWD_RULE_TESTS: Array<(p: string) => boolean> = [
+  (p) => p.length >= 8,
+  (p) => /[A-Z]/.test(p),
+  (p) => /[a-z]/.test(p),
+  (p) => /[0-9]/.test(p),
+  (p) => /[^A-Za-z0-9]/.test(p),
 ];
-function isStrong(p: string) { return PWD_RULES.every((r) => r.test(p)); }
+
+const PWD_RULE_I18N_KEYS = [
+  "auth.resetPassword.pwdRules.minChars",
+  "auth.resetPassword.pwdRules.uppercase",
+  "auth.resetPassword.pwdRules.lowercase",
+  "auth.resetPassword.pwdRules.digit",
+  "auth.resetPassword.pwdRules.special",
+] as const;
+
+function isStrong(p: string) {
+  return PWD_RULE_TESTS.every((test) => test(p));
+}
 
 type TokenState = "verifying" | "valid" | "expired" | "used" | "error";
 
@@ -141,6 +153,7 @@ function AnimatedField({
 export default function ResetPasswordScreen() {
   const router = useRouter();
   const { token } = useLocalSearchParams<{ token?: string }>();
+  const { t } = useTranslation();
 
   const [tokenState, setTokenState] = useState<TokenState>("verifying");
   const [password,   setPassword]   = useState("");
@@ -197,6 +210,12 @@ export default function ResetPasswordScreen() {
 
   if (!fontsLoaded) return null;
 
+  /* Build password rules using t() inside component */
+  const pwdRules = PWD_RULE_I18N_KEYS.map((key, i) => ({
+    label: t(key),
+    test: PWD_RULE_TESTS[i],
+  }));
+
   const canSubmit = isStrong(password) && password === confirm;
 
   /* ── Form gönder ─────────────────────────────────────────── */
@@ -219,7 +238,7 @@ export default function ResetPasswordScreen() {
         if (data.expired) {
           setTokenState("expired");
         } else {
-          setErrorMsg(data.error ?? "Şifre güncellenemedi. Lütfen tekrar deneyin.");
+          setErrorMsg(data.error ?? t("auth.resetPassword.updateFailed"));
         }
         return;
       }
@@ -228,7 +247,7 @@ export default function ResetPasswordScreen() {
       setSuccess(true);
     } catch {
       Haptics.notificationAsync(Haptics.NotificationFeedbackType.Error);
-      setErrorMsg("İnternet bağlantınızı kontrol edin ve tekrar deneyin.");
+      setErrorMsg(t("common.networkError"));
     } finally {
       setLoading(false);
     }
@@ -256,10 +275,10 @@ export default function ResetPasswordScreen() {
           </Animated.View>
           <Animated.View entering={FadeIn.delay(200).duration(400)}>
             <Text style={styles.stateTitle} maxFontSizeMultiplier={1.2}>
-              Şifren Güncellendi!
+              {t("auth.resetPassword.successTitle")}
             </Text>
             <Text style={styles.stateMsg} maxFontSizeMultiplier={1.3}>
-              Yeni şifrenle giriş yapabilirsin.
+              {t("auth.resetPassword.successMsg")}
             </Text>
           </Animated.View>
           <Animated.View entering={FadeIn.delay(350).duration(400)} style={{ width: "100%" }}>
@@ -274,7 +293,9 @@ export default function ResetPasswordScreen() {
                 end={{ x: 1, y: 1 }}
                 style={[styles.btn, styles.btnShadow, { marginTop: 32 }]}
               >
-                <Text style={styles.btnText} maxFontSizeMultiplier={1.2}>Giriş Yap</Text>
+                <Text style={styles.btnText} maxFontSizeMultiplier={1.2}>
+                  {t("auth.resetPassword.goToLogin")}
+                </Text>
               </LinearGradient>
             </Pressable>
           </Animated.View>
@@ -291,7 +312,7 @@ export default function ResetPasswordScreen() {
         <View style={styles.centerWrap}>
           <ActivityIndicator size="large" color={C.purple500} />
           <Text style={styles.verifyingText} maxFontSizeMultiplier={1.2}>
-            Bağlantı doğrulanıyor…
+            {t("auth.resetPassword.verifying")}
           </Text>
         </View>
       </SafeAreaView>
@@ -321,17 +342,17 @@ export default function ResetPasswordScreen() {
           <Animated.View entering={FadeIn.delay(150).duration(400)}>
             <Text style={styles.stateTitle} maxFontSizeMultiplier={1.2}>
               {isUsed
-                ? "Bağlantı Kullanıldı"
+                ? t("auth.resetPassword.linkUsedTitle")
                 : isExpired
-                  ? "Bağlantının Süresi Doldu"
-                  : "Geçersiz Bağlantı"}
+                  ? t("auth.resetPassword.linkExpiredTitle")
+                  : t("auth.resetPassword.linkInvalidTitle")}
             </Text>
             <Text style={styles.stateMsg} maxFontSizeMultiplier={1.3}>
               {isUsed
-                ? "Bu şifre sıfırlama bağlantısı zaten kullanılmış."
+                ? t("auth.resetPassword.linkUsedMsg")
                 : isExpired
-                  ? "Bu bağlantı 30 dakika geçerliydi. Lütfen yeni bir bağlantı talep edin."
-                  : "Bu şifre sıfırlama bağlantısı geçersiz. Yeni bir tane talep edin."}
+                  ? t("auth.resetPassword.linkExpiredMsg")
+                  : t("auth.resetPassword.linkInvalidMsg")}
             </Text>
           </Animated.View>
           <Animated.View entering={FadeIn.delay(280).duration(400)} style={{ width: "100%" }}>
@@ -347,7 +368,7 @@ export default function ResetPasswordScreen() {
                 style={[styles.btn, styles.btnShadow, { marginTop: 32 }]}
               >
                 <Text style={styles.btnText} maxFontSizeMultiplier={1.2}>
-                  Yeni Bağlantı Talep Et
+                  {t("auth.resetPassword.requestNew")}
                 </Text>
               </LinearGradient>
             </Pressable>
@@ -381,7 +402,7 @@ export default function ResetPasswordScreen() {
               onPress={() => { Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light); router.back(); }}
               style={({ pressed }) => [styles.backBtn, pressed && styles.pressed]}
               accessibilityRole="button"
-              accessibilityLabel="Geri dön"
+              accessibilityLabel={t("common.goBack")}
               hitSlop={8}
             >
               <ChevronLeft size={22} color={C.purple900} strokeWidth={2.5} />
@@ -405,10 +426,10 @@ export default function ResetPasswordScreen() {
           {/* Başlık */}
           <Animated.View entering={FadeIn.delay(200).duration(400)}>
             <Text style={styles.title} maxFontSizeMultiplier={1.2}>
-              Yeni Şifre Oluştur
+              {t("auth.resetPassword.screenTitle")}
             </Text>
             <Text style={styles.subtitleLine} maxFontSizeMultiplier={1.3}>
-              Güvenli yeni şifreni belirle.
+              {t("auth.resetPassword.screenSubtitle")}
             </Text>
           </Animated.View>
 
@@ -425,7 +446,7 @@ export default function ResetPasswordScreen() {
 
             {/* Yeni Şifre */}
             <AnimatedField
-              label="Yeni Şifre"
+              label={t("auth.resetPassword.newPassword")}
               focused={focusedField === "pwd"}
               delay={330}
               icon={
@@ -443,7 +464,7 @@ export default function ResetPasswordScreen() {
                 onChangeText={setPassword}
                 onFocus={() => setFocusedField("pwd")}
                 onBlur={() => setFocusedField(null)}
-                placeholder="En az 8 karakter"
+                placeholder={t("auth.resetPassword.newPasswordPlaceholder")}
                 placeholderTextColor={C.muted}
                 secureTextEntry={!showPwd}
                 autoCapitalize="none"
@@ -452,13 +473,13 @@ export default function ResetPasswordScreen() {
                 textContentType="newPassword"
                 returnKeyType="next"
                 onSubmitEditing={() => cfmRef.current?.focus()}
-                accessibilityLabel="Yeni şifre"
+                accessibilityLabel={t("auth.resetPassword.newPasswordAccessibility")}
               />
               <Pressable
                 onPress={() => { Haptics.selectionAsync(); setShowPwd((v) => !v); }}
                 hitSlop={8}
                 accessibilityRole="button"
-                accessibilityLabel={showPwd ? "Şifreyi gizle" : "Şifreyi göster"}
+                accessibilityLabel={showPwd ? t("auth.hidePassword") : t("auth.showPassword")}
               >
                 {showPwd
                   ? <EyeOff size={20} color={C.purple600} strokeWidth={2} />
@@ -470,7 +491,7 @@ export default function ResetPasswordScreen() {
             {/* Şifre güç göstergesi */}
             {password.length > 0 && (
               <Animated.View entering={FadeIn.duration(250)} style={styles.rulesBox}>
-                {PWD_RULES.map((r) => {
+                {pwdRules.map((r) => {
                   const ok = r.test(password);
                   return (
                     <View key={r.label} style={styles.ruleRow}>
@@ -489,7 +510,7 @@ export default function ResetPasswordScreen() {
 
             {/* Şifre Tekrar */}
             <AnimatedField
-              label="Yeni Şifre Tekrar"
+              label={t("auth.resetPassword.confirmPasswordLabel")}
               focused={focusedField === "cfm"}
               delay={390}
               icon={
@@ -508,7 +529,7 @@ export default function ResetPasswordScreen() {
                 onChangeText={setConfirm}
                 onFocus={() => setFocusedField("cfm")}
                 onBlur={() => setFocusedField(null)}
-                placeholder="Şifreni tekrar yaz"
+                placeholder={t("auth.resetPassword.confirmPasswordPlaceholder")}
                 placeholderTextColor={C.muted}
                 secureTextEntry={!showCfm}
                 autoCapitalize="none"
@@ -517,7 +538,7 @@ export default function ResetPasswordScreen() {
                 textContentType="newPassword"
                 returnKeyType="done"
                 onSubmitEditing={onSubmit}
-                accessibilityLabel="Yeni şifre tekrar"
+                accessibilityLabel={t("auth.resetPassword.confirmPasswordAccessibility")}
               />
               <Pressable
                 onPress={() => { Haptics.selectionAsync(); setShowCfm((v) => !v); }}
@@ -535,7 +556,7 @@ export default function ResetPasswordScreen() {
             {confirm.length > 0 && password !== confirm && (
               <Animated.View entering={FadeIn.duration(200)} style={styles.mismatchWarn}>
                 <AlertCircle size={12} color={C.error} strokeWidth={2} />
-                <Text style={styles.mismatchText}>Şifreler eşleşmiyor</Text>
+                <Text style={styles.mismatchText}>{t("auth.resetPassword.passwordMismatch")}</Text>
               </Animated.View>
             )}
 
@@ -563,7 +584,7 @@ export default function ResetPasswordScreen() {
                       style={[styles.btnText, !canSubmit && styles.btnTextDisabled]}
                       maxFontSizeMultiplier={1.2}
                     >
-                      Şifremi Güncelle
+                      {t("auth.resetPassword.submitBtn")}
                     </Text>
                   )}
                 </LinearGradient>
@@ -599,9 +620,9 @@ const styles = StyleSheet.create({
     shadowRadius: 6, shadowOffset: { width: 0, height: 3 }, elevation: 2,
   },
 
-  iconWrap: { alignItems: "center", marginTop: 28 },
+  iconWrap: { alignItems: "center", marginTop: 24 },
   iconOuterCircle: {
-    width: 96, height: 96, borderRadius: 48,
+    width: 100, height: 100, borderRadius: 50,
     backgroundColor: C.purple100,
     alignItems: "center", justifyContent: "center",
   },
@@ -614,26 +635,24 @@ const styles = StyleSheet.create({
 
   title: {
     textAlign: "center", marginTop: 20,
-    fontSize: 24, color: C.purple900, fontFamily: "Quicksand_700Bold",
+    fontSize: 25, color: C.purple900, fontFamily: "Quicksand_700Bold",
   },
   subtitleLine: {
-    textAlign: "center", marginTop: 8,
-    fontSize: 14, color: C.muted, fontFamily: "Quicksand_500Medium",
+    textAlign: "center", marginTop: 8, lineHeight: 22,
+    fontSize: 14.5, color: C.muted, fontFamily: "Quicksand_500Medium",
   },
 
   globalError: {
-    flexDirection: "row", gap: 8, alignItems: "center",
-    marginTop: 16, paddingHorizontal: 14, paddingVertical: 12,
-    borderRadius: 14, backgroundColor: "#FFF5F5",
-    borderWidth: 1, borderColor: "#FED7D7",
+    flexDirection: "row", alignItems: "center", gap: 8,
+    marginTop: 16, padding: 12, borderRadius: 12,
+    backgroundColor: "#FFF5F5", borderWidth: 1, borderColor: "#FEB2B2",
   },
   globalErrorText: {
-    flex: 1, fontSize: 13.5, color: C.error, fontFamily: "Quicksand_600SemiBold",
+    flex: 1, fontSize: 13.5, color: C.error, fontFamily: "Quicksand_500Medium",
   },
 
   card: {
-    marginTop: 24, padding: 20, borderRadius: 24,
-    backgroundColor: C.white,
+    marginTop: 24, padding: 20, borderRadius: 24, backgroundColor: C.white,
     shadowColor: C.purple900, shadowOpacity: 0.07,
     shadowRadius: 16, shadowOffset: { width: 0, height: 8 }, elevation: 4,
   },
@@ -641,71 +660,71 @@ const styles = StyleSheet.create({
     fontSize: 13.5, color: C.purple900,
     fontFamily: "Quicksand_600SemiBold", marginBottom: 8, marginLeft: 2,
   },
+  fieldGap: { height: 16 },
   inputWrap: {
     flexDirection: "row", alignItems: "center",
-    height: 52, borderRadius: 16, paddingHorizontal: 14,
-    backgroundColor: C.cream, borderWidth: 1.5, borderColor: "transparent",
+    height: 52, borderRadius: 16, paddingHorizontal: 14, borderWidth: 1.5,
   },
   inputIcon: { marginRight: 10 },
-  input: {
-    flex: 1, fontSize: 15.5, color: C.purple900,
-    fontFamily: "Quicksand_600SemiBold",
-  },
-  fieldGap: { height: 12 },
+  input: { flex: 1, fontSize: 15.5, color: C.purple900, fontFamily: "Quicksand_600SemiBold" },
 
-  rulesBox: { marginTop: 8, gap: 4, paddingHorizontal: 2 },
-  ruleRow:  { flexDirection: "row", alignItems: "center", gap: 6 },
-  ruleCircle: { width: 11, height: 11, borderRadius: 6, borderWidth: 1.5, borderColor: C.muted },
-  ruleTxt:  { fontSize: 12.5, color: C.muted, fontFamily: "Quicksand_500Medium" },
-  ruleTxtOk: { color: C.success, fontFamily: "Quicksand_600SemiBold" },
+  rulesBox: { marginTop: 10, gap: 6, paddingLeft: 4 },
+  ruleRow: { flexDirection: "row", alignItems: "center", gap: 8 },
+  ruleCircle: {
+    width: 13, height: 13, borderRadius: 7,
+    borderWidth: 1.5, borderColor: C.muted,
+  },
+  ruleTxt: { fontSize: 12.5, color: C.muted, fontFamily: "Quicksand_500Medium" },
+  ruleTxtOk: { color: C.success },
 
   mismatchWarn: {
-    flexDirection: "row", alignItems: "center", gap: 5, marginTop: 6, paddingLeft: 2,
+    flexDirection: "row", alignItems: "center", gap: 6,
+    marginTop: 8,
   },
-  mismatchText: { fontSize: 12, color: C.error, fontFamily: "Quicksand_500Medium" },
+  mismatchText: { fontSize: 12.5, color: C.error, fontFamily: "Quicksand_500Medium" },
 
   btn: {
     height: 54, borderRadius: 27, marginTop: 8,
-    alignItems: "center", justifyContent: "center", overflow: "hidden",
+    alignItems: "center", justifyContent: "center",
   },
   btnShadow: {
     shadowColor: C.purple600, shadowOpacity: 0.35,
     shadowRadius: 12, shadowOffset: { width: 0, height: 8 }, elevation: 6,
   },
-  btnText: {
-    color: C.white, fontSize: 16, letterSpacing: 0.2,
-    fontFamily: "Quicksand_700Bold",
-  },
+  btnText: { color: C.white, fontSize: 16, letterSpacing: 0.2, fontFamily: "Quicksand_700Bold" },
   btnTextDisabled: { color: C.purple600, opacity: 0.55 },
 
-  /* State screens (loading / expired / success) */
   centerWrap: {
     flex: 1, alignItems: "center", justifyContent: "center",
-    paddingHorizontal: 36,
-  },
-  verifyingText: {
-    marginTop: 16, fontSize: 15, color: C.muted,
-    fontFamily: "Quicksand_500Medium",
+    paddingHorizontal: 32,
   },
   stateOuterCircle: {
-    width: 104, height: 104, borderRadius: 52,
+    width: 110, height: 110, borderRadius: 55,
     backgroundColor: C.purple100,
     alignItems: "center", justifyContent: "center",
-    marginBottom: 24,
+    marginBottom: 8,
   },
   stateOuterCircleError: { backgroundColor: "#FFF5F5" },
   stateIconCircle: {
-    width: 78, height: 78, borderRadius: 39,
+    width: 80, height: 80, borderRadius: 40,
     alignItems: "center", justifyContent: "center",
+    shadowColor: C.purple600, shadowOpacity: 0.35,
+    shadowRadius: 14, shadowOffset: { width: 0, height: 8 }, elevation: 8,
   },
-  stateIconCircleError: { backgroundColor: "#FC8181" },
+  stateIconCircleError: {
+    backgroundColor: "#FEB2B2",
+    shadowColor: C.error,
+  },
   stateTitle: {
-    textAlign: "center", fontSize: 22,
-    color: C.purple900, fontFamily: "Quicksand_700Bold", marginBottom: 10,
+    textAlign: "center", marginTop: 16,
+    fontSize: 22, color: C.purple900, fontFamily: "Quicksand_700Bold",
   },
   stateMsg: {
-    textAlign: "center", fontSize: 14.5, lineHeight: 22,
-    color: C.muted, fontFamily: "Quicksand_500Medium",
+    textAlign: "center", marginTop: 10, lineHeight: 22,
+    fontSize: 14.5, color: C.muted, fontFamily: "Quicksand_500Medium",
+  },
+  verifyingText: {
+    marginTop: 16, fontSize: 15, color: C.muted, fontFamily: "Quicksand_500Medium",
   },
   pressed: { transform: [{ scale: 0.97 }] },
 });

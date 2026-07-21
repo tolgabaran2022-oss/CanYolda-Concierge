@@ -23,6 +23,7 @@ import {
   View,
 } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
+import { useTranslation } from "react-i18next";
 
 const API_BASE = process.env.EXPO_PUBLIC_DOMAIN
   ? `https://${process.env.EXPO_PUBLIC_DOMAIN}/api`
@@ -44,6 +45,7 @@ const C = {
 export default function VerifyResetCodeScreen() {
   const router = useRouter();
   const { email } = useLocalSearchParams<{ email: string }>();
+  const { t } = useTranslation();
 
   const [code,       setCode]       = useState("");
   const [loading,    setLoading]    = useState(false);
@@ -87,9 +89,9 @@ export default function VerifyResetCodeScreen() {
         Haptics.notificationAsync(Haptics.NotificationFeedbackType.Error);
         if (data.maxAttemptsReached) {
           setMaxReached(true);
-          setErrorMsg(data.error ?? "Maksimum deneme sayısına ulaşıldı.");
+          setErrorMsg(data.error ?? t("auth.verifyCode.maxAttempts"));
         } else {
-          setErrorMsg(data.error ?? "Kod doğrulanamadı.");
+          setErrorMsg(data.error ?? t("auth.verifyCode.verifyFailed"));
           if (typeof data.remaining === "number") setRemaining(data.remaining);
           setCode("");
           inputRef.current?.focus();
@@ -104,7 +106,7 @@ export default function VerifyResetCodeScreen() {
       } as never);
     } catch {
       Haptics.notificationAsync(Haptics.NotificationFeedbackType.Error);
-      setErrorMsg("İnternet bağlantınızı kontrol edin ve tekrar deneyin.");
+      setErrorMsg(t("common.networkError"));
     } finally {
       setLoading(false);
     }
@@ -127,16 +129,16 @@ export default function VerifyResetCodeScreen() {
       const data = await res.json() as { ok?: boolean; error?: string };
 
       if (!res.ok && res.status === 429) {
-        setErrorMsg(data.error ?? "Lütfen biraz bekleyin.");
+        setErrorMsg(data.error ?? t("auth.verifyCode.rateLimitMsg"));
       } else {
         Alert.alert(
-          "Kod Gönderildi",
-          "Yeni sıfırlama kodu e-posta adresinize gönderildi.",
-          [{ text: "Tamam" }]
+          t("auth.verifyCode.codeSentTitle"),
+          t("auth.verifyCode.codeSentMsg"),
+          [{ text: t("common.ok") }]
         );
       }
     } catch {
-      setErrorMsg("İnternet bağlantınızı kontrol edin.");
+      setErrorMsg(t("common.networkError"));
     } finally {
       setResending(false);
     }
@@ -163,7 +165,7 @@ export default function VerifyResetCodeScreen() {
             onPress={() => { Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light); router.back(); }}
             style={({ pressed }) => [styles.backBtn, pressed && styles.pressed]}
             accessibilityRole="button"
-            accessibilityLabel="Geri dön"
+            accessibilityLabel={t("common.goBack")}
             hitSlop={8}
           >
             <Icon name="ChevronLeft" size={22} color={C.purple900} />
@@ -182,23 +184,22 @@ export default function VerifyResetCodeScreen() {
           </View>
 
           <Text style={styles.title} maxFontSizeMultiplier={1.2}>
-            E-postanı kontrol et
+            {t("auth.verifyCode.title")}
           </Text>
           <Text style={styles.subtitle} maxFontSizeMultiplier={1.3}>
-            <Text style={styles.emailText}>{maskedEmail}</Text>
-            {"\n"}adresine 6 haneli sıfırlama kodu gönderdik.
+            {t("auth.verifyCode.subtitle", { email: maskedEmail })}
           </Text>
 
           {/* Form */}
           <View style={styles.card}>
-            <Text style={styles.label}>Sıfırlama Kodu</Text>
+            <Text style={styles.label}>{t("auth.verifyCode.label")}</Text>
             <View style={[styles.codeWrap, errorMsg ? styles.codeWrapError : null]}>
               <TextInput
                 ref={inputRef}
                 style={styles.codeInput}
                 value={code}
-                onChangeText={(t) => {
-                  setCode(t.replace(/\D/g, "").slice(0, 6));
+                onChangeText={(t_) => {
+                  setCode(t_.replace(/\D/g, "").slice(0, 6));
                   if (errorMsg) { setErrorMsg(""); setRemaining(null); }
                 }}
                 placeholder="· · · · · ·"
@@ -208,7 +209,7 @@ export default function VerifyResetCodeScreen() {
                 returnKeyType="done"
                 onSubmitEditing={onVerify}
                 editable={!maxReached}
-                accessibilityLabel="6 haneli sıfırlama kodu"
+                accessibilityLabel={t("auth.verifyCode.codeAccessibility")}
                 autoFocus
               />
             </View>
@@ -221,7 +222,9 @@ export default function VerifyResetCodeScreen() {
             ) : remaining !== null ? null : null}
 
             {remaining !== null && !maxReached && (
-              <Text style={styles.remainingText}>{remaining} deneme hakkınız kaldı</Text>
+              <Text style={styles.remainingText}>
+                {t("auth.verifyCode.remainingAttempts", { count: remaining })}
+              </Text>
             )}
 
             {/* Doğrula butonu */}
@@ -242,7 +245,7 @@ export default function VerifyResetCodeScreen() {
                   <ActivityIndicator color={C.white} />
                 ) : (
                   <Text style={[styles.btnText, (code.length !== 6 || maxReached) && styles.btnTextDisabled]} maxFontSizeMultiplier={1.2}>
-                    Kodu Doğrula
+                    {t("auth.verifyCode.verify")}
                   </Text>
                 )}
               </LinearGradient>
@@ -260,7 +263,7 @@ export default function VerifyResetCodeScreen() {
               ) : (
                 <>
                   <Icon name="RefreshCw" size={14} color={C.purple600} />
-                  <Text style={styles.resendText}>Kodu yeniden gönder</Text>
+                  <Text style={styles.resendText}>{t("auth.verifyCode.resend")}</Text>
                 </>
               )}
             </Pressable>
@@ -270,7 +273,7 @@ export default function VerifyResetCodeScreen() {
           <View style={styles.hint}>
             <Icon name="Info" size={16} color={C.muted} />
             <Text style={styles.hintText} maxFontSizeMultiplier={1.3}>
-              Kod birkaç dakika içinde gelmezse spam klasörünü kontrol et. Kod 10 dakika geçerlidir.
+              {t("auth.verifyCode.hint")}
             </Text>
           </View>
         </ScrollView>
@@ -308,7 +311,6 @@ const styles = StyleSheet.create({
 
   title:     { textAlign: "center", marginTop: 20, fontSize: 25, color: C.purple900, fontFamily: "Quicksand_700Bold" },
   subtitle:  { textAlign: "center", marginTop: 8, lineHeight: 22, fontSize: 14.5, color: C.muted, fontFamily: "Quicksand_500Medium" },
-  emailText: { color: C.purple600, fontFamily: "Quicksand_700Bold" },
 
   card: {
     marginTop: 26, padding: 20, borderRadius: 24,
