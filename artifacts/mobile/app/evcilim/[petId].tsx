@@ -5,6 +5,7 @@ import { Image } from "expo-image";
 import { LinearGradient } from "expo-linear-gradient";
 import { useLocalSearchParams, useRouter } from "expo-router";
 import React, { useState } from "react";
+import { useTranslation } from "react-i18next";
 import {
   Alert,
   KeyboardAvoidingView,
@@ -104,6 +105,7 @@ type ManageGridItem = {
 };
 
 export default function PetDetailScreen() {
+  const { t } = useTranslation();
   const { petId } = useLocalSearchParams<{ petId: string }>();
   const { getPet, updatePet, deletePet } = usePets();
   const { user } = useAuth();
@@ -126,19 +128,19 @@ export default function PetDetailScreen() {
   const [isSaving, setIsSaving] = useState(false);
 
   const MANAGE_GRID: ManageGridItem[] = [
-    { key: "vaccinations",   label: "Aşılar",    icon: "shield-checkmark-outline", color: "#FF9500",  route: `/evcilim/${petId}/vaccinations` },
-    { key: "appointments",   label: "Randevular", icon: "calendar-outline",         color: P,          route: `/evcilim/${petId}/appointments` },
-    { key: "identification", label: "Kimlik",     icon: "id-card-outline",          color: "#5856D6",  route: `/evcilim/${petId}/identification` },
-    { key: "nutrition",      label: "Beslenme",   icon: "bag-handle-outline",       color: GREEN,      route: `/evcilim/${petId}/nutrition` },
-    { key: "notes",          label: "Notlar",     icon: "pencil-outline",           color: "#AF52DE",  route: `/evcilim/${petId}/notes` },
+    { key: "vaccinations",   label: t("pets.detail.vaccinations"),   icon: "shield-checkmark-outline", color: "#FF9500",  route: `/evcilim/${petId}/vaccinations` },
+    { key: "appointments",   label: t("pets.detail.appointments"),   icon: "calendar-outline",         color: P,          route: `/evcilim/${petId}/appointments` },
+    { key: "identification", label: t("pets.detail.identification"), icon: "id-card-outline",          color: "#5856D6",  route: `/evcilim/${petId}/identification` },
+    { key: "nutrition",      label: t("pets.detail.nutrition"),      icon: "bag-handle-outline",       color: GREEN,      route: `/evcilim/${petId}/nutrition` },
+    { key: "notes",          label: t("pets.detail.notes"),          icon: "pencil-outline",           color: "#AF52DE",  route: `/evcilim/${petId}/notes` },
   ];
 
   if (!pet) {
     return (
       <View style={{ flex: 1, alignItems: "center", justifyContent: "center", backgroundColor: BG }}>
-        <Text style={{ color: BODY, fontSize: 16 }}>Hayvan bulunamadı</Text>
+        <Text style={{ color: BODY, fontSize: 16 }}>{t("pets.detail.notFound")}</Text>
         <Pressable style={{ marginTop: 16 }} onPress={() => router.back()}>
-          <Text style={{ color: P, fontSize: 14, fontFamily: "Inter_600SemiBold" }}>Geri Dön</Text>
+          <Text style={{ color: P, fontSize: 14, fontFamily: "Inter_600SemiBold" }}>{t("common.goBack")}</Text>
         </Pressable>
       </View>
     );
@@ -155,7 +157,7 @@ export default function PetDetailScreen() {
   };
 
   const handleSave = async () => {
-    if (!name.trim()) { Alert.alert("Hata", "İsim giriniz."); return; }
+    if (!name.trim()) { Alert.alert(t("common.error"), t("pets.detail.nameRequired")); return; }
     setIsSaving(true);
     try {
       let remoteImage: string | undefined = image;
@@ -163,7 +165,7 @@ export default function PetDetailScreen() {
         try {
           remoteImage = await uploadImage(image);
         } catch {
-          Alert.alert("Fotoğraf Yüklenemedi", "Fotoğraf sunucuya yüklenemedi, önceki fotoğraf korunacak.");
+          Alert.alert(t("pets.add.uploadFailed"), t("pets.detail.uploadFailedKept"));
           remoteImage = undefined;
         }
       }
@@ -171,20 +173,20 @@ export default function PetDetailScreen() {
       Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
       setEditing(false);
     } catch {
-      Alert.alert("Hata", "Kaydedilemedi.");
+      Alert.alert(t("common.error"), t("pets.detail.saveError"));
     } finally {
       setIsSaving(false);
     }
   };
 
   const handleDelete = () => {
-    Alert.alert("Hayvanı Sil", `${pet.name} kalıcı olarak silinecek. Emin misin?`, [
-      { text: "Vazgeç", style: "cancel" },
+    Alert.alert(t("pets.detail.deleteConfirmTitle"), t("pets.detail.deleteConfirmMsg", { name: pet.name }), [
+      { text: t("pets.detail.cancelDelete"), style: "cancel" },
       {
-        text: "Sil",
+        text: t("common.delete"),
         style: "destructive",
         onPress: async () => {
-          try { await deletePet(petId!); router.back(); } catch { Alert.alert("Hata", "Silinemedi."); }
+          try { await deletePet(petId!); router.back(); } catch { Alert.alert(t("common.error"), t("pets.detail.deleteError")); }
         },
       },
     ]);
@@ -243,56 +245,56 @@ export default function PetDetailScreen() {
           <View style={st.form}>
             {/* Type selector */}
             <View style={fi.wrap}>
-              <Text style={fi.label}>Hayvan Türü</Text>
+              <Text style={fi.label}>{t("pets.detail.animalType")}</Text>
               <ScrollView horizontal showsHorizontalScrollIndicator={false} style={{ marginTop: 6 }}>
                 <View style={{ flexDirection: "row", gap: 8 }}>
-                  {PET_TYPES.map((t) => (
+                  {PET_TYPES.map((pt) => (
                     <Pressable
-                      key={t}
-                      style={[st.typePill, type === t && st.typePillActive]}
-                      onPress={() => setType(t)}
+                      key={pt}
+                      style={[st.typePill, type === pt && st.typePillActive]}
+                      onPress={() => setType(pt)}
                     >
-                      <Icon name="paw" size={16} color={type === t ? WHITE : P} />
-                      <Text style={[st.typeLabel, type === t && st.typeLabelActive]}>{t}</Text>
+                      <Icon name="paw" size={16} color={type === pt ? WHITE : P} />
+                      <Text style={[st.typeLabel, type === pt && st.typeLabelActive]}>{t(`pets.add.types.${pt}`)}</Text>
                     </Pressable>
                   ))}
                 </View>
               </ScrollView>
             </View>
-            <Field label="İsim *" value={name} onChangeText={setName} placeholder="Örn. Pamuk" />
-            <Field label="Irk / Cins" value={breed} onChangeText={setBreed} placeholder="Örn. British Shorthair" />
-            <Field label="Yaş" value={age} onChangeText={setAge} placeholder="Örn. 2 yaş" />
-            <Field label="Ağırlık (kg)" value={weight} onChangeText={setWeight} placeholder="Örn. 4.5" keyboardType="decimal-pad" />
-            <Field label="Renk / Desen" value={color} onChangeText={setColor} placeholder="Örn. Gri benekli" />
+            <Field label={t("pets.detail.nameLabel")} value={name} onChangeText={setName} placeholder={t("pets.detail.namePlaceholder")} />
+            <Field label={t("pets.detail.breedField")} value={breed} onChangeText={setBreed} placeholder={t("pets.detail.breedPlaceholder")} />
+            <Field label={t("pets.detail.ageField")} value={age} onChangeText={setAge} placeholder={t("pets.detail.agePlaceholder")} />
+            <Field label={t("pets.detail.weightLabel")} value={weight} onChangeText={setWeight} placeholder={t("pets.detail.weightPlaceholder")} keyboardType="decimal-pad" />
+            <Field label={t("pets.detail.colorLabel")} value={color} onChangeText={setColor} placeholder={t("pets.detail.colorPlaceholder")} />
             <View style={st.toggleRow}>
               <View>
-                <Text style={st.toggleLabel}>Kısırlaştırıldı mı?</Text>
-                <Text style={st.toggleSub}>Sağlık takibi için önemli</Text>
+                <Text style={st.toggleLabel}>{t("pets.detail.neuteredLabel")}</Text>
+                <Text style={st.toggleSub}>{t("pets.detail.neuteredSub")}</Text>
               </View>
               <Switch value={isNeutered} onValueChange={setIsNeutered} trackColor={{ false: "#E0D8F0", true: P }} thumbColor={WHITE} />
             </View>
-            <Field label="Açıklama / Karakter" value={bio} onChangeText={setBio} placeholder="Karakteri hakkında kısa bilgi..." multiline />
+            <Field label={t("pets.detail.bioLabel")} value={bio} onChangeText={setBio} placeholder={t("pets.detail.bioPlaceholder")} multiline />
 
             <Pressable style={st.deleteBtn} onPress={handleDelete}>
-              <Text style={st.deleteTxt}>Hayvanı Sil</Text>
+              <Text style={st.deleteTxt}>{t("pets.detail.deletePet")}</Text>
             </Pressable>
           </View>
         ) : (
           <View style={st.infoCard}>
             <View style={st.infoRow}>
               <View style={st.infoItem}>
-                <Text style={st.infoLabel}>Tür</Text>
-                <Text style={st.infoValue}>{pet.type}</Text>
+                <Text style={st.infoLabel}>{t("pets.detail.typeLabel")}</Text>
+                <Text style={st.infoValue}>{t(`pets.add.types.${pet.type}`, { defaultValue: pet.type })}</Text>
               </View>
               {pet.breed ? (
                 <View style={st.infoItem}>
-                  <Text style={st.infoLabel}>Irk</Text>
+                  <Text style={st.infoLabel}>{t("pets.detail.breedLabel")}</Text>
                   <Text style={st.infoValue}>{pet.breed}</Text>
                 </View>
               ) : null}
               {pet.age ? (
                 <View style={st.infoItem}>
-                  <Text style={st.infoLabel}>Yaş</Text>
+                  <Text style={st.infoLabel}>{t("pets.detail.ageLabel")}</Text>
                   <Text style={st.infoValue}>{pet.age}</Text>
                 </View>
               ) : null}
@@ -303,7 +305,7 @@ export default function PetDetailScreen() {
         {/* Management grid */}
         {!editing && (
           <>
-            <Text style={st.sectionTitle}>Yönetim</Text>
+            <Text style={st.sectionTitle}>{t("pets.detail.management")}</Text>
             <View style={st.grid}>
               {MANAGE_GRID.map((item) => (
                 <Pressable

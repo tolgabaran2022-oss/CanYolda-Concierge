@@ -53,7 +53,21 @@
     "hoursAgo_other": "{{count}} hours ago",
     "daysAgo_one": "{{count}} day ago",
     "daysAgo_other": "{{count}} days ago",
-    "goBack": "Go back"
+    "goBack": "Go back",
+    "monthNames": [
+      "January",
+      "February",
+      "March",
+      "April",
+      "May",
+      "June",
+      "July",
+      "August",
+      "September",
+      "October",
+      "November",
+      "December"
+    ]
   },
   "language": {
     "title": "Language",
@@ -582,8 +596,22 @@
         "Kedi": "Cat",
         "Köpek": "Dog",
         "Kuş": "Bird",
-        "Tavşan": "Rabbit"
-      }
+        "Tavşan": "Rabbit",
+        "Balık": "Fish",
+        "Diğer": "Other"
+      },
+      "photoA11y": "Add or change photo",
+      "photoSheetMsg": "How would you like to add it?",
+      "webCameraTitle": "Camera",
+      "webCameraMsg": "Camera is not supported on web. Choose from gallery.",
+      "cameraPermTitle": "Camera Permission Required",
+      "cameraPermMsg": "Enable camera permission in Settings.",
+      "galleryPermTitle": "Gallery Permission Required",
+      "galleryPermMsg": "Enable photo permission in Settings.",
+      "invalidDateTitle": "Invalid Date",
+      "premiumRequiredTitle": "Premium Required",
+      "premiumRequiredMsg": "Evcilim Premium is required for a second pet.",
+      "uploading": "Uploading…"
     },
     "empty": {
       "title": "No pets yet",
@@ -612,7 +640,34 @@
       "editPet": "Edit Pet",
       "deletePet": "Delete Pet",
       "deleteConfirm": "Are you sure you want to delete this pet?",
-      "shareProfile": "Share Profile"
+      "shareProfile": "Share Profile",
+      "notFound": "Pet not found",
+      "typeLabel": "Type",
+      "breedLabel": "Breed",
+      "ageLabel": "Age",
+      "management": "Management",
+      "animalType": "Animal Type",
+      "nameLabel": "Name *",
+      "namePlaceholder": "e.g. Pamuk",
+      "breedField": "Breed",
+      "breedPlaceholder": "e.g. British Shorthair",
+      "ageField": "Age",
+      "agePlaceholder": "e.g. 2 years",
+      "weightLabel": "Weight (kg)",
+      "weightPlaceholder": "e.g. 4.5",
+      "colorLabel": "Color / Pattern",
+      "colorPlaceholder": "e.g. Gray spotted",
+      "neuteredLabel": "Neutered?",
+      "neuteredSub": "Important for health tracking",
+      "bioLabel": "Description / Character",
+      "bioPlaceholder": "A short note about their character...",
+      "nameRequired": "Please enter a name.",
+      "saveError": "Could not save.",
+      "deleteError": "Could not delete.",
+      "uploadFailedKept": "Photo could not be uploaded; the previous photo will be kept.",
+      "deleteConfirmTitle": "Delete Pet",
+      "deleteConfirmMsg": "{{name}} will be permanently deleted. Are you sure?",
+      "cancelDelete": "Cancel"
     },
     "premium": {
       "title": "CanYoldaşı Premium",
@@ -634,6 +689,25 @@
       "premiumActive": "Premium active",
       "premiumUntil": "Active until {{date}}",
       "manageSub": "Manage Subscription"
+    },
+    "form": {
+      "nameLabel": "Name *",
+      "namePlaceholder": "Pet's name",
+      "typeLabel": "Type",
+      "breedLabel": "Breed",
+      "breedPlaceholder": "Optional",
+      "ageLabel": "Age",
+      "agePlaceholder": "e.g. 2 years",
+      "vaccinationLabel": "Vaccination Info",
+      "vaccinationPlaceholder": "Vaccination status and dates...",
+      "feedingLabel": "Feeding Notes",
+      "feedingPlaceholder": "Food type, portion info...",
+      "createProfile": "Create Profile",
+      "photoSheetMsg": "How would you like to add a photo?",
+      "nameRequiredMsg": "Please enter the pet's name.",
+      "uploadFailedMsg": "Photo upload failed. The pet will be saved without a photo.",
+      "cameraPermMsg": "Enable camera permission in Settings.",
+      "galleryPermMsg": "Enable photo library permission in Settings."
     }
   },
   "leaderboard": {

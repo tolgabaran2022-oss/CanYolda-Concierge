@@ -6,6 +6,7 @@ import { Image } from "expo-image";
 import { LinearGradient } from "expo-linear-gradient";
 import { useRouter } from "expo-router";
 import React, { useEffect, useRef, useState } from "react";
+import { useTranslation } from "react-i18next";
 import {
   ActionSheetIOS,
   ActivityIndicator,
@@ -77,10 +78,11 @@ type PetType = typeof PET_TYPES[number]["key"];
 const GENDERS  = ["Erkek", "Dişi", "Bilinmiyor"] as const;
 type Gender    = typeof GENDERS[number];
 
-const MONTHS   = [
-  "Ocak","Şubat","Mart","Nisan","Mayıs","Haziran",
-  "Temmuz","Ağustos","Eylül","Ekim","Kasım","Aralık",
-];
+const GENDER_KEYS: Record<Gender, string> = {
+  "Erkek":      "common.male",
+  "Dişi":       "common.female",
+  "Bilinmiyor": "common.unknown_gender",
+};
 
 /* ── Date picker modal ─────────────────────────────────── */
 function DatePickerModal({
@@ -94,6 +96,8 @@ function DatePickerModal({
   onConfirm: (d: Date) => void;
   onCancel: () => void;
 }) {
+  const { t } = useTranslation();
+  const MONTHS = t("common.monthNames", { returnObjects: true }) as string[];
   const now    = new Date();
   const [year,  setYear]  = useState(value ? value.getFullYear()  : now.getFullYear() - 3);
   const [month, setMonth] = useState(value ? value.getMonth()      : 0);
@@ -111,7 +115,7 @@ function DatePickerModal({
       </TouchableWithoutFeedback>
       <View style={dp.sheet}>
         <View style={dp.handle} />
-        <Text style={dp.title}>Doğum Tarihi Seç</Text>
+        <Text style={dp.title}>{t("pets.add.pickDateTitle")}</Text>
         <View style={dp.cols}>
           <ScrollView style={dp.col} showsVerticalScrollIndicator={false}>
             {days.map((d) => (
@@ -137,18 +141,18 @@ function DatePickerModal({
         </View>
         <View style={dp.btns}>
           <Pressable style={dp.cancelBtn} onPress={onCancel}>
-            <Text style={dp.cancelTxt}>İptal</Text>
+            <Text style={dp.cancelTxt}>{t("common.cancel")}</Text>
           </Pressable>
           <Pressable
             style={dp.confirmBtn}
             onPress={() => {
               const d = new Date(year, month, safeDay);
-              if (d > now) { Alert.alert("Geçersiz Tarih", "İleri bir tarih seçilemez."); return; }
+              if (d > now) { Alert.alert(t("pets.add.invalidDateTitle"), t("pets.add.invalidDate")); return; }
               onConfirm(d);
             }}
           >
             <LinearGradient colors={[PURPLE2, PURPLE]} style={dp.confirmGrad}>
-              <Text style={dp.confirmTxt}>Tamam</Text>
+              <Text style={dp.confirmTxt}>{t("pets.add.confirm")}</Text>
             </LinearGradient>
           </Pressable>
         </View>
@@ -180,6 +184,7 @@ const dp = StyleSheet.create({
 const FOOTER_H = 78; // approximate footer height for scroll padding
 
 export default function AddPetScreen() {
+  const { t } = useTranslation();
   const insets = useSafeAreaInsets();
   const router = useRouter();
   const { addPet } = usePets();
@@ -228,45 +233,46 @@ export default function AddPetScreen() {
   const handlePickImage = () => {
     if (Platform.OS === "ios") {
       ActionSheetIOS.showActionSheetWithOptions(
-        { options: ["Fotoğraf Çek", "Galeriden Seç", "İptal"], cancelButtonIndex: 2 },
+        { options: [t("common.takePhoto"), t("common.chooseFromGallery"), t("common.cancel")], cancelButtonIndex: 2 },
         async (i) => {
           if (i === 0) await openCamera();
           else if (i === 1) await openGallery();
         },
       );
     } else {
-      Alert.alert("Fotoğraf Ekle", "Nasıl eklemek istersiniz?", [
-        { text: "Fotoğraf Çek",  onPress: openCamera  },
-        { text: "Galeriden Seç", onPress: openGallery },
-        { text: "İptal", style: "cancel" },
+      Alert.alert(t("pets.add.photo"), t("pets.add.photoSheetMsg"), [
+        { text: t("common.takePhoto"),         onPress: openCamera  },
+        { text: t("common.chooseFromGallery"), onPress: openGallery },
+        { text: t("common.cancel"), style: "cancel" },
       ]);
     }
   };
 
   const openCamera = async () => {
-    if (Platform.OS === "web") { Alert.alert("Kamera", "Web'de kamera desteklenmiyor. Galeriden seçin."); return; }
+    if (Platform.OS === "web") { Alert.alert(t("pets.add.webCameraTitle"), t("pets.add.webCameraMsg")); return; }
     const perm = await ImagePicker.requestCameraPermissionsAsync();
-    if (!perm.granted) { Alert.alert("Kamera İzni Gerekli", "Ayarlardan kamera iznini etkinleştirin."); return; }
+    if (!perm.granted) { Alert.alert(t("pets.add.cameraPermTitle"), t("pets.add.cameraPermMsg")); return; }
     const res = await ImagePicker.launchCameraAsync({ allowsEditing: true, aspect: [1, 1], quality: 0.8 });
     if (!res.canceled && res.assets[0]) setImage(res.assets[0].uri);
   };
 
   const openGallery = async () => {
     const perm = Platform.OS !== "web" ? await ImagePicker.requestMediaLibraryPermissionsAsync() : null;
-    if (perm && !perm.granted) { Alert.alert("Galeri İzni Gerekli", "Ayarlardan fotoğraf iznini etkinleştirin."); return; }
+    if (perm && !perm.granted) { Alert.alert(t("pets.add.galleryPermTitle"), t("pets.add.galleryPermMsg")); return; }
     const res = await ImagePicker.launchImageLibraryAsync({ mediaTypes: ["images"], allowsEditing: true, aspect: [1, 1], quality: 0.8 });
     if (!res.canceled && res.assets[0]) setImage(res.assets[0].uri);
   };
 
   function formatDate(d: Date) {
-    return `${String(d.getDate()).padStart(2, "0")} ${MONTHS[d.getMonth()]} ${d.getFullYear()}`;
+    const monthNames = t("common.monthNames", { returnObjects: true }) as string[];
+    return `${String(d.getDate()).padStart(2, "0")} ${monthNames[d.getMonth()]} ${d.getFullYear()}`;
   }
 
   const canSave = name.trim().length > 0 && !isSaving;
 
   const handleSave = async () => {
     const trimmed = name.trim();
-    if (!trimmed) { setNameError("İsim zorunludur."); return; }
+    if (!trimmed) { setNameError(t("pets.add.nameRequired")); return; }
     if (!user || isSavingRef.current) return;
     isSavingRef.current = true;
     setIsSaving(true);
@@ -276,7 +282,7 @@ export default function AddPetScreen() {
       if (image) {
         setUploading(true);
         try { remoteImageUrl = await uploadImage(image); }
-        catch { Alert.alert("Fotoğraf Yüklenemedi", "Hayvan fotoğrafsız kaydedilecek."); }
+        catch { Alert.alert(t("pets.add.uploadFailed"), t("pets.add.uploadFailedMsg")); }
         finally { setUploading(false); }
       }
       const birthDateStr = noBirthDate ? undefined : (birthDate ? birthDate.toISOString().split("T")[0] : undefined);
@@ -300,10 +306,10 @@ export default function AddPetScreen() {
         // auto-open the premium modal via the openPremium navigation param.
         Haptics.notificationAsync(Haptics.NotificationFeedbackType.Warning);
         Alert.alert(
-          "Premium Gerekli",
-          "İkinci evcil hayvan için Evcilim Premium gereklidir.",
+          t("pets.add.premiumRequiredTitle"),
+          t("pets.add.premiumRequiredMsg"),
           [{
-            text: "Tamam",
+            text: t("common.ok"),
             onPress: () => router.replace({
               pathname: "/pets",
               params: { openPremium: "true" },
@@ -312,7 +318,7 @@ export default function AddPetScreen() {
         );
         return;
       }
-      Alert.alert("Hata", "Hayvan kaydedilemedi. Lütfen tekrar deneyin.");
+      Alert.alert(t("common.error"), t("pets.add.saveFailed"));
     } finally {
       setIsSaving(false);
       isSavingRef.current = false;
@@ -343,14 +349,14 @@ export default function AddPetScreen() {
         <View style={[s.header, { height: HEADER_H }]}>
           <Pressable
             accessibilityRole="button"
-            accessibilityLabel="Geri dön"
+            accessibilityLabel={t("common.goBack")}
             style={({ pressed }) => [s.backBtn, { opacity: pressed ? 0.7 : 1 }]}
             onPress={() => router.back()}
             hitSlop={10}
           >
             <Icon name="chevron-back" size={20} color={DARK} />
           </Pressable>
-          <Text style={s.headerTitle}>Evcil Hayvan Ekle</Text>
+          <Text style={s.headerTitle}>{t("pets.add.title")}</Text>
           <View style={{ width: 40 }} />
         </View>
 
@@ -369,7 +375,7 @@ export default function AddPetScreen() {
           <View style={s.photoSection}>
             <Pressable
               accessibilityRole="button"
-              accessibilityLabel="Fotoğraf ekle veya değiştir"
+              accessibilityLabel={t("pets.add.photoA11y")}
               style={({ pressed }) => [{ opacity: pressed ? 0.82 : 1 }]}
               onPress={handlePickImage}
             >
@@ -383,7 +389,7 @@ export default function AddPetScreen() {
                 )}
                 {uploading && (
                   <View style={s.photoOverlay}>
-                    <Text style={s.photoOverlayTxt}>Yükleniyor…</Text>
+                    <Text style={s.photoOverlayTxt}>{t("pets.add.uploading")}</Text>
                   </View>
                 )}
                 <View style={s.cameraBadge}>
@@ -393,13 +399,13 @@ export default function AddPetScreen() {
                 </View>
               </View>
             </Pressable>
-            <Text style={s.photoLabel}>Fotoğraf Ekle</Text>
-            <Text style={s.photoSub}>Kamera veya galeriden seç</Text>
+            <Text style={s.photoLabel}>{t("pets.add.photo")}</Text>
+            <Text style={s.photoSub}>{t("pets.add.photoSub")}</Text>
           </View>
 
           {/* Animal type */}
           <View style={s.section}>
-            <Text style={s.sectionLabel}>Hayvan Türü *</Text>
+            <Text style={s.sectionLabel}>{t("pets.add.animalType")}</Text>
             <View style={s.typeGrid}>
               {PET_TYPES.map(({ key, icon }) => {
                 const active = petType === key;
@@ -408,7 +414,7 @@ export default function AddPetScreen() {
                     key={key}
                     accessibilityRole="button"
                     accessibilityState={{ selected: active }}
-                    accessibilityLabel={key}
+                    accessibilityLabel={t(`pets.add.types.${key}`)}
                     style={({ pressed }) => [s.typeCard, active && s.typeCardActive, { opacity: pressed ? 0.86 : 1 }]}
                     onPress={() => { Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light); setPetType(key); }}
                   >
@@ -418,7 +424,7 @@ export default function AddPetScreen() {
                       </View>
                     )}
                     <Icon name={icon} size={28} color={active ? PURPLE : BODY} />
-                    <Text style={[s.typeLabel, active && s.typeLabelActive]}>{key}</Text>
+                    <Text style={[s.typeLabel, active && s.typeLabelActive]}>{t(`pets.add.types.${key}`)}</Text>
                   </Pressable>
                 );
               })}
@@ -427,7 +433,7 @@ export default function AddPetScreen() {
 
           {/* Kimlik Bilgileri */}
           <View style={s.card}>
-            <Text style={s.cardTitle}>Kimlik Bilgileri</Text>
+            <Text style={s.cardTitle}>{t("pets.add.identityCard")}</Text>
 
             {/* Name */}
             <View style={s.inputWrap}>
@@ -437,7 +443,7 @@ export default function AddPetScreen() {
                   style={s.textInput}
                   value={name}
                   onChangeText={(v) => { setName(v); if (v.trim()) setNameError(""); }}
-                  placeholder="İsim *   Örn. Pamuk"
+                  placeholder={`${t("pets.add.name")}   ${t("pets.add.namePlaceholder")}`}
                   placeholderTextColor={BODY}
                   autoCapitalize="words"
                   returnKeyType="next"
@@ -456,7 +462,7 @@ export default function AddPetScreen() {
                   style={s.textInput}
                   value={breed}
                   onChangeText={setBreed}
-                  placeholder="Irk / Cins   Örn. British Shorthair"
+                  placeholder={`${t("pets.add.breed")}   ${t("pets.add.breedPlaceholder")}`}
                   placeholderTextColor={BODY}
                   autoCapitalize="words"
                   returnKeyType="done"
@@ -469,7 +475,7 @@ export default function AddPetScreen() {
 
             {/* Gender */}
             <View style={s.genderSection}>
-              <Text style={s.fieldLabel}>Cinsiyet</Text>
+              <Text style={s.fieldLabel}>{t("pets.add.gender")}</Text>
               <View style={s.genderRow}>
                 {GENDERS.map((g) => {
                   const active = gender === g;
@@ -482,7 +488,7 @@ export default function AddPetScreen() {
                       onPress={() => { Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light); setGender(g); }}
                     >
                       {active && <Icon name="checkmark-circle" size={13} color={PURPLE} />}
-                      <Text style={[s.genderTxt, active && s.genderTxtActive]}>{g}</Text>
+                      <Text style={[s.genderTxt, active && s.genderTxtActive]}>{t(GENDER_KEYS[g])}</Text>
                     </Pressable>
                   );
                 })}
@@ -492,19 +498,19 @@ export default function AddPetScreen() {
 
           {/* Temel Bilgiler */}
           <View style={s.card}>
-            <Text style={s.cardTitle}>Temel Bilgiler</Text>
-            <Text style={s.fieldLabel}>Doğum Tarihi</Text>
+            <Text style={s.cardTitle}>{t("pets.add.basicInfoCard")}</Text>
+            <Text style={s.fieldLabel}>{t("pets.add.birthDate")}</Text>
 
             <Pressable
               accessibilityRole="button"
-              accessibilityLabel="Doğum tarihi seç"
+              accessibilityLabel={t("pets.add.birthDatePlaceholder")}
               style={[s.dateBtn, noBirthDate && s.dateBtnDisabled]}
               onPress={() => { if (!noBirthDate) { Keyboard.dismiss(); setPickerOpen(true); } }}
               disabled={noBirthDate}
             >
               <Icon name="calendar" size={17} color={noBirthDate ? BODY : PURPLE} />
               <Text style={[s.dateTxt, !birthDate && s.datePlaceholder, noBirthDate && { color: BODY }]}>
-                {birthDate ? formatDate(birthDate) : "Doğum tarihini seç"}
+                {birthDate ? formatDate(birthDate) : t("pets.add.birthDatePlaceholder")}
               </Text>
               <Icon name="calendar-outline" size={15} color={noBirthDate ? "#ccc" : BORDER} />
             </Pressable>
@@ -519,7 +525,7 @@ export default function AddPetScreen() {
             >
               <Icon name="calendar-outline" size={15} color={noBirthDate ? PURPLE : BODY} />
               <Text style={[s.unknownTxt, noBirthDate && { color: PURPLE }]}>
-                Doğum tarihini bilmiyorum
+                {t("pets.add.unknownBirthDate")}
               </Text>
             </Pressable>
           </View>
@@ -527,7 +533,7 @@ export default function AddPetScreen() {
           {/* Reassurance */}
           <View style={s.reassurance}>
             <Icon name="heart" size={13} color={PURPLE} />
-            <Text style={s.reassuranceTxt}>İlk dostunu ekliyorsun</Text>
+            <Text style={s.reassuranceTxt}>{t("pets.add.reassurance")}</Text>
           </View>
         </ScrollView>
 
@@ -535,7 +541,7 @@ export default function AddPetScreen() {
         <View style={[s.footer, { paddingBottom: insets.bottom + 10 }]}>
           <Pressable
             accessibilityRole="button"
-            accessibilityLabel={isSaving ? "Kaydediliyor" : "Kaydet"}
+            accessibilityLabel={isSaving ? t("pets.add.saving") : t("pets.add.save")}
             accessibilityState={{ disabled: !canSave }}
             style={({ pressed }) => [s.saveBtn, { opacity: !canSave ? 0.5 : pressed ? 0.88 : 1 }]}
             onPress={handleSave}
@@ -548,7 +554,7 @@ export default function AddPetScreen() {
               style={s.saveGrad}
             >
               <Icon name={isSaving ? "hourglass-outline" : "checkmark-circle"} size={21} color={WHITE} />
-              <Text style={s.saveTxt}>{isSaving ? "Kaydediliyor…" : "Kaydet"}</Text>
+              <Text style={s.saveTxt}>{isSaving ? t("pets.add.saving") : t("pets.add.save")}</Text>
             </LinearGradient>
           </Pressable>
         </View>

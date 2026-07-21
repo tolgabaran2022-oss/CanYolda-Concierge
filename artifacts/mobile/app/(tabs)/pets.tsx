@@ -2,6 +2,7 @@ import { EvcilimTab } from "@/components/EvcilimTab";
 import { useTheme } from "@/hooks/useTheme";
 import * as Haptics from "expo-haptics";
 import React from "react";
+import { useTranslation } from "react-i18next";
 import {
   Platform,
   StyleSheet,
@@ -18,10 +19,11 @@ const TAB_H = 68;
 // ── Evcilim header ────────────────────────────────────────────────────────────
 function EvcilimHeader({ topPad }: { topPad: number }) {
   const T = useTheme();
+  const { t } = useTranslation();
   return (
     <View style={[eh.wrap, { paddingTop: topPad + 6, backgroundColor: T.bg }]}>
       <View style={eh.titleRow}>
-        <Text style={[eh.title, { color: DARK }]}>Evcilim</Text>
+        <Text style={[eh.title, { color: DARK }]}>{t("pets.title")}</Text>
         <View style={eh.underline} />
       </View>
     </View>

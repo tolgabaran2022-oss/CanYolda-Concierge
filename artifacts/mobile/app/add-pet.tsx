@@ -5,6 +5,7 @@ import * as ImagePicker from "expo-image-picker";
 import { Image } from "expo-image";
 import { useRouter } from "expo-router";
 import React, { useState } from "react";
+import { useTranslation } from "react-i18next";
 import {
   ActivityIndicator,
   Alert,
@@ -55,6 +56,7 @@ async function uploadImage(localUri: string): Promise<string> {
 const PET_TYPES = ["Kedi", "Köpek", "Kuş", "Tavşan", "Balık", "Diğer"];
 
 export default function AddPetScreen() {
+  const { t } = useTranslation();
   const colors = useColors();
   const insets = useSafeAreaInsets();
   const router = useRouter();
@@ -73,7 +75,7 @@ export default function AddPetScreen() {
   const openCamera = async () => {
     const perm = await ImagePicker.requestCameraPermissionsAsync();
     if (!perm.granted) {
-      Alert.alert("Kamera İzni Gerekli", "Ayarlar'dan kamera iznini etkinleştirin.");
+      Alert.alert(t("pets.add.cameraPermTitle"), t("pets.form.cameraPermMsg"));
       return;
     }
     const result = await ImagePicker.launchCameraAsync({
@@ -89,7 +91,7 @@ export default function AddPetScreen() {
   const openGallery = async () => {
     const perm = await ImagePicker.requestMediaLibraryPermissionsAsync();
     if (!perm.granted) {
-      Alert.alert("Galeri İzni Gerekli", "Ayarlar'dan fotoğraf kütüphanesi iznini etkinleştirin.");
+      Alert.alert(t("pets.add.galleryPermTitle"), t("pets.form.galleryPermMsg"));
       return;
     }
     const result = await ImagePicker.launchImageLibraryAsync({
@@ -105,19 +107,19 @@ export default function AddPetScreen() {
 
   const pickImage = () => {
     Alert.alert(
-      "Fotoğraf Ekle",
-      "Nasıl fotoğraf eklemek istersiniz?",
+      t("pets.add.photo"),
+      t("pets.form.photoSheetMsg"),
       [
-        { text: "Kamera", onPress: openCamera },
-        { text: "Galeri", onPress: openGallery },
-        { text: "İptal", style: "cancel" },
+        { text: t("common.camera"), onPress: openCamera },
+        { text: t("common.gallery"), onPress: openGallery },
+        { text: t("common.cancel"), style: "cancel" },
       ]
     );
   };
 
   const handleSave = async () => {
     if (!name.trim()) {
-      Alert.alert("Hata", "Hayvanın adını giriniz.");
+      Alert.alert(t("common.error"), t("pets.form.nameRequiredMsg"));
       return;
     }
     if (!user) return;
@@ -129,8 +131,8 @@ export default function AddPetScreen() {
           remoteImageUrl = await uploadImage(image);
         } catch {
           Alert.alert(
-            "Fotoğraf Yüklenemedi",
-            "Fotoğraf sunucuya yüklenirken hata oluştu. Hayvan fotoğrafsız kaydedilecek.",
+            t("pets.add.uploadFailed"),
+            t("pets.form.uploadFailedMsg"),
           );
         }
       }
@@ -147,7 +149,7 @@ export default function AddPetScreen() {
       Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
       router.back();
     } catch {
-      Alert.alert("Hata", "Kaydedilemedi.");
+      Alert.alert(t("common.error"), t("pets.detail.saveError"));
     } finally {
       setIsSaving(false);
     }
@@ -170,7 +172,7 @@ export default function AddPetScreen() {
           <View style={[styles.photoPlaceholder, { backgroundColor: colors.muted, borderColor: colors.border }]}>
             <Icon name="camera-outline" size={32} color={colors.mutedForeground} />
             <Text style={[styles.photoHint, { color: colors.mutedForeground }]}>
-              Fotoğraf Ekle
+              {t("pets.add.photo")}
             </Text>
           </View>
         )}
@@ -178,39 +180,39 @@ export default function AddPetScreen() {
 
       {/* Name */}
       <View style={styles.field}>
-        <Text style={[styles.label, { color: colors.foreground }]}>Ad *</Text>
+        <Text style={[styles.label, { color: colors.foreground }]}>{t("pets.form.nameLabel")}</Text>
         <TextInput
           style={[styles.input, { backgroundColor: colors.muted, color: colors.foreground, borderColor: colors.border }]}
           value={name}
           onChangeText={setName}
-          placeholder="Hayvanın adı"
+          placeholder={t("pets.form.namePlaceholder")}
           placeholderTextColor={colors.mutedForeground}
         />
       </View>
 
       {/* Type */}
       <View style={styles.field}>
-        <Text style={[styles.label, { color: colors.foreground }]}>Tür</Text>
+        <Text style={[styles.label, { color: colors.foreground }]}>{t("pets.form.typeLabel")}</Text>
         <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={styles.typeRow}>
-          {PET_TYPES.map((t) => (
+          {PET_TYPES.map((pt) => (
             <Pressable
-              key={t}
+              key={pt}
               style={[
                 styles.typeChip,
                 {
-                  backgroundColor: type === t ? colors.primary : colors.muted,
-                  borderColor: type === t ? colors.primary : "transparent",
+                  backgroundColor: type === pt ? colors.primary : colors.muted,
+                  borderColor: type === pt ? colors.primary : "transparent",
                 },
               ]}
-              onPress={() => setType(t)}
+              onPress={() => setType(pt)}
             >
               <Text
                 style={[
                   styles.typeChipText,
-                  { color: type === t ? "white" : colors.mutedForeground },
+                  { color: type === pt ? "white" : colors.mutedForeground },
                 ]}
               >
-                {t}
+                {t(`pets.add.types.${pt}`)}
               </Text>
             </Pressable>
           ))}
@@ -220,22 +222,22 @@ export default function AddPetScreen() {
       {/* Breed + Age */}
       <View style={styles.row2}>
         <View style={[styles.field, { flex: 1 }]}>
-          <Text style={[styles.label, { color: colors.foreground }]}>Cins</Text>
+          <Text style={[styles.label, { color: colors.foreground }]}>{t("pets.form.breedLabel")}</Text>
           <TextInput
             style={[styles.input, { backgroundColor: colors.muted, color: colors.foreground, borderColor: colors.border }]}
             value={breed}
             onChangeText={setBreed}
-            placeholder="İsteğe bağlı"
+            placeholder={t("pets.form.breedPlaceholder")}
             placeholderTextColor={colors.mutedForeground}
           />
         </View>
         <View style={[styles.field, { flex: 1 }]}>
-          <Text style={[styles.label, { color: colors.foreground }]}>Yaş</Text>
+          <Text style={[styles.label, { color: colors.foreground }]}>{t("pets.form.ageLabel")}</Text>
           <TextInput
             style={[styles.input, { backgroundColor: colors.muted, color: colors.foreground, borderColor: colors.border }]}
             value={age}
             onChangeText={setAge}
-            placeholder="Örn: 2 yaş"
+            placeholder={t("pets.form.agePlaceholder")}
             placeholderTextColor={colors.mutedForeground}
           />
         </View>
@@ -243,12 +245,12 @@ export default function AddPetScreen() {
 
       {/* Vaccination */}
       <View style={styles.field}>
-        <Text style={[styles.label, { color: colors.foreground }]}>Aşı Bilgisi</Text>
+        <Text style={[styles.label, { color: colors.foreground }]}>{t("pets.form.vaccinationLabel")}</Text>
         <TextInput
           style={[styles.textArea, { backgroundColor: colors.muted, color: colors.foreground, borderColor: colors.border }]}
           value={vaccinationInfo}
           onChangeText={setVaccinationInfo}
-          placeholder="Aşı durumu ve tarihleri..."
+          placeholder={t("pets.form.vaccinationPlaceholder")}
           placeholderTextColor={colors.mutedForeground}
           multiline
           textAlignVertical="top"
@@ -257,12 +259,12 @@ export default function AddPetScreen() {
 
       {/* Feeding notes */}
       <View style={styles.field}>
-        <Text style={[styles.label, { color: colors.foreground }]}>Beslenme Notları</Text>
+        <Text style={[styles.label, { color: colors.foreground }]}>{t("pets.form.feedingLabel")}</Text>
         <TextInput
           style={[styles.textArea, { backgroundColor: colors.muted, color: colors.foreground, borderColor: colors.border }]}
           value={feedingNotes}
           onChangeText={setFeedingNotes}
-          placeholder="Mama türü, porsiyon bilgisi..."
+          placeholder={t("pets.form.feedingPlaceholder")}
           placeholderTextColor={colors.mutedForeground}
           multiline
           textAlignVertical="top"
@@ -282,7 +284,7 @@ export default function AddPetScreen() {
         ) : (
           <>
             <Icon name="checkmark-circle-outline" size={20} color="white" />
-            <Text style={styles.saveBtnText}>Profil Oluştur</Text>
+            <Text style={styles.saveBtnText}>{t("pets.form.createProfile")}</Text>
           </>
         )}
       </Pressable>

@@ -53,7 +53,21 @@
     "hoursAgo_other": "{{count}} saat önce",
     "daysAgo_one": "{{count}} gün önce",
     "daysAgo_other": "{{count}} gün önce",
-    "goBack": "Geri dön"
+    "goBack": "Geri dön",
+    "monthNames": [
+      "Ocak",
+      "Şubat",
+      "Mart",
+      "Nisan",
+      "Mayıs",
+      "Haziran",
+      "Temmuz",
+      "Ağustos",
+      "Eylül",
+      "Ekim",
+      "Kasım",
+      "Aralık"
+    ]
   },
   "language": {
     "title": "Dil",
@@ -582,8 +596,22 @@
         "Kedi": "Kedi",
         "Köpek": "Köpek",
         "Kuş": "Kuş",
-        "Tavşan": "Tavşan"
-      }
+        "Tavşan": "Tavşan",
+        "Balık": "Balık",
+        "Diğer": "Diğer"
+      },
+      "photoA11y": "Fotoğraf ekle veya değiştir",
+      "photoSheetMsg": "Nasıl eklemek istersiniz?",
+      "webCameraTitle": "Kamera",
+      "webCameraMsg": "Web'de kamera desteklenmiyor. Galeriden seçin.",
+      "cameraPermTitle": "Kamera İzni Gerekli",
+      "cameraPermMsg": "Ayarlardan kamera iznini etkinleştirin.",
+      "galleryPermTitle": "Galeri İzni Gerekli",
+      "galleryPermMsg": "Ayarlardan fotoğraf iznini etkinleştirin.",
+      "invalidDateTitle": "Geçersiz Tarih",
+      "premiumRequiredTitle": "Premium Gerekli",
+      "premiumRequiredMsg": "İkinci evcil hayvan için Evcilim Premium gereklidir.",
+      "uploading": "Yükleniyor…"
     },
     "empty": {
       "title": "Evcil hayvanın yok",
@@ -612,7 +640,34 @@
       "editPet": "Hayvanı Düzenle",
       "deletePet": "Hayvanı Sil",
       "deleteConfirm": "Bu evcil hayvanı silmek istediğinizden emin misiniz?",
-      "shareProfile": "Profili Paylaş"
+      "shareProfile": "Profili Paylaş",
+      "notFound": "Hayvan bulunamadı",
+      "typeLabel": "Tür",
+      "breedLabel": "Irk",
+      "ageLabel": "Yaş",
+      "management": "Yönetim",
+      "animalType": "Hayvan Türü",
+      "nameLabel": "İsim *",
+      "namePlaceholder": "Örn. Pamuk",
+      "breedField": "Irk / Cins",
+      "breedPlaceholder": "Örn. British Shorthair",
+      "ageField": "Yaş",
+      "agePlaceholder": "Örn. 2 yaş",
+      "weightLabel": "Ağırlık (kg)",
+      "weightPlaceholder": "Örn. 4.5",
+      "colorLabel": "Renk / Desen",
+      "colorPlaceholder": "Örn. Gri benekli",
+      "neuteredLabel": "Kısırlaştırıldı mı?",
+      "neuteredSub": "Sağlık takibi için önemli",
+      "bioLabel": "Açıklama / Karakter",
+      "bioPlaceholder": "Karakteri hakkında kısa bilgi...",
+      "nameRequired": "İsim giriniz.",
+      "saveError": "Kaydedilemedi.",
+      "deleteError": "Silinemedi.",
+      "uploadFailedKept": "Fotoğraf sunucuya yüklenemedi, önceki fotoğraf korunacak.",
+      "deleteConfirmTitle": "Hayvanı Sil",
+      "deleteConfirmMsg": "{{name}} kalıcı olarak silinecek. Emin misin?",
+      "cancelDelete": "Vazgeç"
     },
     "premium": {
       "title": "CanYoldaşı Premium",
@@ -634,6 +689,25 @@
       "premiumActive": "Premium aktif",
       "premiumUntil": "{{date}} tarihine kadar aktif",
       "manageSub": "Üyeliği Yönet"
+    },
+    "form": {
+      "nameLabel": "Ad *",
+      "namePlaceholder": "Hayvanın adı",
+      "typeLabel": "Tür",
+      "breedLabel": "Cins",
+      "breedPlaceholder": "İsteğe bağlı",
+      "ageLabel": "Yaş",
+      "agePlaceholder": "Örn: 2 yaş",
+      "vaccinationLabel": "Aşı Bilgisi",
+      "vaccinationPlaceholder": "Aşı durumu ve tarihleri...",
+      "feedingLabel": "Beslenme Notları",
+      "feedingPlaceholder": "Mama türü, porsiyon bilgisi...",
+      "createProfile": "Profil Oluştur",
+      "photoSheetMsg": "Nasıl fotoğraf eklemek istersiniz?",
+      "nameRequiredMsg": "Hayvanın adını giriniz.",
+      "uploadFailedMsg": "Fotoğraf sunucuya yüklenirken hata oluştu. Hayvan fotoğrafsız kaydedilecek.",
+      "cameraPermMsg": "Ayarlar'dan kamera iznini etkinleştirin.",
+      "galleryPermMsg": "Ayarlar'dan fotoğraf kütüphanesi iznini etkinleştirin."
     }
   },
   "leaderboard": {
