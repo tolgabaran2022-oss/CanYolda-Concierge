@@ -16,6 +16,7 @@ import {
   View,
 } from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
+import { useTranslation } from "react-i18next";
 import { AnimalCard } from "@/components/AnimalCard";
 import { EmptyState } from "@/components/EmptyState";
 import { useAnimals } from "@/contexts/AnimalsContext";
@@ -27,11 +28,11 @@ const BG          = "#F8F9FC";
 
 type FilterKey = "all" | "injured" | "hungry" | "healthy";
 
-const FILTERS: { key: FilterKey; label: string; icon: string; accent: string }[] = [
-  { key: "all",     label: "Hepsi",          icon: "paw-outline",              accent: PURPLE     },
-  { key: "injured", label: "Acil",            icon: "medkit-outline",           accent: "#DC2626"  },
-  { key: "hungry",  label: "Yardım Bekleyen", icon: "warning-outline",          accent: "#D97706"  },
-  { key: "healthy", label: "Sağlıklı",        icon: "checkmark-circle-outline", accent: "#16A34A"  },
+const FILTER_DEFS: { key: FilterKey; labelKey: string; icon: string; accent: string }[] = [
+  { key: "all",     labelKey: "animals.filters.all",       icon: "paw-outline",              accent: PURPLE    },
+  { key: "injured", labelKey: "animals.filters.emergency", icon: "medkit-outline",           accent: "#DC2626" },
+  { key: "hungry",  labelKey: "animals.filters.needsHelp", icon: "warning-outline",          accent: "#D97706" },
+  { key: "healthy", labelKey: "animals.filters.healthy",   icon: "checkmark-circle-outline", accent: "#16A34A" },
 ];
 
 function filterAnimals(
@@ -56,11 +57,13 @@ function FilterChip({
   f,
   active,
   count,
+  label,
   onPress,
 }: {
-  f: (typeof FILTERS)[0];
+  f: (typeof FILTER_DEFS)[0];
   active: boolean;
   count: number;
+  label: string;
   onPress: () => void;
 }) {
   const T = useTheme();
@@ -68,7 +71,7 @@ function FilterChip({
 
   const handlePress = () => {
     Animated.sequence([
-      Animated.timing(scale, { toValue: 0.93, duration: 80, useNativeDriver: true }),
+      Animated.timing(scale, { toValue: 0.93, duration: 80,  useNativeDriver: true }),
       Animated.timing(scale, { toValue: 1,    duration: 120, useNativeDriver: true }),
     ]).start();
     onPress();
@@ -85,7 +88,7 @@ function FilterChip({
             style={F.chipActive}
           >
             <Icon name={f.icon} size={14} color="#FFF" />
-            <Text style={F.chipLabelActive}>{f.label}</Text>
+            <Text style={F.chipLabelActive}>{label}</Text>
             <View style={F.chipBadge}>
               <Text style={F.chipBadgeText}>{count}</Text>
             </View>
@@ -93,7 +96,7 @@ function FilterChip({
         ) : (
           <View style={[F.chipInactive, { backgroundColor: T.card, borderColor: T.border }]}>
             <Icon name={f.icon} size={14} color={f.accent} />
-            <Text style={[F.chipLabelInactive, { color: T.text }]}>{f.label}</Text>
+            <Text style={[F.chipLabelInactive, { color: T.text }]}>{label}</Text>
             <View style={[F.chipBadgeInactive, { backgroundColor: `${f.accent}18` }]}>
               <Text style={[F.chipBadgeTextInactive, { color: f.accent }]}>{count}</Text>
             </View>
@@ -110,31 +113,23 @@ export default function AnimalsScreen() {
   const { width: SW } = useWindowDimensions();
   const router        = useRouter();
   const { animals, isLoading } = useAnimals();
+  const { t } = useTranslation();
   const [filter, setFilter] = useState<FilterKey>("all");
 
-  // ── Map marker deep-link: open the exact report by ID ──────────────────────
-  // When the Harita screen navigates here with a reportId param, find the
-  // matching report in the FULL (unfiltered) dataset and push its detail screen.
-  // The ref prevents re-triggering on every re-render after the first handling.
   const { reportId } = useLocalSearchParams<{ reportId?: string }>();
   const handledReportIdRef = useRef<string | null>(null);
 
   useEffect(() => {
     if (!reportId) return;
-    // Guard: don't re-open the same report on every render
     if (handledReportIdRef.current === reportId) return;
-    // Wait until the animals array is populated
     if (!animals.length) return;
 
     const target = animals.find((a) => a.id === reportId);
     if (target) {
       handledReportIdRef.current = reportId;
-      // Reset any active filter so the card is visible if the user navigates back
       setFilter("all");
-      // Navigate to the exact report detail using its unique ID
       router.push(`/animal/${reportId}`);
     }
-    // If the report is not found (deleted), gracefully do nothing
   }, [reportId, animals, router]);
 
   const filtered   = useMemo(() => filterAnimals(animals, filter), [animals, filter]);
@@ -145,7 +140,7 @@ export default function AnimalsScreen() {
 
   const handleAdd = useCallback(() => {
     Animated.sequence([
-      Animated.timing(addBtnScale, { toValue: 0.93, duration: 80, useNativeDriver: true }),
+      Animated.timing(addBtnScale, { toValue: 0.93, duration: 80,  useNativeDriver: true }),
       Animated.timing(addBtnScale, { toValue: 1,    duration: 120, useNativeDriver: true }),
     ]).start();
     Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
@@ -177,8 +172,8 @@ export default function AnimalsScreen() {
               <Text style={[H.logoText, { color: T.text }]}>canyoldaşı</Text>
             </View>
             <View style={H.titleBlock}>
-              <Text style={[H.title, { color: T.text }]}>Sokak Hayvanları</Text>
-              <Text style={[H.subtitle, { color: T.textMuted }]}>Yakınındaki canlı durumları keşfet</Text>
+              <Text style={[H.title, { color: T.text }]}>{t("animals.streetAnimals")}</Text>
+              <Text style={[H.subtitle, { color: T.textMuted }]}>{t("animals.subtitle")}</Text>
             </View>
           </View>
 
@@ -194,7 +189,7 @@ export default function AnimalsScreen() {
                   style={H.addBtn}
                 >
                   <Icon name="warning" size={15} color="#FFF" />
-                  <Text style={H.addBtnText}>Durum Bildir</Text>
+                  <Text style={H.addBtnText}>{t("map.reportStatus")}</Text>
                 </LinearGradient>
               </Pressable>
             </Animated.View>
@@ -203,7 +198,7 @@ export default function AnimalsScreen() {
             <Pressable
               onPress={() => router.push("/leaderboard")}
               hitSlop={8}
-              accessibilityLabel="Ayın Kahramanları"
+              accessibilityLabel={t("map.heroesAccessibility")}
             >
               <LinearGradient
                 colors={["#7C3AED", "#6D28D9"]}
@@ -212,13 +207,13 @@ export default function AnimalsScreen() {
                 style={H.addBtn}
               >
                 <Icon name="trophy" size={15} color="#FFF" />
-                <Text style={H.addBtnText}>Kahramanlar</Text>
+                <Text style={H.addBtnText}>{t("map.heroes")}</Text>
               </LinearGradient>
             </Pressable>
           </View>
         </View>
 
-        {/* Status summary row — Acil + Bekleyen + Sağlıklı + Toplam */}
+        {/* Status summary row */}
         <View style={[H.summaryRow, { backgroundColor: T.card, borderColor: T.border }]}>
           {/* Acil */}
           <View style={H.summaryItem}>
@@ -226,7 +221,7 @@ export default function AnimalsScreen() {
               <View style={[H.summaryDot, { backgroundColor: "#DC2626" }]} />
               <Text style={[H.summaryNum, { color: T.text }]}>{injured}</Text>
             </View>
-            <Text style={[H.summaryLabel, { color: T.textMuted }]}>Acil</Text>
+            <Text style={[H.summaryLabel, { color: T.textMuted }]}>{t("animals.summary.emergency")}</Text>
           </View>
           <View style={[H.summaryDivider, { backgroundColor: T.divider }]} />
           {/* Bekleyen */}
@@ -235,7 +230,7 @@ export default function AnimalsScreen() {
               <View style={[H.summaryDot, { backgroundColor: "#D97706" }]} />
               <Text style={[H.summaryNum, { color: T.text }]}>{hungry}</Text>
             </View>
-            <Text style={[H.summaryLabel, { color: T.textMuted }]}>Bekleyen</Text>
+            <Text style={[H.summaryLabel, { color: T.textMuted }]}>{t("animals.summary.pending")}</Text>
           </View>
           <View style={[H.summaryDivider, { backgroundColor: T.divider }]} />
           {/* Sağlıklı */}
@@ -244,7 +239,7 @@ export default function AnimalsScreen() {
               <View style={[H.summaryDot, { backgroundColor: "#16A34A" }]} />
               <Text style={[H.summaryNum, { color: T.text }]}>{healthy}</Text>
             </View>
-            <Text style={[H.summaryLabel, { color: T.textMuted }]}>Sağlıklı</Text>
+            <Text style={[H.summaryLabel, { color: T.textMuted }]}>{t("animals.summary.healthy")}</Text>
           </View>
           <View style={[H.summaryDivider, { backgroundColor: T.divider }]} />
           {/* Toplam */}
@@ -253,7 +248,7 @@ export default function AnimalsScreen() {
               <View style={[H.summaryDot, { backgroundColor: T.purple }]} />
               <Text style={[H.summaryNum, { color: T.text }]}>{animals.length}</Text>
             </View>
-            <Text style={[H.summaryLabel, { color: T.textMuted }]}>Toplam</Text>
+            <Text style={[H.summaryLabel, { color: T.textMuted }]}>{t("animals.summary.total")}</Text>
           </View>
         </View>
       </View>
@@ -265,10 +260,11 @@ export default function AnimalsScreen() {
           showsHorizontalScrollIndicator={false}
           contentContainerStyle={F.scroll}
         >
-          {FILTERS.map((f) => (
+          {FILTER_DEFS.map((f) => (
             <FilterChip
               key={f.key}
               f={f}
+              label={t(f.labelKey)}
               active={filter === f.key}
               count={countForFilter(animals, f.key)}
               onPress={() => handleFilterChange(f.key)}
@@ -301,14 +297,14 @@ export default function AnimalsScreen() {
           animals.length === 0 ? (
             <EmptyState
               icon="paw-outline"
-              title="Henüz durum bildirimi bulunmuyor."
-              subtitle="Yakınındaki bir hayvan için ilk bildirimi sen oluşturabilirsin."
+              title={t("animals.emptyTitle")}
+              subtitle={t("animals.emptySubtitle")}
             />
           ) : (
             <EmptyState
               icon="paw-outline"
-              title="Bu filtrede hayvan yok"
-              subtitle="Farklı bir kategori seçerek diğer bildirimleri görebilirsin."
+              title={t("animals.filterEmptyTitle")}
+              subtitle={t("animals.filterEmptySubtitle")}
             />
           )
         }
@@ -400,14 +396,12 @@ const H = StyleSheet.create({
     elevation: 2,
     alignItems: "center",
   },
-  /* Each of the 4 equal columns */
   summaryItem: {
     flex: 1,
     alignItems: "center",
     justifyContent: "center",
     gap: 3,
   },
-  /* Dot + number on the same horizontal line */
   summaryTopRow: {
     flexDirection: "row",
     alignItems: "center",

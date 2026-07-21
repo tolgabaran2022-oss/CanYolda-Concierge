@@ -18,7 +18,6 @@ import {
   ActivityIndicator,
   Alert,
   Animated,
-  Dimensions,
   Linking,
   Platform,
   useWindowDimensions,
@@ -30,6 +29,7 @@ import {
 } from "react-native";
 import MapView, { Marker, PROVIDER_DEFAULT } from "react-native-maps";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
+import { useTranslation } from "react-i18next";
 import { StatusBadge, STATUS_COLORS } from "@/components/StatusBadge";
 import type { AnimalStatus, StrayAnimal } from "@/contexts/AnimalsContext";
 import { useAnimals } from "@/contexts/AnimalsContext";
@@ -45,17 +45,17 @@ const DEFAULT_REGION = {
 
 const PURPLE = "#7C3AED";
 
-const STATUS_FILTERS: {
+const STATUS_FILTER_DEFS: {
   key: "all" | AnimalStatus;
-  label: string;
+  labelKey: string;
   icon: string;
   accent: string;
 }[] = [
-  { key: "all",     label: "Hepsi",      icon: "paw-outline",              accent: PURPLE    },
-  { key: "hungry",  label: "Aç",          icon: "restaurant-outline",       accent: "#F97316" },
-  { key: "injured", label: "Yaralı",      icon: "medkit-outline",           accent: "#EF4444" },
-  { key: "healthy", label: "Sağlıklı",    icon: "checkmark-circle-outline", accent: "#16A34A" },
-  { key: "unknown", label: "Bilinmiyor",  icon: "help-circle-outline",      accent: "#71717A" },
+  { key: "all",     labelKey: "map.filterAll",     icon: "paw-outline",              accent: PURPLE    },
+  { key: "hungry",  labelKey: "map.filterHungry",  icon: "restaurant-outline",       accent: "#F97316" },
+  { key: "injured", labelKey: "map.filterInjured", icon: "medkit-outline",           accent: "#EF4444" },
+  { key: "healthy", labelKey: "map.filterHealthy", icon: "checkmark-circle-outline", accent: "#16A34A" },
+  { key: "unknown", labelKey: "map.filterUnknown", icon: "help-circle-outline",      accent: "#71717A" },
 ];
 
 const TAB_FLOAT_H = 64;
@@ -67,6 +67,7 @@ export default function MapScreen() {
   const { width: SW } = useWindowDimensions();
   const router = useRouter();
   const { animals } = useAnimals();
+  const { t } = useTranslation();
 
   const [selectedId, setSelectedId] = useState<string | null>(null);
   const [region, setRegion] = useState(DEFAULT_REGION);
@@ -84,14 +85,12 @@ export default function MapScreen() {
   const listRef = useRef<BottomSheetFlatListMethods>(null);
   const pulseAnim = useRef(new Animated.Value(1)).current;
 
-  /* scrollTarget: animal ID we want to scroll the card list to */
   const [scrollTarget, setScrollTarget] = useState<string | null>(null);
 
   const snapPoints = useMemo(() => ["30%", "55%", "88%"], []);
   const tabClearance = insets.bottom + TAB_BOTTOM_GAP + TAB_FLOAT_H;
   const topPad = Platform.OS === "web" ? (SW < 1024 ? 54 : 16) : insets.top;
 
-  /* ── Pulse animation for user location marker ─────────── */
   useEffect(() => {
     if (!userLocation) return;
     const pulse = Animated.loop(
@@ -112,7 +111,6 @@ export default function MapScreen() {
     return () => pulse.stop();
   }, [userLocation]);
 
-  /* ── Locate me ────────────────────────────────────────── */
   const locateMe = async () => {
     if (Platform.OS === "web") {
       if (typeof navigator === "undefined" || !navigator.geolocation) return;
@@ -132,8 +130,8 @@ export default function MapScreen() {
         },
         () => {
           Alert.alert(
-            "Konum Bilgisi Alınamadı",
-            "Lütfen cihazınızın konum hizmetlerini açın."
+            t("map.locationUnavailableTitle"),
+            t("map.locationUnavailableMsg")
           );
           setIsLocating(false);
         },
@@ -152,18 +150,18 @@ export default function MapScreen() {
       if (!perm?.granted) {
         if (perm?.canAskAgain === false) {
           Alert.alert(
-            "Konum İzni Gerekli",
-            "Konumunuzu gösterebilmemiz için konum izni vermeniz gerekiyor.",
+            t("map.locationPermTitle"),
+            t("map.locationPermMsg"),
             [
-              { text: "İptal", style: "cancel" },
-              { text: "Ayarlara Git", onPress: () => Linking.openSettings() },
+              { text: t("common.cancel"), style: "cancel" },
+              {
+                text: t("map.openSettings"),
+                onPress: () => Linking.openSettings(),
+              },
             ]
           );
         } else {
-          Alert.alert(
-            "Konum İzni Gerekli",
-            "Konumunuzu gösterebilmemiz için konum izni vermeniz gerekiyor."
-          );
+          Alert.alert(t("map.locationPermTitle"), t("map.locationPermMsg"));
         }
         return;
       }
@@ -192,13 +190,13 @@ export default function MapScreen() {
       const msg = err instanceof Error ? err.message : "";
       if (msg === "timeout") {
         Alert.alert(
-          "Konum Alınamadı",
-          "Konum bilgisi alınamadı. Lütfen cihazınızın konum hizmetlerini açın."
+          t("map.locationTimeoutTitle"),
+          t("map.locationTimeoutMsg")
         );
       } else {
         Alert.alert(
-          "Konum Hatası",
-          "Konum bilgisi alınamadı. Lütfen cihazınızın konum hizmetlerini açın."
+          t("map.locationErrorTitle"),
+          t("map.locationErrorMsg")
         );
       }
     } finally {
@@ -206,9 +204,6 @@ export default function MapScreen() {
     }
   };
 
-  /* ── Data ─────────────────────────────────────────────── */
-
-  /* Only render markers for records with valid coordinates */
   const validAnimals = useMemo(
     () =>
       animals.filter((a) => {
@@ -217,7 +212,7 @@ export default function MapScreen() {
         if (typeof lat !== "number" || typeof lng !== "number") return false;
         if (!isFinite(lat) || !isFinite(lng)) return false;
         if (lat < -90 || lat > 90 || lng < -180 || lng > 180) return false;
-        if (lat === 0 && lng === 0) return false; /* sentinel — never set */
+        if (lat === 0 && lng === 0) return false;
         return true;
       }),
     [animals]
@@ -231,21 +226,20 @@ export default function MapScreen() {
     [animals, filter]
   );
 
-  /* ── Scroll to card when scrollTarget is set ──────────── */
   useEffect(() => {
     if (!scrollTarget) return;
     const index = filtered.findIndex((a) => a.id === scrollTarget);
-    if (index === -1) return; /* animal not yet in filtered — wait for next render */
+    if (index === -1) return;
     setScrollTarget(null);
-    const t = setTimeout(() => {
+    const timer = setTimeout(() => {
       listRef.current?.scrollToIndex({ index, animated: true, viewPosition: 0.5 });
     }, 280);
-    return () => clearTimeout(t);
+    return () => clearTimeout(timer);
   }, [scrollTarget, filtered]);
 
   const countPerFilter = useMemo(
     () =>
-      STATUS_FILTERS.reduce<Record<string, number>>((acc, f) => {
+      STATUS_FILTER_DEFS.reduce<Record<string, number>>((acc, f) => {
         acc[f.key] =
           f.key === "all"
             ? animals.length
@@ -255,61 +249,59 @@ export default function MapScreen() {
     [animals]
   );
 
-  /* ── Centralized handlers ─────────────────────────────── */
-
-  /* Filter change — also clears any stale pending scroll */
   const handleFilterChange = useCallback((key: string) => {
     setFilter(key);
     setScrollTarget(null);
     Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
   }, []);
 
-  /* Marker tap: navigate to Hayvanlar tab and auto-open the exact report detail */
-  const handleMarkerPress = useCallback((animalId: string) => {
-    const animal = animals.find((a) => a.id === animalId);
-    if (!animal) {
-      if (__DEV__) console.warn("[MAP] Marker tapped but animal not found:", animalId);
-      return;
-    }
+  const handleMarkerPress = useCallback(
+    (animalId: string) => {
+      const animal = animals.find((a) => a.id === animalId);
+      if (!animal) {
+        if (__DEV__)
+          console.warn("[MAP] Marker tapped but animal not found:", animalId);
+        return;
+      }
+      Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+      setSelectedId(animalId);
+      router.navigate({
+        pathname: "/(tabs)/animals",
+        params: { reportId: animalId },
+      });
+    },
+    [animals, router]
+  );
 
-    Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
-    setSelectedId(animalId);
+  const handleCardPress = useCallback(
+    (animal: StrayAnimal) => {
+      setSelectedId(animal.id);
+      if (
+        typeof animal.latitude === "number" &&
+        typeof animal.longitude === "number"
+      ) {
+        mapRef.current?.animateToRegion(
+          {
+            latitude: animal.latitude,
+            longitude: animal.longitude,
+            latitudeDelta: 0.012,
+            longitudeDelta: 0.012,
+          },
+          600
+        );
+      }
+      router.push(`/animal/${animal.id}` as const);
+    },
+    [router]
+  );
 
-    // Navigate to the Hayvanlar tab; animals.tsx reads the reportId param
-    // and auto-opens the matching detail screen using the unique report ID.
-    router.navigate({
-      pathname: "/(tabs)/animals",
-      params: { reportId: animalId },
-    });
-  }, [animals, router]);
-
-  /* Card tap: sync camera to pin + navigate to detail */
-  const handleCardPress = useCallback((animal: StrayAnimal) => {
-    setSelectedId(animal.id);
-    /* Soft pan to the animal's location without aggressive zoom */
-    if (typeof animal.latitude === "number" && typeof animal.longitude === "number") {
-      mapRef.current?.animateToRegion(
-        {
-          latitude:      animal.latitude,
-          longitude:     animal.longitude,
-          latitudeDelta:  0.012,
-          longitudeDelta: 0.012,
-        },
-        600
-      );
-    }
-    router.push(`/animal/${animal.id}` as const);
-  }, [router]);
-
-  /* ── Sheet list header ────────────────────────────────── */
   const ListHeader = useMemo(
     () => (
       <>
-        {/* Title row */}
         <View style={styles.sheetTitleRow}>
           <View style={styles.sheetTitleGroup}>
             <Text style={[styles.sheetTitle, { color: colors.foreground }]}>
-              Yakındaki Hayvanlar
+              {t("map.nearbyAnimals")}
             </Text>
             <View
               style={[
@@ -320,28 +312,24 @@ export default function MapScreen() {
               <Text
                 style={[styles.countBadgeText, { color: colors.primary }]}
               >
-                {animals.length} hayvan
+                {t("map.animalCount", { count: animals.length })}
               </Text>
             </View>
           </View>
-          <Pressable
-            onPress={() => router.navigate("/animals")}
-            hitSlop={8}
-          >
+          <Pressable onPress={() => router.navigate("/animals")} hitSlop={8}>
             <Text style={[styles.seeAll, { color: colors.primary }]}>
-              Hepsini Gör
+              {t("map.viewAll")}
             </Text>
           </Pressable>
         </View>
 
-        {/* Horizontal filters */}
         <ScrollView
           horizontal
           showsHorizontalScrollIndicator={false}
           style={{ flexGrow: 0 }}
           contentContainerStyle={styles.filterRow}
         >
-          {STATUS_FILTERS.map((f) => {
+          {STATUS_FILTER_DEFS.map((f) => {
             const active = filter === f.key;
             const accentColor = f.accent ?? colors.primary;
             const activeBg = accentColor;
@@ -370,7 +358,7 @@ export default function MapScreen() {
                     { color: active ? "white" : colors.text },
                   ]}
                 >
-                  {f.label}
+                  {t(f.labelKey)}
                 </Text>
                 <View
                   style={[
@@ -397,10 +385,9 @@ export default function MapScreen() {
         </ScrollView>
       </>
     ),
-    [filter, countPerFilter, animals.length, colors, handleFilterChange]
+    [filter, countPerFilter, animals.length, colors, handleFilterChange, t]
   );
 
-  /* ── Animal row renderer ──────────────────────────────── */
   const renderAnimalRow = useCallback(
     ({ item: animal }: { item: StrayAnimal }) => {
       const isSelected = selectedId === animal.id;
@@ -433,7 +420,9 @@ export default function MapScreen() {
               <StatusBadge status={animal.status} size="sm" />
               {animal.needsHelpByUsers.length > 0 && (
                 <View style={styles.urgentBadge}>
-                  <Text style={styles.urgentBadgeText}>Acil</Text>
+                  <Text style={styles.urgentBadgeText}>
+                    {t("animals.status.urgent")}
+                  </Text>
                 </View>
               )}
             </View>
@@ -441,7 +430,7 @@ export default function MapScreen() {
               style={[styles.animalNote, { color: colors.foreground }]}
               numberOfLines={1}
             >
-              {animal.notes || "Not eklenmemiş"}
+              {animal.notes || t("map.noNote")}
             </Text>
             <Text
               style={[styles.animalMeta, { color: colors.mutedForeground }]}
@@ -449,11 +438,15 @@ export default function MapScreen() {
               {animal.userName} · {formatTimeAgo(animal.timestamp)}
             </Text>
           </View>
-          <Icon name="chevron-forward" size={16} color={colors.mutedForeground} />
+          <Icon
+            name="chevron-forward"
+            size={16}
+            color={colors.mutedForeground}
+          />
         </Pressable>
       );
     },
-    [selectedId, colors, handleCardPress]
+    [selectedId, colors, handleCardPress, t]
   );
 
   const EmptyList = useMemo(
@@ -461,17 +454,15 @@ export default function MapScreen() {
       <View style={styles.emptyRow}>
         <Icon name="paw-outline" size={22} color={colors.mutedForeground} />
         <Text style={[styles.emptyText, { color: colors.mutedForeground }]}>
-          Bu filtrede hayvan yok
+          {t("map.noFilterResults")}
         </Text>
       </View>
     ),
-    [colors.mutedForeground]
+    [colors.mutedForeground, t]
   );
 
-  /* ── Render ───────────────────────────────────────────── */
   return (
     <View style={styles.container}>
-      {/* Map fills the whole screen */}
       <MapView
         ref={mapRef}
         style={StyleSheet.absoluteFill}
@@ -497,9 +488,7 @@ export default function MapScreen() {
                 styles.marker,
                 {
                   backgroundColor: STATUS_COLORS[animal.status],
-                  transform: [
-                    { scale: selectedId === animal.id ? 1.3 : 1 },
-                  ],
+                  transform: [{ scale: selectedId === animal.id ? 1.3 : 1 }],
                   borderColor: selectedId === animal.id ? "white" : "white",
                   shadowOpacity: selectedId === animal.id ? 0.45 : 0.28,
                 },
@@ -556,7 +545,7 @@ export default function MapScreen() {
             ]}
           >
             <Text style={[styles.countText, { color: colors.primary }]}>
-              {animals.length} hayvan
+              {t("map.animalCount", { count: animals.length })}
             </Text>
           </View>
         </View>
@@ -564,13 +553,16 @@ export default function MapScreen() {
         <View style={{ flexDirection: "row", gap: 8 }}>
           {/* Ayın Kahramanları */}
           <Pressable
-            style={({ pressed }) => [{ opacity: pressed ? 0.82 : 1, flex: 1 }, styles.emergencyBtn]}
+            style={({ pressed }) => [
+              { opacity: pressed ? 0.82 : 1, flex: 1 },
+              styles.emergencyBtn,
+            ]}
             onPress={() => {
               router.push("/leaderboard");
               Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
             }}
             hitSlop={4}
-            accessibilityLabel="Ayın Kahramanları liderlik tablosu"
+            accessibilityLabel={t("map.heroesAccessibility")}
           >
             <LinearGradient
               colors={["#7C3AED", "#6D28D9"]}
@@ -579,14 +571,22 @@ export default function MapScreen() {
               style={styles.emergencyGradient}
             >
               <Icon name="trophy" size={14} color="#FFF" />
-              <Text style={styles.emergencyText} numberOfLines={1}>Kahramanlar</Text>
+              <Text style={styles.emergencyText} numberOfLines={1}>
+                {t("map.heroes")}
+              </Text>
             </LinearGradient>
           </Pressable>
           {/* Durum Bildir */}
           <Pressable
-            style={({ pressed }) => [{ opacity: pressed ? 0.82 : 1, flex: 1 }, styles.emergencyBtn]}
+            style={({ pressed }) => [
+              { opacity: pressed ? 0.82 : 1, flex: 1 },
+              styles.emergencyBtn,
+            ]}
             onPress={() => {
-              const coords = userLocation ?? { latitude: region.latitude, longitude: region.longitude };
+              const coords = userLocation ?? {
+                latitude: region.latitude,
+                longitude: region.longitude,
+              };
               router.push({
                 pathname: "/add-animal",
                 params: {
@@ -597,7 +597,7 @@ export default function MapScreen() {
               Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
             }}
             hitSlop={4}
-            accessibilityLabel="Hayvan durumu bildir"
+            accessibilityLabel={t("map.reportStatusAccessibility")}
           >
             <LinearGradient
               colors={["#FF6B35", "#EF4444"]}
@@ -606,7 +606,9 @@ export default function MapScreen() {
               style={styles.emergencyGradient}
             >
               <Icon name="warning" size={14} color="#FFF" />
-              <Text style={styles.emergencyText} numberOfLines={1}>Durum Bildir</Text>
+              <Text style={styles.emergencyText} numberOfLines={1}>
+                {t("map.reportStatus")}
+              </Text>
             </LinearGradient>
           </Pressable>
         </View>
@@ -677,9 +679,15 @@ export default function MapScreen() {
           nestedScrollEnabled
           showsVerticalScrollIndicator={false}
           contentContainerStyle={{ paddingBottom: tabClearance + 16 }}
-          ItemSeparatorComponent={() => <View style={{ height: StyleSheet.hairlineWidth, backgroundColor: colors.border }} />}
+          ItemSeparatorComponent={() => (
+            <View
+              style={{
+                height: StyleSheet.hairlineWidth,
+                backgroundColor: colors.border,
+              }}
+            />
+          )}
           onScrollToIndexFailed={(info) => {
-            /* FlatList hasn't measured the item yet — retry after layout */
             setTimeout(() => {
               listRef.current?.scrollToIndex({
                 index: info.index,
@@ -956,7 +964,7 @@ const styles = StyleSheet.create({
     borderLeftWidth: 3,
   },
   animalRowSelected: {
-    paddingLeft: 17, /* compensate for 3px border so content doesn't shift */
+    paddingLeft: 17,
   },
   animalIcon: {
     width: 42,

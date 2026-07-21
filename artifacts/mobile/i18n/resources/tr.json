@@ -291,11 +291,29 @@
     "openInMaps": "Haritada Aç",
     "locationPermission": "Konum iznine ihtiyaç var",
     "locationPermissionDesc": "Yakınındaki hayvanları görmek için konum iznini açın.",
-    "openSettings": "Ayarları Aç",
+    "openSettings": "Ayarlara Git",
     "loading": "Harita yükleniyor…",
     "noAnimals": "Bu bölgede kayıtlı hayvan bulunamadı.",
     "markerTitle": "Hayvan Raporu",
-    "zoomIn": "Yakınlaştır"
+    "zoomIn": "Yakınlaştır",
+    "filterAll": "Hepsi",
+    "filterHungry": "Aç",
+    "filterInjured": "Yaralı",
+    "filterHealthy": "Sağlıklı",
+    "filterUnknown": "Bilinmiyor",
+    "animalCount": "{{count}} hayvan",
+    "noNote": "Not eklenmemiş",
+    "noFilterResults": "Bu filtrede hayvan yok",
+    "heroesAccessibility": "Ayın Kahramanları liderlik tablosu",
+    "reportStatusAccessibility": "Hayvan durumu bildir",
+    "locationPermTitle": "Konum İzni Gerekli",
+    "locationPermMsg": "Konumunuzu gösterebilmemiz için konum izni vermeniz gerekiyor.",
+    "locationUnavailableTitle": "Konum Bilgisi Alınamadı",
+    "locationUnavailableMsg": "Lütfen cihazınızın konum hizmetlerini açın.",
+    "locationTimeoutTitle": "Konum Alınamadı",
+    "locationTimeoutMsg": "Konum bilgisi alınamadı. Lütfen cihazınızın konum hizmetlerini açın.",
+    "locationErrorTitle": "Konum Hatası",
+    "locationErrorMsg": "Konum bilgisi alınamadı. Lütfen cihazınızın konum hizmetlerini açın."
   },
   "animals": {
     "title": "Hayvanlar",
@@ -357,6 +375,24 @@
       "submitting": "Gönderiliyor…",
       "successMsg": "Hayvan başarıyla raporlandı.",
       "locationRequired": "Lütfen konumu işaretleyin."
+    },
+    "streetAnimals": "Sokak Hayvanları",
+    "subtitle": "Yakınındaki canlı durumları keşfet",
+    "emptyTitle": "Henüz durum bildirimi bulunmuyor.",
+    "emptySubtitle": "Yakınındaki bir hayvan için ilk bildirimi sen oluşturabilirsin.",
+    "filterEmptyTitle": "Bu filtrede hayvan yok",
+    "filterEmptySubtitle": "Farklı bir kategori seçerek diğer bildirimleri görebilirsin.",
+    "filters": {
+      "all": "Hepsi",
+      "emergency": "Acil",
+      "needsHelp": "Yardım Bekleyen",
+      "healthy": "Sağlıklı"
+    },
+    "summary": {
+      "emergency": "Acil",
+      "pending": "Bekleyen",
+      "healthy": "Sağlıklı",
+      "total": "Toplam"
     }
   },
   "adoption": {
@@ -408,6 +444,110 @@
       "submitting": "Yayınlanıyor…",
       "update": "İlanı Güncelle",
       "updating": "Güncelleniyor…"
+    },
+    "featuredLabel": "Öne Çıkarılmış",
+    "contact": "İletişim",
+    "listingCount": "{{count}} ilan",
+    "searchPlaceholder": "Kedi, köpek, kuş ara...",
+    "loginToFavoriteTitle": "Giriş Yapın",
+    "loginToFavoriteMsg": "Takip etmek için giriş yapmanız gerekiyor.",
+    "tabs": {
+      "create": "İlan Oluştur",
+      "mylistings": "İlanlarım",
+      "messages": "Mesajlarım",
+      "listings": "Tüm İlanlar"
+    },
+    "filterChips": {
+      "all": "Tümü",
+      "cat": "Kedi",
+      "dog": "Köpek",
+      "bird": "Kuş",
+      "rabbit": "Tavşan",
+      "new": "Yeni",
+      "other": "Diğer"
+    },
+    "myFilters": {
+      "all": "Tümü",
+      "active": "Aktif",
+      "passive": "Pasif",
+      "pending": "Bekleyen",
+      "adopted": "Sahiplendirilen"
+    },
+    "statusLabels": {
+      "active": "Aktif",
+      "pending": "Onay Bekliyor",
+      "passive": "Pasif",
+      "adopted": "Sahiplendirildi",
+      "expired": "Süresi Doldu"
+    },
+    "tips": {
+      "0": "Hayvanın yaşı, karakteri ve sağlık durumunu belirt",
+      "1": "Net ve aydınlık fotoğraflar ekle — ilanını öne çıkarır",
+      "2": "Sahiplenecek kişiyle yüz yüze görüşmeyi tercih et"
+    },
+    "hero": {
+      "title": "Evcil hayvanını\nsahiplendirme ilanına ekle",
+      "subtitle": "Fotoğraf, açıklama ve konum\nekleyerek ilan oluştur"
+    },
+    "stats": {
+      "activeListings": "Aktif İlan",
+      "adopted": "Sahiplendirilen",
+      "animalFriends": "Hayvan Dostu"
+    },
+    "banner": {
+      "title": "Güvenli Sahiplendirme",
+      "subtitle": "Doğrulanmış kullanıcılar ve güvenli iletişim ile patili dostlarımızı doğru yuvalara götürüyoruz."
+    },
+    "msgSection": {
+      "loginRequired": "Mesajları görmek için giriş yapın",
+      "empty": "Henüz mesaj yok",
+      "emptySubtitle": "Bir sahiplendirme ilanında \"Mesaj Gönder\" butonuna basarak konuşma başlatın",
+      "chatStarted": "Sohbet başladı",
+      "adoptionContext": "Sahiplendirme"
+    },
+    "time": {
+      "now": "şimdi",
+      "minutes": "{{count}} dk",
+      "hours": "{{count}} sa",
+      "days": "{{count}} g"
+    },
+    "myListingsSection": {
+      "sectionTitle": "İlanlarım",
+      "sectionSubtitle": "Verdiğin ilanları yönet, performansını takip et",
+      "emptyTitle": "Henüz İlan Yok",
+      "emptySubtitle": "İlk sahiplendirme ilanını oluşturarak\npatili dostuna yeni bir yuva bul.",
+      "filterEmpty": "Bu filtrede ilan yok",
+      "deleteTitle": "İlanı Sil",
+      "deleteMsg": "\"{{petName}}\" ilanını kalıcı olarak silmek istiyor musun? Bu işlem geri alınamaz.",
+      "adoptedTitle": "Sahiplendirildi",
+      "adoptedMsg": "\"{{petName}}\" artık yeni yuvasında. İlanı sahiplendirildi olarak işaretlensin mi?",
+      "adoptedYes": "Evet, İşaretle"
+    },
+    "card": {
+      "noPhoto": "Fotoğraf eklenmedi",
+      "performance": "Performans",
+      "last7days": "SON 7 GÜN",
+      "views": "Görüntülenme",
+      "favorites": "Favori",
+      "adoptedCongrats": "Tebrikler! Bu hayvan yeni yuvasını buldu",
+      "featureTitle": "İlanını öne çıkar",
+      "featureSub": "Daha fazla kişiye ulaş, daha hızlı sahiplendir!",
+      "extendTitle": "Süreyi uzat",
+      "extendSub": "Mevcut promosyona ek süre ekle!",
+      "featureBtn": "Öne Çıkar",
+      "extendBtn": "Öne Çıkarmayı Uzat",
+      "featAccessExtend": "Öne çıkarmayı uzat",
+      "featAccessBoost": "İlanı öne çıkar",
+      "editBtn": "Düzenle",
+      "previewBtn": "Önizle",
+      "deleteBtn": "Sil"
+    },
+    "boost": {
+      "successTitle": "İlanın Öne Çıkarıldı!",
+      "successSub": "İlanın artık daha fazla kullanıcıya gösterilecek",
+      "package": "Paketi",
+      "activeUntilFull": "{{date}} · {{time}} tarihine kadar aktif",
+      "great": "Harika!"
     }
   },
   "pets": {

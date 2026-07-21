@@ -291,11 +291,29 @@
     "openInMaps": "Open in Maps",
     "locationPermission": "Location permission required",
     "locationPermissionDesc": "Enable location access to see animals nearby.",
-    "openSettings": "Open Settings",
+    "openSettings": "Go to Settings",
     "loading": "Loading map…",
     "noAnimals": "No animals reported in this area.",
     "markerTitle": "Animal Report",
-    "zoomIn": "Zoom In"
+    "zoomIn": "Zoom In",
+    "filterAll": "All",
+    "filterHungry": "Hungry",
+    "filterInjured": "Injured",
+    "filterHealthy": "Healthy",
+    "filterUnknown": "Unknown",
+    "animalCount": "{{count}} animals",
+    "noNote": "No notes added",
+    "noFilterResults": "No animals in this filter",
+    "heroesAccessibility": "Monthly Heroes leaderboard",
+    "reportStatusAccessibility": "Report animal status",
+    "locationPermTitle": "Location Permission Required",
+    "locationPermMsg": "We need location permission to show your position.",
+    "locationUnavailableTitle": "Location Unavailable",
+    "locationUnavailableMsg": "Please enable location services on your device.",
+    "locationTimeoutTitle": "Location Unavailable",
+    "locationTimeoutMsg": "Could not get location. Please enable location services.",
+    "locationErrorTitle": "Location Error",
+    "locationErrorMsg": "Could not get location. Please enable location services."
   },
   "animals": {
     "title": "Animals",
@@ -357,6 +375,24 @@
       "submitting": "Submitting…",
       "successMsg": "Animal reported successfully.",
       "locationRequired": "Please mark the location."
+    },
+    "streetAnimals": "Street Animals",
+    "subtitle": "Discover live reports near you",
+    "emptyTitle": "No reports yet.",
+    "emptySubtitle": "You can be the first to report an animal nearby.",
+    "filterEmptyTitle": "No animals in this filter",
+    "filterEmptySubtitle": "Try selecting a different category to see other reports.",
+    "filters": {
+      "all": "All",
+      "emergency": "Emergency",
+      "needsHelp": "Needs Help",
+      "healthy": "Healthy"
+    },
+    "summary": {
+      "emergency": "Emergency",
+      "pending": "Pending",
+      "healthy": "Healthy",
+      "total": "Total"
     }
   },
   "adoption": {
@@ -408,6 +444,110 @@
       "submitting": "Publishing…",
       "update": "Update Listing",
       "updating": "Updating…"
+    },
+    "featuredLabel": "Featured",
+    "contact": "Contact",
+    "listingCount": "{{count}} listings",
+    "searchPlaceholder": "Search cats, dogs, birds...",
+    "loginToFavoriteTitle": "Log In",
+    "loginToFavoriteMsg": "Log in to follow listings.",
+    "tabs": {
+      "create": "Create Listing",
+      "mylistings": "My Listings",
+      "messages": "My Messages",
+      "listings": "All Listings"
+    },
+    "filterChips": {
+      "all": "All",
+      "cat": "Cat",
+      "dog": "Dog",
+      "bird": "Bird",
+      "rabbit": "Rabbit",
+      "new": "New",
+      "other": "Other"
+    },
+    "myFilters": {
+      "all": "All",
+      "active": "Active",
+      "passive": "Inactive",
+      "pending": "Pending",
+      "adopted": "Adopted"
+    },
+    "statusLabels": {
+      "active": "Active",
+      "pending": "Pending Approval",
+      "passive": "Inactive",
+      "adopted": "Adopted",
+      "expired": "Expired"
+    },
+    "tips": {
+      "0": "Include the animal's age, personality and health status",
+      "1": "Add clear, well-lit photos — they make your listing stand out",
+      "2": "Prefer meeting the adopter in person"
+    },
+    "hero": {
+      "title": "Add your pet\nto adoption listings",
+      "subtitle": "Create a listing with photo,\ndescription and location"
+    },
+    "stats": {
+      "activeListings": "Active Listings",
+      "adopted": "Adopted",
+      "animalFriends": "Animal Friends"
+    },
+    "banner": {
+      "title": "Safe Adoption",
+      "subtitle": "We help furry friends find the right homes through verified users and secure communication."
+    },
+    "msgSection": {
+      "loginRequired": "Log in to see messages",
+      "empty": "No messages yet",
+      "emptySubtitle": "Tap \"Send Message\" on an adoption listing to start a conversation",
+      "chatStarted": "Chat started",
+      "adoptionContext": "Adoption"
+    },
+    "time": {
+      "now": "now",
+      "minutes": "{{count}} min",
+      "hours": "{{count}} hr",
+      "days": "{{count}} d"
+    },
+    "myListingsSection": {
+      "sectionTitle": "My Listings",
+      "sectionSubtitle": "Manage your listings and track performance",
+      "emptyTitle": "No Listings Yet",
+      "emptySubtitle": "Create your first adoption listing\nto find a new home for your furry friend.",
+      "filterEmpty": "No listings in this filter",
+      "deleteTitle": "Delete Listing",
+      "deleteMsg": "Are you sure you want to permanently delete the listing for \"{{petName}}\"? This cannot be undone.",
+      "adoptedTitle": "Adopted",
+      "adoptedMsg": "\"{{petName}}\" has found a new home. Mark the listing as adopted?",
+      "adoptedYes": "Yes, Mark"
+    },
+    "card": {
+      "noPhoto": "No photo added",
+      "performance": "Performance",
+      "last7days": "LAST 7 DAYS",
+      "views": "Views",
+      "favorites": "Favorites",
+      "adoptedCongrats": "Congratulations! This animal found a new home",
+      "featureTitle": "Feature your listing",
+      "featureSub": "Reach more people, get adopted faster!",
+      "extendTitle": "Extend duration",
+      "extendSub": "Add more time to the current promotion!",
+      "featureBtn": "Feature",
+      "extendBtn": "Extend Feature",
+      "featAccessExtend": "Extend feature",
+      "featAccessBoost": "Feature listing",
+      "editBtn": "Edit",
+      "previewBtn": "Preview",
+      "deleteBtn": "Delete"
+    },
+    "boost": {
+      "successTitle": "Your Listing is Featured!",
+      "successSub": "Your listing will now be shown to more users",
+      "package": "Package",
+      "activeUntilFull": "active until {{date}} · {{time}}",
+      "great": "Great!"
     }
   },
   "pets": {

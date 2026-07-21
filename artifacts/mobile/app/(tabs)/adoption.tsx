@@ -31,6 +31,7 @@ import {
   View,
 } from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
+import { useTranslation } from "react-i18next";
 import type { AdoptionListing } from "@/contexts/AdoptionContext";
 import { useAdoption } from "@/contexts/AdoptionContext";
 import { useAuth } from "@/contexts/AuthContext";
@@ -76,20 +77,14 @@ const TYPE_NORMALIZE: Record<string, Filter> = {
   Tavşan: "rabbit", tavşan: "rabbit", rabbit: "rabbit",
 };
 
-const FILTERS: { key: Filter; label: string; icon: string }[] = [
-  { key: "all",    label: "Tümü",   icon: "apps-outline"             },
-  { key: "cat",    label: "Kedi",   icon: "paw-outline"              },
-  { key: "dog",    label: "Köpek",  icon: "paw"                      },
-  { key: "bird",   label: "Kuş",    icon: "leaf-outline"             },
-  { key: "rabbit", label: "Tavşan", icon: "heart-outline"            },
-  { key: "new",    label: "Yeni",   icon: "sparkles-outline"         },
-  { key: "other",  label: "Diğer",  icon: "ellipsis-horizontal-circle-outline" },
-];
-
-const TIPS = [
-  "Hayvanın yaşı, karakteri ve sağlık durumunu belirt",
-  "Net ve aydınlık fotoğraflar ekle — ilanını öne çıkarır",
-  "Sahiplenecek kişiyle yüz yüze görüşmeyi tercih et",
+const FILTER_DEFS: { key: Filter; labelKey: string; icon: string }[] = [
+  { key: "all",    labelKey: "adoption.filterChips.all",    icon: "apps-outline"             },
+  { key: "cat",    labelKey: "adoption.filterChips.cat",    icon: "paw-outline"              },
+  { key: "dog",    labelKey: "adoption.filterChips.dog",    icon: "paw"                      },
+  { key: "bird",   labelKey: "adoption.filterChips.bird",   icon: "leaf-outline"             },
+  { key: "rabbit", labelKey: "adoption.filterChips.rabbit", icon: "heart-outline"            },
+  { key: "new",    labelKey: "adoption.filterChips.new",    icon: "sparkles-outline"         },
+  { key: "other",  labelKey: "adoption.filterChips.other",  icon: "ellipsis-horizontal-circle-outline" },
 ];
 
 const CHIP_W   = 80;
@@ -106,18 +101,68 @@ const ADOPTION_NOTIF_TYPES = [
 ];
 
 // ── Tab defs ──────────────────────────────────────────────────────────────────
-const TAB_DEFS: { key: Tab; label: string; icon: string }[] = [
-  { key: "create",     label: "İlan Oluştur", icon: "add-circle-outline"  },
-  { key: "mylistings", label: "İlanlarım",    icon: "list-outline"        },
-  { key: "messages",   label: "Mesajlarım",   icon: "chatbubbles-outline" },
-  { key: "listings",   label: "Tüm İlanlar",  icon: "heart-outline"       },
+const TAB_DEFS: { key: Tab; labelKey: string; icon: string }[] = [
+  { key: "create",     labelKey: "adoption.tabs.create",     icon: "add-circle-outline"  },
+  { key: "mylistings", labelKey: "adoption.tabs.mylistings", icon: "list-outline"        },
+  { key: "messages",   labelKey: "adoption.tabs.messages",   icon: "chatbubbles-outline" },
+  { key: "listings",   labelKey: "adoption.tabs.listings",   icon: "heart-outline"       },
 ];
+
+const MY_FILTER_DEFS: { key: MyFilter; labelKey: string }[] = [
+  { key: "all",     labelKey: "adoption.myFilters.all"     },
+  { key: "active",  labelKey: "adoption.myFilters.active"  },
+  { key: "passive", labelKey: "adoption.myFilters.passive" },
+  { key: "pending", labelKey: "adoption.myFilters.pending" },
+  { key: "adopted", labelKey: "adoption.myFilters.adopted" },
+];
+
+const STATUS_CFG: Record<ListStatus, { color: string; bg: string; icon: string }> = {
+  "Aktif":           { color: "#18A558", bg: "#E6F7EE",    icon: "checkmark-circle"     },
+  "Onay Bekliyor":   { color: "#D97706", bg: "#FEF3C7",    icon: "time-outline"         },
+  "Pasif":           { color: BODY,      bg: `${BODY}14`,  icon: "pause-circle-outline" },
+  "Sahiplendirildi": { color: P,         bg: `${P}14`,     icon: "heart-circle"         },
+  "Süresi Doldu":    { color: "#DC2626", bg: "#FEE2E2",    icon: "close-circle-outline" },
+};
+
+const STATUS_LABEL_KEYS: Record<ListStatus, string> = {
+  "Aktif":           "adoption.statusLabels.active",
+  "Onay Bekliyor":   "adoption.statusLabels.pending",
+  "Pasif":           "adoption.statusLabels.passive",
+  "Sahiplendirildi": "adoption.statusLabels.adopted",
+  "Süresi Doldu":    "adoption.statusLabels.expired",
+};
+
+function pkgFormatPrice(unitAmount: number): string {
+  return (unitAmount / 100).toFixed(0);
+}
+
+interface MyCard {
+  listing: AdoptionListing;
+  status:  ListStatus;
+}
+
+// ── Msg time label hook ────────────────────────────────────────────────────────
+function useMsgTimeLabel() {
+  const { t } = useTranslation();
+  return useCallback((iso: string): string => {
+    const diff = Date.now() - new Date(iso).getTime();
+    const m = Math.floor(diff / 60_000);
+    if (m < 1)  return t("adoption.time.now");
+    if (m < 60) return t("adoption.time.minutes", { count: m });
+    const h = Math.floor(m / 60);
+    if (h < 24) return t("adoption.time.hours", { count: h });
+    const d = Math.floor(h / 24);
+    if (d < 7)  return t("adoption.time.days", { count: d });
+    return new Date(iso).toLocaleDateString("tr-TR", { day: "numeric", month: "short" });
+  }, [t]);
+}
 
 // ── Adoption header ───────────────────────────────────────────────────────────
 function AdoptionHeader({ topPad }: { topPad: number }) {
   const T = useTheme();
   const router = useRouter();
   const { user } = useAuth();
+  const { t } = useTranslation();
   const [unreadCount, setUnreadCount] = React.useState(0);
 
   React.useEffect(() => {
@@ -136,7 +181,7 @@ function AdoptionHeader({ topPad }: { topPad: number }) {
   return (
     <View style={[ah.wrap, { paddingTop: topPad + 6, backgroundColor: T.bg }]}>
       <View style={ah.titleRow}>
-        <Text style={[ah.title, { color: DARK }]}>Sahiplendirme</Text>
+        <Text style={[ah.title, { color: DARK }]}>{t("adoption.title")}</Text>
         <View style={ah.underline} />
       </View>
       <Pressable
@@ -179,21 +224,22 @@ function TabSwitcher({
   unreadMessages?: number;
 }) {
   const T = useTheme();
+  const { t } = useTranslation();
   return (
     <View style={[tsw.wrap, { backgroundColor: T.card, borderColor: T.border }]}>
-      {TAB_DEFS.map((t) => {
-        const isActive   = active === t.key;
-        const showBadge  = t.key === "messages" && unreadMessages > 0;
+      {TAB_DEFS.map((tab) => {
+        const isActive   = active === tab.key;
+        const showBadge  = tab.key === "messages" && unreadMessages > 0;
         return (
           <Pressable
-            key={t.key}
+            key={tab.key}
             style={tsw.item}
-            onPress={() => { Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light); onChange(t.key); }}
+            onPress={() => { Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light); onChange(tab.key); }}
           >
             {isActive ? (
               <LinearGradient colors={[P2, P]} start={{ x: 0, y: 0 }} end={{ x: 1, y: 0 }} style={tsw.grad}>
-                <Icon name={t.icon} size={12} color={WHITE} />
-                <Text style={tsw.lblActive} numberOfLines={1}>{t.label}</Text>
+                <Icon name={tab.icon} size={12} color={WHITE} />
+                <Text style={tsw.lblActive} numberOfLines={1}>{t(tab.labelKey)}</Text>
                 {showBadge && (
                   <View style={tsw.badge}>
                     <Text style={tsw.badgeTxt}>{unreadMessages > 9 ? "9+" : String(unreadMessages)}</Text>
@@ -202,8 +248,8 @@ function TabSwitcher({
               </LinearGradient>
             ) : (
               <View style={tsw.inactiveRow}>
-                <Icon name={t.icon} size={12} color={T.purple} />
-                <Text style={[tsw.lblInactive, { color: T.textMuted }]} numberOfLines={1}>{t.label}</Text>
+                <Icon name={tab.icon} size={12} color={T.purple} />
+                <Text style={[tsw.lblInactive, { color: T.textMuted }]} numberOfLines={1}>{t(tab.labelKey)}</Text>
                 {showBadge && (
                   <View style={tsw.badge}>
                     <Text style={tsw.badgeTxt}>{unreadMessages > 9 ? "9+" : String(unreadMessages)}</Text>
@@ -241,13 +287,14 @@ function SearchBar({
   activeFilterCount?: number;
 }) {
   const T = useTheme();
+  const { t } = useTranslation();
   return (
     <View style={sb.wrap}>
       <View style={[sb.inputWrap, { backgroundColor: T.card, borderColor: T.border }]}>
         <Icon name="search-outline" size={16} color={T.textMuted} />
         <TextInput
           style={[sb.input, { color: T.text }]}
-          placeholder="Kedi, köpek, kuş ara..."
+          placeholder={t("adoption.searchPlaceholder")}
           placeholderTextColor={T.placeholder}
           value={query}
           onChangeText={onQuery}
@@ -294,6 +341,7 @@ const sb = StyleSheet.create({
 // ── Filter row ────────────────────────────────────────────────────────────────
 function FilterRow({ active, onChange }: { active: Filter; onChange: (f: Filter) => void }) {
   const T = useTheme();
+  const { t } = useTranslation();
   const filterRef = useRef<FlatList>(null);
 
   const handlePress = (key: Filter, idx: number) => {
@@ -305,7 +353,7 @@ function FilterRow({ active, onChange }: { active: Filter; onChange: (f: Filter)
   return (
     <FlatList
       ref={filterRef}
-      data={FILTERS}
+      data={FILTER_DEFS}
       horizontal
       keyExtractor={(item) => item.key}
       showsHorizontalScrollIndicator={false}
@@ -330,12 +378,12 @@ function FilterRow({ active, onChange }: { active: Filter; onChange: (f: Filter)
                 style={[fc.chip, fc.chipActiveShadow]}
               >
                 <Icon name={f.icon} size={13} color="#FFF" />
-                <Text style={fc.lblActive}>{f.label}</Text>
+                <Text style={fc.lblActive}>{t(f.labelKey)}</Text>
               </LinearGradient>
             ) : (
               <View style={[fc.chip, fc.chipInactive, { backgroundColor: T.card, borderColor: T.border }]}>
                 <Icon name={f.icon} size={13} color={P} />
-                <Text style={[fc.lbl, { color: T.purple }]}>{f.label}</Text>
+                <Text style={[fc.lbl, { color: T.purple }]}>{t(f.labelKey)}</Text>
               </View>
             )}
           </Pressable>
@@ -392,18 +440,17 @@ function ListingCard({ listing }: { listing: AdoptionListing }) {
   const router = useRouter();
   const { isFollowed, followListing, unfollowListing } = useAdoption();
   const { user } = useAuth();
+  const { t } = useTranslation();
   const [imgError, setImgError] = useState(false);
   const [followLoading, setFollowLoading] = useState(false);
 
-  /* Derived from promotedUntil — single source of truth; no BoostContext needed */
   const isFeatured = isListingPromoted(listing.promotedUntil);
-
   const liked = isFollowed(listing.id);
 
   const handleHeartPress = async (e: { stopPropagation?: () => void }) => {
     e.stopPropagation?.();
     if (!user) {
-      Alert.alert("Giriş Yapın", "Takip etmek için giriş yapmanız gerekiyor.");
+      Alert.alert(t("adoption.loginToFavoriteTitle"), t("adoption.loginToFavoriteMsg"));
       return;
     }
     if (followLoading) return;
@@ -448,7 +495,7 @@ function ListingCard({ listing }: { listing: AdoptionListing }) {
           {isFeatured && (
             <View style={lc.featuredBadge}>
               <Icon name="star" size={9} color="#7C3AED" />
-              <Text style={lc.featuredTxt}>Öne Çıkarılmış</Text>
+              <Text style={lc.featuredTxt}>{t("adoption.featuredLabel")}</Text>
             </View>
           )}
 
@@ -489,7 +536,7 @@ function ListingCard({ listing }: { listing: AdoptionListing }) {
               onPress={() => router.push(`/adoption/${listing.id}`)}
             >
               <LinearGradient colors={[P2, P]} style={lc.chatGrad}>
-                <Text style={lc.chatTxt}>İletişim</Text>
+                <Text style={lc.chatTxt}>{t("adoption.contact")}</Text>
               </LinearGradient>
             </Pressable>
           </View>
@@ -535,12 +582,15 @@ const lc = StyleSheet.create({
 // ── Listings header ───────────────────────────────────────────────────────────
 function ListingsHeader({ count, filter }: { count: number; filter: Filter }) {
   const T = useTheme();
-  const label = filter === "all" ? "Tüm İlanlar" : FILTERS.find((f) => f.key === filter)?.label ?? "";
+  const { t } = useTranslation();
+  const label = filter === "all"
+    ? t("adoption.tabs.listings")
+    : t(`adoption.filterChips.${filter}`);
   return (
     <View style={lh.wrap}>
       <Text style={[lh.title, { color: T.text }]}>{label}</Text>
       <View style={lh.pill}>
-        <Text style={lh.count}>{count} ilan</Text>
+        <Text style={lh.count}>{t("adoption.listingCount", { count })}</Text>
       </View>
     </View>
   );
@@ -555,6 +605,7 @@ const lh = StyleSheet.create({
 // ── Create section ────────────────────────────────────────────────────────────
 function CreateSection({ onPress, botPad }: { onPress: () => void; botPad: number }) {
   const T = useTheme();
+  const { t } = useTranslation();
   return (
     <ScrollView
       showsVerticalScrollIndicator={false}
@@ -566,15 +617,15 @@ function CreateSection({ onPress, botPad }: { onPress: () => void; botPad: numbe
             <LinearGradient colors={[`${P}22`, `${P2}14`]} style={cr.heroIconCircle}>
               <Icon name="heart" size={22} color={P} />
             </LinearGradient>
-            <Text style={[cr.heroTitle, { color: T.text }]}>Evcil hayvanını{"\n"}sahiplendirme ilanına ekle</Text>
-            <Text style={[cr.heroSub, { color: T.textMuted }]}>Fotoğraf, açıklama ve konum{"\n"}ekleyerek ilan oluştur</Text>
+            <Text style={[cr.heroTitle, { color: T.text }]}>{t("adoption.hero.title")}</Text>
+            <Text style={[cr.heroSub, { color: T.textMuted }]}>{t("adoption.hero.subtitle")}</Text>
             <Pressable
               style={({ pressed }) => [cr.ctaBtn, { opacity: pressed ? 0.88 : 1 }]}
               onPress={() => { Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium); onPress(); }}
             >
               <LinearGradient colors={[P2, P]} start={{ x: 0, y: 0 }} end={{ x: 1, y: 0 }} style={cr.ctaGrad}>
                 <Icon name="add-circle-outline" size={15} color={WHITE} />
-                <Text style={cr.ctaTxt}>İlan Oluştur</Text>
+                <Text style={cr.ctaTxt}>{t("adoption.tabs.create")}</Text>
               </LinearGradient>
             </Pressable>
           </View>
@@ -588,16 +639,16 @@ function CreateSection({ onPress, botPad }: { onPress: () => void; botPad: numbe
 
       <View style={{ flexDirection: "row", gap: 10 }}>
         {([
-          { icon: "paw"    as const, val: "2.4K+", lbl: "Aktif İlan" },
-          { icon: "heart"  as const, val: "800+",  lbl: "Sahiplendirilen" },
-          { icon: "people" as const, val: "12K+",  lbl: "Hayvan Dostu" },
+          { icon: "paw"    as const, val: "2.4K+", lblKey: "adoption.stats.activeListings" },
+          { icon: "heart"  as const, val: "800+",  lblKey: "adoption.stats.adopted"        },
+          { icon: "people" as const, val: "12K+",  lblKey: "adoption.stats.animalFriends"  },
         ] as const).map((stat) => (
-          <View key={stat.lbl} style={[cr.statCard, { backgroundColor: T.card, borderColor: T.border }]}>
+          <View key={stat.lblKey} style={[cr.statCard, { backgroundColor: T.card, borderColor: T.border }]}>
             <LinearGradient colors={[`${P}18`, `${P2}10`]} style={cr.statIconWrap}>
               <Icon name={stat.icon} size={18} color={P} />
             </LinearGradient>
             <Text style={[cr.statVal, { color: T.text }]}>{stat.val}</Text>
-            <Text style={[cr.statLbl, { color: T.textMuted }]}>{stat.lbl}</Text>
+            <Text style={[cr.statLbl, { color: T.textMuted }]}>{t(stat.lblKey)}</Text>
           </View>
         ))}
       </View>
@@ -612,8 +663,8 @@ function CreateSection({ onPress, botPad }: { onPress: () => void; botPad: numbe
           <Icon name="shield-checkmark" size={22} color={WHITE} />
         </View>
         <View style={{ flex: 1 }}>
-          <Text style={cr.bannerTitle}>Güvenli Sahiplendirme</Text>
-          <Text style={cr.bannerSub}>Doğrulanmış kullanıcılar ve güvenli iletişim ile patili dostlarımızı doğru yuvalara götürüyoruz.</Text>
+          <Text style={cr.bannerTitle}>{t("adoption.banner.title")}</Text>
+          <Text style={cr.bannerSub}>{t("adoption.banner.subtitle")}</Text>
         </View>
       </LinearGradient>
     </ScrollView>
@@ -646,20 +697,10 @@ const cr = StyleSheet.create({
 });
 
 // ── Messaging helpers ─────────────────────────────────────────────────────────
-function msgTimeLabel(iso: string): string {
-  const diff = Date.now() - new Date(iso).getTime();
-  const m = Math.floor(diff / 60_000);
-  if (m < 1)  return "şimdi";
-  if (m < 60) return `${m} dk`;
-  const h = Math.floor(m / 60);
-  if (h < 24) return `${h} sa`;
-  const d = Math.floor(h / 24);
-  if (d < 7)  return `${d} g`;
-  return new Date(iso).toLocaleDateString("tr-TR", { day: "numeric", month: "short" });
-}
-
 function AdoptionConvCard({ conv, onPress }: { conv: ApiConversation; onPress: () => void }) {
   const T         = useTheme();
+  const { t }     = useTranslation();
+  const timeLabel = useMsgTimeLabel();
   const hasUnread = conv.unreadCount > 0;
   const initial   = (conv.otherUsername ?? "?").slice(0, 1).toUpperCase();
 
@@ -696,14 +737,14 @@ function AdoptionConvCard({ conv, onPress }: { conv: ApiConversation; onPress: (
           <Text style={[acc.username, { color: T.text }, hasUnread && acc.usernameBold]} numberOfLines={1}>
             {conv.otherUsername}
           </Text>
-          <Text style={[acc.time, { color: T.textMuted }]}>{msgTimeLabel(conv.lastMessageAt)}</Text>
+          <Text style={[acc.time, { color: T.textMuted }]}>{timeLabel(conv.lastMessageAt)}</Text>
         </View>
         <Text style={[acc.context, { color: T.purple }]} numberOfLines={1}>
-          {conv.listingTitle ? `${conv.listingTitle} · ` : ""}Sahiplendirme
+          {conv.listingTitle ? `${conv.listingTitle} · ` : ""}{t("adoption.msgSection.adoptionContext")}
         </Text>
         <View style={acc.row3}>
           <Text style={[acc.preview, { color: hasUnread ? T.text : T.textMuted }, hasUnread && acc.previewBold]} numberOfLines={1}>
-            {conv.lastMessage || "Sohbet başladı"}
+            {conv.lastMessage || t("adoption.msgSection.chatStarted")}
           </Text>
           {hasUnread && (
             <View style={acc.badge}>
@@ -750,6 +791,7 @@ function MessagesSection({ botPad }: { botPad: number }) {
   const T                        = useTheme();
   const router                   = useRouter();
   const { user, token }          = useAuth();
+  const { t }                    = useTranslation();
   const [convs,      setConvs]   = useState<ApiConversation[]>([]);
   const [loading,    setLoading] = useState(true);
   const [refreshing, setRef]     = useState(false);
@@ -765,15 +807,15 @@ function MessagesSection({ botPad }: { botPad: number }) {
 
   useEffect(() => { load(); }, [load]);
   useEffect(() => {
-    const t = setInterval(load, 30_000);
-    return () => clearInterval(t);
+    const timer = setInterval(load, 30_000);
+    return () => clearInterval(timer);
   }, [load]);
 
   if (!user) {
     return (
       <View style={ms.center}>
         <Icon name="lock-closed-outline" size={34} color={`${P}60`} />
-        <Text style={ms.loginTxt}>Mesajları görmek için giriş yapın</Text>
+        <Text style={ms.loginTxt}>{t("adoption.msgSection.loginRequired")}</Text>
       </View>
     );
   }
@@ -793,8 +835,8 @@ function MessagesSection({ botPad }: { botPad: number }) {
           <View style={ms.emptyIllo}>
             <Icon name="chatbubbles-outline" size={38} color={`${P}70`} />
           </View>
-          <Text style={ms.emptyTitle}>Henüz mesaj yok</Text>
-          <Text style={ms.emptySub}>Bir sahiplendirme ilanında "Mesaj Gönder" butonuna basarak konuşma başlatın</Text>
+          <Text style={ms.emptyTitle}>{t("adoption.msgSection.empty")}</Text>
+          <Text style={ms.emptySub}>{t("adoption.msgSection.emptySubtitle")}</Text>
         </View>
       }
       renderItem={({ item: conv }) => (
@@ -835,33 +877,6 @@ const sm = StyleSheet.create({
 });
 
 // ── My Listings Section ───────────────────────────────────────────────────────
-const MY_FILTERS: { key: MyFilter; label: string }[] = [
-  { key: "all",     label: "Tümü"          },
-  { key: "active",  label: "Aktif"         },
-  { key: "passive", label: "Pasif"         },
-  { key: "pending", label: "Bekleyen"      },
-  { key: "adopted", label: "Sahiplendirilen" },
-];
-
-const STATUS_CFG: Record<ListStatus, { color: string; bg: string; icon: string }> = {
-  "Aktif":           { color: "#18A558", bg: "#E6F7EE",    icon: "checkmark-circle"     },
-  "Onay Bekliyor":   { color: "#D97706", bg: "#FEF3C7",    icon: "time-outline"         },
-  "Pasif":           { color: BODY,      bg: `${BODY}14`,  icon: "pause-circle-outline" },
-  "Sahiplendirildi": { color: P,         bg: `${P}14`,     icon: "heart-circle"         },
-  "Süresi Doldu":    { color: "#DC2626", bg: "#FEE2E2",    icon: "close-circle-outline" },
-};
-
-/* remainingTime replaced by formatRemainingTime from @/utils/promotionHelpers */
-
-
-function pkgFormatPrice(unitAmount: number): string {
-  return (unitAmount / 100).toFixed(0);
-}
-
-interface MyCard {
-  listing: AdoptionListing;
-  status:  ListStatus;
-}
 
 function MyListingCard({
   card, onEdit, onTogglePassive, onAdopted, onPreview, onDelete,
@@ -877,6 +892,7 @@ function MyListingCard({
   now: Date;
 }) {
   const T = useTheme();
+  const { t } = useTranslation();
   const { listing, status } = card;
   const views = listing.viewsCount ?? 0;
   const favs  = listing.favoriteCount ?? 0;
@@ -884,10 +900,8 @@ function MyListingCard({
   const [perfOpen, setPerfOpen] = useState(false);
   const [imgError, setImgError] = useState(false);
 
-  const isAdopted = status === "Sahiplendirildi";
-  /* Stacking is allowed — owner may always extend an active promotion */
-  const canBoost  = status === "Aktif";
-  /* Derived from promotedUntil — single source of truth */
+  const isAdopted  = status === "Sahiplendirildi";
+  const canBoost   = status === "Aktif";
   const isFeatured = isListingPromoted(listing.promotedUntil, now);
   const remainingLabel = isFeatured ? formatRemainingTime(listing.promotedUntil, now) : null;
 
@@ -899,12 +913,12 @@ function MyListingCard({
           {isFeatured ? (
             <View style={ml.featBadge}>
               <Icon name="star" size={10} color="#7C3AED" />
-              <Text style={ml.featBadgeTxt}>Öne Çıkarılmış</Text>
+              <Text style={ml.featBadgeTxt}>{t("adoption.featuredLabel")}</Text>
             </View>
           ) : (
             <View style={[ml.statusBadge, { backgroundColor: cfg.bg }]}>
               <Icon name={cfg.icon} size={11} color={cfg.color} />
-              <Text style={[ml.statusTxt, { color: cfg.color }]}>{status}</Text>
+              <Text style={[ml.statusTxt, { color: cfg.color }]}>{t(STATUS_LABEL_KEYS[status])}</Text>
             </View>
           )}
           <View style={ml.agePill}>
@@ -923,7 +937,7 @@ function MyListingCard({
           {(!listing.photo || imgError) && (
             <View style={ml.heroNoPhotoOverlay}>
               <Icon name="paw" size={22} color="rgba(255,255,255,0.85)" />
-              <Text style={ml.heroNoPhotoTxt}>Fotoğraf eklenmedi</Text>
+              <Text style={ml.heroNoPhotoTxt}>{t("adoption.card.noPhoto")}</Text>
             </View>
           )}
         </View>
@@ -934,12 +948,12 @@ function MyListingCard({
               style={ml.featuredBannerInner}
               accessibilityLabel={
                 remainingLabel
-                  ? `Öne çıkarılıyor — promosyonun bitmesine ${remainingLabel}`
-                  : "Öne çıkarılıyor"
+                  ? t("adoption.card.featAccessExtend") + ` — ${remainingLabel}`
+                  : t("adoption.card.featAccessBoost")
               }
             >
               <Icon name="star" size={12} color="#7C3AED" />
-              <Text style={ml.featuredBannerTxt}>Öne Çıkarılmış</Text>
+              <Text style={ml.featuredBannerTxt}>{t("adoption.featuredLabel")}</Text>
               {remainingLabel && (
                 <View style={ml.featuredTimeChip}>
                   <Icon name="time-outline" size={10} color={P} />
@@ -970,25 +984,25 @@ function MyListingCard({
               style={ml.perfBtn}
               onPress={() => { Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light); setPerfOpen((v) => !v); }}
             >
-              <Text style={ml.perfBtnTxt}>Performans</Text>
+              <Text style={ml.perfBtnTxt}>{t("adoption.card.performance")}</Text>
               <Icon name={perfOpen ? "chevron-up" : "chevron-down"} size={10} color={BODY} />
             </Pressable>
           </View>
 
           {perfOpen && (
             <View style={ml.perfPanel}>
-              <Text style={ml.perfPanelTitle}>SON 7 GÜN</Text>
+              <Text style={ml.perfPanelTitle}>{t("adoption.card.last7days")}</Text>
               <View style={ml.perfRow}>
                 <View style={ml.perfItem}>
                   <Icon name="eye" size={16} color={P} />
                   <Text style={ml.perfVal}>{views}</Text>
-                  <Text style={ml.perfLbl}>Görüntülenme</Text>
+                  <Text style={ml.perfLbl}>{t("adoption.card.views")}</Text>
                 </View>
                 <View style={ml.perfDivV} />
                 <View style={ml.perfItem}>
                   <Icon name="heart" size={16} color="#DC2626" />
                   <Text style={[ml.perfVal, { color: "#DC2626" }]}>{favs}</Text>
-                  <Text style={ml.perfLbl}>Favori</Text>
+                  <Text style={ml.perfLbl}>{t("adoption.card.favorites")}</Text>
                 </View>
               </View>
             </View>
@@ -997,7 +1011,7 @@ function MyListingCard({
           {isAdopted && (
             <View style={ml.adoptedBanner}>
               <Icon name="heart-circle" size={16} color={P} />
-              <Text style={ml.adoptedBannerTxt}>Tebrikler! Bu hayvan yeni yuvasını buldu</Text>
+              <Text style={ml.adoptedBannerTxt}>{t("adoption.card.adoptedCongrats")}</Text>
             </View>
           )}
 
@@ -1010,13 +1024,13 @@ function MyListingCard({
                 <View style={ml.promoteTextWrap}>
                   {isFeatured ? (
                     <>
-                      <Text style={ml.promoteTitle}>Süreyi uzat</Text>
-                      <Text style={ml.promoteSub}>Mevcut promosyona ek süre ekle!</Text>
+                      <Text style={ml.promoteTitle}>{t("adoption.card.extendTitle")}</Text>
+                      <Text style={ml.promoteSub}>{t("adoption.card.extendSub")}</Text>
                     </>
                   ) : (
                     <>
-                      <Text style={ml.promoteTitle}>İlanını öne çıkar</Text>
-                      <Text style={ml.promoteSub}>Daha fazla kişiye ulaş, daha hızlı sahiplendir!</Text>
+                      <Text style={ml.promoteTitle}>{t("adoption.card.featureTitle")}</Text>
+                      <Text style={ml.promoteSub}>{t("adoption.card.featureSub")}</Text>
                     </>
                   )}
                 </View>
@@ -1024,12 +1038,12 @@ function MyListingCard({
               <Pressable
                 onPress={() => { Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light); onBoost(); }}
                 accessibilityRole="button"
-                accessibilityLabel={isFeatured ? "Öne çıkarmayı uzat" : "İlanı öne çıkar"}
+                accessibilityLabel={isFeatured ? t("adoption.card.featAccessExtend") : t("adoption.card.featAccessBoost")}
               >
                 <LinearGradient colors={[P2, P]} start={{ x: 0, y: 0 }} end={{ x: 1, y: 0 }} style={ml.promoteBtnGrad}>
                   <Icon name="sparkles" size={13} color={WHITE} />
                   <Text style={ml.promoteBtnTxt}>
-                    {isFeatured ? "Öne Çıkarmayı Uzat" : "Öne Çıkar"}
+                    {isFeatured ? t("adoption.card.extendBtn") : t("adoption.card.featureBtn")}
                   </Text>
                 </LinearGradient>
               </Pressable>
@@ -1041,15 +1055,15 @@ function MyListingCard({
           <View style={ml.actions}>
             <Pressable style={({ pressed }) => [ml.btn, ml.btnEdit, { opacity: pressed ? 0.8 : 1 }]} onPress={() => { Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light); onEdit(); }}>
               <Icon name="create-outline" size={15} color={P} />
-              <Text style={[ml.btnTxt, { color: P }]}>Düzenle</Text>
+              <Text style={[ml.btnTxt, { color: P }]}>{t("adoption.card.editBtn")}</Text>
             </Pressable>
             <Pressable style={({ pressed }) => [ml.btn, ml.btnPreview, { opacity: pressed ? 0.8 : 1 }]} onPress={() => { Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light); onPreview(); }}>
               <Icon name="eye-outline" size={15} color={BODY} />
-              <Text style={[ml.btnTxt, { color: BODY }]}>Önizle</Text>
+              <Text style={[ml.btnTxt, { color: BODY }]}>{t("adoption.card.previewBtn")}</Text>
             </Pressable>
             <Pressable style={({ pressed }) => [ml.btn, ml.btnDel, { opacity: pressed ? 0.75 : 1 }]} onPress={() => { Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium); onDelete(); }}>
               <Icon name="trash-outline" size={15} color="#DC2626" />
-              <Text style={[ml.btnTxt, { color: "#DC2626" }]}>Sil</Text>
+              <Text style={[ml.btnTxt, { color: "#DC2626" }]}>{t("adoption.card.deleteBtn")}</Text>
             </Pressable>
           </View>
         </View>
@@ -1067,8 +1081,8 @@ function MyListingsSection({
 }) {
   const T = useTheme();
   const { fetchBoostStatus } = useBoost();
+  const { t } = useTranslation();
   const router = useRouter();
-  /* Single minute-level tick for all cards — no per-card interval */
   const now = useNow(60_000);
 
   const [successModal, setSuccessModal] = useState<{ petName: string; pkgLabel: string; expiresAt: string } | null>(null);
@@ -1082,18 +1096,39 @@ function MyListingsSection({
   }, []);
 
   const handleAdopted = useCallback((id: string, petName: string) => {
-    Alert.alert("Sahiplendirildi", `"${petName}" artık yeni yuvasında. İlanı sahiplendirildi olarak işaretlensin mi?`, [
-      { text: "İptal", style: "cancel" },
-      { text: "Evet, İşaretle", onPress: () => { Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success); setStatusMap((prev) => ({ ...prev, [id]: "Sahiplendirildi" })); } },
-    ]);
-  }, []);
+    Alert.alert(
+      t("adoption.myListingsSection.adoptedTitle"),
+      t("adoption.myListingsSection.adoptedMsg", { petName }),
+      [
+        { text: t("common.cancel"), style: "cancel" },
+        {
+          text: t("adoption.myListingsSection.adoptedYes"),
+          onPress: () => {
+            Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
+            setStatusMap((prev) => ({ ...prev, [id]: "Sahiplendirildi" }));
+          },
+        },
+      ]
+    );
+  }, [t]);
 
   const handleDelete = useCallback((listing: AdoptionListing) => {
-    Alert.alert("İlanı Sil", `"${listing.petName}" ilanını kalıcı olarak silmek istiyor musun? Bu işlem geri alınamaz.`, [
-      { text: "İptal", style: "cancel" },
-      { text: "Sil", style: "destructive", onPress: async () => { await deleteListing(listing.id); Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success); } },
-    ]);
-  }, [deleteListing]);
+    Alert.alert(
+      t("adoption.myListingsSection.deleteTitle"),
+      t("adoption.myListingsSection.deleteMsg", { petName: listing.petName }),
+      [
+        { text: t("common.cancel"), style: "cancel" },
+        {
+          text: t("adoption.card.deleteBtn"),
+          style: "destructive",
+          onPress: async () => {
+            await deleteListing(listing.id);
+            Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
+          },
+        },
+      ]
+    );
+  }, [deleteListing, t]);
 
   const handleBoost = useCallback((listingId: string, petName: string) => {
     router.push({ pathname: "/boost-packages", params: { listingId, petName } });
@@ -1114,24 +1149,29 @@ function MyListingsSection({
       <Pressable style={sm.overlay} onPress={() => setSuccessModal(null)}>
         <View style={sm.card}>
           <View style={sm.emoji}><Icon name="star" size={40} color="#F5A623" /></View>
-          <Text style={sm.title}>İlanın Öne Çıkarıldı!</Text>
-          <Text style={sm.sub}>İlanın artık daha fazla kullanıcıya gösterilecek</Text>
+          <Text style={sm.title}>{t("adoption.boost.successTitle")}</Text>
+          <Text style={sm.sub}>{t("adoption.boost.successSub")}</Text>
           {successModal && (
             <View style={sm.infoBox}>
               <View style={sm.infoRow}>
                 <LinearGradient colors={[P2, DARK]} style={sm.infoIcon}><Icon name="cube-outline" size={13} color={WHITE} /></LinearGradient>
-                <Text style={sm.infoTxt}>{successModal.pkgLabel} Paketi</Text>
+                <Text style={sm.infoTxt}>{successModal.pkgLabel} {t("adoption.boost.package")}</Text>
               </View>
               <View style={sm.infoRow}>
                 <LinearGradient colors={[P2, DARK]} style={sm.infoIcon}><Icon name="time-outline" size={13} color={WHITE} /></LinearGradient>
-                <Text style={sm.infoTxt}>{new Date(successModal.expiresAt).toLocaleDateString("tr-TR", { day: "numeric", month: "long" })} · {new Date(successModal.expiresAt).toLocaleTimeString("tr-TR", { hour: "2-digit", minute: "2-digit" })} tarihine kadar aktif</Text>
+                <Text style={sm.infoTxt}>
+                  {t("adoption.boost.activeUntilFull", {
+                    date: new Date(successModal.expiresAt).toLocaleDateString("tr-TR", { day: "numeric", month: "long" }),
+                    time: new Date(successModal.expiresAt).toLocaleTimeString("tr-TR", { hour: "2-digit", minute: "2-digit" }),
+                  })}
+                </Text>
               </View>
             </View>
           )}
           <Pressable onPress={() => setSuccessModal(null)} style={sm.btn}>
             <LinearGradient colors={[P2, P]} start={{ x: 0, y: 0 }} end={{ x: 1, y: 0 }} style={sm.btnGrad}>
               <Icon name="rocket-outline" size={16} color={WHITE} />
-              <Text style={sm.btnTxt}>Harika!</Text>
+              <Text style={sm.btnTxt}>{t("adoption.boost.great")}</Text>
             </LinearGradient>
           </Pressable>
         </View>
@@ -1140,20 +1180,20 @@ function MyListingsSection({
 
     <ScrollView showsVerticalScrollIndicator={false} contentContainerStyle={{ paddingBottom: botPad + 24 }}>
       <View style={ml.secHeader}>
-        <Text style={[ml.secTitle, { color: T.text }]}>İlanlarım</Text>
-        <Text style={[ml.secSub, { color: T.textMuted }]}>Verdiğin ilanları yönet, performansını takip et</Text>
+        <Text style={[ml.secTitle, { color: T.text }]}>{t("adoption.myListingsSection.sectionTitle")}</Text>
+        <Text style={[ml.secSub, { color: T.textMuted }]}>{t("adoption.myListingsSection.sectionSubtitle")}</Text>
       </View>
 
       <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={ml.filterList} style={ml.filterScroll}>
-        {MY_FILTERS.map((f) => {
+        {MY_FILTER_DEFS.map((f) => {
           const isA = myFilter === f.key;
           return isA ? (
             <LinearGradient key={f.key} colors={[P2, P]} start={{ x: 0, y: 0 }} end={{ x: 1, y: 0 }} style={ml.filterChipActive}>
-              <Text style={ml.filterLblActive}>{f.label}</Text>
+              <Text style={ml.filterLblActive}>{t(f.labelKey)}</Text>
             </LinearGradient>
           ) : (
             <Pressable key={f.key} style={[ml.filterChip, { backgroundColor: T.card, borderColor: T.border }]} onPress={() => { Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light); setMyFilter(f.key); }}>
-              <Text style={[ml.filterLbl, { color: T.textMuted }]}>{f.label}</Text>
+              <Text style={[ml.filterLbl, { color: T.textMuted }]}>{t(f.labelKey)}</Text>
             </Pressable>
           );
         })}
@@ -1162,12 +1202,12 @@ function MyListingsSection({
       {myListings.length === 0 && (
         <View style={ml.emptyWrap}>
           <View style={ml.emptyIllo}><Icon name="list-outline" size={40} color={`${P}70`} /></View>
-          <Text style={[ml.emptyTitle, { color: T.text }]}>Henüz İlan Yok</Text>
-          <Text style={[ml.emptySub, { color: T.textMuted }]}>İlk sahiplendirme ilanını oluşturarak{"\n"}patili dostuna yeni bir yuva bul.</Text>
+          <Text style={[ml.emptyTitle, { color: T.text }]}>{t("adoption.myListingsSection.emptyTitle")}</Text>
+          <Text style={[ml.emptySub, { color: T.textMuted }]}>{t("adoption.myListingsSection.emptySubtitle")}</Text>
           <Pressable style={({ pressed }) => [{ opacity: pressed ? 0.85 : 1, marginTop: 8 }]} onPress={onAdd}>
             <LinearGradient colors={[P2, P]} start={{ x: 0, y: 0 }} end={{ x: 1, y: 0 }} style={ml.addBtn}>
               <Icon name="add-circle-outline" size={15} color={WHITE} />
-              <Text style={ml.addBtnTxt}>İlan Oluştur</Text>
+              <Text style={ml.addBtnTxt}>{t("adoption.tabs.create")}</Text>
             </LinearGradient>
           </Pressable>
         </View>
@@ -1176,7 +1216,7 @@ function MyListingsSection({
       {myListings.length > 0 && visible.length === 0 && (
         <View style={ml.emptyFilter}>
           <Icon name="filter-outline" size={32} color={`${P}50`} />
-          <Text style={ml.emptyFilterTxt}>Bu filtrede ilan yok</Text>
+          <Text style={ml.emptyFilterTxt}>{t("adoption.myListingsSection.filterEmpty")}</Text>
         </View>
       )}
 
@@ -1344,21 +1384,17 @@ export default function AdoptionScreen() {
 
   const sorted = useMemo(() => {
     return [...listings].sort((a, b) => {
-      // Group: 0 = active promo, 1 = normal/expired → ascending = promoted first
       const ap = isListingPromoted(a.promotedUntil) ? 0 : 1;
       const bp = isListingPromoted(b.promotedUntil) ? 0 : 1;
       if (ap !== bp) return ap - bp;
-      // Within promoted group: latest expiry first (matches backend ORDER BY)
       if (ap === 0) {
         const ae = new Date(a.promotedUntil!).getTime();
         const be = new Date(b.promotedUntil!).getTime();
         if (ae !== be) return be - ae;
       }
-      // Within each group: newest first
       const ad = new Date(a.createdAt).getTime();
       const bd = new Date(b.createdAt).getTime();
       if (ad !== bd) return bd - ad;
-      // Stable ID tiebreaker (matches backend id DESC)
       return a.id < b.id ? 1 : -1;
     });
   }, [listings]);
@@ -1396,130 +1432,95 @@ export default function AdoptionScreen() {
     if (af.status !== "all") {
       list = list.filter((l) => {
         const s = (l.status ?? "").toLowerCase();
-        if (af.status === "active")  return s === "aktif"          || s === "active";
-        if (af.status === "adopted") return s === "sahiplendirildi" || s === "adopted";
+        if (af.status === "active")  return s === "active"  || s === "aktif";
+        if (af.status === "adopted") return s === "adopted" || s === "sahiplendirildi";
         return true;
       });
     }
-    if (af.locationCity !== null) list = list.filter((l) => (extractCity(l.location) ?? "").toLowerCase() === af.locationCity!.toLowerCase());
-
-    if (af.sortBy === "oldest") {
-      list = [...list].sort((a, b) => {
-        // Promoted group always before normal group
-        const ap = isListingPromoted(a.promotedUntil) ? 0 : 1;
-        const bp = isListingPromoted(b.promotedUntil) ? 0 : 1;
-        if (ap !== bp) return ap - bp;
-        // Within each group: oldest first
-        return new Date(a.createdAt).getTime() - new Date(b.createdAt).getTime();
-      });
-    } else if (af.sortBy === "age_asc") {
-      list = [...list].sort((a, b) => {
-        const ap = isListingPromoted(a.promotedUntil) ? 0 : 1;
-        const bp = isListingPromoted(b.promotedUntil) ? 0 : 1;
-        if (ap !== bp) return ap - bp;
-        const am = parseAgeMonths(a.petAge ?? "") ?? 999;
-        const bm = parseAgeMonths(b.petAge ?? "") ?? 999;
-        return am - bm;
-      });
-    } else if (af.sortBy === "age_desc") {
-      list = [...list].sort((a, b) => {
-        const ap = isListingPromoted(a.promotedUntil) ? 0 : 1;
-        const bp = isListingPromoted(b.promotedUntil) ? 0 : 1;
-        if (ap !== bp) return ap - bp;
-        const am = parseAgeMonths(a.petAge ?? "") ?? -1;
-        const bm = parseAgeMonths(b.petAge ?? "") ?? -1;
-        return bm - am;
-      });
+    if (af.locationCity !== null) {
+      list = list.filter((l) => extractCity(l.location)?.toLowerCase() === af.locationCity?.toLowerCase());
     }
-
     return list;
   }, [sorted, filter, query, advFilters]);
 
-  const activeBadgeCount = countActiveFilters(advFilters);
+  const handleTabChange = useCallback((tab: Tab) => {
+    setActiveTab(tab);
+    Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+  }, []);
+
+  const goToCreate = useCallback(() => {
+    if (!user) {
+      router.push("/login");
+      return;
+    }
+    router.push("/adoption/create");
+  }, [user, router]);
 
   return (
-    <View style={[s.root, { backgroundColor: T.bg }]}>
-      <View style={[s.stickyTop, { backgroundColor: T.bg }]}>
-        <AdoptionHeader topPad={topPad} />
-        <View style={dividerStyle.divider} />
-        <TabSwitcher active={activeTab} onChange={setActiveTab} unreadMessages={unreadAdoptionCount} />
-      </View>
+    <View style={{ flex: 1, backgroundColor: T.bg }}>
+      <AdoptionHeader topPad={topPad} />
+      <View style={dividerStyle.divider} />
 
-      {activeTab === "create" && (
-        <CreateSection onPress={() => router.push("/add-adoption")} botPad={botPad} />
-      )}
+      <TabSwitcher active={activeTab} onChange={handleTabChange} unreadMessages={unreadAdoptionCount} />
 
-      {activeTab === "messages" && (
-        <MessagesSection botPad={botPad} />
-      )}
+      <View style={{ flex: 1 }}>
+        {activeTab === "create" && (
+          <CreateSection onPress={goToCreate} botPad={botPad} />
+        )}
 
-      {activeTab === "mylistings" && (
-        <MyListingsSection
-          userId={user?.id ?? ""}
-          userEmail={user?.email ?? ""}
-          listings={listings}
-          boostStatuses={boostStatuses}
-          deleteListing={deleteListing}
-          botPad={botPad}
-          onAdd={() => router.push("/add-adoption")}
-        />
-      )}
-
-      {activeTab === "listings" && (
-        <View style={s.listingShell}>
-          <SearchBar query={query} onQuery={setQuery} onFilter={() => setFilterSheetOpen(true)} activeFilterCount={activeBadgeCount} />
-          <FilterRow active={filter} onChange={(f) => { setFilter(f); }} />
-          <ListingsHeader count={filtered.length} filter={filter} />
-          <FlatList
-            data={filtered}
-            keyExtractor={(item) => item.id}
-            renderItem={({ item }) => (
-              <ListingCard listing={item} />
-            )}
-            contentContainerStyle={{ paddingTop: 2, paddingBottom: botPad + 24 }}
-            showsVerticalScrollIndicator={false}
-            ListEmptyComponent={
-              <View style={s.empty}>
-                <View style={s.emptyIllo}><Icon name="heart-outline" size={40} color={`${P}70`} /></View>
-                <Text style={s.emptyTitle}>{query ? "Sonuç Bulunamadı" : "İlan Bulunamadı"}</Text>
-                <Text style={s.emptySub}>
-                  {query ? `"${query}" için eşleşen ilan yok` : filter === "all" ? "İlk sahiplendirme ilanını sen oluştur" : "Bu kategoride henüz ilan yok"}
-                </Text>
-                {!query && filter === "all" && (
-                  <Pressable style={({ pressed }) => [s.emptyBtn, { opacity: pressed ? 0.85 : 1 }]} onPress={() => setActiveTab("create")}>
-                    <LinearGradient colors={[P2, P]} style={s.emptyBtnGrad}>
-                      <Icon name="add-circle-outline" size={15} color={WHITE} />
-                      <Text style={s.emptyBtnTxt}>İlan Oluştur</Text>
-                    </LinearGradient>
-                  </Pressable>
-                )}
-              </View>
-            }
+        {activeTab === "mylistings" && user && (
+          <MyListingsSection
+            userId={user.id}
+            userEmail={user.email}
+            listings={listings}
+            boostStatuses={boostStatuses}
+            deleteListing={deleteListing}
+            botPad={botPad}
+            onAdd={goToCreate}
           />
-        </View>
-      )}
+        )}
+
+        {activeTab === "messages" && (
+          <MessagesSection botPad={botPad} />
+        )}
+
+        {activeTab === "listings" && (
+          <>
+            <SearchBar
+              query={query}
+              onQuery={setQuery}
+              onFilter={() => setFilterSheetOpen(true)}
+              activeFilterCount={countActiveFilters(advFilters)}
+            />
+            <FilterRow active={filter} onChange={setFilter} />
+            <ListingsHeader count={filtered.length} filter={filter} />
+            <FlatList
+              data={filtered}
+              keyExtractor={(item) => item.id}
+              renderItem={({ item }) => <ListingCard listing={item} />}
+              showsVerticalScrollIndicator={false}
+              contentContainerStyle={{ paddingBottom: botPad + 16 }}
+              ListEmptyComponent={
+                <View style={{ alignItems: "center", paddingTop: 48, paddingHorizontal: 40, gap: 10 }}>
+                  <Icon name="paw-outline" size={36} color={`${P}50`} />
+                  <Text style={{ fontSize: 15, fontFamily: "Inter_500Medium", color: BODY, textAlign: "center" }}>
+                    {listings.length === 0 ? "" : query.trim() ? "" : ""}
+                  </Text>
+                </View>
+              }
+            />
+          </>
+        )}
+      </View>
 
       <AdoptionFilterSheet
         visible={filterSheetOpen}
+        onClose={() => setFilterSheetOpen(false)}
         activeFilters={advFilters}
+        onApply={(f) => { setAdvFilters(f); setFilterSheetOpen(false); }}
         breeds={availableBreeds}
         cities={availableCities}
-        onApply={(f) => setAdvFilters(f)}
-        onClose={() => setFilterSheetOpen(false)}
       />
     </View>
   );
 }
-
-const s = StyleSheet.create({
-  root:         { flex: 1, backgroundColor: "#F7F7F7" },
-  stickyTop:    { backgroundColor: WHITE },
-  listingShell: { flex: 1 },
-  empty:        { alignItems: "center", paddingTop: 52, paddingHorizontal: 40, gap: 8 },
-  emptyIllo:    { width: 74, height: 74, borderRadius: 37, backgroundColor: `${P}12`, alignItems: "center", justifyContent: "center", marginBottom: 6 },
-  emptyTitle:   { fontSize: 17, fontFamily: "Inter_700Bold", color: DARK },
-  emptySub:     { fontSize: 13, fontFamily: "Inter_400Regular", color: BODY, textAlign: "center", lineHeight: 20 },
-  emptyBtn:     { marginTop: 14, borderRadius: 50, overflow: "hidden" },
-  emptyBtnGrad: { flexDirection: "row", alignItems: "center", gap: 7, paddingVertical: 12, paddingHorizontal: 26 },
-  emptyBtnTxt:  { fontSize: 13, fontFamily: "Inter_700Bold", color: WHITE },
-});
