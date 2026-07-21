@@ -14,6 +14,7 @@ import {
   View,
 } from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
+import { useTranslation } from "react-i18next";
 import { useAuth } from "@/contexts/AuthContext";
 import { useTheme } from "@/hooks/useTheme";
 import {
@@ -25,7 +26,6 @@ import {
 
 const PURPLE      = "#7B5EA7";
 const PURPLE_DARK = "#3D2070";
-const BG          = "#F9F8FF";
 const CAT_DEFAULT = "https://loremflickr.com/300/300/cat?lock=500";
 
 const TYPE_ICONS: Record<string, { name: string; color: string }> = {
@@ -35,14 +35,16 @@ const TYPE_ICONS: Record<string, { name: string; color: string }> = {
   story_view: { name: "eye",          color: "#34C759" },
 };
 
-function formatAgo(iso: string): string {
+type TFn = (key: string, opts?: Record<string, unknown>) => string;
+
+function formatAgo(iso: string, t: TFn): string {
   const diff = Date.now() - new Date(iso).getTime();
   const m = Math.floor(diff / 60000);
-  if (m < 1)  return "Az önce";
-  if (m < 60) return `${m} dk`;
+  if (m < 1)  return t("notifications.justNow");
+  if (m < 60) return t("notifications.minutesShort", { count: m });
   const h = Math.floor(m / 60);
-  if (h < 24) return `${h} sa`;
-  return `${Math.floor(h / 24)} gün`;
+  if (h < 24) return t("notifications.hoursShort", { count: h });
+  return t("notifications.daysShort", { count: Math.floor(h / 24) });
 }
 
 export default function NotificationsScreen() {
@@ -50,6 +52,7 @@ export default function NotificationsScreen() {
   const insets = useSafeAreaInsets();
   const router = useRouter();
   const { user } = useAuth();
+  const { t } = useTranslation();
 
   const [notifs,      setNotifs]      = useState<AppNotification[]>([]);
   const [loading,     setLoading]     = useState(true);
@@ -98,10 +101,10 @@ export default function NotificationsScreen() {
         <Pressable onPress={() => router.back()} hitSlop={12}>
           <Icon name="chevron-back" size={24} color={T.text} />
         </Pressable>
-        <Text style={[S.headerTitle, { color: T.text }]}>Bildirimler</Text>
+        <Text style={[S.headerTitle, { color: T.text }]}>{t("notifications.title")}</Text>
         {unreadCount > 0 ? (
           <Pressable onPress={handleMarkAll} hitSlop={8}>
-            <Text style={S.markAll}>Tümünü okundu işaretle</Text>
+            <Text style={S.markAll}>{t("notifications.markAllRead")}</Text>
           </Pressable>
         ) : <View style={{ width: 90 }} />}
       </View>
@@ -129,8 +132,8 @@ export default function NotificationsScreen() {
           ListEmptyComponent={
             <View style={S.empty}>
               <Icon name="notifications-off-outline" size={64} color="#C5BAE8" />
-              <Text style={S.emptyTitle}>Henüz bildirim yok</Text>
-              <Text style={S.emptySub}>Takip edilince veya beğeni aldığında buraya gelir</Text>
+              <Text style={S.emptyTitle}>{t("notifications.emptyTitle")}</Text>
+              <Text style={S.emptySub}>{t("notifications.emptySub")}</Text>
             </View>
           }
           renderItem={({ item: n }) => {
@@ -158,7 +161,7 @@ export default function NotificationsScreen() {
                     <Text style={S.rowSender}>{n.senderName} </Text>
                     {n.message}
                   </Text>
-                  <Text style={S.rowTime}>{formatAgo(n.createdAt)}</Text>
+                  <Text style={S.rowTime}>{formatAgo(n.createdAt, t)}</Text>
                 </View>
 
                 {/* Post thumbnail */}
@@ -178,13 +181,12 @@ export default function NotificationsScreen() {
 }
 
 const S = StyleSheet.create({
-  root: { flex: 1, backgroundColor: BG },
+  root: { flex: 1 },
 
   header: {
     flexDirection: "row", alignItems: "center", justifyContent: "space-between",
     paddingHorizontal: 16, paddingVertical: 12,
-    backgroundColor: "#FFF",
-    borderBottomWidth: 1, borderBottomColor: "rgba(123,94,167,0.10)",
+    borderBottomWidth: 1,
   },
   headerTitle: { fontSize: 16, fontFamily: "Inter_700Bold", color: PURPLE_DARK },
   markAll:     { fontSize: 12, fontFamily: "Inter_500Medium", color: PURPLE },

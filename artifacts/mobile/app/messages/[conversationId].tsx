@@ -23,6 +23,7 @@ import {
   View,
 } from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
+import { useTranslation } from "react-i18next";
 import { useAuth } from "@/contexts/AuthContext";
 import { useTheme } from "@/hooks/useTheme";
 import {
@@ -36,29 +37,37 @@ import {
 
 const POLL_INTERVAL = 3000;
 
-function timeStr(isoStr: string): string {
-  return new Date(isoStr).toLocaleTimeString("tr-TR", { hour: "2-digit", minute: "2-digit" });
+type TFn = (key: string, opts?: Record<string, unknown>) => string;
+
+function timeStr(isoStr: string, lang: string): string {
+  return new Date(isoStr).toLocaleTimeString(
+    lang === "tr" ? "tr-TR" : "en-US",
+    { hour: "2-digit", minute: "2-digit" },
+  );
 }
 
-function dateSep(isoStr: string): string {
+function dateSep(isoStr: string, t: TFn, lang: string): string {
   const d = new Date(isoStr);
-  const today = new Date();
+  const today     = new Date();
   const yesterday = new Date(today);
   yesterday.setDate(today.getDate() - 1);
-  if (d.toDateString() === today.toDateString())     return "Bugün";
-  if (d.toDateString() === yesterday.toDateString()) return "Dün";
-  return d.toLocaleDateString("tr-TR", { day: "numeric", month: "long" });
+  if (d.toDateString() === today.toDateString())     return t("common.today");
+  if (d.toDateString() === yesterday.toDateString()) return t("common.yesterday");
+  return d.toLocaleDateString(
+    lang === "tr" ? "tr-TR" : "en-US",
+    { day: "numeric", month: "long" },
+  );
 }
 
 type RenderedItem =
   | { kind: "date"; id: string; label: string }
   | { kind: "msg";  id: string; msg: ApiMessage };
 
-function buildItems(msgs: ApiMessage[]): RenderedItem[] {
+function buildItems(msgs: ApiMessage[], t: TFn, lang: string): RenderedItem[] {
   const items: RenderedItem[] = [];
   let lastDate = "";
   for (const m of msgs) {
-    const d = dateSep(m.createdAt);
+    const d = dateSep(m.createdAt, t, lang);
     if (d !== lastDate) {
       items.push({ kind: "date", id: `date-${m.createdAt}`, label: d });
       lastDate = d;
@@ -73,6 +82,7 @@ export default function ChatScreen() {
   const insets   = useSafeAreaInsets();
   const router   = useRouter();
   const { user, token } = useAuth();
+  const { t, i18n } = useTranslation();
   const { conversationId } = useLocalSearchParams<{ conversationId: string }>();
 
   const [conv,     setConv]     = useState<ApiConversation | null>(null);
@@ -190,7 +200,7 @@ export default function ChatScreen() {
     setSending(true);
     try {
       const remoteUrl = await uploadMsgImage(result.assets[0].uri);
-      const msg = await apiSendMessage(conversationId, token ?? "", "📷 Fotoğraf", remoteUrl);
+      const msg = await apiSendMessage(conversationId, token ?? "", t("messages.photo"), remoteUrl);
       setMsgs((p) => [...p, msg]);
       latestAt.current = msg.createdAt;
       setTimeout(() => flatRef.current?.scrollToEnd({ animated: true }), 80);
@@ -201,7 +211,7 @@ export default function ChatScreen() {
   if (loading) {
     return (
       <View style={[S.root, { backgroundColor: T.bg, paddingTop: topPad }]}>
-        <ChatHeader T={T} conv={null} onBack={() => router.back()} />
+        <ChatHeader T={T} conv={null} onBack={() => router.back()} t={t} />
         <View style={S.center}>
           <ActivityIndicator size="large" color={T.purple} />
         </View>
@@ -209,11 +219,11 @@ export default function ChatScreen() {
     );
   }
 
-  const items = buildItems(msgs);
+  const items = buildItems(msgs, t, i18n.language);
 
   return (
     <View style={[S.root, { backgroundColor: T.bg, paddingTop: topPad }]}>
-      <ChatHeader T={T} conv={conv} onBack={() => router.back()} />
+      <ChatHeader T={T} conv={conv} onBack={() => router.back()} t={t} />
 
       {/* Listing card */}
       {conv?.listingId && (
@@ -226,9 +236,9 @@ export default function ChatScreen() {
             </View>
           )}
           <View style={{ flex: 1 }}>
-            <Text style={[S.listingLabel, { color: T.textMuted }]}>İlan</Text>
+            <Text style={[S.listingLabel, { color: T.textMuted }]}>{t("messages.listing")}</Text>
             <Text style={[S.listingTitle, { color: T.text }]} numberOfLines={1}>
-              {conv.listingTitle ?? "İlan"}
+              {conv.listingTitle ?? t("messages.listing")}
             </Text>
           </View>
           <Icon name="chevron-forward" size={18} color={T.textMuted} />
@@ -250,7 +260,7 @@ export default function ChatScreen() {
           ListEmptyComponent={
             <View style={S.center}>
               <Text style={[S.noMsgs, { color: T.textMuted }]}>
-                Henüz mesaj yok. Merhaba de!
+                {t("messages.noMsgs")}
               </Text>
             </View>
           }
@@ -259,7 +269,7 @@ export default function ChatScreen() {
               return <DateSeparator T={T} label={item.label} />;
             }
             const isMine = item.msg.senderId === user?.id;
-            return <MessageBubble msg={item.msg} isMine={isMine} />;
+            return <MessageBubble msg={item.msg} isMine={isMine} lang={i18n.language} t={t} />;
           }}
         />
 
@@ -276,7 +286,7 @@ export default function ChatScreen() {
             style={[S.input, { backgroundColor: T.input, color: T.text, borderColor: T.inputBorder }]}
             value={text}
             onChangeText={setText}
-            placeholder="Mesaj yaz…"
+            placeholder={t("messages.inputPlaceholder")}
             placeholderTextColor={T.placeholder}
             multiline
             maxLength={1000}
@@ -308,7 +318,7 @@ export default function ChatScreen() {
 
 type ThemeProp = { T: ReturnType<typeof useTheme> };
 
-function ChatHeader({ T, conv, onBack }: ThemeProp & { conv: ApiConversation | null; onBack: () => void }) {
+function ChatHeader({ T, conv, onBack, t }: ThemeProp & { conv: ApiConversation | null; onBack: () => void; t: TFn }) {
   const router = useRouter();
   const initial = conv?.otherUsername?.charAt(0).toUpperCase() ?? "?";
   return (
@@ -333,7 +343,7 @@ function ChatHeader({ T, conv, onBack }: ThemeProp & { conv: ApiConversation | n
           </View>
         )}
         <Text style={[S.headerUsername, { color: T.text }]} numberOfLines={1}>
-          {conv ? `@${conv.otherUsername}` : "Sohbet"}
+          {conv ? `@${conv.otherUsername}` : t("messages.chat")}
         </Text>
       </Pressable>
 
@@ -352,11 +362,15 @@ function DateSeparator({ T, label }: ThemeProp & { label: string }) {
   );
 }
 
-function MessageBubble({ msg, isMine }: { msg: ApiMessage; isMine: boolean }) {
+function MessageBubble({
+  msg, isMine, lang, t,
+}: {
+  msg: ApiMessage; isMine: boolean; lang: string; t: TFn;
+}) {
   const T = useTheme();
   const [imgFailed, setImgFailed] = useState(false);
   const hasPhoto = !!msg.imageUrl;
-  const showText = !!msg.message && msg.message !== "📷 Fotoğraf";
+  const showText = !!msg.message && msg.message !== "📷 Fotoğraf" && msg.message !== "📷 Photo";
 
   const bubbleBg    = isMine ? T.purple : T.card;
   const textColor   = isMine ? "#FFF"   : T.text;
@@ -382,7 +396,7 @@ function MessageBubble({ msg, isMine }: { msg: ApiMessage; isMine: boolean }) {
             imgFailed ? (
               <View style={[S.imgErrorBox, { backgroundColor: T.bgSecondary }]}>
                 <Icon name="image-outline" size={28} color={T.textFaint} />
-                <Text style={[S.imgErrorTxt, { color: T.textMuted }]}>Görsel yüklenemedi</Text>
+                <Text style={[S.imgErrorTxt, { color: T.textMuted }]}>{t("messages.imgLoadError")}</Text>
               </View>
             ) : (
               <Image
@@ -397,7 +411,7 @@ function MessageBubble({ msg, isMine }: { msg: ApiMessage; isMine: boolean }) {
             <Text style={[S.bubbleTxt, { color: textColor }]}>{msg.message}</Text>
           )}
           <Text style={[S.bubbleTime, { color: timeColor }]}>
-            {timeStr(msg.createdAt)}{isMine ? (msg.isRead ? " ✓✓" : " ✓") : ""}
+            {timeStr(msg.createdAt, lang)}{isMine ? (msg.isRead ? " ✓✓" : " ✓") : ""}
           </Text>
         </View>
       </View>
@@ -425,8 +439,7 @@ const S = StyleSheet.create({
 
   listingCard: {
     flexDirection: "row", alignItems: "center", gap: 12,
-    margin: 12, padding: 12, borderRadius: 14,
-    borderWidth: 1,
+    margin: 12, padding: 12, borderRadius: 14, borderWidth: 1,
     ...Platform.select({
       ios:     { shadowColor: "#000", shadowOffset: { width: 0, height: 2 }, shadowOpacity: 0.06, shadowRadius: 8 },
       android: { elevation: 2 },
@@ -451,21 +464,8 @@ const S = StyleSheet.create({
   bubbleMine:  { borderBottomRightRadius: 4 },
   bubbleOther: { borderBottomLeftRadius: 4 },
 
-  bubbleImg: {
-    width: 220,
-    aspectRatio: 4 / 3,
-    borderRadius: 10,
-    marginBottom: 6,
-  },
-  imgErrorBox: {
-    width: 200,
-    height: 120,
-    borderRadius: 10,
-    alignItems: "center",
-    justifyContent: "center",
-    gap: 6,
-    marginBottom: 6,
-  },
+  bubbleImg:   { width: 220, aspectRatio: 4 / 3, borderRadius: 10, marginBottom: 6 },
+  imgErrorBox: { width: 200, height: 120, borderRadius: 10, alignItems: "center", justifyContent: "center", gap: 6, marginBottom: 6 },
   imgErrorTxt: { fontSize: 12, fontFamily: "Inter_400Regular" },
 
   bubbleTxt:  { fontSize: 14, fontFamily: "Inter_400Regular", lineHeight: 20 },
@@ -479,14 +479,9 @@ const S = StyleSheet.create({
   imgBtn: { width: 40, height: 40, alignItems: "center", justifyContent: "center" },
   input: {
     flex: 1, minHeight: 40, maxHeight: 120,
-    borderRadius: 22,
-    paddingHorizontal: 16, paddingVertical: 10,
-    fontSize: 14, fontFamily: "Inter_400Regular",
-    borderWidth: 1,
+    borderRadius: 22, paddingHorizontal: 16, paddingVertical: 10,
+    fontSize: 14, fontFamily: "Inter_400Regular", borderWidth: 1,
   },
-  sendBtn: {
-    width: 40, height: 40, borderRadius: 20,
-    alignItems: "center", justifyContent: "center",
-  },
+  sendBtn:         { width: 40, height: 40, borderRadius: 20, alignItems: "center", justifyContent: "center" },
   sendBtnDisabled: { opacity: 0.4 },
 });

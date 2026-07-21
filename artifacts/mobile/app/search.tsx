@@ -14,26 +14,27 @@ import {
   View,
 } from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
+import { useTranslation } from "react-i18next";
 import { apiSearchUsers, type SocialUser } from "@/lib/socialApi";
 import { useTheme } from "@/hooks/useTheme";
 
 const PURPLE      = "#7B5EA7";
 const PURPLE_DARK = "#3D2070";
-const BG          = "#F9F8FF";
 const CAT_DEFAULT = "https://loremflickr.com/300/300/cat?lock=500";
 
 const SUGGESTED: SocialUser[] = [
-  { userId: "miyav.house",     username: "miyav.house",     avatarUrl: "https://loremflickr.com/100/100/kitten?lock=11", postCount: 8 },
-  { userId: "patili.bir.dunya",username: "patili.bir.dunya",avatarUrl: "https://loremflickr.com/100/100/puppy?lock=22",  postCount: 6 },
-  { userId: "sokak.dostlari",  username: "sokak.dostlari",  avatarUrl: "https://loremflickr.com/100/100/puppy?lock=66",  postCount: 5 },
-  { userId: "koydeki.patiler", username: "koydeki.patiler", avatarUrl: "https://loremflickr.com/100/100/dog?lock=44",   postCount: 5 },
-  { userId: "kucuk.pawlar",    username: "kucuk.pawlar",    avatarUrl: "https://loremflickr.com/100/100/cat?lock=55",   postCount: 4 },
+  { userId: "miyav.house",      username: "miyav.house",      avatarUrl: "https://loremflickr.com/100/100/kitten?lock=11", postCount: 8 },
+  { userId: "patili.bir.dunya", username: "patili.bir.dunya", avatarUrl: "https://loremflickr.com/100/100/puppy?lock=22",  postCount: 6 },
+  { userId: "sokak.dostlari",   username: "sokak.dostlari",   avatarUrl: "https://loremflickr.com/100/100/puppy?lock=66",  postCount: 5 },
+  { userId: "koydeki.patiler",  username: "koydeki.patiler",  avatarUrl: "https://loremflickr.com/100/100/dog?lock=44",    postCount: 5 },
+  { userId: "kucuk.pawlar",     username: "kucuk.pawlar",     avatarUrl: "https://loremflickr.com/100/100/cat?lock=55",    postCount: 4 },
 ];
 
 export default function SearchScreen() {
   const T      = useTheme();
   const insets = useSafeAreaInsets();
   const router = useRouter();
+  const { t } = useTranslation();
 
   const [query,    setQuery]    = useState("");
   const [results,  setResults]  = useState<SocialUser[]>([]);
@@ -77,7 +78,7 @@ export default function SearchScreen() {
         <Pressable onPress={() => router.back()} hitSlop={12}>
           <Icon name="chevron-back" size={24} color={T.text} />
         </Pressable>
-        <Text style={[S.headerTitle, { color: T.text }]}>Ara</Text>
+        <Text style={[S.headerTitle, { color: T.text }]}>{t("search.headerTitle")}</Text>
         <View style={{ width: 32 }} />
       </View>
 
@@ -85,10 +86,10 @@ export default function SearchScreen() {
       <View style={[S.searchBar, { backgroundColor: T.card, borderColor: T.border }]}>
         <Icon name="search-outline" size={18} color={T.textFaint} />
         <TextInput
-          style={[S.searchInput, { color: T.text, outlineStyle: "none" } as any]}
+          style={[S.searchInput, { color: T.text } as import("react-native").TextStyle]}
           value={query}
           onChangeText={setQuery}
-          placeholder="Kullanıcı ara..."
+          placeholder={t("search.userPlaceholder")}
           placeholderTextColor={T.placeholder}
           autoCapitalize="none"
           autoCorrect={false}
@@ -101,7 +102,9 @@ export default function SearchScreen() {
 
       {/* Section label */}
       <Text style={[S.sectionLabel, { color: T.textFaint }]}>
-        {query.trim() ? `"${query}" için sonuçlar` : "Önerilen Kullanıcılar"}
+        {query.trim()
+          ? t("search.resultsFor", { query })
+          : t("search.suggested")}
       </Text>
 
       <FlatList
@@ -113,7 +116,7 @@ export default function SearchScreen() {
           !loading && query.trim() ? (
             <View style={S.empty}>
               <Icon name="person-outline" size={48} color="#C5BAE8" />
-              <Text style={[S.emptyText, { color: T.textMuted }]}>Kullanıcı bulunamadı</Text>
+              <Text style={[S.emptyText, { color: T.textMuted }]}>{t("search.noUsers")}</Text>
             </View>
           ) : null
         }
@@ -129,7 +132,9 @@ export default function SearchScreen() {
             />
             <View style={S.userInfo}>
               <Text style={[S.userName, { color: T.text }]}>@{u.username}</Text>
-              <Text style={[S.userMeta, { color: T.textMuted }]}>{u.postCount} gönderi</Text>
+              <Text style={[S.userMeta, { color: T.textMuted }]}>
+                {t("search.postCount", { count: u.postCount })}
+              </Text>
             </View>
             <Icon name="chevron-forward" size={18} color={T.textFaint} />
           </Pressable>
@@ -140,21 +145,19 @@ export default function SearchScreen() {
 }
 
 const S = StyleSheet.create({
-  root: { flex: 1, backgroundColor: BG },
+  root: { flex: 1 },
 
   header: {
     flexDirection: "row", alignItems: "center", justifyContent: "space-between",
     paddingHorizontal: 16, paddingVertical: 12,
-    backgroundColor: "#FFF",
-    borderBottomWidth: 1, borderBottomColor: "rgba(123,94,167,0.10)",
+    borderBottomWidth: 1,
   },
   headerTitle: { fontSize: 16, fontFamily: "Inter_700Bold", color: PURPLE_DARK },
 
   searchBar: {
     flexDirection: "row", alignItems: "center", gap: 10,
     marginHorizontal: 16, marginTop: 14, marginBottom: 6,
-    backgroundColor: "#FFF",
-    borderRadius: 14, borderWidth: 1, borderColor: "rgba(123,94,167,0.18)",
+    borderRadius: 14, borderWidth: 1,
     paddingHorizontal: 14, paddingVertical: 12,
   },
   searchInput: {
@@ -162,7 +165,7 @@ const S = StyleSheet.create({
   },
 
   sectionLabel: {
-    fontSize: 12, fontFamily: "Inter_700Bold", color: "#8888AA",
+    fontSize: 12, fontFamily: "Inter_700Bold",
     textTransform: "uppercase", letterSpacing: 0.8,
     marginHorizontal: 18, marginTop: 12, marginBottom: 6,
   },
@@ -171,7 +174,6 @@ const S = StyleSheet.create({
   userRow:   {
     flexDirection: "row", alignItems: "center", gap: 14,
     paddingHorizontal: 16, paddingVertical: 12,
-    backgroundColor: "#FFF",
     borderBottomWidth: 1, borderBottomColor: "rgba(123,94,167,0.06)",
   },
   avatar:    { width: 48, height: 48, borderRadius: 24 },

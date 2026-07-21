@@ -1107,12 +1107,32 @@
     "send": "Send",
     "noConversations": "You haven't started any conversations.",
     "deleteConversation": "Delete Conversation",
-    "deleteConfirm": "Are you sure you want to delete this conversation?"
+    "deleteConfirm": "Are you sure you want to delete this conversation?",
+    "justNow": "just now",
+    "minutesShort": "{{count}}m",
+    "hoursShort": "{{count}}h",
+    "daysShort": "{{count}}d",
+    "loginRequired": "Log in to view messages",
+    "emptyTitle": "No messages yet",
+    "emptySub": "Visit a user profile to send a message",
+    "chatStarted": "Chat started",
+    "noMsgs": "No messages yet. Say hello!",
+    "inputPlaceholder": "Write a message…",
+    "photo": "📷 Photo",
+    "chat": "Chat",
+    "imgLoadError": "Image could not be loaded",
+    "listing": "Listing"
   },
   "notifications": {
     "title": "Notifications",
     "empty": "No notifications yet.",
-    "markAllRead": "Mark All as Read"
+    "markAllRead": "Mark All as Read",
+    "justNow": "Just now",
+    "minutesShort": "{{count}}m",
+    "hoursShort": "{{count}}h",
+    "daysShort": "{{count}}d",
+    "emptyTitle": "No notifications yet",
+    "emptySub": "You'll see notifications here when you get a follow or like"
   },
   "profile": {
     "title": "Profile",
@@ -1136,10 +1156,16 @@
   },
   "search": {
     "title": "Search",
+    "headerTitle": "Search",
     "placeholder": "Search users, animals or listings…",
     "noResults": "No results found.",
     "recentSearches": "Recent Searches",
-    "clearAll": "Clear All"
+    "clearAll": "Clear All",
+    "userPlaceholder": "Search users...",
+    "resultsFor": "Results for \"{{query}}\"",
+    "suggested": "Suggested Users",
+    "noUsers": "No users found",
+    "postCount": "{{count}} posts"
   },
   "errors": {
     "UNAUTHORIZED": "You need to be logged in to perform this action.",

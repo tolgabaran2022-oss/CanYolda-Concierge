@@ -1107,12 +1107,32 @@
     "send": "Gönder",
     "noConversations": "Henüz konuşma başlatmadınız.",
     "deleteConversation": "Konuşmayı Sil",
-    "deleteConfirm": "Bu konuşmayı silmek istediğinizden emin misiniz?"
+    "deleteConfirm": "Bu konuşmayı silmek istediğinizden emin misiniz?",
+    "justNow": "şimdi",
+    "minutesShort": "{{count}} dk",
+    "hoursShort": "{{count}} sa",
+    "daysShort": "{{count}} g",
+    "loginRequired": "Mesajları görmek için giriş yapın",
+    "emptyTitle": "Henüz mesaj yok",
+    "emptySub": "Bir kullanıcı profiline giderek mesaj gönderebilirsin",
+    "chatStarted": "Sohbet başladı",
+    "noMsgs": "Henüz mesaj yok. Merhaba de!",
+    "inputPlaceholder": "Mesaj yaz…",
+    "photo": "📷 Fotoğraf",
+    "chat": "Sohbet",
+    "imgLoadError": "Görsel yüklenemedi",
+    "listing": "İlan"
   },
   "notifications": {
     "title": "Bildirimler",
     "empty": "Henüz bildirim yok.",
-    "markAllRead": "Tümünü Okundu İşaretle"
+    "markAllRead": "Tümünü Okundu İşaretle",
+    "justNow": "Az önce",
+    "minutesShort": "{{count}} dk",
+    "hoursShort": "{{count}} sa",
+    "daysShort": "{{count}} gün",
+    "emptyTitle": "Henüz bildirim yok",
+    "emptySub": "Takip edilince veya beğeni aldığında buraya gelir"
   },
   "profile": {
     "title": "Profil",
@@ -1136,10 +1156,16 @@
   },
   "search": {
     "title": "Arama",
+    "headerTitle": "Ara",
     "placeholder": "Kullanıcı, hayvan veya ilan ara…",
     "noResults": "Sonuç bulunamadı.",
     "recentSearches": "Son Aramalar",
-    "clearAll": "Tümünü Temizle"
+    "clearAll": "Tümünü Temizle",
+    "userPlaceholder": "Kullanıcı ara...",
+    "resultsFor": "\"{{query}}\" için sonuçlar",
+    "suggested": "Önerilen Kullanıcılar",
+    "noUsers": "Kullanıcı bulunamadı",
+    "postCount": "{{count}} gönderi"
   },
   "errors": {
     "UNAUTHORIZED": "Bu işlem için giriş yapmanız gerekiyor.",
