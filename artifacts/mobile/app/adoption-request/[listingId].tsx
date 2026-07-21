@@ -17,6 +17,7 @@ import {
   View,
 } from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
+import { useTranslation } from "react-i18next";
 import { useAuth } from "@/contexts/AuthContext";
 import { useAdoption } from "@/contexts/AdoptionContext";
 import { apiSendAdoptionRequest } from "@/lib/adoptionRequestsApi";
@@ -86,6 +87,7 @@ type SuccessViewProps = {
   onBack: () => void;
 };
 function SuccessView({ petName, onViewRequest, onBack }: SuccessViewProps) {
+  const { t } = useTranslation();
   const scale = useRef(new Animated.Value(0.6)).current;
   const opacity = useRef(new Animated.Value(0)).current;
   React.useEffect(() => {
@@ -102,9 +104,9 @@ function SuccessView({ petName, onViewRequest, onBack }: SuccessViewProps) {
           <Icon name="checkmark" size={44} color={WHITE} />
         </LinearGradient>
       </Animated.View>
-      <Text style={S.successTitle}>Talebin gönderildi 🐾</Text>
+      <Text style={S.successTitle}>{t("adoptionRequest.successTitle")}</Text>
       <Text style={S.successSub}>
-        {petName} için gönderilen talebinizi ilan sahibi inceleyecek ve sizinle iletişime geçebilecek.
+        {t("adoptionRequest.successSub", { petName })}
       </Text>
       <View style={S.successBtns}>
         <Pressable
@@ -113,14 +115,14 @@ function SuccessView({ petName, onViewRequest, onBack }: SuccessViewProps) {
         >
           <LinearGradient colors={[P2, P, DARK]} start={{ x: 0, y: 0 }} end={{ x: 1, y: 0 }} style={S.successPrimaryInner}>
             <Icon name="document-text-outline" size={18} color={WHITE} />
-            <Text style={S.successPrimaryTxt}>Talebimi Gör</Text>
+            <Text style={S.successPrimaryTxt}>{t("adoptionRequest.successViewRequest")}</Text>
           </LinearGradient>
         </Pressable>
         <Pressable
           style={({ pressed }) => [S.successSecondary, { opacity: pressed ? 0.75 : 1 }]}
           onPress={onBack}
         >
-          <Text style={S.successSecondaryTxt}>Tüm İlanlara Dön</Text>
+          <Text style={S.successSecondaryTxt}>{t("adoptionRequest.successBackToAll")}</Text>
         </Pressable>
       </View>
     </Animated.View>
@@ -128,6 +130,7 @@ function SuccessView({ petName, onViewRequest, onBack }: SuccessViewProps) {
 }
 
 export default function AdoptionRequestScreen() {
+  const { t } = useTranslation();
   const { listingId } = useLocalSearchParams<{ listingId: string }>();
   const router = useRouter();
   const insets = useSafeAreaInsets();
@@ -138,7 +141,6 @@ export default function AdoptionRequestScreen() {
   const topPad = Platform.OS === "web" ? 20 : insets.top + 4;
   const botPad = Platform.OS === "web" ? 24 : insets.bottom + 16;
 
-  /* Form state */
   const [reason,        setReason]        = useState("");
   const [hadPet,        setHadPet]        = useState<boolean | null>(null);
   const [livingSpace,   setLivingSpace]   = useState("");
@@ -146,23 +148,32 @@ export default function AdoptionRequestScreen() {
   const [aloneDuration, setAloneDuration] = useState("");
   const [note,          setNote]          = useState("");
 
-  /* UI state */
   const [submitting, setSubmitting] = useState(false);
   const [success,    setSuccess]    = useState(false);
   const [errors,     setErrors]     = useState<Record<string, string>>({});
 
-  const LIVING_OPTIONS = ["Apartman dairesi", "Müstakil ev", "Bahçeli ev", "Diğer"];
-  const ALONE_OPTIONS  = ["Hayır", "1–3 saat", "3–6 saat", "6 saatten fazla"];
+  const LIVING_OPTIONS = [
+    t("adoptionRequest.livingOpt1"),
+    t("adoptionRequest.livingOpt2"),
+    t("adoptionRequest.livingOpt3"),
+    t("adoptionRequest.livingOpt4"),
+  ];
+  const ALONE_OPTIONS = [
+    t("adoptionRequest.aloneOpt0"),
+    t("adoptionRequest.aloneOpt1"),
+    t("adoptionRequest.aloneOpt2"),
+    t("adoptionRequest.aloneOpt3"),
+  ];
 
   const validate = (): boolean => {
     const e: Record<string, string> = {};
-    if (reason.trim().length < 20) e.reason = "En az 20 karakter giriniz";
-    if (reason.trim().length > 500) e.reason = "En fazla 500 karakter";
-    if (hadPet === null)       e.hadPet       = "Bu alan zorunlu";
-    if (!livingSpace)          e.livingSpace  = "Bu alan zorunlu";
-    if (hasOtherPets === null) e.hasOtherPets = "Bu alan zorunlu";
-    if (!aloneDuration)        e.aloneDuration = "Bu alan zorunlu";
-    if (note.length > 300)     e.note = "En fazla 300 karakter";
+    if (reason.trim().length < 20) e.reason = t("adoptionRequest.reasonMin");
+    if (reason.trim().length > 500) e.reason = t("adoptionRequest.reasonMax");
+    if (hadPet === null)       e.hadPet       = t("adoptionRequest.fieldRequired");
+    if (!livingSpace)          e.livingSpace  = t("adoptionRequest.fieldRequired");
+    if (hasOtherPets === null) e.hasOtherPets = t("adoptionRequest.fieldRequired");
+    if (!aloneDuration)        e.aloneDuration = t("adoptionRequest.fieldRequired");
+    if (note.length > 300)     e.note = t("adoptionRequest.noteMax");
     setErrors(e);
     return Object.keys(e).length === 0;
   };
@@ -189,7 +200,7 @@ export default function AdoptionRequestScreen() {
       });
       setSuccess(true);
     } catch (err: unknown) {
-      const msg = err instanceof Error ? err.message : "Talep gönderilemedi";
+      const msg = err instanceof Error ? err.message : t("adoptionRequest.submitError");
       setErrors({ submit: msg });
       Haptics.notificationAsync(Haptics.NotificationFeedbackType.Error);
     } finally {
@@ -201,9 +212,9 @@ export default function AdoptionRequestScreen() {
     return (
       <View style={[S.root, { paddingTop: topPad, alignItems: "center", justifyContent: "center" }]}>
         <Stack.Screen options={{ headerShown: false }} />
-        <Text style={S.fieldLabel}>İlan bulunamadı</Text>
+        <Text style={S.fieldLabel}>{t("adoptionRequest.notFound")}</Text>
         <Pressable style={S.backBtn} onPress={() => router.back()}>
-          <Text style={{ color: P, fontFamily: "Inter_600SemiBold" }}>Geri Dön</Text>
+          <Text style={{ color: P, fontFamily: "Inter_600SemiBold" }}>{t("common.back")}</Text>
         </Pressable>
       </View>
     );
@@ -235,7 +246,7 @@ export default function AdoptionRequestScreen() {
         <Pressable style={S.backBtn} onPress={() => router.back()} hitSlop={12}>
           <Icon name="chevron-back" size={22} color={DARK} />
         </Pressable>
-        <Text style={S.headerTitle}>Sahiplendirme Talebi</Text>
+        <Text style={S.headerTitle}>{t("adoptionRequest.headerTitle")}</Text>
         <View style={{ width: 36 }} />
       </View>
 
@@ -275,11 +286,11 @@ export default function AdoptionRequestScreen() {
         <View style={S.divider} />
 
         {/* Field 1 — reason */}
-        <FieldGroup label="Neden sahiplenmek istiyorsun?" required error={errors.reason}>
+        <FieldGroup label={t("adoptionRequest.reasonLabel")} required error={errors.reason}>
           <View style={[S.textareaWrap, errors.reason ? S.inputError : null]}>
             <TextInput
               style={S.textarea}
-              placeholder="Lütfen en az 20 karakter yazınız..."
+              placeholder={t("adoptionRequest.reasonPlaceholder")}
               placeholderTextColor={`${BODY}80`}
               multiline
               numberOfLines={4}
@@ -293,15 +304,15 @@ export default function AdoptionRequestScreen() {
         </FieldGroup>
 
         {/* Field 2 — had pet before */}
-        <FieldGroup label="Daha önce evcil hayvan baktın mı?" required error={errors.hadPet}>
+        <FieldGroup label={t("adoptionRequest.hadPetLabel")} required error={errors.hadPet}>
           <View style={S.optionRow}>
-            <OptionBtn label="Evet" selected={hadPet === true}  onPress={() => setHadPet(true)} />
-            <OptionBtn label="Hayır" selected={hadPet === false} onPress={() => setHadPet(false)} />
+            <OptionBtn label={t("adoptionRequest.yes")} selected={hadPet === true}  onPress={() => setHadPet(true)} />
+            <OptionBtn label={t("adoptionRequest.no")}  selected={hadPet === false} onPress={() => setHadPet(false)} />
           </View>
         </FieldGroup>
 
         {/* Field 3 — living space */}
-        <FieldGroup label="Yaşam alanın" required error={errors.livingSpace}>
+        <FieldGroup label={t("adoptionRequest.livingSpaceLabel")} required error={errors.livingSpace}>
           <View style={S.optionGrid}>
             {LIVING_OPTIONS.map((opt) => (
               <OptionBtn key={opt} label={opt} selected={livingSpace === opt} onPress={() => setLivingSpace(opt)} />
@@ -310,15 +321,15 @@ export default function AdoptionRequestScreen() {
         </FieldGroup>
 
         {/* Field 4 — other pets */}
-        <FieldGroup label="Evde başka hayvan var mı?" required error={errors.hasOtherPets}>
+        <FieldGroup label={t("adoptionRequest.otherPetsLabel")} required error={errors.hasOtherPets}>
           <View style={S.optionRow}>
-            <OptionBtn label="Evet"  selected={hasOtherPets === true}  onPress={() => setHasOtherPets(true)} />
-            <OptionBtn label="Hayır" selected={hasOtherPets === false} onPress={() => setHasOtherPets(false)} />
+            <OptionBtn label={t("adoptionRequest.yes")}  selected={hasOtherPets === true}  onPress={() => setHasOtherPets(true)} />
+            <OptionBtn label={t("adoptionRequest.no")}   selected={hasOtherPets === false} onPress={() => setHasOtherPets(false)} />
           </View>
         </FieldGroup>
 
         {/* Field 5 — alone duration */}
-        <FieldGroup label="Gün içinde hayvan yalnız kalacak mı?" required error={errors.aloneDuration}>
+        <FieldGroup label={t("adoptionRequest.aloneDurationLabel")} required error={errors.aloneDuration}>
           <View style={S.optionGrid}>
             {ALONE_OPTIONS.map((opt) => (
               <OptionBtn key={opt} label={opt} selected={aloneDuration === opt} onPress={() => setAloneDuration(opt)} />
@@ -327,11 +338,11 @@ export default function AdoptionRequestScreen() {
         </FieldGroup>
 
         {/* Field 6 — note (optional) */}
-        <FieldGroup label="İlan sahibine not" error={errors.note}>
+        <FieldGroup label={t("adoptionRequest.noteLabel")} error={errors.note}>
           <View style={[S.textareaWrap, errors.note ? S.inputError : null]}>
             <TextInput
               style={[S.textarea, { minHeight: 80 }]}
-              placeholder="İsteğe bağlı ek bir not ekleyebilirsin..."
+              placeholder={t("adoptionRequest.notePlaceholder")}
               placeholderTextColor={`${BODY}80`}
               multiline
               numberOfLines={3}
@@ -358,7 +369,7 @@ export default function AdoptionRequestScreen() {
           style={({ pressed }) => [S.cancelBtn, { opacity: pressed ? 0.7 : 1 }]}
           onPress={() => router.back()}
         >
-          <Text style={S.cancelBtnTxt}>Vazgeç</Text>
+          <Text style={S.cancelBtnTxt}>{t("common.cancel")}</Text>
         </Pressable>
 
         <Pressable
@@ -372,7 +383,7 @@ export default function AdoptionRequestScreen() {
             ) : (
               <>
                 <Icon name="send" size={17} color={WHITE} />
-                <Text style={S.submitBtnTxt}>Talebi Gönder</Text>
+                <Text style={S.submitBtnTxt}>{t("adoptionRequest.submitBtn")}</Text>
               </>
             )}
           </LinearGradient>
@@ -390,7 +401,6 @@ const S = StyleSheet.create({
   backBtn:     { width: 36, height: 36, borderRadius: 18, backgroundColor: `${P}10`, alignItems: "center", justifyContent: "center" },
   headerTitle: { flex: 1, fontSize: 18, fontFamily: "Inter_700Bold", color: DARK, textAlign: "center", letterSpacing: -0.2 },
 
-  // Listing summary
   listingCard:   { flexDirection: "row", alignItems: "center", gap: 12, backgroundColor: WHITE, borderRadius: 20, borderWidth: 1, borderColor: BORDER, padding: 14, ...IOS_SHADOW },
   listingPhoto:  { width: 70, height: 70, borderRadius: 16, overflow: "hidden", alignItems: "center", justifyContent: "center", flexShrink: 0 },
   listingInfo:   { flex: 1, gap: 2 },
@@ -404,18 +414,15 @@ const S = StyleSheet.create({
 
   divider: { height: 1, backgroundColor: BORDER },
 
-  // Field groups
   fieldGroup: { gap: 10 },
   fieldLabel: { fontSize: 14, fontFamily: "Inter_600SemiBold", color: DARK },
   fieldError: { fontSize: 12, fontFamily: "Inter_400Regular", color: RED, marginTop: -4 },
 
-  // Textarea
   textareaWrap: { backgroundColor: WHITE, borderRadius: 16, borderWidth: 1.5, borderColor: BORDER, padding: 14 },
   textarea:     { fontSize: 14, fontFamily: "Inter_400Regular", color: DARK, minHeight: 110, lineHeight: 22 },
   charCount:    { fontSize: 11, fontFamily: "Inter_400Regular", color: `${BODY}80`, textAlign: "right", marginTop: 4 },
   inputError:   { borderColor: `${RED}60` },
 
-  // Options
   optionRow:  { flexDirection: "row", gap: 10 },
   optionGrid: { flexDirection: "row", flexWrap: "wrap", gap: 10 },
   optionBtn:  {
@@ -430,11 +437,9 @@ const S = StyleSheet.create({
   optionTxt:         { fontSize: 13, fontFamily: "Inter_500Medium", color: BODY },
   optionTxtSelected: { color: P, fontFamily: "Inter_700Bold" },
 
-  // Submit error
   submitErrorWrap: { flexDirection: "row", alignItems: "center", gap: 8, backgroundColor: "#FFF0F0", borderRadius: 12, padding: 12, borderWidth: 1, borderColor: "#FFD5D5" },
   submitErrorTxt:  { fontSize: 13, fontFamily: "Inter_500Medium", color: RED, flex: 1 },
 
-  // Sticky bottom
   stickyBottom:  {
     flexDirection: "row", alignItems: "center", gap: 12,
     paddingHorizontal: 18, paddingTop: 14,
@@ -447,7 +452,6 @@ const S = StyleSheet.create({
   submitBtn:      { flexDirection: "row", alignItems: "center", justifyContent: "center", gap: 8, height: 54, borderRadius: 16 },
   submitBtnTxt:   { fontSize: 15, fontFamily: "Inter_700Bold", color: WHITE },
 
-  // Success
   successWrap: { flex: 1, alignItems: "center", justifyContent: "center", paddingHorizontal: 32, gap: 20 },
   successIllo: { marginBottom: 8 },
   successCircle: { width: 100, height: 100, borderRadius: 50, alignItems: "center", justifyContent: "center" },

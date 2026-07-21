@@ -29,6 +29,7 @@ import { apiGetUser, type SocialUser } from "@/lib/socialApi";
 import { formatTimeAgo } from "@/utils/formatters";
 import { getDefaultAnimalImageUri } from "@/utils/animalDefaults";
 import type { AnimalStatus } from "@/contexts/AnimalsContext";
+import { useTranslation } from "react-i18next";
 
 /* ── API helper (mirrors AnimalsContext) ───────────────────────────────────── */
 const API_BASE = process.env.EXPO_PUBLIC_DOMAIN
@@ -61,38 +62,7 @@ const C = {
   amber:      "#D97706",
 };
 
-/* ── Status mapping (Ionicons only — no emoji) ──────────────────────────────── */
-const STATUS_CFG: Record<AnimalStatus, {
-  icon: string;
-  label: string;
-  color: string;
-  bg: string;
-}> = {
-  hungry:  { icon: "warning-outline",       label: "Yardım Bekliyor", color: C.amber,  bg: "#FEF3C7" },
-  injured: { icon: "medkit-outline",         label: "Acil Durum",      color: C.red,    bg: "#FEE2E2" },
-  healthy: { icon: "checkmark-circle-outline",label: "Sağlıklı",        color: C.green,  bg: "#D1FAE5" },
-  unknown: { icon: "help-circle-outline",    label: "Durum Bilinmiyor",color: C.muted,  bg: "#F3F4F6" },
-};
-
-const STATUS_LABEL: Record<AnimalStatus, string> = {
-  hungry:  "Yardım Bekliyor",
-  injured: "Acil",
-  healthy: "Sağlıklı",
-  unknown: "Bilinmiyor",
-};
-
-const HELP_STATUS_MAP: Record<string, { label: string; color: string }> = {
-  same_location:  { label: "Aynı Bölgede",          color: "#7B5EA7" },
-  injured:        { label: "Yaralı",                  color: "#DC2626" },
-  emergency:      { label: "Acil Yardım Gerekli",     color: "#EA580C" },
-  fed:            { label: "Beslendi",                color: "#16A34A" },
-  watered:        { label: "Su Verildi",              color: "#0284C7" },
-  taken_to_vet:   { label: "Tedaviye Götürüldü",      color: "#7B5EA7" },
-  at_vet:         { label: "Veteriner Kontrolünde",   color: "#0EA5E9" },
-  safe:           { label: "Güvende",                 color: "#16A34A" },
-  adopted:        { label: "Sahiplendirildi",         color: "#7B5EA7" },
-  not_found:      { label: "Bulunamadı",              color: "#8B8FA8" },
-};
+/* ── Status configs are built inside the component with t() ─────────────────── */
 
 interface HelpUpdateItem {
   id:          string;
@@ -106,17 +76,10 @@ interface HelpUpdateItem {
   createdAt:   string;
 }
 
-/* ── Animal type display ────────────────────────────────────────────────────── */
-function formatAnimalType(raw?: string): string {
-  if (!raw) return "Sokak Hayvanı";
-  const map: Record<string, string> = {
-    cat: "Kedi", kedi: "Kedi",
-    dog: "Köpek", köpek: "Köpek", kopek: "Köpek",
-    bird: "Kuş", kuş: "Kuş",
-    rabbit: "Tavşan",
-    other: "Diğer", diğer: "Diğer",
-  };
-  return map[raw.toLowerCase()] ?? raw;
+/* ── Animal type display (raw value; labels resolved inside component) ──────── */
+function formatAnimalTypeRaw(raw?: string): string {
+  if (!raw) return "";
+  return raw.toLowerCase();
 }
 
 /* ── Initials avatar ────────────────────────────────────────────────────────── */
@@ -134,6 +97,7 @@ function OwnerSheet({
   onClose: () => void;
   onDelete: () => void;
 }) {
+  const { t } = useTranslation();
   const slideAnim = useRef(new Animated.Value(300)).current;
 
   useEffect(() => {
@@ -153,7 +117,7 @@ function OwnerSheet({
         <Animated.View style={[OS.sheet, { transform: [{ translateY: slideAnim }] }]}>
           <Pressable>
             <View style={OS.handle} />
-            <Text style={OS.title}>Bildirim İşlemleri</Text>
+            <Text style={OS.title}>{t("animalDetail.ownerActions")}</Text>
             <View style={OS.sep} />
             <Pressable
               style={({ pressed }) => [OS.action, pressed && OS.pressed]}
@@ -166,14 +130,14 @@ function OwnerSheet({
               <View style={[OS.iconBox, { backgroundColor: "#FEE2E2" }]}>
                 <Icon name="trash-outline" size={20} color={C.red} />
               </View>
-              <Text style={[OS.actionLabel, { color: C.red }]}>Bildirimi Sil</Text>
+              <Text style={[OS.actionLabel, { color: C.red }]}>{t("animalDetail.deleteReport")}</Text>
             </Pressable>
             <View style={OS.sep} />
             <Pressable
               style={({ pressed }) => [OS.cancel, pressed && OS.pressed]}
               onPress={() => { Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light); onClose(); }}
             >
-              <Text style={OS.cancelLabel}>Vazgeç</Text>
+              <Text style={OS.cancelLabel}>{t("common.cancel")}</Text>
             </Pressable>
             <View style={{ height: Platform.OS === "ios" ? 20 : 8 }} />
           </Pressable>
@@ -231,11 +195,44 @@ const IC = StyleSheet.create({
    MAIN SCREEN
 ══════════════════════════════════════════════════════════════════════════════ */
 export default function AnimalDetailScreen() {
+  const { t } = useTranslation();
   const { id }   = useLocalSearchParams<{ id: string }>();
   const router   = useRouter();
   const insets   = useSafeAreaInsets();
   const { user } = useAuth();
   const { getAnimal, addComment, deleteAnimal } = useAnimals();
+
+  /* ── Status configs (built with t() inside the component) ─── */
+  const STATUS_CFG: Record<AnimalStatus, { icon: string; label: string; color: string; bg: string }> = {
+    hungry:  { icon: "warning-outline",          label: t("animalDetail.statusHungry"),  color: C.amber,  bg: "#FEF3C7" },
+    injured: { icon: "medkit-outline",            label: t("animalDetail.statusInjured"), color: C.red,    bg: "#FEE2E2" },
+    healthy: { icon: "checkmark-circle-outline",  label: t("animalDetail.statusHealthy"), color: C.green,  bg: "#D1FAE5" },
+    unknown: { icon: "help-circle-outline",       label: t("animalDetail.statusUnknown"), color: C.muted,  bg: "#F3F4F6" },
+  };
+  const STATUS_LABEL: Record<AnimalStatus, string> = {
+    hungry:  t("animalDetail.statusLabelHungry"),
+    injured: t("animalDetail.statusLabelInjured"),
+    healthy: t("animalDetail.statusLabelHealthy"),
+    unknown: t("animalDetail.statusLabelUnknown"),
+  };
+  const HELP_STATUS_MAP: Record<string, { label: string; color: string }> = {
+    same_location:  { label: t("animalDetail.helpSameLocation"),  color: "#7B5EA7" },
+    injured:        { label: t("animalDetail.helpInjured"),        color: "#DC2626" },
+    emergency:      { label: t("animalDetail.helpEmergency"),      color: "#EA580C" },
+    fed:            { label: t("animalDetail.helpFed"),            color: "#16A34A" },
+    watered:        { label: t("animalDetail.helpWatered"),        color: "#0284C7" },
+    taken_to_vet:   { label: t("animalDetail.helpTakenToVet"),     color: "#7B5EA7" },
+    at_vet:         { label: t("animalDetail.helpAtVet"),          color: "#0EA5E9" },
+    safe:           { label: t("animalDetail.helpSafe"),           color: "#16A34A" },
+    adopted:        { label: t("animalDetail.helpAdopted"),        color: "#7B5EA7" },
+    not_found:      { label: t("animalDetail.helpNotFound"),       color: "#8B8FA8" },
+  };
+  const formatAnimalType = (raw?: string): string => {
+    if (!raw) return t("animalDetail.animalTypeDefault");
+    const key = `animalDetail.animalType_${formatAnimalTypeRaw(raw)}`;
+    const translated = t(key);
+    return translated === key ? raw : translated;
+  };
 
   const animal   = getAnimal(id ?? "");
   const isOwner  = !!user?.id && !!animal && animal.userId === user.id;
@@ -316,7 +313,7 @@ export default function AnimalDetailScreen() {
   /* ── Confirm handler ─── */
   const handleConfirm = useCallback(async () => {
     if (!animal || !user) {
-      Alert.alert("Giriş Gerekli", "Bildirimi onaylamak için giriş yapın.");
+      Alert.alert(t("animalDetail.loginRequired"), t("animalDetail.loginToConfirm"));
       return;
     }
     setIsConfirming(true);
@@ -328,19 +325,19 @@ export default function AnimalDetailScreen() {
         Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
       } else {
         const err = await res.json().catch(() => ({})) as { error?: string };
-        Alert.alert("Bilgi", err.error ?? "Zaten onayladınız veya kendi bildiriminizi onaylayamazsınız.");
+        Alert.alert(t("animalDetail.info"), err.error ?? t("animalDetail.alreadyConfirmed"));
       }
     } catch {
-      Alert.alert("Hata", "Onay gönderilemedi.");
+      Alert.alert(t("errors.error"), t("animalDetail.confirmError"));
     } finally {
       setIsConfirming(false);
     }
-  }, [animal, user, confirmCount]);
+  }, [animal, user, confirmCount, t]);
 
   /* ── Volunteer claim handler ─── */
   const handleVolunteer = useCallback(async () => {
     if (!animal || !user) {
-      Alert.alert("Giriş Gerekli", "Gönüllü olmak için giriş yapın.");
+      Alert.alert(t("animalDetail.loginRequired"), t("animalDetail.loginToVolunteer"));
       return;
     }
     setIsVolunteering(true);
@@ -349,17 +346,17 @@ export default function AnimalDetailScreen() {
       if (res.ok) {
         setHasVolunteered(true);
         Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
-        Alert.alert("Teşekkürler!", "Gönüllü olarak kaydedildiniz. Yardımınız için çok teşekkürler!");
+        Alert.alert(t("animalDetail.thanksTitle"), t("animalDetail.volunteerSuccess"));
       } else {
         const err = await res.json().catch(() => ({})) as { error?: string };
-        Alert.alert("Bilgi", err.error ?? "Zaten gönüllü oldunuz.");
+        Alert.alert(t("animalDetail.info"), err.error ?? t("animalDetail.alreadyVolunteer"));
       }
     } catch {
-      Alert.alert("Hata", "Gönüllü kaydı yapılamadı.");
+      Alert.alert(t("errors.error"), t("animalDetail.volunteerError"));
     } finally {
       setIsVolunteering(false);
     }
-  }, [animal, user]);
+  }, [animal, user, t]);
 
   /* ── Handlers ─── */
   const handleHelp = useCallback(() => {
@@ -375,14 +372,14 @@ export default function AnimalDetailScreen() {
   }, [animal, router, user]);
 
   const handleComment = useCallback(async () => {
-    const t = commentText.trim();
-    if (!t) return;
-    if (!user) { Alert.alert("Giriş gerekli", "Yorum yapmak için giriş yapın."); return; }
+    const text = commentText.trim();
+    if (!text) return;
+    if (!user) { Alert.alert(t("animalDetail.loginRequired"), t("animalDetail.loginToConfirm")); return; }
     if (!animal) return;
-    await addComment(animal.id, { userId: user.id, userName: user.name, text: t });
+    await addComment(animal.id, { userId: user.id, userName: user.name, text });
     setCommentText("");
     Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
-  }, [commentText, user, animal, addComment]);
+  }, [commentText, user, animal, addComment, t]);
 
   const handleMapOpen = useCallback(async () => {
     if (!animal || isOpeningMap) return;
@@ -395,7 +392,7 @@ export default function AnimalDetailScreen() {
 
     /* No location data at all */
     if (!lat && !lng && !animal.locationName) {
-      Alert.alert("Konum Bilgisi Yok", "Bu bildirim için konum bilgisi bulunmuyor.");
+      Alert.alert(t("animalDetail.noLocation"), t("animalDetail.noLocationMsg"));
       setIsOpeningMap(false);
       return;
     }
@@ -415,10 +412,10 @@ export default function AnimalDetailScreen() {
         await Linking.openURL(url);
       } else if (fallbackUrl) {
         await Linking.openURL(fallbackUrl).catch(() => {
-          Alert.alert("Hata", "Harita uygulaması açılamadı.");
+          Alert.alert(t("errors.error"), t("animalDetail.mapOpenError"));
         });
       } else {
-        Alert.alert("Hata", "Harita uygulaması açılamadı.");
+        Alert.alert(t("errors.error"), t("animalDetail.mapOpenError"));
       }
     };
 
@@ -439,17 +436,17 @@ export default function AnimalDetailScreen() {
         const gmapsAvailable = await Linking.canOpenURL(gmapsScheme).catch(() => false);
         if (gmapsAvailable) {
           Alert.alert(
-            "Haritada Aç",
+            t("animalDetail.mapOpen"),
             undefined,
             [
-              { text: "Apple Haritalar", onPress: () => {
+              { text: t("animalDetail.appleMaps"), onPress: () => {
                 const appleUrl = `https://maps.apple.com/?ll=${lat},${lng}&q=${label}`;
-                Linking.openURL(appleUrl).catch(() => Alert.alert("Hata", "Apple Haritalar açılamadı."));
+                Linking.openURL(appleUrl).catch(() => Alert.alert(t("errors.error"), t("animalDetail.mapOpenError")));
               }},
-              { text: "Google Maps", onPress: () => {
-                Linking.openURL(gmapsScheme).catch(() => Alert.alert("Hata", "Google Maps açılamadı."));
+              { text: t("animalDetail.googleMaps"), onPress: () => {
+                Linking.openURL(gmapsScheme).catch(() => Alert.alert(t("errors.error"), t("animalDetail.mapOpenError")));
               }},
-              { text: "Vazgeç", style: "cancel" },
+              { text: t("common.cancel"), style: "cancel" },
             ]
           );
         } else {
@@ -485,12 +482,12 @@ export default function AnimalDetailScreen() {
 
   const handleDeleteRequest = useCallback(() => {
     Alert.alert(
-      "Bildirimi sil?",
-      "Bu sokak hayvanı bildirimi kalıcı olarak silinecek. Bu işlem geri alınamaz.",
+      t("animalDetail.deleteConfirmTitle"),
+      t("animalDetail.deleteConfirmMsg"),
       [
-        { text: "Vazgeç", style: "cancel" },
+        { text: t("common.cancel"), style: "cancel" },
         {
-          text: "Sil",
+          text: t("common.delete"),
           style: "destructive",
           onPress: async () => {
             if (!user?.id || !animal) return;
@@ -500,7 +497,7 @@ export default function AnimalDetailScreen() {
               Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
               router.back();
             } catch {
-              Alert.alert("Hata", "Bildirim silinemedi. Lütfen tekrar deneyin.");
+              Alert.alert(t("errors.error"), t("animalDetail.deleteError"));
             } finally {
               setDeleting(false);
             }
@@ -517,10 +514,10 @@ export default function AnimalDetailScreen() {
         <View style={D.notFoundIcon}>
           <Icon name="alert-circle-outline" size={36} color={C.muted} />
         </View>
-        <Text style={D.notFoundTitle}>Bildirim bulunamadı</Text>
-        <Text style={D.notFoundSub}>Bu ilan silinmiş ya da mevcut değil.</Text>
+        <Text style={D.notFoundTitle}>{t("animalDetail.notFound")}</Text>
+        <Text style={D.notFoundSub}>{t("animalDetail.notFoundMsg")}</Text>
         <Pressable onPress={() => router.back()} style={D.backBtn}>
-          <Text style={D.backBtnText}>Geri Dön</Text>
+          <Text style={D.backBtnText}>{t("animalDetail.goBack")}</Text>
         </Pressable>
       </View>
     );
@@ -593,7 +590,7 @@ export default function AnimalDetailScreen() {
                 <View style={D.placeholderIconWrap}>
                   <Icon name="camera-outline" size={36} color="#B0A8CC" />
                 </View>
-                <Text style={D.imagePlaceholderText}>Henüz fotoğraf eklenmemiş</Text>
+                <Text style={D.imagePlaceholderText}>{t("animalDetail.noPhoto")}</Text>
               </View>
             )}
 
@@ -618,7 +615,7 @@ export default function AnimalDetailScreen() {
                 style={D.circleBtn}
                 hitSlop={12}
                 accessibilityRole="button"
-                accessibilityLabel="Geri dön"
+                accessibilityLabel={t("animalDetail.goBack")}
               >
                 <Icon name="arrow-back" size={19} color="#FFF" />
               </Pressable>
@@ -630,7 +627,7 @@ export default function AnimalDetailScreen() {
                     hitSlop={12}
                     disabled={deleting}
                     accessibilityRole="button"
-                    accessibilityLabel="Bildirim işlemleri"
+                    accessibilityLabel={t("animalDetail.ownerActions")}
                   >
                     <Icon name="ellipsis-horizontal" size={18} color="#FFF" />
                   </Pressable>
@@ -640,7 +637,7 @@ export default function AnimalDetailScreen() {
                   style={D.circleBtn}
                   hitSlop={12}
                   accessibilityRole="button"
-                  accessibilityLabel="Paylaş"
+                  accessibilityLabel={t("common.share")}
                 >
                   <Icon name="share-outline" size={18} color="#FFF" />
                 </Pressable>
@@ -681,7 +678,7 @@ export default function AnimalDetailScreen() {
             <Text style={D.noteTitle} numberOfLines={4}>
               {animal.notes
                 ? animal.notes
-                : `${statusCfg.label} sokak hayvanı bildirimi`}
+                : t("animalDetail.reportTitle", { status: statusCfg.label })}
             </Text>
 
             {/* Reporter row — static, not tappable */}
@@ -713,46 +710,46 @@ export default function AnimalDetailScreen() {
 
             {/* Hayvanın Durumu — description section */}
             <View style={D.section}>
-              <Text style={D.sectionTitle}>Hayvanın Durumu</Text>
+              <Text style={D.sectionTitle}>{t("animalDetail.descriptionSection")}</Text>
               <Text style={D.descText}>
                 {animal.notes
                   ? animal.notes
-                  : "Bu bildirim için ek açıklama bulunmuyor."}
+                  : t("animalDetail.noDescription")}
               </Text>
             </View>
 
             {/* Durum Bilgileri — 2×2 grid */}
             <View style={D.section}>
-              <Text style={D.sectionTitle}>Durum Bilgileri</Text>
+              <Text style={D.sectionTitle}>{t("animalDetail.statusInfoTitle")}</Text>
               <View style={D.infoGrid}>
                 <View style={D.infoRow}>
                   <InfoCard
                     icon="time-outline"
-                    label="Bildirim Tarihi"
+                    label={t("animalDetail.reportDate")}
                     value={dateStr}
                   />
                   <InfoCard
                     icon="location-outline"
-                    label="Konum"
+                    label={t("animalDetail.locationLabel")}
                     value={
                       animal.locationName
                         ? animal.locationName
                         : (animal.latitude !== 0 && animal.longitude !== 0)
                           ? `${animal.latitude.toFixed(4)}, ${animal.longitude.toFixed(4)}`
-                          : "Belirtilmedi"
+                          : t("animalDetail.notSpecified")
                     }
                   />
                 </View>
                 <View style={D.infoRow}>
                   <InfoCard
                     icon={statusCfg.icon}
-                    label="Durum"
+                    label={t("animalDetail.statusLabel")}
                     value={STATUS_LABEL[animal.status]}
                     valueColor={statusCfg.color}
                   />
                   <InfoCard
                     icon="paw-outline"
-                    label="Tür"
+                    label={t("animalDetail.typeLabel")}
                     value={animalLabel}
                   />
                 </View>
@@ -761,7 +758,7 @@ export default function AnimalDetailScreen() {
 
             {/* Topluluk Aksiyonları — confirm + volunteer */}
             <View style={D.section}>
-              <Text style={D.sectionTitle}>Topluluk Aksiyonları</Text>
+              <Text style={D.sectionTitle}>{t("animalDetail.communityTitle")}</Text>
               <View style={{ flexDirection: "row", gap: 10 }}>
                 {/* Onayla */}
                 <Pressable
@@ -786,7 +783,7 @@ export default function AnimalDetailScreen() {
                     : <Icon name="checkmark-circle-outline" size={18} color="#10B981" />
                   }
                   <Text style={{ fontSize: 14, fontFamily: "Inter_600SemiBold", color: "#065F46" }}>
-                    Onayla {confirmCount > 0 ? `(${confirmCount})` : ""}
+                    {t("animalDetail.confirm")} {confirmCount > 0 ? `(${confirmCount})` : ""}
                   </Text>
                 </Pressable>
                 {/* Gönüllü Ol */}
@@ -812,7 +809,7 @@ export default function AnimalDetailScreen() {
                     : <Icon name={hasVolunteered ? "checkmark-done" : "person-add-outline"} size={17} color={hasVolunteered ? "#6B7280" : C.purple} />
                   }
                   <Text style={{ fontSize: 14, fontFamily: "Inter_600SemiBold", color: hasVolunteered ? "#6B7280" : C.purpleDark }}>
-                    {hasVolunteered ? "Gönüllüsün" : "Gönüllü Ol"}
+                    {hasVolunteered ? t("animalDetail.volunteeredBtn") : t("animalDetail.volunteerBtn")}
                   </Text>
                 </Pressable>
               </View>
@@ -820,7 +817,7 @@ export default function AnimalDetailScreen() {
 
             {/* Map preview */}
             <View style={D.section}>
-              <Text style={D.sectionTitle}>Konum</Text>
+              <Text style={D.sectionTitle}>{t("animalDetail.locationLabel")}</Text>
               <Pressable style={D.mapPreview} onPress={handleMapOpen} accessibilityRole="button">
                 <LinearGradient colors={["#EDE9F8", "#DDD5F5"]} style={D.mapGradient}>
                   <View style={D.mapPinWrap}>
@@ -832,7 +829,7 @@ export default function AnimalDetailScreen() {
                 </LinearGradient>
                 <View style={D.mapOpenRow}>
                   <Icon name="map-outline" size={15} color={C.purple} />
-                  <Text style={D.mapOpenText}>Haritada Aç</Text>
+                  <Text style={D.mapOpenText}>{t("animalDetail.mapOpen")}</Text>
                   <Icon name="chevron-forward" size={14} color={C.purple} />
                 </View>
               </Pressable>
@@ -840,13 +837,13 @@ export default function AnimalDetailScreen() {
 
             {/* Etkileşim stats */}
             <View style={D.section}>
-              <Text style={D.sectionTitle}>Etkileşim</Text>
+              <Text style={D.sectionTitle}>{t("animalDetail.interactionTitle")}</Text>
               <View style={D.statsRow}>
                 <StatCard
                   icon="heart-outline"
                   iconColor={C.purple}
                   value={helpCount}
-                  label="Yardımcı Oldu"
+                  label={t("animalDetail.helpCount")}
                   onPress={handleHelp}
                   scale={helpScale}
                 />
@@ -854,7 +851,7 @@ export default function AnimalDetailScreen() {
                   icon="chatbubble-outline"
                   iconColor={C.purple}
                   value={animal.comments.length}
-                  label="Yorum"
+                  label={t("animalDetail.commentCount")}
                   onPress={() => {
                     Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
                     scrollRef.current?.scrollTo({ y: commentsYRef.current, animated: true });
@@ -864,7 +861,7 @@ export default function AnimalDetailScreen() {
                   icon="location-outline"
                   iconColor={C.purple}
                   value={locationOpenCount}
-                  label="Konum Açıldı"
+                  label={t("animalDetail.locationViews")}
                   onPress={handleMapOpen}
                 />
               </View>
@@ -874,7 +871,9 @@ export default function AnimalDetailScreen() {
             <View style={D.section}>
               <View style={{ marginBottom: 14 }}>
                 <Text style={D.sectionTitle}>
-                  {uniqueHelperCount > 0 ? `Durum Güncellemeleri (${uniqueHelperCount})` : "Durum Güncellemeleri"}
+                  {uniqueHelperCount > 0
+                    ? `${t("animalDetail.updatesTitle")} (${uniqueHelperCount})`
+                    : t("animalDetail.updatesTitle")}
                 </Text>
               </View>
               {helpUpdatesLoading ? (
@@ -888,10 +887,10 @@ export default function AnimalDetailScreen() {
                 >
                   <Icon name="heart-outline" size={28} color="#C0B8D8" />
                   <Text style={{ fontSize: 13, fontFamily: "Inter_600SemiBold", color: C.purple }}>
-                    İlk Güncellemeyi Ekle
+                    {t("animalDetail.firstUpdate")}
                   </Text>
                   <Text style={{ fontSize: 12, fontFamily: "Inter_400Regular", color: C.muted, textAlign: "center", paddingHorizontal: 24 }}>
-                    Bu hayvanı gördüysen güncel durumunu bildir
+                    {t("animalDetail.firstUpdateSub")}
                   </Text>
                 </Pressable>
               ) : (
@@ -943,7 +942,7 @@ export default function AnimalDetailScreen() {
                   ))}
                   {helpUpdates.length > 3 && (
                     <Text style={{ fontSize: 12, fontFamily: "Inter_400Regular", color: C.muted, textAlign: "center" }}>
-                      +{helpUpdates.length - 3} güncelleme daha
+                      {t("animalDetail.moreUpdates", { count: helpUpdates.length - 3 })}
                     </Text>
                   )}
                 </View>
@@ -956,12 +955,12 @@ export default function AnimalDetailScreen() {
               onLayout={(e) => { commentsYRef.current = e.nativeEvent.layout.y; }}
             >
               <Text style={D.sectionTitle}>
-                Yorumlar{animal.comments.length > 0 ? ` (${animal.comments.length})` : ""}
+                {t("animalDetail.comments")}{animal.comments.length > 0 ? ` (${animal.comments.length})` : ""}
               </Text>
               {animal.comments.length === 0 ? (
                 <View style={D.emptyComments}>
                   <Icon name="chatbubbles-outline" size={24} color="#C0B8D8" />
-                  <Text style={D.noComment}>Henüz yorum yok. İlk yorumu sen yap!</Text>
+                  <Text style={D.noComment}>{t("animalDetail.noComments")}</Text>
                 </View>
               ) : (
                 <View style={{ gap: 12 }}>
@@ -988,7 +987,7 @@ export default function AnimalDetailScreen() {
                   style={D.input}
                   value={commentText}
                   onChangeText={setCommentText}
-                  placeholder="Yorum ekle..."
+                  placeholder={t("animalDetail.commentPlaceholder")}
                   placeholderTextColor={C.muted}
                   returnKeyType="send"
                   onSubmitEditing={handleComment}
@@ -1001,7 +1000,7 @@ export default function AnimalDetailScreen() {
               </View>
             </View>
 
-            <Text style={D.footer}>Küçük bir destek, büyük bir hayat kurtarır.</Text>
+            <Text style={D.footer}>{t("animalDetail.footer")}</Text>
           </View>
         </ScrollView>
       </KeyboardAvoidingView>
@@ -1014,7 +1013,7 @@ export default function AnimalDetailScreen() {
           style={({ pressed }) => [D.helpButton, pressed && { opacity: 0.9 }]}
           onPress={handleHelp}
           accessibilityRole="button"
-          accessibilityLabel="Yardım et"
+          accessibilityLabel={t("animalDetail.helpBtn")}
         >
           <Animated.View style={{ transform: [{ scale: helpScale }], width: "100%", height: 56 }}>
             <LinearGradient
@@ -1024,7 +1023,7 @@ export default function AnimalDetailScreen() {
               style={D.actionFill}
             >
               <Icon name="heart-outline" size={18} color="#FFF" />
-              <Text style={D.actionFillText}>Yardım Et</Text>
+              <Text style={D.actionFillText}>{t("animalDetail.helpBtn")}</Text>
             </LinearGradient>
           </Animated.View>
         </Pressable>

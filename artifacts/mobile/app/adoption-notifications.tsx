@@ -14,6 +14,7 @@ import {
   View,
 } from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
+import { useTranslation } from "react-i18next";
 import { useAuth } from "@/contexts/AuthContext";
 import { useAdoption, type AdoptionListing } from "@/contexts/AdoptionContext";
 import {
@@ -23,7 +24,6 @@ import {
   type AppNotification,
 } from "@/lib/socialApi";
 import { apiGetOrCreateConversation } from "@/lib/messagesApi";
-import { formatTimeAgo } from "@/utils/formatters";
 
 const P    = "#7C4DCC";
 const DARK = "#4B267D";
@@ -42,47 +42,31 @@ const ADOPTION_TYPES = [
 ];
 
 type FilterTab = "all" | "requests" | "mylistings" | "following";
-const FILTERS: { key: FilterTab; label: string }[] = [
-  { key: "all",       label: "Tümü" },
-  { key: "requests",  label: "Talepler" },
-  { key: "mylistings",label: "İlanlarım" },
-  { key: "following", label: "Takip Ettiklerim" },
-];
-
-function formatAgo(iso: string): string {
-  const diff = Date.now() - new Date(iso).getTime();
-  const m = Math.floor(diff / 60000);
-  if (m < 1)  return "Az önce";
-  if (m < 60) return `${m} dk`;
-  const h = Math.floor(m / 60);
-  if (h < 24) return `${h} sa`;
-  return `${Math.floor(h / 24)} gün`;
-}
 
 interface NotifConfig {
   icon: string;
   iconColor: string;
   iconBg: string;
-  title: string;
-  ctaLabel: string;
+  titleKey: string;
+  ctaKey: string;
 }
 
 function getNotifConfig(type: string): NotifConfig {
   switch (type) {
     case "adoption_request_received":
-      return { icon: "paw", iconColor: P, iconBg: `${P}18`, title: "Yeni sahiplendirme talebi", ctaLabel: "Talebi Gör" };
+      return { icon: "paw",             iconColor: P,         iconBg: `${P}18`,   titleKey: "adoptionNotifs.notifTypeRequestReceived",  ctaKey: "adoptionNotifs.ctaRequestReceived"  };
     case "adoption_request_accepted":
-      return { icon: "checkmark-circle", iconColor: "#34C759", iconBg: "#E8F8EE", title: "Talebin kabul edildi 🎉", ctaLabel: "Mesajlaş" };
+      return { icon: "checkmark-circle", iconColor: "#34C759", iconBg: "#E8F8EE",  titleKey: "adoptionNotifs.notifTypeRequestAccepted",   ctaKey: "adoptionNotifs.ctaRequestAccepted"  };
     case "adoption_request_rejected":
-      return { icon: "close-circle", iconColor: "#FF6B6B", iconBg: "#FFF0F0", title: "Talep durumu güncellendi", ctaLabel: "İlanı Gör" };
+      return { icon: "close-circle",     iconColor: "#FF6B6B", iconBg: "#FFF0F0",  titleKey: "adoptionNotifs.notifTypeRequestRejected",   ctaKey: "adoptionNotifs.ctaRequestRejected"  };
     case "adoption_message_received":
-      return { icon: "chatbubble", iconColor: "#5B9BD5", iconBg: "#EBF4FF", title: "Yeni mesaj", ctaLabel: "Mesajı Aç" };
+      return { icon: "chatbubble",       iconColor: "#5B9BD5", iconBg: "#EBF4FF",  titleKey: "adoptionNotifs.notifTypeMessageReceived",   ctaKey: "adoptionNotifs.ctaMessageReceived"  };
     case "adoption_listing_updated":
-      return { icon: "refresh-circle", iconColor: "#FF9500", iconBg: "#FFF5E6", title: "İlan durumu güncellendi", ctaLabel: "İlanı Gör" };
+      return { icon: "refresh-circle",   iconColor: "#FF9500", iconBg: "#FFF5E6",  titleKey: "adoptionNotifs.notifTypeListingUpdated",    ctaKey: "adoptionNotifs.ctaListingUpdated"   };
     case "adoption_listing_reminder":
-      return { icon: "time", iconColor: "#FF9500", iconBg: "#FFF5E6", title: "İlan durumunu güncelle", ctaLabel: "Durumu Güncelle" };
+      return { icon: "time",             iconColor: "#FF9500", iconBg: "#FFF5E6",  titleKey: "adoptionNotifs.notifTypeListingReminder",   ctaKey: "adoptionNotifs.ctaListingReminder"  };
     default:
-      return { icon: "notifications", iconColor: P, iconBg: `${P}18`, title: "Bildirim", ctaLabel: "Gör" };
+      return { icon: "notifications",    iconColor: P,         iconBg: `${P}18`,   titleKey: "adoptionNotifs.notifTypeDefault",           ctaKey: "adoptionNotifs.ctaDefault"          };
   }
 }
 
@@ -106,6 +90,7 @@ function filterNotifs(notifs: AppNotification[], filter: FilterTab): AppNotifica
   }
 }
 
+/* ── Notification Card ─────────────────────────────────────────────────── */
 function NotifCard({
   notif,
   onPress,
@@ -115,6 +100,7 @@ function NotifCard({
   onPress: () => void;
   onRead: () => void;
 }) {
+  const { t } = useTranslation();
   const cfg = getNotifConfig(notif.type);
   const fadeAnim = useRef(new Animated.Value(notif.read ? 1 : 0)).current;
 
@@ -123,6 +109,16 @@ function NotifCard({
   }, [notif.read]);
 
   const bgColor = fadeAnim.interpolate({ inputRange: [0, 1], outputRange: [`${P}08`, WHITE] });
+
+  const formatAgo = (iso: string): string => {
+    const diff = Date.now() - new Date(iso).getTime();
+    const m = Math.floor(diff / 60000);
+    if (m < 1)  return t("adoptionNotifs.timeJustNow");
+    if (m < 60) return t("adoptionNotifs.timeMinutes", { count: m });
+    const h = Math.floor(m / 60);
+    if (h < 24) return t("adoptionNotifs.timeHours", { count: h });
+    return t("adoptionNotifs.timeDays", { count: Math.floor(h / 24) });
+  };
 
   return (
     <Animated.View style={[S.notifCard, { backgroundColor: bgColor }]}>
@@ -136,7 +132,7 @@ function NotifCard({
         </View>
 
         <View style={S.notifBody}>
-          <Text style={S.notifTitle}>{cfg.title}</Text>
+          <Text style={S.notifTitle}>{t(cfg.titleKey)}</Text>
           <Text style={S.notifMsg} numberOfLines={2}>{notif.message}</Text>
           <Text style={S.notifTime}>{formatAgo(notif.createdAt)}</Text>
         </View>
@@ -157,7 +153,7 @@ function NotifCard({
           style={({ pressed }) => [S.ctaBtn, { opacity: pressed ? 0.7 : 1 }]}
           onPress={() => { onRead(); onPress(); Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light); }}
         >
-          <Text style={S.ctaBtnTxt}>{cfg.ctaLabel}</Text>
+          <Text style={S.ctaBtnTxt}>{t(cfg.ctaKey)}</Text>
           <Icon name="chevron-forward" size={12} color={P} />
         </Pressable>
       </View>
@@ -166,13 +162,13 @@ function NotifCard({
 }
 
 /* ── Followed listing card ─────────────────────────────────── */
-function statusColor(status?: string): { bg: string; text: string; label: string } {
+function statusInfo(status: string | undefined, t: (k: string) => string): { bg: string; text: string; label: string } {
   switch (status) {
-    case "Sahiplendirildi": return { bg: "#E8F8EE", text: "#34C759", label: "Sahiplendirildi" };
-    case "Pasif":           return { bg: "#FFF0F0", text: "#FF6B6B", label: "Pasif" };
-    case "Süresi Doldu":    return { bg: "#FFF5E6", text: "#FF9500", label: "Süresi Doldu" };
-    case "Onay Bekliyor":   return { bg: `${P}14`, text: P,          label: "Onay Bekliyor" };
-    default:                return { bg: "#E8F8EE", text: "#34C759", label: "Aktif" };
+    case "Sahiplendirildi": return { bg: "#E8F8EE", text: "#34C759", label: t("adoptionNotifs.statusSahiplendirildi") };
+    case "Pasif":           return { bg: "#FFF0F0", text: "#FF6B6B", label: t("adoptionNotifs.statusPasif")           };
+    case "Süresi Doldu":    return { bg: "#FFF5E6", text: "#FF9500", label: t("adoptionNotifs.statusSuresiDoldu")     };
+    case "Onay Bekliyor":   return { bg: `${P}14`,  text: P,         label: t("adoptionNotifs.statusOnayBekliyor")    };
+    default:                return { bg: "#E8F8EE", text: "#34C759", label: t("adoptionNotifs.statusAktif")           };
   }
 }
 
@@ -185,13 +181,13 @@ function FollowedCard({
   onPress: () => void;
   onUnfollow: () => void;
 }) {
-  const sc = statusColor(listing.status);
+  const { t } = useTranslation();
+  const sc = statusInfo(listing.status, t);
   return (
     <Pressable
       style={({ pressed }) => [S.followCard, { opacity: pressed ? 0.92 : 1 }]}
       onPress={() => { Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light); onPress(); }}
     >
-      {/* Thumbnail */}
       {listing.photo ? (
         <Image source={{ uri: listing.photo }} style={S.followThumb} contentFit="cover" />
       ) : (
@@ -200,7 +196,6 @@ function FollowedCard({
         </View>
       )}
 
-      {/* Info */}
       <View style={S.followBody}>
         <View style={S.followTopRow}>
           <Text style={S.followName} numberOfLines={1}>{listing.petName}</Text>
@@ -220,17 +215,16 @@ function FollowedCard({
           </View>
         ) : null}
 
-        <Text style={S.followSub}>Takip ettiğin sahiplendirme ilanı</Text>
+        <Text style={S.followSub}>{t("adoptionNotifs.followedLabel")}</Text>
       </View>
 
-      {/* Actions */}
       <View style={S.followActions}>
         <Pressable
           style={({ pressed }) => [S.followGoBtn, { opacity: pressed ? 0.7 : 1 }]}
           onPress={() => { Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light); onPress(); }}
           hitSlop={6}
         >
-          <Text style={S.followGoBtnTxt}>İlanı Gör</Text>
+          <Text style={S.followGoBtnTxt}>{t("adoptionNotifs.viewListing")}</Text>
           <Icon name="chevron-forward" size={11} color={P} />
         </Pressable>
         <Pressable
@@ -247,6 +241,7 @@ function FollowedCard({
 
 /* ── Main screen ───────────────────────────────────────────── */
 export default function AdoptionNotificationsScreen() {
+  const { t } = useTranslation();
   const insets = useSafeAreaInsets();
   const router = useRouter();
   const { user } = useAuth();
@@ -263,6 +258,13 @@ export default function AdoptionNotificationsScreen() {
   const adoptionNotifs = notifs.filter((n) => ADOPTION_TYPES.includes(n.type));
   const unreadCount    = adoptionNotifs.filter((n) => !n.read).length;
   const displayed      = filterNotifs(notifs, filter);
+
+  const FILTERS: { key: FilterTab; labelKey: string }[] = [
+    { key: "all",        labelKey: "adoptionNotifs.filterAll"        },
+    { key: "requests",   labelKey: "adoptionNotifs.filterRequests"   },
+    { key: "mylistings", labelKey: "adoptionNotifs.filterMyListings" },
+    { key: "following",  labelKey: "adoptionNotifs.filterFollowing"  },
+  ];
 
   const load = useCallback(async (refresh = false) => {
     if (!user) return;
@@ -329,16 +331,16 @@ export default function AdoptionNotificationsScreen() {
           <Icon name="chevron-back" size={22} color={DARK} />
         </Pressable>
         <View style={S.headerCenter}>
-          <Text style={S.headerTitle}>Sahiplendirme Bildirimleri</Text>
+          <Text style={S.headerTitle}>{t("adoptionNotifs.headerTitle")}</Text>
           {unreadCount > 0 && (
             <View style={S.unreadBadgeHeader}>
-              <Text style={S.unreadBadgeHeaderTxt}>{unreadCount > 99 ? "99+" : unreadCount} okunmamış</Text>
+              <Text style={S.unreadBadgeHeaderTxt}>{t("adoptionNotifs.unreadCount", { count: unreadCount > 99 ? "99+" : unreadCount })}</Text>
             </View>
           )}
         </View>
         {unreadCount > 0 && !isFollowingTab && (
           <Pressable style={S.markAllBtn} onPress={handleMarkAll} hitSlop={8}>
-            <Text style={S.markAllTxt}>Tümünü oku</Text>
+            <Text style={S.markAllTxt}>{t("adoptionNotifs.markAllRead")}</Text>
           </Pressable>
         )}
       </View>
@@ -351,7 +353,7 @@ export default function AdoptionNotificationsScreen() {
             style={({ pressed }) => [S.filterTab, filter === f.key && S.filterTabActive, { opacity: pressed ? 0.75 : 1 }]}
             onPress={() => { setFilter(f.key); Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light); }}
           >
-            <Text style={[S.filterTabTxt, filter === f.key && S.filterTabTxtActive]}>{f.label}</Text>
+            <Text style={[S.filterTabTxt, filter === f.key && S.filterTabTxtActive]}>{t(f.labelKey)}</Text>
             {f.key === "following" && followedListings.length > 0 && (
               <View style={S.tabBadge}>
                 <Text style={S.tabBadgeTxt}>{followedListings.length}</Text>
@@ -389,16 +391,13 @@ export default function AdoptionNotificationsScreen() {
                 <View style={S.emptyIllo}>
                   <Icon name="heart-outline" size={36} color={`${P}60`} />
                 </View>
-                <Text style={S.emptyTitle}>Takip ettiğin ilan yok</Text>
-                <Text style={S.emptySub}>
-                  Kalp simgesine dokunduğun sahiplendirme ilanları burada görünür.
-                </Text>
+                <Text style={S.emptyTitle}>{t("adoptionNotifs.emptyNoFollowing")}</Text>
+                <Text style={S.emptySub}>{t("adoptionNotifs.emptyNoFollowingSub")}</Text>
               </View>
             )
           }
         />
       ) : (
-        /* Notification tabs */
         <FlatList
           data={displayed}
           keyExtractor={(item) => item.id}
@@ -425,11 +424,11 @@ export default function AdoptionNotificationsScreen() {
                 <View style={S.emptyIllo}>
                   <Icon name="notifications-outline" size={36} color={`${P}60`} />
                 </View>
-                <Text style={S.emptyTitle}>Bildirim yok</Text>
+                <Text style={S.emptyTitle}>{t("adoptionNotifs.emptyNoNotifs")}</Text>
                 <Text style={S.emptySub}>
                   {filter === "all"
-                    ? "Sahiplendirme bildirimlerin burada görünecek."
-                    : "Bu kategoride henüz bildirim yok."}
+                    ? t("adoptionNotifs.emptyNoNotifsAll")
+                    : t("adoptionNotifs.emptyNoNotifsCategory")}
                 </Text>
               </View>
             )
@@ -488,7 +487,6 @@ const S = StyleSheet.create({
   ctaBtn:    { flexDirection: "row", alignItems: "center", gap: 4, backgroundColor: `${P}10`, borderRadius: 10, paddingHorizontal: 12, paddingVertical: 6 },
   ctaBtnTxt: { fontSize: 12, fontFamily: "Inter_700Bold", color: P },
 
-  /* Followed card */
   followCard: {
     flexDirection: "row", alignItems: "center", gap: 12,
     borderRadius: 18, borderWidth: 1, borderColor: BORDER,

@@ -1,0 +1,231 @@
+CAN YOLDAŞI — i18n PHASE 6
+LEGAL SCREENS + FINAL TRANSLATION AUDIT
+
+Amaç:
+Uygulamadaki tüm kullanıcıya görünen metinlerin Türkçe ve İngilizce destekli olduğunu doğrulamak.
+
+Mevcut i18next altyapısını kullan.
+
+Yeni dil sistemi oluşturma.
+
+==================================================
+PART 1 — PRIVACY POLICY
+==================================================
+
+Dosya:
+
+artifacts/mobile/app/privacy-policy.tsx
+
+
+Yapılacaklar:
+
+- useTranslation ekle.
+- Tüm hardcoded Türkçe hukuki metinleri kaldır.
+- Privacy Policy içeriğini translation sistemine taşı.
+
+Namespace:
+
+privacy.*
+
+Kapsam:
+
+- Başlık
+- Bölümler
+- Açıklamalar
+- Kullanıcı hakları
+- Veri toplama
+- Veri kullanımı
+- İletişim bölümü
+
+
+tr.json ve en.json içine birlikte ekle.
+
+
+==================================================
+PART 2 — TERMS OF SERVICE
+==================================================
+
+Dosya:
+
+artifacts/mobile/app/terms-of-service.tsx
+
+
+Yapılacaklar:
+
+- useTranslation ekle.
+- Tüm hardcoded Türkçe metinleri kaldır.
+
+Namespace:
+
+terms.*
+
+Kapsam:
+
+- Başlık
+- Kullanım koşulları
+- Kullanıcı sorumlulukları
+- İçerik kuralları
+- Hesap kullanımı
+- İletişim
+
+
+tr.json ve en.json birlikte güncellenecek.
+
+
+==================================================
+PART 3 — GLOBAL HARD-CODED TEXT AUDIT
+==================================================
+
+Tüm mobile klasörünü tara:
+
+artifacts/mobile/app
+artifacts/mobile/components
+
+
+Ara:
+
+- Türkçe stringler
+- Hardcoded kullanıcı mesajları
+- Alert.alert içerikleri
+- Placeholder değerleri
+- Button textleri
+- Accessibility label değerleri
+
+
+Örnek:
+
+Bul:
+
+<Text>
+Giriş Yap
+</Text>
+
+
+Bul:
+
+Alert.alert(
+ "Hata",
+ "Bir sorun oluştu"
+)
+
+
+Bunların tamamını i18n sistemine bağla.
+
+
+==================================================
+PART 4 — TRANSLATION KEY AUDIT
+==================================================
+
+Kontrol et:
+
+tr.json
+
+ve
+
+en.json
+
+
+Kurallar:
+
+- Aynı key sayısı olmalı.
+- Eksik key olmamalı.
+- Fazla key olmamalı.
+
+
+Eksik varsa:
+
+İki dosyaya birlikte ekle.
+
+
+==================================================
+PART 5 — DATABASE VALUE CHECK
+==================================================
+
+Çeviri sırasında:
+
+DB kayıtlarını değiştirme.
+
+Örnek:
+
+Kedi
+Köpek
+Erkek
+Dişi
+
+gibi değerler database'de aynı kalacak.
+
+Sadece UI gösterimi çevrilecek.
+
+
+==================================================
+PART 6 — LANGUAGE SWITCH TEST
+==================================================
+
+Test et:
+
+Türkçe:
+
+- Login
+- Ana ekran
+- Harita
+- Hayvanlar
+- Sahiplendirme
+- Evcilim
+- Mesajlar
+- Profil
+- Premium
+- Privacy
+- Terms
+
+
+English:
+
+Aynı ekranların tamamı İngilizce görünmeli.
+
+
+Uygulama kapanıp açıldığında:
+
+Dil korunmalı.
+
+
+==================================================
+FINAL REPORT
+==================================================
+
+Rapor formatı:
+
+1. Privacy Policy durumu
+
+2. Terms of Service durumu
+
+3. Eklenen translation namespace'leri
+
+4. Global hardcoded text sonucu
+
+5. Eksik translation key sonucu
+
+6. tr.json / en.json karşılaştırması
+
+7. TypeScript sonucu
+
+8. iOS sonucu
+
+9. Android sonucu
+
+10. Web sonucu
+
+11. Kalan i18n problemleri
+
+
+Son karar:
+
+Bunlardan biri:
+
+- i18n TAMAMLANDI
+- Küçük eksikler var
+- Kritik eksikler var
+
+
+Kod davranışını değiştirme.
+
+Navigation, API, Database, RevenueCat, Authentication mantığına dokunma.

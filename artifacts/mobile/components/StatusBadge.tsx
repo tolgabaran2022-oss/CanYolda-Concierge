@@ -1,19 +1,17 @@
 import React from "react";
 import { StyleSheet, Text, View } from "react-native";
+import { useTranslation } from "react-i18next";
 import type { AnimalStatus } from "@/contexts/AnimalsContext";
 
-const STATUS_CONFIG: Record<
-  AnimalStatus,
-  { label: string; bg: string; color: string }
-> = {
-  hungry: { label: "Aç", bg: "#FEF3C7", color: "#92400E" },
-  injured: { label: "Yaralı", bg: "#FEE2E2", color: "#991B1B" },
-  healthy: { label: "Sağlıklı", bg: "#D1FAE5", color: "#065F46" },
-  unknown: { label: "Bilinmiyor", bg: "#F3F4F6", color: "#374151" },
+const STATUS_COLORS_MAP: Record<AnimalStatus, { bg: string; color: string }> = {
+  hungry:  { bg: "#FEF3C7", color: "#92400E" },
+  injured: { bg: "#FEE2E2", color: "#991B1B" },
+  healthy: { bg: "#D1FAE5", color: "#065F46" },
+  unknown: { bg: "#F3F4F6", color: "#374151" },
 };
 
 export const STATUS_COLORS: Record<AnimalStatus, string> = {
-  hungry: "#F59E0B",
+  hungry:  "#F59E0B",
   injured: "#EF4444",
   healthy: "#10B981",
   unknown: "#9CA3AF",
@@ -25,24 +23,25 @@ interface Props {
 }
 
 export function StatusBadge({ status, size = "md" }: Props) {
-  const config = STATUS_CONFIG[status] ?? STATUS_CONFIG.unknown;
+  const { t } = useTranslation();
+  const cfg = STATUS_COLORS_MAP[status] ?? STATUS_COLORS_MAP.unknown;
   const isSmall = size === "sm";
   return (
     <View
       style={[
         styles.badge,
-        { backgroundColor: config.bg },
+        { backgroundColor: cfg.bg },
         isSmall && styles.badgeSm,
       ]}
     >
       <Text
         style={[
           styles.text,
-          { color: config.color },
+          { color: cfg.color },
           isSmall && styles.textSm,
         ]}
       >
-        {config.label}
+        {t(`animals.status.${status}`, { defaultValue: status })}
       </Text>
     </View>
   );

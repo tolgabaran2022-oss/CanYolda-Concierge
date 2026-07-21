@@ -4,6 +4,7 @@ import { useRouter } from "expo-router";
 import React from "react";
 import { Pressable, StyleSheet, Text, View } from "react-native";
 import { LinearGradient } from "expo-linear-gradient";
+import { useTranslation } from "react-i18next";
 import type { AdoptionListing } from "@/contexts/AdoptionContext";
 import { useColors } from "@/hooks/useColors";
 import { formatTimeAgo } from "@/utils/formatters";
@@ -19,10 +20,10 @@ interface Props {
 }
 
 export function AdoptionCard({ listing }: Props) {
+  const { t } = useTranslation();
   const colors = useColors();
   const router = useRouter();
 
-  /* Single source of truth — derived from listing.promotedUntil timestamp */
   const isActive = isListingPromoted(listing.promotedUntil);
 
   return (
@@ -40,8 +41,8 @@ export function AdoptionCard({ listing }: Props) {
       accessibilityRole="button"
       accessibilityLabel={
         isActive
-          ? `${listing.petName} — öne çıkan ilan`
-          : `${listing.petName} ilanı`
+          ? t("adoption.card.listingFeaturedAccessibility", { name: listing.petName })
+          : t("adoption.card.listingAccessibility", { name: listing.petName })
       }
     >
       {isActive && (
@@ -50,10 +51,10 @@ export function AdoptionCard({ listing }: Props) {
           start={{ x: 0, y: 0 }}
           end={{ x: 1, y: 1 }}
           style={styles.featuredBanner}
-          accessibilityLabel="Öne çıkan ilan"
+          accessibilityLabel={t("adoption.card.featuredBannerAccessibility")}
         >
           <Icon name="sparkles" size={11} color={WHITE} />
-          <Text style={styles.featuredText}>Öne Çıkan</Text>
+          <Text style={styles.featuredText}>{t("adoption.card.featuredBannerLabel")}</Text>
         </LinearGradient>
       )}
 

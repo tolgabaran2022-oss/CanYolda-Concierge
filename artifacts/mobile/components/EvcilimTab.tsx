@@ -34,6 +34,7 @@ import {
   buildPetMeta,
   buildPetSubtitle,
 } from "@/utils/petFormatters";
+import { useTranslation } from "react-i18next";
 
 /* ── Design tokens ──────────────────────────────────────────────────────────── */
 const C = {
@@ -87,14 +88,15 @@ function formatDateShort(dateStr: string): string {
    1. EMPTY STATE (no pets)
 ══════════════════════════════════════════════════════════════════════════════ */
 const HERO_IMAGE = require("../assets/images/hero-pets-animals.png");
-const FEATURE_CARDS = [
-  { icon: "vaccine",           label: "Aşı Takibi" },
-  { icon: "calendar",          label: "Randevular" },
-  { icon: "nutrition-outline", label: "Beslenme" },
-  { icon: "clipboard-outline", label: "Sağlık Kayıtları" },
-] as const;
 
 function NoPetsState({ onAdd, addingPet, botPad }: { onAdd: () => void; addingPet: boolean; botPad: number }) {
+  const { t } = useTranslation();
+  const FEATURE_CARDS = [
+    { icon: "vaccine",           label: t("evcilimTab.feature_vaccine") },
+    { icon: "calendar",          label: t("evcilimTab.feature_calendar") },
+    { icon: "nutrition-outline", label: t("evcilimTab.feature_nutrition") },
+    { icon: "clipboard-outline", label: t("evcilimTab.feature_health") },
+  ] as const;
   return (
     <ScrollView
       style={{ flex: 1 }}
@@ -114,17 +116,15 @@ function NoPetsState({ onAdd, addingPet, botPad }: { onAdd: () => void; addingPe
           source={HERO_IMAGE}
           style={np.heroImg}
           contentFit="contain"
-          accessibilityLabel="Sevimli kedi ve köpek"
+          accessibilityLabel={t("evcilimTab.heroAccessibility")}
         />
       </View>
 
       {/* ── Headline ── */}
-      <Text style={np.headline}>Dostunun bakım yolculuğu{"\n"}burada başlasın</Text>
+      <Text style={np.headline}>{t("evcilimTab.headlineNoPets")}</Text>
 
       {/* ── Description ── */}
-      <Text style={np.desc}>
-        Aşılarını, randevularını, beslenme ve sağlık bilgilerini tek yerden kolayca yönet.
-      </Text>
+      <Text style={np.desc}>{t("evcilimTab.descNoPets")}</Text>
 
       {/* ── 2×2 feature cards ── */}
       <View style={np.grid}>
@@ -141,13 +141,13 @@ function NoPetsState({ onAdd, addingPet, botPad }: { onAdd: () => void; addingPe
       {/* ── Trust badge ── */}
       <View style={np.badge} accessibilityRole="text">
         <Icon name="checkmark-circle" size={16} color="#2a7a47" />
-        <Text style={np.badgeTxt}>İlk evcil hayvanın ücretsiz</Text>
+        <Text style={np.badgeTxt}>{t("evcilimTab.firstPetFree")}</Text>
       </View>
 
       {/* ── CTA ── */}
       <Pressable
         accessibilityRole="button"
-        accessibilityLabel="İlk dostunu ekle"
+        accessibilityLabel={t("evcilimTab.firstPetCta")}
         disabled={addingPet}
         style={({ pressed }) => [
           np.cta,
@@ -167,7 +167,7 @@ function NoPetsState({ onAdd, addingPet, botPad }: { onAdd: () => void; addingPe
         >
           {addingPet
             ? <ActivityIndicator size="small" color="#fff" />
-            : <><Icon name="add-circle-outline" size={20} color="#fff" /><Text style={np.ctaTxt}>İlk Dostumu Ekle</Text></>
+            : <><Icon name="add-circle-outline" size={20} color="#fff" /><Text style={np.ctaTxt}>{t("evcilimTab.firstPetCta")}</Text></>
           }
         </LinearGradient>
       </Pressable>
@@ -214,6 +214,7 @@ function PetProfileCard({
   onEdit: () => void;
   onOpenSelector: () => void;
 }) {
+  const { t } = useTranslation();
   const pet = pets[selectedIndex]!;
   const subtitle = buildPetSubtitle(pet.type, pet.breed, pet.gender);
   const meta     = buildPetMeta(pet.birthDate, pet.age, pet.weight);
@@ -223,7 +224,7 @@ function PetProfileCard({
       {/* Profile card */}
       <Pressable
         accessibilityRole="button"
-        accessibilityLabel="Evcil hayvan detayını aç"
+        accessibilityLabel={t("evcilimTab.detailAccessibility")}
         style={({ pressed }) => [pc.card, SHADOW_MD, { opacity: pressed ? 0.95 : 1 }]}
         onPress={() => { Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light); onEdit(); }}
       >
@@ -265,7 +266,7 @@ function PetProfileCard({
           {/* Dropdown arrow */}
           <Pressable
             accessibilityRole="button"
-            accessibilityLabel="Evcil hayvan değiştir"
+            accessibilityLabel={t("evcilimTab.changePetAccessibility")}
             hitSlop={12}
             onPress={(e) => {
               e.stopPropagation?.();
@@ -296,14 +297,14 @@ function PetProfileCard({
       {/* Add pet button */}
       <Pressable
         accessibilityRole="button"
-        accessibilityLabel="Yeni evcil hayvan ekle"
+        accessibilityLabel={t("evcilimTab.addPetAccessibility")}
         disabled={addingPet}
         style={({ pressed }) => [pc.addBtn, { opacity: addingPet ? 0.55 : pressed ? 0.82 : 1 }]}
         onPress={() => { Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light); onAdd(); }}
       >
         {addingPet
           ? <ActivityIndicator size="small" color={C.purple} />
-          : <><Icon name="add-circle-outline" size={18} color={C.purple} /><Text style={pc.addTxt}>Evcil Hayvan Ekle</Text></>
+          : <><Icon name="add-circle-outline" size={18} color={C.purple} /><Text style={pc.addTxt}>{t("evcilimTab.addPet")}</Text></>
         }
       </Pressable>
     </View>
@@ -374,6 +375,7 @@ function PetSelectorSheet({
   onDelete: (id: string) => Promise<void>;
   deletingPetId: string | null;
 }) {
+  const { t } = useTranslation();
   const [pendingDeletePet, setPendingDeletePet] = useState<Pet | null>(null);
 
   useEffect(() => {
@@ -392,7 +394,7 @@ function PetSelectorSheet({
         <Pressable style={ss.backdrop} onPress={onClose} />
         <View style={ss.sheet}>
           <View style={ss.handle} />
-          <Text style={ss.title}>Evcil Dostlarım</Text>
+          <Text style={ss.title}>{t("evcilimTab.myPets")}</Text>
           <ScrollView
             showsVerticalScrollIndicator={false}
             style={ss.list}
@@ -421,7 +423,7 @@ function PetSelectorSheet({
                   <Pressable
                     hitSlop={12}
                     accessibilityRole="button"
-                    accessibilityLabel={`${pet.name} evcil hayvanını sil`}
+                    accessibilityLabel={t("evcilimTab.deleteAccessibility", { name: pet.name })}
                     style={ss.deleteBtn}
                     disabled={anyDeleting}
                     onPress={(e) => {
@@ -487,7 +489,7 @@ function PetSelectorSheet({
           >
             {addingPet
               ? <ActivityIndicator size="small" color={C.purple} />
-              : <><Icon name="add-circle-outline" size={20} color={C.purple} /><Text style={ss.addBtnTxt}>Evcil Hayvan Ekle</Text></>
+              : <><Icon name="add-circle-outline" size={20} color={C.purple} /><Text style={ss.addBtnTxt}>{t("evcilimTab.addPet")}</Text></>
             }
           </Pressable>
         </View>
@@ -505,17 +507,17 @@ function PetSelectorSheet({
           <Pressable style={dm.backdrop} onPress={() => setPendingDeletePet(null)} />
           <View style={dm.card}>
             <Text style={dm.title}>
-              {pendingDeletePet?.name} silinsin mi?
+              {t("evcilimTab.deleteConfirmTitle", { name: pendingDeletePet?.name })}
             </Text>
             <Text style={dm.body}>
-              Bu evcil hayvan profilini silmek istediğine emin misin? Bu işlem geri alınamaz.
+              {t("evcilimTab.deleteConfirmMsg")}
             </Text>
             <View style={dm.btns}>
               <Pressable
                 style={({ pressed }) => [dm.cancelBtn, pressed && { opacity: 0.8 }]}
                 onPress={() => setPendingDeletePet(null)}
               >
-                <Text style={dm.cancelTxt}>Vazgeç</Text>
+                <Text style={dm.cancelTxt}>{t("common.cancel")}</Text>
               </Pressable>
               <Pressable
                 style={({ pressed }) => [dm.deleteBtn, pressed && { opacity: 0.8 }]}
@@ -526,7 +528,7 @@ function PetSelectorSheet({
                   await onDelete(pet.id);
                 }}
               >
-                <Text style={dm.deleteTxt}>Sil</Text>
+                <Text style={dm.deleteTxt}>{t("common.delete")}</Text>
               </Pressable>
             </View>
           </View>
@@ -624,11 +626,13 @@ function QuickStatusCards({
     stockKg = `${kg.toLocaleString("tr-TR", { maximumFractionDigits: 1 })} kg`;
   }
 
+  const { t } = useTranslation();
+
   const cards = [
     {
-      label:     "Sonraki Aşı",
-      value:     nextVacc?.vaccineName ?? "Kayıt yok",
-      secondary: nextVacc ? formatDateShort(nextVacc.nextDueDate) : "Aşı ekle",
+      label:     t("evcilimTab.nextVaccine"),
+      value:     nextVacc?.vaccineName ?? t("evcilimTab.noRecord"),
+      secondary: nextVacc ? formatDateShort(nextVacc.nextDueDate) : t("evcilimTab.addVaccine"),
       icon:      "calendar-outline" as const,
       color:     C.orange,
       bg:        C.orangeBg,
@@ -636,9 +640,9 @@ function QuickStatusCards({
       isEmpty:   !nextVacc,
     },
     {
-      label:     "Yaklaşan Randevu",
-      value:     nextAppt?.title ?? "Randevu yok",
-      secondary: nextAppt ? formatDateShort(nextAppt.appointmentDate) : "Randevu oluştur",
+      label:     t("evcilimTab.upcomingAppt"),
+      value:     nextAppt?.title ?? t("evcilimTab.noAppt"),
+      secondary: nextAppt ? formatDateShort(nextAppt.appointmentDate) : t("evcilimTab.createAppt"),
       icon:      "calendar-outline" as const,
       color:     C.purple,
       bg:        C.purpleLight,
@@ -646,9 +650,9 @@ function QuickStatusCards({
       isEmpty:   !nextAppt,
     },
     {
-      label:     "Mama Durumu",
-      value:     daysLeft !== null ? `${daysLeft} gün kaldı` : "Kayıt yok",
-      secondary: stockKg || "Beslenme ekle",
+      label:     t("evcilimTab.foodStatus"),
+      value:     daysLeft !== null ? t("evcilimTab.daysLeft", { count: daysLeft }) : t("evcilimTab.noRecord"),
+      secondary: stockKg || t("evcilimTab.addNutrition"),
       icon:      "nutrition-outline" as const,
       color:     C.green,
       bg:        C.greenBg,
@@ -659,7 +663,7 @@ function QuickStatusCards({
 
   return (
     <View style={qs.section}>
-      <Text style={qs.title}>Hızlı Durum</Text>
+      <Text style={qs.title}>{t("evcilimTab.quickStatusTitle")}</Text>
       <View style={qs.row}>
         {cards.map((c) => (
           <Pressable
@@ -726,29 +730,30 @@ function ManagementGrid({
   onNav: (route: string) => void;
   onPremiumNav: (source: string, destination: string) => void;
 }) {
+  const { t } = useTranslation();
   const overdueVacc  = vaccinations.filter((v) => v.status === "overdue").length;
   const upcomingAppt = appointments.filter((a) => a.status === "upcoming").length;
 
   const GRID: GridItem[] = [
-    { key: "id",           label: "Kimlik",    icon: "id-card-outline",          route: `/evcilim/${petId}/identification` },
-    { key: "health",       label: "Sağlık",    icon: "heart-outline",            route: `/evcilim/${petId}/health` },
-    { key: "vaccinations", label: "Aşılar",    icon: "shield-checkmark-outline", route: `/evcilim/${petId}/vaccinations`, badge: overdueVacc || undefined },
-    { key: "appointments", label: "Randevular", icon: "calendar-outline",         route: `/evcilim/${petId}/appointments`, badge: upcomingAppt || undefined },
-    { key: "nutrition",    label: "Beslenme",   icon: "nutrition-outline",        route: `/evcilim/${petId}/nutrition` },
-    { key: "documents",    label: "Belgeler",   icon: "document-text-outline",   route: `/evcilim/${petId}/documents`, premium: true },
-    { key: "medications",  label: "İlaçlar",    icon: "medical-outline",          route: `/evcilim/${petId}/medications`, premium: true },
-    { key: "notes",        label: "Notlar",     icon: "pencil-outline",           route: `/evcilim/${petId}/notes` },
+    { key: "id",           label: t("evcilimTab.gridItemId"),           icon: "id-card-outline",          route: `/evcilim/${petId}/identification` },
+    { key: "health",       label: t("evcilimTab.gridItemHealth"),       icon: "heart-outline",            route: `/evcilim/${petId}/health` },
+    { key: "vaccinations", label: t("evcilimTab.gridItemVaccinations"), icon: "shield-checkmark-outline", route: `/evcilim/${petId}/vaccinations`, badge: overdueVacc || undefined },
+    { key: "appointments", label: t("evcilimTab.gridItemAppointments"), icon: "calendar-outline",         route: `/evcilim/${petId}/appointments`, badge: upcomingAppt || undefined },
+    { key: "nutrition",    label: t("evcilimTab.gridItemNutrition"),    icon: "nutrition-outline",        route: `/evcilim/${petId}/nutrition` },
+    { key: "documents",    label: t("evcilimTab.gridItemDocuments"),    icon: "document-text-outline",    route: `/evcilim/${petId}/documents`, premium: true },
+    { key: "medications",  label: t("evcilimTab.gridItemMedications"),  icon: "medical-outline",          route: `/evcilim/${petId}/medications`, premium: true },
+    { key: "notes",        label: t("evcilimTab.gridItemNotes"),        icon: "pencil-outline",           route: `/evcilim/${petId}/notes` },
   ];
 
   return (
     <View style={mg.section}>
-      <Text style={mg.title}>Yönetim</Text>
+      <Text style={mg.title}>{t("evcilimTab.managementTitle")}</Text>
       <View style={mg.grid}>
         {GRID.map((item) => (
           <Pressable
             key={item.key}
             accessibilityRole="button"
-            accessibilityLabel={`${item.label} ekranını aç`}
+            accessibilityLabel={t("evcilimTab.gridItemAccessibility", { label: item.label })}
             style={({ pressed }) => [mg.cell, pressed && { opacity: 0.75 }]}
             onPress={() => {
               Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
@@ -818,6 +823,7 @@ function AIAssistantCard({ petId, isPremium, onNav, onPremiumNav }: {
   onNav: (r: string) => void;
   onPremiumNav: (source: string, destination: string) => void;
 }) {
+  const { t } = useTranslation();
   return (
     <Pressable
       style={({ pressed }) => [ai.card, pressed && { opacity: 0.85 }]}
@@ -830,14 +836,14 @@ function AIAssistantCard({ petId, isPremium, onNav, onPremiumNav }: {
         }
       }}
       accessibilityRole="button"
-      accessibilityLabel="AI Hayvan Asistanı"
+      accessibilityLabel={t("evcilimTab.aiTitle")}
     >
       <View style={ai.iconWrap}>
         <Icon name="sparkles-outline" size={22} color="#fff" />
       </View>
       <View style={ai.body}>
-        <Text style={ai.title}>AI Hayvan Asistanı</Text>
-        <Text style={ai.sub}>Evcil hayvanın hakkında anlık sorular sor.</Text>
+        <Text style={ai.title}>{t("evcilimTab.aiTitle")}</Text>
+        <Text style={ai.sub}>{t("evcilimTab.aiSub")}</Text>
       </View>
       {!isPremium && (
         <View style={ai.premiumPill}>
@@ -871,6 +877,7 @@ function UpcomingReminders({
   petId: string;
   onNav: (route: string) => void;
 }) {
+  const { t } = useTranslation();
   const upcoming = reminders
     .filter((r) => {
       try { return new Date(r.date) >= new Date(new Date().setHours(0, 0, 0, 0)); }
@@ -882,14 +889,14 @@ function UpcomingReminders({
   return (
     <View style={ur.section}>
       <View style={ur.header}>
-        <Text style={ur.title}>Yaklaşan Hatırlatmalar</Text>
+        <Text style={ur.title}>{t("evcilimTab.remindersTitle")}</Text>
         <Pressable
           hitSlop={12}
           accessibilityRole="button"
-          accessibilityLabel="Tüm hatırlatmaları görüntüle"
+          accessibilityLabel={t("evcilimTab.remindersViewAllAccess")}
           onPress={() => { Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light); onNav(`/evcilim/${petId}/reminders`); }}
         >
-          <Text style={ur.seeAll}>Tümünü Gör</Text>
+          <Text style={ur.seeAll}>{t("evcilimTab.remindersViewAll")}</Text>
         </Pressable>
       </View>
 
@@ -899,8 +906,8 @@ function UpcomingReminders({
             <Icon name="calendar-outline" size={26} color={C.green} />
           </View>
           <View style={ur.emptyText}>
-            <Text style={ur.emptyTitle}>Yaklaşan hatırlatman yok</Text>
-            <Text style={ur.emptySub}>Aşı, randevu veya bakım hatırlatıcısı ekleyebilirsin.</Text>
+            <Text style={ur.emptyTitle}>{t("evcilimTab.remindersEmptyTitle")}</Text>
+            <Text style={ur.emptySub}>{t("evcilimTab.remindersEmptySub")}</Text>
           </View>
           <Pressable
             hitSlop={8}
@@ -908,7 +915,7 @@ function UpcomingReminders({
             accessibilityRole="button"
             onPress={() => onNav(`/evcilim/${petId}/reminders`)}
           >
-            <Text style={ur.emptyBtnTxt}>Hatırlatıcı Ekle</Text>
+            <Text style={ur.emptyBtnTxt}>{t("evcilimTab.addReminder")}</Text>
           </Pressable>
         </View>
       ) : (
@@ -1018,6 +1025,7 @@ function LoadingSkeleton() {
    7. MAIN EXPORTED COMPONENT
 ══════════════════════════════════════════════════════════════════════════════ */
 export function EvcilimTab({ botPad }: { botPad: number }) {
+  const { t } = useTranslation();
   const { pets, isLoading: petsLoading, error: petsError, refresh: refreshPets, deletePet } = usePets();
   const { user } = useAuth();
   const { status: premiumStatus, isPremium, refresh: refreshPetPremiumStatus } = usePetPremium();
@@ -1104,8 +1112,8 @@ export function EvcilimTab({ botPad }: { botPad: number }) {
       showPremiumModal(source, destination);
     } catch {
       Alert.alert(
-        "Bağlantı Hatası",
-        "Premium durum kontrol edilemedi. Lütfen internet bağlantınızı kontrol edin."
+        t("evcilimTab.connectionError"),
+        t("evcilimTab.premiumCheckError")
       );
     } finally {
       premiumActionLockRef.current = false;
@@ -1122,7 +1130,7 @@ export function EvcilimTab({ botPad }: { botPad: number }) {
     try {
       const latestStatus = await refreshPetPremiumStatus(false);
       if (!latestStatus) {
-        Alert.alert("Oturum Gerekli", "Evcil hayvan eklemek için lütfen giriş yapın.");
+        Alert.alert(t("evcilimTab.loginRequired"), t("evcilimTab.loginRequiredMsg"));
         return;
       }
       Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
@@ -1137,8 +1145,8 @@ export function EvcilimTab({ botPad }: { botPad: number }) {
       }
     } catch {
       Alert.alert(
-        "Bağlantı Hatası",
-        "Evcil hayvan bilgileri şu anda alınamadı. Lütfen internet bağlantınızı kontrol edip tekrar deneyin."
+        t("evcilimTab.connectionError"),
+        t("evcilimTab.petLoadError")
       );
     } finally {
       addingPetLockRef.current = false;
@@ -1155,9 +1163,9 @@ export function EvcilimTab({ botPad }: { botPad: number }) {
       Haptics.notificationAsync(Haptics.NotificationFeedbackType.Error);
       const msg = err instanceof Error ? err.message : "";
       if (msg.toLowerCase().includes("yetkisiz") || msg.toLowerCase().includes("unauthorized") || msg.toLowerCase().includes("403")) {
-        Alert.alert("Yetki Hatası", "Bu evcil hayvanı silme yetkiniz yok.");
+        Alert.alert(t("evcilimTab.permissionError"), t("evcilimTab.deletePetPermError"));
       } else {
-        Alert.alert("Hata", "Evcil hayvan silinemedi. Lütfen tekrar deneyin.");
+        Alert.alert(t("errors.error"), t("evcilimTab.deleteError"));
       }
     } finally {
       setDeletingPetId(null);

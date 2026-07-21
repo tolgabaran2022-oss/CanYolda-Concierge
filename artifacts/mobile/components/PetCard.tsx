@@ -3,6 +3,7 @@ import { Image } from "expo-image";
 import { useRouter } from "expo-router";
 import React from "react";
 import { Pressable, StyleSheet, Text, View } from "react-native";
+import { useTranslation } from "react-i18next";
 import type { Pet } from "@/contexts/PetsContext";
 import { useColors } from "@/hooks/useColors";
 
@@ -19,6 +20,7 @@ interface Props {
 }
 
 export function PetCard({ pet, isOwner }: Props) {
+  const { t } = useTranslation();
   const colors = useColors();
   const router = useRouter();
   const icon = PET_TYPE_ICONS[pet.type] ?? "paw";
@@ -64,7 +66,7 @@ export function PetCard({ pet, isOwner }: Props) {
         <View style={styles.vaccineBadge}>
           <Icon name="shield-checkmark" size={10} color={colors.secondary} />
           <Text style={[styles.vaccineText, { color: colors.secondary }]}>
-            Aşılı
+            {t("petCard.vaccinated")}
           </Text>
         </View>
       ) : null}
@@ -72,7 +74,9 @@ export function PetCard({ pet, isOwner }: Props) {
         <View
           style={[styles.ownerBadge, { backgroundColor: colors.primary + "20" }]}
         >
-          <Text style={[styles.ownerText, { color: colors.primary }]}>Benim</Text>
+          <Text style={[styles.ownerText, { color: colors.primary }]}>
+            {t("petCard.mine")}
+          </Text>
         </View>
       )}
     </Pressable>

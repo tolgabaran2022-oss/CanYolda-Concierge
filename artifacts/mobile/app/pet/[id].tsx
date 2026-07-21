@@ -13,6 +13,7 @@ import {
   View,
 } from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
+import { useTranslation } from "react-i18next";
 import { useAuth } from "@/contexts/AuthContext";
 import { useBoost } from "@/contexts/BoostContext";
 import { usePets } from "@/contexts/PetsContext";
@@ -20,6 +21,7 @@ import { useColors } from "@/hooks/useColors";
 import { formatTimeAgo } from "@/utils/formatters";
 
 export default function PetDetailScreen() {
+  const { t } = useTranslation();
   const { id } = useLocalSearchParams<{ id: string }>();
   const colors = useColors();
   const insets = useSafeAreaInsets();
@@ -41,10 +43,10 @@ export default function PetDetailScreen() {
     return (
       <View style={[styles.notFound, { backgroundColor: colors.background }]}>
         <Text style={[styles.notFoundText, { color: colors.mutedForeground }]}>
-          Evcil hayvan bulunamadı.
+          {t("petDetail.notFound")}
         </Text>
         <Pressable onPress={() => router.back()}>
-          <Text style={[styles.backLink, { color: colors.primary }]}>Geri Dön</Text>
+          <Text style={[styles.backLink, { color: colors.primary }]}>{t("common.back")}</Text>
         </Pressable>
       </View>
     );
@@ -60,12 +62,12 @@ export default function PetDetailScreen() {
 
   const handleDelete = () => {
     Alert.alert(
-      "İlanı Sil",
-      `${pet.name} ilanını silmek istediğine emin misin?`,
+      t("petDetail.deleteAlertTitle"),
+      t("petDetail.deleteAlertMsg", { name: pet.name }),
       [
-        { text: "İptal", style: "cancel" },
+        { text: t("common.cancel"), style: "cancel" },
         {
-          text: "Sil",
+          text: t("common.delete"),
           style: "destructive",
           onPress: async () => {
             await deletePet(pet.id);
@@ -77,13 +79,17 @@ export default function PetDetailScreen() {
     );
   };
 
+  const infoSections = [
+    { labelKey: "petDetail.vaccinationInfo", value: pet.vaccinationInfo, icon: "shield-checkmark-outline" as const },
+    { labelKey: "petDetail.feedingNotes",    value: pet.feedingNotes,    icon: "restaurant-outline" as const },
+  ];
+
   return (
     <ScrollView
       style={{ backgroundColor: colors.background }}
       contentContainerStyle={{ paddingBottom: bottomPad + 24 }}
       showsVerticalScrollIndicator={false}
     >
-      {/* Hero */}
       {pet.image ? (
         <Image source={{ uri: pet.image }} style={styles.heroImage} contentFit="cover" />
       ) : (
@@ -93,7 +99,6 @@ export default function PetDetailScreen() {
       )}
 
       <View style={styles.body}>
-        {/* Name + type */}
         <View style={styles.titleRow}>
           <View>
             <Text style={[styles.petName, { color: colors.foreground }]}>{pet.name}</Text>
@@ -106,17 +111,15 @@ export default function PetDetailScreen() {
           {pet.vaccinationInfo ? (
             <View style={[styles.vacBadge, { backgroundColor: colors.secondary + "20" }]}>
               <Icon name="shield-checkmark" size={14} color={colors.secondary} />
-              <Text style={[styles.vacText, { color: colors.secondary }]}>Aşılı</Text>
+              <Text style={[styles.vacText, { color: colors.secondary }]}>{t("petDetail.vaccinated")}</Text>
             </View>
           ) : null}
         </View>
 
-        {/* Added date */}
         <Text style={[styles.addedDate, { color: colors.mutedForeground }]}>
-          Eklenme: {formatTimeAgo(pet.createdAt)}
+          {t("petDetail.addedDate", { date: formatTimeAgo(pet.createdAt) })}
         </Text>
 
-        {/* Active boost badge */}
         {boost?.isFeatured && boost.expiresAt && (
           <View style={[styles.boostActiveBadge, { backgroundColor: `${colors.primary}12`, borderColor: `${colors.primary}30` }]}>
             <Icon name="star" size={14} color={colors.primary} />
@@ -125,26 +128,25 @@ export default function PetDetailScreen() {
                 const remaining = new Date(boost.expiresAt).getTime() - Date.now();
                 const h = Math.max(0, Math.floor(remaining / 3_600_000));
                 const m = Math.max(0, Math.floor((remaining % 3_600_000) / 60_000));
-                return `Öne Çıkan · ${h > 0 ? `${h}s ` : ""}${m}dk kaldı`;
+                const timeStr = h > 0
+                  ? t("petDetail.boostTimeLeftHM", { h, m })
+                  : t("petDetail.boostTimeLeftM", { m });
+                return `${t("petDetail.featured")} · ${timeStr}`;
               })()}
             </Text>
           </View>
         )}
 
-        {/* Info sections */}
-        {[
-          { label: "Aşı Bilgisi", value: pet.vaccinationInfo, icon: "shield-checkmark-outline" as const },
-          { label: "Beslenme Notları", value: pet.feedingNotes, icon: "restaurant-outline" as const },
-        ].map((section) =>
+        {infoSections.map((section) =>
           section.value ? (
             <View
-              key={section.label}
+              key={section.labelKey}
               style={[styles.infoCard, { backgroundColor: colors.card, borderColor: colors.border }]}
             >
               <View style={styles.infoHeader}>
                 <Icon name={section.icon} size={18} color={colors.primary} />
                 <Text style={[styles.infoLabel, { color: colors.foreground }]}>
-                  {section.label}
+                  {t(section.labelKey)}
                 </Text>
               </View>
               <Text style={[styles.infoText, { color: colors.mutedForeground }]}>
@@ -154,10 +156,8 @@ export default function PetDetailScreen() {
           ) : null
         )}
 
-        {/* Owner actions */}
         {isOwner && (
           <View style={styles.actionsCol}>
-            {/* Boost button */}
             <Pressable
               style={({ pressed }) => [
                 styles.boostBtn,
@@ -168,18 +168,17 @@ export default function PetDetailScreen() {
               <Icon name="star" size={18} color={colors.primary} />
               <View style={{ flex: 1 }}>
                 <Text style={[styles.boostBtnTitle, { color: colors.primary }]}>
-                  {boost?.isFeatured ? "Öne Çıkarmayı Yenile" : "İlanı Öne Çıkar"}
+                  {boost?.isFeatured ? t("petDetail.boostRenew") : t("petDetail.boostActivate")}
                 </Text>
                 <Text style={[styles.boostBtnSub, { color: colors.mutedForeground }]}>
                   {boost?.isFeatured
-                    ? "Süre uzatmak için yeni paket al"
-                    : "₺50'den başlayan fiyatlarla"}
+                    ? t("petDetail.boostRenewSub")
+                    : t("petDetail.boostPriceFrom")}
                 </Text>
               </View>
               <Icon name="chevron-forward" size={16} color={colors.primary} />
             </Pressable>
 
-            {/* Delete button */}
             <Pressable
               style={({ pressed }) => [
                 styles.deleteBtn,
@@ -189,7 +188,7 @@ export default function PetDetailScreen() {
             >
               <Icon name="trash-outline" size={18} color={colors.destructive} />
               <Text style={[styles.deleteBtnText, { color: colors.destructive }]}>
-                İlanı Sil
+                {t("petDetail.deleteBtn")}
               </Text>
             </Pressable>
           </View>

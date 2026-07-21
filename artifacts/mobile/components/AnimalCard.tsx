@@ -13,6 +13,7 @@ import {
   Text,
   View,
 } from "react-native";
+import { useTranslation } from "react-i18next";
 import { StatusBadge, STATUS_COLORS } from "@/components/StatusBadge";
 import { useAuth } from "@/contexts/AuthContext";
 import { useAnimals } from "@/contexts/AnimalsContext";
@@ -46,11 +47,19 @@ function OwnerActionSheet({
   onClose,
   onViewDetail,
   onDelete,
+  title,
+  viewDetailLabel,
+  deleteLabel,
+  cancelLabel,
 }: {
   visible: boolean;
   onClose: () => void;
   onViewDetail: () => void;
   onDelete: () => void;
+  title: string;
+  viewDetailLabel: string;
+  deleteLabel: string;
+  cancelLabel: string;
 }) {
   const slideAnim = useRef(new Animated.Value(300)).current;
 
@@ -86,16 +95,12 @@ function OwnerActionSheet({
           style={[AS.sheet, { transform: [{ translateY: slideAnim }] }]}
         >
           <Pressable>
-            {/* Handle */}
             <View style={AS.handle} />
 
-            {/* Title */}
-            <Text style={AS.title}>Bildirim İşlemleri</Text>
+            <Text style={AS.title}>{title}</Text>
 
-            {/* Separator */}
             <View style={AS.sep} />
 
-            {/* View Detail */}
             <Pressable
               style={({ pressed }) => [AS.action, pressed && AS.actionPressed]}
               onPress={() => {
@@ -106,11 +111,10 @@ function OwnerActionSheet({
               <View style={[AS.iconWrap, { backgroundColor: `${C.purple}14` }]}>
                 <Icon name="information-circle-outline" size={20} color={C.purple} />
               </View>
-              <Text style={AS.actionLabel}>Bildirim Detayları</Text>
+              <Text style={AS.actionLabel}>{viewDetailLabel}</Text>
               <Icon name="chevron-forward" size={16} color={C.muted} />
             </Pressable>
 
-            {/* Delete */}
             <Pressable
               style={({ pressed }) => [AS.action, pressed && AS.actionPressed]}
               onPress={() => {
@@ -121,13 +125,11 @@ function OwnerActionSheet({
               <View style={[AS.iconWrap, { backgroundColor: `${C.red}14` }]}>
                 <Icon name="trash-outline" size={20} color={C.red} />
               </View>
-              <Text style={[AS.actionLabel, { color: C.red }]}>Bildirimi Sil</Text>
+              <Text style={[AS.actionLabel, { color: C.red }]}>{deleteLabel}</Text>
             </Pressable>
 
-            {/* Separator */}
             <View style={AS.sep} />
 
-            {/* Cancel */}
             <Pressable
               style={({ pressed }) => [AS.cancelBtn, pressed && AS.actionPressed]}
               onPress={() => {
@@ -135,10 +137,9 @@ function OwnerActionSheet({
                 onClose();
               }}
             >
-              <Text style={AS.cancelLabel}>Vazgeç</Text>
+              <Text style={AS.cancelLabel}>{cancelLabel}</Text>
             </Pressable>
 
-            {/* Safe area bottom padding */}
             <View style={{ height: Platform.OS === "ios" ? 20 : 8 }} />
           </Pressable>
         </Animated.View>
@@ -216,6 +217,7 @@ const AS = StyleSheet.create({
 
 /* ── AnimalCard ──────────────────────────────────────────────────────────── */
 export function AnimalCard({ animal, onLike, index = 0 }: Props) {
+  const { t }           = useTranslation();
   const T               = useTheme();
   const router          = useRouter();
   const { user }        = useAuth();
@@ -230,7 +232,6 @@ export function AnimalCard({ animal, onLike, index = 0 }: Props) {
   const pressScale = useRef(new Animated.Value(1)).current;
   const heartScale = useRef(new Animated.Value(1)).current;
 
-  /* Determine ownership using authenticated user UUID */
   const isOwner = !!user?.id && animal.userId === user.id;
 
   useEffect(() => {
@@ -272,12 +273,12 @@ export function AnimalCard({ animal, onLike, index = 0 }: Props) {
     setSheetVisible(false);
     setTimeout(() => {
       Alert.alert(
-        "Bildirimi sil?",
-        "Bu sokak hayvanı bildirimi kalıcı olarak silinecek. Bu işlem geri alınamaz.",
+        t("animalCard.deleteAlertTitle"),
+        t("animalCard.deleteAlertMsg"),
         [
-          { text: "Vazgeç", style: "cancel" },
+          { text: t("common.cancel"), style: "cancel" },
           {
-            text: "Sil",
+            text: t("common.delete"),
             style: "destructive",
             onPress: confirmDelete,
           },
@@ -292,9 +293,9 @@ export function AnimalCard({ animal, onLike, index = 0 }: Props) {
     try {
       await deleteAnimal(animal.id, user.id);
       Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
-      Alert.alert("Bildirim silindi");
+      Alert.alert(t("animalCard.deleteSuccess"));
     } catch {
-      Alert.alert("Hata", "Bildirim silinemedi. Lütfen tekrar deneyin.");
+      Alert.alert(t("errors.error"), t("animalCard.deleteError"));
     } finally {
       setDeleting(false);
     }
@@ -313,6 +314,10 @@ export function AnimalCard({ animal, onLike, index = 0 }: Props) {
         onClose={() => setSheetVisible(false)}
         onViewDetail={handleViewDetail}
         onDelete={handleDeleteRequest}
+        title={t("animalCard.sheetTitle")}
+        viewDetailLabel={t("animalCard.sheetViewDetail")}
+        deleteLabel={t("animalCard.sheetDelete")}
+        cancelLabel={t("common.cancel")}
       />
 
       <Animated.View
@@ -326,11 +331,10 @@ export function AnimalCard({ animal, onLike, index = 0 }: Props) {
           },
         ]}
       >
-        {/* ── Owner ••• button (top-right overlay) ── */}
         {isOwner && (
           <Pressable
             accessibilityRole="button"
-            accessibilityLabel="Bildirim işlemleri"
+            accessibilityLabel={t("animalCard.menuAccessibility")}
             hitSlop={{ top: 12, bottom: 12, left: 12, right: 12 }}
             style={({ pressed }) => [
               S.menuBtn,
@@ -344,7 +348,6 @@ export function AnimalCard({ animal, onLike, index = 0 }: Props) {
           </Pressable>
         )}
 
-        {/* ── Main card area ── */}
         <Pressable
           onPress={() => {
             Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
@@ -354,7 +357,6 @@ export function AnimalCard({ animal, onLike, index = 0 }: Props) {
           onPressOut={handlePressOut}
           style={S.card}
         >
-          {/* Thumbnail */}
           <View style={S.thumbWrap}>
             <Image
               source={{ uri: thumbUri }}
@@ -365,11 +367,10 @@ export function AnimalCard({ animal, onLike, index = 0 }: Props) {
             <View style={[S.statusDot, { backgroundColor: statusDotColor }]} />
           </View>
 
-          {/* Main content */}
           <View style={S.content}>
             <StatusBadge status={animal.status} size="sm" />
             <Text style={[S.notes, { color: T.text }]} numberOfLines={2}>
-              {animal.notes || "Not eklenmemiş"}
+              {animal.notes || t("animalCard.noNotes")}
             </Text>
             <Text style={S.meta}>
               <Text style={S.metaName}>{animal.userName}</Text>
@@ -384,7 +385,6 @@ export function AnimalCard({ animal, onLike, index = 0 }: Props) {
             ) : null}
           </View>
 
-          {/* Arrow */}
           <View style={S.arrowWrap}>
             <View style={S.arrowCircle}>
               <Icon name="chevron-forward" size={13} color={C.purple} />
@@ -392,11 +392,9 @@ export function AnimalCard({ animal, onLike, index = 0 }: Props) {
           </View>
         </Pressable>
 
-        {/* ── Interaction row ── */}
         <View style={[S.divider, { backgroundColor: T.divider }]} />
         <View style={S.interactRow}>
 
-          {/* Like */}
           <Pressable
             onPress={handleLike}
             style={({ pressed }) => [S.interactBtn, pressed && { opacity: 0.7 }]}
@@ -416,7 +414,6 @@ export function AnimalCard({ animal, onLike, index = 0 }: Props) {
 
           <View style={[S.interactSep, { backgroundColor: T.border }]} />
 
-          {/* Comment */}
           <Pressable
             onPress={() => {
               Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
@@ -431,25 +428,24 @@ export function AnimalCard({ animal, onLike, index = 0 }: Props) {
 
           <View style={[S.interactSep, { backgroundColor: T.border }]} />
 
-          {/* Location */}
           <Pressable
             onPress={() => {
               Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
               Alert.alert(
-                "Konumu Aç",
+                t("animalCard.openLocationTitle"),
                 animal.locationName
-                  ? `${animal.locationName} konumunu haritada aç?`
-                  : "Konum bilgisi mevcut değil.",
+                  ? t("animalCard.openLocationPrompt", { locationName: animal.locationName })
+                  : t("animalCard.noLocationInfo"),
                 animal.locationName
-                  ? [{ text: "İptal", style: "cancel" }, { text: "Aç", style: "default" }]
-                  : [{ text: "Tamam" }]
+                  ? [{ text: t("common.cancel"), style: "cancel" }, { text: t("animalCard.openBtn"), style: "default" }]
+                  : [{ text: t("common.ok") }]
               );
             }}
             style={({ pressed }) => [S.interactBtn, pressed && { opacity: 0.7 }]}
             hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}
           >
             <Icon name="location-outline" size={16} color={T.textMuted} />
-            <Text style={[S.interactText, { color: T.textMuted }]}>Konumu Aç</Text>
+            <Text style={[S.interactText, { color: T.textMuted }]}>{t("animalCard.openLocationTitle")}</Text>
           </Pressable>
 
           <View style={{ flex: 1 }} />
@@ -476,7 +472,6 @@ const S = StyleSheet.create({
     overflow: "hidden",
   },
 
-  /* Owner ••• menu button — absolutely positioned top-right */
   menuBtn: {
     position: "absolute",
     top: 10,
@@ -496,11 +491,9 @@ const S = StyleSheet.create({
     paddingTop: 14,
     paddingBottom: 12,
     gap: 14,
-    /* right padding extra so content doesn't overlap ••• button */
     paddingRight: 46,
   },
 
-  /* Thumbnail */
   thumbWrap: {
     width: 60,
     height: 60,
@@ -525,7 +518,6 @@ const S = StyleSheet.create({
     borderColor: "transparent",
   },
 
-  /* Content */
   content: { flex: 1, gap: 5 },
   notes: {
     fontSize: 14,
@@ -552,7 +544,6 @@ const S = StyleSheet.create({
     flex: 1,
   },
 
-  /* Arrow */
   arrowWrap: { justifyContent: "center" },
   arrowCircle: {
     width: 30,
@@ -563,7 +554,6 @@ const S = StyleSheet.create({
     justifyContent: "center",
   },
 
-  /* Interaction row */
   divider: {
     height: 1,
     backgroundColor: C.divider,

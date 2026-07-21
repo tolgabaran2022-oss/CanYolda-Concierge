@@ -18,6 +18,7 @@ import {
   View,
 } from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
+import { useTranslation } from "react-i18next";
 import { Icon } from "@/components/Icon";
 import { useAuth } from "@/contexts/AuthContext";
 
@@ -35,7 +36,7 @@ async function apiFetch(path: string, opts: RequestInit = {}) {
   return fetch(`${API_BASE}${path}`, { ...opts, headers });
 }
 
-async function uploadPhoto(localUri: string): Promise<string> {
+async function uploadPhoto(localUri: string, uploadErrorMsg: string): Promise<string> {
   const filename = localUri.split("/").pop() ?? "photo.jpg";
   const match = /\.(\w+)$/.exec(filename);
   const mimeType = match ? `image/${match[1].toLowerCase().replace("jpg", "jpeg")}` : "image/jpeg";
@@ -51,7 +52,7 @@ async function uploadPhoto(localUri: string): Promise<string> {
   const headers: Record<string, string> = {};
   if (token) headers["Authorization"] = `Bearer ${token}`;
   const res = await fetch(`${API_BASE}/upload`, { method: "POST", body: formData, headers });
-  if (!res.ok) throw new Error("Fotoğraf yüklenemedi");
+  if (!res.ok) throw new Error(uploadErrorMsg);
   const data = await res.json() as { url: string };
   return data.url;
 }
@@ -68,19 +69,20 @@ const C = {
 };
 
 const HELP_STATUSES = [
-  { key: "same_location",  label: "Aynı Bölgede",          icon: "map-pin",          color: "#7B5EA7" },
-  { key: "injured",        label: "Yaralı",                  icon: "injured",          color: "#DC2626" },
-  { key: "emergency",      label: "Acil Yardım Gerekli",     icon: "warning-outline",  color: "#EA580C" },
-  { key: "fed",            label: "Beslendi",                icon: "food",             color: "#16A34A" },
-  { key: "watered",        label: "Su Verildi",              icon: "droplets",         color: "#0284C7" },
-  { key: "taken_to_vet",   label: "Tedaviye Götürüldü",      icon: "car",              color: "#7B5EA7" },
-  { key: "at_vet",         label: "Veteriner Kontrolünde",   icon: "stethoscope",      color: "#0EA5E9" },
-  { key: "safe",           label: "Güvende",                 icon: "shield-checkmark", color: "#16A34A" },
-  { key: "adopted",        label: "Sahiplendirildi",         icon: "home",             color: "#7B5EA7" },
-  { key: "not_found",      label: "Bulunamadı",              icon: "eye-off-outline",  color: "#8B8FA8" },
+  { key: "same_location",  icon: "map-pin",          color: "#7B5EA7" },
+  { key: "injured",        icon: "injured",          color: "#DC2626" },
+  { key: "emergency",      icon: "warning-outline",  color: "#EA580C" },
+  { key: "fed",            icon: "food",             color: "#16A34A" },
+  { key: "watered",        icon: "droplets",         color: "#0284C7" },
+  { key: "taken_to_vet",   icon: "car",              color: "#7B5EA7" },
+  { key: "at_vet",         icon: "stethoscope",      color: "#0EA5E9" },
+  { key: "safe",           icon: "shield-checkmark", color: "#16A34A" },
+  { key: "adopted",        icon: "home",             color: "#7B5EA7" },
+  { key: "not_found",      icon: "eye-off-outline",  color: "#8B8FA8" },
 ] as const;
 
 export default function HelpUpdateScreen() {
+  const { t }        = useTranslation();
   const { animalId } = useLocalSearchParams<{ animalId: string }>();
   const router       = useRouter();
   const insets       = useSafeAreaInsets();
@@ -103,8 +105,8 @@ export default function HelpUpdateScreen() {
     const { status } = await ImagePicker.requestCameraPermissionsAsync();
     if (status !== "granted") {
       Alert.alert(
-        "Kamera izni gerekli",
-        "Fotoğraf çekebilmek için cihaz ayarlarından CanYoldaşı uygulamasına kamera erişimi vermelisin."
+        t("helpUpdate.cameraPermTitle"),
+        t("helpUpdate.cameraPermMsg")
       );
       return;
     }
@@ -117,14 +119,14 @@ export default function HelpUpdateScreen() {
     if (!result.canceled && result.assets[0]) {
       setPhotoUri(result.assets[0].uri);
     }
-  }, []);
+  }, [t]);
 
   const handleGallery = useCallback(async () => {
     const { status } = await ImagePicker.requestMediaLibraryPermissionsAsync();
     if (status !== "granted") {
       Alert.alert(
-        "Fotoğraf erişimi gerekli",
-        "Galeriden fotoğraf seçebilmek için fotoğraf erişimine izin vermelisin."
+        t("helpUpdate.galleryPermTitle"),
+        t("helpUpdate.galleryPermMsg")
       );
       return;
     }
@@ -137,13 +139,13 @@ export default function HelpUpdateScreen() {
     if (!result.canceled && result.assets[0]) {
       setPhotoUri(result.assets[0].uri);
     }
-  }, []);
+  }, [t]);
 
   const handleSubmit = useCallback(async () => {
     if (!canSubmit) return;
     if (submissionLock.current) return;
     if (!user?.id) {
-      Alert.alert("Oturum gerekli", "Güncelleme ekleyebilmek için giriş yapmalısın.");
+      Alert.alert(t("helpUpdate.authRequired"), t("helpUpdate.authRequiredMsg"));
       return;
     }
     if (!animalId) return;
@@ -152,8 +154,7 @@ export default function HelpUpdateScreen() {
     setIsSubmitting(true);
 
     try {
-      /* Upload the photo first — avoids 413 errors from base64 JSON payloads */
-      const photoUrl = await uploadPhoto(photoUri!);
+      const photoUrl = await uploadPhoto(photoUri!, t("helpUpdate.uploadError"));
 
       const res = await apiFetch(`/animals/${animalId}/help-updates`, {
         method: "POST",
@@ -166,7 +167,7 @@ export default function HelpUpdateScreen() {
       });
 
       if (!res.ok) {
-        let errMsg = "Güncelleme kaydedilemedi";
+        let errMsg = t("helpUpdate.errorSave");
         try {
           const errData = await res.json() as { error?: string };
           if (errData.error) errMsg = errData.error;
@@ -186,44 +187,43 @@ export default function HelpUpdateScreen() {
 
       Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
 
-      let alertMsg = "Güncel durum bilgisi eklendi. Desteğin için teşekkürler!";
+      let alertMsg = t("helpUpdate.successDefault");
       if (pointsEarned > 0) {
-        alertMsg = `Yardım güncellemen paylaşıldı. Bu ay +${pointsEarned} puan kazandın!`;
+        alertMsg = t("helpUpdate.successWithPoints", { points: pointsEarned });
       } else if (cooldownActive) {
-        alertMsg = "Güncellemen paylaşıldı. Bu hayvan için son 24 saat içinde puan kazandığın için ek puan verilmedi.";
+        alertMsg = t("helpUpdate.successCooldown");
       }
 
       Alert.alert(
-        "Teşekkürler! 🐾",
+        t("helpUpdate.successTitle"),
         alertMsg,
-        [{ text: "Tamam", onPress: () => router.back() }]
+        [{ text: t("common.ok"), onPress: () => router.back() }]
       );
     } catch (err) {
-      const msg = err instanceof Error ? err.message : "Güncelleme kaydedilemedi. Lütfen tekrar dene.";
-      Alert.alert("Hata", msg);
+      const msg = err instanceof Error ? err.message : t("helpUpdate.errorDefault");
+      Alert.alert(t("errors.error"), msg);
     } finally {
       setIsSubmitting(false);
       submissionLock.current = false;
     }
-  }, [canSubmit, user, animalId, photoUri, selectedStatus, note, router]);
+  }, [canSubmit, user, animalId, photoUri, selectedStatus, note, router, t]);
 
   const topPad = Platform.OS === "web" ? 16 : insets.top;
 
   return (
     <View style={{ flex: 1, backgroundColor: C.bg }}>
-      {/* ── Header ── */}
       <View style={[S.header, { paddingTop: topPad + 10 }]}>
         <Pressable
           onPress={() => router.back()}
           style={S.backBtn}
           hitSlop={12}
           accessibilityRole="button"
-          accessibilityLabel="Geri dön"
+          accessibilityLabel={t("helpUpdate.backAccessibility")}
         >
           <Icon name="arrow-back" size={20} color={C.text} />
         </Pressable>
         <Text style={S.headerTitle} numberOfLines={2}>
-          Hayvanın Güncel Durumunu Bildir
+          {t("helpUpdate.headerTitle")}
         </Text>
         <View style={{ width: 42 }} />
       </View>
@@ -239,13 +239,13 @@ export default function HelpUpdateScreen() {
           keyboardShouldPersistTaps="handled"
         >
           <Text style={S.subtitle}>
-            Bu hayvanı gördüysen güncel fotoğraf ve durum bilgisi ekleyerek diğer kullanıcılara yardımcı ol.
+            {t("helpUpdate.subtitle")}
           </Text>
 
-          {/* ── Photo Section ── */}
+          {/* Photo Section */}
           <View style={S.section}>
-            <Text style={S.sectionTitle}>Güncel Fotoğraf</Text>
-            <Text style={S.sectionHint}>Hayvanın şu anki durumunu gösteren güncel bir fotoğraf ekle.</Text>
+            <Text style={S.sectionTitle}>{t("helpUpdate.photoSection")}</Text>
+            <Text style={S.sectionHint}>{t("helpUpdate.photoHint")}</Text>
 
             {photoUri ? (
               <View style={S.photoPreviewWrap}>
@@ -271,17 +271,26 @@ export default function HelpUpdateScreen() {
                     <View style={S.photoBtnIcon}>
                       <Icon name="camera-outline" size={22} color={C.purple} />
                     </View>
-                    <Text style={S.photoBtnText}>Fotoğraf Çek</Text>
+                    <Text style={S.photoBtnText}>{t("helpUpdate.cameraBtn")}</Text>
                   </Pressable>
                 )}
+                <Pressable
+                  style={({ pressed }) => [S.photoBtn, S.photoBtnFull, pressed && { opacity: 0.75 }]}
+                  onPress={handleGallery}
+                >
+                  <View style={S.photoBtnIcon}>
+                    <Icon name="images-outline" size={22} color={C.purple} />
+                  </View>
+                  <Text style={S.photoBtnText}>{t("helpUpdate.galleryBtn")}</Text>
+                </Pressable>
               </View>
             )}
           </View>
 
-          {/* ── Status Section ── */}
+          {/* Status Section */}
           <View style={S.section}>
-            <Text style={S.sectionTitle}>Hayvanın Mevcut Durumu</Text>
-            <Text style={S.sectionHint}>Hayvanın şu anki durumu nedir?</Text>
+            <Text style={S.sectionTitle}>{t("helpUpdate.statusSection")}</Text>
+            <Text style={S.sectionHint}>{t("helpUpdate.statusHint")}</Text>
             <View style={S.statusGrid}>
               {HELP_STATUSES.map((s) => {
                 const active = selectedStatus === s.key;
@@ -311,7 +320,7 @@ export default function HelpUpdateScreen() {
                       ]}
                       numberOfLines={2}
                     >
-                      {s.label}
+                      {t(`animals.status.${s.key}`, { defaultValue: s.key })}
                     </Text>
                     {active && (
                       <View style={[S.statusActiveDot, { backgroundColor: s.color }]} />
@@ -322,16 +331,16 @@ export default function HelpUpdateScreen() {
             </View>
           </View>
 
-          {/* ── Note Section ── */}
+          {/* Note Section */}
           <View style={S.section}>
-            <Text style={S.sectionTitle}>Güncel Durum Notu</Text>
+            <Text style={S.sectionTitle}>{t("helpUpdate.noteSection")}</Text>
             <View style={S.noteWrap}>
               <TextInput
                 style={S.noteInput}
                 multiline
                 value={note}
-                onChangeText={(t) => setNote(t.slice(0, 300))}
-                placeholder="Örn. Hayvan aynı bölgede görüldü. Mama ve su verildi."
+                onChangeText={(txt) => setNote(txt.slice(0, 300))}
+                placeholder={t("helpUpdate.notePlaceholder")}
                 placeholderTextColor={C.muted}
                 maxLength={300}
                 textAlignVertical="top"
@@ -341,19 +350,19 @@ export default function HelpUpdateScreen() {
           </View>
         </ScrollView>
 
-        {/* ── Submit Button ── */}
+        {/* Submit Button */}
         <View style={[S.footer, { paddingBottom: Math.max(insets.bottom + 8, 16) }]}>
           <Pressable
             style={[S.submitBtn, !canSubmit && S.submitBtnDisabled]}
             onPress={handleSubmit}
             disabled={!canSubmit}
             accessibilityRole="button"
-            accessibilityLabel="Güncellemeyi kaydet"
+            accessibilityLabel={t("helpUpdate.submitAccessibility")}
           >
             {isSubmitting ? (
               <View style={S.submitInner}>
                 <ActivityIndicator size="small" color="#FFF" />
-                <Text style={S.submitText}>Güncelleme Kaydediliyor...</Text>
+                <Text style={S.submitText}>{t("helpUpdate.submittingBtn")}</Text>
               </View>
             ) : (
               <LinearGradient
@@ -363,7 +372,7 @@ export default function HelpUpdateScreen() {
                 style={S.submitGradient}
               >
                 <Icon name="checkmark-circle" size={20} color="#FFF" />
-                <Text style={S.submitText}>Güncellemeyi Kaydet</Text>
+                <Text style={S.submitText}>{t("helpUpdate.submitBtn")}</Text>
               </LinearGradient>
             )}
           </Pressable>
@@ -483,20 +492,6 @@ const S = StyleSheet.create({
     flexDirection: "row",
     gap: 8,
     alignItems: "center",
-  },
-  changeBtn: {
-    flexDirection: "row",
-    alignItems: "center",
-    gap: 5,
-    backgroundColor: "rgba(0,0,0,0.55)",
-    paddingHorizontal: 12,
-    paddingVertical: 7,
-    borderRadius: 10,
-  },
-  changeBtnText: {
-    color: C.white,
-    fontSize: 12,
-    fontFamily: "Inter_600SemiBold",
   },
   removeBtn: {
     width: 32, height: 32, borderRadius: 16,

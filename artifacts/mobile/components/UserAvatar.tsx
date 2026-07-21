@@ -1,5 +1,6 @@
 import { Image } from "expo-image";
 import React from "react";
+import { useTranslation } from "react-i18next";
 import { ActivityIndicator, Pressable, StyleSheet, Text, View } from "react-native";
 import { Icon } from "@/components/Icon";
 
@@ -22,6 +23,7 @@ export function UserAvatar({
   onPress,
   accessibilityLabel,
 }: UserAvatarProps) {
+  const { t } = useTranslation();
   const initials = (name ?? "")
     .split(" ")
     .filter(Boolean)
@@ -79,7 +81,7 @@ export function UserAvatar({
         onPress={onPress}
         disabled={uploading}
         accessibilityRole="button"
-        accessibilityLabel={editable ? "Profil fotoğrafını değiştir" : (accessibilityLabel ?? "")}
+        accessibilityLabel={editable ? t("common.changeProfilePhoto") : (accessibilityLabel ?? "")}
         style={({ pressed }) => ({ opacity: pressed ? 0.8 : 1 })}
       >
         {content}

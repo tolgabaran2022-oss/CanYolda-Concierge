@@ -22,6 +22,7 @@ import {
   View,
 } from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
+import { useTranslation } from "react-i18next";
 import { useAdoption } from "@/contexts/AdoptionContext";
 import { useAuth } from "@/contexts/AuthContext";
 import { useTheme } from "@/hooks/useTheme";
@@ -264,6 +265,7 @@ const APS = StyleSheet.create({
 /* ── Main screen ── */
 export default function AddAdoptionScreen() {
   const T              = useTheme();
+  const { t }          = useTranslation();
   const insets         = useSafeAreaInsets();
   const router         = useRouter();
   const { addListing } = useAdoption();
@@ -304,11 +306,11 @@ export default function AddAdoptionScreen() {
 
   const openCamera = async () => {
     if (images.length >= MAX_PHOTOS) {
-      Alert.alert("Limit Aşıldı", `En fazla ${MAX_PHOTOS} fotoğraf ekleyebilirsiniz.`);
+      Alert.alert(t("addAdoption.photoLimitTitle"), t("addAdoption.photoLimitMsg", { count: MAX_PHOTOS }));
       return;
     }
     const perm = await ImagePicker.requestCameraPermissionsAsync();
-    if (!perm.granted) { Alert.alert("Kamera İzni Gerekli", "Ayarlar'dan kamera iznini etkinleştirin."); return; }
+    if (!perm.granted) { Alert.alert(t("addAnimal.cameraPermTitle"), t("addAnimal.openSettings")); return; }
     const result = await ImagePicker.launchCameraAsync({ allowsEditing: true, aspect: [4, 3], quality: 0.8 });
     if (!result.canceled && result.assets[0]) {
       setImages((prev) => [...prev, result.assets[0].uri].slice(0, MAX_PHOTOS));
@@ -318,7 +320,7 @@ export default function AddAdoptionScreen() {
 
   const openGallery = async () => {
     if (images.length >= MAX_PHOTOS) {
-      Alert.alert("Limit Aşıldı", `En fazla ${MAX_PHOTOS} fotoğraf ekleyebilirsiniz.`);
+      Alert.alert(t("addAdoption.photoLimitTitle"), t("addAdoption.photoLimitMsg", { count: MAX_PHOTOS }));
       return;
     }
     const perm = await ImagePicker.requestMediaLibraryPermissionsAsync();
@@ -348,11 +350,11 @@ export default function AddAdoptionScreen() {
 
   const validate = (): boolean => {
     const errs: Record<string, string> = {};
-    if (images.length === 0)  errs.photo              = "Fotoğraf eklenmesi zorunludur";
-    if (!petName.trim())      errs.petName            = "Hayvan adı zorunludur";
-    if (!petAge)              errs.petAge             = "Yaş seçimi zorunludur";
-    if (!province)            errs.province           = "İl seçimi zorunludur";
-    if (!district)            errs.district           = "İlçe seçimi zorunludur";
+    if (images.length === 0)  errs.photo              = t("addAdoption.photoRequired");
+    if (!petName.trim())      errs.petName            = t("addAdoption.nameRequired");
+    if (!petAge)              errs.petAge             = t("addAdoption.ageRequired");
+    if (!province)            errs.province           = t("addAdoption.cityRequired");
+    if (!district)            errs.district           = t("addAdoption.districtRequired");
     if (description.trim().length < 30)
                               errs.description        = "Açıklama en az 30 karakter olmalıdır";
     if (!healthStatus)        errs.healthStatus       = "Lütfen detay bilgilerini tamamla.";
@@ -393,7 +395,7 @@ export default function AddAdoptionScreen() {
         setIsUploading(false);
       } catch (uploadErr) {
         console.error("[handleSave] photo upload failed", uploadErr);
-        Alert.alert("Fotoğraf Yüklenemedi", "Fotoğraflardan biri yüklenemedi. Lütfen tekrar deneyin.");
+        Alert.alert(t("addAdoption.uploadError"), t("addAdoption.uploadError"));
         setIsUploading(false);
         setIsSaving(false);
         return;

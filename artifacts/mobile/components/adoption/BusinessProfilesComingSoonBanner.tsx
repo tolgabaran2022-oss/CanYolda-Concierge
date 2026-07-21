@@ -13,6 +13,7 @@ import {
 import { LinearGradient } from "expo-linear-gradient";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { Icon } from "@/components/Icon";
+import { useTranslation } from "react-i18next";
 
 const BANNER = require("@/assets/images/business-profiles-banner.png");
 
@@ -23,6 +24,7 @@ const PURPLE_DARK  = "#6D28D9";
 /* ─────────────────────────────────────────────────────────── */
 
 const BusinessProfilesComingSoonBanner = React.memo(() => {
+  const { t } = useTranslation();
   const [visible, setVisible] = useState(false);
   const opening = useRef(false);
   const insets = useSafeAreaInsets();
@@ -55,7 +57,7 @@ const BusinessProfilesComingSoonBanner = React.memo(() => {
         onPress={openModal}
         style={s.container}
         accessibilityRole="button"
-        accessibilityLabel="Veteriner ve Petshop profilleri hakkında bilgi al"
+        accessibilityLabel={t("common.businessBannerInfo")}
       >
         {({ pressed }) => (
           <View style={[s.inner, pressed && { opacity: 0.88 }]}>
@@ -79,7 +81,7 @@ const BusinessProfilesComingSoonBanner = React.memo(() => {
         onRequestClose={closeModal}
       >
         {/* Backdrop */}
-        <TouchableWithoutFeedback onPress={closeModal} accessibilityLabel="Pencereyi kapat">
+        <TouchableWithoutFeedback onPress={closeModal} accessibilityLabel={t("common.closeWindow")}>
           <View style={s.backdrop} />
         </TouchableWithoutFeedback>
 
@@ -97,7 +99,7 @@ const BusinessProfilesComingSoonBanner = React.memo(() => {
               onPress={closeModal}
               style={s.closeBtn}
               hitSlop={8}
-              accessibilityLabel="Pencereyi kapat"
+              accessibilityLabel={t("common.closeWindow")}
               accessibilityRole="button"
             >
               <Icon name="x" size={16} color={PURPLE} />

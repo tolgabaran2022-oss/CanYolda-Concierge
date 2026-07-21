@@ -10,14 +10,14 @@ import {
   View,
 } from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
+import { useTranslation } from "react-i18next";
 import { Icon } from "@/components/Icon";
 import { useTheme } from "@/hooks/useTheme";
 
-const LAST_UPDATED = "17 Temmuz 2026";
-const APP_NAME     = "CanYoldaşı";
-const CONTACT      = "destek@canyoldasi.app";
+const CONTACT = "destek@canyoldasi.app";
 
 export default function PrivacyPolicyScreen() {
+  const { t }   = useTranslation();
   const router  = useRouter();
   const insets  = useSafeAreaInsets();
   const T       = useTheme();
@@ -30,12 +30,12 @@ export default function PrivacyPolicyScreen() {
         <Pressable
           style={({ pressed }) => [S.backBtn, { opacity: pressed ? 0.6 : 1 }]}
           onPress={() => router.back()}
-          accessibilityLabel="Geri"
+          accessibilityLabel={t("privacy.back")}
           accessibilityRole="button"
         >
           <Icon name="chevron-back" size={22} color={T.purple} />
         </Pressable>
-        <Text style={[S.title, { color: T.text }]}>Gizlilik Politikası</Text>
+        <Text style={[S.title, { color: T.text }]}>{t("privacy.title")}</Text>
         <View style={S.backBtn} />
       </View>
 
@@ -43,82 +43,61 @@ export default function PrivacyPolicyScreen() {
         contentContainerStyle={[S.content, { paddingBottom: insets.bottom + 40 }]}
         showsVerticalScrollIndicator={false}
       >
-        <Text style={[S.updated, { color: T.textFaint }]}>Son güncelleme: {LAST_UPDATED}</Text>
+        <Text style={[S.updated, { color: T.textFaint }]}>
+          {t("privacy.lastUpdated", { date: t("privacy.lastUpdatedDate") })}
+        </Text>
 
-        <Section title="1. Genel Bakış" T={T}>
-          {APP_NAME} ("uygulama", "biz"), Türkiye'deki sokak hayvanlarını raporlamak, takip etmek ve sahiplendirme ilanlarını yönetmek için topluluk odaklı bir mobil uygulamadır. Bu Gizlilik Politikası, uygulama aracılığıyla toplanan, kullanılan ve paylaşılan kişisel verilerin nasıl işlendiğini açıklamaktadır.
+        <Section title={t("privacy.s1Title")} T={T}>
+          {t("privacy.s1Body")}
         </Section>
 
-        <Section title="2. Toplanan Veriler" T={T}>
-          <Bold>2.1 Hesap Bilgileri{"\n"}</Bold>
-          Kayıt sırasında ad, e-posta adresi ve telefon numarası toplanır. Şifreler bcrypt ile hashlenerek saklanır; düz metin olarak hiçbir zaman saklanmaz veya iletilmez.{"\n\n"}
-          <Bold>2.2 Konum Bilgisi{"\n"}</Bold>
-          Sokak hayvanı raporlanırken veya ilan oluşturulurken kullanıcının onayıyla konum bilgisi (enlem/boylam) alınır. Arka planda konum takibi yapılmaz.{"\n\n"}
-          <Bold>2.3 Fotoğraflar{"\n"}</Bold>
-          Hayvan raporları ve ilanlar için yüklenen fotoğraflar sunucumuzda saklanır. Fotoğraflar yalnızca uygulama içi amaçlarla kullanılır.{"\n\n"}
-          <Bold>2.4 Mesajlar{"\n"}</Bold>
-          Kullanıcılar arasındaki mesajlar şifreli bağlantı (HTTPS/TLS) üzerinden iletilir ve veritabanında saklanır. Mesajlar yalnızca ilgili konuşma katılımcıları tarafından okunabilir.{"\n\n"}
-          <Bold>2.5 Uygulama İçi Satın Alımlar{"\n"}</Bold>
-          Ödeme işlemleri Apple App Store veya Google Play Store tarafından gerçekleştirilir. Kredi kartı veya ödeme bilgileri {APP_NAME} sunucularında saklanmaz. Satın alım doğrulama RevenueCat üzerinden yapılır.
+        <Section title={t("privacy.s2Title")} T={T}>
+          <Bold>{t("privacy.s2_1")}{"\n"}</Bold>
+          {t("privacy.s2_1Body")}{"\n\n"}
+          <Bold>{t("privacy.s2_2")}{"\n"}</Bold>
+          {t("privacy.s2_2Body")}{"\n\n"}
+          <Bold>{t("privacy.s2_3")}{"\n"}</Bold>
+          {t("privacy.s2_3Body")}{"\n\n"}
+          <Bold>{t("privacy.s2_4")}{"\n"}</Bold>
+          {t("privacy.s2_4Body")}{"\n\n"}
+          <Bold>{t("privacy.s2_5")}{"\n"}</Bold>
+          {t("privacy.s2_5Body")}
         </Section>
 
-        <Section title="3. Verilerin Kullanımı" T={T}>
-          Toplanan veriler şu amaçlarla kullanılır:{"\n"}
-          {"• "}Hesap oluşturma ve kimlik doğrulama{"\n"}
-          {"• "}Sokak hayvanı raporları ve sahiplendirme ilanlarının yönetimi{"\n"}
-          {"• "}Kullanıcılar arasında mesajlaşma{"\n"}
-          {"• "}Uygulama içi satın alım doğrulama{"\n"}
-          {"• "}Hizmet kalitesinin iyileştirilmesi{"\n"}
-          {"• "}Yasal yükümlülüklerin yerine getirilmesi
+        <Section title={t("privacy.s3Title")} T={T}>
+          {t("privacy.s3Body")}
         </Section>
 
-        <Section title="4. Veri Paylaşımı" T={T}>
-          Kişisel verileriniz üçüncü taraflarla satılmaz veya kiralanmaz.{"\n\n"}
-          Veriler yalnızca şu durumlarda paylaşılabilir:{"\n"}
-          {"• "}Hizmet sağlayıcılar (RevenueCat — satın alım doğrulama){"\n"}
-          {"• "}Yasal zorunluluklar (mahkeme kararı, yetkili makam talebi){"\n"}
-          {"• "}Acil durumlarda can güvenliğini korumak için
+        <Section title={t("privacy.s4Title")} T={T}>
+          {t("privacy.s4Body")}
         </Section>
 
-        <Section title="5. Veri Güvenliği" T={T}>
-          {"• "}Tüm iletişim HTTPS/TLS ile şifrelenir{"\n"}
-          {"• "}Şifreler bcrypt ile hashlenerek saklanır{"\n"}
-          {"• "}JWT token'ları kısa ömürlüdür (30 gün){"\n"}
-          {"• "}Şifre sıfırlama kodları SHA-256 ile hashlenerek saklanır ve 10 dakika sonra geçersizleşir
+        <Section title={t("privacy.s5Title")} T={T}>
+          {t("privacy.s5Body")}
         </Section>
 
-        <Section title="6. Veri Saklama Süresi" T={T}>
-          {"• "}Hesap verileri: Hesap silinene kadar{"\n"}
-          {"• "}Hayvan raporları: Anonimleştirilerek süresiz (topluluk verisi){"\n"}
-          {"• "}Sahiplendirme ilanları: Anonimleştirilerek süresiz{"\n"}
-          {"• "}Mesajlar: Hesap silindiğinde erişim kesilir{"\n"}
-          {"• "}Şifre sıfırlama tokenleri: Kullanıldıktan veya 10 dakika sonra
+        <Section title={t("privacy.s6Title")} T={T}>
+          {t("privacy.s6Body")}
         </Section>
 
-        <Section title="7. Kullanıcı Hakları" T={T}>
-          KVKK (Kişisel Verilerin Korunması Kanunu) kapsamında şu haklara sahipsiniz:{"\n"}
-          {"• "}Verilerinize erişim ve kopyasını talep etme{"\n"}
-          {"• "}Yanlış verilerin düzeltilmesini talep etme{"\n"}
-          {"• "}Hesabınızı ve tüm kişisel verilerinizi silme (Hesap {">"} Tehlikeli Alan {">"} Hesabı Sil){"\n"}
-          {"• "}Veri işlemeye itiraz etme{"\n\n"}
-          Talepleriniz için: {CONTACT}
+        <Section title={t("privacy.s7Title")} T={T}>
+          {t("privacy.s7Body", { contact: CONTACT })}
         </Section>
 
-        <Section title="8. Çocukların Gizliliği" T={T}>
-          Bu uygulama 13 yaşın altındaki çocuklara yönelik değildir. 13 yaş altı kullanıcıların kişisel verilerini kasıtlı olarak toplamayız.
+        <Section title={t("privacy.s8Title")} T={T}>
+          {t("privacy.s8Body")}
         </Section>
 
-        <Section title="9. Çerezler ve Takip" T={T}>
-          Mobil uygulama çerez kullanmaz. Web sürümünde oturum yönetimi için AsyncStorage kullanılır. Reklam takibi veya üçüncü taraf analitik aracı kullanılmamaktadır.
+        <Section title={t("privacy.s9Title")} T={T}>
+          {t("privacy.s9Body")}
         </Section>
 
-        <Section title="10. Politika Değişiklikleri" T={T}>
-          Bu politika güncellendiğinde uygulama içinde bildirim yapılır. Değişiklikler yayınlandıktan sonra uygulamayı kullanmaya devam etmeniz değişiklikleri kabul ettiğiniz anlamına gelir.
+        <Section title={t("privacy.s10Title")} T={T}>
+          {t("privacy.s10Body")}
         </Section>
 
-        <Section title="11. İletişim" T={T}>
-          Gizlilik politikamızla ilgili sorularınız için:{"\n"}
-          E-posta: {CONTACT}
+        <Section title={t("privacy.s11Title")} T={T}>
+          {t("privacy.s11Body", { contact: CONTACT })}
         </Section>
       </ScrollView>
     </View>

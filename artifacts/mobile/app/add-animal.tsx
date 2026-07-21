@@ -25,6 +25,7 @@ import {
 } from "react-native";
 import MapView, { Marker, PROVIDER_DEFAULT } from "react-native-maps";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
+import { useTranslation } from "react-i18next";
 
 /* ── Icon mappings for animal types ──────────────────────────── */
 const ANIMAL_TYPE_ICONS: Record<AnimalType, string> = {
@@ -34,48 +35,7 @@ const ANIMAL_TYPE_ICONS: Record<AnimalType, string> = {
   diger: "paw",
 };
 
-/* ── Status definitions ───────────────────────────────────────── */
-const STATUSES: {
-  key: AnimalStatus;
-  label: string;
-  icon: string;
-  tintBg: string;
-  tintBorder: string;
-  iconColor: string;
-}[] = [
-  {
-    key: "hungry",
-    label: "Aç",
-    icon: "restaurant-outline",
-    tintBg: "#FEF3C7",
-    tintBorder: "#F59E0B",
-    iconColor: "#92400E",
-  },
-  {
-    key: "injured",
-    label: "Yaralı",
-    icon: "pulse-outline",
-    tintBg: "#FEE2E2",
-    tintBorder: "#EF4444",
-    iconColor: "#991B1B",
-  },
-  {
-    key: "healthy",
-    label: "Sağlıklı",
-    icon: "checkmark-circle-outline",
-    tintBg: "#D1FAE5",
-    tintBorder: "#10B981",
-    iconColor: "#065F46",
-  },
-  {
-    key: "unknown",
-    label: "Bilinmiyor",
-    icon: "help-circle-outline",
-    tintBg: "#F3F4F6",
-    tintBorder: "#9CA3AF",
-    iconColor: "#374151",
-  },
-];
+/* ── Status definitions are defined inside the component (need t()) ── */
 
 const DEFAULT_REGION = {
   latitude: 41.0082,
@@ -145,6 +105,21 @@ export default function AddAnimalScreen() {
   const { addAnimal } = useAnimals();
   const { user, token } = useAuth();
   const params = useLocalSearchParams<{ initialLat?: string; initialLng?: string }>();
+  const { t } = useTranslation();
+
+  const STATUSES: {
+    key: AnimalStatus;
+    label: string;
+    icon: string;
+    tintBg: string;
+    tintBorder: string;
+    iconColor: string;
+  }[] = [
+    { key: "hungry",  label: t("statusBadge.hungry"),  icon: "restaurant-outline",       tintBg: "#FEF3C7", tintBorder: "#F59E0B", iconColor: "#92400E" },
+    { key: "injured", label: t("statusBadge.injured"), icon: "pulse-outline",             tintBg: "#FEE2E2", tintBorder: "#EF4444", iconColor: "#991B1B" },
+    { key: "healthy", label: t("statusBadge.healthy"), icon: "checkmark-circle-outline",  tintBg: "#D1FAE5", tintBorder: "#10B981", iconColor: "#065F46" },
+    { key: "unknown", label: t("statusBadge.unknown"), icon: "help-circle-outline",       tintBg: "#F3F4F6", tintBorder: "#9CA3AF", iconColor: "#374151" },
+  ];
 
   const [image, setImage]                   = useState<string | undefined>(); // confirmed local URI
   const [pendingImage, setPendingImage]     = useState<string | undefined>(); // captured, awaiting confirm
@@ -193,8 +168,8 @@ export default function AddAnimalScreen() {
       // Secure context check (camera requires HTTPS or localhost)
       if (typeof window !== "undefined" && !window.isSecureContext) {
         Alert.alert(
-          "Güvenli Bağlantı Gerekli",
-          "Kamerayı kullanabilmek için uygulamayı güvenli HTTPS bağlantısı üzerinden açın."
+          t("addAnimal.httpsRequired"),
+          t("addAnimal.httpsRequiredMsg")
         );
         return;
       }
@@ -235,13 +210,13 @@ export default function AddAnimalScreen() {
 
     if (status !== "granted") {
       Alert.alert(
-        "Kamera İzni Gerekli",
-        "Fotoğraf çekebilmek için kamera izni vermeniz gerekiyor.",
+        t("addAnimal.cameraPermTitle"),
+        t("addAnimal.cameraPermMsg"),
         [
           canAskAgain
-            ? { text: "Kamera İzni Ver", onPress: openCamera }
-            : { text: "Ayarları Aç", onPress: () => void Linking.openSettings() },
-          { text: "Vazgeç", style: "cancel" },
+            ? { text: t("addAnimal.grantPermission"), onPress: openCamera }
+            : { text: t("addAnimal.openSettings"), onPress: () => void Linking.openSettings() },
+          { text: t("common.cancel"), style: "cancel" },
         ]
       );
       return;
@@ -274,7 +249,7 @@ export default function AddAnimalScreen() {
       setPhotoStatus("ready");
     } catch {
       setPhotoStatus("upload_failed");
-      setPhotoStatusReason("Fotoğraf yüklenemedi. Lütfen tekrar deneyin.");
+      setPhotoStatusReason(t("addAnimal.uploadError"));
     }
   };
 
@@ -300,14 +275,14 @@ export default function AddAnimalScreen() {
   const showDuplicateAlert = (nearby: NearbyAnimal[], onContinue: () => void) => {
     const first = nearby[0];
     const desc = first?.reportCode
-      ? `${first.reportCode} numaralı bildirim zaten var`
-      : "Bu konuma yakın son 1 saat içinde bir bildirim yapılmış";
+      ? t("addAnimal.duplicateReportCode", { code: first.reportCode })
+      : t("addAnimal.duplicateNearby");
     Alert.alert(
-      "Benzer Bildirim Var",
-      `${desc}.\n\nYine de yeni bildirim yapmak ister misiniz?`,
+      t("addAnimal.duplicateTitle"),
+      `${desc}.\n\n${t("addAnimal.duplicateQuestion")}`,
       [
-        { text: "Mevcut Bildirimi Gör", onPress: () => router.push(`/animal/${first?.id}`), style: "cancel" },
-        { text: "Yeni Bildirim Yap", onPress: onContinue },
+        { text: t("addAnimal.viewExisting"), onPress: () => router.push(`/animal/${first?.id}`), style: "cancel" },
+        { text: t("addAnimal.newReport"), onPress: onContinue },
       ]
     );
   };
@@ -381,19 +356,19 @@ export default function AddAnimalScreen() {
 
   const handleSave = async () => {
     if (!location) {
-      Alert.alert("Konum Gerekli", "Lütfen hayvanın konumunu belirleyin.");
+      Alert.alert(t("addAnimal.locationRequired"), t("addAnimal.locationRequiredMsg"));
       return;
     }
     if (!user) return;
 
     if (!confirmedImageUrl || photoStatus !== "ready") {
       Alert.alert(
-        "Fotoğraf Gerekli",
+        t("addAnimal.photoRequiredTitle"),
         photoStatus === "uploading"
-          ? "Fotoğraf yükleniyor, lütfen bekleyin."
+          ? t("addAnimal.photoUploading")
           : photoStatus === "upload_failed"
-            ? (photoStatusReason ?? "Fotoğraf yüklenemedi. Lütfen tekrar deneyin.")
-            : "Lütfen önce hayvanın fotoğrafını çekin.",
+            ? (photoStatusReason ?? t("addAnimal.uploadError"))
+            : t("addAnimal.photoRequiredMsg"),
       );
       return;
     }
@@ -414,7 +389,7 @@ export default function AddAnimalScreen() {
       Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
       router.back();
     } catch {
-      Alert.alert("Hata", "Kaydedilemedi, lütfen tekrar deneyin.");
+      Alert.alert(t("errors.error"), t("addAnimal.saveError"));
     } finally {
       setIsSaving(false);
     }
@@ -436,9 +411,9 @@ export default function AddAnimalScreen() {
           <Icon name="chevron-back" size={20} color={C.purple} />
         </Pressable>
         <View style={S.headerTitles}>
-          <Text style={[S.headerTitle, { color: C.text }]}>Sokak Hayvanı Ekle</Text>
+          <Text style={[S.headerTitle, { color: C.text }]}>{t("addAnimal.title")}</Text>
           <Text style={[S.headerSubtitle, { color: C.textMuted }]}>
-            Yakındaki bir dost için yardım bildir
+            {t("addAnimal.subtitle")}
           </Text>
         </View>
         <View style={S.headerSpacer} />
@@ -454,11 +429,11 @@ export default function AddAnimalScreen() {
         {/* ── 1. Photo card ───────────────────────────────────────── */}
         <View style={S.section}>
           <SectionLabel
-            label="Fotoğraf"
-            note="Zorunlu — Yalnızca kamera ile çekilebilir"
+            label={t("addAnimal.photoSection")}
+            note={t("addAnimal.photoRequired")}
           />
           <Text style={[S.photoRequiredSub, { color: C.textMuted }]}>
-            Hayvanın olay yerindeki güncel ve net fotoğrafını çekin.
+            {t("addAnimal.photoHelp")}
           </Text>
 
           {/* Pending preview — captured but not yet confirmed */}
@@ -468,11 +443,11 @@ export default function AddAnimalScreen() {
               <View style={S.photoPreviewActions}>
                 <Pressable style={[S.photoPreviewBtn, { backgroundColor: "rgba(0,0,0,0.55)" }]} onPress={retakePhoto}>
                   <Icon name="camera-reverse-outline" size={16} color="#FFFFFF" />
-                  <Text style={S.photoPreviewBtnText}>Tekrar Çek</Text>
+                  <Text style={S.photoPreviewBtnText}>{t("addAnimal.retake")}</Text>
                 </Pressable>
                 <Pressable style={[S.photoPreviewBtn, { backgroundColor: C.purple }]} onPress={() => { void confirmImage(); }}>
                   <Icon name="checkmark-circle-outline" size={16} color="#FFFFFF" />
-                  <Text style={S.photoPreviewBtnText}>Fotoğrafı Kullan</Text>
+                  <Text style={S.photoPreviewBtnText}>{t("addAnimal.usePhoto")}</Text>
                 </Pressable>
               </View>
             </View>
@@ -494,22 +469,22 @@ export default function AddAnimalScreen() {
                   {photoStatus === "uploading" ? (
                     <View style={[S.photoStatusOverlay, { backgroundColor: "rgba(0,0,0,0.60)" }]}>
                       <ActivityIndicator color="#FFFFFF" />
-                      <Text style={S.photoStatusOverlayText}>Fotoğraf yükleniyor…</Text>
+                      <Text style={S.photoStatusOverlayText}>{t("addAnimal.uploading")}</Text>
                     </View>
                   ) : photoStatus === "ready" ? (
                     <View style={[S.photoStatusOverlay, { backgroundColor: "rgba(34,197,94,0.75)" }]}>
                       <Icon name="checkmark-circle" size={20} color="#FFFFFF" />
-                      <Text style={S.photoStatusOverlayText}>Fotoğraf hazır.</Text>
+                      <Text style={S.photoStatusOverlayText}>{t("addAnimal.photoReady")}</Text>
                     </View>
                   ) : photoStatus === "upload_failed" ? (
                     <View style={[S.photoStatusOverlay, { backgroundColor: "rgba(239,68,68,0.80)" }]}>
                       <Icon name="cloud-offline-outline" size={20} color="#FFFFFF" />
-                      <Text style={S.photoStatusOverlayText}>Yükleme başarısız — tekrar çek</Text>
+                      <Text style={S.photoStatusOverlayText}>{t("addAnimal.uploadFailed")}</Text>
                     </View>
                   ) : (
                     <View style={S.photoOverlay}>
                       <Icon name="camera-reverse-outline" size={16} color="#FFFFFF" />
-                      <Text style={S.photoOverlayText}>Fotoğrafı Değiştir</Text>
+                      <Text style={S.photoOverlayText}>{t("addAnimal.changePhoto")}</Text>
                     </View>
                   )}
                 </>
@@ -518,12 +493,12 @@ export default function AddAnimalScreen() {
                   <View style={[S.photoCameraCircle, { backgroundColor: C.purpleFaint }]}>
                     <Icon name="camera-outline" size={28} color={C.purple} />
                   </View>
-                  <Text style={[S.photoAddTitle, { color: C.text }]}>Fotoğraf Çek</Text>
+                  <Text style={[S.photoAddTitle, { color: C.text }]}>{t("addAnimal.takePhoto")}</Text>
                   <Text style={[S.photoAddSub, { color: C.textMuted }]}>
-                    Kamera ile olay yerinde fotoğraf çekin
+                    {t("addAnimal.takePhotoDesc")}
                   </Text>
                   <View style={[S.requiredPill, { backgroundColor: "#FEE2E2" }]}>
-                    <Text style={[S.requiredPillText, { color: "#DC2626" }]}>Zorunlu</Text>
+                    <Text style={[S.requiredPillText, { color: "#DC2626" }]}>{t("addAnimal.required")}</Text>
                   </View>
                 </View>
               )}
@@ -533,7 +508,7 @@ export default function AddAnimalScreen() {
 
         {/* ── 2. Animal type ──────────────────────────────────────── */}
         <View style={S.section}>
-          <SectionLabel label="Hayvan Türü" />
+          <SectionLabel label={t("addAnimal.animalType")} />
           <View style={S.typeRow}>
             {ANIMAL_TYPES.map((t) => {
               const isActive = animalType === t.key;
@@ -568,7 +543,7 @@ export default function AddAnimalScreen() {
 
         {/* ── 3. Status ───────────────────────────────────────────── */}
         <View style={S.section}>
-          <SectionLabel label="Durum" />
+          <SectionLabel label={t("addAnimal.status")} />
           <View style={S.statusGrid}>
             {STATUSES.map((s) => {
               const isActive = status === s.key;
@@ -609,7 +584,7 @@ export default function AddAnimalScreen() {
 
         {/* ── 4. Notes ────────────────────────────────────────────── */}
         <View style={S.section}>
-          <SectionLabel label="Notlar" sub="Durumu kısaca anlat" />
+          <SectionLabel label={t("addAnimal.notesLabel")} sub={t("addAnimal.notesSub")} />
           <TextInput
             style={[
               S.notesInput,
@@ -623,7 +598,7 @@ export default function AddAnimalScreen() {
             onChangeText={setNotes}
             onFocus={() => setNotesFocused(true)}
             onBlur={() => setNotesFocused(false)}
-            placeholder="Örn. Ön bacağında yara var, veteriner yardımı gerekiyor..."
+            placeholder={t("addAnimal.notesPlaceholder")}
             placeholderTextColor={C.placeholder}
             multiline
             numberOfLines={4}
@@ -633,13 +608,13 @@ export default function AddAnimalScreen() {
 
         {/* ── 5. Location ─────────────────────────────────────────── */}
         <View style={S.section}>
-          <SectionLabel label="Konum" sub="Hayvanın görüldüğü konumu ekle" />
+          <SectionLabel label={t("addAnimal.location")} sub={t("addAnimal.locationSub")} />
 
           {location ? (
             <View style={[S.locationSuccess, { backgroundColor: "#D1FAE5", borderColor: "#10B981" }]}>
               <Icon name="checkmark-circle" size={20} color="#065F46" />
               <View style={{ flex: 1 }}>
-                <Text style={[S.locationSuccessTitle, { color: "#065F46" }]}>Konum Eklendi</Text>
+                <Text style={[S.locationSuccessTitle, { color: "#065F46" }]}>{t("addAnimal.locationAdded")}</Text>
                 <Text style={[S.locationSuccessCoords, { color: "#34724F" }]}>
                   {location.latitude.toFixed(5)}, {location.longitude.toFixed(5)}
                 </Text>
@@ -651,7 +626,7 @@ export default function AddAnimalScreen() {
               >
                 {isLocating
                   ? <ActivityIndicator size="small" color="#065F46" />
-                  : <Text style={[S.locationChangeBtnText, { color: "#065F46" }]}>Güncelle</Text>
+                  : <Text style={[S.locationChangeBtnText, { color: "#065F46" }]}>{t("addAnimal.locationUpdate")}</Text>
                 }
               </Pressable>
             </View>
@@ -667,12 +642,12 @@ export default function AddAnimalScreen() {
               {isLocating ? (
                 <>
                   <ActivityIndicator color="white" size="small" />
-                  <Text style={S.locBtnText}>Konum alınıyor...</Text>
+                  <Text style={S.locBtnText}>{t("addAnimal.locating")}</Text>
                 </>
               ) : (
                 <>
                   <Icon name="location-outline" size={20} color="white" strokeWidth={2} />
-                  <Text style={S.locBtnText}>Mevcut Konumumu Kullan</Text>
+                  <Text style={S.locBtnText}>{t("addAnimal.findMyLocation")}</Text>
                 </>
               )}
             </Pressable>
@@ -701,9 +676,9 @@ export default function AddAnimalScreen() {
               <View style={S.mapNoLocOverlay}>
                 <View style={[S.mapNoLocCard, { backgroundColor: C.card }]}>
                   <Icon name="location-outline" size={20} color={C.purple} />
-                  <Text style={[S.mapNoLocTitle, { color: C.text }]}>Henüz konum seçilmedi</Text>
+                  <Text style={[S.mapNoLocTitle, { color: C.text }]}>{t("addAnimal.noLocationTitle")}</Text>
                   <Text style={[S.mapNoLocSub, { color: C.textMuted }]}>
-                    Yukarıdaki butonu kullanarak mevcut konumunu ekle
+                    {t("addAnimal.noLocationSub")}
                   </Text>
                 </View>
               </View>
@@ -732,12 +707,12 @@ export default function AddAnimalScreen() {
               ) : uploading ? (
                 <>
                   <ActivityIndicator color="white" size="small" />
-                  <Text style={S.submitBtnText}>Fotoğraf yükleniyor…</Text>
+                  <Text style={S.submitBtnText}>{t("addAnimal.uploading")}</Text>
                 </>
               ) : (
                 <>
                   <Icon name="send" size={20} color="white" strokeWidth={2.2} />
-                  <Text style={S.submitBtnText}>Durumu Bildir</Text>
+                  <Text style={S.submitBtnText}>{t("addAnimal.submit")}</Text>
                 </>
               )}
             </Pressable>

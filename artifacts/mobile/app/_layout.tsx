@@ -12,7 +12,7 @@ import React, { useEffect, useState } from "react";
 import { Platform, View } from "react-native";
 import { GestureHandlerRootView } from "react-native-gesture-handler";
 import { SafeAreaProvider } from "react-native-safe-area-context";
-import { I18nextProvider } from "react-i18next";
+import { I18nextProvider, useTranslation } from "react-i18next";
 
 import { ErrorBoundary } from "@/components/ErrorBoundary";
 import { AdoptionProvider } from "@/contexts/AdoptionContext";
@@ -38,6 +38,7 @@ const queryClient = new QueryClient({
 
 function RootLayoutNav() {
   const { user, isLoading } = useAuth();
+  const { t } = useTranslation();
   const segments = useSegments();
   const router = useRouter();
 
@@ -69,7 +70,7 @@ function RootLayoutNav() {
         options={{
           presentation: "modal",
           headerShown: true,
-          title: "Evcil Hayvan Ekle",
+          title: t("pets.addPetTitle"),
           headerStyle: { backgroundColor: "#FAF7F0" },
           headerTintColor: "#E07A35",
           headerTitleStyle: { fontFamily: "Inter_600SemiBold" },

@@ -12,6 +12,7 @@ import {
   View,
 } from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
+import { useTranslation } from "react-i18next";
 
 // ── Türkiye'nin 81 ili ───────────────────────────────────────────────────────
 export const TURKEY_PROVINCES: string[] = [
@@ -28,7 +29,7 @@ export const TURKEY_PROVINCES: string[] = [
   "Yalova","Karabük","Kilis","Osmaniye","Düzce",
 ];
 
-// ── Palette (matches app) ────────────────────────────────────────────────────
+// ── Palette ────────────────────────────────────────────────────────────────
 const P    = "#7C4DCC";
 const P2   = "#A480D8";
 const DARK = "#4B267D";
@@ -37,7 +38,7 @@ const BG   = "#F8F4FF";
 const WHITE = "#FFFFFF";
 const BORDER = "rgba(124,77,204,0.12)";
 
-// ── Types ────────────────────────────────────────────────────────────────────
+// ── Types ─────────────────────────────────────────────────────────────────
 export type AgeRange     = "all" | "0_6m" | "6_12m" | "1_3y" | "3y_plus";
 export type GenderFilter = "all" | "female" | "male" | "unknown";
 export type SortBy       = "newest" | "oldest" | "age_asc" | "age_desc";
@@ -63,12 +64,12 @@ export const DEFAULT_FILTERS: AdoptionFilters = {
 
 export function countActiveFilters(f: AdoptionFilters): number {
   let n = 0;
-  if (f.ageRange     !== "all")   n++;
-  if (f.gender       !== "all")   n++;
-  if (f.breed        !== null)    n++;
-  if (f.status       !== "all")   n++;
+  if (f.ageRange     !== "all")    n++;
+  if (f.gender       !== "all")    n++;
+  if (f.breed        !== null)     n++;
+  if (f.status       !== "all")    n++;
   if (f.sortBy       !== "newest") n++;
-  if (f.locationCity !== null)    n++;
+  if (f.locationCity !== null)     n++;
   return n;
 }
 
@@ -121,13 +122,7 @@ function Chips<T extends string>({
       {options.map((o) => {
         const active = value === o.key;
         return active ? (
-          <LinearGradient
-            key={o.key}
-            colors={[P2, P]}
-            start={{ x: 0, y: 0 }}
-            end={{ x: 1, y: 0 }}
-            style={fs.chipActive}
-          >
+          <LinearGradient key={o.key} colors={[P2, P]} start={{ x: 0, y: 0 }} end={{ x: 1, y: 0 }} style={fs.chipActive}>
             <Pressable
               onPress={() => { Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light); onSelect(o.key); }}
               style={{ alignItems: "center", justifyContent: "center" }}
@@ -152,25 +147,21 @@ function Chips<T extends string>({
 function BreedChips({
   breeds,
   value,
+  allLabel,
   onSelect,
 }: {
   breeds: string[];
   value: string | null;
+  allLabel: string;
   onSelect: (b: string | null) => void;
 }) {
-  const all = [{ key: null as string | null, label: "Tümü" }, ...breeds.map((b) => ({ key: b, label: b }))];
+  const all = [{ key: null as string | null, label: allLabel }, ...breeds.map((b) => ({ key: b, label: b }))];
   return (
     <View style={fs.chipRow}>
       {all.map((o) => {
         const active = value === o.key;
         return active ? (
-          <LinearGradient
-            key={String(o.key)}
-            colors={[P2, P]}
-            start={{ x: 0, y: 0 }}
-            end={{ x: 1, y: 0 }}
-            style={fs.chipActive}
-          >
+          <LinearGradient key={String(o.key)} colors={[P2, P]} start={{ x: 0, y: 0 }} end={{ x: 1, y: 0 }} style={fs.chipActive}>
             <Pressable
               onPress={() => { Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light); onSelect(o.key); }}
               style={{ alignItems: "center", justifyContent: "center" }}
@@ -195,24 +186,25 @@ function BreedChips({
 function CityChips({
   cities,
   value,
+  allLabel,
+  showAllLabel,
+  showLessLabel,
   onSelect,
 }: {
   cities: string[];
   value: string | null;
+  allLabel: string;
+  showAllLabel: string;
+  showLessLabel: string;
   onSelect: (c: string | null) => void;
 }) {
   const [expanded, setExpanded] = useState(false);
-
-  /* Merge listing cities with full province list when expanded */
   const provinceList = expanded ? TURKEY_PROVINCES : cities;
-
-  /* Always ensure the currently selected city is visible */
   const visibleSet = new Set(provinceList);
   if (value && !visibleSet.has(value)) visibleSet.add(value);
   const visibleCities = Array.from(visibleSet).sort();
-
   const options: { key: string | null; label: string }[] = [
-    { key: null, label: "Tümü" },
+    { key: null, label: allLabel },
     ...visibleCities.map((c) => ({ key: c, label: c })),
   ];
 
@@ -222,13 +214,7 @@ function CityChips({
         {options.map((o) => {
           const active = value === o.key;
           return active ? (
-            <LinearGradient
-              key={String(o.key)}
-              colors={[P2, P]}
-              start={{ x: 0, y: 0 }}
-              end={{ x: 1, y: 0 }}
-              style={fs.chipActive}
-            >
+            <LinearGradient key={String(o.key)} colors={[P2, P]} start={{ x: 0, y: 0 }} end={{ x: 1, y: 0 }} style={fs.chipActive}>
               <Pressable
                 onPress={() => { Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light); onSelect(o.key); }}
                 style={{ alignItems: "center", justifyContent: "center" }}
@@ -247,133 +233,79 @@ function CityChips({
           );
         })}
       </View>
-
-      {/* Expand / collapse toggle */}
       <Pressable
         style={fs.expandBtn}
-        onPress={() => {
-          Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
-          setExpanded((v) => !v);
-        }}
+        onPress={() => { Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light); setExpanded((v) => !v); }}
       >
-        <Icon
-          name={expanded ? "chevron-up-outline" : "chevron-down-outline"}
-          size={13}
-          color={P}
-        />
-        <Text style={fs.expandTxt}>
-          {expanded ? "Daha Az Göster" : "Tüm Şehirleri Göster (81 İl)"}
-        </Text>
+        <Icon name={expanded ? "chevron-up-outline" : "chevron-down-outline"} size={13} color={P} />
+        <Text style={fs.expandTxt}>{expanded ? showLessLabel : showAllLabel}</Text>
       </Pressable>
     </View>
   );
 }
 
-// ── Main sheet component ──────────────────────────────────────────────────────
+// ── Main sheet ────────────────────────────────────────────────────────────────
 interface Props {
-  visible:        boolean;
-  activeFilters:  AdoptionFilters;
-  breeds:         string[];
-  cities:         string[];
-  onApply:        (f: AdoptionFilters) => void;
-  onClose:        () => void;
+  visible:       boolean;
+  activeFilters: AdoptionFilters;
+  breeds:        string[];
+  cities:        string[];
+  onApply:       (f: AdoptionFilters) => void;
+  onClose:       () => void;
 }
 
-export function AdoptionFilterSheet({
-  visible,
-  activeFilters,
-  breeds,
-  cities,
-  onApply,
-  onClose,
-}: Props) {
+export function AdoptionFilterSheet({ visible, activeFilters, breeds, cities, onApply, onClose }: Props) {
+  const { t } = useTranslation();
   const insets = useSafeAreaInsets();
   const botPad = Platform.OS === "web" ? 24 : insets.bottom + 16;
 
-  /* Draft state — committed only on "Uygula" */
   const [draft, setDraft] = useState<AdoptionFilters>(activeFilters);
-
-  useEffect(() => {
-    if (visible) setDraft(activeFilters);
-  }, [visible]);
+  useEffect(() => { if (visible) setDraft(activeFilters); }, [visible]);
 
   const update = <K extends keyof AdoptionFilters>(key: K, val: AdoptionFilters[K]) =>
     setDraft((prev) => ({ ...prev, [key]: val }));
 
-  const reset = () => {
-    Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
-    setDraft(DEFAULT_FILTERS);
-  };
-
-  const apply = () => {
-    Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
-    onApply(draft);
-    onClose();
-  };
+  const reset = () => { Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium); setDraft(DEFAULT_FILTERS); };
+  const apply = () => { Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium); onApply(draft); onClose(); };
 
   const activeCount = countActiveFilters(draft);
 
   return (
-    <Modal
-      visible={visible}
-      transparent
-      animationType="slide"
-      onRequestClose={onClose}
-      statusBarTranslucent
-    >
-      {/* Overlay */}
+    <Modal visible={visible} transparent animationType="slide" onRequestClose={onClose} statusBarTranslucent>
       <Pressable style={fs.overlay} onPress={onClose} />
-
-      {/* Sheet */}
       <View style={[fs.sheet, { paddingBottom: botPad }]}>
-        {/* Handle bar */}
         <View style={fs.handle} />
-
-        {/* Header */}
         <View style={fs.header}>
           <View style={fs.headerLeft}>
-            <Text style={fs.headerTitle}>Filtrele</Text>
+            <Text style={fs.headerTitle}>{t("filterSheet.title")}</Text>
             {activeCount > 0 && (
-              <View style={fs.activeBadge}>
-                <Text style={fs.activeBadgeTxt}>{activeCount}</Text>
-              </View>
+              <View style={fs.activeBadge}><Text style={fs.activeBadgeTxt}>{activeCount}</Text></View>
             )}
           </View>
           <View style={fs.headerRight}>
             {activeCount > 0 && (
               <Pressable onPress={reset} hitSlop={10}>
-                <Text style={fs.resetTxt}>Sıfırla</Text>
+                <Text style={fs.resetTxt}>{t("filterSheet.reset")}</Text>
               </Pressable>
             )}
-            <Pressable
-              style={fs.closeBtn}
-              onPress={onClose}
-              hitSlop={8}
-            >
+            <Pressable style={fs.closeBtn} onPress={onClose} hitSlop={8}>
               <Icon name="close" size={16} color={BODY} />
             </Pressable>
           </View>
         </View>
 
-        {/* Scrollable filter content */}
-        <ScrollView
-          style={fs.scroll}
-          contentContainerStyle={fs.scrollContent}
-          showsVerticalScrollIndicator={false}
-          keyboardShouldPersistTaps="handled"
-        >
-
+        <ScrollView style={fs.scroll} contentContainerStyle={fs.scrollContent} showsVerticalScrollIndicator={false} keyboardShouldPersistTaps="handled">
           {/* Sıralama */}
           <View style={fs.section}>
-            <SectionTitle title="Sıralama" />
+            <SectionTitle title={t("filterSheet.sortSection")} />
             <Chips<SortBy>
               value={draft.sortBy}
               onSelect={(v) => update("sortBy", v)}
               options={[
-                { key: "newest",   label: "En Yeni"              },
-                { key: "oldest",   label: "En Eski"              },
-                { key: "age_asc",  label: "Yaş: Küçük → Büyük"  },
-                { key: "age_desc", label: "Yaş: Büyük → Küçük"  },
+                { key: "newest",   label: t("filterSheet.sortNewest")  },
+                { key: "oldest",   label: t("filterSheet.sortOldest")  },
+                { key: "age_asc",  label: t("filterSheet.sortAgeAsc")  },
+                { key: "age_desc", label: t("filterSheet.sortAgeDesc") },
               ]}
             />
           </View>
@@ -382,16 +314,16 @@ export function AdoptionFilterSheet({
 
           {/* Yaş */}
           <View style={fs.section}>
-            <SectionTitle title="Yaş" />
+            <SectionTitle title={t("filterSheet.ageSection")} />
             <Chips<AgeRange>
               value={draft.ageRange}
               onSelect={(v) => update("ageRange", v)}
               options={[
-                { key: "all",     label: "Tümü"       },
-                { key: "0_6m",    label: "0–6 ay"     },
-                { key: "6_12m",   label: "6–12 ay"    },
-                { key: "1_3y",    label: "1–3 yaş"    },
-                { key: "3y_plus", label: "3 yaş+"     },
+                { key: "all",     label: t("filterSheet.ageAll")      },
+                { key: "0_6m",    label: t("filterSheet.age0to6m")    },
+                { key: "6_12m",   label: t("filterSheet.age6to12m")   },
+                { key: "1_3y",    label: t("filterSheet.age1to3y")    },
+                { key: "3y_plus", label: t("filterSheet.age3yPlus")   },
               ]}
             />
           </View>
@@ -400,15 +332,15 @@ export function AdoptionFilterSheet({
 
           {/* Cinsiyet */}
           <View style={fs.section}>
-            <SectionTitle title="Cinsiyet" />
+            <SectionTitle title={t("filterSheet.genderSection")} />
             <Chips<GenderFilter>
               value={draft.gender}
               onSelect={(v) => update("gender", v)}
               options={[
-                { key: "all",     label: "Tümü"       },
-                { key: "female",  label: "Dişi"       },
-                { key: "male",    label: "Erkek"      },
-                { key: "unknown", label: "Bilinmiyor" },
+                { key: "all",     label: t("filterSheet.genderAll")     },
+                { key: "female",  label: t("filterSheet.genderFemale")  },
+                { key: "male",    label: t("filterSheet.genderMale")    },
+                { key: "unknown", label: t("filterSheet.genderUnknown") },
               ]}
             />
           </View>
@@ -417,62 +349,60 @@ export function AdoptionFilterSheet({
 
           {/* İlan Durumu */}
           <View style={fs.section}>
-            <SectionTitle title="İlan Durumu" />
+            <SectionTitle title={t("filterSheet.statusSection")} />
             <Chips<StatusFilter>
               value={draft.status}
               onSelect={(v) => update("status", v)}
               options={[
-                { key: "all",     label: "Tümü"          },
-                { key: "active",  label: "Aktif"         },
-                { key: "adopted", label: "Sahiplendirildi" },
+                { key: "all",     label: t("filterSheet.statusAll")     },
+                { key: "active",  label: t("filterSheet.statusActive")  },
+                { key: "adopted", label: t("filterSheet.statusAdopted") },
               ]}
             />
           </View>
 
-          {/* Irk — only if breeds exist */}
+          <View style={fs.divider} />
+
+          {/* Irk */}
           {breeds.length > 0 && (
             <>
-              <View style={fs.divider} />
               <View style={fs.section}>
-                <SectionTitle title="Irk" />
+                <SectionTitle title={t("filterSheet.breedSection")} />
                 <BreedChips
                   breeds={breeds}
                   value={draft.breed}
+                  allLabel={t("filterSheet.breedsAll")}
                   onSelect={(v) => update("breed", v)}
                 />
               </View>
-            </>
-          )}
-
-          {/* Konum — only if cities exist */}
-          {cities.length > 0 && (
-            <>
               <View style={fs.divider} />
-              <View style={fs.section}>
-                <SectionTitle title="Şehir" />
-                <CityChips
-                  cities={cities}
-                  value={draft.locationCity}
-                  onSelect={(v) => update("locationCity", v)}
-                />
-              </View>
             </>
           )}
 
-          {/* bottom spacing so CTA doesn't overlap last section */}
-          <View style={{ height: 24 }} />
+          {/* Şehir */}
+          {cities.length > 0 && (
+            <View style={fs.section}>
+              <SectionTitle title={t("filterSheet.citySection")} />
+              <CityChips
+                cities={cities}
+                value={draft.locationCity}
+                allLabel={t("filterSheet.cityAll")}
+                showAllLabel={t("filterSheet.showAllCities")}
+                showLessLabel={t("filterSheet.showLess")}
+                onSelect={(v) => update("locationCity", v)}
+              />
+            </View>
+          )}
         </ScrollView>
 
-        {/* Sticky CTA */}
-        <View style={[fs.cta, { borderTopColor: BORDER }]}>
-          <Pressable
-            style={({ pressed }) => [fs.applyBtn, { opacity: pressed ? 0.88 : 1 }]}
-            onPress={apply}
-          >
+        {/* Footer */}
+        <View style={fs.footer}>
+          <Pressable style={fs.applyBtn} onPress={apply}>
             <LinearGradient colors={[P2, P]} start={{ x: 0, y: 0 }} end={{ x: 1, y: 0 }} style={fs.applyGrad}>
-              <Icon name="checkmark-circle-outline" size={17} color={WHITE} />
               <Text style={fs.applyTxt}>
-                {activeCount > 0 ? `Filtreleri Uygula (${activeCount})` : "Filtreleri Uygula"}
+                {activeCount > 0
+                  ? t("filterSheet.applyWithCount", { count: activeCount })
+                  : t("filterSheet.apply")}
               </Text>
             </LinearGradient>
           </Pressable>
@@ -482,78 +412,39 @@ export function AdoptionFilterSheet({
   );
 }
 
-// ── Styles ────────────────────────────────────────────────────────────────────
 const fs = StyleSheet.create({
-  overlay: {
-    position: "absolute", top: 0, left: 0, right: 0, bottom: 0,
-    backgroundColor: "rgba(20,8,46,0.55)",
-  },
-  sheet: {
+  overlay:       { ...StyleSheet.absoluteFillObject, backgroundColor: "rgba(0,0,0,0.4)" },
+  sheet:         {
     position: "absolute", bottom: 0, left: 0, right: 0,
     backgroundColor: WHITE,
-    borderTopLeftRadius: 28, borderTopRightRadius: 28,
+    borderTopLeftRadius: 24, borderTopRightRadius: 24,
     maxHeight: "88%",
-    ...Platform.select({
-      ios:     { shadowColor: DARK, shadowOffset: { width: 0, height: -8 }, shadowOpacity: 0.18, shadowRadius: 24 },
-      android: { elevation: 24 },
-      default: {},
-    }),
+    shadowColor: DARK, shadowOffset: { width: 0, height: -4 }, shadowOpacity: 0.12, shadowRadius: 20,
+    elevation: 20,
   },
-  handle: {
-    alignSelf: "center", width: 40, height: 4, borderRadius: 2,
-    backgroundColor: `${BODY}30`, marginTop: 12, marginBottom: 4,
-  },
-  header: {
-    flexDirection: "row", alignItems: "center", justifyContent: "space-between",
-    paddingHorizontal: 20, paddingVertical: 14,
-  },
-  headerLeft:  { flexDirection: "row", alignItems: "center", gap: 8 },
-  headerRight: { flexDirection: "row", alignItems: "center", gap: 12 },
-  headerTitle: { fontSize: 18, fontFamily: "Inter_700Bold", color: DARK, letterSpacing: -0.3 },
-  activeBadge: { backgroundColor: P, borderRadius: 10, paddingHorizontal: 7, paddingVertical: 2, minWidth: 22, alignItems: "center" },
-  activeBadgeTxt: { fontSize: 11, fontFamily: "Inter_700Bold", color: WHITE },
-  resetTxt:    { fontSize: 13, fontFamily: "Inter_600SemiBold", color: P },
-  closeBtn:    { width: 32, height: 32, borderRadius: 16, backgroundColor: `${BODY}12`, alignItems: "center", justifyContent: "center" },
-
-  scroll:        { flexGrow: 0 },
-  scrollContent: { paddingHorizontal: 20, paddingTop: 4 },
-
-  section: { gap: 12, paddingVertical: 4 },
-  divider: { height: 1, backgroundColor: BORDER, marginVertical: 16 },
-
-  sectionTitle: { fontSize: 13, fontFamily: "Inter_700Bold", color: DARK, letterSpacing: 0.2, textTransform: "uppercase" },
-
-  chipRow: { flexDirection: "row", flexWrap: "wrap", gap: 8 },
-
-  chipActive: {
-    borderRadius: 20, paddingVertical: 8, paddingHorizontal: 16,
-    ...Platform.select({
-      ios:     { shadowColor: P, shadowOffset: { width: 0, height: 3 }, shadowOpacity: 0.28, shadowRadius: 8 },
-      android: { elevation: 4 },
-      default: {},
-    }),
-  },
-  chipInactive: {
-    borderRadius: 20, paddingVertical: 8, paddingHorizontal: 16,
-    backgroundColor: BG, borderWidth: 1.5, borderColor: `${P}25`,
-  },
-  chipLbl:       { fontSize: 13, fontFamily: "Inter_500Medium", color: BODY },
-  chipLblActive: { fontSize: 13, fontFamily: "Inter_700Bold",   color: WHITE },
-
-  expandBtn: {
-    flexDirection: "row", alignItems: "center", gap: 6,
-    alignSelf: "flex-start",
-    backgroundColor: `${P}10`, borderRadius: 20,
-    paddingVertical: 7, paddingHorizontal: 14,
-    borderWidth: 1, borderColor: `${P}25`,
-  },
-  expandTxt: { fontSize: 12, fontFamily: "Inter_600SemiBold", color: P },
-
-  cta:     { borderTopWidth: 1, paddingHorizontal: 20, paddingTop: 14 },
-  applyBtn:{ borderRadius: 16, overflow: "hidden" },
-  applyGrad: {
-    flexDirection: "row", alignItems: "center", justifyContent: "center",
-    gap: 8, paddingVertical: 15,
-  },
-  applyTxt: { fontSize: 15, fontFamily: "Inter_700Bold", color: WHITE },
+  handle:        { alignSelf: "center", width: 40, height: 4, borderRadius: 2, backgroundColor: BORDER, marginTop: 10, marginBottom: 4 },
+  header:        { flexDirection: "row", alignItems: "center", justifyContent: "space-between", paddingHorizontal: 20, paddingVertical: 14, borderBottomWidth: 1, borderBottomColor: BORDER },
+  headerLeft:    { flexDirection: "row", alignItems: "center", gap: 8 },
+  headerTitle:   { fontSize: 18, fontWeight: "700", color: DARK, letterSpacing: -0.3 },
+  activeBadge:   { backgroundColor: P, borderRadius: 10, paddingHorizontal: 7, paddingVertical: 2 },
+  activeBadgeTxt:{ color: WHITE, fontSize: 11, fontWeight: "700" },
+  headerRight:   { flexDirection: "row", alignItems: "center", gap: 12 },
+  resetTxt:      { color: P, fontSize: 14, fontWeight: "600" },
+  closeBtn:      { width: 28, height: 28, borderRadius: 14, backgroundColor: BG, alignItems: "center", justifyContent: "center" },
+  scroll:        { flexGrow: 1 },
+  scrollContent: { paddingHorizontal: 20, paddingTop: 8, paddingBottom: 16 },
+  section:       { paddingVertical: 14 },
+  sectionTitle:  { fontSize: 13, fontWeight: "700", color: BODY, textTransform: "uppercase", letterSpacing: 0.6, marginBottom: 10 },
+  divider:       { height: 1, backgroundColor: BORDER },
+  chipRow:       { flexDirection: "row", flexWrap: "wrap", gap: 8 },
+  chipActive:    { borderRadius: 20, paddingHorizontal: 14, paddingVertical: 8, minHeight: 36, justifyContent: "center" },
+  chipInactive:  { borderRadius: 20, paddingHorizontal: 14, paddingVertical: 8, minHeight: 36, justifyContent: "center", borderWidth: 1, borderColor: BORDER, backgroundColor: BG },
+  chipLblActive: { color: WHITE, fontSize: 13, fontWeight: "600" },
+  chipLbl:       { color: BODY, fontSize: 13, fontWeight: "500" },
+  expandBtn:     { flexDirection: "row", alignItems: "center", gap: 6, alignSelf: "flex-start", paddingVertical: 4 },
+  expandTxt:     { color: P, fontSize: 13, fontWeight: "500" },
+  footer:        { paddingHorizontal: 20, paddingTop: 12, borderTopWidth: 1, borderTopColor: BORDER },
+  applyBtn:      { borderRadius: 14, overflow: "hidden" },
+  applyGrad:     { height: 48, alignItems: "center", justifyContent: "center" },
+  applyTxt:      { color: WHITE, fontSize: 15, fontWeight: "700" },
 });

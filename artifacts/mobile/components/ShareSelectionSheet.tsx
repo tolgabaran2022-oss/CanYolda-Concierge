@@ -11,6 +11,7 @@ import {
   View,
 } from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
+import { useTranslation } from "react-i18next";
 import { useTheme } from "@/hooks/useTheme";
 
 interface Props {
@@ -26,6 +27,7 @@ export function ShareSelectionSheet({
   onSelectStory,
   onSelectPost,
 }: Props) {
+  const { t } = useTranslation();
   const T = useTheme();
   const insets = useSafeAreaInsets();
   const slideAnim = useRef(new Animated.Value(340)).current;
@@ -105,7 +107,7 @@ export function ShareSelectionSheet({
         </View>
 
         {/* Title */}
-        <Text style={[SS.title, { color: T.text }]}>Yeni Paylaşım</Text>
+        <Text style={[SS.title, { color: T.text }]}>{t("shareSheet.title")}</Text>
 
         {/* Options */}
         <View style={SS.optionsWrap}>
@@ -126,9 +128,9 @@ export function ShareSelectionSheet({
               <Icon name="radio-button-on" size={24} color="#FFF" />
             </LinearGradient>
             <View style={SS.optionTextBlock}>
-              <Text style={[SS.optionTitle, { color: T.text }]}>Hikâye</Text>
+              <Text style={[SS.optionTitle, { color: T.text }]}>{t("shareSheet.storyTitle")}</Text>
               <Text style={[SS.optionSub, { color: T.textMuted }]}>
-                24 saat boyunca görünen bir hikâye paylaş
+                {t("shareSheet.storySub")}
               </Text>
             </View>
             <Icon name="chevron-forward" size={18} color={T.textMuted} />
@@ -151,9 +153,9 @@ export function ShareSelectionSheet({
               <Icon name="images" size={22} color="#FFF" />
             </LinearGradient>
             <View style={SS.optionTextBlock}>
-              <Text style={[SS.optionTitle, { color: T.text }]}>Gönderi</Text>
+              <Text style={[SS.optionTitle, { color: T.text }]}>{t("shareSheet.postTitle")}</Text>
               <Text style={[SS.optionSub, { color: T.textMuted }]}>
-                Profilinde ve akışta kalıcı bir gönderi paylaş
+                {t("shareSheet.postSub")}
               </Text>
             </View>
             <Icon name="chevron-forward" size={18} color={T.textMuted} />
@@ -168,7 +170,7 @@ export function ShareSelectionSheet({
           ]}
           onPress={onClose}
         >
-          <Text style={[SS.cancelText, { color: T.textMuted }]}>Vazgeç</Text>
+          <Text style={[SS.cancelText, { color: T.textMuted }]}>{t("common.cancel")}</Text>
         </Pressable>
       </Animated.View>
     </Modal>

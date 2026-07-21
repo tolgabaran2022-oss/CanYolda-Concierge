@@ -10,14 +10,14 @@ import {
   View,
 } from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
+import { useTranslation } from "react-i18next";
 import { Icon } from "@/components/Icon";
 import { useTheme } from "@/hooks/useTheme";
 
-const LAST_UPDATED = "17 Temmuz 2026";
-const APP_NAME     = "CanYoldaşı";
-const CONTACT      = "destek@canyoldasi.app";
+const CONTACT = "destek@canyoldasi.app";
 
 export default function TermsOfServiceScreen() {
+  const { t }   = useTranslation();
   const router  = useRouter();
   const insets  = useSafeAreaInsets();
   const T       = useTheme();
@@ -30,12 +30,12 @@ export default function TermsOfServiceScreen() {
         <Pressable
           style={({ pressed }) => [S.backBtn, { opacity: pressed ? 0.6 : 1 }]}
           onPress={() => router.back()}
-          accessibilityLabel="Geri"
+          accessibilityLabel={t("terms.back")}
           accessibilityRole="button"
         >
           <Icon name="chevron-back" size={22} color={T.purple} />
         </Pressable>
-        <Text style={[S.title, { color: T.text }]}>Kullanım Koşulları</Text>
+        <Text style={[S.title, { color: T.text }]}>{t("terms.title")}</Text>
         <View style={S.backBtn} />
       </View>
 
@@ -43,65 +43,52 @@ export default function TermsOfServiceScreen() {
         contentContainerStyle={[S.content, { paddingBottom: insets.bottom + 40 }]}
         showsVerticalScrollIndicator={false}
       >
-        <Text style={[S.updated, { color: T.textFaint }]}>Son güncelleme: {LAST_UPDATED}</Text>
+        <Text style={[S.updated, { color: T.textFaint }]}>
+          {t("terms.lastUpdated", { date: t("terms.lastUpdatedDate") })}
+        </Text>
 
-        <Section title="1. Kabul" T={T}>
-          {APP_NAME} uygulamasını kullanarak bu Kullanım Koşullarını kabul etmiş olursunuz. Bu koşulları kabul etmiyorsanız uygulamayı kullanmayınız.
+        <Section title={t("terms.s1Title")} T={T}>
+          {t("terms.s1Body")}
         </Section>
 
-        <Section title="2. Hizmet Tanımı" T={T}>
-          {APP_NAME}, Türkiye'deki sokak hayvanlarını raporlamak ve takip etmek, sahiplendirme ilanları oluşturmak ve yönetmek, hayvan sahipleri arasında iletişim kurmak amacıyla sağlanan topluluk odaklı bir platformdur.
+        <Section title={t("terms.s2Title")} T={T}>
+          {t("terms.s2Body")}
         </Section>
 
-        <Section title="3. Hesap Koşulları" T={T}>
-          {"• "}En az 13 yaşında olmalısınız{"\n"}
-          {"• "}Doğru ve güncel bilgiler sağlamalısınız{"\n"}
-          {"• "}Hesabınızın güvenliğinden siz sorumlusunuzdur{"\n"}
-          {"• "}Hesabınız bir başkasına devredilemez{"\n"}
-          {"• "}Sahte veya yanıltıcı hesap oluşturmak yasaktır
+        <Section title={t("terms.s3Title")} T={T}>
+          {t("terms.s3Body")}
         </Section>
 
-        <Section title="4. Kabul Edilebilir Kullanım" T={T}>
-          Aşağıdaki eylemler yasaktır:{"\n"}
-          {"• "}Gerçek olmayan hayvan raporu oluşturma{"\n"}
-          {"• "}Başka kullanıcılara taciz veya tehdit{"\n"}
-          {"• "}Spam veya tekrarlı içerik paylaşımı{"\n"}
-          {"• "}Başka kullanıcıların hesabına izinsiz erişim girişimi{"\n"}
-          {"• "}Uygulamanın teknik altyapısına zarar verme girişimi{"\n"}
-          {"• "}Otomatik araçlarla veri kazıma (scraping){"\n"}
-          {"• "}Ticari reklam içerikleri (ilanlar hariç)
+        <Section title={t("terms.s4Title")} T={T}>
+          {t("terms.s4Body")}
         </Section>
 
-        <Section title="5. Kullanıcı Oluşturulan İçerik" T={T}>
-          Yüklediğiniz içerikler (fotoğraflar, açıklamalar, mesajlar) için şunları beyan edersiniz:{"\n"}
-          {"• "}İlgili içeriği paylaşma hakkına sahipsiniz{"\n"}
-          {"• "}İçerik üçüncü tarafların haklarını ihlal etmemektedir{"\n"}
-          {"• "}İçerik gerçek ve doğrudur{"\n\n"}
-          İçeriğinizi {APP_NAME} platformunda görüntülemek için bize kısıtlı, ücretsiz bir lisans vermiş olursunuz. Bu lisans hesabınızı sildiğinizde sona erer.
+        <Section title={t("terms.s5Title")} T={T}>
+          {t("terms.s5Body")}
         </Section>
 
-        <Section title="6. Uygulama İçi Satın Alımlar" T={T}>
-          Öne çıkarma (boost) paketleri Apple App Store veya Google Play Store üzerinden satın alınır. Satın alımlar ilgili mağazanın iade politikasına tabidir. Dijital ürünlerin iadesi mağazanın takdirindedir.
+        <Section title={t("terms.s6Title")} T={T}>
+          {t("terms.s6Body")}
         </Section>
 
-        <Section title="7. Hesap Silme" T={T}>
-          Hesabınızı istediğiniz zaman Hesap {">"} Tehlikeli Alan {">"} Hesabı Sil bölümünden silebilirsiniz. Hesap silme işlemi kişisel verilerinizi kaldırır ve kamu katkılarınızı (hayvan raporları, ilanlar) anonimleştirir.
+        <Section title={t("terms.s7Title")} T={T}>
+          {t("terms.s7Body")}
         </Section>
 
-        <Section title="8. Sorumluluk Sınırlaması" T={T}>
-          {APP_NAME}, kullanıcı tarafından oluşturulan içeriklerden sorumlu değildir. Uygulama "olduğu gibi" sağlanmaktadır. Hizmet kesintilerinden doğan zararlar için sorumluluk üstlenilmez.
+        <Section title={t("terms.s8Title")} T={T}>
+          {t("terms.s8Body")}
         </Section>
 
-        <Section title="9. Değişiklikler" T={T}>
-          Bu koşullar değiştirildiğinde uygulama içinde bildirim yapılır. Değişiklikler yayınlandıktan sonra uygulamayı kullanmaya devam etmeniz değişiklikleri kabul ettiğiniz anlamına gelir.
+        <Section title={t("terms.s9Title")} T={T}>
+          {t("terms.s9Body")}
         </Section>
 
-        <Section title="10. Uygulanacak Hukuk" T={T}>
-          Bu koşullar Türkiye Cumhuriyeti kanunlarına tabidir. Anlaşmazlıklar İstanbul mahkemelerinde çözüme kavuşturulacaktır.
+        <Section title={t("terms.s10Title")} T={T}>
+          {t("terms.s10Body")}
         </Section>
 
-        <Section title="11. İletişim" T={T}>
-          E-posta: {CONTACT}
+        <Section title={t("terms.s11Title")} T={T}>
+          {t("terms.s11Body", { contact: CONTACT })}
         </Section>
       </ScrollView>
     </View>

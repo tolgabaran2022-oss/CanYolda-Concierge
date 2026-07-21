@@ -20,6 +20,7 @@ import {
 } from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { useAdoption } from "@/contexts/AdoptionContext";
+import { useTranslation } from "react-i18next";
 import { useAuth } from "@/contexts/AuthContext";
 import { apiCheckAdoptionRequest } from "@/lib/adoptionRequestsApi";
 import { useBoost } from "@/contexts/BoostContext";
@@ -98,6 +99,7 @@ function SectionHead({ title }: { title: string }) {
 // ── Main ──────────────────────────────────────────────────────────────────────
 export default function AdoptionDetailScreen() {
   const T = useTheme();
+  const { t } = useTranslation();
   const { id, preview } = useLocalSearchParams<{ id: string; preview?: string }>();
   const isPreviewMode = preview === "true";
   const insets = useSafeAreaInsets();
@@ -126,7 +128,7 @@ export default function AdoptionDetailScreen() {
 
   const handleToggleFollow = async () => {
     if (!user) {
-      Alert.alert("Giriş Gerekli", "İlanı takip etmek için giriş yapın.");
+      Alert.alert(t("adoption.loginToFavoriteTitle"), t("adoption.loginToFavoriteMsg"));
       return;
     }
     if (followLoading) return;
@@ -176,10 +178,10 @@ export default function AdoptionDetailScreen() {
         <View style={S.notFoundIllo}>
           <Icon name="heart-dislike-outline" size={44} color={`${P}80`} />
         </View>
-        <Text style={S.notFoundTitle}>İlan Bulunamadı</Text>
-        <Text style={S.notFoundSub}>Bu ilan kaldırılmış ya da mevcut değil.</Text>
+        <Text style={S.notFoundTitle}>{t("adoption.detail.notFound")}</Text>
+        <Text style={S.notFoundSub}>{t("adoption.detail.notFoundSub")}</Text>
         <Pressable style={S.notFoundBtn} onPress={() => router.back()}>
-          <Text style={S.notFoundBtnTxt}>Geri Dön</Text>
+          <Text style={S.notFoundBtnTxt}>{t("animalDetail.goBack")}</Text>
         </Pressable>
       </View>
     );
@@ -190,7 +192,7 @@ export default function AdoptionDetailScreen() {
   const topBarPad = Platform.OS === "web" ? 20 : insets.top + 6;
 
   const handleRevealPhone = async () => {
-    if (!user) { Alert.alert("Giriş Gerekli", "Telefon numarasını görmek için giriş yapın."); return; }
+    if (!user) { Alert.alert(t("animalDetail.loginRequired"), t("animalDetail.loginToPhone")); return; }
     Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
     setPhoneModalOpen(true);
     if (revealedPhone) return; /* already revealed */
@@ -200,7 +202,7 @@ export default function AdoptionDetailScreen() {
       const result = await apiRevealPhone(id!);
       setRevealedPhone(result.phoneNumber);
     } catch (e: any) {
-      setRevealError(e?.message ?? "Telefon numarası alınamadı");
+      setRevealError(e?.message ?? t("adoption.detail.phoneRevealError"));
     } finally {
       setRevealLoading(false);
     }
@@ -208,7 +210,7 @@ export default function AdoptionDetailScreen() {
 
   const handleSendMessage = async () => {
     if (!user) {
-      Alert.alert("Giriş Gerekli", "Mesaj göndermek için lütfen giriş yapın.");
+      Alert.alert(t("animalDetail.loginRequired"), t("animalDetail.loginToPhone"));
       return;
     }
     if (!listing) return;
@@ -226,17 +228,17 @@ export default function AdoptionDetailScreen() {
       );
       router.push(`/messages/${encodeURIComponent(conv.id)}` as any);
     } catch {
-      Alert.alert("Hata", "Mesaj başlatılamadı, lütfen tekrar deneyin.");
+      Alert.alert(t("errors.error"), t("adoption.detail.msgError"));
     } finally {
       setMsgSending(false);
     }
   };
 
   const handleDelete = () => {
-    Alert.alert("İlanı Kaldır", "Bu ilanı kaldırmak istediğine emin misin?", [
-      { text: "İptal", style: "cancel" },
+    Alert.alert(t("adoption.detail.deleteTitle"), t("adoption.detail.deleteMsg"), [
+      { text: t("common.cancel"), style: "cancel" },
       {
-        text: "Kaldır", style: "destructive",
+        text: t("adoption.detail.deleteBtn"), style: "destructive",
         onPress: async () => {
           await deleteListing(listing.id);
           Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
@@ -371,17 +373,17 @@ export default function AdoptionDetailScreen() {
               {listing.petAge ? (
                 <StatPill icon="calendar-outline" label="Yaş" value={listing.petAge} />
               ) : (
-                <StatPill icon="calendar-outline" label="Yaş" value="Belirtilmemiş" />
+                <StatPill icon="calendar-outline" label={t("adoption.detail.ageLabel")} value={t("adoption.detail.notSpecified")} />
               )}
               <StatPill icon="location-outline" label="Konum" value={listing.location.split(",")[0]} />
-              <StatPill icon="shield-checkmark-outline" label="Sağlık" value={getHealthStatusLabel(listing.healthStatus)} />
+              <StatPill icon="shield-checkmark-outline" label={t("adoption.detail.healthLabel")} value={getHealthStatusLabel(listing.healthStatus)} />
             </View>
 
             {/* Divider */}
             <View style={S.divider} />
 
             {/* Owner / poster */}
-            <SectionHead title="İlan Sahibi" />
+            <SectionHead title={t("adoption.detail.ownerSection")} />
             <View style={S.ownerCard}>
               <LinearGradient colors={[P2, P, DARK]} style={S.ownerAvatar}>
                 <Text style={S.ownerAvatarTxt}>{listing.userName.charAt(0).toUpperCase()}</Text>
@@ -405,13 +407,13 @@ export default function AdoptionDetailScreen() {
             <View style={S.divider} />
 
             {/* Description */}
-            <SectionHead title="Hakkında" />
+            <SectionHead title={t("adoption.detail.aboutSection")} />
             <View style={S.descCard}>
               <Text style={S.descText}>{listing.description}</Text>
             </View>
 
             {/* Info grid */}
-            <SectionHead title="Detay Bilgiler" />
+            <SectionHead title={t("adoption.detail.detailsSection")} />
             <View style={S.infoGrid}>
               <View style={S.infoCell}>
                 <Icon name="medkit-outline" size={18} color={P} />
@@ -470,7 +472,7 @@ export default function AdoptionDetailScreen() {
             {isOwner && !isPreviewMode && (
               <View style={S.ownerActionsWrap}>
                 <View style={S.divider} />
-                <SectionHead title="İlan Yönetimi" />
+                <SectionHead title={t("adoption.detail.managementSection")} />
 
                 {/* Edit button */}
                 <Pressable
@@ -497,8 +499,8 @@ export default function AdoptionDetailScreen() {
                   accessibilityRole="button"
                   accessibilityLabel={
                     isListingPromoted(listing.promotedUntil)
-                      ? "Öne çıkarmayı uzat"
-                      : "İlanı öne çıkar"
+                      ? t("adoption.card.featAccessExtend")
+                      : t("adoption.card.featAccessBoost")
                   }
                 >
                   <LinearGradient
@@ -511,13 +513,13 @@ export default function AdoptionDetailScreen() {
                     <View style={{ flex: 1 }}>
                       <Text style={S.boostBtnTitle}>
                         {isListingPromoted(listing.promotedUntil)
-                          ? "Öne Çıkarmayı Uzat"
-                          : "İlanı Öne Çıkar"}
+                          ? t("adoption.card.extendBtn")
+                          : t("adoption.card.featureBtn")}
                       </Text>
                       <Text style={S.boostBtnSub}>
                         {isListingPromoted(listing.promotedUntil)
-                          ? "Mevcut promosyona ek süre ekle"
-                          : "Daha fazla kişiye ulaş, daha hızlı sahiplendir!"}
+                          ? t("adoption.card.extendSub")
+                          : t("adoption.card.featureSub")}
                       </Text>
                     </View>
                     <Icon name="chevron-forward" size={16} color="rgba(255,255,255,0.7)" />
@@ -622,7 +624,7 @@ export default function AdoptionDetailScreen() {
           {existingRequest?.hasRequest && (existingRequest.status === "pending" || existingRequest.status === "reviewing") ? (
             <View style={S.existingRequestBanner}>
               <Icon name="time" size={16} color="#FF9500" />
-              <Text style={S.existingRequestTxt}>Bu ilan için zaten bir talebin var ({existingRequest.status === "pending" ? "Beklemede" : "İnceleniyor"})</Text>
+              <Text style={S.existingRequestTxt}>Bu ilan için zaten bir talebin var ({existingRequest.status === "pending" ? t("adoption.statusLabels.pending") : t("adoption.statusLabels.active")})</Text>
             </View>
           ) : (
             <Pressable
@@ -651,7 +653,7 @@ export default function AdoptionDetailScreen() {
               }}
             >
               <Icon name="chatbubble-ellipses-outline" size={18} color={P} />
-              <Text style={S.intentSecondaryTxt}>{msgSending ? "Açılıyor…" : "Mesaj Gönder"}</Text>
+              <Text style={S.intentSecondaryTxt}>{msgSending ? t("adoption.detail.opening") : t("adoption.detail.sendMsg")}</Text>
             </Pressable>
           )}
 

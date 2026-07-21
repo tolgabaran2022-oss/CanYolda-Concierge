@@ -22,6 +22,7 @@ import {
   View,
 } from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
+import { useTranslation } from "react-i18next";
 import { useAdoption } from "@/contexts/AdoptionContext";
 import { useAuth } from "@/contexts/AuthContext";
 import { useTheme } from "@/hooks/useTheme";
@@ -159,6 +160,7 @@ function PickerModal({ visible, title, items, selected, onSelect, onClose }: {
   selected: string; onSelect: (v: string) => void; onClose: () => void;
 }) {
   const T      = useTheme();
+  const { t }  = useTranslation();
   const insets = useSafeAreaInsets();
   const [q, setQ] = useState("");
   const filtered = q ? items.filter((i) => i.label.toLowerCase().includes(q.toLowerCase())) : items;
@@ -172,7 +174,7 @@ function PickerModal({ visible, title, items, selected, onSelect, onClose }: {
         </View>
         <View style={PM.search}>
           <Icon name="search-outline" size={18} color={C.sub} style={{ marginRight: 8 }} />
-          <TextInput style={PM.searchInput} placeholder="Ara..." placeholderTextColor={C.placeholder} value={q} onChangeText={setQ} autoCorrect={false} />
+          <TextInput style={PM.searchInput} placeholder={t("addAdoption.searchPlaceholder")} placeholderTextColor={C.placeholder} value={q} onChangeText={setQ} autoCorrect={false} />
         </View>
         <FlatList
           data={filtered}
@@ -211,13 +213,14 @@ function PhotoActionSheet({ visible, isFirst, isLast, isCover, onAction }: {
   onAction: (a: PhotoAction) => void;
 }) {
   const T      = useTheme();
+  const { t }  = useTranslation();
   const insets = useSafeAreaInsets();
   type Btn = { label: string; icon: string; action: PhotoAction; color?: string };
   const btns: Btn[] = [
-    ...(!isCover ? [{ label: "Kapak Fotoğrafı Yap", icon: "star", action: "cover" as PhotoAction, color: C.purple }] : []),
-    ...(!isFirst ? [{ label: "Öne Taşı",            icon: "arrow-back", action: "moveLeft" as PhotoAction }] : []),
-    ...(!isLast  ? [{ label: "Arkaya Taşı",          icon: "arrow-forward", action: "moveRight" as PhotoAction }] : []),
-    { label: "Fotoğrafı Sil", icon: "trash-outline", action: "delete" as PhotoAction, color: C.error },
+    ...(!isCover ? [{ label: t("addAdoption.makeCover"), icon: "star", action: "cover" as PhotoAction, color: C.purple }] : []),
+    ...(!isFirst ? [{ label: t("addAdoption.moveForward"),            icon: "arrow-back", action: "moveLeft" as PhotoAction }] : []),
+    ...(!isLast  ? [{ label: t("addAdoption.moveBack"),          icon: "arrow-forward", action: "moveRight" as PhotoAction }] : []),
+    { label: t("addAdoption.deletePhoto"), icon: "trash-outline", action: "delete" as PhotoAction, color: C.error },
   ];
   return (
     <Modal visible={visible} transparent animationType="slide" onRequestClose={() => onAction("close")}>
@@ -257,6 +260,7 @@ function AddPhotoSheet({ visible, onCamera, onGallery, onClose }: {
   visible: boolean; onCamera: () => void; onGallery: () => void; onClose: () => void;
 }) {
   const T          = useTheme();
+  const { t }      = useTranslation();
   const insets     = useSafeAreaInsets();
   const pendingRef = useRef<null | (() => void)>(null);
 
@@ -290,7 +294,7 @@ function AddPhotoSheet({ visible, onCamera, onGallery, onClose }: {
       <Pressable style={AS.overlay} onPress={onClose} />
       <View style={[AS.sheet, { paddingBottom: insets.bottom + 8, backgroundColor: T.card }]}>
         <View style={[AS.handle, { backgroundColor: T.divider }]} />
-        <Text style={{ fontSize: 16, fontFamily: "Inter_700Bold", color: C.label, paddingVertical: 10, textAlign: "center" }}>Fotoğraf Ekle</Text>
+        <Text style={{ fontSize: 16, fontFamily: "Inter_700Bold", color: C.label, paddingVertical: 10, textAlign: "center" }}>{t("addAdoption.addPhoto")}</Text>
         <Pressable style={({ pressed }) => [AS.row, { opacity: pressed ? 0.7 : 1 }]} onPress={() => scheduleAction(onCamera)}>
           <View style={AS.iconWrap}><Icon name="camera-outline" size={20} color={C.purpleDark} /></View>
           <Text style={AS.rowTxt}>Kameradan Çek</Text>
@@ -310,6 +314,7 @@ function AddPhotoSheet({ visible, onCamera, onGallery, onClose }: {
 /* ── Main screen ─────────────────────────────────────────── */
 export default function EditAdoptionScreen() {
   const T               = useTheme();
+  const { t }           = useTranslation();
   const { id }          = useLocalSearchParams<{ id: string }>();
   const insets          = useSafeAreaInsets();
   const router          = useRouter();
@@ -387,7 +392,7 @@ export default function EditAdoptionScreen() {
         <Icon name="lock-closed-outline" size={44} color={`${C.purple}60`} />
         <Text style={{ fontSize: 18, fontFamily: "Inter_700Bold", color: C.label }}>Yetkisiz Erişim</Text>
         <Pressable style={{ backgroundColor: C.purple, borderRadius: 14, paddingVertical: 12, paddingHorizontal: 28 }} onPress={() => router.back()}>
-          <Text style={{ fontSize: 15, fontFamily: "Inter_600SemiBold", color: "#FFF" }}>Geri Dön</Text>
+          <Text style={{ fontSize: 15, fontFamily: "Inter_600SemiBold", color: "#FFF" }}>{t("animalDetail.goBack")}</Text>
         </Pressable>
       </View>
     );
@@ -396,11 +401,11 @@ export default function EditAdoptionScreen() {
   /* ── Photo actions ── */
   const openCamera = async () => {
     if (images.length >= MAX_PHOTOS) {
-      Alert.alert("Limit Aşıldı", `En fazla ${MAX_PHOTOS} fotoğraf ekleyebilirsiniz.`);
+      Alert.alert(t("addAdoption.photoLimitTitle"), t("addAdoption.photoLimitMsg", { count: MAX_PHOTOS }));
       return;
     }
     const perm = await ImagePicker.requestCameraPermissionsAsync();
-    if (!perm.granted) { Alert.alert("Kamera İzni Gerekli", "Ayarlar'dan kamera iznini etkinleştirin."); return; }
+    if (!perm.granted) { Alert.alert(t("addAnimal.cameraPermTitle"), t("addAnimal.openSettings")); return; }
     const result = await ImagePicker.launchCameraAsync({ allowsEditing: true, aspect: [4, 3], quality: 0.8 });
     if (!result.canceled && result.assets[0]) {
       setImages((prev) => [...prev, result.assets[0].uri].slice(0, MAX_PHOTOS));
@@ -410,7 +415,7 @@ export default function EditAdoptionScreen() {
 
   const openGallery = async () => {
     if (images.length >= MAX_PHOTOS) {
-      Alert.alert("Limit Aşıldı", `En fazla ${MAX_PHOTOS} fotoğraf ekleyebilirsiniz.`);
+      Alert.alert(t("addAdoption.photoLimitTitle"), t("addAdoption.photoLimitMsg", { count: MAX_PHOTOS }));
       return;
     }
     const remaining = MAX_PHOTOS - images.length;
@@ -456,7 +461,7 @@ export default function EditAdoptionScreen() {
       });
       Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
     } else if (action === "delete") {
-      Alert.alert("Fotoğrafı Sil", "Bu fotoğrafı silmek istediğine emin misin?", [
+      Alert.alert(t("adoption.detail.deletePhotoTitle"), t("adoption.detail.deletePhotoMsg"), [
         { text: "İptal", style: "cancel" },
         {
           text: "Sil", style: "destructive",
@@ -473,12 +478,12 @@ export default function EditAdoptionScreen() {
   /* ── Validation ── */
   const validate = () => {
     const errs: Record<string, string> = {};
-    if (images.length === 0)           errs.images     = "En az bir fotoğraf zorunludur";
-    if (!petName.trim())               errs.petName    = "Hayvan adı zorunludur";
-    if (!petAge)                       errs.petAge     = "Yaş seçimi zorunludur";
-    if (!province)                     errs.province   = "İl seçimi zorunludur";
-    if (!district)                     errs.district   = "İlçe seçimi zorunludur";
-    if (description.trim().length < 30) errs.description = "En az 30 karakter yazınız";
+    if (images.length === 0)           errs.images     = t("addAdoption.photoRequired");
+    if (!petName.trim())               errs.petName    = t("addAdoption.nameRequired");
+    if (!petAge)                       errs.petAge     = t("addAdoption.ageRequired");
+    if (!province)                     errs.province   = t("addAdoption.cityRequired");
+    if (!district)                     errs.district   = t("addAdoption.districtRequired");
+    if (description.trim().length < 30) errs.description = t("addAdoption.descriptionMinLength");
     if (!healthStatus)       errs.healthStatus       = "Lütfen detay bilgilerini tamamla.";
     if (!vaccinationStatus)  errs.vaccinationStatus  = "Lütfen detay bilgilerini tamamla.";
     if (!environmentType)    errs.environmentType    = "Lütfen detay bilgilerini tamamla.";
@@ -643,7 +648,7 @@ export default function EditAdoptionScreen() {
                       hitSlop={6}
                       onPress={() => {
                         Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
-                        Alert.alert("Fotoğrafı Sil", "Bu fotoğrafı silmek istediğine emin misin?", [
+                        Alert.alert(t("adoption.detail.deletePhotoTitle"), t("adoption.detail.deletePhotoMsg"), [
                           { text: "İptal", style: "cancel" },
                           { text: "Sil", style: "destructive", onPress: () => setImages((prev) => prev.filter((_, i) => i !== idx)) },
                         ]);
