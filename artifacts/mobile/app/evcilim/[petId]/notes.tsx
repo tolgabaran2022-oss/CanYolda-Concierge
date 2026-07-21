@@ -4,19 +4,11 @@ import { LinearGradient } from "expo-linear-gradient";
 import { useLocalSearchParams, useRouter } from "expo-router";
 import React, { useCallback, useEffect, useState } from "react";
 import {
-  ActivityIndicator,
-  Alert,
-  FlatList,
-  KeyboardAvoidingView,
-  Modal,
-  Platform,
-  Pressable,
-  StyleSheet,
-  Text,
-  TextInput,
-  View,
+  ActivityIndicator, Alert, FlatList, KeyboardAvoidingView,
+  Modal, Platform, Pressable, StyleSheet, Text, TextInput, View,
 } from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
+import { useTranslation } from "react-i18next";
 import { useAuth } from "@/contexts/AuthContext";
 import { usePets } from "@/contexts/PetsContext";
 import { apiGetNotes, apiCreateNote, apiUpdateNote, apiDeleteNote, type ApiPetNote } from "@/lib/petManagementApi";
@@ -52,9 +44,7 @@ function NoteCard({ note, onEdit, onDelete }: { note: ApiPetNote; onEdit: () => 
           <Icon name="trash-outline" size={16} color={RED} />
         </Pressable>
       </View>
-      {note.content ? (
-        <Text style={nc.content} numberOfLines={3}>{note.content}</Text>
-      ) : null}
+      {note.content ? <Text style={nc.content} numberOfLines={3}>{note.content}</Text> : null}
     </Pressable>
   );
 }
@@ -76,8 +66,9 @@ function AddEditModal({ visible, initial, onClose, onSave }: {
   onClose: () => void;
   onSave: (title: string, content: string) => Promise<void>;
 }) {
+  const { t } = useTranslation();
   const insets = useSafeAreaInsets();
-  const [title, setTitle] = useState(initial?.title ?? "");
+  const [title, setTitle]   = useState(initial?.title ?? "");
   const [content, setContent] = useState(initial?.content ?? "");
   const [saving, setSaving] = useState(false);
 
@@ -86,10 +77,10 @@ function AddEditModal({ visible, initial, onClose, onSave }: {
   }, [visible, initial]);
 
   const handleSave = async () => {
-    if (!title.trim()) { Alert.alert("Hata", "Başlık giriniz."); return; }
+    if (!title.trim()) { Alert.alert(t("common.error"), t("pets.notes.errTitleRequired")); return; }
     setSaving(true);
     try { await onSave(title.trim(), content.trim()); onClose(); }
-    catch { Alert.alert("Hata", "Kaydedilemedi."); }
+    catch { Alert.alert(t("common.error"), t("pets.notes.errSave")); }
     finally { setSaving(false); }
   };
 
@@ -100,21 +91,21 @@ function AddEditModal({ visible, initial, onClose, onSave }: {
       <KeyboardAvoidingView style={{ flex: 1, backgroundColor: WHITE }} behavior={Platform.OS === "ios" ? "padding" : undefined}>
         <View style={[am.header, { paddingTop: insets.top + 12 }]}>
           <Pressable onPress={onClose} hitSlop={8}><Icon name="close" size={24} color={DARK} /></Pressable>
-          <Text style={am.title}>{initial ? "Notu Düzenle" : "Not Ekle"}</Text>
+          <Text style={am.title}>{initial ? t("pets.notes.editTitle") : t("pets.notes.addTitle")}</Text>
           <View style={{ width: 24 }} />
         </View>
         <View style={am.form}>
           <View style={am.field}>
-            <Text style={am.label}>Başlık *</Text>
-            <TextInput style={fld} value={title} onChangeText={setTitle} placeholder="Notun başlığı..." placeholderTextColor={BODY} />
+            <Text style={am.label}>{t("pets.notes.titleLabel")}</Text>
+            <TextInput style={fld} value={title} onChangeText={setTitle} placeholder={t("pets.notes.titlePlaceholder")} placeholderTextColor={BODY} />
           </View>
           <View style={[am.field, { flex: 1 }]}>
-            <Text style={am.label}>İçerik</Text>
+            <Text style={am.label}>{t("pets.notes.contentLabel")}</Text>
             <TextInput
               style={[fld, { flex: 1, textAlignVertical: "top", minHeight: 200 }]}
               value={content}
               onChangeText={setContent}
-              placeholder="Not içeriği..."
+              placeholder={t("pets.notes.contentPlaceholder")}
               placeholderTextColor={BODY}
               multiline
             />
@@ -122,7 +113,7 @@ function AddEditModal({ visible, initial, onClose, onSave }: {
           <Pressable style={am.saveBtn} onPress={handleSave} disabled={saving}>
             <LinearGradient colors={[P2, P]} style={am.saveGrad}>
               <Icon name={saving ? "hourglass-outline" : "checkmark-circle-outline"} size={20} color={WHITE} />
-              <Text style={am.saveTxt}>{saving ? "Kaydediliyor..." : "Kaydet"}</Text>
+              <Text style={am.saveTxt}>{saving ? t("pets.notes.saving") : t("pets.notes.save")}</Text>
             </LinearGradient>
           </Pressable>
         </View>
@@ -131,29 +122,30 @@ function AddEditModal({ visible, initial, onClose, onSave }: {
   );
 }
 const am = StyleSheet.create({
-  header: { flexDirection: "row", alignItems: "center", justifyContent: "space-between", paddingHorizontal: 20, paddingBottom: 14 },
-  title:  { fontSize: 17, fontFamily: "Inter_700Bold", color: DARK },
-  form:   { flex: 1, paddingHorizontal: 20, gap: 14, paddingBottom: 24 },
-  field:  { gap: 6 },
-  label:  { fontSize: 12, fontFamily: "Inter_700Bold", color: DARK, letterSpacing: 0.2 },
-  saveBtn:{ borderRadius: 16, overflow: "hidden", marginTop: 8 },
+  header:  { flexDirection: "row", alignItems: "center", justifyContent: "space-between", paddingHorizontal: 20, paddingBottom: 14 },
+  title:   { fontSize: 17, fontFamily: "Inter_700Bold", color: DARK },
+  form:    { flex: 1, paddingHorizontal: 20, gap: 14, paddingBottom: 24 },
+  field:   { gap: 6 },
+  label:   { fontSize: 12, fontFamily: "Inter_700Bold", color: DARK, letterSpacing: 0.2 },
+  saveBtn: { borderRadius: 16, overflow: "hidden", marginTop: 8 },
   saveGrad:{ flexDirection: "row", alignItems: "center", justifyContent: "center", gap: 8, paddingVertical: 16 },
-  saveTxt:{ fontSize: 15, fontFamily: "Inter_700Bold", color: WHITE },
+  saveTxt: { fontSize: 15, fontFamily: "Inter_700Bold", color: WHITE },
 });
 
 /* ── Main Screen ─────────────────────────────────────── */
 export default function NotesScreen() {
   const { petId } = useLocalSearchParams<{ petId: string }>();
+  const { t } = useTranslation();
   const { user } = useAuth();
   const { getPet } = usePets();
   const router = useRouter();
   const insets = useSafeAreaInsets();
 
   const pet = getPet(petId ?? "");
-  const [notes, setNotes] = useState<ApiPetNote[]>([]);
-  const [loading, setLoading] = useState(true);
+  const [notes, setNotes]               = useState<ApiPetNote[]>([]);
+  const [loading, setLoading]           = useState(true);
   const [modalVisible, setModalVisible] = useState(false);
-  const [editing, setEditing] = useState<ApiPetNote | null>(null);
+  const [editing, setEditing]           = useState<ApiPetNote | null>(null);
 
   const load = useCallback(async () => {
     if (!petId || !user) return;
@@ -177,10 +169,10 @@ export default function NotesScreen() {
   };
 
   const handleDelete = (note: ApiPetNote) => {
-    Alert.alert("Sil", `"${note.title}" silinecek?`, [
-      { text: "Vazgeç", style: "cancel" },
+    Alert.alert(t("pets.notes.deleteTitle"), `"${note.title}" ${t("pets.notes.deleteConfirmSuffix")}`, [
+      { text: t("pets.notes.deleteCancel"), style: "cancel" },
       {
-        text: "Sil", style: "destructive",
+        text: t("pets.notes.deleteConfirm"), style: "destructive",
         onPress: async () => {
           if (!petId || !user) return;
           await apiDeleteNote(petId, note.id);
@@ -198,7 +190,7 @@ export default function NotesScreen() {
           <Icon name="chevron-back" size={22} color={DARK} />
         </Pressable>
         <View>
-          <Text style={st.headerTitle}>Notlar</Text>
+          <Text style={st.headerTitle}>{t("pets.notes.title")}</Text>
           {pet ? <Text style={st.headerSub}>{pet.name}</Text> : null}
         </View>
         <Pressable style={st.addBtn} onPress={() => { Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light); setEditing(null); setModalVisible(true); }}>
@@ -215,8 +207,8 @@ export default function NotesScreen() {
           <LinearGradient colors={[`${P2}20`, `${P}10`]} style={st.emptyCircle}>
             <Icon name="pencil-outline" size={40} color={P} />
           </LinearGradient>
-          <Text style={st.emptyTitle}>Not Yok</Text>
-          <Text style={st.emptySub}>Hayvanınla ilgili önemli bilgileri not al</Text>
+          <Text style={st.emptyTitle}>{t("pets.notes.emptyTitle")}</Text>
+          <Text style={st.emptySub}>{t("pets.notes.emptySub")}</Text>
         </View>
       ) : (
         <FlatList

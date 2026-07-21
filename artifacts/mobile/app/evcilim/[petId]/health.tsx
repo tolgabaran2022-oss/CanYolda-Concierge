@@ -6,6 +6,7 @@ import {
 import { Stack, useLocalSearchParams, useRouter } from "expo-router";
 import * as Haptics from "expo-haptics";
 import { SafeAreaView } from "react-native-safe-area-context";
+import { useTranslation } from "react-i18next";
 import { Icon } from "@/components/Icon";
 import { useColors } from "@/hooks/useColors";
 import {
@@ -25,20 +26,9 @@ function formatDate(s: string) {
   catch { return s; }
 }
 
-function vaccStatus(v: ApiVaccination): { label: string; color: string } {
-  const colors = { current: "#43B96C", upcoming: "#FF9500", overdue: "#E55D6F", scheduled: "#7B5EA7" };
-  const labels = { current: "Güncel", upcoming: "Yaklaşıyor", overdue: "Gecikmiş", scheduled: "Planlandı" };
-  return { label: labels[v.status] ?? v.status, color: colors[v.status] ?? "#8C8699" };
-}
-
-function apptStatus(a: ApiAppointment): { label: string; color: string } {
-  const colors = { upcoming: "#7B5EA7", completed: "#43B96C", cancelled: "#E55D6F" };
-  const labels = { upcoming: "Yaklaşan", completed: "Tamamlandı", cancelled: "İptal" };
-  return { label: labels[a.status] ?? a.status, color: colors[a.status] ?? "#8C8699" };
-}
-
 export default function HealthScreen() {
   const { petId } = useLocalSearchParams<{ petId: string }>();
+  const { t } = useTranslation();
   const C = useColors();
   const router = useRouter();
   const { isPremium } = usePetPremium();
@@ -60,18 +50,40 @@ export default function HealthScreen() {
 
   useEffect(() => { load(); }, [load]);
 
+  const vaccLabels: Record<string, string> = {
+    current:   t("pets.health.vaccLabels.current"),
+    upcoming:  t("pets.health.vaccLabels.upcoming"),
+    overdue:   t("pets.health.vaccLabels.overdue"),
+    scheduled: t("pets.health.vaccLabels.scheduled"),
+  };
+  const vaccColors: Record<string, string> = { current: "#43B96C", upcoming: "#FF9500", overdue: "#E55D6F", scheduled: "#7B5EA7" };
+
+  const apptLabels: Record<string, string> = {
+    upcoming:  t("pets.health.apptLabels.upcoming"),
+    completed: t("pets.health.apptLabels.completed"),
+    cancelled: t("pets.health.apptLabels.cancelled"),
+  };
+  const apptColors: Record<string, string> = { upcoming: "#7B5EA7", completed: "#43B96C", cancelled: "#E55D6F" };
+
   const S = makeStyles(C);
 
   const overdue = vaccinations.filter(v => v.status === "overdue");
-  const upcoming = vaccinations.filter(v => v.status === "upcoming" || v.status === "scheduled");
+  const upcomingVacc = vaccinations.filter(v => v.status === "upcoming" || v.status === "scheduled");
   const current = vaccinations.filter(v => v.status === "current");
   const upcomingAppts = appointments.filter(a => a.status === "upcoming")
     .sort((a, b) => a.appointmentDate.localeCompare(b.appointmentDate));
 
+  const quickActions = [
+    { icon: "add-circle-outline",      label: t("pets.health.addAppt"),    route: `/evcilim/${petId}/appointments` },
+    { icon: "shield-checkmark-outline", label: t("pets.health.addVacc"),    route: `/evcilim/${petId}/vaccinations` },
+    { icon: "medical-outline",          label: t("pets.health.medications"), route: `/evcilim/${petId}/medications` },
+    { icon: "document-text-outline",    label: t("pets.health.documents"),   route: `/evcilim/${petId}/documents` },
+  ];
+
   if (loading) {
     return (
       <SafeAreaView style={S.flex} edges={["bottom"]}>
-        <Stack.Screen options={{ title: "Sağlık Özeti", headerBackTitle: "Geri" }} />
+        <Stack.Screen options={{ title: t("pets.health.title"), headerBackTitle: t("pets.health.backTitle") }} />
         <View style={S.center}><ActivityIndicator color={C.purple} size="large" /></View>
       </SafeAreaView>
     );
@@ -79,7 +91,7 @@ export default function HealthScreen() {
 
   return (
     <SafeAreaView style={S.flex} edges={["bottom"]}>
-      <Stack.Screen options={{ title: "Sağlık Özeti", headerBackTitle: "Geri" }} />
+      <Stack.Screen options={{ title: t("pets.health.title"), headerBackTitle: t("pets.health.backTitle") }} />
 
       <ScrollView
         contentContainerStyle={S.scroll}
@@ -90,15 +102,15 @@ export default function HealthScreen() {
         <View style={S.statsRow}>
           <View style={[S.statCard, { backgroundColor: overdue.length > 0 ? "#FFF1F0" : C.card }]}>
             <Text style={[S.statNum, { color: overdue.length > 0 ? "#E55D6F" : C.purple }]}>{overdue.length}</Text>
-            <Text style={S.statLabel}>Gecikmiş Aşı</Text>
+            <Text style={S.statLabel}>{t("pets.health.overdueVaccine")}</Text>
           </View>
           <View style={S.statCard}>
-            <Text style={[S.statNum, { color: "#FF9500" }]}>{upcoming.length}</Text>
-            <Text style={S.statLabel}>Yaklaşan Aşı</Text>
+            <Text style={[S.statNum, { color: "#FF9500" }]}>{upcomingVacc.length}</Text>
+            <Text style={S.statLabel}>{t("pets.health.upcomingVaccine")}</Text>
           </View>
           <View style={S.statCard}>
             <Text style={[S.statNum, { color: "#43B96C" }]}>{current.length}</Text>
-            <Text style={S.statLabel}>Güncel Aşı</Text>
+            <Text style={S.statLabel}>{t("pets.health.currentVaccine")}</Text>
           </View>
         </View>
 
@@ -107,8 +119,8 @@ export default function HealthScreen() {
           <View style={S.alertCard}>
             <Icon name="warning-outline" size={20} color="#E55D6F" />
             <View style={{ flex: 1 }}>
-              <Text style={S.alertTitle}>Gecikmiş Aşı Var</Text>
-              <Text style={S.alertSub}>{overdue.map(v => v.vaccineName).join(", ")} için veteriner randevusu alınız.</Text>
+              <Text style={S.alertTitle}>{t("pets.health.overdueAlert")}</Text>
+              <Text style={S.alertSub}>{overdue.map(v => v.vaccineName).join(", ")} {t("pets.health.overdueAlertSub")}</Text>
             </View>
             <Pressable onPress={() => { Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light); router.push(`/evcilim/${petId}/appointments`); }}>
               <Icon name="chevron-forward" size={18} color="#E55D6F" />
@@ -119,22 +131,23 @@ export default function HealthScreen() {
         {/* Upcoming appointments */}
         <View style={S.section}>
           <View style={S.sectionHeader}>
-            <Text style={S.sectionTitle}>Yaklaşan Randevular</Text>
+            <Text style={S.sectionTitle}>{t("pets.health.upcomingAppts")}</Text>
             <Pressable onPress={() => router.push(`/evcilim/${petId}/appointments`)}>
-              <Text style={S.seeAll}>Tümü</Text>
+              <Text style={S.seeAll}>{t("pets.health.seeAll")}</Text>
             </Pressable>
           </View>
           {upcomingAppts.length === 0 ? (
             <View style={S.emptyRow}>
               <Icon name="calendar-outline" size={22} color={C.textMuted} />
-              <Text style={S.emptyText}>Randevu yok</Text>
+              <Text style={S.emptyText}>{t("pets.health.noAppt")}</Text>
               <Pressable style={S.addPill} onPress={() => router.push(`/evcilim/${petId}/appointments`)}>
-                <Text style={S.addPillTxt}>Ekle</Text>
+                <Text style={S.addPillTxt}>{t("pets.health.add")}</Text>
               </Pressable>
             </View>
           ) : (
             upcomingAppts.slice(0, 3).map(a => {
-              const { label, color } = apptStatus(a);
+              const color = apptColors[a.status] ?? "#8C8699";
+              const label = apptLabels[a.status] ?? a.status;
               return (
                 <View key={a.id} style={S.rowCard}>
                   <View style={[S.rowIcon, { backgroundColor: `${color}14` }]}>
@@ -156,22 +169,23 @@ export default function HealthScreen() {
         {/* Vaccinations */}
         <View style={S.section}>
           <View style={S.sectionHeader}>
-            <Text style={S.sectionTitle}>Aşı Durumu</Text>
+            <Text style={S.sectionTitle}>{t("pets.health.vaccSectionTitle")}</Text>
             <Pressable onPress={() => router.push(`/evcilim/${petId}/vaccinations`)}>
-              <Text style={S.seeAll}>Tümü</Text>
+              <Text style={S.seeAll}>{t("pets.health.seeAll")}</Text>
             </Pressable>
           </View>
           {vaccinations.length === 0 ? (
             <View style={S.emptyRow}>
               <Icon name="shield-checkmark-outline" size={22} color={C.textMuted} />
-              <Text style={S.emptyText}>Aşı kaydı yok</Text>
+              <Text style={S.emptyText}>{t("pets.health.noVacc")}</Text>
               <Pressable style={S.addPill} onPress={() => router.push(`/evcilim/${petId}/vaccinations`)}>
-                <Text style={S.addPillTxt}>Ekle</Text>
+                <Text style={S.addPillTxt}>{t("pets.health.add")}</Text>
               </Pressable>
             </View>
           ) : (
             vaccinations.slice(0, 5).map(v => {
-              const { label, color } = vaccStatus(v);
+              const color = vaccColors[v.status] ?? "#8C8699";
+              const label = vaccLabels[v.status] ?? v.status;
               return (
                 <View key={v.id} style={S.rowCard}>
                   <View style={[S.rowIcon, { backgroundColor: `${color}14` }]}>
@@ -180,8 +194,10 @@ export default function HealthScreen() {
                   <View style={{ flex: 1 }}>
                     <Text style={S.rowTitle}>{v.vaccineName}</Text>
                     <Text style={S.rowSub}>
-                      {v.administeredDate ? `Yapıldı: ${formatDate(v.administeredDate)}` : "Tarihi bilinmiyor"}
-                      {v.nextDueDate ? ` · Sonraki: ${formatDate(v.nextDueDate)}` : ""}
+                      {v.administeredDate
+                        ? `${t("pets.health.administered")} ${formatDate(v.administeredDate)}`
+                        : t("pets.health.unknownDate")}
+                      {v.nextDueDate ? ` · ${t("pets.health.next")} ${formatDate(v.nextDueDate)}` : ""}
                     </Text>
                   </View>
                   <View style={[S.statusBadge, { backgroundColor: `${color}14` }]}>
@@ -203,8 +219,8 @@ export default function HealthScreen() {
               <Icon name="sparkles-outline" size={22} color="#fff" />
             </View>
             <View style={{ flex: 1 }}>
-              <Text style={S.aiTitle}>AI Hayvan Asistanı</Text>
-              <Text style={S.aiSub}>Sağlık soruların için AI destekli yanıtlar al.</Text>
+              <Text style={S.aiTitle}>{t("pets.health.aiTitle")}</Text>
+              <Text style={S.aiSub}>{t("pets.health.aiSub")}</Text>
             </View>
             <Icon name="chevron-forward" size={18} color={C.purple} />
           </Pressable>
@@ -212,12 +228,7 @@ export default function HealthScreen() {
 
         {/* Quick actions */}
         <View style={S.actionsGrid}>
-          {[
-            { icon: "add-circle-outline", label: "Randevu Ekle", route: `/evcilim/${petId}/appointments` },
-            { icon: "shield-checkmark-outline", label: "Aşı Ekle", route: `/evcilim/${petId}/vaccinations` },
-            { icon: "medical-outline", label: "İlaç Takibi", route: `/evcilim/${petId}/medications` },
-            { icon: "document-text-outline", label: "Belgeler", route: `/evcilim/${petId}/documents` },
-          ].map(({ icon, label, route }) => (
+          {quickActions.map(({ icon, label, route }) => (
             <Pressable
               key={label}
               style={S.actionBtn}

@@ -4,25 +4,15 @@ import { LinearGradient } from "expo-linear-gradient";
 import { useLocalSearchParams, useRouter } from "expo-router";
 import React, { useCallback, useEffect, useState } from "react";
 import {
-  ActivityIndicator,
-  Alert,
-  KeyboardAvoidingView,
-  Modal,
-  Platform,
-  Pressable,
-  ScrollView,
-  StyleSheet,
-  Switch,
-  Text,
-  TextInput,
-  View,
+  ActivityIndicator, Alert, KeyboardAvoidingView, Modal,
+  Platform, Pressable, ScrollView, StyleSheet, Switch,
+  Text, TextInput, View,
 } from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
+import { useTranslation } from "react-i18next";
 import { useAuth } from "@/contexts/AuthContext";
 import {
-  apiGetAppointment,
-  apiUpdateAppointment,
-  apiDeleteAppointment,
+  apiGetAppointment, apiUpdateAppointment, apiDeleteAppointment,
   type ApiAppointment,
 } from "@/lib/petManagementApi";
 
@@ -34,7 +24,6 @@ const BG     = "#F6F1FF";
 const WHITE  = "#FFFFFF";
 const BORDER = "#EEE8F5";
 const GREEN  = "#34C759";
-const ORANGE = "#FF9500";
 const RED    = "#FF3B30";
 
 const SHADOW = Platform.select({
@@ -43,27 +32,14 @@ const SHADOW = Platform.select({
   default: {},
 });
 
-const STATUS_LABEL: Record<string, string> = { upcoming: "Yaklaşıyor", completed: "Tamamlandı", cancelled: "İptal" };
 const STATUS_COLOR: Record<string, string>  = { upcoming: P, completed: GREEN, cancelled: RED };
-
-const RECURRENCE_LABELS: Record<string, string> = {
-  never: "Yok",
-  "1m":  "Her Ay",
-  "3m":  "Her 3 Ayda Bir",
-  "6m":  "Her 6 Ayda Bir",
-  "12m": "Her Yıl",
-};
 const RECURRENCE_OPTIONS = ["never", "1m", "3m", "6m", "12m"] as const;
-
 const APPT_TYPES = ["veteriner", "kuaför", "kontrol", "aşı", "diş", "diğer"] as const;
 
 function formatDateLong(s: string): string {
   if (!s) return "—";
-  try {
-    return new Date(s).toLocaleDateString("tr-TR", {
-      day: "numeric", month: "long", year: "numeric", weekday: "long",
-    });
-  } catch { return s; }
+  try { return new Date(s).toLocaleDateString("tr-TR", { day: "numeric", month: "long", year: "numeric", weekday: "long" }); }
+  catch { return s; }
 }
 
 function formatDate(s: string): string {
@@ -73,28 +49,32 @@ function formatDate(s: string): string {
 }
 
 /* ── Edit Sheet ──────────────────────────────────────── */
-function EditSheet({
-  visible,
-  appt,
-  onClose,
-  onSave,
-}: {
+function EditSheet({ visible, appt, onClose, onSave }: {
   visible: boolean;
   appt: ApiAppointment | null;
   onClose: () => void;
   onSave: (data: Partial<Omit<ApiAppointment, "id" | "petId" | "userId" | "createdAt" | "updatedAt">>) => Promise<void>;
 }) {
+  const { t } = useTranslation();
   const insets = useSafeAreaInsets();
-  const [title, setTitle]             = useState(appt?.title ?? "");
-  const [apptType, setApptType]       = useState(appt?.appointmentType ?? "veteriner");
-  const [apptDate, setApptDate]       = useState(appt?.appointmentDate ?? "");
-  const [apptTime, setApptTime]       = useState(appt?.appointmentTime ?? "");
-  const [location, setLocation]       = useState(appt?.location ?? "");
-  const [clinicName, setClinic]       = useState(appt?.clinicName ?? "");
-  const [vetName, setVet]             = useState(appt?.veterinarianName ?? "");
-  const [description, setDesc]        = useState(appt?.description ?? "");
-  const [recurrence, setRecurrence]   = useState(appt?.recurrenceRule ?? "never");
-  const [saving, setSaving]           = useState(false);
+  const [title, setTitle]           = useState(appt?.title ?? "");
+  const [apptType, setApptType]     = useState(appt?.appointmentType ?? "veteriner");
+  const [apptDate, setApptDate]     = useState(appt?.appointmentDate ?? "");
+  const [apptTime, setApptTime]     = useState(appt?.appointmentTime ?? "");
+  const [location, setLocation]     = useState(appt?.location ?? "");
+  const [clinicName, setClinic]     = useState(appt?.clinicName ?? "");
+  const [vetName, setVet]           = useState(appt?.veterinarianName ?? "");
+  const [description, setDesc]      = useState(appt?.description ?? "");
+  const [recurrence, setRecurrence] = useState(appt?.recurrenceRule ?? "never");
+  const [saving, setSaving]         = useState(false);
+
+  const recurrenceLabels: Record<string, string> = {
+    never: t("pets.apptDetail.recurrenceLabels.never"),
+    "1m":  t("pets.apptDetail.recurrenceLabels.1m"),
+    "3m":  t("pets.apptDetail.recurrenceLabels.3m"),
+    "6m":  t("pets.apptDetail.recurrenceLabels.6m"),
+    "12m": t("pets.apptDetail.recurrenceLabels.12m"),
+  };
 
   useEffect(() => {
     if (visible && appt) {
@@ -107,12 +87,12 @@ function EditSheet({
   }, [visible, appt]);
 
   const handleSave = async () => {
-    if (!title.trim()) { Alert.alert("Hata", "Başlık giriniz."); return; }
+    if (!title.trim()) { Alert.alert(t("common.error"), t("pets.apptDetail.errTitleRequired")); return; }
     setSaving(true);
     try {
       await onSave({ title, appointmentType: apptType, appointmentDate: apptDate, appointmentTime: apptTime, location, clinicName, veterinarianName: vetName, description, recurrenceRule: recurrence });
       onClose();
-    } catch { Alert.alert("Hata", "Kaydedilemedi."); }
+    } catch { Alert.alert(t("common.error"), t("pets.apptDetail.errSave")); }
     finally { setSaving(false); }
   };
 
@@ -123,43 +103,43 @@ function EditSheet({
       <KeyboardAvoidingView style={{ flex: 1, backgroundColor: WHITE }} behavior={Platform.OS === "ios" ? "padding" : undefined}>
         <View style={[es.header, { paddingTop: insets.top + 12 }]}>
           <Pressable onPress={onClose} hitSlop={8}><Icon name="close" size={24} color={DARK} /></Pressable>
-          <Text style={es.title}>Randevuyu Düzenle</Text>
+          <Text style={es.title}>{t("pets.apptDetail.editTitle")}</Text>
           <View style={{ width: 24 }} />
         </View>
         <ScrollView showsVerticalScrollIndicator={false} contentContainerStyle={es.form} keyboardShouldPersistTaps="handled">
           <View style={es.field}>
-            <Text style={es.label}>Randevu Türü</Text>
+            <Text style={es.label}>{t("pets.apptDetail.apptTypeLabel")}</Text>
             <ScrollView horizontal showsHorizontalScrollIndicator={false} style={{ marginTop: 6 }}>
               <View style={{ flexDirection: "row", gap: 8 }}>
-                {APPT_TYPES.map((t) => (
-                  <Pressable key={t} style={[es.pill, apptType === t && es.pillActive]} onPress={() => setApptType(t)}>
-                    <Text style={[es.pillTxt, apptType === t && { color: P, fontFamily: "Inter_700Bold" }]}>{t.charAt(0).toUpperCase() + t.slice(1)}</Text>
+                {APPT_TYPES.map((at) => (
+                  <Pressable key={at} style={[es.pill, apptType === at && es.pillActive]} onPress={() => setApptType(at)}>
+                    <Text style={[es.pillTxt, apptType === at && { color: P, fontFamily: "Inter_700Bold" }]}>{at.charAt(0).toUpperCase() + at.slice(1)}</Text>
                   </Pressable>
                 ))}
               </View>
             </ScrollView>
           </View>
-          <View style={es.field}><Text style={es.label}>Başlık *</Text><TextInput style={fld} value={title} onChangeText={setTitle} placeholderTextColor={BODY} /></View>
-          <View style={es.field}><Text style={es.label}>Tarih (YYYY-AA-GG)</Text><TextInput style={fld} value={apptDate} onChangeText={setApptDate} placeholder="2026-08-15" placeholderTextColor={BODY} /></View>
-          <View style={es.field}><Text style={es.label}>Saat</Text><TextInput style={fld} value={apptTime} onChangeText={setApptTime} placeholder="14:30" placeholderTextColor={BODY} /></View>
-          <View style={es.field}><Text style={es.label}>Klinik / Salon</Text><TextInput style={fld} value={clinicName} onChangeText={setClinic} placeholderTextColor={BODY} /></View>
-          <View style={es.field}><Text style={es.label}>Veteriner / Uzman</Text><TextInput style={fld} value={vetName} onChangeText={setVet} placeholderTextColor={BODY} /></View>
-          <View style={es.field}><Text style={es.label}>Konum</Text><TextInput style={fld} value={location} onChangeText={setLocation} placeholderTextColor={BODY} /></View>
+          <View style={es.field}><Text style={es.label}>{t("pets.apptDetail.titleLabel")}</Text><TextInput style={fld} value={title} onChangeText={setTitle} placeholderTextColor={BODY} /></View>
+          <View style={es.field}><Text style={es.label}>{t("pets.apptDetail.dateLabel")}</Text><TextInput style={fld} value={apptDate} onChangeText={setApptDate} placeholder="2026-08-15" placeholderTextColor={BODY} /></View>
+          <View style={es.field}><Text style={es.label}>{t("pets.apptDetail.timeLabel")}</Text><TextInput style={fld} value={apptTime} onChangeText={setApptTime} placeholder="14:30" placeholderTextColor={BODY} /></View>
+          <View style={es.field}><Text style={es.label}>{t("pets.apptDetail.clinicLabel")}</Text><TextInput style={fld} value={clinicName} onChangeText={setClinic} placeholderTextColor={BODY} /></View>
+          <View style={es.field}><Text style={es.label}>{t("pets.apptDetail.vetLabel")}</Text><TextInput style={fld} value={vetName} onChangeText={setVet} placeholderTextColor={BODY} /></View>
+          <View style={es.field}><Text style={es.label}>{t("pets.apptDetail.locationLabel")}</Text><TextInput style={fld} value={location} onChangeText={setLocation} placeholderTextColor={BODY} /></View>
           <View style={es.field}>
-            <Text style={es.label}>Tekrarlama</Text>
+            <Text style={es.label}>{t("pets.apptDetail.repeatLabel")}</Text>
             <View style={{ flexDirection: "row", flexWrap: "wrap", gap: 8, marginTop: 6 }}>
               {RECURRENCE_OPTIONS.map((r) => (
                 <Pressable key={r} style={[es.pill, recurrence === r && es.pillActive]} onPress={() => setRecurrence(r)}>
-                  <Text style={[es.pillTxt, recurrence === r && { color: P, fontFamily: "Inter_700Bold" }]}>{RECURRENCE_LABELS[r]}</Text>
+                  <Text style={[es.pillTxt, recurrence === r && { color: P, fontFamily: "Inter_700Bold" }]}>{recurrenceLabels[r]}</Text>
                 </Pressable>
               ))}
             </View>
           </View>
-          <View style={es.field}><Text style={es.label}>Notlar</Text><TextInput style={[fld, { minHeight: 80, textAlignVertical: "top" }]} value={description} onChangeText={setDesc} placeholder="Ek notlar..." placeholderTextColor={BODY} multiline /></View>
+          <View style={es.field}><Text style={es.label}>{t("pets.apptDetail.notesLabel")}</Text><TextInput style={[fld, { minHeight: 80, textAlignVertical: "top" }]} value={description} onChangeText={setDesc} placeholder={t("pets.apptDetail.notesPlaceholder")} placeholderTextColor={BODY} multiline /></View>
           <Pressable style={es.saveBtn} onPress={handleSave} disabled={saving}>
             <LinearGradient colors={[P2, P]} style={es.saveGrad}>
               <Icon name={saving ? "hourglass-outline" : "checkmark-circle-outline"} size={20} color={WHITE} />
-              <Text style={es.saveTxt}>{saving ? "Kaydediliyor..." : "Kaydet"}</Text>
+              <Text style={es.saveTxt}>{saving ? t("pets.apptDetail.saving") : t("pets.apptDetail.save")}</Text>
             </LinearGradient>
           </Pressable>
         </ScrollView>
@@ -168,30 +148,22 @@ function EditSheet({
   );
 }
 const es = StyleSheet.create({
-  header:   { flexDirection: "row", alignItems: "center", justifyContent: "space-between", paddingHorizontal: 20, paddingBottom: 14 },
-  title:    { fontSize: 17, fontFamily: "Inter_700Bold", color: DARK },
-  form:     { paddingHorizontal: 20, gap: 14, paddingBottom: 40 },
-  field:    { gap: 6 },
-  label:    { fontSize: 12, fontFamily: "Inter_700Bold", color: DARK, letterSpacing: 0.2 },
-  pill:     { paddingHorizontal: 14, paddingVertical: 8, borderRadius: 50, backgroundColor: WHITE, borderWidth: 1.5, borderColor: BORDER },
+  header:    { flexDirection: "row", alignItems: "center", justifyContent: "space-between", paddingHorizontal: 20, paddingBottom: 14 },
+  title:     { fontSize: 17, fontFamily: "Inter_700Bold", color: DARK },
+  form:      { paddingHorizontal: 20, gap: 14, paddingBottom: 40 },
+  field:     { gap: 6 },
+  label:     { fontSize: 12, fontFamily: "Inter_700Bold", color: DARK, letterSpacing: 0.2 },
+  pill:      { paddingHorizontal: 14, paddingVertical: 8, borderRadius: 50, backgroundColor: WHITE, borderWidth: 1.5, borderColor: BORDER },
   pillActive:{ borderColor: P, backgroundColor: `${P}10` },
-  pillTxt:  { fontSize: 12, fontFamily: "Inter_500Medium", color: BODY },
-  saveBtn:  { borderRadius: 16, overflow: "hidden", marginTop: 8 },
-  saveGrad: { flexDirection: "row", alignItems: "center", justifyContent: "center", gap: 8, paddingVertical: 16 },
-  saveTxt:  { fontSize: 15, fontFamily: "Inter_700Bold", color: WHITE },
+  pillTxt:   { fontSize: 12, fontFamily: "Inter_500Medium", color: BODY },
+  saveBtn:   { borderRadius: 16, overflow: "hidden", marginTop: 8 },
+  saveGrad:  { flexDirection: "row", alignItems: "center", justifyContent: "center", gap: 8, paddingVertical: 16 },
+  saveTxt:   { fontSize: 15, fontFamily: "Inter_700Bold", color: WHITE },
 });
 
 /* ── Detail Row ──────────────────────────────────────── */
-function DetailRow({
-  icon,
-  iconColor,
-  text,
-  right,
-}: {
-  icon: string;
-  iconColor?: string;
-  text: string;
-  right?: React.ReactNode;
+function DetailRow({ icon, iconColor, text, right }: {
+  icon: string; iconColor?: string; text: string; right?: React.ReactNode;
 }) {
   return (
     <View style={dr.row}>
@@ -210,12 +182,11 @@ const dr = StyleSheet.create({
 });
 
 /* ── Recurrence Picker ─────────────────────────────── */
-function RecurrencePicker({
-  value,
-  onChange,
-}: {
+function RecurrencePicker({ value, onChange, recurrenceLabels, recurrenceLabel }: {
   value: string;
   onChange: (v: string) => void;
+  recurrenceLabels: Record<string, string>;
+  recurrenceLabel: string;
 }) {
   const [open, setOpen] = useState(false);
 
@@ -225,9 +196,9 @@ function RecurrencePicker({
         <View style={[rp.iconWrap, { backgroundColor: `${BODY}14` }]}>
           <Icon name="repeat-outline" size={18} color={BODY} />
         </View>
-        <Text style={rp.label}>Tekrarlama</Text>
+        <Text style={rp.label}>{recurrenceLabel}</Text>
         <View style={rp.right}>
-          <Text style={rp.value}>{RECURRENCE_LABELS[value] ?? "Yok"}</Text>
+          <Text style={rp.value}>{recurrenceLabels[value] ?? recurrenceLabels["never"]}</Text>
           <Icon name="chevron-forward" size={16} color={BODY} />
         </View>
       </Pressable>
@@ -241,7 +212,7 @@ function RecurrencePicker({
                 style={[rp.option, value === r && rp.optionActive]}
                 onPress={() => { onChange(r); setOpen(false); }}
               >
-                <Text style={[rp.optionTxt, value === r && { color: P, fontFamily: "Inter_700Bold" }]}>{RECURRENCE_LABELS[r]}</Text>
+                <Text style={[rp.optionTxt, value === r && { color: P, fontFamily: "Inter_700Bold" }]}>{recurrenceLabels[r]}</Text>
                 {value === r && <Icon name="checkmark" size={16} color={P} />}
               </Pressable>
             ))}
@@ -252,21 +223,22 @@ function RecurrencePicker({
   );
 }
 const rp = StyleSheet.create({
-  row:        { flexDirection: "row", alignItems: "center", gap: 12, paddingVertical: 10 },
-  iconWrap:   { width: 36, height: 36, borderRadius: 10, alignItems: "center", justifyContent: "center" },
-  label:      { flex: 1, fontSize: 14, fontFamily: "Inter_500Medium", color: DARK },
-  right:      { flexDirection: "row", alignItems: "center", gap: 6 },
-  value:      { fontSize: 14, fontFamily: "Inter_400Regular", color: BODY },
-  overlay:    { flex: 1, justifyContent: "center", alignItems: "center", backgroundColor: "#00000040" },
-  menu:       { backgroundColor: WHITE, borderRadius: 16, paddingVertical: 8, width: 240, ...Platform.select({ ios: { shadowColor: "#000", shadowOffset: { width: 0, height: 6 }, shadowOpacity: 0.15, shadowRadius: 20 }, android: { elevation: 8 } }) },
-  option:     { flexDirection: "row", alignItems: "center", justifyContent: "space-between", paddingHorizontal: 20, paddingVertical: 14 },
+  row:         { flexDirection: "row", alignItems: "center", gap: 12, paddingVertical: 10 },
+  iconWrap:    { width: 36, height: 36, borderRadius: 10, alignItems: "center", justifyContent: "center" },
+  label:       { flex: 1, fontSize: 14, fontFamily: "Inter_500Medium", color: DARK },
+  right:       { flexDirection: "row", alignItems: "center", gap: 6 },
+  value:       { fontSize: 14, fontFamily: "Inter_400Regular", color: BODY },
+  overlay:     { flex: 1, justifyContent: "center", alignItems: "center", backgroundColor: "#00000040" },
+  menu:        { backgroundColor: WHITE, borderRadius: 16, paddingVertical: 8, width: 240, ...Platform.select({ ios: { shadowColor: "#000", shadowOffset: { width: 0, height: 6 }, shadowOpacity: 0.15, shadowRadius: 20 }, android: { elevation: 8 } }) },
+  option:      { flexDirection: "row", alignItems: "center", justifyContent: "space-between", paddingHorizontal: 20, paddingVertical: 14 },
   optionActive:{ backgroundColor: `${P}08` },
-  optionTxt:  { fontSize: 15, fontFamily: "Inter_400Regular", color: DARK },
+  optionTxt:   { fontSize: 15, fontFamily: "Inter_400Regular", color: DARK },
 });
 
 /* ── Main Screen ─────────────────────────────────────── */
 export default function AppointmentDetailScreen() {
   const { petId, apptId } = useLocalSearchParams<{ petId: string; apptId: string }>();
+  const { t } = useTranslation();
   const { user } = useAuth();
   const router = useRouter();
   const insets = useSafeAreaInsets();
@@ -274,6 +246,20 @@ export default function AppointmentDetailScreen() {
   const [appt, setAppt]         = useState<ApiAppointment | null>(null);
   const [loading, setLoading]   = useState(true);
   const [editOpen, setEditOpen] = useState(false);
+
+  const statusLabels: Record<string, string> = {
+    upcoming:  t("pets.apptDetail.statusLabels.upcoming"),
+    completed: t("pets.apptDetail.statusLabels.completed"),
+    cancelled: t("pets.apptDetail.statusLabels.cancelled"),
+  };
+
+  const recurrenceLabels: Record<string, string> = {
+    never: t("pets.apptDetail.recurrenceLabels.never"),
+    "1m":  t("pets.apptDetail.recurrenceLabels.1m"),
+    "3m":  t("pets.apptDetail.recurrenceLabels.3m"),
+    "6m":  t("pets.apptDetail.recurrenceLabels.6m"),
+    "12m": t("pets.apptDetail.recurrenceLabels.12m"),
+  };
 
   const load = useCallback(async () => {
     if (!petId || !apptId || !user) return;
@@ -293,20 +279,18 @@ export default function AppointmentDetailScreen() {
 
   const handleReminderToggle = async (val: boolean) => {
     if (!appt) return;
-    const reminderAt = val
-      ? new Date(Date.now() - 86400000).toISOString()
-      : "";
+    const reminderAt = val ? new Date(Date.now() - 86400000).toISOString() : "";
     await handleUpdate({ reminderAt });
   };
 
   const handleCancel = () => {
     Alert.alert(
-      "Randevuyu İptal Et",
-      "Bu randevuyu iptal etmek istediğinizden emin misiniz?",
+      t("pets.apptDetail.cancelAlertTitle"),
+      t("pets.apptDetail.cancelAlertMsg"),
       [
-        { text: "Vazgeç", style: "cancel" },
+        { text: t("pets.apptDetail.goBack"), style: "cancel" },
         {
-          text: "İptal Et",
+          text: t("pets.apptDetail.cancelConfirm"),
           style: "destructive",
           onPress: async () => {
             if (!petId || !apptId || !user) return;
@@ -314,9 +298,7 @@ export default function AppointmentDetailScreen() {
               await apiDeleteAppointment(petId, apptId);
               Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
               router.back();
-            } catch {
-              Alert.alert("Hata", "İptal edilemedi.");
-            }
+            } catch { Alert.alert(t("common.error"), t("pets.apptDetail.errCancel")); }
           },
         },
       ]
@@ -338,11 +320,11 @@ export default function AppointmentDetailScreen() {
           <Pressable style={ms.backBtn} onPress={() => router.back()} hitSlop={8}>
             <Icon name="chevron-back" size={22} color={DARK} />
           </Pressable>
-          <Text style={ms.headerTitle}>Randevu Detayı</Text>
+          <Text style={ms.headerTitle}>{t("pets.apptDetail.title")}</Text>
           <View style={{ width: 38 }} />
         </View>
         <View style={{ flex: 1, alignItems: "center", justifyContent: "center" }}>
-          <Text style={{ fontSize: 16, color: BODY }}>Randevu bulunamadı.</Text>
+          <Text style={{ fontSize: 16, color: BODY }}>{t("pets.apptDetail.notFound")}</Text>
         </View>
       </View>
     );
@@ -359,7 +341,7 @@ export default function AppointmentDetailScreen() {
         <Pressable style={ms.backBtn} onPress={() => router.back()} hitSlop={8}>
           <Icon name="chevron-back" size={22} color={DARK} />
         </Pressable>
-        <Text style={ms.headerTitle}>Randevu Detayı</Text>
+        <Text style={ms.headerTitle}>{t("pets.apptDetail.title")}</Text>
         <Pressable
           style={ms.editBtn}
           onPress={() => { Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light); setEditOpen(true); }}
@@ -375,7 +357,6 @@ export default function AppointmentDetailScreen() {
       >
         {/* Main info card */}
         <View style={[det.card, SHADOW]}>
-          {/* Title row */}
           <View style={det.titleRow}>
             <View style={[det.bigIcon, { backgroundColor: `${sc}15` }]}>
               <Icon name="calendar" size={28} color={sc} />
@@ -383,35 +364,20 @@ export default function AppointmentDetailScreen() {
             <View style={det.titleInfo}>
               <Text style={det.title}>{appt.title}</Text>
               <View style={[det.badge, { backgroundColor: `${sc}15` }]}>
-                <Text style={[det.badgeTxt, { color: sc }]}>{STATUS_LABEL[appt.status]}</Text>
+                <Text style={[det.badgeTxt, { color: sc }]}>{statusLabels[appt.status] ?? appt.status}</Text>
               </View>
             </View>
           </View>
 
           <View style={det.separator} />
 
-          {/* Detail rows */}
-          <DetailRow
-            icon="calendar-outline"
-            iconColor={sc}
-            text={appt.appointmentDate ? formatDateLong(appt.appointmentDate) : "—"}
-          />
-          {appt.appointmentTime ? (
-            <DetailRow icon="time-outline" iconColor={BODY} text={appt.appointmentTime} />
-          ) : null}
+          <DetailRow icon="calendar-outline" iconColor={sc} text={appt.appointmentDate ? formatDateLong(appt.appointmentDate) : "—"} />
+          {appt.appointmentTime ? <DetailRow icon="time-outline" iconColor={BODY} text={appt.appointmentTime} /> : null}
           {(appt.clinicName || appt.location) ? (
-            <DetailRow
-              icon="location-outline"
-              iconColor={BODY}
-              text={[appt.clinicName, appt.location].filter(Boolean).join(" — ")}
-            />
+            <DetailRow icon="location-outline" iconColor={BODY} text={[appt.clinicName, appt.location].filter(Boolean).join(" — ")} />
           ) : null}
           {appt.veterinarianName ? (
-            <DetailRow
-              icon="person-circle-outline"
-              iconColor={BODY}
-              text={`Veteriner Hekim — ${appt.veterinarianName}`}
-            />
+            <DetailRow icon="person-circle-outline" iconColor={BODY} text={`${t("pets.apptDetail.vetPrefix")}${appt.veterinarianName}`} />
           ) : null}
 
           {/* Reminder toggle */}
@@ -421,7 +387,7 @@ export default function AppointmentDetailScreen() {
               <Icon name="notifications-outline" size={18} color={P} />
             </View>
             <View style={{ flex: 1 }}>
-              <Text style={det.reminderLabel}>Hatırlatma</Text>
+              <Text style={det.reminderLabel}>{t("pets.apptDetail.reminder")}</Text>
               {reminderEnabled && <Text style={det.reminderDate}>{reminderDate}</Text>}
             </View>
             <Switch
@@ -436,7 +402,7 @@ export default function AppointmentDetailScreen() {
         {/* Notes card */}
         {appt.description ? (
           <View style={[det.notesCard, SHADOW]}>
-            <Text style={det.notesTitle}>Notlar</Text>
+            <Text style={det.notesTitle}>{t("pets.apptDetail.notes")}</Text>
             <Text style={det.notesText}>{appt.description}</Text>
           </View>
         ) : null}
@@ -446,6 +412,8 @@ export default function AppointmentDetailScreen() {
           <RecurrencePicker
             value={appt.recurrenceRule ?? "never"}
             onChange={(v) => handleUpdate({ recurrenceRule: v })}
+            recurrenceLabels={recurrenceLabels}
+            recurrenceLabel={t("pets.apptDetail.recurrence")}
           />
         </View>
 
@@ -455,7 +423,7 @@ export default function AppointmentDetailScreen() {
           onPress={handleCancel}
         >
           <Icon name="close-circle-outline" size={20} color={WHITE} />
-          <Text style={det.cancelTxt}>Randevuyu İptal Et</Text>
+          <Text style={det.cancelTxt}>{t("pets.apptDetail.cancelBtn")}</Text>
         </Pressable>
       </ScrollView>
 

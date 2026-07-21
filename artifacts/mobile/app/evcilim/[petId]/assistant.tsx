@@ -6,19 +6,13 @@ import {
 import { Stack, useLocalSearchParams, useRouter } from "expo-router";
 import * as Haptics from "expo-haptics";
 import { SafeAreaView } from "react-native-safe-area-context";
+import { useTranslation } from "react-i18next";
 import { Icon } from "@/components/Icon";
 import { useColors } from "@/hooks/useColors";
 import { apiSendAssistantMessage } from "@/lib/petManagementApi";
 import { usePetPremium } from "@/contexts/PetPremiumContext";
 
 type Message = { id: string; role: "user" | "assistant"; content: string };
-
-const SUGGESTIONS = [
-  "Bugün ne tür egzersiz yapmalı?",
-  "Aşı programı hakkında bilgi ver",
-  "Tüy dökümünü nasıl azaltabilirim?",
-  "Kaç öğün yemeli?",
-];
 
 function mkId() { return `${Date.now()}-${Math.random().toString(36).slice(2)}`; }
 
@@ -35,31 +29,36 @@ function redirectToPremiumModal(router: ReturnType<typeof useRouter>, petId: str
 
 export default function AssistantScreen() {
   const { petId } = useLocalSearchParams<{ petId: string }>();
+  const { t } = useTranslation();
   const C = useColors();
   const router = useRouter();
   const { isPremium, isLoading: premiumLoading } = usePetPremium();
   const gateChecked = useRef(false);
 
-  const [messages, setMessages] = useState<Message[]>([]);
-  const [input, setInput] = useState("");
-  const [sending, setSending] = useState(false);
+  const [messages, setMessages]   = useState<Message[]>([]);
+  const [input, setInput]         = useState("");
+  const [sending, setSending]     = useState(false);
   const [unavailable, setUnavailable] = useState(false);
   const scrollRef = useRef<ScrollView>(null);
+
+  const suggestions = [
+    t("pets.assistant.suggestions.s1"),
+    t("pets.assistant.suggestions.s2"),
+    t("pets.assistant.suggestions.s3"),
+    t("pets.assistant.suggestions.s4"),
+  ];
 
   useEffect(() => {
     setMessages([{
       id: mkId(), role: "assistant",
-      content: "Merhaba! Ben CanYoldaşı AI Asistanı. Evcil hayvanınızla ilgili sorularınızı yanıtlamaktan mutluluk duyarım. Beslenme, bakım, sağlık veya davranış konusunda soru sorabilirsiniz. ⚠️ Ciddi sağlık durumlarında lütfen veterinerinize başvurun.",
+      content: t("pets.assistant.welcomeMsg"),
     }]);
   }, []);
 
-  // Gate: redirect non-premium users back to /pets to open the premium modal.
   useEffect(() => {
     if (premiumLoading || gateChecked.current) return;
     gateChecked.current = true;
-    if (!isPremium && petId) {
-      redirectToPremiumModal(router, petId, "assistant");
-    }
+    if (!isPremium && petId) redirectToPremiumModal(router, petId, "assistant");
   }, [premiumLoading, isPremium, petId, router]);
 
   const sendMessage = useCallback(async (text: string) => {
@@ -75,34 +74,34 @@ export default function AssistantScreen() {
       const result = await apiSendAssistantMessage(petId, msg);
       if (result.unavailable) {
         setUnavailable(true);
-        setMessages(prev => [...prev, { id: mkId(), role: "assistant", content: "AI Asistanı şu anda yapılandırılmamış. Lütfen daha sonra tekrar deneyin." }]);
+        setMessages(prev => [...prev, { id: mkId(), role: "assistant", content: t("pets.assistant.unavailableMsg") }]);
       } else {
         setMessages(prev => [...prev, { id: mkId(), role: "assistant", content: result.reply }]);
       }
     } catch (err: unknown) {
-      const msg2 = err instanceof Error ? err.message : "";
-      if (msg2 === "premium_required") {
+      const errMsg = err instanceof Error ? err.message : "";
+      if (errMsg === "premium_required") {
         if (petId) redirectToPremiumModal(router, petId, "assistant");
         return;
       }
-      setMessages(prev => [...prev, { id: mkId(), role: "assistant", content: "Bir hata oluştu. Lütfen tekrar deneyin." }]);
+      setMessages(prev => [...prev, { id: mkId(), role: "assistant", content: t("pets.assistant.errorMsg") }]);
     } finally {
       setSending(false);
       setTimeout(() => scrollRef.current?.scrollToEnd({ animated: true }), 100);
     }
-  }, [petId, sending, router]);
+  }, [petId, sending, router, t]);
 
   const S = makeStyles(C);
 
   return (
     <SafeAreaView style={S.flex} edges={["bottom"]}>
       <Stack.Screen options={{
-        title: "AI Hayvan Asistanı",
-        headerBackTitle: "Geri",
+        title: t("pets.assistant.title"),
+        headerBackTitle: t("pets.assistant.backTitle"),
         headerRight: () => (
           <View style={S.premiumPill}>
             <Icon name="diamond-outline" size={12} color={C.purple} />
-            <Text style={S.premiumPillTxt}>Premium</Text>
+            <Text style={S.premiumPillTxt}>{t("pets.assistant.premium")}</Text>
           </View>
         ),
       }} />
@@ -140,7 +139,7 @@ export default function AssistantScreen() {
         {/* Suggestions (only if fresh) */}
         {messages.length <= 1 && !sending && (
           <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={S.suggRow}>
-            {SUGGESTIONS.map(s => (
+            {suggestions.map((s) => (
               <Pressable key={s} style={S.suggChip} onPress={() => sendMessage(s)}>
                 <Text style={S.suggTxt}>{s}</Text>
               </Pressable>
@@ -152,7 +151,7 @@ export default function AssistantScreen() {
         <View style={S.inputRow}>
           <TextInput
             style={S.textInput}
-            placeholder={unavailable ? "Asistan şu anda kullanılamıyor" : "Bir şey sor…"}
+            placeholder={unavailable ? t("pets.assistant.unavailablePlaceholder") : t("pets.assistant.inputPlaceholder")}
             placeholderTextColor={C.textMuted}
             value={input}
             onChangeText={setInput}
@@ -174,7 +173,7 @@ export default function AssistantScreen() {
           </Pressable>
         </View>
 
-        <Text style={S.disclaimer}>AI yanıtları bilgi amaçlıdır; veteriner tavsiyesi yerine geçmez.</Text>
+        <Text style={S.disclaimer}>{t("pets.assistant.disclaimer")}</Text>
       </KeyboardAvoidingView>
     </SafeAreaView>
   );
@@ -183,12 +182,6 @@ export default function AssistantScreen() {
 function makeStyles(C: ReturnType<typeof useColors>) {
   return StyleSheet.create({
     flex:           { flex: 1, backgroundColor: C.bg },
-    center:         { flex: 1, alignItems: "center", justifyContent: "center", gap: 14, paddingHorizontal: 32 },
-    lockIcon:       { width: 80, height: 80, borderRadius: 40, backgroundColor: `${C.purple}14`, alignItems: "center", justifyContent: "center" },
-    lockTitle:      { fontSize: 20, fontFamily: "Inter_700Bold", color: C.text },
-    lockSub:        { fontSize: 14, fontFamily: "Inter_400Regular", color: C.textMuted, textAlign: "center", lineHeight: 20 },
-    premiumBtn:     { flexDirection: "row", alignItems: "center", gap: 8, marginTop: 4, paddingHorizontal: 24, paddingVertical: 13, backgroundColor: C.purple, borderRadius: 14 },
-    premiumBtnTxt:  { fontSize: 15, fontFamily: "Inter_700Bold", color: "#fff" },
     premiumPill:    { flexDirection: "row", alignItems: "center", gap: 4, paddingHorizontal: 10, paddingVertical: 4, backgroundColor: `${C.purple}12`, borderRadius: 50 },
     premiumPillTxt: { fontSize: 11, fontFamily: "Inter_700Bold", color: C.purple },
     msgList:        { padding: 16, paddingBottom: 8, gap: 12 },

@@ -1,15 +1,15 @@
-import React, { useCallback, useEffect, useState } from "react";
+import React, { useCallback, useEffect, useRef, useState } from "react";
 import {
-  ActivityIndicator, Alert, Pressable, RefreshControl,
+  ActivityIndicator, Alert, Linking, Pressable, RefreshControl,
   ScrollView, StyleSheet, Text, TextInput, View,
 } from "react-native";
 import { Image } from "expo-image";
 import * as ImagePicker from "expo-image-picker";
 import { Stack, useLocalSearchParams, useRouter } from "expo-router";
 import * as Haptics from "expo-haptics";
-import { Linking } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 import AsyncStorage from "@react-native-async-storage/async-storage";
+import { useTranslation } from "react-i18next";
 import { Icon } from "@/components/Icon";
 import { useColors } from "@/hooks/useColors";
 import {
@@ -17,27 +17,27 @@ import {
   apiUpdatePetDocument, type ApiPetDocument,
 } from "@/lib/petManagementApi";
 import { usePetPremium } from "@/contexts/PetPremiumContext";
-import { useRef } from "react";
 
 const SHADOW = {
   shadowColor: "#7B5EA7", shadowOffset: { width: 0, height: 2 },
   shadowOpacity: 0.08, shadowRadius: 8, elevation: 3,
 };
 
-const CATEGORIES = [
-  { key: "vaccination_card", label: "Aşı Kartı", icon: "shield-checkmark-outline", color: "#FF9500" },
-  { key: "prescription", label: "Reçete", icon: "medical-outline", color: "#E55D6F" },
-  { key: "lab_results", label: "Lab Sonuçları", icon: "flask-outline", color: "#7B5EA7" },
-  { key: "health_record", label: "Sağlık Kaydı", icon: "document-text-outline", color: "#34C759" },
-  { key: "insurance", label: "Sigorta", icon: "shield-outline", color: "#5856D6" },
-  { key: "identification", label: "Kimlik", icon: "id-card-outline", color: "#FF9500" },
-  { key: "other", label: "Diğer", icon: "folder-outline", color: "#8C8699" },
-] as const;
+const CATEGORY_KEYS = ["vaccination_card", "prescription", "lab_results", "health_record", "insurance", "identification", "other"] as const;
+const CATEGORY_META: Record<typeof CATEGORY_KEYS[number], { icon: string; color: string }> = {
+  vaccination_card: { icon: "shield-checkmark-outline", color: "#FF9500" },
+  prescription:     { icon: "medical-outline",          color: "#E55D6F" },
+  lab_results:      { icon: "flask-outline",            color: "#7B5EA7" },
+  health_record:    { icon: "document-text-outline",    color: "#34C759" },
+  insurance:        { icon: "shield-outline",           color: "#5856D6" },
+  identification:   { icon: "id-card-outline",          color: "#FF9500" },
+  other:            { icon: "folder-outline",           color: "#8C8699" },
+};
 
-type CatKey = typeof CATEGORIES[number]["key"];
+type CatKey = typeof CATEGORY_KEYS[number];
 
-function catInfo(key: string) {
-  return CATEGORIES.find(c => c.key === key) ?? CATEGORIES[CATEGORIES.length - 1]!;
+function catMeta(key: string) {
+  return CATEGORY_META[key as CatKey] ?? CATEGORY_META.other;
 }
 
 const API_BASE = process.env.EXPO_PUBLIC_DOMAIN
@@ -78,24 +78,33 @@ function redirectToPremiumModal(router: ReturnType<typeof useRouter>, petId: str
 
 export default function DocumentsScreen() {
   const { petId } = useLocalSearchParams<{ petId: string }>();
+  const { t } = useTranslation();
   const C = useColors();
   const router = useRouter();
   const { isPremium, isLoading: premiumLoading } = usePetPremium();
   const gateChecked = useRef(false);
 
-  const [documents, setDocuments] = useState<ApiPetDocument[]>([]);
-  const [loading, setLoading] = useState(true);
-  const [refreshing, setRefreshing] = useState(false);
-  const [uploading, setUploading] = useState(false);
-
-  const [editingDoc, setEditingDoc] = useState<ApiPetDocument | null>(null);
-  const [editTitle, setEditTitle] = useState("");
-  const [editCategory, setEditCategory] = useState<CatKey>("other");
-  const [editDate, setEditDate] = useState("");
-  const [editNotes, setEditNotes] = useState("");
-  const [editSaving, setEditSaving] = useState(false);
-
+  const [documents, setDocuments]         = useState<ApiPetDocument[]>([]);
+  const [loading, setLoading]             = useState(true);
+  const [refreshing, setRefreshing]       = useState(false);
+  const [uploading, setUploading]         = useState(false);
+  const [editingDoc, setEditingDoc]       = useState<ApiPetDocument | null>(null);
+  const [editTitle, setEditTitle]         = useState("");
+  const [editCategory, setEditCategory]   = useState<CatKey>("other");
+  const [editDate, setEditDate]           = useState("");
+  const [editNotes, setEditNotes]         = useState("");
+  const [editSaving, setEditSaving]       = useState(false);
   const [selectedCategory, setSelectedCategory] = useState<CatKey | "all">("all");
+
+  const categoryLabels: Record<string, string> = {
+    vaccination_card: t("pets.documents.categories.vaccination_card"),
+    prescription:     t("pets.documents.categories.prescription"),
+    lab_results:      t("pets.documents.categories.lab_results"),
+    health_record:    t("pets.documents.categories.health_record"),
+    insurance:        t("pets.documents.categories.insurance"),
+    identification:   t("pets.documents.categories.identification"),
+    other:            t("pets.documents.categories.other"),
+  };
 
   const load = useCallback(async () => {
     if (!petId) return;
@@ -106,14 +115,10 @@ export default function DocumentsScreen() {
 
   useEffect(() => { load(); }, [load]);
 
-  // Gate: redirect non-premium users back to /pets to open the premium modal.
-  // Wait until premium status has finished loading to avoid false redirects.
   useEffect(() => {
     if (premiumLoading || gateChecked.current) return;
     gateChecked.current = true;
-    if (!isPremium && petId) {
-      redirectToPremiumModal(router, petId, "documents");
-    }
+    if (!isPremium && petId) redirectToPremiumModal(router, petId, "documents");
   }, [premiumLoading, isPremium, petId, router]);
 
   const handleAdd = async () => {
@@ -122,7 +127,7 @@ export default function DocumentsScreen() {
       return;
     }
     const perm = await ImagePicker.requestMediaLibraryPermissionsAsync();
-    if (!perm.granted) { Alert.alert("İzin Gerekli", "Belge eklemek için fotoğraf izni gereklidir."); return; }
+    if (!perm.granted) { Alert.alert(t("pets.documents.errPermission"), t("pets.documents.errPermissionMsg")); return; }
     const result = await ImagePicker.launchImageLibraryAsync({ mediaTypes: ["images"], quality: 0.85 });
     if (result.canceled || !result.assets[0] || !petId) return;
     const a = result.assets[0];
@@ -147,14 +152,14 @@ export default function DocumentsScreen() {
         if (petId) redirectToPremiumModal(router, petId, "documents");
         return;
       }
-      Alert.alert("Yüklenemedi", "Belge yüklenirken bir hata oluştu.");
+      Alert.alert(t("pets.documents.errUpload"), t("pets.documents.errUploadMsg"));
     } finally { setUploading(false); }
   };
 
   const openEdit = (doc: ApiPetDocument) => {
     setEditingDoc(doc);
     setEditTitle(doc.title);
-    setEditCategory(doc.category as CatKey || "other");
+    setEditCategory((doc.category as CatKey) || "other");
     setEditDate(doc.documentDate);
     setEditNotes(doc.notes);
   };
@@ -169,34 +174,31 @@ export default function DocumentsScreen() {
       setDocuments(prev => prev.map(d => d.id === editingDoc.id ? updated : d));
       Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
       setEditingDoc(null);
-    } catch { Alert.alert("Hata", "Değişiklikler kaydedilemedi."); }
+    } catch { Alert.alert(t("common.error"), t("pets.documents.errSave")); }
     finally { setEditSaving(false); }
   };
 
   const handleDelete = (doc: ApiPetDocument) => {
-    Alert.alert("Belge Sil", `"${doc.title}" belgesi silinsin mi?`, [
-      { text: "İptal", style: "cancel" },
-      { text: "Sil", style: "destructive", onPress: async () => {
+    Alert.alert(t("pets.documents.deleteTitle"), `"${doc.title}" ${t("pets.documents.deleteConfirmSuffix")}`, [
+      { text: t("pets.documents.deleteCancel"), style: "cancel" },
+      { text: t("pets.documents.deleteConfirm"), style: "destructive", onPress: async () => {
         if (!petId) return;
         try {
           await apiDeletePetDocument(petId, doc.id);
           setDocuments(prev => prev.filter(d => d.id !== doc.id));
           Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
-        } catch { Alert.alert("Hata", "Belge silinemedi."); }
+        } catch { Alert.alert(t("common.error"), t("pets.documents.errDelete")); }
       }},
     ]);
   };
 
   const S = makeStyles(C);
-
-  const filteredDocs = selectedCategory === "all"
-    ? documents
-    : documents.filter(d => d.category === selectedCategory);
+  const filteredDocs = selectedCategory === "all" ? documents : documents.filter(d => d.category === selectedCategory);
 
   if (loading) {
     return (
       <SafeAreaView style={S.flex} edges={["bottom"]}>
-        <Stack.Screen options={{ title: "Belge Kasası", headerBackTitle: "Geri" }} />
+        <Stack.Screen options={{ title: t("pets.documents.title"), headerBackTitle: t("pets.documents.backTitle") }} />
         <View style={S.center}><ActivityIndicator color={C.purple} size="large" /></View>
       </SafeAreaView>
     );
@@ -204,7 +206,7 @@ export default function DocumentsScreen() {
 
   return (
     <SafeAreaView style={S.flex} edges={["bottom"]}>
-      <Stack.Screen options={{ title: "Belge Kasası", headerBackTitle: "Geri",
+      <Stack.Screen options={{ title: t("pets.documents.title"), headerBackTitle: t("pets.documents.backTitle"),
         headerRight: () => (
           <Pressable hitSlop={12} onPress={handleAdd} style={S.addBtn} disabled={uploading}>
             {uploading
@@ -215,7 +217,6 @@ export default function DocumentsScreen() {
         ),
       }} />
 
-
       {/* Category filter */}
       {documents.length > 0 && (
         <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={S.catRow}>
@@ -223,18 +224,21 @@ export default function DocumentsScreen() {
             style={[S.catChip, selectedCategory === "all" && S.catChipActive]}
             onPress={() => setSelectedCategory("all")}
           >
-            <Text style={[S.catChipTxt, selectedCategory === "all" && S.catChipTxtActive]}>Tümü</Text>
+            <Text style={[S.catChipTxt, selectedCategory === "all" && S.catChipTxtActive]}>{t("pets.documents.filterAll")}</Text>
           </Pressable>
-          {CATEGORIES.filter(c => documents.some(d => d.category === c.key)).map(c => (
-            <Pressable
-              key={c.key}
-              style={[S.catChip, selectedCategory === c.key && { backgroundColor: c.color, borderColor: c.color }]}
-              onPress={() => setSelectedCategory(c.key)}
-            >
-              <Icon name={c.icon} size={13} color={selectedCategory === c.key ? "#fff" : C.textMuted} />
-              <Text style={[S.catChipTxt, selectedCategory === c.key && S.catChipTxtActive]}>{c.label}</Text>
-            </Pressable>
-          ))}
+          {CATEGORY_KEYS.filter(ck => documents.some(d => d.category === ck)).map(ck => {
+            const meta = catMeta(ck);
+            return (
+              <Pressable
+                key={ck}
+                style={[S.catChip, selectedCategory === ck && { backgroundColor: meta.color, borderColor: meta.color }]}
+                onPress={() => setSelectedCategory(ck)}
+              >
+                <Icon name={meta.icon} size={13} color={selectedCategory === ck ? "#fff" : C.textMuted} />
+                <Text style={[S.catChipTxt, selectedCategory === ck && S.catChipTxtActive]}>{categoryLabels[ck]}</Text>
+              </Pressable>
+            );
+          })}
         </ScrollView>
       )}
 
@@ -246,19 +250,19 @@ export default function DocumentsScreen() {
         {documents.length === 0 ? (
           <View style={S.empty}>
             <Icon name="document-text-outline" size={42} color={C.purple} />
-            <Text style={S.emptyTitle}>Belge yok</Text>
-            <Text style={S.emptySub}>Aşı karnesi, reçete ve sağlık belgelerini güvenle saklayın.</Text>
+            <Text style={S.emptyTitle}>{t("pets.documents.emptyTitle")}</Text>
+            <Text style={S.emptySub}>{t("pets.documents.emptySub")}</Text>
             <Pressable style={S.uploadBtn} onPress={handleAdd} disabled={uploading}>
               {uploading
                 ? <ActivityIndicator color="#fff" size="small" />
-                : <Text style={S.uploadBtnTxt}>Belge Yükle</Text>
+                : <Text style={S.uploadBtnTxt}>{t("pets.documents.upload")}</Text>
               }
             </Pressable>
           </View>
         ) : (
           <View style={S.grid}>
             {filteredDocs.map(doc => {
-              const cat = catInfo(doc.category);
+              const meta = catMeta(doc.category);
               return (
                 <Pressable
                   key={doc.id}
@@ -266,25 +270,21 @@ export default function DocumentsScreen() {
                   onPress={() => openEdit(doc)}
                   onLongPress={() => handleDelete(doc)}
                 >
-                  <View style={[S.docThumb, { backgroundColor: `${cat.color}10` }]}>
+                  <View style={[S.docThumb, { backgroundColor: `${meta.color}10` }]}>
                     {isImage(doc.mimeType) ? (
                       <Image source={{ uri: doc.fileUrl }} style={S.docImage} contentFit="cover" />
                     ) : (
-                      <Icon name={cat.icon} size={32} color={cat.color} />
+                      <Icon name={meta.icon} size={32} color={meta.color} />
                     )}
                   </View>
                   <View style={S.docInfo}>
-                    <View style={[S.catPill, { backgroundColor: `${cat.color}14` }]}>
-                      <Text style={[S.catPillTxt, { color: cat.color }]}>{cat.label}</Text>
+                    <View style={[S.catPill, { backgroundColor: `${meta.color}14` }]}>
+                      <Text style={[S.catPillTxt, { color: meta.color }]}>{categoryLabels[doc.category] ?? doc.category}</Text>
                     </View>
                     <Text style={S.docTitle} numberOfLines={2}>{doc.title}</Text>
-                    <Text style={S.docDate}>{doc.documentDate || "Tarih yok"}</Text>
+                    <Text style={S.docDate}>{doc.documentDate || t("pets.documents.noDate")}</Text>
                   </View>
-                  <Pressable
-                    style={S.viewBtn}
-                    hitSlop={8}
-                    onPress={() => Linking.openURL(doc.fileUrl)}
-                  >
+                  <Pressable style={S.viewBtn} hitSlop={8} onPress={() => Linking.openURL(doc.fileUrl)}>
                     <Icon name="open-outline" size={16} color={C.purple} />
                   </Pressable>
                 </Pressable>
@@ -298,50 +298,34 @@ export default function DocumentsScreen() {
       {editingDoc && (
         <View style={S.sheet}>
           <View style={S.sheetHandle} />
-          <Text style={S.sheetTitle}>Belge Düzenle</Text>
-          <Text style={S.label}>Başlık</Text>
-          <TextInput
-            style={S.input}
-            value={editTitle}
-            onChangeText={setEditTitle}
-            placeholder="Belge adı"
-            placeholderTextColor={C.textMuted}
-          />
-          <Text style={S.label}>Kategori</Text>
+          <Text style={S.sheetTitle}>{t("pets.documents.editTitle")}</Text>
+          <Text style={S.label}>{t("pets.documents.titleLabel")}</Text>
+          <TextInput style={S.input} value={editTitle} onChangeText={setEditTitle} placeholder={t("pets.documents.titlePlaceholder")} placeholderTextColor={C.textMuted} />
+          <Text style={S.label}>{t("pets.documents.categoryLabel")}</Text>
           <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={{ flexDirection: "row", gap: 8, paddingBottom: 4 }}>
-            {CATEGORIES.map(c => (
-              <Pressable
-                key={c.key}
-                style={[S.catChip, editCategory === c.key && { backgroundColor: c.color, borderColor: c.color }]}
-                onPress={() => setEditCategory(c.key)}
-              >
-                <Text style={[S.catChipTxt, editCategory === c.key && S.catChipTxtActive]}>{c.label}</Text>
-              </Pressable>
-            ))}
+            {CATEGORY_KEYS.map(ck => {
+              const meta = catMeta(ck);
+              return (
+                <Pressable
+                  key={ck}
+                  style={[S.catChip, editCategory === ck && { backgroundColor: meta.color, borderColor: meta.color }]}
+                  onPress={() => setEditCategory(ck)}
+                >
+                  <Text style={[S.catChipTxt, editCategory === ck && S.catChipTxtActive]}>{categoryLabels[ck]}</Text>
+                </Pressable>
+              );
+            })}
           </ScrollView>
-          <Text style={S.label}>Belge Tarihi</Text>
-          <TextInput
-            style={S.input}
-            value={editDate}
-            onChangeText={setEditDate}
-            placeholder="YYYY-AA-GG"
-            placeholderTextColor={C.textMuted}
-          />
-          <Text style={S.label}>Not</Text>
-          <TextInput
-            style={[S.input, { minHeight: 60, textAlignVertical: "top" }]}
-            value={editNotes}
-            onChangeText={setEditNotes}
-            placeholder="Açıklama..."
-            placeholderTextColor={C.textMuted}
-            multiline
-          />
+          <Text style={S.label}>{t("pets.documents.dateLabel")}</Text>
+          <TextInput style={S.input} value={editDate} onChangeText={setEditDate} placeholder="YYYY-AA-GG" placeholderTextColor={C.textMuted} />
+          <Text style={S.label}>{t("pets.documents.notesLabel")}</Text>
+          <TextInput style={[S.input, { minHeight: 60, textAlignVertical: "top" }]} value={editNotes} onChangeText={setEditNotes} placeholder={t("pets.documents.notesPlaceholder")} placeholderTextColor={C.textMuted} multiline />
           <View style={{ flexDirection: "row", gap: 10, marginTop: 16 }}>
-            <Pressable style={[S.cancelBtn]} onPress={() => setEditingDoc(null)}>
-              <Text style={S.cancelTxt}>İptal</Text>
+            <Pressable style={S.cancelBtn} onPress={() => setEditingDoc(null)}>
+              <Text style={S.cancelTxt}>{t("pets.documents.cancel")}</Text>
             </Pressable>
             <Pressable style={[S.saveBtn, editSaving && { opacity: 0.7 }]} onPress={handleEditSave} disabled={editSaving}>
-              {editSaving ? <ActivityIndicator color="#fff" size="small" /> : <Text style={S.saveTxt}>Kaydet</Text>}
+              {editSaving ? <ActivityIndicator color="#fff" size="small" /> : <Text style={S.saveTxt}>{t("pets.documents.save")}</Text>}
             </Pressable>
           </View>
         </View>
@@ -355,16 +339,13 @@ function makeStyles(C: ReturnType<typeof useColors>) {
     flex:           { flex: 1, backgroundColor: C.bg },
     center:         { flex: 1, alignItems: "center", justifyContent: "center" },
     addBtn:         { width: 34, height: 34, borderRadius: 12, backgroundColor: `${C.purple}14`, alignItems: "center", justifyContent: "center" },
-    premiumBanner:  { flexDirection: "row", alignItems: "center", gap: 8, paddingHorizontal: 16, paddingVertical: 10, backgroundColor: `${C.purple}10`, borderBottomWidth: 1, borderColor: `${C.purple}20` },
-    premiumBannerTxt: { flex: 1, fontSize: 13, fontFamily: "Inter_400Regular", color: C.purple },
     catRow:         { paddingHorizontal: 14, paddingVertical: 10, gap: 8, flexDirection: "row" },
     catChip:        { flexDirection: "row", alignItems: "center", gap: 5, paddingHorizontal: 12, paddingVertical: 6, borderRadius: 20, borderWidth: 1, borderColor: C.border, backgroundColor: C.card },
     catChipActive:  { backgroundColor: C.purple, borderColor: C.purple },
     catChipTxt:     { fontSize: 12, fontFamily: "Inter_500Medium", color: C.textMuted },
-    catChipTxtActive: { color: "#fff" },
+    catChipTxtActive:{ color: "#fff" },
     emptyContainer: { flexGrow: 1 },
     empty:          { flex: 1, alignItems: "center", justifyContent: "center", gap: 12, paddingHorizontal: 32, paddingTop: 40 },
-    lockIcon:       { width: 72, height: 72, borderRadius: 36, backgroundColor: `${C.purple}14`, alignItems: "center", justifyContent: "center" },
     emptyTitle:     { fontSize: 17, fontFamily: "Inter_600SemiBold", color: C.text },
     emptySub:       { fontSize: 14, fontFamily: "Inter_400Regular", color: C.textMuted, textAlign: "center", lineHeight: 20 },
     uploadBtn:      { marginTop: 8, paddingHorizontal: 24, paddingVertical: 12, backgroundColor: C.purple, borderRadius: 14 },

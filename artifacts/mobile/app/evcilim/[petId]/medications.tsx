@@ -1,4 +1,4 @@
-import React, { useCallback, useEffect, useState } from "react";
+import React, { useCallback, useEffect, useRef, useState } from "react";
 import {
   ActivityIndicator, Alert, KeyboardAvoidingView, Platform,
   Pressable, RefreshControl, ScrollView, StyleSheet, Text,
@@ -7,6 +7,7 @@ import {
 import { Stack, useLocalSearchParams, useRouter } from "expo-router";
 import * as Haptics from "expo-haptics";
 import { SafeAreaView } from "react-native-safe-area-context";
+import { useTranslation } from "react-i18next";
 import { Icon } from "@/components/Icon";
 import { useColors } from "@/hooks/useColors";
 import {
@@ -14,7 +15,6 @@ import {
   apiDeleteMedication, type ApiMedication,
 } from "@/lib/petManagementApi";
 import { usePetPremium } from "@/contexts/PetPremiumContext";
-import { useRef } from "react";
 
 const SHADOW = {
   shadowColor: "#7B5EA7", shadowOffset: { width: 0, height: 2 },
@@ -22,9 +22,6 @@ const SHADOW = {
 };
 
 const RECURRENCE = ["daily","weekly","monthly","as_needed"] as const;
-const RECURRENCE_LABELS: Record<string, string> = {
-  daily: "Her Gün", weekly: "Haftalık", monthly: "Aylık", as_needed: "Gerektiğinde",
-};
 
 type FormState = {
   name: string; dosage: string; instructions: string;
@@ -51,6 +48,7 @@ function redirectToPremiumModal(router: ReturnType<typeof useRouter>, petId: str
 
 export default function MedicationsScreen() {
   const { petId } = useLocalSearchParams<{ petId: string }>();
+  const { t } = useTranslation();
   const C = useColors();
   const router = useRouter();
   const { isPremium, isLoading: premiumLoading } = usePetPremium();
@@ -65,6 +63,13 @@ export default function MedicationsScreen() {
   const [saving, setSaving] = useState(false);
   const [deletingId, setDeletingId] = useState<string | null>(null);
 
+  const recurrenceLabels: Record<string, string> = {
+    daily:     t("pets.medications.recurrence.daily"),
+    weekly:    t("pets.medications.recurrence.weekly"),
+    monthly:   t("pets.medications.recurrence.monthly"),
+    as_needed: t("pets.medications.recurrence.as_needed"),
+  };
+
   const load = useCallback(async () => {
     if (!petId) return;
     try { setMedications(await apiGetMedications(petId)); }
@@ -74,7 +79,6 @@ export default function MedicationsScreen() {
 
   useEffect(() => { load(); }, [load]);
 
-  // Gate: redirect non-premium users back to /pets to open the premium modal.
   useEffect(() => {
     if (premiumLoading || gateChecked.current) return;
     gateChecked.current = true;
@@ -104,7 +108,7 @@ export default function MedicationsScreen() {
 
   const handleSave = async () => {
     if (!petId || !form.name.trim()) {
-      Alert.alert("Uyarı", "İlaç adı zorunludur."); return;
+      Alert.alert(t("common.error"), t("pets.medications.errNameRequired")); return;
     }
     setSaving(true);
     try {
@@ -123,7 +127,7 @@ export default function MedicationsScreen() {
         if (petId) redirectToPremiumModal(router, petId, "medications");
         return;
       }
-      Alert.alert("Hata", "İlaç kaydedilemedi.");
+      Alert.alert(t("common.error"), t("pets.medications.errSave"));
     } finally { setSaving(false); }
   };
 
@@ -133,22 +137,22 @@ export default function MedicationsScreen() {
       const updated = await apiUpdateMedication(petId, m.id, { isActive: !m.isActive });
       setMedications(prev => prev.map(x => x.id === m.id ? updated : x));
       Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
-    } catch { Alert.alert("Hata", "Durum güncellenemedi."); }
+    } catch { Alert.alert(t("common.error"), t("pets.medications.errStatusUpdate")); }
   };
 
   const handleDelete = (m: ApiMedication) => {
     Alert.alert(
-      "İlaç Sil", `"${m.name}" ilaç kaydı silinsin mi?`,
+      t("pets.medications.deleteTitle"), `"${m.name}" ${t("pets.medications.deleteConfirmSuffix")}`,
       [
-        { text: "İptal", style: "cancel" },
-        { text: "Sil", style: "destructive", onPress: async () => {
+        { text: t("common.cancel"), style: "cancel" },
+        { text: t("common.delete"), style: "destructive", onPress: async () => {
           if (!petId) return;
           setDeletingId(m.id);
           try {
             await apiDeleteMedication(petId, m.id);
             setMedications(prev => prev.filter(x => x.id !== m.id));
             Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
-          } catch { Alert.alert("Hata", "İlaç silinemedi."); }
+          } catch { Alert.alert(t("common.error"), t("pets.medications.errDelete")); }
           finally { setDeletingId(null); }
         }},
       ]
@@ -160,23 +164,21 @@ export default function MedicationsScreen() {
   if (loading) {
     return (
       <SafeAreaView style={S.flex} edges={["bottom"]}>
-        <Stack.Screen options={{ title: "İlaçlar", headerBackTitle: "Geri" }} />
+        <Stack.Screen options={{ title: t("pets.medications.title"), headerBackTitle: t("pets.medications.backTitle") }} />
         <View style={S.center}><ActivityIndicator color={C.purple} size="large" /></View>
       </SafeAreaView>
     );
   }
 
-
   return (
     <SafeAreaView style={S.flex} edges={["bottom"]}>
-      <Stack.Screen options={{ title: "İlaçlar", headerBackTitle: "Geri",
+      <Stack.Screen options={{ title: t("pets.medications.title"), headerBackTitle: t("pets.medications.backTitle"),
         headerRight: () => (
           <Pressable hitSlop={12} onPress={openAdd} style={S.addBtn}>
             <Icon name="add" size={22} color={C.purple} />
           </Pressable>
         ),
       }} />
-
 
       <ScrollView
         contentContainerStyle={S.list}
@@ -186,10 +188,10 @@ export default function MedicationsScreen() {
         {medications.length === 0 && (
           <View style={S.empty}>
             <Icon name="medical-outline" size={42} color={C.purple} />
-            <Text style={S.emptyTitle}>İlaç kaydı yok</Text>
-            <Text style={S.emptySub}>Evcil hayvanınızın ilaçlarını buradan takip edin.</Text>
+            <Text style={S.emptyTitle}>{t("pets.medications.emptyTitle")}</Text>
+            <Text style={S.emptySub}>{t("pets.medications.emptySub")}</Text>
             <Pressable style={S.premiumBtn} onPress={openAdd}>
-              <Text style={S.premiumBtnTxt}>İlaç Ekle</Text>
+              <Text style={S.premiumBtnTxt}>{t("pets.medications.addBtn")}</Text>
             </Pressable>
           </View>
         )}
@@ -204,13 +206,13 @@ export default function MedicationsScreen() {
                 <Text style={[S.cardName, !m.isActive && S.inactive]}>{m.name}</Text>
                 <View style={[S.badge, { backgroundColor: m.isActive ? `${"#43B96C"}18` : `${C.textMuted}18` }]}>
                   <Text style={[S.badgeTxt, { color: m.isActive ? "#43B96C" : C.textMuted }]}>
-                    {m.isActive ? "Aktif" : "Pasif"}
+                    {m.isActive ? t("pets.medications.active") : t("pets.medications.inactive")}
                   </Text>
                 </View>
               </View>
-              {!!m.dosage && <Text style={S.cardSub}>Doz: {m.dosage}</Text>}
+              {!!m.dosage && <Text style={S.cardSub}>{t("pets.medications.dose")} {m.dosage}</Text>}
               {!!m.recurrenceRule && (
-                <Text style={S.cardMeta}>{RECURRENCE_LABELS[m.recurrenceRule] ?? m.recurrenceRule}</Text>
+                <Text style={S.cardMeta}>{recurrenceLabels[m.recurrenceRule] ?? m.recurrenceRule}</Text>
               )}
               {!!m.startDate && (
                 <Text style={S.cardMeta}>{m.startDate}{m.endDate ? ` → ${m.endDate}` : ""}</Text>
@@ -221,7 +223,7 @@ export default function MedicationsScreen() {
                 hitSlop={10}
                 onPress={() => handleToggleActive(m)}
                 style={S.actionBtn}
-                accessibilityLabel={m.isActive ? "Pasife al" : "Aktife al"}
+                accessibilityLabel={m.isActive ? t("pets.medications.deactivate") : t("pets.medications.activate")}
               >
                 <Icon name={m.isActive ? "pause-circle-outline" : "play-circle-outline"} size={22} color={C.textMuted} />
               </Pressable>
@@ -247,56 +249,56 @@ export default function MedicationsScreen() {
           style={S.sheet}
         >
           <View style={S.sheetHandle} />
-          <Text style={S.sheetTitle}>{editingId ? "İlaç Düzenle" : "İlaç Ekle"}</Text>
+          <Text style={S.sheetTitle}>{editingId ? t("pets.medications.editTitle") : t("pets.medications.addTitle")}</Text>
 
           <ScrollView showsVerticalScrollIndicator={false} keyboardShouldPersistTaps="handled">
-            <Text style={S.label}>İlaç Adı *</Text>
+            <Text style={S.label}>{t("pets.medications.nameLabel")}</Text>
             <TextInput
               style={S.input}
-              placeholder="ör. Antibiyotik, vitamin..."
+              placeholder={t("pets.medications.namePlaceholder")}
               value={form.name}
-              onChangeText={t => setForm(f => ({ ...f, name: t }))}
+              onChangeText={v => setForm(f => ({ ...f, name: v }))}
               placeholderTextColor={C.textMuted}
             />
 
-            <Text style={S.label}>Doz</Text>
+            <Text style={S.label}>{t("pets.medications.doseLabel")}</Text>
             <TextInput
               style={S.input}
-              placeholder="ör. 1 tablet, 5 mg/kg"
+              placeholder={t("pets.medications.dosePlaceholder")}
               value={form.dosage}
-              onChangeText={t => setForm(f => ({ ...f, dosage: t }))}
+              onChangeText={v => setForm(f => ({ ...f, dosage: v }))}
               placeholderTextColor={C.textMuted}
             />
 
-            <Text style={S.label}>Kullanım Talimatı</Text>
+            <Text style={S.label}>{t("pets.medications.instructionLabel")}</Text>
             <TextInput
               style={[S.input, S.textarea]}
-              placeholder="Açlık/tokluk, özel notlar..."
+              placeholder={t("pets.medications.instructionPlaceholder")}
               value={form.instructions}
-              onChangeText={t => setForm(f => ({ ...f, instructions: t }))}
+              onChangeText={v => setForm(f => ({ ...f, instructions: v }))}
               placeholderTextColor={C.textMuted}
               multiline numberOfLines={3}
             />
 
-            <Text style={S.label}>Başlangıç Tarihi</Text>
+            <Text style={S.label}>{t("pets.medications.startDateLabel")}</Text>
             <TextInput
               style={S.input}
               placeholder="YYYY-AA-GG"
               value={form.startDate}
-              onChangeText={t => setForm(f => ({ ...f, startDate: t }))}
+              onChangeText={v => setForm(f => ({ ...f, startDate: v }))}
               placeholderTextColor={C.textMuted}
             />
 
-            <Text style={S.label}>Bitiş Tarihi</Text>
+            <Text style={S.label}>{t("pets.medications.endDateLabel")}</Text>
             <TextInput
               style={S.input}
               placeholder="YYYY-AA-GG"
               value={form.endDate}
-              onChangeText={t => setForm(f => ({ ...f, endDate: t }))}
+              onChangeText={v => setForm(f => ({ ...f, endDate: v }))}
               placeholderTextColor={C.textMuted}
             />
 
-            <Text style={S.label}>Sıklık</Text>
+            <Text style={S.label}>{t("pets.medications.frequencyLabel")}</Text>
             <View style={S.chips}>
               {RECURRENCE.map(r => (
                 <Pressable
@@ -305,7 +307,7 @@ export default function MedicationsScreen() {
                   onPress={() => setForm(f => ({ ...f, recurrenceRule: r }))}
                 >
                   <Text style={[S.chipTxt, form.recurrenceRule === r && S.chipTxtActive]}>
-                    {RECURRENCE_LABELS[r]}
+                    {recurrenceLabels[r]}
                   </Text>
                 </Pressable>
               ))}
@@ -313,12 +315,12 @@ export default function MedicationsScreen() {
 
             <View style={S.formActions}>
               <Pressable style={S.cancelBtn} onPress={() => setShowForm(false)}>
-                <Text style={S.cancelTxt}>İptal</Text>
+                <Text style={S.cancelTxt}>{t("common.cancel")}</Text>
               </Pressable>
               <Pressable style={[S.saveBtn, saving && S.savingBtn]} onPress={handleSave} disabled={saving}>
                 {saving
                   ? <ActivityIndicator color="#fff" size="small" />
-                  : <Text style={S.saveTxt}>Kaydet</Text>
+                  : <Text style={S.saveTxt}>{t("common.save")}</Text>
                 }
               </Pressable>
             </View>
@@ -335,11 +337,6 @@ function makeStyles(C: ReturnType<typeof useColors>) {
     center:        { flex: 1, alignItems: "center", justifyContent: "center", gap: 12, paddingHorizontal: 32 },
     list:          { padding: 16, gap: 12 },
     addBtn:        { width: 34, height: 34, borderRadius: 12, backgroundColor: `${C.purple}14`, alignItems: "center", justifyContent: "center" },
-    premiumBanner: { flexDirection: "row", alignItems: "center", gap: 8, paddingHorizontal: 16, paddingVertical: 10, backgroundColor: `${C.purple}10`, borderBottomWidth: 1, borderColor: `${C.purple}20` },
-    premiumBannerTxt: { flex: 1, fontSize: 13, fontFamily: "Inter_400Regular", color: C.purple },
-    lockIcon:      { width: 72, height: 72, borderRadius: 36, backgroundColor: `${C.purple}14`, alignItems: "center", justifyContent: "center", marginBottom: 8 },
-    lockTitle:     { fontSize: 18, fontFamily: "Inter_700Bold", color: C.text },
-    lockSub:       { fontSize: 14, fontFamily: "Inter_400Regular", color: C.textMuted, textAlign: "center", lineHeight: 20 },
     premiumBtn:    { marginTop: 8, paddingHorizontal: 24, paddingVertical: 12, backgroundColor: C.purple, borderRadius: 14 },
     premiumBtnTxt: { fontSize: 14, fontFamily: "Inter_700Bold", color: "#fff" },
     empty:         { alignItems: "center", gap: 10, paddingTop: 60, paddingHorizontal: 32 },

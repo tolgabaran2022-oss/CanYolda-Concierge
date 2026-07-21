@@ -7,6 +7,7 @@ import {
 import { Stack, useLocalSearchParams } from "expo-router";
 import * as Haptics from "expo-haptics";
 import { SafeAreaView } from "react-native-safe-area-context";
+import { useTranslation } from "react-i18next";
 import { Icon } from "@/components/Icon";
 import { useColors } from "@/hooks/useColors";
 import {
@@ -19,21 +20,17 @@ const SHADOW = {
   shadowOpacity: 0.08, shadowRadius: 8, elevation: 3,
 };
 
-const REMINDER_TYPES = [
-  { key: "vaccination", label: "Aşı", icon: "shield-checkmark-outline", color: "#FF9500" },
-  { key: "appointment", label: "Randevu", icon: "calendar-outline", color: "#7B5EA7" },
-  { key: "medication", label: "İlaç", icon: "medical-outline", color: "#E55D6F" },
-  { key: "nutrition", label: "Beslenme", icon: "nutrition-outline", color: "#34C759" },
-  { key: "general", label: "Genel", icon: "alarm-outline", color: "#5856D6" },
-  { key: "custom", label: "Özel", icon: "star-outline", color: "#FF9500" },
-] as const;
+const REMINDER_TYPE_KEYS = ["vaccination", "appointment", "medication", "nutrition", "general", "custom"] as const;
+const REMINDER_TYPE_META: Record<string, { icon: string; color: string }> = {
+  vaccination: { icon: "shield-checkmark-outline", color: "#FF9500" },
+  appointment: { icon: "calendar-outline",         color: "#7B5EA7" },
+  medication:  { icon: "medical-outline",          color: "#E55D6F" },
+  nutrition:   { icon: "nutrition-outline",        color: "#34C759" },
+  general:     { icon: "alarm-outline",            color: "#5856D6" },
+  custom:      { icon: "star-outline",             color: "#FF9500" },
+};
 
-const REPEAT_RULES = [
-  { key: "never", label: "Tekrarsız" },
-  { key: "daily", label: "Her Gün" },
-  { key: "weekly", label: "Haftalık" },
-  { key: "monthly", label: "Aylık" },
-] as const;
+const REPEAT_RULE_KEYS = ["never", "daily", "weekly", "monthly"] as const;
 
 type FormState = {
   title: string; reminderType: ApiPetReminder["reminderType"];
@@ -46,10 +43,6 @@ const EMPTY_FORM: FormState = {
   time: "", repeatRule: "never", notes: "", isEnabled: true,
 };
 
-function typeInfo(key: string) {
-  return REMINDER_TYPES.find(t => t.key === key) ?? REMINDER_TYPES[4]!;
-}
-
 function formatDate(s: string) {
   if (!s) return "—";
   try { return new Date(s).toLocaleDateString("tr-TR", { day: "numeric", month: "long", year: "numeric" }); }
@@ -58,6 +51,7 @@ function formatDate(s: string) {
 
 export default function RemindersScreen() {
   const { petId } = useLocalSearchParams<{ petId: string }>();
+  const { t } = useTranslation();
   const C = useColors();
 
   const [reminders, setReminders] = useState<ApiPetReminder[]>([]);
@@ -68,6 +62,22 @@ export default function RemindersScreen() {
   const [form, setForm] = useState<FormState>(EMPTY_FORM);
   const [saving, setSaving] = useState(false);
   const [togglingId, setTogglingId] = useState<string | null>(null);
+
+  const typeLabels: Record<string, string> = {
+    vaccination: t("pets.reminders.types.vaccination"),
+    appointment: t("pets.reminders.types.appointment"),
+    medication:  t("pets.reminders.types.medication"),
+    nutrition:   t("pets.reminders.types.nutrition"),
+    general:     t("pets.reminders.types.general"),
+    custom:      t("pets.reminders.types.custom"),
+  };
+
+  const repeatLabels: Record<string, string> = {
+    never:   t("pets.reminders.repeat.never"),
+    daily:   t("pets.reminders.repeat.daily"),
+    weekly:  t("pets.reminders.repeat.weekly"),
+    monthly: t("pets.reminders.repeat.monthly"),
+  };
 
   const load = useCallback(async () => {
     if (!petId) return;
@@ -90,7 +100,7 @@ export default function RemindersScreen() {
   };
 
   const handleSave = async () => {
-    if (!petId || !form.title.trim()) { Alert.alert("Uyarı", "Başlık zorunludur."); return; }
+    if (!petId || !form.title.trim()) { Alert.alert(t("common.error"), t("pets.reminders.errTitleRequired")); return; }
     setSaving(true);
     try {
       if (editingId) {
@@ -102,7 +112,7 @@ export default function RemindersScreen() {
       }
       Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
       setShowForm(false);
-    } catch { Alert.alert("Hata", "Hatırlatıcı kaydedilemedi."); }
+    } catch { Alert.alert(t("common.error"), t("pets.reminders.errSave")); }
     finally { setSaving(false); }
   };
 
@@ -113,20 +123,20 @@ export default function RemindersScreen() {
       const updated = await apiUpdatePetReminder(petId, r.id, { isEnabled: !r.isEnabled });
       setReminders(prev => prev.map(x => x.id === r.id ? updated : x));
       Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
-    } catch { Alert.alert("Hata", "Durum güncellenemedi."); }
+    } catch { Alert.alert(t("common.error"), t("pets.reminders.errStatusUpdate")); }
     finally { setTogglingId(null); }
   };
 
   const handleDelete = (r: ApiPetReminder) => {
-    Alert.alert("Hatırlatıcı Sil", `"${r.title}" silinsin mi?`, [
-      { text: "İptal", style: "cancel" },
-      { text: "Sil", style: "destructive", onPress: async () => {
+    Alert.alert(t("pets.reminders.deleteTitle"), `"${r.title}" ${t("pets.reminders.deleteConfirmSuffix")}`, [
+      { text: t("common.cancel"), style: "cancel" },
+      { text: t("common.delete"), style: "destructive", onPress: async () => {
         if (!petId) return;
         try {
           await apiDeletePetReminder(petId, r.id);
           setReminders(prev => prev.filter(x => x.id !== r.id));
           Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
-        } catch { Alert.alert("Hata", "Silinemedi."); }
+        } catch { Alert.alert(t("common.error"), t("pets.reminders.errDelete")); }
       }},
     ]);
   };
@@ -136,7 +146,7 @@ export default function RemindersScreen() {
   if (loading) {
     return (
       <SafeAreaView style={S.flex} edges={["bottom"]}>
-        <Stack.Screen options={{ title: "Hatırlatıcılar", headerBackTitle: "Geri" }} />
+        <Stack.Screen options={{ title: t("pets.reminders.title"), headerBackTitle: t("pets.reminders.backTitle") }} />
         <View style={S.center}><ActivityIndicator color={C.purple} size="large" /></View>
       </SafeAreaView>
     );
@@ -147,7 +157,7 @@ export default function RemindersScreen() {
 
   return (
     <SafeAreaView style={S.flex} edges={["bottom"]}>
-      <Stack.Screen options={{ title: "Hatırlatıcılar", headerBackTitle: "Geri",
+      <Stack.Screen options={{ title: t("pets.reminders.title"), headerBackTitle: t("pets.reminders.backTitle"),
         headerRight: () => (
           <Pressable hitSlop={12} onPress={openAdd} style={S.addBtn}>
             <Icon name="add" size={22} color={C.purple} />
@@ -163,25 +173,39 @@ export default function RemindersScreen() {
         {reminders.length === 0 && (
           <View style={S.empty}>
             <View style={S.emptyIcon}><Icon name="alarm-outline" size={38} color={C.purple} /></View>
-            <Text style={S.emptyTitle}>Hatırlatıcı yok</Text>
-            <Text style={S.emptySub}>Aşı, randevu veya özel hatırlatıcılar ekleyin.</Text>
+            <Text style={S.emptyTitle}>{t("pets.reminders.emptyTitle")}</Text>
+            <Text style={S.emptySub}>{t("pets.reminders.emptySub")}</Text>
             <Pressable style={S.addEmptyBtn} onPress={openAdd}>
-              <Text style={S.addEmptyTxt}>Hatırlatıcı Ekle</Text>
+              <Text style={S.addEmptyTxt}>{t("pets.reminders.addBtn")}</Text>
             </Pressable>
           </View>
         )}
 
         {upcoming.length > 0 && (
           <>
-            <Text style={S.sectionTitle}>Yaklaşan</Text>
-            {upcoming.map(r => <ReminderCard key={r.id} r={r} C={C} S={S} onEdit={() => openEdit(r)} onDelete={() => handleDelete(r)} onToggle={() => handleToggle(r)} toggling={togglingId === r.id} />)}
+            <Text style={S.sectionTitle}>{t("pets.reminders.sectionUpcoming")}</Text>
+            {upcoming.map(r => (
+              <ReminderCard
+                key={r.id} r={r} C={C} S={S}
+                typeLabels={typeLabels} repeatLabels={repeatLabels}
+                onEdit={() => openEdit(r)} onDelete={() => handleDelete(r)}
+                onToggle={() => handleToggle(r)} toggling={togglingId === r.id}
+              />
+            ))}
           </>
         )}
 
         {past.length > 0 && (
           <>
-            <Text style={[S.sectionTitle, { marginTop: 16 }]}>Geçmiş / Devre Dışı</Text>
-            {past.map(r => <ReminderCard key={r.id} r={r} C={C} S={S} onEdit={() => openEdit(r)} onDelete={() => handleDelete(r)} onToggle={() => handleToggle(r)} toggling={togglingId === r.id} />)}
+            <Text style={[S.sectionTitle, { marginTop: 16 }]}>{t("pets.reminders.sectionPast")}</Text>
+            {past.map(r => (
+              <ReminderCard
+                key={r.id} r={r} C={C} S={S}
+                typeLabels={typeLabels} repeatLabels={repeatLabels}
+                onEdit={() => openEdit(r)} onDelete={() => handleDelete(r)}
+                onToggle={() => handleToggle(r)} toggling={togglingId === r.id}
+              />
+            ))}
           </>
         )}
       </ScrollView>
@@ -189,45 +213,48 @@ export default function RemindersScreen() {
       {showForm && (
         <KeyboardAvoidingView behavior={Platform.OS === "ios" ? "padding" : undefined} style={S.sheet}>
           <View style={S.sheetHandle} />
-          <Text style={S.sheetTitle}>{editingId ? "Hatırlatıcı Düzenle" : "Hatırlatıcı Ekle"}</Text>
+          <Text style={S.sheetTitle}>{editingId ? t("pets.reminders.editTitle") : t("pets.reminders.addTitle")}</Text>
           <ScrollView showsVerticalScrollIndicator={false} keyboardShouldPersistTaps="handled">
-            <Text style={S.label}>Başlık *</Text>
-            <TextInput style={S.input} placeholder="ör. Kuduz aşısı, veteriner randevusu..." value={form.title} onChangeText={t => setForm(f => ({ ...f, title: t }))} placeholderTextColor={C.textMuted} />
+            <Text style={S.label}>{t("pets.reminders.titleLabel")}</Text>
+            <TextInput style={S.input} placeholder={t("pets.reminders.titlePlaceholder")} value={form.title} onChangeText={v => setForm(f => ({ ...f, title: v }))} placeholderTextColor={C.textMuted} />
 
-            <Text style={S.label}>Tür</Text>
+            <Text style={S.label}>{t("pets.reminders.typeLabel")}</Text>
             <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={S.typeRow}>
-              {REMINDER_TYPES.map(t => (
-                <Pressable key={t.key} style={[S.typeChip, form.reminderType === t.key && { backgroundColor: t.color, borderColor: t.color }]} onPress={() => setForm(f => ({ ...f, reminderType: t.key }))}>
-                  <Icon name={t.icon} size={14} color={form.reminderType === t.key ? "#fff" : C.textMuted} />
-                  <Text style={[S.typeChipTxt, form.reminderType === t.key && S.typeChipTxtActive]}>{t.label}</Text>
-                </Pressable>
-              ))}
+              {REMINDER_TYPE_KEYS.map(tk => {
+                const meta = REMINDER_TYPE_META[tk]!;
+                return (
+                  <Pressable key={tk} style={[S.typeChip, form.reminderType === tk && { backgroundColor: meta.color, borderColor: meta.color }]} onPress={() => setForm(f => ({ ...f, reminderType: tk }))}>
+                    <Icon name={meta.icon} size={14} color={form.reminderType === tk ? "#fff" : C.textMuted} />
+                    <Text style={[S.typeChipTxt, form.reminderType === tk && S.typeChipTxtActive]}>{typeLabels[tk]}</Text>
+                  </Pressable>
+                );
+              })}
             </ScrollView>
 
-            <Text style={S.label}>Tarih</Text>
-            <TextInput style={S.input} placeholder="YYYY-AA-GG" value={form.date} onChangeText={t => setForm(f => ({ ...f, date: t }))} placeholderTextColor={C.textMuted} />
+            <Text style={S.label}>{t("pets.reminders.dateLabel")}</Text>
+            <TextInput style={S.input} placeholder="YYYY-AA-GG" value={form.date} onChangeText={v => setForm(f => ({ ...f, date: v }))} placeholderTextColor={C.textMuted} />
 
-            <Text style={S.label}>Saat (isteğe bağlı)</Text>
-            <TextInput style={S.input} placeholder="ör. 09:00" value={form.time} onChangeText={t => setForm(f => ({ ...f, time: t }))} placeholderTextColor={C.textMuted} />
+            <Text style={S.label}>{t("pets.reminders.timeLabel")}</Text>
+            <TextInput style={S.input} placeholder={t("pets.reminders.timePlaceholder")} value={form.time} onChangeText={v => setForm(f => ({ ...f, time: v }))} placeholderTextColor={C.textMuted} />
 
-            <Text style={S.label}>Tekrar</Text>
+            <Text style={S.label}>{t("pets.reminders.repeatLabel")}</Text>
             <View style={S.repeatRow}>
-              {REPEAT_RULES.map(r => (
-                <Pressable key={r.key} style={[S.repeatChip, form.repeatRule === r.key && S.repeatChipActive]} onPress={() => setForm(f => ({ ...f, repeatRule: r.key }))}>
-                  <Text style={[S.repeatChipTxt, form.repeatRule === r.key && S.repeatChipTxtActive]}>{r.label}</Text>
+              {REPEAT_RULE_KEYS.map(rk => (
+                <Pressable key={rk} style={[S.repeatChip, form.repeatRule === rk && S.repeatChipActive]} onPress={() => setForm(f => ({ ...f, repeatRule: rk }))}>
+                  <Text style={[S.repeatChipTxt, form.repeatRule === rk && S.repeatChipTxtActive]}>{repeatLabels[rk]}</Text>
                 </Pressable>
               ))}
             </View>
 
-            <Text style={S.label}>Not (isteğe bağlı)</Text>
-            <TextInput style={[S.input, S.textarea]} placeholder="Açıklama veya özel not..." value={form.notes} onChangeText={t => setForm(f => ({ ...f, notes: t }))} placeholderTextColor={C.textMuted} multiline numberOfLines={3} />
+            <Text style={S.label}>{t("pets.reminders.notesLabel")}</Text>
+            <TextInput style={[S.input, S.textarea]} placeholder={t("pets.reminders.notesPlaceholder")} value={form.notes} onChangeText={v => setForm(f => ({ ...f, notes: v }))} placeholderTextColor={C.textMuted} multiline numberOfLines={3} />
 
             <View style={S.formActions}>
               <Pressable style={S.cancelBtn} onPress={() => setShowForm(false)}>
-                <Text style={S.cancelTxt}>İptal</Text>
+                <Text style={S.cancelTxt}>{t("common.cancel")}</Text>
               </Pressable>
               <Pressable style={[S.saveBtn, saving && S.savingBtn]} onPress={handleSave} disabled={saving}>
-                {saving ? <ActivityIndicator color="#fff" size="small" /> : <Text style={S.saveTxt}>Kaydet</Text>}
+                {saving ? <ActivityIndicator color="#fff" size="small" /> : <Text style={S.saveTxt}>{t("common.save")}</Text>}
               </Pressable>
             </View>
           </ScrollView>
@@ -237,27 +264,29 @@ export default function RemindersScreen() {
   );
 }
 
-function ReminderCard({ r, C, S, onEdit, onDelete, onToggle, toggling }: {
+function ReminderCard({ r, C, S, typeLabels, repeatLabels, onEdit, onDelete, onToggle, toggling }: {
   r: ApiPetReminder; C: ReturnType<typeof useColors>;
-  S: ReturnType<typeof makeStyles>; onEdit: () => void;
-  onDelete: () => void; onToggle: () => void; toggling: boolean;
+  S: ReturnType<typeof makeStyles>;
+  typeLabels: Record<string, string>;
+  repeatLabels: Record<string, string>;
+  onEdit: () => void; onDelete: () => void; onToggle: () => void; toggling: boolean;
 }) {
-  const info = typeInfo(r.reminderType);
+  const meta = REMINDER_TYPE_META[r.reminderType] ?? REMINDER_TYPE_META["general"]!;
   return (
     <Pressable style={[S.card, !r.isEnabled && S.cardDisabled]} onPress={onEdit}>
-      <View style={[S.cardIcon, { backgroundColor: `${info.color}18` }]}>
-        <Icon name={info.icon} size={20} color={info.color} />
+      <View style={[S.cardIcon, { backgroundColor: `${meta.color}18` }]}>
+        <Icon name={meta.icon} size={20} color={meta.color} />
       </View>
       <View style={S.cardBody}>
         <Text style={[S.cardTitle, !r.isEnabled && S.dimmed]}>{r.title}</Text>
         <Text style={S.cardDate}>{formatDate(r.date)}{r.time ? ` · ${r.time}` : ""}</Text>
         <View style={S.cardMeta}>
-          <View style={[S.typePill, { backgroundColor: `${info.color}14` }]}>
-            <Text style={[S.typePillTxt, { color: info.color }]}>{info.label}</Text>
+          <View style={[S.typePill, { backgroundColor: `${meta.color}14` }]}>
+            <Text style={[S.typePillTxt, { color: meta.color }]}>{typeLabels[r.reminderType] ?? r.reminderType}</Text>
           </View>
           {r.repeatRule !== "never" && (
             <View style={S.repeatPill}>
-              <Text style={S.repeatPillTxt}>{REPEAT_RULES.find(x => x.key === r.repeatRule)?.label ?? r.repeatRule}</Text>
+              <Text style={S.repeatPillTxt}>{repeatLabels[r.repeatRule] ?? r.repeatRule}</Text>
             </View>
           )}
         </View>

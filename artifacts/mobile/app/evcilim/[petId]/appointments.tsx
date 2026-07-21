@@ -4,27 +4,15 @@ import { LinearGradient } from "expo-linear-gradient";
 import { useLocalSearchParams, useRouter } from "expo-router";
 import React, { useCallback, useEffect, useState } from "react";
 import {
-  ActivityIndicator,
-  Alert,
-  FlatList,
-  KeyboardAvoidingView,
-  Modal,
-  Platform,
-  Pressable,
-  ScrollView,
-  StyleSheet,
-  Text,
-  TextInput,
-  View,
+  ActivityIndicator, Alert, FlatList, KeyboardAvoidingView,
+  Modal, Platform, Pressable, ScrollView, StyleSheet,
+  Text, TextInput, View,
 } from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
+import { useTranslation } from "react-i18next";
 import { useAuth } from "@/contexts/AuthContext";
 import { usePets } from "@/contexts/PetsContext";
-import {
-  apiGetAppointments,
-  apiCreateAppointment,
-  type ApiAppointment,
-} from "@/lib/petManagementApi";
+import { apiGetAppointments, apiCreateAppointment, type ApiAppointment } from "@/lib/petManagementApi";
 
 const P      = "#7B5EA7";
 const P2     = "#9E78CC";
@@ -34,7 +22,6 @@ const BG     = "#F6F1FF";
 const WHITE  = "#FFFFFF";
 const BORDER = "#EEE8F5";
 const GREEN  = "#34C759";
-const ORANGE = "#FF9500";
 const RED    = "#FF3B30";
 
 const CARD_SHADOW = Platform.select({
@@ -44,7 +31,6 @@ const CARD_SHADOW = Platform.select({
 });
 
 const APPT_TYPES = ["veteriner", "kuaför", "kontrol", "aşı", "diş", "diğer"] as const;
-const STATUS_LABEL: Record<string, string> = { upcoming: "Yaklaşıyor", completed: "Tamamlandı", cancelled: "İptal" };
 const STATUS_COLOR: Record<string, string> = { upcoming: P, completed: GREEN, cancelled: RED };
 
 function formatDate(s: string) {
@@ -61,9 +47,20 @@ function daysUntil(dateStr: string): number {
 }
 
 /* ── Appointment Card ─────────────────────────────────── */
-function ApptCard({ appt, onPress }: { appt: ApiAppointment; onPress: () => void }) {
+function ApptCard({ appt, onPress, statusLabels, t }: {
+  appt: ApiAppointment; onPress: () => void;
+  statusLabels: Record<string, string>;
+  t: (key: string, opts?: Record<string, unknown>) => string;
+}) {
   const sc   = STATUS_COLOR[appt.status] ?? BODY;
   const days = appt.status === "upcoming" ? daysUntil(appt.appointmentDate) : null;
+
+  let remainTxt = "";
+  if (days !== null) {
+    if (days < 0) remainTxt = t("pets.appointments.daysAgo", { count: Math.abs(days) });
+    else if (days === 0) remainTxt = t("pets.appointments.today");
+    else remainTxt = t("pets.appointments.daysLeft", { count: days });
+  }
 
   return (
     <Pressable style={({ pressed }) => [ac.card, pressed && { opacity: 0.85 }]} onPress={onPress}>
@@ -79,28 +76,26 @@ function ApptCard({ appt, onPress }: { appt: ApiAppointment; onPress: () => void
           </View>
         </View>
         <View style={[ac.badge, { backgroundColor: `${sc}18` }]}>
-          <Text style={[ac.badgeTxt, { color: sc }]}>{STATUS_LABEL[appt.status]}</Text>
+          <Text style={[ac.badgeTxt, { color: sc }]}>{statusLabels[appt.status] ?? appt.status}</Text>
         </View>
       </View>
       <View style={ac.details}>
         <View style={ac.row}>
           <Icon name="calendar-outline" size={13} color={BODY} />
-          <Text style={ac.rowLabel}>Tarih</Text>
+          <Text style={ac.rowLabel}>{t("pets.appointments.dateLabel")}</Text>
           <Text style={ac.rowValue}>{formatDate(appt.appointmentDate)}{appt.appointmentTime ? ` · ${appt.appointmentTime}` : ""}</Text>
         </View>
         {days !== null && (
           <View style={ac.row}>
             <Icon name="time-outline" size={13} color={days < 0 ? RED : BODY} />
-            <Text style={ac.rowLabel}>Kalan</Text>
-            <Text style={[ac.rowValue, days < 0 && { color: RED }]}>
-              {days < 0 ? `${Math.abs(days)} gün geçti` : days === 0 ? "Bugün!" : `${days} gün`}
-            </Text>
+            <Text style={ac.rowLabel}>{t("pets.appointments.remainingLabel")}</Text>
+            <Text style={[ac.rowValue, days < 0 && { color: RED }]}>{remainTxt}</Text>
           </View>
         )}
         {appt.location ? (
           <View style={ac.row}>
             <Icon name="location-outline" size={13} color={BODY} />
-            <Text style={ac.rowLabel}>Yer</Text>
+            <Text style={ac.rowLabel}>{t("pets.appointments.locationLabel")}</Text>
             <Text style={ac.rowValue}>{appt.location}</Text>
           </View>
         ) : null}
@@ -129,25 +124,22 @@ const ac = StyleSheet.create({
 /* ── Add Sheet ────────────────────────────────────────── */
 type ApptStatus = ApiAppointment["status"];
 
-function AddSheet({
-  visible,
-  onClose,
-  onSave,
-}: {
+function AddSheet({ visible, onClose, onSave }: {
   visible: boolean;
   onClose: () => void;
   onSave: (data: Omit<ApiAppointment, "id" | "petId" | "userId" | "createdAt" | "updatedAt">) => Promise<void>;
 }) {
+  const { t } = useTranslation();
   const insets = useSafeAreaInsets();
-  const [title, setTitle]                   = useState("");
-  const [appointmentType, setType]          = useState("veteriner");
-  const [appointmentDate, setDate]          = useState("");
-  const [appointmentTime, setTime]          = useState("");
-  const [location, setLocation]             = useState("");
-  const [clinicName, setClinic]             = useState("");
-  const [veterinarianName, setVet]          = useState("");
-  const [description, setDesc]              = useState("");
-  const [saving, setSaving]                 = useState(false);
+  const [title, setTitle]           = useState("");
+  const [appointmentType, setType]  = useState("veteriner");
+  const [appointmentDate, setDate]  = useState("");
+  const [appointmentTime, setTime]  = useState("");
+  const [location, setLocation]     = useState("");
+  const [clinicName, setClinic]     = useState("");
+  const [veterinarianName, setVet]  = useState("");
+  const [description, setDesc]      = useState("");
+  const [saving, setSaving]         = useState(false);
 
   useEffect(() => {
     if (visible) {
@@ -157,13 +149,13 @@ function AddSheet({
   }, [visible]);
 
   const handleSave = async () => {
-    if (!title.trim()) { Alert.alert("Hata", "Başlık giriniz."); return; }
-    if (!appointmentDate.trim()) { Alert.alert("Hata", "Tarih giriniz."); return; }
+    if (!title.trim()) { Alert.alert(t("common.error"), t("pets.appointments.errTitleRequired")); return; }
+    if (!appointmentDate.trim()) { Alert.alert(t("common.error"), t("pets.appointments.errDateRequired")); return; }
     setSaving(true);
     try {
       await onSave({ title, appointmentType, appointmentDate, appointmentTime, location, clinicName, veterinarianName, description, status: "upcoming" as ApptStatus, reminderAt: "", recurrenceRule: "never" });
       onClose();
-    } catch { Alert.alert("Hata", "Kaydedilemedi."); }
+    } catch { Alert.alert(t("common.error"), t("pets.appointments.errSave")); }
     finally { setSaving(false); }
   };
 
@@ -174,33 +166,33 @@ function AddSheet({
       <KeyboardAvoidingView style={{ flex: 1, backgroundColor: WHITE }} behavior={Platform.OS === "ios" ? "padding" : undefined}>
         <View style={[ash.header, { paddingTop: insets.top + 12 }]}>
           <Pressable onPress={onClose} hitSlop={8}><Icon name="close" size={24} color={DARK} /></Pressable>
-          <Text style={ash.title}>Randevu Ekle</Text>
+          <Text style={ash.title}>{t("pets.appointments.addTitle")}</Text>
           <View style={{ width: 24 }} />
         </View>
         <ScrollView showsVerticalScrollIndicator={false} contentContainerStyle={ash.form} keyboardShouldPersistTaps="handled">
           <View style={ash.field}>
-            <Text style={ash.label}>Randevu Türü</Text>
+            <Text style={ash.label}>{t("pets.appointments.apptTypeLabel")}</Text>
             <ScrollView horizontal showsHorizontalScrollIndicator={false} style={{ marginTop: 6 }}>
               <View style={{ flexDirection: "row", gap: 8 }}>
-                {APPT_TYPES.map((t) => (
-                  <Pressable key={t} style={[ash.typePill, appointmentType === t && ash.typePillActive]} onPress={() => setType(t)}>
-                    <Text style={[ash.typeTxt, appointmentType === t && { color: P, fontFamily: "Inter_700Bold" }]}>{t.charAt(0).toUpperCase() + t.slice(1)}</Text>
+                {APPT_TYPES.map((at) => (
+                  <Pressable key={at} style={[ash.typePill, appointmentType === at && ash.typePillActive]} onPress={() => setType(at)}>
+                    <Text style={[ash.typeTxt, appointmentType === at && { color: P, fontFamily: "Inter_700Bold" }]}>{at.charAt(0).toUpperCase() + at.slice(1)}</Text>
                   </Pressable>
                 ))}
               </View>
             </ScrollView>
           </View>
-          <View style={ash.field}><Text style={ash.label}>Başlık *</Text><TextInput style={fld} value={title} onChangeText={setTitle} placeholder="Örn. Yıllık kontrol" placeholderTextColor={BODY} /></View>
-          <View style={ash.field}><Text style={ash.label}>Tarih * (YYYY-AA-GG)</Text><TextInput style={fld} value={appointmentDate} onChangeText={setDate} placeholder="2026-08-15" placeholderTextColor={BODY} /></View>
-          <View style={ash.field}><Text style={ash.label}>Saat</Text><TextInput style={fld} value={appointmentTime} onChangeText={setTime} placeholder="14:30" placeholderTextColor={BODY} /></View>
-          <View style={ash.field}><Text style={ash.label}>Klinik / Salon</Text><TextInput style={fld} value={clinicName} onChangeText={setClinic} placeholder="İstanbul Pet Kliniği" placeholderTextColor={BODY} /></View>
-          <View style={ash.field}><Text style={ash.label}>Veteriner / Uzman</Text><TextInput style={fld} value={veterinarianName} onChangeText={setVet} placeholder="Dr. Mehmet Demir" placeholderTextColor={BODY} /></View>
-          <View style={ash.field}><Text style={ash.label}>Konum</Text><TextInput style={fld} value={location} onChangeText={setLocation} placeholder="Kadıköy, İstanbul" placeholderTextColor={BODY} /></View>
-          <View style={ash.field}><Text style={ash.label}>Notlar</Text><TextInput style={[fld, { minHeight: 80, textAlignVertical: "top" }]} value={description} onChangeText={setDesc} placeholder="Ek notlar..." placeholderTextColor={BODY} multiline /></View>
+          <View style={ash.field}><Text style={ash.label}>{t("pets.appointments.titleLabel")}</Text><TextInput style={fld} value={title} onChangeText={setTitle} placeholder={t("pets.appointments.titlePlaceholder")} placeholderTextColor={BODY} /></View>
+          <View style={ash.field}><Text style={ash.label}>{t("pets.appointments.dateFieldLabel")}</Text><TextInput style={fld} value={appointmentDate} onChangeText={setDate} placeholder="2026-08-15" placeholderTextColor={BODY} /></View>
+          <View style={ash.field}><Text style={ash.label}>{t("pets.appointments.timeLabel")}</Text><TextInput style={fld} value={appointmentTime} onChangeText={setTime} placeholder="14:30" placeholderTextColor={BODY} /></View>
+          <View style={ash.field}><Text style={ash.label}>{t("pets.appointments.clinicLabel")}</Text><TextInput style={fld} value={clinicName} onChangeText={setClinic} placeholder={t("pets.appointments.clinicPlaceholder")} placeholderTextColor={BODY} /></View>
+          <View style={ash.field}><Text style={ash.label}>{t("pets.appointments.vetLabel")}</Text><TextInput style={fld} value={veterinarianName} onChangeText={setVet} placeholder={t("pets.appointments.vetPlaceholder")} placeholderTextColor={BODY} /></View>
+          <View style={ash.field}><Text style={ash.label}>{t("pets.appointments.locationFieldLabel")}</Text><TextInput style={fld} value={location} onChangeText={setLocation} placeholder={t("pets.appointments.locationPlaceholder")} placeholderTextColor={BODY} /></View>
+          <View style={ash.field}><Text style={ash.label}>{t("pets.appointments.notesLabel")}</Text><TextInput style={[fld, { minHeight: 80, textAlignVertical: "top" }]} value={description} onChangeText={setDesc} placeholder={t("pets.apptDetail.notesPlaceholder")} placeholderTextColor={BODY} multiline /></View>
           <Pressable style={ash.saveBtn} onPress={handleSave} disabled={saving}>
             <LinearGradient colors={[P2, P]} style={ash.saveGrad}>
               <Icon name={saving ? "hourglass-outline" : "checkmark-circle-outline"} size={20} color={WHITE} />
-              <Text style={ash.saveTxt}>{saving ? "Kaydediliyor..." : "Kaydet"}</Text>
+              <Text style={ash.saveTxt}>{saving ? t("pets.appointments.saving") : t("pets.appointments.save")}</Text>
             </LinearGradient>
           </Pressable>
         </ScrollView>
@@ -225,6 +217,7 @@ const ash = StyleSheet.create({
 /* ── Main Screen ─────────────────────────────────────── */
 export default function AppointmentsScreen() {
   const { petId } = useLocalSearchParams<{ petId: string }>();
+  const { t } = useTranslation();
   const { user } = useAuth();
   const { getPet } = usePets();
   const router = useRouter();
@@ -234,6 +227,12 @@ export default function AppointmentsScreen() {
   const [appointments, setAppointments] = useState<ApiAppointment[]>([]);
   const [loading, setLoading]           = useState(true);
   const [addVisible, setAddVisible]     = useState(false);
+
+  const statusLabels: Record<string, string> = {
+    upcoming:  t("pets.appointments.statusLabels.upcoming"),
+    completed: t("pets.appointments.statusLabels.completed"),
+    cancelled: t("pets.appointments.statusLabels.cancelled"),
+  };
 
   const load = useCallback(async () => {
     if (!petId || !user) return;
@@ -258,13 +257,13 @@ export default function AppointmentsScreen() {
           <Icon name="chevron-back" size={22} color={DARK} />
         </Pressable>
         <View style={{ flex: 1, alignItems: "center" }}>
-          <Text style={ms.headerTitle}>Randevular</Text>
+          <Text style={ms.headerTitle}>{t("pets.appointments.title")}</Text>
           {pet ? <Text style={ms.headerSub}>{pet.name}</Text> : null}
         </View>
         <Pressable style={ms.addBtn} onPress={() => { Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light); setAddVisible(true); }}>
           <LinearGradient colors={[P2, P]} style={ms.addGrad}>
             <Icon name="add" size={20} color={WHITE} />
-            <Text style={ms.addTxt}>Ekle</Text>
+            <Text style={ms.addTxt}>{t("pets.appointments.add")}</Text>
           </LinearGradient>
         </Pressable>
       </View>
@@ -276,8 +275,8 @@ export default function AppointmentsScreen() {
           <LinearGradient colors={[`${P2}20`, `${P}10`]} style={ms.emptyCircle}>
             <Icon name="calendar-outline" size={40} color={P} />
           </LinearGradient>
-          <Text style={ms.emptyTitle}>Randevu Yok</Text>
-          <Text style={ms.emptySub}>Veteriner, kuaför ve diğer randevularını takip et</Text>
+          <Text style={ms.emptyTitle}>{t("pets.appointments.emptyTitle")}</Text>
+          <Text style={ms.emptySub}>{t("pets.appointments.emptySub")}</Text>
         </View>
       ) : (
         <FlatList
@@ -288,6 +287,8 @@ export default function AppointmentsScreen() {
           renderItem={({ item }) => (
             <ApptCard
               appt={item}
+              statusLabels={statusLabels}
+              t={t}
               onPress={() => {
                 Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
                 router.push(`/evcilim/${petId}/appointments/${item.id}` as Parameters<typeof router.push>[0]);

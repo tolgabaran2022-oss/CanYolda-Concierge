@@ -18,6 +18,7 @@ import {
   View,
 } from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
+import { useTranslation } from "react-i18next";
 import { useAuth } from "@/contexts/AuthContext";
 import { usePets } from "@/contexts/PetsContext";
 import {
@@ -45,12 +46,6 @@ const CARD_SHADOW = Platform.select({
   default: {},
 });
 
-const STATUS_LABELS: Record<ApiVaccination["status"], string> = {
-  current:   "Güncel",
-  upcoming:  "Yaklaşıyor",
-  overdue:   "Gecikmiş",
-  scheduled: "Planlandı",
-};
 const STATUS_COLORS: Record<ApiVaccination["status"], string> = {
   current:   GREEN,
   upcoming:  ORANGE,
@@ -59,12 +54,9 @@ const STATUS_COLORS: Record<ApiVaccination["status"], string> = {
 };
 
 type FilterKey = "all" | "current" | "upcoming" | "overdue";
-const FILTERS: { key: FilterKey; label: string }[] = [
-  { key: "all",      label: "Tümü" },
-  { key: "current",  label: "Güncel" },
-  { key: "upcoming", label: "Yaklaşıyor" },
-  { key: "overdue",  label: "Gecikmiş" },
-];
+const FILTER_KEYS: FilterKey[] = ["all", "current", "upcoming", "overdue"];
+
+const STATUSES: ApiVaccination["status"][] = ["current", "upcoming", "overdue", "scheduled"];
 
 function formatDate(s: string) {
   if (!s) return "—";
@@ -79,144 +71,16 @@ function daysUntil(dateStr: string): number {
   return Math.ceil((target.getTime() - today.getTime()) / 86400000);
 }
 
-/* ── Info Banner ──────────────────────────────────────── */
-function InfoBanner() {
-  return (
-    <View style={ib.card}>
-      <View style={ib.text}>
-        <Text style={ib.title}>Aşı Takibi</Text>
-        <Text style={ib.desc}>
-          Aşı takvimini düzenli olarak takip ederek dostunuzun sağlığını koruyabilirsiniz.
-        </Text>
-      </View>
-      <View style={ib.iconWrap}>
-        <Icon name="shield-checkmark" size={28} color={P} />
-      </View>
-    </View>
-  );
-}
-const ib = StyleSheet.create({
-  card:    { flexDirection: "row", alignItems: "center", backgroundColor: `${P}0C`, borderRadius: 16, padding: 16, gap: 12, marginBottom: 16, borderWidth: 1, borderColor: `${P}20` },
-  text:    { flex: 1, gap: 4 },
-  title:   { fontSize: 14, fontFamily: "Inter_700Bold", color: DARK },
-  desc:    { fontSize: 12, fontFamily: "Inter_400Regular", color: BODY, lineHeight: 18 },
-  iconWrap:{ width: 48, height: 48, borderRadius: 24, backgroundColor: `${P}18`, alignItems: "center", justifyContent: "center" },
-});
-
-/* ── Filter Chips ─────────────────────────────────────── */
-function FilterChips({ active, onSelect }: { active: FilterKey; onSelect: (k: FilterKey) => void }) {
-  return (
-    <ScrollView horizontal showsHorizontalScrollIndicator={false} style={{ marginBottom: 16 }}>
-      <View style={{ flexDirection: "row", gap: 8 }}>
-        {FILTERS.map((f) => {
-          const isActive = f.key === active;
-          return (
-            <Pressable
-              key={f.key}
-              style={[fc.chip, isActive && fc.chipActive]}
-              onPress={() => { Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light); onSelect(f.key); }}
-            >
-              <Text style={[fc.chipTxt, isActive && fc.chipTxtActive]}>{f.label}</Text>
-            </Pressable>
-          );
-        })}
-      </View>
-    </ScrollView>
-  );
-}
-const fc = StyleSheet.create({
-  chip:        { paddingHorizontal: 16, paddingVertical: 8, borderRadius: 50, backgroundColor: WHITE, borderWidth: 1.5, borderColor: BORDER },
-  chipActive:  { backgroundColor: P, borderColor: P },
-  chipTxt:     { fontSize: 13, fontFamily: "Inter_500Medium", color: BODY },
-  chipTxtActive:{ color: WHITE, fontFamily: "Inter_700Bold" },
-});
-
-/* ── Vaccination Card ─────────────────────────────────── */
-function VaccCard({
-  vacc,
-  onEdit,
-  onDelete,
-}: {
-  vacc: ApiVaccination;
-  onEdit: () => void;
-  onDelete: () => void;
-}) {
-  const statusColor = STATUS_COLORS[vacc.status] ?? BODY;
-  const days = vacc.nextDueDate ? daysUntil(vacc.nextDueDate) : null;
-
-  return (
-    <Pressable
-      style={({ pressed }) => [vc.card, pressed && { opacity: 0.88 }]}
-      onPress={onEdit}
-    >
-      {/* Top row: icon + name + status badge */}
-      <View style={vc.top}>
-        <View style={[vc.iconWrap, { backgroundColor: `${statusColor}18` }]}>
-          <Icon name="medkit-outline" size={20} color={statusColor} />
-        </View>
-        <View style={vc.nameWrap}>
-          <Text style={vc.name} numberOfLines={1}>{vacc.vaccineName}</Text>
-          {vacc.vaccineType ? <Text style={vc.type}>{vacc.vaccineType}</Text> : null}
-        </View>
-        <View style={[vc.statusBadge, { backgroundColor: `${statusColor}15` }]}>
-          <Text style={[vc.statusTxt, { color: statusColor }]}>{STATUS_LABELS[vacc.status]}</Text>
-        </View>
-      </View>
-
-      {/* Two-column date section */}
-      <View style={vc.dateRow}>
-        <View style={vc.dateCol}>
-          <Text style={vc.dateLabel}>Yapılma Tarihi</Text>
-          <Text style={vc.dateValue}>{formatDate(vacc.administeredDate)}</Text>
-        </View>
-        <View style={vc.divider} />
-        <View style={vc.dateCol}>
-          <Text style={vc.dateLabel}>Sonraki Tarih</Text>
-          <Text style={[vc.dateValue, days !== null && days < 0 && { color: RED }]}>
-            {vacc.nextDueDate ? formatDate(vacc.nextDueDate) : "—"}
-          </Text>
-        </View>
-        <Icon name="chevron-forward" size={16} color={BODY} style={{ alignSelf: "center" }} />
-      </View>
-
-      {/* Delete */}
-      <Pressable style={vc.deleteBtn} onPress={onDelete} hitSlop={10}>
-        <Icon name="trash-outline" size={15} color={RED} />
-      </Pressable>
-    </Pressable>
-  );
-}
-const vc = StyleSheet.create({
-  card:        { backgroundColor: WHITE, borderRadius: 16, padding: 16, borderWidth: 1, borderColor: BORDER, marginBottom: 10, position: "relative", ...CARD_SHADOW },
-  top:         { flexDirection: "row", alignItems: "center", gap: 12, marginBottom: 14 },
-  iconWrap:    { width: 42, height: 42, borderRadius: 21, alignItems: "center", justifyContent: "center" },
-  nameWrap:    { flex: 1 },
-  name:        { fontSize: 15, fontFamily: "Inter_700Bold", color: DARK },
-  type:        { fontSize: 12, fontFamily: "Inter_400Regular", color: BODY, marginTop: 2 },
-  statusBadge: { borderRadius: 50, paddingHorizontal: 10, paddingVertical: 4 },
-  statusTxt:   { fontSize: 11, fontFamily: "Inter_700Bold" },
-  dateRow:     { flexDirection: "row", alignItems: "center", backgroundColor: BG, borderRadius: 12, padding: 12 },
-  dateCol:     { flex: 1, gap: 4 },
-  divider:     { width: 1, height: 32, backgroundColor: BORDER, marginHorizontal: 12 },
-  dateLabel:   { fontSize: 10, fontFamily: "Inter_600SemiBold", color: BODY, textTransform: "uppercase", letterSpacing: 0.4 },
-  dateValue:   { fontSize: 13, fontFamily: "Inter_600SemiBold", color: DARK },
-  deleteBtn:   { position: "absolute", top: 14, right: 14, padding: 4 },
-});
-
 /* ── Add/Edit Sheet ────────────────────────────────────── */
-const STATUSES: ApiVaccination["status"][] = ["current", "upcoming", "overdue", "scheduled"];
-
 function AddEditSheet({
-  visible,
-  initial,
-  onClose,
-  onSave,
+  visible, initial, onClose, onSave,
 }: {
   visible: boolean;
   initial: Partial<ApiVaccination> | null;
   onClose: () => void;
   onSave: (data: Omit<ApiVaccination, "id" | "petId" | "userId" | "createdAt" | "updatedAt">) => Promise<void>;
 }) {
+  const { t } = useTranslation();
   const [vaccineName, setVaccineName] = useState(initial?.vaccineName ?? "");
   const [vaccineType, setVaccineType] = useState(initial?.vaccineType ?? "");
   const [administeredDate, setAdmin]  = useState(initial?.administeredDate ?? "");
@@ -228,6 +92,13 @@ function AddEditSheet({
   const [status, setStatus]           = useState<ApiVaccination["status"]>(initial?.status ?? "current");
   const [saving, setSaving]           = useState(false);
   const insets = useSafeAreaInsets();
+
+  const statusLabels: Record<ApiVaccination["status"], string> = {
+    current:   t("pets.vaccinations.statusLabels.current"),
+    upcoming:  t("pets.vaccinations.statusLabels.upcoming"),
+    overdue:   t("pets.vaccinations.statusLabels.overdue"),
+    scheduled: t("pets.vaccinations.statusLabels.scheduled"),
+  };
 
   useEffect(() => {
     if (visible && initial) {
@@ -243,13 +114,13 @@ function AddEditSheet({
   }, [visible, initial]);
 
   const handleSave = async () => {
-    if (!vaccineName.trim()) { Alert.alert("Hata", "Aşı adını giriniz."); return; }
-    if (!administeredDate.trim()) { Alert.alert("Hata", "Uygulanma tarihini giriniz."); return; }
+    if (!vaccineName.trim()) { Alert.alert(t("common.error"), t("pets.vaccinations.errNameRequired")); return; }
+    if (!administeredDate.trim()) { Alert.alert(t("common.error"), t("pets.vaccinations.errDateRequired")); return; }
     setSaving(true);
     try {
       await onSave({ vaccineName, vaccineType, administeredDate, nextDueDate, veterinarianName, clinicName, serialNumber, description, status });
       onClose();
-    } catch { Alert.alert("Hata", "Kaydedilemedi."); }
+    } catch { Alert.alert(t("common.error"), t("pets.vaccinations.errSave")); }
     finally { setSaving(false); }
   };
 
@@ -260,32 +131,32 @@ function AddEditSheet({
       <KeyboardAvoidingView style={{ flex: 1, backgroundColor: WHITE }} behavior={Platform.OS === "ios" ? "padding" : undefined}>
         <View style={[sh.header, { paddingTop: insets.top + 12 }]}>
           <Pressable onPress={onClose} hitSlop={8}><Icon name="close" size={24} color={DARK} /></Pressable>
-          <Text style={sh.title}>{initial?.id ? "Aşıyı Düzenle" : "Aşı Ekle"}</Text>
+          <Text style={sh.title}>{initial?.id ? t("pets.vaccinations.editTitle") : t("pets.vaccinations.addTitle")}</Text>
           <View style={{ width: 24 }} />
         </View>
         <ScrollView showsVerticalScrollIndicator={false} contentContainerStyle={sh.form} keyboardShouldPersistTaps="handled">
-          <View style={sh.field}><Text style={sh.label}>Aşı Adı *</Text><TextInput style={fld} value={vaccineName} onChangeText={setVaccineName} placeholder="Örn. Kuduz aşısı" placeholderTextColor={BODY} /></View>
-          <View style={sh.field}><Text style={sh.label}>Aşı Türü</Text><TextInput style={fld} value={vaccineType} onChangeText={setVaccineType} placeholder="Örn. Canlı, Ölü, Kombine" placeholderTextColor={BODY} /></View>
-          <View style={sh.field}><Text style={sh.label}>Uygulanma Tarihi * (YYYY-AA-GG)</Text><TextInput style={fld} value={administeredDate} onChangeText={setAdmin} placeholder="2026-05-12" placeholderTextColor={BODY} /></View>
-          <View style={sh.field}><Text style={sh.label}>Sonraki Tarih (YYYY-AA-GG)</Text><TextInput style={fld} value={nextDueDate} onChangeText={setNextDue} placeholder="2027-05-12" placeholderTextColor={BODY} /></View>
-          <View style={sh.field}><Text style={sh.label}>Veteriner</Text><TextInput style={fld} value={veterinarianName} onChangeText={setVetName} placeholder="Dr. Ahmet Yılmaz" placeholderTextColor={BODY} /></View>
-          <View style={sh.field}><Text style={sh.label}>Klinik</Text><TextInput style={fld} value={clinicName} onChangeText={setClinicName} placeholder="İstanbul Pet Kliniği" placeholderTextColor={BODY} /></View>
-          <View style={sh.field}><Text style={sh.label}>Seri No</Text><TextInput style={fld} value={serialNumber} onChangeText={setSerial} placeholder="Aşı seri numarası" placeholderTextColor={BODY} /></View>
+          <View style={sh.field}><Text style={sh.label}>{t("pets.vaccinations.nameLabel")}</Text><TextInput style={fld} value={vaccineName} onChangeText={setVaccineName} placeholder={t("pets.vaccinations.namePlaceholder")} placeholderTextColor={BODY} /></View>
+          <View style={sh.field}><Text style={sh.label}>{t("pets.vaccinations.typeLabel")}</Text><TextInput style={fld} value={vaccineType} onChangeText={setVaccineType} placeholder={t("pets.vaccinations.typePlaceholder")} placeholderTextColor={BODY} /></View>
+          <View style={sh.field}><Text style={sh.label}>{t("pets.vaccinations.adminDateLabel")}</Text><TextInput style={fld} value={administeredDate} onChangeText={setAdmin} placeholder="2026-05-12" placeholderTextColor={BODY} /></View>
+          <View style={sh.field}><Text style={sh.label}>{t("pets.vaccinations.nextDateLabel")}</Text><TextInput style={fld} value={nextDueDate} onChangeText={setNextDue} placeholder="2027-05-12" placeholderTextColor={BODY} /></View>
+          <View style={sh.field}><Text style={sh.label}>{t("pets.vaccinations.vetLabel")}</Text><TextInput style={fld} value={veterinarianName} onChangeText={setVetName} placeholder="Dr. Ahmet Yılmaz" placeholderTextColor={BODY} /></View>
+          <View style={sh.field}><Text style={sh.label}>{t("pets.vaccinations.clinicLabel")}</Text><TextInput style={fld} value={clinicName} onChangeText={setClinicName} placeholder="İstanbul Pet Kliniği" placeholderTextColor={BODY} /></View>
+          <View style={sh.field}><Text style={sh.label}>{t("pets.vaccinations.serialLabel")}</Text><TextInput style={fld} value={serialNumber} onChangeText={setSerial} placeholder={t("pets.vaccinations.serialPlaceholder")} placeholderTextColor={BODY} /></View>
           <View style={sh.field}>
-            <Text style={sh.label}>Durum</Text>
+            <Text style={sh.label}>{t("pets.vaccinations.statusLabel")}</Text>
             <View style={{ flexDirection: "row", gap: 8, flexWrap: "wrap" }}>
               {STATUSES.map((s) => (
                 <Pressable key={s} style={[sh.statusPill, status === s && sh.statusPillActive]} onPress={() => setStatus(s)}>
-                  <Text style={[sh.statusTxt, status === s && { color: P, fontFamily: "Inter_700Bold" }]}>{STATUS_LABELS[s]}</Text>
+                  <Text style={[sh.statusTxt, status === s && { color: P, fontFamily: "Inter_700Bold" }]}>{statusLabels[s]}</Text>
                 </Pressable>
               ))}
             </View>
           </View>
-          <View style={sh.field}><Text style={sh.label}>Notlar</Text><TextInput style={[fld, { minHeight: 80, textAlignVertical: "top" }]} value={description} onChangeText={setDescription} placeholder="Ek notlar..." placeholderTextColor={BODY} multiline /></View>
+          <View style={sh.field}><Text style={sh.label}>{t("pets.vaccinations.notesLabel")}</Text><TextInput style={[fld, { minHeight: 80, textAlignVertical: "top" }]} value={description} onChangeText={setDescription} placeholder="Ek notlar..." placeholderTextColor={BODY} multiline /></View>
           <Pressable style={sh.saveBtn} onPress={handleSave} disabled={saving}>
             <LinearGradient colors={[P2, P]} style={sh.saveGrad}>
               <Icon name={saving ? "hourglass-outline" : "checkmark-circle-outline"} size={20} color={WHITE} />
-              <Text style={sh.saveTxt}>{saving ? "Kaydediliyor..." : "Kaydet"}</Text>
+              <Text style={sh.saveTxt}>{saving ? t("common.saving") : t("common.save")}</Text>
             </LinearGradient>
           </Pressable>
         </ScrollView>
@@ -307,23 +178,10 @@ const sh = StyleSheet.create({
   saveTxt:      { fontSize: 15, fontFamily: "Inter_700Bold", color: WHITE },
 });
 
-/* ── Footer Note ──────────────────────────────────────── */
-function FooterNote() {
-  return (
-    <View style={fn.wrap}>
-      <Icon name="time-outline" size={14} color={BODY} />
-      <Text style={fn.txt}>Aşı zamanları yaklaştığında size bildirim göndereceğiz.</Text>
-    </View>
-  );
-}
-const fn = StyleSheet.create({
-  wrap: { flexDirection: "row", alignItems: "center", gap: 8, paddingHorizontal: 20, paddingVertical: 16 },
-  txt:  { fontSize: 12, fontFamily: "Inter_400Regular", color: BODY, flex: 1, lineHeight: 18 },
-});
-
 /* ── Main Screen ───────────────────────────────────────── */
 export default function VaccinationsScreen() {
   const { petId } = useLocalSearchParams<{ petId: string }>();
+  const { t } = useTranslation();
   const { user } = useAuth();
   const { getPet } = usePets();
   const router = useRouter();
@@ -335,6 +193,20 @@ export default function VaccinationsScreen() {
   const [sheetVisible, setSheetVisible] = useState(false);
   const [editing, setEditing]           = useState<ApiVaccination | null>(null);
   const [filter, setFilter]             = useState<FilterKey>("all");
+
+  const filterLabels: Record<FilterKey, string> = {
+    all:      t("pets.vaccinations.filterLabels.all"),
+    current:  t("pets.vaccinations.filterLabels.current"),
+    upcoming: t("pets.vaccinations.filterLabels.upcoming"),
+    overdue:  t("pets.vaccinations.filterLabels.overdue"),
+  };
+
+  const statusLabels: Record<ApiVaccination["status"], string> = {
+    current:   t("pets.vaccinations.statusLabels.current"),
+    upcoming:  t("pets.vaccinations.statusLabels.upcoming"),
+    overdue:   t("pets.vaccinations.statusLabels.overdue"),
+    scheduled: t("pets.vaccinations.statusLabels.scheduled"),
+  };
 
   const load = useCallback(async () => {
     if (!petId || !user) return;
@@ -360,10 +232,10 @@ export default function VaccinationsScreen() {
   };
 
   const handleDelete = (vacc: ApiVaccination) => {
-    Alert.alert("Sil", `"${vacc.vaccineName}" silinecek?`, [
-      { text: "Vazgeç", style: "cancel" },
+    Alert.alert(t("common.delete"), `"${vacc.vaccineName}" ${t("pets.vaccinations.deleteConfirmSuffix")}`, [
+      { text: t("common.cancel"), style: "cancel" },
       {
-        text: "Sil", style: "destructive",
+        text: t("common.delete"), style: "destructive",
         onPress: async () => {
           if (!petId || !user) return;
           await apiDeleteVaccination(petId, vacc.id);
@@ -382,7 +254,7 @@ export default function VaccinationsScreen() {
           <Icon name="chevron-back" size={22} color={DARK} />
         </Pressable>
         <View style={{ flex: 1, alignItems: "center" }}>
-          <Text style={ms.headerTitle}>Aşılar</Text>
+          <Text style={ms.headerTitle}>{t("pets.vaccinations.title")}</Text>
           {pet ? <Text style={ms.headerSub}>{pet.name}</Text> : null}
         </View>
         <Pressable
@@ -391,7 +263,7 @@ export default function VaccinationsScreen() {
         >
           <LinearGradient colors={[P2, P]} style={ms.addGrad}>
             <Icon name="add" size={20} color={WHITE} />
-            <Text style={ms.addTxt}>Ekle</Text>
+            <Text style={ms.addTxt}>{t("pets.vaccinations.add")}</Text>
           </LinearGradient>
         </Pressable>
       </View>
@@ -406,8 +278,33 @@ export default function VaccinationsScreen() {
           contentContainerStyle={{ paddingHorizontal: 20, paddingBottom: insets.bottom + 24 }}
           ListHeaderComponent={
             <>
-              <InfoBanner />
-              <FilterChips active={filter} onSelect={setFilter} />
+              {/* Info banner */}
+              <View style={ib.card}>
+                <View style={ib.text}>
+                  <Text style={ib.title}>{t("pets.vaccinations.bannerTitle")}</Text>
+                  <Text style={ib.desc}>{t("pets.vaccinations.bannerDesc")}</Text>
+                </View>
+                <View style={ib.iconWrap}>
+                  <Icon name="shield-checkmark" size={28} color={P} />
+                </View>
+              </View>
+              {/* Filter chips */}
+              <ScrollView horizontal showsHorizontalScrollIndicator={false} style={{ marginBottom: 16 }}>
+                <View style={{ flexDirection: "row", gap: 8 }}>
+                  {FILTER_KEYS.map((fk) => {
+                    const isActive = fk === filter;
+                    return (
+                      <Pressable
+                        key={fk}
+                        style={[fc.chip, isActive && fc.chipActive]}
+                        onPress={() => { Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light); setFilter(fk); }}
+                      >
+                        <Text style={[fc.chipTxt, isActive && fc.chipTxtActive]}>{filterLabels[fk]}</Text>
+                      </Pressable>
+                    );
+                  })}
+                </View>
+              </ScrollView>
             </>
           }
           ListEmptyComponent={
@@ -416,21 +313,59 @@ export default function VaccinationsScreen() {
                 <Icon name="shield-checkmark-outline" size={36} color={P} />
               </LinearGradient>
               <Text style={ms.emptyTitle}>
-                {filter === "all" ? "Aşı Kaydı Yok" : `${FILTERS.find(f => f.key === filter)?.label} aşı yok`}
+                {filter === "all" ? t("pets.vaccinations.emptyTitle") : `${filterLabels[filter]} ${t("pets.vaccinations.tryOtherFilter")}`}
               </Text>
               <Text style={ms.emptySub}>
-                {filter === "all" ? "İlk aşı kaydını eklemek için + Ekle butonuna dokun" : "Farklı bir filtre deneyin"}
+                {filter === "all" ? t("pets.vaccinations.emptySub") : t("pets.vaccinations.tryOtherFilter")}
               </Text>
             </View>
           }
-          ListFooterComponent={vaccinations.length > 0 ? <FooterNote /> : null}
-          renderItem={({ item }) => (
-            <VaccCard
-              vacc={item}
-              onEdit={() => { setEditing(item); setSheetVisible(true); }}
-              onDelete={() => handleDelete(item)}
-            />
-          )}
+          ListFooterComponent={vaccinations.length > 0 ? (
+            <View style={fn.wrap}>
+              <Icon name="time-outline" size={14} color={BODY} />
+              <Text style={fn.txt}>{t("pets.vaccinations.notification")}</Text>
+            </View>
+          ) : null}
+          renderItem={({ item }) => {
+            const statusColor = STATUS_COLORS[item.status] ?? BODY;
+            const days = item.nextDueDate ? daysUntil(item.nextDueDate) : null;
+            return (
+              <Pressable
+                style={({ pressed }) => [vc.card, pressed && { opacity: 0.88 }]}
+                onPress={() => { setEditing(item); setSheetVisible(true); }}
+              >
+                <View style={vc.top}>
+                  <View style={[vc.iconWrap, { backgroundColor: `${statusColor}18` }]}>
+                    <Icon name="medkit-outline" size={20} color={statusColor} />
+                  </View>
+                  <View style={vc.nameWrap}>
+                    <Text style={vc.name} numberOfLines={1}>{item.vaccineName}</Text>
+                    {item.vaccineType ? <Text style={vc.type}>{item.vaccineType}</Text> : null}
+                  </View>
+                  <View style={[vc.statusBadge, { backgroundColor: `${statusColor}15` }]}>
+                    <Text style={[vc.statusTxt, { color: statusColor }]}>{statusLabels[item.status]}</Text>
+                  </View>
+                </View>
+                <View style={vc.dateRow}>
+                  <View style={vc.dateCol}>
+                    <Text style={vc.dateLabel}>{t("pets.vaccinations.administeredDate")}</Text>
+                    <Text style={vc.dateValue}>{formatDate(item.administeredDate)}</Text>
+                  </View>
+                  <View style={vc.divider} />
+                  <View style={vc.dateCol}>
+                    <Text style={vc.dateLabel}>{t("pets.vaccinations.nextDate")}</Text>
+                    <Text style={[vc.dateValue, days !== null && days < 0 && { color: RED }]}>
+                      {item.nextDueDate ? formatDate(item.nextDueDate) : "—"}
+                    </Text>
+                  </View>
+                  <Icon name="chevron-forward" size={16} color={BODY} style={{ alignSelf: "center" }} />
+                </View>
+                <Pressable style={vc.deleteBtn} onPress={() => handleDelete(item)} hitSlop={10}>
+                  <Icon name="trash-outline" size={15} color={RED} />
+                </Pressable>
+              </Pressable>
+            );
+          }}
         />
       )}
 
@@ -443,6 +378,40 @@ export default function VaccinationsScreen() {
     </View>
   );
 }
+
+const ib = StyleSheet.create({
+  card:    { flexDirection: "row", alignItems: "center", backgroundColor: `${P}0C`, borderRadius: 16, padding: 16, gap: 12, marginBottom: 16, borderWidth: 1, borderColor: `${P}20` },
+  text:    { flex: 1, gap: 4 },
+  title:   { fontSize: 14, fontFamily: "Inter_700Bold", color: DARK },
+  desc:    { fontSize: 12, fontFamily: "Inter_400Regular", color: BODY, lineHeight: 18 },
+  iconWrap:{ width: 48, height: 48, borderRadius: 24, backgroundColor: `${P}18`, alignItems: "center", justifyContent: "center" },
+});
+const fc = StyleSheet.create({
+  chip:        { paddingHorizontal: 16, paddingVertical: 8, borderRadius: 50, backgroundColor: WHITE, borderWidth: 1.5, borderColor: BORDER },
+  chipActive:  { backgroundColor: P, borderColor: P },
+  chipTxt:     { fontSize: 13, fontFamily: "Inter_500Medium", color: BODY },
+  chipTxtActive:{ color: WHITE, fontFamily: "Inter_700Bold" },
+});
+const vc = StyleSheet.create({
+  card:        { backgroundColor: WHITE, borderRadius: 16, padding: 16, borderWidth: 1, borderColor: BORDER, marginBottom: 10, position: "relative", ...CARD_SHADOW },
+  top:         { flexDirection: "row", alignItems: "center", gap: 12, marginBottom: 14 },
+  iconWrap:    { width: 42, height: 42, borderRadius: 21, alignItems: "center", justifyContent: "center" },
+  nameWrap:    { flex: 1 },
+  name:        { fontSize: 15, fontFamily: "Inter_700Bold", color: DARK },
+  type:        { fontSize: 12, fontFamily: "Inter_400Regular", color: BODY, marginTop: 2 },
+  statusBadge: { borderRadius: 50, paddingHorizontal: 10, paddingVertical: 4 },
+  statusTxt:   { fontSize: 11, fontFamily: "Inter_700Bold" },
+  dateRow:     { flexDirection: "row", alignItems: "center", backgroundColor: BG, borderRadius: 12, padding: 12 },
+  dateCol:     { flex: 1, gap: 4 },
+  divider:     { width: 1, height: 32, backgroundColor: BORDER, marginHorizontal: 12 },
+  dateLabel:   { fontSize: 10, fontFamily: "Inter_600SemiBold", color: BODY, textTransform: "uppercase", letterSpacing: 0.4 },
+  dateValue:   { fontSize: 13, fontFamily: "Inter_600SemiBold", color: DARK },
+  deleteBtn:   { position: "absolute", top: 14, right: 14, padding: 4 },
+});
+const fn = StyleSheet.create({
+  wrap: { flexDirection: "row", alignItems: "center", gap: 8, paddingHorizontal: 20, paddingVertical: 16 },
+  txt:  { fontSize: 12, fontFamily: "Inter_400Regular", color: BODY, flex: 1, lineHeight: 18 },
+});
 const ms = StyleSheet.create({
   header:      { flexDirection: "row", alignItems: "center", justifyContent: "space-between", paddingHorizontal: 20, paddingBottom: 14 },
   backBtn:     { width: 38, height: 38, borderRadius: 19, backgroundColor: WHITE, alignItems: "center", justifyContent: "center", borderWidth: 1, borderColor: BORDER },

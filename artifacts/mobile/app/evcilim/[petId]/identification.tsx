@@ -4,21 +4,14 @@ import { LinearGradient } from "expo-linear-gradient";
 import { useLocalSearchParams, useRouter } from "expo-router";
 import React, { useCallback, useEffect, useState } from "react";
 import {
-  ActivityIndicator,
-  Alert,
-  KeyboardAvoidingView,
-  Platform,
-  Pressable,
-  ScrollView,
-  StyleSheet,
-  Text,
-  TextInput,
-  View,
+  ActivityIndicator, Alert, KeyboardAvoidingView, Platform,
+  Pressable, ScrollView, StyleSheet, Text, TextInput, View,
 } from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
+import { useTranslation } from "react-i18next";
 import { useAuth } from "@/contexts/AuthContext";
 import { usePets } from "@/contexts/PetsContext";
-import { apiGetIdentification, apiUpsertIdentification, type ApiIdentification } from "@/lib/petManagementApi";
+import { apiGetIdentification, apiUpsertIdentification } from "@/lib/petManagementApi";
 
 const P     = "#7B5EA7";
 const P2    = "#9E78CC";
@@ -69,6 +62,7 @@ function SectionTitle({ title, icon }: { title: string; icon: string }) {
 
 export default function IdentificationScreen() {
   const { petId } = useLocalSearchParams<{ petId: string }>();
+  const { t } = useTranslation();
   const { user } = useAuth();
   const { getPet } = usePets();
   const router = useRouter();
@@ -76,17 +70,17 @@ export default function IdentificationScreen() {
 
   const pet = getPet(petId ?? "");
   const [loading, setLoading] = useState(true);
-  const [saving, setSaving] = useState(false);
+  const [saving, setSaving]   = useState(false);
 
-  const [microchipNumber, setMicrochip]         = useState("");
-  const [passportNumber, setPassport]           = useState("");
-  const [healthBookNumber, setHealthBook]       = useState("");
-  const [registrationNumber, setRegistration]   = useState("");
-  const [insuranceInfo, setInsurance]           = useState("");
-  const [veterinarianName, setVetName]          = useState("");
-  const [veterinarianPhone, setVetPhone]        = useState("");
-  const [emergencyContactName, setEmerName]     = useState("");
-  const [emergencyContactPhone, setEmerPhone]   = useState("");
+  const [microchipNumber, setMicrochip]       = useState("");
+  const [passportNumber, setPassport]         = useState("");
+  const [healthBookNumber, setHealthBook]     = useState("");
+  const [registrationNumber, setRegistration] = useState("");
+  const [insuranceInfo, setInsurance]         = useState("");
+  const [veterinarianName, setVetName]        = useState("");
+  const [veterinarianPhone, setVetPhone]      = useState("");
+  const [emergencyContactName, setEmerName]   = useState("");
+  const [emergencyContactPhone, setEmerPhone] = useState("");
 
   const load = useCallback(async () => {
     if (!petId || !user) return;
@@ -94,14 +88,10 @@ export default function IdentificationScreen() {
     try {
       const data = await apiGetIdentification(petId);
       if (data) {
-        setMicrochip(data.microchipNumber);
-        setPassport(data.passportNumber);
-        setHealthBook(data.healthBookNumber);
-        setRegistration(data.registrationNumber);
-        setInsurance(data.insuranceInfo);
-        setVetName(data.veterinarianName);
-        setVetPhone(data.veterinarianPhone);
-        setEmerName(data.emergencyContactName);
+        setMicrochip(data.microchipNumber); setPassport(data.passportNumber);
+        setHealthBook(data.healthBookNumber); setRegistration(data.registrationNumber);
+        setInsurance(data.insuranceInfo); setVetName(data.veterinarianName);
+        setVetPhone(data.veterinarianPhone); setEmerName(data.emergencyContactName);
         setEmerPhone(data.emergencyContactPhone);
       }
     } finally { setLoading(false); }
@@ -118,10 +108,9 @@ export default function IdentificationScreen() {
         insuranceInfo, veterinarianName, veterinarianPhone, emergencyContactName, emergencyContactPhone,
       });
       Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
-      Alert.alert("Kaydedildi", "Kimlik bilgileri güncellendi.");
-    } catch {
-      Alert.alert("Hata", "Kaydedilemedi.");
-    } finally { setSaving(false); }
+      Alert.alert(t("pets.identification.savedTitle"), t("pets.identification.savedMsg"));
+    } catch { Alert.alert(t("common.error"), t("pets.identification.errSave")); }
+    finally { setSaving(false); }
   };
 
   return (
@@ -131,7 +120,7 @@ export default function IdentificationScreen() {
           <Icon name="chevron-back" size={22} color={DARK} />
         </Pressable>
         <View>
-          <Text style={st.headerTitle}>Kimlik Bilgileri</Text>
+          <Text style={st.headerTitle}>{t("pets.identification.title")}</Text>
           {pet ? <Text style={st.headerSub}>{pet.name}</Text> : null}
         </View>
         <View style={{ width: 38 }} />
@@ -143,20 +132,20 @@ export default function IdentificationScreen() {
         </View>
       ) : (
         <ScrollView showsVerticalScrollIndicator={false} contentContainerStyle={[st.form, { paddingBottom: insets.bottom + 40 }]} keyboardShouldPersistTaps="handled">
-          <SectionTitle title="Kimlik Numaraları" icon="barcode-outline" />
-          <Field label="Mikroçip No" icon="radio-button-on-outline" value={microchipNumber} onChangeText={setMicrochip} placeholder="985141000000000" />
-          <Field label="Pasaport No" icon="document-text-outline" value={passportNumber} onChangeText={setPassport} placeholder="TR123456789" />
-          <Field label="Sağlık Karnesi No" icon="clipboard-outline" value={healthBookNumber} onChangeText={setHealthBook} placeholder="SK-2024-001234" />
-          <Field label="Kayıt No (Belediye)" icon="business-outline" value={registrationNumber} onChangeText={setRegistration} placeholder="34-12345" />
-          <Field label="Sigorta Bilgisi" icon="shield-outline" value={insuranceInfo} onChangeText={setInsurance} placeholder="Allianz Pet Plus - TR12345" />
+          <SectionTitle title={t("pets.identification.idNumbers")} icon="barcode-outline" />
+          <Field label={t("pets.identification.microchipLabel")} icon="radio-button-on-outline" value={microchipNumber} onChangeText={setMicrochip} placeholder="985141000000000" />
+          <Field label={t("pets.identification.passportLabel")} icon="document-text-outline" value={passportNumber} onChangeText={setPassport} placeholder="TR123456789" />
+          <Field label={t("pets.identification.healthBookLabel")} icon="clipboard-outline" value={healthBookNumber} onChangeText={setHealthBook} placeholder="SK-2024-001234" />
+          <Field label={t("pets.identification.registrationLabel")} icon="business-outline" value={registrationNumber} onChangeText={setRegistration} placeholder="34-12345" />
+          <Field label={t("pets.identification.insuranceLabel")} icon="shield-outline" value={insuranceInfo} onChangeText={setInsurance} placeholder="Allianz Pet Plus - TR12345" />
 
-          <SectionTitle title="Veteriner Bilgileri" icon="medkit-outline" />
-          <Field label="Veteriner Adı" icon="person-outline" value={veterinarianName} onChangeText={setVetName} placeholder="Dr. Ayşe Kaya" />
-          <Field label="Veteriner Telefon" icon="call-outline" value={veterinarianPhone} onChangeText={setVetPhone} placeholder="+90 212 555 0000" keyboardType="phone-pad" />
+          <SectionTitle title={t("pets.identification.vetInfo")} icon="medkit-outline" />
+          <Field label={t("pets.identification.vetNameLabel")} icon="person-outline" value={veterinarianName} onChangeText={setVetName} placeholder="Dr. Ayşe Kaya" />
+          <Field label={t("pets.identification.vetPhoneLabel")} icon="call-outline" value={veterinarianPhone} onChangeText={setVetPhone} placeholder="+90 212 555 0000" keyboardType="phone-pad" />
 
-          <SectionTitle title="Acil Durum İletişim" icon="warning-outline" />
-          <Field label="Ad Soyad" icon="person-add-outline" value={emergencyContactName} onChangeText={setEmerName} placeholder="Mehmet Yılmaz" />
-          <Field label="Telefon" icon="call-outline" value={emergencyContactPhone} onChangeText={setEmerPhone} placeholder="+90 532 000 0000" keyboardType="phone-pad" />
+          <SectionTitle title={t("pets.identification.emergencyContact")} icon="warning-outline" />
+          <Field label={t("pets.identification.contactNameLabel")} icon="person-add-outline" value={emergencyContactName} onChangeText={setEmerName} placeholder="Mehmet Yılmaz" />
+          <Field label={t("pets.identification.contactPhoneLabel")} icon="call-outline" value={emergencyContactPhone} onChangeText={setEmerPhone} placeholder="+90 532 000 0000" keyboardType="phone-pad" />
 
           <Pressable
             style={({ pressed }) => [st.saveBtn, { opacity: pressed ? 0.85 : 1 }]}
@@ -165,7 +154,7 @@ export default function IdentificationScreen() {
           >
             <LinearGradient colors={[P2, P]} style={st.saveGrad}>
               <Icon name={saving ? "hourglass-outline" : "checkmark-circle-outline"} size={20} color={WHITE} />
-              <Text style={st.saveTxt}>{saving ? "Kaydediliyor..." : "Bilgileri Kaydet"}</Text>
+              <Text style={st.saveTxt}>{saving ? t("pets.identification.saving") : t("pets.identification.save")}</Text>
             </LinearGradient>
           </Pressable>
         </ScrollView>
