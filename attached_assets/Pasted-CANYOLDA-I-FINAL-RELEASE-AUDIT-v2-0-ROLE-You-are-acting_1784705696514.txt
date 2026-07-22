@@ -1,0 +1,539 @@
+CANYOLDAŞI
+FINAL RELEASE AUDIT
+v2.0
+
+ROLE
+
+You are acting as:
+
+• Senior React Native Engineer
+• Senior Expo Engineer
+• Senior QA Automation Engineer
+• Senior Mobile Security Engineer
+• Senior Backend Engineer
+• Apple App Store Reviewer
+• Google Play Reviewer
+
+Your job is NOT to redesign the app.
+
+Your job is NOT to suggest new features.
+
+Your ONLY responsibility is to determine whether this application is truly ready for its first public release.
+
+==================================================
+IMPORTANT TEST RULE
+==================================================
+
+Never mark PASS based only on code inspection.
+
+PASS requires:
+
+✓ Feature executed
+✓ UI verified
+✓ Expected result observed
+✓ Backend verified (if applicable)
+✓ No console/runtime errors
+✓ Persistent data reloaded successfully
+
+If only code was inspected:
+
+STATIC REVIEW
+
+If platform unavailable:
+
+BLOCKED
+
+If not executed:
+
+NOT TESTED
+
+Do NOT mark Web PASS as Android PASS.
+
+Do NOT mark Android PASS as iOS PASS.
+
+==================================================
+PHASE 1
+BUILD READINESS
+==================================================
+
+Verify:
+
+app.json
+app.config.*
+eas.json
+package.json
+expo plugins
+permissions
+icons
+adaptive icon
+splash
+bundle identifiers
+package name
+version
+build number
+versionCode
+environment variables
+production flags
+EAS profiles
+
+==================================================
+PHASE 2
+AUTH FLOW
+==================================================
+
+Test:
+
+Register
+
+Login
+
+Logout
+
+Remember session
+
+Forgot password
+
+Reset password
+
+Session restore
+
+Token refresh
+
+Expired session
+
+Deleted account login
+
+==================================================
+PHASE 3
+PET MANAGEMENT
+==================================================
+
+Test completely:
+
+First pet
+
+Second pet
+
+Premium restriction
+
+Edit pet
+
+Delete pet
+
+Vaccination
+
+Medication
+
+Reminder
+
+Appointment
+
+Documents
+
+Notes
+
+Nutrition
+
+AI Assistant
+
+Photo upload
+
+Camera
+
+Gallery
+
+Persistence
+
+==================================================
+PHASE 4
+ADOPTION
+==================================================
+
+Test:
+
+Create listing
+
+Edit listing
+
+Delete listing
+
+Boost
+
+Listing detail
+
+Message owner
+
+Contact button
+
+Report status
+
+Photo upload
+
+Photo reorder
+
+Cover photo
+
+Save
+
+Validation
+
+==================================================
+PHASE 5
+STRAY ANIMAL REPORT
+==================================================
+
+Test:
+
+Camera
+
+Location
+
+Status selection
+
+Notes
+
+Submit
+
+Photo upload
+
+Edit
+
+Current status update
+
+==================================================
+PHASE 6
+MESSAGING
+==================================================
+
+Test:
+
+Conversation list
+
+Open conversation
+
+Send text
+
+Send image
+
+Notifications
+
+Unread count
+
+Read state
+
+==================================================
+PHASE 7
+MAP
+==================================================
+
+Test:
+
+Current location
+
+Permission denied
+
+Pins
+
+Open detail
+
+Open maps
+
+Refresh
+
+==================================================
+PHASE 8
+PROFILE
+==================================================
+
+Test:
+
+Edit profile
+
+Photo
+
+Privacy
+
+Notifications
+
+Followers
+
+Following
+
+Public profile
+
+Account deletion
+
+==================================================
+PHASE 9
+PREMIUM
+==================================================
+
+Test:
+
+Purchase
+
+Restore
+
+RevenueCat
+
+Second pet restriction
+
+Premium screen
+
+Boost purchase
+
+==================================================
+PHASE 10
+LANGUAGE
+==================================================
+
+Switch:
+
+Turkish
+
+English
+
+Verify:
+
+No untranslated strings
+
+No raw translation keys
+
+No mixed language
+
+No hardcoded Turkish
+
+No hardcoded English
+
+==================================================
+PHASE 11
+OFFLINE
+==================================================
+
+Test:
+
+No internet
+
+Timeouts
+
+Retry
+
+Offline UI
+
+==================================================
+PHASE 12
+PERMISSIONS
+==================================================
+
+Camera
+
+Location
+
+Notifications
+
+Photo Library
+
+Permission denied
+
+Permission granted
+
+Repeated requests
+
+==================================================
+PHASE 13
+SECURITY
+==================================================
+
+Verify:
+
+JWT
+
+Authorization
+
+Ownership
+
+Validation
+
+Uploads
+
+Secrets
+
+Rate limiting
+
+Password reset
+
+==================================================
+PHASE 14
+PERFORMANCE
+==================================================
+
+Inspect:
+
+Memory leaks
+
+Slow screens
+
+Heavy renders
+
+Large FlatLists
+
+Image loading
+
+Bundle size
+
+==================================================
+PHASE 15
+STORE REVIEW
+==================================================
+
+Verify:
+
+Privacy Policy
+
+Terms
+
+Account deletion
+
+Required permissions
+
+RevenueCat compliance
+
+Store metadata
+
+Production icons
+
+1024 icon
+
+Adaptive icon
+
+==================================================
+PHASE 16
+CODE QUALITY
+==================================================
+
+Search entire repository:
+
+TODO
+
+FIXME
+
+console.log
+
+debug
+
+mock
+
+fake
+
+temporary
+
+localhost
+
+127.0.0.1
+
+development URL
+
+unused imports
+
+dead code
+
+==================================================
+PHASE 17
+KNOWN REGRESSION CHECK
+==================================================
+
+Explicitly verify these previously fixed issues did NOT regress:
+
+✓ Add Pet button works
+
+✓ Hero "İlan Oluştur" button works
+
+✓ Edit Listing "Fotoğraf Ekle" works
+
+✓ Remove phone button from listing detail
+
+✓ Remove Gallery button from Current Status screen
+
+✓ Camera-only flow works
+
+✓ Animal Type translations
+
+✓ Status badge translations
+
+✓ No raw translation keys
+
+==================================================
+FINAL RELEASE BLOCKERS
+==================================================
+
+Report ONLY verified blockers.
+
+For each blocker provide:
+
+Severity
+
+Platform
+
+File
+
+Root cause
+
+Exact fix
+
+Estimated effort
+
+==================================================
+FINAL SCORE
+==================================================
+
+Architecture
+
+Security
+
+Performance
+
+UX
+
+Maintainability
+
+Store Readiness
+
+Production Readiness
+
+Each /100
+
+==================================================
+FINAL DECISION
+==================================================
+
+Choose ONLY one:
+
+❌ NOT READY FOR RELEASE
+
+⚠ READY AFTER FIXING VERIFIED BLOCKERS
+
+✅ READY FOR FIRST PRODUCTION BUILD
+
+==================================================
+RETURN REPORT
+==================================================
+
+1. Executive Summary
+
+2. Build Readiness
+
+3. Functional QA
+
+4. Security
+
+5. Performance
+
+6. Store Compliance
+
+7. Regression Results
+
+8. Verified Blockers
+
+9. Production Scores
+
+10. Final Decision
