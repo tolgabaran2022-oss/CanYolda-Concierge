@@ -1,0 +1,157 @@
+CANYOLDAŞI — TARGETED UI CHANGE
+REMOVE “GALERİDEN SEÇ” FROM CURRENT ANIMAL STATUS SCREEN
+
+Problem:
+
+On the screen:
+
+“Hayvanın Güncel Durumunu Bildir”
+
+the “Güncel Fotoğraf” section currently has two options:
+
+1. Fotoğraf Çek
+2. Galeriden Seç
+
+Remove ONLY the “Galeriden Seç” option.
+
+==================================================
+TARGET
+==================================================
+
+Find the screen/component that renders:
+
+- “Hayvanın Güncel Durumunu Bildir”
+- “Güncel Fotoğraf”
+- “Fotoğraf Çek”
+- “Galeriden Seç”
+
+Likely route/component names may include:
+
+- animal status update
+- report current status
+- update animal
+- help animal
+- status report
+
+Use the actual existing file in the project.
+
+==================================================
+REQUIRED CHANGE
+==================================================
+
+Remove:
+
+- the “Galeriden Seç” card/button
+- its gallery icon
+- its onPress handler
+- unused gallery picker callback
+- unused imports that exist only for this option
+- unused styles created only for the second card
+
+Keep:
+
+- “Fotoğraf Çek”
+- camera permission logic
+- camera launch logic
+- selected photo preview
+- form validation
+- status selection
+- current status note
+- save/update flow
+
+==================================================
+LAYOUT
+==================================================
+
+After removing the gallery card:
+
+- The “Fotoğraf Çek” card must use the full available width.
+- Do not leave an empty space on the right.
+- Preserve the same height, border radius, dashed border, icon style, and spacing.
+- Keep the page visually balanced.
+- Do not redesign other sections.
+
+Expected layout:
+
+[                Fotoğraf Çek                ]
+
+Instead of:
+
+[ Fotoğraf Çek ] [ Galeriden Seç ]
+
+==================================================
+BUSINESS RULE
+==================================================
+
+This screen must become camera-only.
+
+The user must take a current photo at the scene.
+
+Do not allow gallery selection through another hidden button, action sheet, or fallback on this screen.
+
+Do not modify gallery usage on unrelated screens.
+
+==================================================
+CODE CLEANUP
+==================================================
+
+Remove only code that is no longer used on this screen, such as:
+
+- handlePickFromGallery
+- launchImageLibrary
+- requestMediaLibraryPermissionsAsync
+- gallery icon imports
+- gallery-specific translation keys from the component
+
+Do not delete shared translation keys from locale files if they are used elsewhere.
+
+==================================================
+VALIDATION
+==================================================
+
+Verify:
+
+1. “Galeriden Seç” is no longer visible.
+2. “Fotoğraf Çek” occupies the full width.
+3. Tapping “Fotoğraf Çek” opens the camera flow.
+4. Camera permission handling still works.
+5. Captured photo appears in the current photo area.
+6. Save button validation still works.
+7. No empty layout gap remains.
+8. No unused imports or TypeScript errors remain.
+
+Run:
+
+npx tsc --noEmit
+
+Do not report a platform as PASS unless it was actually executed.
+
+Use:
+
+PASS
+FAIL
+BLOCKED
+NOT TESTED
+
+==================================================
+FINAL REPORT
+==================================================
+
+Return:
+
+1. File changed
+2. Removed gallery UI
+3. Removed gallery-only code
+4. Camera-only behavior
+5. Final layout result
+6. TypeScript result
+7. iOS result
+8. Android result
+9. Web result
+10. Remaining issue
+
+Final decision:
+
+- FIXED
+- PARTIALLY FIXED
+- NOT FIXED

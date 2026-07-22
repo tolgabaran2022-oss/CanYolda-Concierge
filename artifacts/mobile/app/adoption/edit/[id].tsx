@@ -10,7 +10,6 @@ import {
   Alert,
   Dimensions,
   FlatList,
-  InteractionManager,
   KeyboardAvoidingView,
   Modal,
   Platform,
@@ -259,38 +258,18 @@ const AS = StyleSheet.create({
 function AddPhotoSheet({ visible, onCamera, onGallery, onClose }: {
   visible: boolean; onCamera: () => void; onGallery: () => void; onClose: () => void;
 }) {
-  const T          = useTheme();
-  const { t }      = useTranslation();
-  const insets     = useSafeAreaInsets();
-  const pendingRef = useRef<null | (() => void)>(null);
-
-  /* Android / Web: visible true→false triggers runAfterInteractions */
-  const prevVisibleRef = useRef(visible);
-  useEffect(() => {
-    if (prevVisibleRef.current && !visible && pendingRef.current) {
-      const action = pendingRef.current;
-      pendingRef.current = null;
-      InteractionManager.runAfterInteractions(() => action());
-    }
-    prevVisibleRef.current = visible;
-  }, [visible]);
-
-  /* iOS: onDismiss fires after the native slide-out animation is fully done */
-  const handleDismiss = () => {
-    if (pendingRef.current) {
-      const action = pendingRef.current;
-      pendingRef.current = null;
-      action();
-    }
-  };
+  const T      = useTheme();
+  const { t }  = useTranslation();
+  const insets = useSafeAreaInsets();
 
   const scheduleAction = (action: () => void) => {
-    pendingRef.current = action;
-    onClose(); /* starts closing → triggers onDismiss (iOS) or useEffect (Android/Web) */
+    onClose();
+    const delay = Platform.OS === "ios" ? 550 : 350;
+    setTimeout(() => action(), delay);
   };
 
   return (
-    <Modal visible={visible} transparent animationType="slide" onRequestClose={onClose} onDismiss={handleDismiss}>
+    <Modal visible={visible} transparent animationType="slide" onRequestClose={onClose}>
       <Pressable style={AS.overlay} onPress={onClose} />
       <View style={[AS.sheet, { paddingBottom: insets.bottom + 8, backgroundColor: T.card }]}>
         <View style={[AS.handle, { backgroundColor: T.divider }]} />
@@ -416,6 +395,11 @@ export default function EditAdoptionScreen() {
   const openGallery = async () => {
     if (images.length >= MAX_PHOTOS) {
       Alert.alert(t("addAdoption.photoLimitTitle"), t("addAdoption.photoLimitMsg", { count: MAX_PHOTOS }));
+      return;
+    }
+    const perm = await ImagePicker.requestMediaLibraryPermissionsAsync();
+    if (!perm.granted) {
+      Alert.alert("Galeri İzni Gerekli", "Ayarlar'dan fotoğraf kütüphanesi iznini etkinleştirin.");
       return;
     }
     const remaining = MAX_PHOTOS - images.length;

@@ -1,0 +1,272 @@
+CANYOLDAŞI — TARGETED BUG FIX
+EDIT ADOPTION — “FOTOĞRAF EKLE” BUTTON DOES NOT WORK
+
+Problem:
+
+On the adoption listing edit screen:
+
+“İlanı Düzenle”
+
+the dashed “Fotoğraf Ekle” tile inside the Photos section does not respond when tapped.
+
+The existing photo can be displayed, but adding another photo does not open the photo source selector.
+
+Fix ONLY this broken photo-add action.
+
+Do not redesign the screen.
+Do not change listing save logic.
+Do not change existing photos.
+Do not change API/database payload structure.
+
+==================================================
+TARGET SCREEN
+==================================================
+
+Likely file:
+
+app/adoption/edit/[id].tsx
+
+This screen may contain local sub-components such as:
+
+- PhotoActionSheet
+- AddPhotoSheet
+- PickerModal
+- photo picker button/tile
+
+Find the dashed tile containing:
+
++ icon
+“Fotoğraf Ekle”
+
+==================================================
+EXPECTED BEHAVIOR
+==================================================
+
+When the user taps the dashed “Fotoğraf Ekle” tile:
+
+→ Open the existing photo source selection flow.
+
+Use the existing implementation already present in the project.
+
+Possible options may include:
+
+- Camera
+- Photo Library / Gallery
+- Cancel
+
+Do not create a second duplicate image picker flow.
+
+==================================================
+ROOT CAUSE AUDIT
+==================================================
+
+Inspect:
+
+- Pressable / TouchableOpacity onPress
+- openAddPhotoSheet()
+- setAddPhotoSheetVisible(true)
+- setPhotoActionSheetVisible(true)
+- handleAddPhoto()
+- pickImage()
+- launchCamera()
+- launchImageLibrary()
+- disabled state
+- current photo count limit
+- pointerEvents
+- zIndex
+- absolute-positioned overlays
+- bottom save bar intercepting touches
+- callback lost during i18n refactor
+- translated label accidentally used as an identifier
+
+Check whether the component visually renders but has:
+
+- no onPress
+- undefined onPress
+- wrong callback
+- permanently disabled prop
+- touch intercepted by another View
+- modal state declared in a different component scope
+
+==================================================
+IMPLEMENTATION RULES
+==================================================
+
+Reconnect the existing handler to the dashed tile.
+
+Example structure:
+
+<Pressable
+  onPress={handleOpenAddPhoto}
+  disabled={photos.length >= 10}
+>
+  ...
+</Pressable>
+
+Where:
+
+const handleOpenAddPhoto = () => {
+  setAddPhotoSheetVisible(true);
+};
+
+Use the actual existing state/callback names in the project.
+
+Do not hardcode a new navigation route.
+
+This action should open the existing picker/action sheet on the same edit screen.
+
+==================================================
+PHOTO LIMIT
+==================================================
+
+The UI shows:
+
+1/10
+
+Preserve the existing 10-photo limit.
+
+Expected:
+
+- photos.length < 10 → tile is pressable
+- photos.length >= 10 → tile is disabled or hidden according to existing design
+
+Do not mistakenly treat 1 photo as reaching the limit.
+
+Check for bugs such as:
+
+disabled={photos.length > 0}
+
+Wrong.
+
+Correct logic should be equivalent to:
+
+disabled={photos.length >= 10}
+
+==================================================
+PERMISSIONS
+==================================================
+
+Preserve the existing permission logic.
+
+Camera selection:
+
+- request camera permission if required
+- show translated permission error if denied
+
+Gallery selection:
+
+- request media-library permission if required
+- show translated permission error if denied
+
+Do not bypass permission checks.
+
+==================================================
+TOUCH LAYER CHECK
+==================================================
+
+Verify no non-interactive layer covers the add-photo tile.
+
+Inspect:
+
+- photo grid wrapper
+- dashed border container
+- decorative plus icon background
+- existing photo remove button
+- absolute-positioned elements
+
+Decorative inner elements may use:
+
+pointerEvents="none"
+
+when necessary.
+
+Do not apply pointerEvents="none" to the Pressable itself.
+
+==================================================
+PRESERVE EXISTING FUNCTIONALITY
+==================================================
+
+Do not break:
+
+- existing cover photo
+- remove-photo X button
+- photo ordering
+- long-press reorder
+- 1/10 counter
+- save changes button
+- listing form values
+- upload queue
+- existing remote image URLs
+
+Newly selected photos must continue using the existing local URI/upload structure.
+
+==================================================
+VALIDATION
+==================================================
+
+Test this exact flow:
+
+1. Open an existing adoption listing.
+2. Enter “İlanı Düzenle”.
+3. Tap “Fotoğraf Ekle”.
+4. Confirm photo source selector opens.
+5. Choose Gallery.
+6. Select one image.
+7. Confirm new image appears in the grid.
+8. Confirm counter changes from 1/10 to 2/10.
+9. Confirm existing cover image remains intact.
+10. Save changes.
+11. Reopen listing and verify the new image persists.
+
+Also test:
+
+- Camera option
+- Cancel option
+- Permission denied behavior
+- 10-photo limit
+- remove-photo action
+- back/close behavior
+
+==================================================
+TYPECHECK
+==================================================
+
+Run:
+
+npx tsc --noEmit
+
+Use only:
+
+PASS
+FAIL
+BLOCKED
+NOT TESTED
+
+Do not report iOS, Android, or Web as PASS unless actually executed.
+
+==================================================
+FINAL REPORT
+==================================================
+
+Return:
+
+1. Root cause
+2. File changed
+3. Broken callback/state found
+4. Exact onPress fix
+5. Photo limit logic
+6. Permission flow status
+7. Gallery test result
+8. Camera test result
+9. Save/persistence result
+10. TypeScript result
+11. iOS result
+12. Android result
+13. Web result
+14. Remaining issue
+
+Final decision:
+
+- FIXED
+- PARTIALLY FIXED
+- NOT FIXED
