@@ -1,4 +1,4 @@
-import { Router } from "express";
+import { Router, type Request, type Response, type NextFunction } from "express";
 import multer from "multer";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
@@ -38,28 +38,49 @@ const upload = multer({
     if (ALLOWED_MIMES.has(file.mimetype)) {
       cb(null, true);
     } else {
-      cb(new Error("Only JPEG, PNG, GIF, WebP and HEIC images are allowed"));
+      cb(new Error("INVALID_MIME"));
     }
   },
 });
 
-router.post("/upload", (req, res, next) => {
-  /* Require JWT auth before accepting the file */
-  const userId = extractUserId(req);
-  if (!userId) {
-    res.status(401).json({ error: "Giriş yapılmamış" });
-    return;
+router.post(
+  "/upload",
+  (req: Request, res: Response, next: NextFunction) => {
+    /* Require JWT auth before accepting the file */
+    const userId = extractUserId(req);
+    if (!userId) {
+      res.status(401).json({ error: "Giriş yapılmamış" });
+      return;
+    }
+    next();
+  },
+  upload.single("image"),
+  /* Multer error handler — converts library errors to correct HTTP status codes */
+  (err: unknown, _req: Request, res: Response, _next: NextFunction) => {
+    if (err instanceof multer.MulterError) {
+      if (err.code === "LIMIT_FILE_SIZE") {
+        res.status(413).json({ error: "Dosya çok büyük. Maksimum 10 MB yüklenebilir." });
+        return;
+      }
+      res.status(400).json({ error: `Yükleme hatası: ${err.message}` });
+      return;
+    }
+    if (err instanceof Error && err.message === "INVALID_MIME") {
+      res.status(415).json({ error: "Desteklenmeyen dosya türü. Yalnızca JPEG, PNG, WebP ve HEIC kabul edilir." });
+      return;
+    }
+    res.status(500).json({ error: "Internal server error" });
+  },
+  (req: Request, res: Response) => {
+    if (!req.file) {
+      res.status(400).json({ error: "No image provided" });
+      return;
+    }
+    const domain = process.env.REPLIT_DOMAINS?.split(",")[0] ?? "";
+    const baseUrl = domain ? `https://${domain}` : "";
+    const url = `${baseUrl}/api/uploads/${req.file.filename}`;
+    res.json({ url, filename: req.file.filename });
   }
-  next();
-}, upload.single("image"), (req, res) => {
-  if (!req.file) {
-    res.status(400).json({ error: "No image provided" });
-    return;
-  }
-  const domain = process.env.REPLIT_DOMAINS?.split(",")[0] ?? "";
-  const baseUrl = domain ? `https://${domain}` : "";
-  const url = `${baseUrl}/api/uploads/${req.file.filename}`;
-  res.json({ url, filename: req.file.filename });
-});
+);
 
 export default router;
