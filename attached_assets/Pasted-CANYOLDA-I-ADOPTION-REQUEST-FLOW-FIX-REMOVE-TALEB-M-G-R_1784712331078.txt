@@ -1,0 +1,399 @@
+CANYOLDAŞI — ADOPTION REQUEST FLOW FIX
+REMOVE “TALEBİMİ GÖR” + CONNECT REQUEST TO CHAT FLOW
+
+Amaç:
+
+Sahiplenme talebi gönderildikten sonra açılan başarı ekranını ve sahiplenme talebi iş akışını düzelt.
+
+Yeni özellik tasarlama.
+Mevcut UI temasını değiştirme.
+İlan, kullanıcı ve mesaj verilerini bozma.
+
+==================================================
+PART 1 — SUCCESS SCREEN UI
+==================================================
+
+Talep başarı ekranında şu iki buton mevcut:
+
+1. Talebimi Gör
+2. Tüm İlanlara Dön
+
+“Talebimi Gör” butonunu tamamen kaldır.
+
+Kaldırılacaklar:
+
+- buton JSX’i
+- ikonu
+- onPress handler
+- yalnız bu butonda kullanılan route
+- yalnız bu butonda kullanılan style
+- kullanılmayan importlar
+
+“Tüm İlanlara Dön” butonu ekranda tek CTA olarak kalsın.
+
+Buton kaldırıldıktan sonra:
+
+- boşluk kalmasın
+- tek buton dengeli yerleşsin
+- mevcut beyaz buton tasarımı korunabilir
+- safe area ve alt boşluk korunmalı
+
+==================================================
+PART 2 — “TÜM İLANLARA DÖN” NAVIGATION
+==================================================
+
+“Tüm İlanlara Dön” butonuna basıldığında kullanıcı:
+
+Sahiplendirme ana sayfasındaki
+“Tüm İlanlar” sekmesine gitmeli.
+
+Sadece Sahiplendirme ana ekranını açıp varsayılan sekmede bırakma.
+
+Gerçek hedef:
+
+Sahiplendirme → Tüm İlanlar
+
+Projedeki mevcut tab/state yapısını incele.
+
+Muhtemel yöntemler:
+
+- route param:
+  router.replace({
+    pathname: "/(tabs)/adoption",
+    params: { tab: "all" }
+  })
+
+- query param:
+  /(tabs)/adoption?tab=all
+
+- shared store/state
+- existing activeTab parameter
+
+Projede hangi yöntem zaten kullanılıyorsa onu kullan.
+
+Translated label ile sekme seçme.
+
+Yanlış:
+
+activeTab === "Tüm İlanlar"
+
+Doğru:
+
+activeTab === "all"
+
+ve UI metni:
+
+t("adoption.tabs.allListings")
+
+==================================================
+PART 3 — REQUIRED ADOPTION REQUEST LOGIC
+==================================================
+
+Sahiplenme talebi mantığı şu şekilde çalışmalı:
+
+USER A:
+İlanı yayınlayan kişi.
+
+USER B:
+İlanı gören ve sahiplenme talebinde bulunan kişi.
+
+Akış:
+
+1. User B ilan detayında “Sahiplenme Talebinde Bulun” butonuna basar.
+
+2. Backend bir adoption request kaydı oluşturur.
+
+Kayıt en az şu ilişkileri korumalı:
+
+- listingId
+- listingOwnerId / recipientUserId = User A
+- requesterUserId = User B
+- status
+- createdAt
+
+3. User A’ya bildirim oluşturulur.
+
+Bildirim anlamı:
+
+“{User B} ilanınızla ilgileniyor ve sizinle konuşmak istiyor.”
+
+Bildirimde şu ilişkiler bulunmalı:
+
+- type: adoption_request
+- actorUserId: User B
+- recipientUserId: User A
+- listingId
+- adoptionRequestId
+- conversationId varsa conversationId
+
+4. User A bildirime dokunduğunda ilgili talep veya sohbet akışı açılmalı.
+
+5. User A ve User B mesajlaşabilmeli.
+
+==================================================
+PART 4 — CONVERSATION CREATION
+==================================================
+
+Aynı ilan ve aynı iki kullanıcı için tekrar tekrar farklı sohbet oluşturma.
+
+Conversation oluşturulurken:
+
+- mevcut konuşma varsa onu kullan
+- yoksa yeni konuşma oluştur
+
+Conversation katılımcıları:
+
+- listing owner / User A
+- requester / User B
+
+Conversation ilanla ilişkilendirilebiliyorsa:
+
+- listingId saklanmalı
+
+Önerilen backend davranışı:
+
+findOrCreateConversation({
+  listingId,
+  userAId: listingOwnerId,
+  userBId: requesterUserId
+})
+
+Aynı kullanıcı kendisiyle sohbet başlatamamalı.
+
+İlan sahibi kendi ilanına talep gönderememeli.
+
+==================================================
+PART 5 — WHEN CHAT SHOULD OPEN
+==================================================
+
+Mevcut ürün mantığını incele ve tek, tutarlı akış uygula.
+
+Tercih edilen davranış:
+
+- User B talebi gönderir.
+- User A bildirim alır.
+- User A bildirime dokunduğunda mevcut veya yeni conversation açılır.
+- User A ile User B sohbet eder.
+
+Eğer mevcut sistem talep gönderildiği anda conversation oluşturuyorsa bunu bozma; ancak User B’yi başarı ekranından “Talebimi Gör” gibi gereksiz bir sayfaya yönlendirme.
+
+Talep gönderildikten sonra başarı ekranında yalnız:
+
+“Tüm İlanlara Dön”
+
+bulunmalı.
+
+==================================================
+PART 6 — NOTIFICATION COPY
+==================================================
+
+Bildirim metni i18n üzerinden gelmeli.
+
+Türkçe örnek:
+
+Başlık:
+“Sahiplenme talebi”
+
+Mesaj:
+“{{name}} ilanınızla ilgileniyor ve sizinle konuşmak istiyor.”
+
+English:
+
+Title:
+“Adoption request”
+
+Message:
+“{{name}} is interested in your listing and would like to talk to you.”
+
+Mevcut notifications/adoption namespace yapısını kullan.
+
+Yeni duplicate namespace oluşturma.
+
+Raw kullanıcı adını güvenli interpolation ile ekle.
+
+==================================================
+PART 7 — DUPLICATE REQUEST PROTECTION
+==================================================
+
+Aynı User B, aynı ilana tekrar talep gönderirse:
+
+- duplicate adoption request oluşturma
+- duplicate notification oluşturma
+- duplicate conversation oluşturma
+
+Mevcut talep varsa uygun translated bilgi mesajı göster.
+
+Örnek:
+
+“Bu ilan için zaten bir talep gönderdiniz.”
+
+İş mantığında mevcut bir unique constraint veya kontrol varsa koru ve doğrula.
+
+==================================================
+PART 8 — AUTHORIZATION
+==================================================
+
+Backend’den gelen userId değerlerine güvenme.
+
+JWT kullanıcısını kullan.
+
+Kontroller:
+
+- requesterId JWT’den alınmalı
+- listing owner DB’den alınmalı
+- requester ilan sahibi olamaz
+- yalnız ilgili iki kullanıcı conversation’a erişebilir
+- başka kullanıcı conversation mesajlarını okuyamaz
+- bildirim yalnız recipient kullanıcı tarafından görülebilir
+
+==================================================
+PART 9 — FILES TO INSPECT
+==================================================
+
+Gerçek dosyaları proje içinde bul.
+
+Muhtemel alanlar:
+
+Mobile:
+
+- adoption request success screen
+- app/adoption/[id].tsx
+- app/(tabs)/adoption.tsx
+- app/notifications.tsx
+- app/messages/[conversationId].tsx
+
+Backend:
+
+- adoption request route
+- notification creation service
+- conversation/message route
+- adoption request schema/table
+- conversation schema/table
+
+Dosya isimlerini tahmin ederek yeni duplicate yapı oluşturma.
+Mevcut sistemi kullan.
+
+==================================================
+PART 10 — PRESERVE
+==================================================
+
+Değiştirme:
+
+- ilan oluşturma
+- ilan düzenleme
+- premium
+- boost
+- RevenueCat
+- profil
+- sahiplendirme kart tasarımları
+- mesajlaşmanın mevcut UI tasarımı
+- database’deki mevcut kullanıcı ve ilan kayıtları
+
+==================================================
+PART 11 — REQUIRED TEST
+==================================================
+
+İki ayrı kullanıcı hesabıyla gerçek test yap.
+
+USER A:
+
+1. Giriş yap.
+2. Bir sahiplendirme ilanı yayınla.
+
+USER B:
+
+3. Farklı hesapla giriş yap.
+4. User A’nın ilanını aç.
+5. “Sahiplenme Talebinde Bulun” de.
+6. Başarı ekranında “Talebimi Gör” butonunun olmadığını doğrula.
+7. “Tüm İlanlara Dön” butonuna bas.
+8. Sahiplendirme → Tüm İlanlar sekmesinin açıldığını doğrula.
+
+USER A:
+
+9. Tekrar User A hesabına geç.
+10. Bildirimin geldiğini doğrula.
+11. Bildirimin User B adı ve ilgili ilanla ilişkili olduğunu doğrula.
+12. Bildirime bas.
+13. User B ile konuşma ekranının açıldığını doğrula.
+14. User B’ye mesaj gönder.
+
+USER B:
+
+15. Mesajı aldığını doğrula.
+16. Yanıt gönder.
+17. User A’nın yanıtı aldığını doğrula.
+
+PERSISTENCE:
+
+18. Uygulamayı kapatıp aç.
+19. Conversation ve mesajların korunduğunu doğrula.
+20. Aynı ilana tekrar talep gönder.
+21. Duplicate request/conversation/notification oluşmadığını doğrula.
+
+==================================================
+PART 12 — RESULT CLASSIFICATION
+==================================================
+
+PASS yalnızca gerçek iki kullanıcıyla akış çalıştırılıp doğrulandıysa ver.
+
+Sadece kod kontrolü:
+
+STATIC REVIEW
+
+Çalıştırılamadıysa:
+
+BLOCKED
+
+Test yapılmadıysa:
+
+NOT TESTED
+
+Web sonucunu iOS veya Android PASS kabul etme.
+
+==================================================
+FINAL REPORT
+==================================================
+
+Şu formatta rapor ver:
+
+1. Değiştirilen başarı ekranı dosyası
+
+2. “Talebimi Gör” kaldırılma sonucu
+
+3. “Tüm İlanlara Dön” hedef route/sekmesi
+
+4. Adoption request backend akışı
+
+5. Notification oluşturma akışı
+
+6. Conversation find-or-create mantığı
+
+7. Authorization kontrolleri
+
+8. Duplicate request koruması
+
+9. User A test sonucu
+
+10. User B test sonucu
+
+11. Mesaj gönderme/alma sonucu
+
+12. Persistence sonucu
+
+13. TypeScript sonucu
+
+14. iOS sonucu
+
+15. Android sonucu
+
+16. Web sonucu
+
+17. Kalan problemler
+
+Final karar:
+
+- FIXED AND VERIFIED
+- FIXED — RUNTIME TEST REQUIRED
+- PARTIALLY FIXED
+- NOT FIXED

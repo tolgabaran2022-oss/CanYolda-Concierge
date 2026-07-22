@@ -12,7 +12,7 @@ import {
 import * as Haptics from "expo-haptics";
 import { Image } from "expo-image";
 import { LinearGradient } from "expo-linear-gradient";
-import { useRouter } from "expo-router";
+import { useRouter, useLocalSearchParams } from "expo-router";
 import React, { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import {
   ActivityIndicator,
@@ -1344,12 +1344,23 @@ export default function AdoptionScreen() {
   const { listings, deleteListing } = useAdoption();
   const { boostStatuses }           = useBoost();
   const { user, token }             = useAuth();
-  const [activeTab, setActiveTab]          = useState<Tab>("create");
+  const { tab: tabParam }           = useLocalSearchParams<{ tab?: string }>();
+  const validTabs: Tab[]            = ["create", "mylistings", "messages", "listings"];
+  const [activeTab, setActiveTab]   = useState<Tab>(
+    validTabs.includes(tabParam as Tab) ? (tabParam as Tab) : "create"
+  );
   const [filter, setFilter]                = useState<Filter>("all");
   const [query, setQuery]                  = useState("");
   const [advFilters, setAdvFilters]        = useState<AdoptionFilters>(DEFAULT_FILTERS);
   const [filterSheetOpen, setFilterSheetOpen] = useState(false);
   const [unreadAdoptionCount, setUnreadAdoptionCount] = useState(0);
+
+  /* Switch to the tab requested via route param (e.g. from success screen) */
+  useEffect(() => {
+    if (tabParam && validTabs.includes(tabParam as Tab)) {
+      setActiveTab(tabParam as Tab);
+    }
+  }, [tabParam]);
 
   useEffect(() => {
     if (!user) return;

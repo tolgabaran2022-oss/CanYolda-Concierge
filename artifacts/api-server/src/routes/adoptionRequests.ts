@@ -69,7 +69,7 @@ router.post("/adoption-requests", async (req, res) => {
       type:         "adoption_request_received",
       postId:       listingId,
       postImage:    listing.photoUrl ?? "",
-      message:      `${String(requesterName ?? "Biri")}, ${listing.petName} için sahiplendirme talebi gönderdi.`,
+      message:      `${String(requesterName ?? "Biri")} ilanınızla ilgileniyor ve sizinle konuşmak istiyor.`,
       read:         false,
     }).catch((err) => logger.error({ err }, "Failed to create adoption notification"));
 
@@ -83,8 +83,8 @@ router.post("/adoption-requests", async (req, res) => {
           eventType:       "adoption_request",
           recipientUserId: listing.userId,
           entityId:        request.id,
-          title:           "Yeni sahiplenme talebi",
-          body:            `${String(requesterName ?? "Biri")}, ${listing.petName} için talep gönderdi.`,
+          title:           "Sahiplenme talebi",
+          body:            `${String(requesterName ?? "Biri")} ilanınızla ilgileniyor ve sizinle konuşmak istiyor.`,
         });
       } catch (enqErr) {
         logger.error(

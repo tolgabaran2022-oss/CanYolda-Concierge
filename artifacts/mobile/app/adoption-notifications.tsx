@@ -306,8 +306,13 @@ export default function AdoptionNotificationsScreen() {
   };
 
   const handleCta = async (notif: AppNotification) => {
-    if (notif.type === "adoption_request_received" && notif.postId) {
-      router.push(`/adoption/${notif.postId}` as any);
+    if (notif.type === "adoption_request_received" && user && notif.senderId) {
+      try {
+        const conv = await apiGetOrCreateConversation(user.id, notif.senderId, notif.postId ? { id: notif.postId, title: "", imageUrl: notif.postImage ?? "" } : undefined);
+        router.push(`/messages/${encodeURIComponent(conv.id)}` as any);
+      } catch {
+        if (notif.postId) router.push(`/adoption/${notif.postId}` as any);
+      }
     } else if (notif.type === "adoption_request_accepted" && user && notif.senderId) {
       try {
         const conv = await apiGetOrCreateConversation(user.id, notif.senderId, notif.postId ? { id: notif.postId, title: "", imageUrl: notif.postImage ?? "" } : undefined);

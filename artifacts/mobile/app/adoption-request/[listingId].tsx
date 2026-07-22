@@ -83,10 +83,9 @@ function FieldGroup({ label, required, error, children }: FieldGroupProps) {
 
 type SuccessViewProps = {
   petName: string;
-  onViewRequest: () => void;
   onBack: () => void;
 };
-function SuccessView({ petName, onViewRequest, onBack }: SuccessViewProps) {
+function SuccessView({ petName, onBack }: SuccessViewProps) {
   const { t } = useTranslation();
   const scale = useRef(new Animated.Value(0.6)).current;
   const opacity = useRef(new Animated.Value(0)).current;
@@ -109,15 +108,6 @@ function SuccessView({ petName, onViewRequest, onBack }: SuccessViewProps) {
         {t("adoptionRequest.successSub", { petName })}
       </Text>
       <View style={S.successBtns}>
-        <Pressable
-          style={({ pressed }) => [S.successPrimary, { opacity: pressed ? 0.85 : 1 }]}
-          onPress={onViewRequest}
-        >
-          <LinearGradient colors={[P2, P, DARK]} start={{ x: 0, y: 0 }} end={{ x: 1, y: 0 }} style={S.successPrimaryInner}>
-            <Icon name="document-text-outline" size={18} color={WHITE} />
-            <Text style={S.successPrimaryTxt}>{t("adoptionRequest.successViewRequest")}</Text>
-          </LinearGradient>
-        </Pressable>
         <Pressable
           style={({ pressed }) => [S.successSecondary, { opacity: pressed ? 0.75 : 1 }]}
           onPress={onBack}
@@ -226,8 +216,7 @@ export default function AdoptionRequestScreen() {
         <Stack.Screen options={{ headerShown: false }} />
         <SuccessView
           petName={listing.petName}
-          onViewRequest={() => router.replace("/(tabs)/pets" as any)}
-          onBack={() => router.replace("/(tabs)/pets" as any)}
+          onBack={() => router.replace({ pathname: "/(tabs)/adoption", params: { tab: "listings" } } as any)}
         />
       </View>
     );
@@ -458,9 +447,6 @@ const S = StyleSheet.create({
   successTitle: { fontSize: 26, fontFamily: "Inter_700Bold", color: DARK, textAlign: "center", letterSpacing: -0.5 },
   successSub:   { fontSize: 15, fontFamily: "Inter_400Regular", color: BODY, textAlign: "center", lineHeight: 24 },
   successBtns:  { width: "100%", gap: 12, marginTop: 8 },
-  successPrimary:      { borderRadius: 18, overflow: "hidden" },
-  successPrimaryInner: { flexDirection: "row", alignItems: "center", justifyContent: "center", gap: 8, height: 56, borderRadius: 18 },
-  successPrimaryTxt:   { fontSize: 15, fontFamily: "Inter_700Bold", color: WHITE },
-  successSecondary:    { alignItems: "center", paddingVertical: 14, borderRadius: 16, borderWidth: 1.5, borderColor: BORDER, backgroundColor: WHITE },
-  successSecondaryTxt: { fontSize: 14, fontFamily: "Inter_600SemiBold", color: BODY },
+  successSecondary:    { alignItems: "center", paddingVertical: 16, borderRadius: 18, borderWidth: 1.5, borderColor: BORDER, backgroundColor: WHITE },
+  successSecondaryTxt: { fontSize: 15, fontFamily: "Inter_600SemiBold", color: BODY },
 });
