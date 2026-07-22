@@ -1,0 +1,1290 @@
+CANYOLDAŞI
+COMPREHENSIVE PRE-RELEASE QA & STORE READINESS AUDIT
+v3.0
+
+AMAÇ
+
+CanYoldaşı uygulamasını ilk App Store ve Google Play yayını öncesinde gerçek kullanıcı davranışlarıyla kapsamlı şekilde test et.
+
+Bu görev yalnızca kod incelemesi değildir.
+
+Kod incelemesi yapılabilir ancak runtime davranışı görülmeden PASS verilmez.
+
+Yeni özellik ekleme.
+Tasarımı değiştirme.
+Ürün fikri önerme.
+Sadece hata bul, doğrula ve yayın engellerini raporla.
+
+==================================================
+EN ÖNEMLİ TEST KURALI
+==================================================
+
+Bir özelliğe yalnızca kodunu inceleyerek PASS verme.
+
+PASS verilebilmesi için:
+
+1. Özellik gerçekten çalıştırılmalı.
+2. İlgili kullanıcı aksiyonu uygulanmalı.
+3. Beklenen UI sonucu görülmeli.
+4. Backend işlemi varsa API ve database sonucu doğrulanmalı.
+5. Console ve network üzerinde beklenmeyen hata olmamalı.
+6. Uygulama yeniden açıldıktan sonra kalıcı veri tekrar okunmalı.
+7. Platforma özel test gerçekten o platformda yapılmalı.
+
+Sonuç sınıflandırması:
+
+PASS:
+Gerçekten çalıştırıldı ve doğrulandı.
+
+FAIL:
+Çalıştırıldı ve hata görüldü.
+
+STATIC REVIEW:
+Yalnızca kod veya configuration incelendi.
+
+BLOCKED:
+Test ortamı, cihaz, hesap, secret veya build olmadığı için çalıştırılamadı.
+
+NOT TESTED:
+Henüz test edilmedi.
+
+Web sonucunu Android PASS kabul etme.
+Android sonucunu iOS PASS kabul etme.
+Expo Web önizlemesini native mobil test olarak kabul etme.
+
+==================================================
+TEST ORTAMLARI
+==================================================
+
+Mümkünse şu ortamları ayrı ayrı test et:
+
+1. iOS Simulator
+2. Gerçek iPhone veya TestFlight build
+3. Android Emulator
+4. Gerçek Android cihaz veya internal testing build
+5. Web
+
+Her platform sonucunu ayrı raporla.
+
+Development build sonuçlarını production build sonucu gibi raporlama.
+
+Production environment variables ile build testi ayrıca yapılmalı.
+
+==================================================
+PHASE 1 — BUILD VE CONFIGURATION
+==================================================
+
+Kontrol et:
+
+- app.json
+- app.config.js / app.config.ts
+- eas.json
+- package.json
+- Expo SDK uyumu
+- React Native sürümü
+- Expo Router
+- Native pluginler
+- Metro configuration
+- TypeScript
+- iOS bundle identifier
+- Android package name
+- app version
+- iOS build number
+- Android versionCode
+- production EAS profile
+- preview EAS profile
+- development EAS profile
+- app icon
+- adaptive icon
+- splash
+- notification icon
+- permissions
+- deep links
+- scheme
+- expo-router origin
+- production environment variables
+- EAS secrets
+
+Özellikle doğrula:
+
+EXPO_PUBLIC_DOMAIN
+
+Production build sırasında gerçekten tanımlı mı?
+
+API URL production domainine mi gidiyor?
+
+Production binary hiçbir koşulda şunlara bağlanmamalı:
+
+- localhost
+- 127.0.0.1
+- development Replit URL
+- janeway.replit.dev
+- temporary preview URL
+
+API domainini sadece .env dosyasında görmek yeterli değildir.
+
+EAS production environment içinde mevcut olduğunu doğrula.
+
+==================================================
+PHASE 2 — TYPECHECK, LINT VE BUILD TESTİ
+==================================================
+
+Çalıştır:
+
+npx tsc --noEmit
+
+Varsa:
+
+npm run lint
+npm run test
+
+Kontrol et:
+
+- TypeScript errors
+- Expo Doctor
+- dependency mismatch
+- invalid plugin
+- duplicate native module
+- deprecated package
+- unresolved import
+- unused critical dependency
+- build-time environment error
+
+Çalıştır:
+
+npx expo-doctor
+
+Mümkünse gerçek production build oluştur:
+
+eas build --platform android --profile production
+
+eas build --platform ios --profile production
+
+Build oluşturulmadıysa store-ready PASS verme.
+
+==================================================
+PHASE 3 — AUTHENTICATION
+==================================================
+
+Gerçek test yap:
+
+1. Yeni kullanıcı kaydı
+2. Aynı e-posta ile tekrar kayıt
+3. Yanlış e-posta formatı
+4. Zayıf parola
+5. Doğru giriş
+6. Yanlış parola
+7. Çıkış
+8. Uygulamayı kapatıp açınca session restore
+9. Token süresi dolduğunda davranış
+10. Yetkisiz API çağrısı
+11. Şifremi unuttum
+12. Reset kodu veya bağlantısı
+13. Yeni parola belirleme
+14. Eski parolayla giriş engeli
+15. Yeni parolayla giriş
+16. Hesap silme
+17. Silinen hesapla yeniden giriş denemesi
+
+Kontrol et:
+
+- JWT
+- AsyncStorage
+- RevenueCat logout
+- loading state
+- error message
+- TR/EN çevirileri
+- duplicate request
+- backend persistence
+
+==================================================
+PHASE 4 — PREMIUM VE REVENUECAT
+==================================================
+
+Bu faz kritik öneme sahiptir.
+
+Aşağıdaki senaryoları gerçek runtime testiyle doğrula.
+
+----------------------------------------
+FREE USER
+----------------------------------------
+
+1. İlk evcil hayvan ücretsiz ekleniyor mu?
+2. İlk hayvanı eklerken Premium ekranı açılmıyor mu?
+3. İkinci evcil hayvan eklenmek istendiğinde Premium modalı açılıyor mu?
+4. Modal kapatılınca ikinci hayvan eklenmesi engelleniyor mu?
+5. Kilitli Premium kartlara basınca doğru Premium ekranı açılıyor mu?
+6. Kilitli özelliğin route'una başka yolla gidilerek Premium kontrolü bypass edilebiliyor mu?
+7. Backend Premium olmayan kullanıcıya Premium işlemi yaptırıyor mu?
+
+----------------------------------------
+PREMIUM USER
+----------------------------------------
+
+1. Aktif entitlement doğru okunuyor mu?
+2. Premium kullanıcı ikinci evcil hayvanı ekleyebiliyor mu?
+3. Premium badge doğru görünüyor mu?
+4. Kilitli özellikler açılıyor mu?
+5. AI Hayvan Asistanı erişimi doğru mu?
+6. Belgeler/İlaçlar gibi elmas işaretli özelliklerin davranışı doğru mu?
+7. Uygulama yeniden açılınca Premium durumu korunuyor mu?
+8. Farklı hesapla giriş yapılınca önceki kullanıcının entitlement bilgisi taşınıyor mu?
+
+----------------------------------------
+PURCHASE
+----------------------------------------
+
+Test ortamında satın alma gerçekleştir:
+
+- aylık paket
+- yıllık paket varsa
+- iptal
+- bekleyen satın alma
+- başarısız satın alma
+- kullanıcı tarafından iptal
+- internet bağlantısı kesilmesi
+- ürün yüklenememesi
+- RevenueCat customer info yenilenmesi
+
+Kontrol et:
+
+- satın alma tamamlanınca UI anında güncelleniyor mu?
+- backend veya kullanıcı verisi güncelleniyor mu?
+- entitlement gerçekten aktif mi?
+- duplicate purchase tetikleniyor mu?
+- loading sırasında tekrar tekrar butona basılabiliyor mu?
+- başarılı satın alma sonrası Premium ekranı kapanıyor mu?
+
+----------------------------------------
+RESTORE PURCHASES
+----------------------------------------
+
+1. Restore Purchases butonuna bas.
+2. Aktif satın alma varsa geri yükleniyor mu?
+3. Satın alma yoksa uygun mesaj gösteriliyor mu?
+4. Restore işlemi başarısızsa çevrilmiş hata gösteriliyor mu?
+5. iOS ve Android sonuçlarını ayrı doğrula.
+
+----------------------------------------
+REVENUECAT CONFIGURATION
+----------------------------------------
+
+Kontrol et:
+
+- iOS API key yalnız iOS'ta
+- Android API key yalnız Android'de
+- Test Store key release build içinde yok
+- Product IDs mağaza ürünleriyle eşleşiyor
+- Entitlement identifier doğru
+- Offering ve package yükleniyor
+- webhook authorization
+- webhook signing secret
+- RevenueCat user identity
+- login/logout
+- anonymous user merge problemi
+- duplicate entitlement problemi
+
+Sadece kod kontrolü yapıldıysa STATIC REVIEW ver.
+
+==================================================
+PHASE 5 — ANDROID EMOJI VE FONT AUDIT
+==================================================
+
+Android’de uygulamanın tüm ekranlarını özel olarak kontrol et.
+
+Amaç:
+
+- emoji yerine kare
+- soru işareti kutusu
+- tofu glyph
+- bozuk ikon
+- yanlış karakter
+- iOS'ta çalışan ama Android'de görünmeyen emoji
+
+problemlerini tespit etmek.
+
+Şu karakterleri ve alanları test et:
+
+- 🐾
+- 🐕
+- 🐈
+- 💎
+- ⭐
+- ❤️
+- 📍
+- 📷
+- 🔔
+- ✓
+- ok işaretleri
+- Türkçe karakterler:
+  Ç, ç, Ğ, ğ, İ, ı, Ö, ö, Ş, ş, Ü, ü
+
+Kontrol edilecek ekranlar:
+
+- Login
+- Register
+- Evcilim boş ekran
+- Evcilim dolu ekran
+- Premium
+- Sahiplendirme
+- Sahiplenme talebi başarı ekranı
+- Bildirimler
+- Mesajlar
+- Liderlik
+- Hayvan detay
+- İlan detay
+- Profil
+- Bottom tab bar
+- Alerts
+- Toast mesajları
+
+Şunları ara:
+
+- Text içinde doğrudan emoji
+- emoji karakteri içeren translation key
+- platforma özel olmayan emoji icon kullanımı
+- custom font içinde olmayan glyph
+- Android font fallback problemi
+
+Emoji bozuk görünüyorsa:
+
+- mümkünse mevcut icon library kullan
+- Ionicons / MaterialCommunityIcons gibi projede mevcut icon setini tercih et
+- gereksiz yeni icon package ekleme
+- tasarımı değiştirme
+- aynı semantik ikonu koru
+
+Android native screenshot veya gerçek render görülmeden PASS verme.
+
+==================================================
+PHASE 6 — EVCİLİM
+==================================================
+
+FREE USER ile test:
+
+1. Evcilim boş ekranı
+2. “İlk Dostunu Ekle”
+3. Add Pet ekranının açılması
+4. Fotoğraf ekleme
+5. İsim
+6. Tür
+7. Cinsiyet
+8. Doğum tarihi
+9. Kaydetme
+10. Evcilim dashboard’da görünme
+11. Uygulama kapanıp açılınca görünme
+
+Test et:
+
+- evcil hayvan değiştirme
+- pet card expand/collapse
+- pet edit
+- pet delete
+- confirmation alerts
+- silme sonrası dashboard yenileme
+
+Yönetim kartları:
+
+- Kimlik
+- Aşılar
+- Randevular
+- Beslenme
+- Belgeler
+- İlaçlar
+- Notlar
+
+Sağlık kartının kaldırıldığını doğrula.
+
+Kaldırılan kart nedeniyle grid boşluk bırakmamalı.
+
+Her kalan karta bas:
+
+- doğru ekran açılıyor mu?
+- yanlış petId gidiyor mu?
+- geri dönüş çalışıyor mu?
+- veri doğru hayvana kaydediliyor mu?
+
+==================================================
+PHASE 7 — PET MODÜLLERİ
+==================================================
+
+Her modül için create/read/update/delete test et.
+
+Aşılar:
+
+- aşı ekle
+- tarih
+- sonraki tarih
+- hatırlatma
+- düzenle
+- sil
+- persistence
+
+Randevular:
+
+- randevu ekle
+- detay
+- düzenle
+- sil
+- geçmiş/gelecek tarih
+
+Beslenme:
+
+- kayıt ekle
+- düzenle
+- sil
+
+İlaçlar:
+
+- ilaç ekle
+- doz
+- sıklık
+- tarih
+- hatırlatma
+- düzenle
+- sil
+
+Notlar:
+
+- ekle
+- düzenle
+- sil
+
+Belgeler:
+
+- belge yükleme
+- izin
+- dosya persistence
+- Premium kilidi
+
+Kimlik:
+
+- bilgiler
+- microchip
+- düzenleme
+- persistence
+
+AI Hayvan Asistanı:
+
+- free kullanıcı kilidi
+- Premium kullanıcı erişimi
+- boş soru
+- uzun soru
+- API error
+- timeout
+- loading
+- response
+- farklı pet context
+
+==================================================
+PHASE 8 — SOKAK HAYVANI BİLDİRİMİ
+==================================================
+
+Test et:
+
+- Add Stray Animal ekranı
+- kamera zorunluluğu
+- kamera izni
+- izin reddi
+- fotoğraf çekme
+- fotoğraf tekrar çekme
+- Animal Type TR/EN
+- Status TR/EN
+- ham translation key olmaması
+- konum
+- not
+- validation
+- submit
+- database
+- harita pin
+- detail screen
+
+İngilizce modda doğrula:
+
+- Cat
+- Dog
+- Bird
+- Other
+- Hungry
+- Injured
+- Healthy
+- Unknown
+
+Şunlar kullanıcıya görünmemeli:
+
+- Kedi
+- Köpek
+- Kuş
+- Diğer
+- statusBadge.hungry
+- statusBadge.injured
+- statusBadge.healthy
+- statusBadge.unknown
+
+==================================================
+PHASE 9 — HAYVANIN GÜNCEL DURUMUNU BİLDİR
+==================================================
+
+Doğrula:
+
+- Galeriden Seç seçeneği kaldırılmış
+- yalnız Fotoğraf Çek mevcut
+- kamera kartı tam genişlikte
+- kamera açılıyor
+- çekilen fotoğraf preview oluyor
+- durum seçimi çalışıyor
+- not yazılıyor
+- Güncellemeyi Kaydet çalışıyor
+- backend kaydı oluşuyor
+- detail tekrar açıldığında güncelleme görünüyor
+
+Durumlar:
+
+- Aynı Bölgede
+- Yaralı
+- Acil Yardım Gerekli
+- Beslendi
+- Su Verildi
+- Veterinere Götürüldü
+- Veterinerde
+- Güvende
+- Sahiplendirildi
+- Bulunamadı
+
+TR ve EN ayrı test et.
+
+==================================================
+PHASE 10 — SAHİPLENDİRME
+==================================================
+
+İki ayrı kullanıcıyla test yap.
+
+USER A:
+İlan sahibi
+
+USER B:
+İlana ilgi gösteren kullanıcı
+
+----------------------------------------
+LISTING CREATE
+----------------------------------------
+
+User A:
+
+- büyük karttaki mor İlan Oluştur butonuna bas
+- create screen açılıyor mu?
+- fotoğraf ekle
+- form doldur
+- validation
+- ilan kaydet
+- ilan listede görünür mü?
+- uygulama yenilenince kalır mı?
+
+----------------------------------------
+EDIT LISTING
+----------------------------------------
+
+- ilanı düzenle
+- Fotoğraf Ekle kutusuna bas
+- Gallery/Camera source selector açılıyor mu?
+- yeni fotoğraf seç
+- sayaç 1/10 → 2/10
+- cover korunuyor mu?
+- fotoğraf sil
+- sıralama
+- kaydet
+- yeniden açıp persistence kontrolü
+
+----------------------------------------
+LISTING DETAIL
+----------------------------------------
+
+- iletişim butonu
+- sağ alttaki telefon butonu kaldırılmış mı?
+- boş alan kalmış mı?
+- sahibi bilgileri
+- detay kartları
+- görsel carousel
+- share
+- boost
+- edit/delete owner controls
+
+----------------------------------------
+ADOPTION REQUEST
+----------------------------------------
+
+User B:
+
+1. User A ilanını aç.
+2. Sahiplenme talebinde bulun.
+3. Duplicate tap yap.
+4. Başarı ekranını kontrol et.
+5. “Talebimi Gör” butonu olmamalı.
+6. “Tüm İlanlara Dön” tek CTA olmalı.
+7. Butona basınca Sahiplendirme → Tüm İlanlar açılmalı.
+
+User A:
+
+8. Talep bildirimi almalı.
+9. Bildirimde User B ve ilan ilişkisi bulunmalı.
+10. Bildirime basınca konuşma açılmalı.
+11. User B’ye mesaj gönderebilmeli.
+
+User B:
+
+12. Mesajı almalı.
+13. Yanıt verebilmeli.
+
+Doğrula:
+
+- duplicate adoption request yok
+- duplicate notification yok
+- duplicate conversation yok
+- kullanıcı kendi ilanına talep gönderemiyor
+- farklı üçüncü kullanıcı conversation'a erişemiyor
+
+==================================================
+PHASE 11 — MESAJLAŞMA
+==================================================
+
+İki kullanıcıyla test:
+
+- conversation list
+- conversation open
+- text message
+- emoji message
+- Turkish characters
+- English characters
+- image message
+- long text
+- empty message
+- rapid duplicate send
+- unread count
+- read state
+- timestamp
+- today/yesterday
+- image error
+- network error
+- app restart persistence
+
+Android emoji testini özellikle mesajlaşmada uygula.
+
+==================================================
+PHASE 12 — BİLDİRİMLER
+==================================================
+
+Test et:
+
+- adoption request
+- new message
+- pet reminder
+- vaccination reminder
+- appointment reminder
+- medication reminder
+- boost/premium notification varsa
+
+Kontrol et:
+
+- push permission
+- foreground notification
+- background notification
+- killed app notification
+- badge count
+- notification tap
+- doğru deep link
+- mark all as read
+- individual read
+- duplicate notification
+- yanlış kullanıcıya bildirim gitmesi
+
+Gerçek push gönderilemediyse BLOCKED ver.
+
+==================================================
+PHASE 13 — HARİTA VE KONUM
+==================================================
+
+Test et:
+
+- location permission granted
+- denied
+- permanently denied
+- GPS kapalı
+- location loading
+- current location
+- animal pins
+- marker press
+- detail screen
+- refresh
+- zoom
+- empty state
+- malformed coordinates
+- duplicate pins
+- Open Maps
+- iOS Maps
+- Android Maps
+
+Console’da unguarded warning veya crash olmamalı.
+
+==================================================
+PHASE 14 — PROFİL VE HESAP
+==================================================
+
+Test et:
+
+- profile view
+- profile edit
+- profile photo
+- gallery permission
+- camera
+- name
+- bio
+- location
+- privacy toggle
+- notification toggle
+- public profile
+- another user's profile
+- pets section
+- message user
+- logout
+- delete account
+
+Hesap silindikten sonra:
+
+- token temizlenmeli
+- RevenueCat logout olmalı
+- protected screen açılmamalı
+- silinen kullanıcı verileri API’den erişilememeli
+
+==================================================
+PHASE 15 — i18n
+==================================================
+
+Dil:
+
+- Türkçe
+- English
+
+Tüm ana ekranları iki dilde aç.
+
+Ara:
+
+- hardcoded Türkçe
+- hardcoded English
+- mixed language
+- raw translation key
+- undefined
+- null
+- [object Object]
+- key path metni
+
+Örnek yasak ekran çıktıları:
+
+- statusBadge.hungry
+- animals.type.cat
+- common.save
+- adoption.requestSentTitle
+
+Dil değişince:
+
+- ekran yeniden çiziliyor mu?
+- uygulama kapanıp açılınca dil korunuyor mu?
+- tarih biçimleri değişiyor mu?
+- ay isimleri değişiyor mu?
+- plural/count çevirileri doğru mu?
+
+tr.json ve en.json key parity kontrolü yap.
+
+==================================================
+PHASE 16 — PERMISSIONS
+==================================================
+
+iOS ve Android’de ayrı test:
+
+- Camera
+- Photo Library
+- Location
+- Notifications
+
+Her izin için:
+
+1. İlk istek
+2. İzin ver
+3. İzin reddet
+4. Tekrar dene
+5. Kalıcı red
+6. Ayarlara yönlendirme
+7. Uygulamaya geri dönüş
+8. Permission state refresh
+
+Gereksiz izin isteme.
+
+Kamera-only ekran gallery izni istememeli.
+
+==================================================
+PHASE 17 — OFFLINE VE HATA DURUMLARI
+==================================================
+
+İnterneti kapat.
+
+Test et:
+
+- login
+- app startup
+- pet list
+- adoption list
+- messaging
+- upload
+- premium products
+- restore
+- map
+- profile
+
+Beklenen:
+
+- sonsuz loading olmamalı
+- beyaz ekran olmamalı
+- crash olmamalı
+- anlaşılır hata mesajı
+- retry varsa çalışmalı
+- tekrar internet gelince recover olmalı
+
+Ayrıca test:
+
+- API 401
+- API 403
+- API 404
+- API 409
+- API 429
+- API 500
+- timeout
+- malformed JSON
+- empty response
+
+==================================================
+PHASE 18 — ANDROID SPECIFIC QA
+==================================================
+
+Gerçek Android cihazda veya Android emulator'da test et.
+
+Kontrol et:
+
+- status bar
+- navigation bar
+- keyboard overlap
+- back button
+- hardware back
+- safe area
+- emoji
+- Turkish fonts
+- photo picker
+- camera
+- location
+- notifications
+- modal
+- bottom sheet
+- ActionSheet alternative
+- keyboard submit
+- ScrollView
+- bottom CTA hidden by navigation bar
+- ripple/touch
+- image URI
+- HEIC handling
+- Android 13+ permissions
+- Android 14+ behavior
+
+Özellikle ActionSheetIOS kullanımını tara.
+
+Android’de ActionSheetIOS çağrılmamalı.
+
+Platform-specific fallback doğru çalışmalı.
+
+==================================================
+PHASE 19 — iOS SPECIFIC QA
+==================================================
+
+Gerçek iOS veya simulator üzerinde test:
+
+- safe area
+- status bar
+- keyboard
+- ActionSheetIOS
+- camera
+- photo library
+- location
+- notifications
+- deep links
+- restore purchases
+- StoreKit sandbox
+- swipe back
+- modal dismiss
+- dynamic type
+- App Tracking Transparency gerekip gerekmediği
+- privacy permission descriptions
+
+==================================================
+PHASE 20 — SECURITY
+==================================================
+
+Kontrol et:
+
+- JWT secret
+- JWT expiry
+- authorization
+- resource ownership
+- IDOR
+- account deletion
+- upload auth
+- MIME validation
+- file size
+- password reset token
+- password reset expiry
+- rate limiting
+- brute force protection
+- SQL injection
+- XSS
+- SVG upload
+- webhook auth
+- RevenueCat HMAC
+- secrets in mobile bundle
+- .env committed
+- API stack traces
+- production debug data
+- userId spoofing
+- conversation participant authorization
+- notification recipient authorization
+
+Her mutation için ownership doğrula.
+
+==================================================
+PHASE 21 — PERFORMANCE
+==================================================
+
+Runtime ölç:
+
+- cold start
+- warm start
+- tab switching
+- adoption list scroll
+- animal list scroll
+- messages list
+- large image
+- memory growth
+- repeated navigation
+- image cache
+- unnecessary rerenders
+- duplicate API requests
+- slow query
+- upload time
+- list virtualization
+- bundle size
+
+Crash, freeze veya ANR riski varsa blocker olarak raporla.
+
+==================================================
+PHASE 22 — CODE QUALITY
+==================================================
+
+Tüm repository'yi ara:
+
+- TODO
+- FIXME
+- console.log
+- console.warn
+- console.error
+- debug
+- mock
+- fake
+- sample
+- temporary
+- localhost
+- 127.0.0.1
+- janeway.replit.dev
+- replit.com origin
+- development URL
+- hardcoded API
+- test API key
+- unused import
+- unused screen
+- dead route
+- duplicate utility
+- disabled button
+- empty onPress
+- swallowed exception
+- any catch {}
+- ts-ignore
+- any type
+- setTimeout navigation workaround
+
+Her bulunan maddeyi blocker olarak sınıflandırma.
+
+Sadece yayın riski oluşturanları blocker yap.
+
+==================================================
+PHASE 23 — STORE READINESS
+==================================================
+
+APP STORE için kontrol:
+
+- production iOS build başarılı mı?
+- app icon doğru mu?
+- 1024×1024 App Store icon var mı?
+- icon alpha/transparency problemi var mı?
+- bundle ID
+- version/build number
+- privacy policy URL
+- terms URL
+- account deletion
+- restore purchases
+- subscription açıklaması
+- permission descriptions
+- screenshots
+- app description
+- support URL
+- contact email
+- privacy answers
+- notification entitlement
+- StoreKit product status
+- RevenueCat product mapping
+
+GOOGLE PLAY için kontrol:
+
+- production AAB başarılı mı?
+- package name
+- versionCode
+- adaptive icon
+- feature graphic
+- screenshots
+- privacy policy URL
+- Data Safety form için gerekli veri listesi
+- account deletion URL/flow
+- notification permission
+- camera/location declaration
+- target SDK uyumu
+- Play Billing ürünleri
+- subscription status
+- internal testing readiness
+- signing configuration
+
+Store metadata yoksa kod release-ready olsa bile store submission statusunu ayrı raporla.
+
+==================================================
+PHASE 24 — KNOWN REGRESSION TEST
+==================================================
+
+Özellikle şu önceki sorunları test et:
+
+1. Add Stray Animal:
+   Animal Type İngilizce görünüyor mu?
+
+2. Add Stray Animal:
+   statusBadge.* raw key görünmüyor mu?
+
+3. Evcilim:
+   “İlk Dostunu Ekle” açılıyor mu?
+
+4. Sahiplendirme:
+   Hero kart mor “İlan Oluştur” çalışıyor mu?
+
+5. İlan düzenleme:
+   “Fotoğraf Ekle” çalışıyor mu?
+
+6. İlan detay:
+   sağ alttaki telefon butonu kaldırılmış mı?
+
+7. Güncel durum:
+   Galeriden Seç kaldırılmış mı?
+
+8. Güncel durum:
+   camera-only akış çalışıyor mu?
+
+9. Sahiplenme talebi başarı ekranı:
+   “Talebimi Gör” kaldırılmış mı?
+
+10. “Tüm İlanlara Dön”:
+    Tüm İlanlar sekmesini açıyor mu?
+
+11. Evcilim Yönetim:
+    Sağlık kartı kaldırılmış mı?
+
+12. Android:
+    emoji veya bozuk karakter var mı?
+
+==================================================
+DATABASE DOĞRULAMA KURALI
+==================================================
+
+Backend işlemi yapan her testte yalnız UI sonucuna güvenme.
+
+Örnek:
+
+- pet kaydı
+- adoption listing
+- adoption request
+- notification
+- conversation
+- message
+- premium entitlement sync
+- boost
+- account deletion
+
+İşlem sonrası database kaydını veya ilgili GET endpoint sonucunu yeniden oku.
+
+Beklenen kayıt gerçekten oluşmuş mu doğrula.
+
+==================================================
+BLOCKER SINIFLANDIRMASI
+==================================================
+
+CRITICAL:
+
+- uygulama açılmıyor
+- production API çalışmıyor
+- veri kaybı
+- auth bypass
+- ödeme çalışmıyor
+- satın alma sonrası Premium açılmıyor
+- başka kullanıcının verisine erişim
+- hesap silme çalışmıyor
+- production build alınamıyor
+- mağaza reddine doğrudan sebep
+
+HIGH:
+
+- ana özellik çalışmıyor
+- crash
+- önemli navigasyon bozuk
+- mesajlaşma çalışmıyor
+- ilan oluşturulamıyor
+- fotoğraf yüklenemiyor
+- Android’de ciddi UI bozukluğu
+
+MEDIUM:
+
+- ikincil özellik hatası
+- bazı metinlerin çevrilmemesi
+- offline durum yetersiz
+- küçük izin akışı sorunu
+
+LOW:
+
+- kozmetik
+- küçük spacing
+- development log
+- maintainability debt
+
+==================================================
+FINAL REPORT
+==================================================
+
+Raporu şu yapıda ver:
+
+1. Executive Summary
+
+2. Test Environment
+- iOS cihaz/build
+- Android cihaz/build
+- Web
+- backend environment
+- test accounts
+- RevenueCat environment
+
+3. Build Results
+
+4. Authentication Results
+
+5. Premium & RevenueCat Results
+
+6. Android Emoji & Font Results
+
+7. Evcilim Results
+
+8. Pet Modules Results
+
+9. Stray Animal Results
+
+10. Adoption Results
+
+11. Adoption Request + Messaging Results
+
+12. Notifications Results
+
+13. Map Results
+
+14. Profile & Account Results
+
+15. i18n Results
+
+16. Permissions Results
+
+17. Offline/Error Results
+
+18. Android Specific Results
+
+19. iOS Specific Results
+
+20. Security Results
+
+21. Performance Results
+
+22. Store Readiness Results
+
+23. Known Regression Results
+
+24. Verified Release Blockers
+
+Her blocker için:
+
+- Severity
+- Platform
+- Feature
+- File
+- Reproduction steps
+- Expected result
+- Actual result
+- Root cause
+- Exact fix
+- Estimated effort
+
+25. Not Tested / Blocked Items
+
+26. Scores
+
+- Architecture /100
+- Security /100
+- Premium /100
+- Android Compatibility /100
+- iOS Compatibility /100
+- Functional QA /100
+- Performance /100
+- Store Readiness /100
+- Production Readiness /100
+
+27. Final Decision
+
+Yalnızca birini seç:
+
+❌ NOT READY FOR PRODUCTION BUILD
+
+⚠️ READY AFTER FIXING VERIFIED BLOCKERS
+
+✅ READY FOR PRODUCTION BUILD, NATIVE DEVICE TESTS REMAIN
+
+✅ READY FOR APP STORE AND GOOGLE PLAY SUBMISSION
+
+Çalıştırılmamış testlere dayanarak son seçeneği verme.
+
+==================================================
+IMPORTANT
+==================================================
+
+Yeni özellik önermeyi bırak.
+
+Yalnız doğrulanmış hataları ve mağaza yayın eksiklerini raporla.
+
+Kod incelemesiyle test sonucunu karıştırma.
+
+Premium satın alma ve Android emoji kontrollerini özellikle yüzeysel geçme.
+
+İki farklı kullanıcı gerektiren adoption request ve messaging akışını tek hesapla test etme.
+
+Final raporda dürüst ol.
