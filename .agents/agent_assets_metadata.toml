@@ -185,3 +185,9 @@ id = "bR2V_zo_NQWX-FwZD-El7"
 uri = "file://revenuecat_dosyalari.zip"
 type = "unspecified"
 title = "RevenueCat Dosyaları"
+
+[[outputs]]
+id = "YlTXvd5EYowCfTwHnXXbD"
+uri = "file://.local/outputs/CanYolda-Concierge.pdf"
+type = "pdf"
+title = "CanYolda Concierge.pdf"
