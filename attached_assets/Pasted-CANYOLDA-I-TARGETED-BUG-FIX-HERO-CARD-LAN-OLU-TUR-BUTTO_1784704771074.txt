@@ -1,0 +1,135 @@
+CANYOLDAŞI — TARGETED BUG FIX
+HERO CARD “İLAN OLUŞTUR” BUTTON ONLY
+
+Problem:
+
+On the Sahiplendirme main screen, the purple “İlan Oluştur” button inside the large hero card does not work.
+
+IMPORTANT:
+
+Fix ONLY the large purple button inside the hero card.
+
+Do NOT change the top segmented/tab “İlan Oluştur” item.
+Do NOT change the other tabs.
+Do NOT redesign the page.
+
+==================================================
+TARGET
+==================================================
+
+Likely file:
+
+app/(tabs)/adoption.tsx
+
+Find the large hero card that contains:
+
+- “Evcil hayvanını sahiplendirme ilanına ekle”
+- the dog image
+- the purple “İlan Oluştur” CTA button
+
+==================================================
+EXPECTED BEHAVIOR
+==================================================
+
+When the user taps the large purple CTA:
+
+→ Open the existing adoption listing creation screen.
+
+Use the real existing route in the project, likely:
+
+/add-adoption
+
+or the current equivalent route.
+
+Do not create a new screen.
+
+==================================================
+CHECK ROOT CAUSE
+==================================================
+
+Inspect only this CTA for:
+
+- missing onPress
+- undefined callback
+- wrong route
+- callback removed during i18n refactor
+- disabled prop
+- decorative image intercepting touches
+- absolute overlay covering the button
+- pointerEvents issue
+- parent container blocking touches
+
+If the dog image or decorative layer overlaps the button, apply:
+
+pointerEvents="none"
+
+only to non-interactive decorative elements.
+
+==================================================
+IMPLEMENTATION
+==================================================
+
+Use a direct handler such as:
+
+const handleCreateAdoption = () => {
+  router.push("/add-adoption");
+};
+
+Connect it only to the large hero CTA.
+
+Example:
+
+<Pressable onPress={handleCreateAdoption}>
+  ...
+</Pressable>
+
+Do not use the translated button label as navigation logic.
+
+==================================================
+PRESERVE
+==================================================
+
+Do not change:
+
+- top tab behavior
+- listing API
+- authentication logic
+- database logic
+- premium logic
+- translations
+- button design
+- card layout
+
+==================================================
+VALIDATION
+==================================================
+
+Confirm:
+
+1. Large purple hero-card button receives touch.
+2. One tap opens the existing create-listing screen.
+3. Back navigation returns correctly.
+4. No double navigation occurs.
+5. Top segmented “İlan Oluştur” remains unchanged.
+6. TypeScript passes:
+
+npx tsc --noEmit
+
+==================================================
+RETURN
+==================================================
+
+1. Root cause
+2. File changed
+3. Route used
+4. Exact onPress fix
+5. TypeScript result
+6. iOS result
+7. Android result
+8. Web result
+
+Final decision:
+
+FIXED
+PARTIALLY FIXED
+NOT FIXED

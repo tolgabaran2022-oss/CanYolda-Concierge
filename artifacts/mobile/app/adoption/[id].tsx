@@ -6,10 +6,8 @@ import { LinearGradient } from "expo-linear-gradient";
 import { Stack, useLocalSearchParams, useRouter } from "expo-router";
 import React, { useEffect, useRef, useState } from "react";
 import {
-  ActivityIndicator,
   Alert,
   Animated,
-  Linking,
   Modal,
   Platform,
   Pressable,
@@ -27,7 +25,7 @@ import { useBoost } from "@/contexts/BoostContext";
 import { useTheme } from "@/hooks/useTheme";
 import { formatTimeAgo } from "@/utils/formatters";
 import { formatRemainingTime, isListingPromoted } from "@/utils/promotionHelpers";
-import { apiGetContactPrefs, apiRevealPhone, type ContactPrefs } from "@/lib/contactApi";
+import { apiGetContactPrefs, type ContactPrefs } from "@/lib/contactApi";
 import { apiGetOrCreateConversation } from "@/lib/messagesApi";
 import {
   getHealthStatusLabel,
@@ -111,10 +109,6 @@ export default function AdoptionDetailScreen() {
 
   /* Contact-reveal state */
   const [contactPrefs,     setContactPrefs]     = useState<ContactPrefs>({ allowPhoneContact: true, allowMessages: true });
-  const [phoneModalOpen,   setPhoneModalOpen]   = useState(false);
-  const [revealedPhone,    setRevealedPhone]    = useState<string | null>(null);
-  const [revealLoading,    setRevealLoading]    = useState(false);
-  const [revealError,      setRevealError]      = useState<string | null>(null);
   const [msgSending,       setMsgSending]       = useState(false);
   /* Contact intent sheet */
   const [intentSheet,      setIntentSheet]      = useState(false);
@@ -161,11 +155,8 @@ export default function AdoptionDetailScreen() {
   useEffect(() => {
     if (!id || !listing) return;
     /* Prefer persisted booleans from AsyncStorage if already present */
-    if (listing.allowPhoneContact !== undefined || listing.allowMessages !== undefined) {
-      setContactPrefs({
-        allowPhoneContact: listing.allowPhoneContact ?? true,
-        allowMessages:     listing.allowMessages     ?? true,
-      });
+    if (listing.allowMessages !== undefined) {
+      setContactPrefs((prev) => ({ ...prev, allowMessages: listing.allowMessages ?? true }));
       return;
     }
     apiGetContactPrefs(id).then(setContactPrefs).catch(() => {});
@@ -190,23 +181,6 @@ export default function AdoptionDetailScreen() {
   // Derive display data from available fields
   const isPhone = !listing.contactInfo.includes("@");
   const topBarPad = Platform.OS === "web" ? 20 : insets.top + 6;
-
-  const handleRevealPhone = async () => {
-    if (!user) { Alert.alert(t("animalDetail.loginRequired"), t("animalDetail.loginToPhone")); return; }
-    Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
-    setPhoneModalOpen(true);
-    if (revealedPhone) return; /* already revealed */
-    setRevealLoading(true);
-    setRevealError(null);
-    try {
-      const result = await apiRevealPhone(id!);
-      setRevealedPhone(result.phoneNumber);
-    } catch (e: any) {
-      setRevealError(e?.message ?? t("adoption.detail.phoneRevealError"));
-    } finally {
-      setRevealLoading(false);
-    }
-  };
 
   const handleSendMessage = async () => {
     if (!user) {
@@ -584,14 +558,6 @@ export default function AdoptionDetailScreen() {
               </Pressable>
             </Animated.View>
 
-            {contactPrefs.allowPhoneContact && (
-              <Pressable
-                style={({ pressed }) => [S.callBtn, { opacity: pressed ? 0.85 : 1 }]}
-                onPress={handleRevealPhone}
-              >
-                <Icon name="call-outline" size={20} color={P} />
-              </Pressable>
-            )}
           </View>
         ) : null}
       </View>
@@ -667,57 +633,6 @@ export default function AdoptionDetailScreen() {
         </View>
       </Modal>
 
-      {/* ── Phone Reveal Modal ── */}
-      <Modal
-        visible={phoneModalOpen}
-        transparent
-        animationType="slide"
-        onRequestClose={() => setPhoneModalOpen(false)}
-      >
-        <Pressable style={S.modalOverlay} onPress={() => setPhoneModalOpen(false)} />
-        <View style={[S.phoneModal, { paddingBottom: botPad + 16 }]}>
-          <View style={S.phoneModalHandle} />
-          <Text style={S.phoneModalTitle}>Telefon Numarası</Text>
-
-          {revealLoading ? (
-            <View style={{ paddingVertical: 28, alignItems: "center" }}>
-              <ActivityIndicator color={P} size="large" />
-              <Text style={{ marginTop: 12, fontSize: 14, fontFamily: "Inter_400Regular", color: BODY }}>Yükleniyor...</Text>
-            </View>
-          ) : revealError ? (
-            <View style={{ paddingVertical: 20, alignItems: "center", gap: 12 }}>
-              <Icon name="alert-circle-outline" size={40} color="#E53E3E" />
-              <Text style={{ fontSize: 15, fontFamily: "Inter_500Medium", color: "#E53E3E", textAlign: "center" }}>{revealError}</Text>
-            </View>
-          ) : revealedPhone ? (
-            <View style={{ alignItems: "center", gap: 18, paddingVertical: 12 }}>
-              <View style={S.phoneDisplay}>
-                <Icon name="call-outline" size={20} color={P} />
-                <Text style={S.phoneDisplayTxt} selectable>{revealedPhone}</Text>
-              </View>
-              <Pressable
-                style={({ pressed }) => [S.callNowBtn, { opacity: pressed ? 0.85 : 1 }]}
-                onPress={() => {
-                  Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
-                  Linking.openURL(`tel:${revealedPhone.replace(/\s/g, "")}`).catch(() => {});
-                }}
-              >
-                <LinearGradient colors={[P2, P, DARK]} start={{ x: 0, y: 0 }} end={{ x: 1, y: 0 }} style={S.callNowBtnInner}>
-                  <Icon name="call-outline" size={18} color={WHITE} />
-                  <Text style={S.callNowBtnTxt}>Şimdi Ara</Text>
-                </LinearGradient>
-              </Pressable>
-            </View>
-          ) : null}
-
-          <Pressable
-            style={({ pressed }) => [S.phoneModalClose, { opacity: pressed ? 0.7 : 1 }]}
-            onPress={() => setPhoneModalOpen(false)}
-          >
-            <Text style={S.phoneModalCloseTxt}>Kapat</Text>
-          </Pressable>
-        </View>
-      </Modal>
     </>
   );
 }
@@ -880,31 +795,7 @@ const S = StyleSheet.create({
   existingRequestBanner: { flexDirection: "row", alignItems: "center", gap: 10, backgroundColor: "#FFF5E6", borderRadius: 14, padding: 14, borderWidth: 1, borderColor: "#FFD5A0" },
   existingRequestTxt:    { fontSize: 13, fontFamily: "Inter_500Medium", color: "#8B6300", flex: 1 },
 
-  // Phone modal
+  // Shared modal overlay and handle (used by Intent Sheet)
   modalOverlay:      { flex: 1, backgroundColor: "rgba(0,0,0,0.45)" },
-  phoneModal: {
-    backgroundColor: BG,
-    borderTopLeftRadius: 32, borderTopRightRadius: 32,
-    paddingTop: 8, paddingHorizontal: 24,
-    gap: 4,
-    ...Platform.select({
-      ios:     { shadowColor: "#000", shadowOffset: { width: 0, height: -4 }, shadowOpacity: 0.12, shadowRadius: 20 },
-      android: { elevation: 20 },
-      default: {},
-    }),
-  },
-  phoneModalHandle:   { width: 40, height: 4, borderRadius: 2, backgroundColor: `${P}30`, alignSelf: "center", marginBottom: 14, marginTop: 4 },
-  phoneModalTitle:    { fontSize: 18, fontFamily: "Inter_700Bold", color: DARK, textAlign: "center", marginBottom: 8 },
-  phoneDisplay: {
-    flexDirection: "row", alignItems: "center", gap: 12,
-    backgroundColor: WHITE, borderRadius: 16,
-    paddingHorizontal: 20, paddingVertical: 16, alignSelf: "stretch",
-    borderWidth: 1.5, borderColor: `${P}25`,
-  },
-  phoneDisplayTxt:    { fontSize: 20, fontFamily: "Inter_700Bold", color: DARK, letterSpacing: 1.2, flex: 1 },
-  callNowBtn:         { width: "100%", borderRadius: 18, overflow: "hidden" },
-  callNowBtnInner:    { flexDirection: "row", alignItems: "center", justifyContent: "center", gap: 8, height: 54, borderRadius: 18 },
-  callNowBtnTxt:      { fontSize: 16, fontFamily: "Inter_700Bold", color: WHITE },
-  phoneModalClose:    { paddingVertical: 16, alignItems: "center" },
-  phoneModalCloseTxt: { fontSize: 15, fontFamily: "Inter_600SemiBold", color: BODY },
+  phoneModalHandle:  { width: 40, height: 4, borderRadius: 2, backgroundColor: `${P}30`, alignSelf: "center", marginBottom: 14, marginTop: 4 },
 });
