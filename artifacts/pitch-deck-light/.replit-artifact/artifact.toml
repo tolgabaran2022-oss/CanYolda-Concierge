@@ -1,0 +1,31 @@
+kind = "slides"
+previewPath = "/pitch-deck-light/"
+title = "CanYoldaşı Pitch Deck (Light)"
+version = "1.0.0"
+id = "artifacts/pitch-deck-light"
+router = "path"
+
+[[integratedSkills]]
+name = "slides"
+version = "1.0.0"
+
+[[services]]
+name = "web"
+paths = [ "/pitch-deck-light/" ]
+localPort = 24229
+
+[services.development]
+run = "pnpm --filter @workspace/pitch-deck-light run dev"
+
+[services.production]
+build = [ "pnpm", "--filter", "@workspace/pitch-deck-light", "run", "build" ]
+publicDir = "artifacts/pitch-deck-light/dist/public"
+serve = "static"
+
+[[services.production.rewrites]]
+from = "/*"
+to = "/index.html"
+
+[services.env]
+PORT = "24229"
+BASE_PATH = "/pitch-deck-light/"
