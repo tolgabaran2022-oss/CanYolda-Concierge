@@ -5,11 +5,10 @@ import * as ImagePicker from "expo-image-picker";
 import { Image } from "expo-image";
 import { LinearGradient } from "expo-linear-gradient";
 import { useRouter } from "expo-router";
-import React, { useEffect, useRef, useState } from "react";
+import React, { useRef, useState } from "react";
 import { useTranslation } from "react-i18next";
 import {
   ActionSheetIOS,
-  ActivityIndicator,
   Alert,
   Keyboard,
   KeyboardAvoidingView,
@@ -26,7 +25,6 @@ import {
 import { SafeAreaView, useSafeAreaInsets } from "react-native-safe-area-context";
 import { useAuth } from "@/contexts/AuthContext";
 import { usePets } from "@/contexts/PetsContext";
-import { apiGetPetPremiumStatus } from "@/lib/petManagementApi";
 
 /* ── Design tokens ─────────────────────────────────────── */
 const PURPLE   = "#7C45D9";
@@ -190,32 +188,6 @@ export default function AddPetScreen() {
   const { addPet } = usePets();
   const { user }   = useAuth();
 
-  // ── Premium gate — checked on mount before showing the form ──
-  const [isGateChecking, setIsGateChecking] = useState(true);
-  const gateCheckedRef = useRef(false);
-
-  useEffect(() => {
-    if (gateCheckedRef.current) return;
-    gateCheckedRef.current = true;
-    apiGetPetPremiumStatus()
-      .then((status) => {
-        if (status.canAddPet) {
-          setIsGateChecking(false);
-        } else {
-          // Cannot add another pet — return to Evcilim tab and auto-open
-          // the premium modal via the openPremium navigation param.
-          router.replace({
-            pathname: "/pets",
-            params: { openPremium: "true" },
-          } as Parameters<typeof router.replace>[0]);
-        }
-      })
-      .catch(() => {
-        // Fail closed: cannot verify — send back to Evcilim without opening form
-        router.replace("/pets" as Parameters<typeof router.replace>[0]);
-      });
-  }, [router]);
-
   const [petType,     setPetType]     = useState<PetType>("Kedi");
   const [name,        setName]        = useState("");
   const [nameError,   setNameError]   = useState("");
@@ -324,15 +296,6 @@ export default function AddPetScreen() {
       isSavingRef.current = false;
     }
   };
-
-  // Gate loading state — show spinner while checking Premium access
-  if (isGateChecking) {
-    return (
-      <SafeAreaView style={[s.root, { alignItems: "center", justifyContent: "center" }]} edges={["top"]}>
-        <ActivityIndicator size="large" color={PURPLE} />
-      </SafeAreaView>
-    );
-  }
 
   // Header height: compact, no safe-area top (SafeAreaView handles it)
   const HEADER_H = 56;

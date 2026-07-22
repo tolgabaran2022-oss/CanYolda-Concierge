@@ -1,0 +1,113 @@
+BUG FIX — "İlk Dostunu Ekle" button does nothing
+
+Problem:
+
+On the Evcilim empty state screen, tapping the purple button:
+
+"İlk Dostunu Ekle"
+
+does nothing.
+
+Previously this button correctly opened the Add Pet flow.
+
+After recent refactors (i18n/navigation), the action no longer works.
+
+==================================================
+GOAL
+==================================================
+
+Restore the ORIGINAL behavior.
+
+Do not redesign the screen.
+
+Do not change Premium logic.
+
+Do not change Pet business logic.
+
+Only restore the broken navigation/action.
+
+==================================================
+EXPECTED BEHAVIOR
+==================================================
+
+Case 1
+
+User has NO pets.
+
+Tap:
+
+"İlk Dostunu Ekle"
+
+→ Open the Add Pet screen.
+
+The same screen that was previously opened before this regression.
+
+--------------------------------------------------
+
+Case 2
+
+User already has one pet.
+
+The existing Premium restriction flow must continue to work exactly as before.
+
+Do NOT bypass Premium.
+
+==================================================
+CHECK
+==================================================
+
+Inspect:
+
+- Evcilim empty state component
+- Button component
+- onPress callback
+- router.push / navigation.navigate
+- handleAddPet()
+- addPet()
+- openAddPet()
+- any renamed callback after refactor
+
+If the button lost its callback, reconnect it.
+
+If the route changed, update it to the current Add Pet route.
+
+If a wrapper component swallowed the touch event, fix it.
+
+==================================================
+VERIFY
+==================================================
+
+Confirm:
+
+✓ Button is pressable.
+
+✓ onPress fires.
+
+✓ Navigation executes.
+
+✓ Add Pet screen opens.
+
+✓ Returning back works.
+
+✓ Premium logic unchanged.
+
+✓ TypeScript passes.
+
+==================================================
+RETURN
+
+1. Root cause
+
+2. Files changed
+
+3. Navigation fix
+
+4. Verified route
+
+5. TypeScript result
+
+6. iOS result
+
+7. Android result
+
+8. Web result
