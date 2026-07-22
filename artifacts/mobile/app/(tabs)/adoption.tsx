@@ -1453,7 +1453,7 @@ export default function AdoptionScreen() {
       router.push("/login");
       return;
     }
-    router.push("/adoption/create");
+    router.push("/add-adoption" as any);
   }, [user, router]);
 
   return (
