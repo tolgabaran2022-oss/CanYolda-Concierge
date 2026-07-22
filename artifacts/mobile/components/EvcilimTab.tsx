@@ -736,7 +736,6 @@ function ManagementGrid({
 
   const GRID: GridItem[] = [
     { key: "id",           label: t("evcilimTab.gridItemId"),           icon: "id-card-outline",          route: `/evcilim/${petId}/identification` },
-    { key: "health",       label: t("evcilimTab.gridItemHealth"),       icon: "heart-outline",            route: `/evcilim/${petId}/health` },
     { key: "vaccinations", label: t("evcilimTab.gridItemVaccinations"), icon: "shield-checkmark-outline", route: `/evcilim/${petId}/vaccinations`, badge: overdueVacc || undefined },
     { key: "appointments", label: t("evcilimTab.gridItemAppointments"), icon: "calendar-outline",         route: `/evcilim/${petId}/appointments`, badge: upcomingAppt || undefined },
     { key: "nutrition",    label: t("evcilimTab.gridItemNutrition"),    icon: "nutrition-outline",        route: `/evcilim/${petId}/nutrition` },

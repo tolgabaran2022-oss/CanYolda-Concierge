@@ -1,0 +1,134 @@
+CANYOLDAŞI — TARGETED UI CHANGE
+REMOVE “SAĞLIK” CARD FROM EVCİLİM MANAGEMENT GRID
+
+Problem:
+
+On the Evcilim pet dashboard screen, under the “Yönetim” section, there is a card labeled:
+
+“Sağlık”
+
+Remove this card completely from this page.
+
+==================================================
+TARGET SCREEN
+==================================================
+
+Find the Evcilim dashboard screen/component that renders the management grid containing:
+
+- Kimlik
+- Sağlık
+- Aşılar
+- Randevular
+- Beslenme
+- Belgeler
+- İlaçlar
+- Notlar
+
+Likely files may include:
+
+- components/EvcilimTab.tsx
+- app/pets.tsx
+- app/(tabs)/pets.tsx
+- pet dashboard component
+
+Use the actual existing file in the project.
+
+==================================================
+REQUIRED CHANGE
+==================================================
+
+Remove ONLY the “Sağlık” management card.
+
+Remove:
+
+- card JSX/config item
+- health icon used only by this card
+- onPress/navigation handler used only by this card
+- route reference used only by this card
+- unused imports
+- unused styles only related to this card
+
+Do not remove the health feature or health screen from the project unless it is completely unused elsewhere.
+
+This request is only to remove the card from the Evcilim dashboard.
+
+==================================================
+LAYOUT
+==================================================
+
+After removing the card:
+
+- The remaining cards must reflow naturally.
+- Do not leave an empty gap.
+- Preserve the current grid style.
+- Preserve card size, spacing, border radius, icons, and typography.
+- Do not redesign the section.
+
+Expected remaining cards:
+
+- Kimlik
+- Aşılar
+- Randevular
+- Beslenme
+- Belgeler
+- İlaçlar
+- Notlar
+
+Use the current grid behavior so the cards automatically reposition.
+
+==================================================
+PRESERVE
+==================================================
+
+Do not change:
+
+- pet data
+- vaccination logic
+- appointment logic
+- nutrition logic
+- documents
+- medications
+- notes
+- premium locks
+- AI Animal Assistant
+- bottom navigation
+- quick status cards
+- translations
+- backend
+- database
+
+==================================================
+VALIDATION
+==================================================
+
+Verify:
+
+1. “Sağlık” card is no longer visible.
+2. No empty space remains in the grid.
+3. Remaining cards are still pressable.
+4. Their navigation routes still work.
+5. Premium badges still display correctly.
+6. No unused icon or import remains.
+7. TypeScript passes:
+
+npx tsc --noEmit
+
+==================================================
+RETURN
+==================================================
+
+1. File changed
+2. Removed card/config item
+3. Removed unused code
+4. Final grid order
+5. TypeScript result
+6. iOS result
+7. Android result
+8. Web result
+9. Remaining issue
+
+Final decision:
+
+- FIXED
+- PARTIALLY FIXED
+- NOT FIXED
