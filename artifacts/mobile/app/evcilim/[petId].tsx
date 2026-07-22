@@ -1,3 +1,4 @@
+import AsyncStorage from "@react-native-async-storage/async-storage";
 import { Icon } from "@/components/Icon";
 import * as Haptics from "expo-haptics";
 import * as ImagePicker from "expo-image-picker";
@@ -38,6 +39,7 @@ type PetType = typeof PET_TYPES[number];
 const API_BASE = process.env.EXPO_PUBLIC_DOMAIN
   ? `https://${process.env.EXPO_PUBLIC_DOMAIN}/api`
   : "http://localhost:8080/api";
+const TOKEN_KEY = "@canyoldasi:jwt";
 
 async function uploadImage(localUri: string): Promise<string> {
   const filename = localUri.split("/").pop() ?? "photo.jpg";
@@ -45,14 +47,19 @@ async function uploadImage(localUri: string): Promise<string> {
   const mimeType = match ? `image/${match[1].toLowerCase().replace("jpg", "jpeg")}` : "image/jpeg";
   const formData = new FormData();
   if (Platform.OS === "web") {
-    const response = await fetch(localUri);
-    const blob = await response.blob();
+    const blob = await fetch(localUri).then((r) => r.blob());
     formData.append("image", blob, filename);
   } else {
     formData.append("image", { uri: localUri, name: filename, type: mimeType } as unknown as Blob);
   }
-  const res = await fetch(`${API_BASE}/upload`, { method: "POST", body: formData });
-  if (!res.ok) throw new Error("Fotoğraf yüklenemedi");
+  const token = await AsyncStorage.getItem(TOKEN_KEY);
+  const headers: Record<string, string> = {};
+  if (token) headers["Authorization"] = `Bearer ${token}`;
+  const res = await fetch(`${API_BASE}/upload`, { method: "POST", body: formData, headers });
+  if (!res.ok) {
+    console.error("[uploadImage] HTTP", res.status, await res.text().catch(() => ""));
+    throw new Error("Fotoğraf yüklenemedi");
+  }
   const data = await res.json() as { url: string };
   return data.url;
 }
@@ -161,12 +168,12 @@ export default function PetDetailScreen() {
     setIsSaving(true);
     try {
       let remoteImage: string | undefined = image;
-      if (image && (image.startsWith("file://") || image.startsWith("content://") || image.startsWith("ph://"))) {
+      if (image && (image.startsWith("file://") || image.startsWith("content://") || image.startsWith("ph://") || image.startsWith("blob:"))) {
         try {
           remoteImage = await uploadImage(image);
         } catch {
           Alert.alert(t("pets.add.uploadFailed"), t("pets.detail.uploadFailedKept"));
-          remoteImage = undefined;
+          remoteImage = pet.image;
         }
       }
       await updatePet(petId!, { name: name.trim(), type, breed: breed.trim(), age: age.trim(), image: remoteImage });

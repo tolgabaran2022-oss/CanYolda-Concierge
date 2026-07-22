@@ -1,0 +1,213 @@
+CANYOLDAŞI — EVCİL HAYVAN PROFİL FOTOĞRAFI YÜKLEME HATASINI DÜZELT
+
+Evcil hayvan profil sayfasında profil fotoğrafı seçildikten sonra şu hata çıkıyor:
+
+“Fotoğraf Yüklenemedi
+Fotoğraf sunucuya yüklenemedi, önceki fotoğraf korunacak.”
+
+Bu sorunu yalnızca gizleyerek veya hata mesajını kaldırarak çözme. Fotoğrafın gerçekten Storage’a yüklenmesini, veritabanına kaydedilmesini ve iOS/Android/Web üzerinde görüntülenmesini sağla.
+
+ÖNCE KÖK NEDENİ BUL
+
+Profil fotoğrafının bütün akışını incele:
+
+1. Fotoğraf seçici açılıyor mu?
+2. Seçilen asset içinden doğru `uri` alınıyor mu?
+3. iOS’ta gelen `file://` URI doğru okunuyor mu?
+4. Android `content://` URI destekleniyor mu?
+5. Web tarafında File/Blob doğru işleniyor mu?
+6. Dosya ArrayBuffer/Blob’a doğru çevriliyor mu?
+7. Kullanıcı oturumu ve `user.id` mevcut mu?
+8. Supabase Storage bucket adı doğru mu?
+9. Storage INSERT/UPDATE/SELECT/DELETE policy’leri uygun mu?
+10. Veritabanındaki pet profil fotoğrafı alanı doğru güncelleniyor mu?
+11. Public URL veya signed URL doğru oluşturuluyor mu?
+12. Uygulama yeniden açıldığında yeni fotoğraf gösteriliyor mu?
+
+HATAYI LOG’LA
+
+Mevcut genel catch bloğu gerçek hatayı gizlemesin. Development ortamında aşağıdakileri güvenli şekilde log’la:
+
+- İşlemin hangi aşamada başarısız olduğu
+- Supabase error message
+- Status code
+- Error code
+- Dosya URI şeması
+- MIME türü
+- Dosya boyutu
+- Bucket adı
+- Storage path
+
+Access token, service-role key ve kullanıcıya ait hassas verileri log’lama.
+
+MOBİL DOSYA DÖNÜŞÜMÜNÜ DÜZELT
+
+React Native/Expo’da yalnızca şu yaklaşımı kullanma:
+
+```ts
+const response = await fetch(uri);
+const blob = await response.blob();
+
+Bu yöntem özellikle iOS/React Native ortamında güvenilir olmayabilir.
+
+Projede kullanılan Expo SDK sürümüne uygun biçimde dosyayı oku ve Supabase Storage’a ArrayBuffer olarak gönder. Gerekirse expo-file-system ve base64-arraybuffer kullan.
+
+Örnek yaklaşım:
+
+import * as FileSystem from "expo-file-system";
+import { decode } from "base64-arraybuffer";
+
+async function uriToArrayBuffer(uri: string) {
+  const base64 = await FileSystem.readAsStringAsync(uri, {
+    encoding: FileSystem.EncodingType.Base64,
+  });
+
+  return decode(base64);
+}
+
+Ancak mevcut Expo SDK’da bu API deprecated ise güncel expo-file-system API’sini kullan. Projenin mevcut SDK sürümüne uygun çözümü seç; deprecated ve güncel API’leri karıştırma.
+
+Web tarafında mobil kodu kullanma. Platform bazlı güvenli dönüşüm uygula:
+
+iOS/Android: URI → base64 → ArrayBuffer
+Web: asset.file veya fetch URI → Blob/ArrayBuffer
+
+DOSYA DOĞRULAMA
+
+Yüklemeden önce:
+
+Kullanıcı giriş yapmış olmalı.
+Pet ID mevcut olmalı.
+Dosya URI boş olmamalı.
+Yalnızca JPEG, PNG ve WebP kabul edilmeli.
+HEIC seçildiyse sunucunun desteklediği formata dönüştür veya doğru MIME/uzantıyla yükle.
+Maksimum dosya boyutu 8 MB olsun.
+Çok büyük görselleri yaklaşık 1200×1200 maksimum boyuta küçült.
+JPEG kalite değeri yaklaşık %80–85 olsun.
+EXIF yön bilgisi nedeniyle fotoğrafın dönmesini engelle.
+Dosya adı içindeki Türkçe karakterleri ve kullanıcı tarafından gelen adı kullanma.
+
+Gerekirse expo-image-manipulator ile resmi optimize et.
+
+GÜVENLİ STORAGE PATH
+
+Dosya adını benzersiz üret:
+
+pet-avatars/{userId}/{petId}/{timestamp}-{randomId}.jpg
+
+Path içine kullanıcıdan gelen kontrolsüz dosya adı koyma.
+
+SUPABASE STORAGE
+
+Projede kullanılan gerçek bucket adını tespit et. Yeni ve gereksiz ikinci bucket oluşturma.
+
+Kontrol et:
+
+Bucket gerçekten var mı?
+Public mi, private mı?
+Uygulama public URL mi yoksa signed URL mi bekliyor?
+authenticated kullanıcının kendi klasörüne INSERT yapmasına izin var mı?
+SELECT policy doğru mu?
+Fotoğraf değişiminde gerekiyorsa UPDATE/DELETE policy var mı?
+Policy’de kullanılan klasör yapısı gerçek yükleme path’iyle eşleşiyor mu?
+
+Gerekli migration/policy düzeltmelerini güvenli biçimde oluştur. Service-role anahtarını mobil uygulamaya kesinlikle koyma.
+
+Örnek policy mantığı:
+
+Kullanıcı yalnızca pet-avatars/{auth.uid()}/... klasörüne dosya yükleyebilsin.
+Kullanıcı yalnızca kendisine ait fotoğrafları değiştirebilsin.
+Görüntüleme uygulamanın mevcut public/private bucket kararına uygun çalışsın.
+
+VERİTABANI GÜNCELLEMESİ
+
+Yükleme başarılı olduktan sonra ilgili evcil hayvan kaydının mevcut fotoğraf alanını güncelle:
+
+avatar_url
+photo_url
+image_url
+
+Hangisi projede gerçekten kullanılıyorsa yalnızca onu kullan. Yeni ve yinelenen kolon oluşturma.
+
+Sıralama şöyle olmalı:
+
+Yeni fotoğrafı optimize et.
+Storage’a yükle.
+URL/path değerini oluştur.
+Pet kaydını güncelle.
+UI cache/state değerini yenile.
+Yeni fotoğrafın ekranda göründüğünü doğrula.
+Eski fotoğraf uygulama tarafından yönetiliyorsa ve artık kullanılmıyorsa güvenli şekilde sil.
+
+Veritabanı güncellemesi başarısız olursa yeni yüklenen sahipsiz dosyayı temizle. Yeni işlem tamamen başarılı olmadan eski fotoğrafı silme.
+
+CACHE SORUNUNU ÖNLE
+
+Aynı URL kullanıldığı için eski fotoğraf gösterilmesin:
+
+Dosya path’ini her yüklemede benzersiz yap.
+React Query/cache/state değerini invalidate veya refresh et.
+Profil ekranına dönüldüğünde güncel pet verisini getir.
+Optimistic preview kullanılıyorsa yükleme başarısız olduğunda eski fotoğrafa dön.
+
+KULLANICI DENEYİMİ
+
+Fotoğraf seçildikten sonra yükleme göstergesi göster.
+Yükleme sırasında düzenleme butonunun tekrar tekrar tetiklenmesini engelle.
+Başarılı olursa fotoğrafı anında yenile.
+Başarısız olursa önceki fotoğrafı koru.
+Kullanıcıya anlaşılır mesaj göster:
+“Fotoğraf yüklenemedi. İnternet bağlantınızı kontrol edip tekrar deneyin.”
+Development loglarında gerçek teknik hata bulunsun.
+Aynı fotoğrafın çift yüklenmesini engelle.
+
+İZİNLER
+
+app.json/app.config ve platform izinlerini kontrol et:
+
+iOS fotoğraf arşivi açıklaması
+Kamera kullanılıyorsa kamera açıklaması
+Android medya/fotoğraf izinleri
+Expo Image Picker yapılandırması
+
+Gereksiz geniş izin isteme.
+
+TESTLER
+
+Şu senaryoları doğrula:
+
+iOS simülatörde galeriden JPEG yükleme
+Gerçek iPhone’da galeriden fotoğraf yükleme
+Android emülatör ve gerçek cihazda yükleme
+Web’de dosya seçerek yükleme
+PNG, JPEG ve WebP
+HEIC fotoğraf
+8 MB üzerindeki fotoğraf
+İnternet kesilmesi
+Oturumu bitmiş kullanıcı
+Storage policy reddi
+Aynı fotoğrafı art arda seçme
+Mevcut fotoğrafı yenisiyle değiştirme
+Uygulamayı kapatıp açınca fotoğrafın korunması
+Başka kullanıcıların aynı pet fotoğrafını değiştirememesi
+
+SON KONTROL
+
+TypeScript kontrolünü çalıştır.
+İlgili testleri çalıştır.
+iOS, Android ve web build uyumluluğunu kontrol et.
+Sadece ekrandaki hata mesajını kaldırma.
+Base64 verisini veritabanına kaydetme.
+Service-role key’i client tarafına ekleme.
+RLS’yi tamamen kapatma.
+Bucket’ı kontrolsüz şekilde public yapma.
+
+İşlem sonunda raporla:
+
+Hatanın kesin kök nedeni
+Değiştirilen dosyalar
+Storage bucket adı ve kullanılan path
+Eklenen/değiştirilen policy’ler
+Fotoğraf alanının adı
+Platform bazında test sonuçları
+Yayına engel kalan bir sorun olup olmadığı
