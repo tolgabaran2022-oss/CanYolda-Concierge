@@ -1,0 +1,141 @@
+CANYOLDAŞI — TÜM SAHTE/DEMO VERİLERİ GÜVENLİ TEMİZLEME GÖREVİ
+
+CanYoldaşı uygulamasını bugün production ortamında yayına alacağız. Daha önce uygulamanın dolu görünmesi ve test edilmesi amacıyla oluşturduğumuz tüm sahte, demo, mock, seed ve örnek içerikleri kaldır.
+
+KAPSAM
+
+Aşağıdaki sahte verileri hem uygulama arayüzünden hem de veritabanından temizle:
+
+1. Sahiplendirme sayfasındaki sahte hayvan kartları
+2. Sahte sahiplendirme ilanları ve ilan detayları
+3. Sokak Hayvanları sayfasındaki sahte durum bildirimleri
+4. Acil durum sayfasındaki sahte bildirimler
+5. Sahte harita işaretleri ve konum kayıtları
+6. Sahte kullanıcı, profil, isim ve profil fotoğrafları
+7. Sahte yorum, mesaj, talep, beğeni, görüntülenme ve yardım sayaçları
+8. Sahte Kahramanlar sıralama kayıtları
+9. Kod içine gömülmüş örnek kartlar ve fallback veriler
+10. Seed, mock, fixture ve demo veri üretme kodları
+
+ÇOK ÖNEMLİ GÜVENLİK KURALLARI
+
+- Gerçek kullanıcıların oluşturduğu hiçbir veriyi silme.
+- Önce sahte kayıtları hangi işaretlerle ayırt edebildiğini analiz et.
+- `is_demo`, `is_mock`, `is_test`, `seed`, `fixture`, `demo`, `fake` gibi alanları kontrol et.
+- Test kullanıcı ID’lerini, sabit UUID’leri, örnek e-posta adreslerini ve kodda tanımlanan sabit ilan ID’lerini araştır.
+- Sadece tahmine dayanarak toplu DELETE çalıştırma.
+- İsim, tarih veya fotoğrafa bakarak gerçek kullanıcı verisini sahte kabul etme.
+- Sahte olduğu kesin olarak doğrulanamayan hiçbir kaydı silme.
+- Tüm veritabanını, tabloyu veya storage bucket’ını topluca temizleme.
+- Şema ve migration dosyalarını bozma.
+
+UYGULAMA KODUNDA ARA
+
+Aşağıdaki kelimeleri tüm projede ara:
+
+- mock
+- demo
+- fake
+- sample
+- seed
+- fixture
+- placeholder
+- dummy
+- testData
+- mockData
+- sampleData
+- adoptionData
+- streetAnimalData
+- emergencyData
+
+Özellikle aşağıdaki yerleri incele:
+
+- Sahiplendirme liste ve detay ekranları
+- Sokak Hayvanları ekranları
+- Acil Durum Bildir ekranları
+- Harita bileşenleri
+- API route’ları
+- React Query hook’ları
+- Zustand/Context store’ları
+- Supabase sorguları
+- Backend seed scriptleri
+- `constants`, `data`, `mocks`, `fixtures` ve `seed` klasörleri
+- Veritabanı migration ve başlangıç scriptleri
+
+TEMİZLEME YÖNTEMİ
+
+1. Önce kodu ve veritabanı yapısını analiz et.
+2. Silinecek kesin sahte kayıtların listesini tablo adı, kayıt ID’si ve tespit sebebiyle çıkar.
+3. Gerçek kayıtlarla ilişkisi olmadığını doğrula.
+4. Silme işleminden önce mevcut kayıtların geri alınabilir yedeğini oluştur.
+5. Foreign key ilişkilerini incele.
+6. Yalnızca doğrulanmış sahte kayıtları transaction içinde sil.
+7. Bağlı sahte fotoğraf, talep, mesaj, yorum ve sayaçları güvenli sırayla temizle.
+8. Storage içerisindeki dosyaları yalnızca silinen sahte kayda ait olduğu kesinleşirse kaldır.
+9. Kodda bulunan hardcoded sahte kartları ve fallback dizilerini kaldır.
+10. Uygulama boş sonuç aldığında sahte kart göstermesin.
+
+BOŞ DURUM TASARIMI
+
+Sahte içerikler kaldırıldıktan sonra boş sayfa veya hata ekranı gösterme. İlgili sayfalarda mevcut CanYoldaşı tasarım sistemine uygun boş durum göster:
+
+Sahiplendirme:
+- Başlık: “Henüz sahiplendirme ilanı yok”
+- Açıklama: “Yeni ilanlar yayınlandığında burada görünecek.”
+- Buton: “İlan Ver”
+
+Sokak Hayvanları:
+- Başlık: “Henüz durum bildirimi yok”
+- Açıklama: “Yakınındaki bir can dostu için ilk bildirimi sen oluşturabilirsin.”
+- Buton: “Durum Bildir”
+
+Acil durum:
+- Başlık: “Aktif acil durum bulunmuyor”
+- Açıklama: “Yeni bildirimler burada görüntülenecek.”
+- Buton: “Acil Durum Bildir”
+
+Kahramanlar:
+- Gerçek katkı kaydı yoksa sahte sıralama gösterme.
+- Uygun bir boş durum mesajı göster.
+
+TEKRAR OLUŞMASINI ENGELLE
+
+- Uygulama başlangıcında demo veri oluşturan kodları kaldır.
+- Development dışındaki ortamlarda seed scriptlerinin çalışmasını engelle.
+- Production build sırasında mock veri import edilmediğini doğrula.
+- API başarısız olduğunda sahte veri döndüren fallback mekanizmasını kaldır.
+- API hatasında boş durum yerine gerçek hata/yeniden dene durumu göster.
+- Testler gerçek veritabanına demo kayıt yazmamalı.
+
+TESTLER
+
+Temizlik sonrasında aşağıdakileri doğrula:
+
+1. Sahiplendirme listesinde sahte kart yok.
+2. Sahte ilan detay URL’leri açılmıyor; güvenli şekilde “İlan bulunamadı” gösteriyor.
+3. Sokak Hayvanları bölümünde sahte durum bildirimi yok.
+4. Haritada sahte işaretçi yok.
+5. Acil durum bölümünde sahte kayıt yok.
+6. Gerçek kullanıcı ilanları ve bildirimleri korunuyor.
+7. Yeni ilan ve durum bildirimi oluşturulabiliyor.
+8. Fotoğraf yükleme çalışıyor.
+9. Filtreleme, arama, konum ve sayfalama çalışıyor.
+10. iOS, Android ve web sürümlerinde boş durumlar düzgün görünüyor.
+11. TypeScript, lint ve mevcut testler başarılı.
+12. Uygulama yeniden başlatıldığında sahte veriler geri gelmiyor.
+
+ÇIKTI RAPORU
+
+İşlem sonunda bana şunları açıkça raporla:
+
+- Sahte verilerin nereden geldiği
+- Değiştirilen dosyalar
+- Temizlenen tablolar
+- Silinen kayıtların ID’leri ve adetleri
+- Silinmeyen şüpheli kayıtlar
+- Korunan gerçek kayıt adetleri
+- Kaldırılan mock/seed mekanizmaları
+- Yapılan testlerin sonuçları
+- Production yayınına engel kalan bir sorun olup olmadığı
+
+Önce analiz ve yedekleme yap, ardından yalnızca kesin olarak sahte olduğu doğrulanan içerikleri temizle. Gerçek kullanıcı verilerine dokunma.
