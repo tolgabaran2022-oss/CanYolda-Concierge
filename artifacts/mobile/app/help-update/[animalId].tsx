@@ -121,25 +121,6 @@ export default function HelpUpdateScreen() {
     }
   }, [t]);
 
-  const handleGallery = useCallback(async () => {
-    const { status } = await ImagePicker.requestMediaLibraryPermissionsAsync();
-    if (status !== "granted") {
-      Alert.alert(
-        t("helpUpdate.galleryPermTitle"),
-        t("helpUpdate.galleryPermMsg")
-      );
-      return;
-    }
-    const result = await ImagePicker.launchImageLibraryAsync({
-      mediaTypes: ["images"] as unknown as ImagePicker.MediaType[],
-      allowsEditing: true,
-      aspect: [4, 3],
-      quality: 0.5,
-    });
-    if (!result.canceled && result.assets[0]) {
-      setPhotoUri(result.assets[0].uri);
-    }
-  }, [t]);
 
   const handleSubmit = useCallback(async () => {
     if (!canSubmit) return;
@@ -274,15 +255,6 @@ export default function HelpUpdateScreen() {
                     <Text style={S.photoBtnText}>{t("helpUpdate.cameraBtn")}</Text>
                   </Pressable>
                 )}
-                <Pressable
-                  style={({ pressed }) => [S.photoBtn, S.photoBtnFull, pressed && { opacity: 0.75 }]}
-                  onPress={handleGallery}
-                >
-                  <View style={S.photoBtnIcon}>
-                    <Icon name="images-outline" size={22} color={C.purple} />
-                  </View>
-                  <Text style={S.photoBtnText}>{t("helpUpdate.galleryBtn")}</Text>
-                </Pressable>
               </View>
             )}
           </View>
@@ -461,9 +433,6 @@ const S = StyleSheet.create({
     gap: 10,
     backgroundColor: C.white,
     minHeight: 110,
-  },
-  photoBtnFull: {
-    flex: 1,
   },
   photoBtnIcon: {
     width: 48, height: 48, borderRadius: 24,
