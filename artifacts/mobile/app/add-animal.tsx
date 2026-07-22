@@ -35,6 +35,13 @@ const ANIMAL_TYPE_ICONS: Record<AnimalType, string> = {
   diger: "paw",
 };
 
+const ANIMAL_TYPE_I18N: Record<AnimalType, string> = {
+  kedi:  "animals.type.cat",
+  kopek: "animals.type.dog",
+  kus:   "animals.type.bird",
+  diger: "animals.type.other",
+};
+
 /* ── Status definitions are defined inside the component (need t()) ── */
 
 const DEFAULT_REGION = {
@@ -510,12 +517,12 @@ export default function AddAnimalScreen() {
         <View style={S.section}>
           <SectionLabel label={t("addAnimal.animalType")} />
           <View style={S.typeRow}>
-            {ANIMAL_TYPES.map((t) => {
-              const isActive = animalType === t.key;
-              const iconName = ANIMAL_TYPE_ICONS[t.key];
+            {ANIMAL_TYPES.map((item) => {
+              const isActive = animalType === item.key;
+              const iconName = ANIMAL_TYPE_ICONS[item.key];
               return (
                 <Pressable
-                  key={t.key}
+                  key={item.key}
                   style={[
                     S.typeChip,
                     {
@@ -524,7 +531,7 @@ export default function AddAnimalScreen() {
                       shadowColor: isActive ? C.purple : "transparent",
                     },
                   ]}
-                  onPress={() => setAnimalType(t.key)}
+                  onPress={() => setAnimalType(item.key)}
                 >
                   <Icon
                     name={iconName}
@@ -533,7 +540,7 @@ export default function AddAnimalScreen() {
                     strokeWidth={isActive ? 2.5 : 1.8}
                   />
                   <Text style={[S.typeChipText, { color: isActive ? "#FFFFFF" : C.text }]}>
-                    {t.label}
+                    {t(ANIMAL_TYPE_I18N[item.key])}
                   </Text>
                 </Pressable>
               );

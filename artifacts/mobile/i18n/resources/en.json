@@ -2004,5 +2004,11 @@
     "removeConfirmTitle": "Remove Listing",
     "removeConfirmMsg": "Are you sure you want to remove this listing?",
     "remove": "Remove"
+  },
+  "statusBadge": {
+    "hungry": "Hungry",
+    "injured": "Injured",
+    "healthy": "Healthy",
+    "unknown": "Unknown"
   }
 }

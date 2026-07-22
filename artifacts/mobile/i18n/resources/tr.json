@@ -2004,5 +2004,11 @@
     "removeConfirmTitle": "İlanı Kaldır",
     "removeConfirmMsg": "Bu ilanı kaldırmak istediğine emin misin?",
     "remove": "Kaldır"
+  },
+  "statusBadge": {
+    "hungry": "Aç",
+    "injured": "Yaralı",
+    "healthy": "Sağlıklı",
+    "unknown": "Bilinmiyor"
   }
 }
