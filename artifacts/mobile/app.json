@@ -14,8 +14,9 @@
       "backgroundColor": "#FAF7F0"
     },
     "updates": {
-      "enabled": false,
-      "url": "https://u.expo.dev/canyoldasi"
+      "enabled": true,
+      "url": "https://u.expo.dev/cdc58e55-f517-4818-b4fd-e4f41b42bad7",
+      "fallbackToCacheTimeout": 0
     },
     "assetBundlePatterns": [
       "**/*"
@@ -27,9 +28,21 @@
       "infoPlist": {
         "ITSAppUsesNonExemptEncryption": false,
         "CFBundleDevelopmentRegion": "tr",
-        "CFBundleLocalizations": ["tr", "en"],
+        "CFBundleLocalizations": [
+          "tr",
+          "en",
+          "tr",
+          "en"
+        ],
         "CFBundleDisplayName": "CanYoldaşı",
         "CFBundleURLTypes": [
+          {
+            "CFBundleURLName": "com.canyoldasi.app",
+            "CFBundleURLSchemes": [
+              "com.canyoldasi.app",
+              "mobile"
+            ]
+          },
           {
             "CFBundleURLName": "com.canyoldasi.app",
             "CFBundleURLSchemes": [
@@ -39,6 +52,23 @@
           }
         ],
         "LSApplicationQueriesSchemes": [
+          "comgooglemaps",
+          "citymapper",
+          "uber",
+          "lyft",
+          "transit",
+          "truckmap",
+          "waze",
+          "yandexnavi",
+          "yandextaxi",
+          "yandexmaps",
+          "kakaomap",
+          "tmap",
+          "szn-mapy",
+          "mapswithme",
+          "osmandmaps",
+          "gett",
+          "nmap",
           "comgooglemaps",
           "citymapper",
           "uber",
@@ -69,17 +99,25 @@
       "package": "com.canyoldasi.app",
       "versionCode": 1,
       "permissions": [
-        "ACCESS_FINE_LOCATION",
-        "ACCESS_COARSE_LOCATION",
-        "CAMERA",
-        "VIBRATE",
-        "android.permission.POST_NOTIFICATIONS"
+        "android.permission.ACCESS_FINE_LOCATION",
+        "android.permission.ACCESS_COARSE_LOCATION",
+        "android.permission.CAMERA",
+        "android.permission.VIBRATE",
+        "android.permission.POST_NOTIFICATIONS",
+        "android.permission.RECORD_AUDIO",
+        "android.permission.ACCESS_FINE_LOCATION",
+        "android.permission.ACCESS_COARSE_LOCATION",
+        "android.permission.CAMERA",
+        "android.permission.VIBRATE",
+        "android.permission.POST_NOTIFICATIONS",
+        "android.permission.RECORD_AUDIO"
       ],
       "adaptiveIcon": {
         "foregroundImage": "./assets/images/icon.png",
         "backgroundColor": "#FAF7F0"
       },
       "blockedPermissions": [
+        "android.permission.RECORD_AUDIO",
         "android.permission.RECORD_AUDIO"
       ]
     },
@@ -131,6 +169,15 @@
     "experiments": {
       "typedRoutes": true,
       "reactCompiler": true
+    },
+    "owner": "baran23",
+    "runtimeVersion": {
+      "policy": "appVersion"
+    },
+    "extra": {
+      "eas": {
+        "projectId": "cdc58e55-f517-4818-b4fd-e4f41b42bad7"
+      }
     }
   }
 }

@@ -11,18 +11,12 @@
     },
     "preview": {
       "distribution": "internal",
-      "environment": "preview",
-      "ios": {
-        "buildType": "release"
-      }
+      "environment": "preview"
     },
     "production": {
       "distribution": "store",
       "autoIncrement": true,
       "environment": "production",
-      "ios": {
-        "buildType": "release"
-      },
       "android": {
         "buildType": "app-bundle"
       }
@@ -31,8 +25,7 @@
   "submit": {
     "production": {
       "ios": {
-        "ascAppId": "$APP_STORE_CONNECT_APP_ID",
-        "ascTeamId": "$APPLE_TEAM_ID"
+        "ascAppId": "$APP_STORE_CONNECT_APP_ID"
       }
     }
   }
