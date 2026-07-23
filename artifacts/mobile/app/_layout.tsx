@@ -91,6 +91,7 @@ function RootLayoutNav() {
       <Stack.Screen name="evcilim/[petId]/identification" />
       <Stack.Screen name="evcilim/[petId]/nutrition" />
       <Stack.Screen name="evcilim/[petId]/notes" />
+      <Stack.Screen name="evcilim/[petId]/reminders" />
       <Stack.Screen name="evcilim/[petId]/medications" />
       <Stack.Screen name="evcilim/[petId]/documents" />
       <Stack.Screen name="evcilim-premium" options={{ presentation: "modal", headerShown: false }} />

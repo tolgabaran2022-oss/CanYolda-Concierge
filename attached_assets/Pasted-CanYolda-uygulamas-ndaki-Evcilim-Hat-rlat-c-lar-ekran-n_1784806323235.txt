@@ -1,0 +1,48 @@
+CanYoldaşı uygulamasındaki **Evcilim → Hatırlatıcılar** ekranında, ilk hatırlatıcı kaydedildikten sonra ortaya çıkan tasarım bozulmasını düzelt.
+
+Sorunun görüldüğü dosya büyük olasılıkla:
+
+`artifacts/mobile/app/evcilim/[petId]/reminders.tsx`
+
+Ekran görüntüsündeki sorunlar:
+
+- “Yaklaşan Hatırlatmalar” bölüm başlığı ekranın en üstüne taşarak iOS saat/notch alanının arkasında kalıyor.
+- Ekranın navigasyon başlığı ve geri düğmesi görünmüyor.
+- İlk hatırlatıcı kartı güvenli alanın hemen altına değil, sistem durum çubuğunun içine doğru yerleşiyor.
+- Sorun özellikle boş ekran durumundan ilk hatırlatıcının bulunduğu liste durumuna geçildiğinde görülüyor.
+
+İstenen düzeltme:
+
+1. Öncelikle bu route’un bağlı olduğu Expo Router `Stack` düzenini ve `headerShown` ayarlarını inceleyerek navigasyon başlığının neden kaybolduğunu tespit et.
+2. Hatırlatıcılar ekranında yalnızca tek bir doğru üst alan yaklaşımı kullan:
+   - Native `Stack` başlığı görünüyorsa içerik onun altında başlamalı.
+   - Native başlık bilinçli olarak gizliyse ekranın kendi başlığı, geri düğmesi ve ekleme düğmesi `SafeAreaView`/safe-area inset kullanılarak oluşturulmalı.
+3. Hem native header hem özel header aynı anda gösterilmemeli.
+4. Sabit ve cihazdan cihaza değişen rastgele `paddingTop` değeri ekleme. iPhone notch/Dynamic Island, Android durum çubuğu ve Web için güvenli alan değerlerini kullan.
+5. Boş liste, yükleniyor durumu ve içinde hatırlatıcı bulunan liste aynı üst hizaya sahip olmalı. Veri geldikten sonra ekran yukarı sıçramamalı.
+6. `ScrollView` içeriği başlığın altında başlamalı; “Yaklaşan Hatırlatmalar” metni tamamen görünür olmalı.
+7. Hatırlatıcı kartının mevcut tasarımını, açma-kapama anahtarını, düzenleme, silme, ekleme ve API işlemlerini değiştirme.
+8. Diğer Evcilim ekranlarının navigasyon veya safe-area düzenini değiştirme.
+9. Global layout dosyasını yalnızca kesin olarak kök neden oradaysa değiştir. Öncelikle düzeltmeyi Hatırlatıcılar ekranıyla sınırla.
+10. İlgisiz dosyalarda düzenleme veya genel tasarım değişikliği yapma.
+11. Platforma özel ekran kopyaları oluşturma; ortak `.tsx` yapısını koru.
+
+Şu senaryoları ayrı ayrı doğrula:
+
+- Hatırlatıcı yokken ekran
+- İlk hatırlatıcı eklendikten sonraki ekran
+- Birden fazla yaklaşan hatırlatıcı
+- Geçmiş/pasif hatırlatıcılar
+- Formu açma ve kapatma
+- Hatırlatıcı düzenleme ve silme
+- iPhone Dynamic Island/notch
+- Android durum çubuğu
+- Web görünümü
+
+Düzeltme sonrasında:
+
+- `pnpm run typecheck` çalıştır.
+- Giriş, Evcilim ana ekranı ve diğer Evcilim alt sayfalarının etkilenmediğini kontrol et.
+- Değiştirilen dosyaları ve kesin kök nedeni bildir.
+- Öncesi/sonrası ekran görüntüsü oluştur.
+- Sonucu `iOS: PASS | Android: PASS | Web: PASS` biçiminde raporla.

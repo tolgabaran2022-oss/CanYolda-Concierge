@@ -4,9 +4,9 @@ import {
   Pressable, RefreshControl, ScrollView, StyleSheet, Switch,
   Text, TextInput, View,
 } from "react-native";
-import { Stack, useLocalSearchParams } from "expo-router";
+import { useLocalSearchParams, useRouter } from "expo-router";
 import * as Haptics from "expo-haptics";
-import { SafeAreaView } from "react-native-safe-area-context";
+import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { useTranslation } from "react-i18next";
 import { Icon } from "@/components/Icon";
 import { useColors } from "@/hooks/useColors";
@@ -53,6 +53,8 @@ export default function RemindersScreen() {
   const { petId } = useLocalSearchParams<{ petId: string }>();
   const { t } = useTranslation();
   const C = useColors();
+  const router = useRouter();
+  const insets = useSafeAreaInsets();
 
   const [reminders, setReminders] = useState<ApiPetReminder[]>([]);
   const [loading, setLoading] = useState(true);
@@ -88,7 +90,10 @@ export default function RemindersScreen() {
 
   useEffect(() => { load(); }, [load]);
 
-  const openAdd = () => { setEditingId(null); setForm(EMPTY_FORM); setShowForm(true); };
+  const openAdd = () => {
+    Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+    setEditingId(null); setForm(EMPTY_FORM); setShowForm(true);
+  };
 
   const openEdit = (r: ApiPetReminder) => {
     setEditingId(r.id);
@@ -143,124 +148,183 @@ export default function RemindersScreen() {
 
   const S = makeStyles(C);
 
-  if (loading) {
-    return (
-      <SafeAreaView style={S.flex} edges={["bottom"]}>
-        <Stack.Screen options={{ title: t("pets.reminders.title"), headerBackTitle: t("pets.reminders.backTitle") }} />
-        <View style={S.center}><ActivityIndicator color={C.purple} size="large" /></View>
-      </SafeAreaView>
-    );
-  }
-
   const upcoming = reminders.filter(r => r.isEnabled && new Date(r.date) >= new Date(new Date().setHours(0,0,0,0)));
-  const past = reminders.filter(r => !r.isEnabled || new Date(r.date) < new Date(new Date().setHours(0,0,0,0)));
+  const past     = reminders.filter(r => !r.isEnabled || new Date(r.date) < new Date(new Date().setHours(0,0,0,0)));
 
   return (
-    <SafeAreaView style={S.flex} edges={["bottom"]}>
-      <Stack.Screen options={{ title: t("pets.reminders.title"), headerBackTitle: t("pets.reminders.backTitle"),
-        headerRight: () => (
-          <Pressable hitSlop={12} onPress={openAdd} style={S.addBtn}>
-            <Icon name="add" size={22} color={C.purple} />
-          </Pressable>
-        ),
-      }} />
+    <View style={[S.root, { backgroundColor: C.bg }]}>
+      {/* ── Custom header — consistent across all states ── */}
+      <View style={[S.header, { paddingTop: insets.top + 12 }]}>
+        <Pressable style={S.backBtn} onPress={() => router.back()} hitSlop={8}>
+          <Icon name="chevron-back" size={22} color={C.text} />
+        </Pressable>
+        <Text style={[S.headerTitle, { color: C.text }]} numberOfLines={1}>
+          {t("pets.reminders.title")}
+        </Text>
+        <Pressable style={[S.addBtn, { backgroundColor: `${C.purple}14` }]} onPress={openAdd} hitSlop={8}>
+          <Icon name="add" size={22} color={C.purple} />
+        </Pressable>
+      </View>
 
-      <ScrollView
-        contentContainerStyle={S.list}
-        showsVerticalScrollIndicator={false}
-        refreshControl={<RefreshControl refreshing={refreshing} onRefresh={() => { setRefreshing(true); load(); }} tintColor={C.purple} />}
-      >
-        {reminders.length === 0 && (
-          <View style={S.empty}>
-            <View style={S.emptyIcon}><Icon name="alarm-outline" size={38} color={C.purple} /></View>
-            <Text style={S.emptyTitle}>{t("pets.reminders.emptyTitle")}</Text>
-            <Text style={S.emptySub}>{t("pets.reminders.emptySub")}</Text>
-            <Pressable style={S.addEmptyBtn} onPress={openAdd}>
-              <Text style={S.addEmptyTxt}>{t("pets.reminders.addBtn")}</Text>
-            </Pressable>
-          </View>
-        )}
+      {/* ── Content — loading / empty / list ── */}
+      {loading ? (
+        <View style={S.center}>
+          <ActivityIndicator color={C.purple} size="large" />
+        </View>
+      ) : (
+        <ScrollView
+          contentContainerStyle={[S.list, { paddingBottom: insets.bottom + 40 }]}
+          showsVerticalScrollIndicator={false}
+          refreshControl={
+            <RefreshControl
+              refreshing={refreshing}
+              onRefresh={() => { setRefreshing(true); load(); }}
+              tintColor={C.purple}
+            />
+          }
+        >
+          {reminders.length === 0 && (
+            <View style={S.empty}>
+              <View style={[S.emptyIcon, { backgroundColor: `${C.purple}12` }]}>
+                <Icon name="alarm-outline" size={38} color={C.purple} />
+              </View>
+              <Text style={[S.emptyTitle, { color: C.text }]}>{t("pets.reminders.emptyTitle")}</Text>
+              <Text style={[S.emptySub, { color: C.textMuted }]}>{t("pets.reminders.emptySub")}</Text>
+              <Pressable style={[S.addEmptyBtn, { backgroundColor: C.purple }]} onPress={openAdd}>
+                <Text style={S.addEmptyTxt}>{t("pets.reminders.addBtn")}</Text>
+              </Pressable>
+            </View>
+          )}
 
-        {upcoming.length > 0 && (
-          <>
-            <Text style={S.sectionTitle}>{t("pets.reminders.sectionUpcoming")}</Text>
-            {upcoming.map(r => (
-              <ReminderCard
-                key={r.id} r={r} C={C} S={S}
-                typeLabels={typeLabels} repeatLabels={repeatLabels}
-                onEdit={() => openEdit(r)} onDelete={() => handleDelete(r)}
-                onToggle={() => handleToggle(r)} toggling={togglingId === r.id}
-              />
-            ))}
-          </>
-        )}
+          {upcoming.length > 0 && (
+            <>
+              <Text style={[S.sectionTitle, { color: C.textMuted }]}>{t("pets.reminders.sectionUpcoming")}</Text>
+              {upcoming.map(r => (
+                <ReminderCard
+                  key={r.id} r={r} C={C} S={S}
+                  typeLabels={typeLabels} repeatLabels={repeatLabels}
+                  onEdit={() => openEdit(r)} onDelete={() => handleDelete(r)}
+                  onToggle={() => handleToggle(r)} toggling={togglingId === r.id}
+                />
+              ))}
+            </>
+          )}
 
-        {past.length > 0 && (
-          <>
-            <Text style={[S.sectionTitle, { marginTop: 16 }]}>{t("pets.reminders.sectionPast")}</Text>
-            {past.map(r => (
-              <ReminderCard
-                key={r.id} r={r} C={C} S={S}
-                typeLabels={typeLabels} repeatLabels={repeatLabels}
-                onEdit={() => openEdit(r)} onDelete={() => handleDelete(r)}
-                onToggle={() => handleToggle(r)} toggling={togglingId === r.id}
-              />
-            ))}
-          </>
-        )}
-      </ScrollView>
+          {past.length > 0 && (
+            <>
+              <Text style={[S.sectionTitle, { color: C.textMuted, marginTop: upcoming.length > 0 ? 16 : 0 }]}>
+                {t("pets.reminders.sectionPast")}
+              </Text>
+              {past.map(r => (
+                <ReminderCard
+                  key={r.id} r={r} C={C} S={S}
+                  typeLabels={typeLabels} repeatLabels={repeatLabels}
+                  onEdit={() => openEdit(r)} onDelete={() => handleDelete(r)}
+                  onToggle={() => handleToggle(r)} toggling={togglingId === r.id}
+                />
+              ))}
+            </>
+          )}
+        </ScrollView>
+      )}
 
+      {/* ── Bottom sheet form ── */}
       {showForm && (
-        <KeyboardAvoidingView behavior={Platform.OS === "ios" ? "padding" : undefined} style={S.sheet}>
-          <View style={S.sheetHandle} />
-          <Text style={S.sheetTitle}>{editingId ? t("pets.reminders.editTitle") : t("pets.reminders.addTitle")}</Text>
+        <KeyboardAvoidingView
+          behavior={Platform.OS === "ios" ? "padding" : undefined}
+          style={[S.sheet, { backgroundColor: C.card, borderColor: C.border, paddingBottom: insets.bottom + 16 }]}
+        >
+          <View style={[S.sheetHandle, { backgroundColor: C.border }]} />
+          <Text style={[S.sheetTitle, { color: C.text }]}>
+            {editingId ? t("pets.reminders.editTitle") : t("pets.reminders.addTitle")}
+          </Text>
           <ScrollView showsVerticalScrollIndicator={false} keyboardShouldPersistTaps="handled">
-            <Text style={S.label}>{t("pets.reminders.titleLabel")}</Text>
-            <TextInput style={S.input} placeholder={t("pets.reminders.titlePlaceholder")} value={form.title} onChangeText={v => setForm(f => ({ ...f, title: v }))} placeholderTextColor={C.textMuted} />
+            <Text style={[S.label, { color: C.textMuted }]}>{t("pets.reminders.titleLabel")}</Text>
+            <TextInput
+              style={[S.input, { backgroundColor: C.bg, borderColor: C.border, color: C.text }]}
+              placeholder={t("pets.reminders.titlePlaceholder")}
+              value={form.title}
+              onChangeText={v => setForm(f => ({ ...f, title: v }))}
+              placeholderTextColor={C.textMuted}
+            />
 
-            <Text style={S.label}>{t("pets.reminders.typeLabel")}</Text>
+            <Text style={[S.label, { color: C.textMuted }]}>{t("pets.reminders.typeLabel")}</Text>
             <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={S.typeRow}>
               {REMINDER_TYPE_KEYS.map(tk => {
                 const meta = REMINDER_TYPE_META[tk]!;
                 return (
-                  <Pressable key={tk} style={[S.typeChip, form.reminderType === tk && { backgroundColor: meta.color, borderColor: meta.color }]} onPress={() => setForm(f => ({ ...f, reminderType: tk }))}>
+                  <Pressable
+                    key={tk}
+                    style={[S.typeChip, { borderColor: C.border, backgroundColor: C.bg },
+                      form.reminderType === tk && { backgroundColor: meta.color, borderColor: meta.color }]}
+                    onPress={() => setForm(f => ({ ...f, reminderType: tk }))}
+                  >
                     <Icon name={meta.icon} size={14} color={form.reminderType === tk ? "#fff" : C.textMuted} />
-                    <Text style={[S.typeChipTxt, form.reminderType === tk && S.typeChipTxtActive]}>{typeLabels[tk]}</Text>
+                    <Text style={[S.typeChipTxt, { color: C.textMuted },
+                      form.reminderType === tk && S.typeChipTxtActive]}>
+                      {typeLabels[tk]}
+                    </Text>
                   </Pressable>
                 );
               })}
             </ScrollView>
 
-            <Text style={S.label}>{t("pets.reminders.dateLabel")}</Text>
-            <TextInput style={S.input} placeholder="YYYY-AA-GG" value={form.date} onChangeText={v => setForm(f => ({ ...f, date: v }))} placeholderTextColor={C.textMuted} />
+            <Text style={[S.label, { color: C.textMuted }]}>{t("pets.reminders.dateLabel")}</Text>
+            <TextInput
+              style={[S.input, { backgroundColor: C.bg, borderColor: C.border, color: C.text }]}
+              placeholder="YYYY-AA-GG" value={form.date}
+              onChangeText={v => setForm(f => ({ ...f, date: v }))}
+              placeholderTextColor={C.textMuted}
+            />
 
-            <Text style={S.label}>{t("pets.reminders.timeLabel")}</Text>
-            <TextInput style={S.input} placeholder={t("pets.reminders.timePlaceholder")} value={form.time} onChangeText={v => setForm(f => ({ ...f, time: v }))} placeholderTextColor={C.textMuted} />
+            <Text style={[S.label, { color: C.textMuted }]}>{t("pets.reminders.timeLabel")}</Text>
+            <TextInput
+              style={[S.input, { backgroundColor: C.bg, borderColor: C.border, color: C.text }]}
+              placeholder={t("pets.reminders.timePlaceholder")} value={form.time}
+              onChangeText={v => setForm(f => ({ ...f, time: v }))}
+              placeholderTextColor={C.textMuted}
+            />
 
-            <Text style={S.label}>{t("pets.reminders.repeatLabel")}</Text>
+            <Text style={[S.label, { color: C.textMuted }]}>{t("pets.reminders.repeatLabel")}</Text>
             <View style={S.repeatRow}>
               {REPEAT_RULE_KEYS.map(rk => (
-                <Pressable key={rk} style={[S.repeatChip, form.repeatRule === rk && S.repeatChipActive]} onPress={() => setForm(f => ({ ...f, repeatRule: rk }))}>
-                  <Text style={[S.repeatChipTxt, form.repeatRule === rk && S.repeatChipTxtActive]}>{repeatLabels[rk]}</Text>
+                <Pressable
+                  key={rk}
+                  style={[S.repeatChip, { borderColor: C.border, backgroundColor: C.bg },
+                    form.repeatRule === rk && { backgroundColor: C.purple, borderColor: C.purple }]}
+                  onPress={() => setForm(f => ({ ...f, repeatRule: rk }))}
+                >
+                  <Text style={[S.repeatChipTxt, { color: C.textMuted },
+                    form.repeatRule === rk && S.repeatChipTxtActive]}>
+                    {repeatLabels[rk]}
+                  </Text>
                 </Pressable>
               ))}
             </View>
 
-            <Text style={S.label}>{t("pets.reminders.notesLabel")}</Text>
-            <TextInput style={[S.input, S.textarea]} placeholder={t("pets.reminders.notesPlaceholder")} value={form.notes} onChangeText={v => setForm(f => ({ ...f, notes: v }))} placeholderTextColor={C.textMuted} multiline numberOfLines={3} />
+            <Text style={[S.label, { color: C.textMuted }]}>{t("pets.reminders.notesLabel")}</Text>
+            <TextInput
+              style={[S.input, S.textarea, { backgroundColor: C.bg, borderColor: C.border, color: C.text }]}
+              placeholder={t("pets.reminders.notesPlaceholder")} value={form.notes}
+              onChangeText={v => setForm(f => ({ ...f, notes: v }))}
+              placeholderTextColor={C.textMuted} multiline numberOfLines={3}
+            />
 
             <View style={S.formActions}>
-              <Pressable style={S.cancelBtn} onPress={() => setShowForm(false)}>
-                <Text style={S.cancelTxt}>{t("common.cancel")}</Text>
+              <Pressable style={[S.cancelBtn, { borderColor: C.border }]} onPress={() => setShowForm(false)}>
+                <Text style={[S.cancelTxt, { color: C.textMuted }]}>{t("common.cancel")}</Text>
               </Pressable>
-              <Pressable style={[S.saveBtn, saving && S.savingBtn]} onPress={handleSave} disabled={saving}>
-                {saving ? <ActivityIndicator color="#fff" size="small" /> : <Text style={S.saveTxt}>{t("common.save")}</Text>}
+              <Pressable style={[S.saveBtn, { backgroundColor: C.purple }, saving && S.savingBtn]} onPress={handleSave} disabled={saving}>
+                {saving
+                  ? <ActivityIndicator color="#fff" size="small" />
+                  : <Text style={S.saveTxt}>{t("common.save")}</Text>
+                }
               </Pressable>
             </View>
           </ScrollView>
         </KeyboardAvoidingView>
       )}
-    </SafeAreaView>
+    </View>
   );
 }
 
@@ -273,20 +337,20 @@ function ReminderCard({ r, C, S, typeLabels, repeatLabels, onEdit, onDelete, onT
 }) {
   const meta = REMINDER_TYPE_META[r.reminderType] ?? REMINDER_TYPE_META["general"]!;
   return (
-    <Pressable style={[S.card, !r.isEnabled && S.cardDisabled]} onPress={onEdit}>
+    <Pressable style={[S.card, { backgroundColor: C.card, borderColor: C.border }, !r.isEnabled && S.cardDisabled]} onPress={onEdit}>
       <View style={[S.cardIcon, { backgroundColor: `${meta.color}18` }]}>
         <Icon name={meta.icon} size={20} color={meta.color} />
       </View>
       <View style={S.cardBody}>
-        <Text style={[S.cardTitle, !r.isEnabled && S.dimmed]}>{r.title}</Text>
-        <Text style={S.cardDate}>{formatDate(r.date)}{r.time ? ` · ${r.time}` : ""}</Text>
+        <Text style={[S.cardTitle, { color: C.text }, !r.isEnabled && { color: C.textMuted }]}>{r.title}</Text>
+        <Text style={[S.cardDate, { color: C.textMuted }]}>{formatDate(r.date)}{r.time ? ` · ${r.time}` : ""}</Text>
         <View style={S.cardMeta}>
           <View style={[S.typePill, { backgroundColor: `${meta.color}14` }]}>
             <Text style={[S.typePillTxt, { color: meta.color }]}>{typeLabels[r.reminderType] ?? r.reminderType}</Text>
           </View>
           {r.repeatRule !== "never" && (
-            <View style={S.repeatPill}>
-              <Text style={S.repeatPillTxt}>{repeatLabels[r.repeatRule] ?? r.repeatRule}</Text>
+            <View style={[S.repeatPill, { backgroundColor: `${C.textMuted}14` }]}>
+              <Text style={[S.repeatPillTxt, { color: C.textMuted }]}>{repeatLabels[r.repeatRule] ?? r.repeatRule}</Text>
             </View>
           )}
         </View>
@@ -294,10 +358,16 @@ function ReminderCard({ r, C, S, typeLabels, repeatLabels, onEdit, onDelete, onT
       <View style={S.cardActions}>
         {toggling
           ? <ActivityIndicator size="small" color={C.purple} />
-          : <Switch value={r.isEnabled} onValueChange={onToggle} trackColor={{ true: C.purple, false: C.border }} thumbColor="#fff" style={{ transform: [{ scaleX: 0.8 }, { scaleY: 0.8 }] }} />
+          : <Switch
+              value={r.isEnabled}
+              onValueChange={onToggle}
+              trackColor={{ true: C.purple, false: C.border }}
+              thumbColor="#fff"
+              style={{ transform: [{ scaleX: 0.8 }, { scaleY: 0.8 }] }}
+            />
         }
         <Pressable hitSlop={10} onPress={onDelete}>
-          <Icon name="trash-outline" size={18} color={"#E55D6F"} />
+          <Icon name="trash-outline" size={18} color="#E55D6F" />
         </Pressable>
       </View>
     </Pressable>
@@ -306,49 +376,64 @@ function ReminderCard({ r, C, S, typeLabels, repeatLabels, onEdit, onDelete, onT
 
 function makeStyles(C: ReturnType<typeof useColors>) {
   return StyleSheet.create({
-    flex:           { flex: 1, backgroundColor: C.bg },
+    root:           { flex: 1 },
+    /* ── Header ── */
+    header:         { flexDirection: "row", alignItems: "center", justifyContent: "space-between",
+                      paddingHorizontal: 20, paddingBottom: 14 },
+    backBtn:        { width: 38, height: 38, borderRadius: 19, alignItems: "center", justifyContent: "center",
+                      backgroundColor: C.card, borderWidth: 1, borderColor: C.border },
+    headerTitle:    { flex: 1, fontSize: 18, fontFamily: "Inter_700Bold", textAlign: "center",
+                      marginHorizontal: 8 },
+    addBtn:         { width: 38, height: 38, borderRadius: 12, alignItems: "center", justifyContent: "center" },
+    /* ── Layout ── */
     center:         { flex: 1, alignItems: "center", justifyContent: "center" },
-    list:           { padding: 16, paddingBottom: 40 },
-    addBtn:         { width: 34, height: 34, borderRadius: 12, backgroundColor: `${C.purple}14`, alignItems: "center", justifyContent: "center" },
+    list:           { paddingHorizontal: 16, paddingTop: 4 },
+    /* ── Empty state ── */
     empty:          { alignItems: "center", gap: 10, paddingTop: 60, paddingHorizontal: 32 },
-    emptyIcon:      { width: 72, height: 72, borderRadius: 36, backgroundColor: `${C.purple}12`, alignItems: "center", justifyContent: "center" },
-    emptyTitle:     { fontSize: 17, fontFamily: "Inter_600SemiBold", color: C.text },
-    emptySub:       { fontSize: 14, fontFamily: "Inter_400Regular", color: C.textMuted, textAlign: "center", lineHeight: 20 },
-    addEmptyBtn:    { marginTop: 4, paddingHorizontal: 24, paddingVertical: 12, backgroundColor: C.purple, borderRadius: 14 },
+    emptyIcon:      { width: 72, height: 72, borderRadius: 36, alignItems: "center", justifyContent: "center" },
+    emptyTitle:     { fontSize: 17, fontFamily: "Inter_600SemiBold" },
+    emptySub:       { fontSize: 14, fontFamily: "Inter_400Regular", textAlign: "center", lineHeight: 20 },
+    addEmptyBtn:    { marginTop: 4, paddingHorizontal: 24, paddingVertical: 12, borderRadius: 14 },
     addEmptyTxt:    { fontSize: 14, fontFamily: "Inter_700Bold", color: "#fff" },
-    sectionTitle:   { fontSize: 13, fontFamily: "Inter_600SemiBold", color: C.textMuted, marginBottom: 8, letterSpacing: 0.3 },
-    card:           { flexDirection: "row", alignItems: "flex-start", gap: 12, backgroundColor: C.card, borderRadius: 18, padding: 14, borderWidth: 1, borderColor: C.border, marginBottom: 10, ...SHADOW },
+    /* ── Section titles ── */
+    sectionTitle:   { fontSize: 13, fontFamily: "Inter_600SemiBold", marginBottom: 8, letterSpacing: 0.3 },
+    /* ── Reminder card ── */
+    card:           { flexDirection: "row", alignItems: "flex-start", gap: 12, borderRadius: 18,
+                      padding: 14, borderWidth: 1, marginBottom: 10, ...SHADOW },
     cardDisabled:   { opacity: 0.55 },
     cardIcon:       { width: 42, height: 42, borderRadius: 13, alignItems: "center", justifyContent: "center", flexShrink: 0 },
     cardBody:       { flex: 1 },
-    cardTitle:      { fontSize: 14, fontFamily: "Inter_600SemiBold", color: C.text, marginBottom: 2 },
-    dimmed:         { color: C.textMuted },
-    cardDate:       { fontSize: 12, fontFamily: "Inter_400Regular", color: C.textMuted, marginBottom: 6 },
+    cardTitle:      { fontSize: 14, fontFamily: "Inter_600SemiBold", marginBottom: 2 },
+    cardDate:       { fontSize: 12, fontFamily: "Inter_400Regular", marginBottom: 6 },
     cardMeta:       { flexDirection: "row", gap: 6, flexWrap: "wrap" },
     typePill:       { paddingHorizontal: 8, paddingVertical: 2, borderRadius: 8 },
     typePillTxt:    { fontSize: 11, fontFamily: "Inter_600SemiBold" },
-    repeatPill:     { paddingHorizontal: 8, paddingVertical: 2, borderRadius: 8, backgroundColor: `${C.textMuted}14` },
-    repeatPillTxt:  { fontSize: 11, fontFamily: "Inter_400Regular", color: C.textMuted },
+    repeatPill:     { paddingHorizontal: 8, paddingVertical: 2, borderRadius: 8 },
+    repeatPillTxt:  { fontSize: 11, fontFamily: "Inter_400Regular" },
     cardActions:    { alignItems: "center", gap: 8, justifyContent: "flex-start", paddingTop: 2 },
-    sheet:          { position: "absolute", bottom: 0, left: 0, right: 0, backgroundColor: C.card, borderTopLeftRadius: 24, borderTopRightRadius: 24, paddingHorizontal: 20, paddingBottom: 32, paddingTop: 12, borderTopWidth: 1, borderColor: C.border, maxHeight: "92%" },
-    sheetHandle:    { width: 40, height: 4, borderRadius: 2, backgroundColor: C.border, alignSelf: "center", marginBottom: 16 },
-    sheetTitle:     { fontSize: 18, fontFamily: "Inter_700Bold", color: C.text, marginBottom: 12 },
-    label:          { fontSize: 13, fontFamily: "Inter_600SemiBold", color: C.textMuted, marginBottom: 6, marginTop: 12 },
-    input:          { backgroundColor: C.bg, borderRadius: 12, borderWidth: 1, borderColor: C.border, paddingHorizontal: 14, paddingVertical: 11, fontSize: 15, fontFamily: "Inter_400Regular", color: C.text },
+    /* ── Bottom sheet form ── */
+    sheet:          { position: "absolute", bottom: 0, left: 0, right: 0, borderTopLeftRadius: 24,
+                      borderTopRightRadius: 24, paddingHorizontal: 20, paddingTop: 12,
+                      borderTopWidth: 1, maxHeight: "92%" },
+    sheetHandle:    { width: 40, height: 4, borderRadius: 2, alignSelf: "center", marginBottom: 16 },
+    sheetTitle:     { fontSize: 18, fontFamily: "Inter_700Bold", marginBottom: 12 },
+    label:          { fontSize: 13, fontFamily: "Inter_600SemiBold", marginBottom: 6, marginTop: 12 },
+    input:          { borderRadius: 12, borderWidth: 1, paddingHorizontal: 14, paddingVertical: 11,
+                      fontSize: 15, fontFamily: "Inter_400Regular" },
     textarea:       { minHeight: 72, textAlignVertical: "top" },
     typeRow:        { flexDirection: "row", gap: 8, paddingBottom: 4 },
-    typeChip:       { flexDirection: "row", alignItems: "center", gap: 5, paddingHorizontal: 10, paddingVertical: 6, borderRadius: 10, borderWidth: 1, borderColor: C.border, backgroundColor: C.bg },
-    typeChipTxt:    { fontSize: 12, fontFamily: "Inter_500Medium", color: C.textMuted },
+    typeChip:       { flexDirection: "row", alignItems: "center", gap: 5, paddingHorizontal: 10,
+                      paddingVertical: 6, borderRadius: 10, borderWidth: 1 },
+    typeChipTxt:    { fontSize: 12, fontFamily: "Inter_500Medium" },
     typeChipTxtActive: { color: "#fff" },
     repeatRow:      { flexDirection: "row", flexWrap: "wrap", gap: 8 },
-    repeatChip:     { paddingHorizontal: 12, paddingVertical: 7, borderRadius: 10, borderWidth: 1, borderColor: C.border, backgroundColor: C.bg },
-    repeatChipActive:{ backgroundColor: C.purple, borderColor: C.purple },
-    repeatChipTxt:  { fontSize: 13, fontFamily: "Inter_400Regular", color: C.textMuted },
+    repeatChip:     { paddingHorizontal: 12, paddingVertical: 7, borderRadius: 10, borderWidth: 1 },
+    repeatChipTxt:  { fontSize: 13, fontFamily: "Inter_400Regular" },
     repeatChipTxtActive: { color: "#fff", fontFamily: "Inter_600SemiBold" },
     formActions:    { flexDirection: "row", gap: 10, marginTop: 20 },
-    cancelBtn:      { flex: 1, paddingVertical: 13, borderRadius: 14, borderWidth: 1, borderColor: C.border, alignItems: "center" },
-    cancelTxt:      { fontSize: 15, fontFamily: "Inter_600SemiBold", color: C.textMuted },
-    saveBtn:        { flex: 2, paddingVertical: 13, borderRadius: 14, backgroundColor: C.purple, alignItems: "center" },
+    cancelBtn:      { flex: 1, paddingVertical: 13, borderRadius: 14, borderWidth: 1, alignItems: "center" },
+    cancelTxt:      { fontSize: 15, fontFamily: "Inter_600SemiBold" },
+    saveBtn:        { flex: 2, paddingVertical: 13, borderRadius: 14, alignItems: "center" },
     savingBtn:      { opacity: 0.7 },
     saveTxt:        { fontSize: 15, fontFamily: "Inter_700Bold", color: "#fff" },
   });
