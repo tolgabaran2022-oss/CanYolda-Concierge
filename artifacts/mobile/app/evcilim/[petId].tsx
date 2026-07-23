@@ -9,6 +9,7 @@ import React, { useState } from "react";
 import { useTranslation } from "react-i18next";
 import {
   Alert,
+  Dimensions,
   KeyboardAvoidingView,
   Platform,
   Pressable,
@@ -32,6 +33,12 @@ const WHITE = "#FFFFFF";
 const BORDER= "#EEE8F5";
 const GREEN = "#34C759";
 const RED   = "#FF3B30";
+
+/* Grid layout: 4 columns, 20px side padding, 10px gap between columns */
+const SCR_W    = Dimensions.get("window").width;
+const GRID_GAP = 10;
+const CARD_W   = Math.floor((SCR_W - 40 - GRID_GAP * 3) / 4);
+const CARD_H   = 125;
 
 const PET_TYPES = ["Kedi", "Köpek", "Kuş", "Tavşan", "Balık", "Diğer"] as const;
 type PetType = typeof PET_TYPES[number];
@@ -356,8 +363,8 @@ const st = StyleSheet.create({
   infoLabel:   { fontSize: 11, fontFamily: "Inter_600SemiBold", color: BODY, textTransform: "uppercase", letterSpacing: 0.5 },
   infoValue:   { fontSize: 15, fontFamily: "Inter_600SemiBold", color: DARK },
   sectionTitle:{ fontSize: 16, fontFamily: "Inter_700Bold", color: DARK, letterSpacing: -0.3 },
-  grid:        { flexDirection: "row", flexWrap: "wrap", gap: 10 },
-  gridCell:    { flex: 1, minWidth: "28%", alignItems: "center", justifyContent: "center", backgroundColor: WHITE, borderRadius: 16, padding: 16, gap: 10, borderWidth: 1, borderColor: BORDER, aspectRatio: 1 },
+  grid:        { flexDirection: "row", flexWrap: "wrap", gap: GRID_GAP, justifyContent: "flex-start" },
+  gridCell:    { width: CARD_W, height: CARD_H, alignItems: "center", justifyContent: "center", backgroundColor: WHITE, borderRadius: 16, padding: 12, gap: 8, borderWidth: 1, borderColor: BORDER },
   gridIcon:    { width: 52, height: 52, borderRadius: 26, alignItems: "center", justifyContent: "center" },
   gridLabel:   { fontSize: 12, fontFamily: "Inter_500Medium", color: DARK, textAlign: "center" },
   typePill:    { flexDirection: "row", alignItems: "center", gap: 6, paddingHorizontal: 14, paddingVertical: 9, borderRadius: 50, backgroundColor: WHITE, borderWidth: 1.5, borderColor: BORDER },
