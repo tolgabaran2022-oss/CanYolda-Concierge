@@ -8,6 +8,8 @@ import React, { useEffect, useRef, useState } from "react";
 import {
   Alert,
   Animated,
+  Dimensions,
+  FlatList,
   Modal,
   Platform,
   Pressable,
@@ -36,6 +38,8 @@ import {
   getDogCompatibilityLabel,
   getToiletTrainingLabel,
 } from "@/lib/petDetailOptions";
+
+const WIN_W = Math.min(Dimensions.get("window").width, 430);
 
 // ── Palette (same as rest of app) ────────────────────────────────────────────
 const P     = "#7C4DCC";
@@ -235,67 +239,106 @@ export default function AdoptionDetailScreen() {
           showsVerticalScrollIndicator={false}
           contentContainerStyle={{ paddingBottom: botPad + 100 }}
         >
-          {/* ── Hero image ── */}
-          <View style={S.heroWrap}>
-            {listing.photo ? (
-              <Image
-                source={{ uri: listing.photo }}
-                style={S.heroImg}
-                contentFit="cover"
-                contentPosition={{ top: 0.25 }}
-              />
-            ) : (
-              <LinearGradient colors={[`${P2}60`, `${P}40`, `${DARK}50`]} style={S.heroImg}>
-                <View style={S.heroPlaceholderInner}>
-                  <Icon name="paw" size={56} color={`${WHITE}80`} />
+          {/* ── Hero photo carousel ── */}
+          {(() => {
+            const photos = listing.images && listing.images.length > 0
+              ? listing.images
+              : listing.photo ? [listing.photo] : [];
+            const [activeIdx, setActiveIdx] = React.useState(0);
+            return (
+              <View style={S.heroWrap}>
+                {photos.length > 0 ? (
+                  <FlatList
+                    data={photos}
+                    horizontal
+                    pagingEnabled
+                    showsHorizontalScrollIndicator={false}
+                    keyExtractor={(uri, i) => `${uri}-${i}`}
+                    onMomentumScrollEnd={(e) => {
+                      const idx = Math.round(e.nativeEvent.contentOffset.x / WIN_W);
+                      setActiveIdx(idx);
+                    }}
+                    renderItem={({ item: uri }) => (
+                      <Image
+                        source={{ uri }}
+                        style={S.heroImg}
+                        contentFit="cover"
+                        contentPosition={{ top: 0.25 }}
+                      />
+                    )}
+                    style={{ width: WIN_W }}
+                    scrollEnabled={photos.length > 1}
+                  />
+                ) : (
+                  <LinearGradient colors={[`${P2}60`, `${P}40`, `${DARK}50`]} style={S.heroImg}>
+                    <View style={S.heroPlaceholderInner}>
+                      <Icon name="paw" size={56} color={`${WHITE}80`} />
+                    </View>
+                  </LinearGradient>
+                )}
+
+                {/* Photo count dots */}
+                {photos.length > 1 && (
+                  <View style={S.dotRow} pointerEvents="none">
+                    {photos.map((_, i) => (
+                      <View key={i} style={[S.dot, i === activeIdx && S.dotActive]} />
+                    ))}
+                  </View>
+                )}
+
+                {/* Photo index counter */}
+                {photos.length > 1 && (
+                  <View style={S.photoCounter} pointerEvents="none">
+                    <Text style={S.photoCounterTxt}>{activeIdx + 1}/{photos.length}</Text>
+                  </View>
+                )}
+
+                {/* Bottom scrim — smooth fade into sheet */}
+                <LinearGradient
+                  colors={["transparent", "transparent", "rgba(248,244,255,0.7)", BG]}
+                  locations={[0, 0.5, 0.82, 1]}
+                  style={S.heroScrim}
+                  pointerEvents="none"
+                />
+
+                {/* Top bar: back + like */}
+                <View style={[S.topBar, { paddingTop: topBarPad }]}>
+                  <Pressable
+                    style={S.blurBtn}
+                    onPress={() => router.back()}
+                    hitSlop={10}
+                  >
+                    {Platform.OS === "ios" ? (
+                      <BlurView intensity={55} tint="dark" style={S.blurInner}>
+                        <Icon name="chevron-back" size={20} color={WHITE} />
+                      </BlurView>
+                    ) : (
+                      <View style={[S.blurInner, { backgroundColor: "rgba(0,0,0,0.35)" }]}>
+                        <Icon name="chevron-back" size={20} color={WHITE} />
+                      </View>
+                    )}
+                  </Pressable>
+
+                  <Pressable
+                    style={S.blurBtn}
+                    onPress={handleToggleFollow}
+                    hitSlop={10}
+                    disabled={followLoading}
+                  >
+                    {Platform.OS === "ios" ? (
+                      <BlurView intensity={55} tint="dark" style={S.blurInner}>
+                        <Icon name={liked ? "heart" : "heart-outline"} size={19} color={liked ? "#FF4466" : WHITE} />
+                      </BlurView>
+                    ) : (
+                      <View style={[S.blurInner, { backgroundColor: "rgba(0,0,0,0.35)" }]}>
+                        <Icon name={liked ? "heart" : "heart-outline"} size={19} color={liked ? "#FF4466" : WHITE} />
+                      </View>
+                    )}
+                  </Pressable>
                 </View>
-              </LinearGradient>
-            )}
-
-            {/* Bottom scrim — smooth fade into sheet */}
-            <LinearGradient
-              colors={["transparent", "transparent", "rgba(248,244,255,0.7)", BG]}
-              locations={[0, 0.5, 0.82, 1]}
-              style={S.heroScrim}
-              pointerEvents="none"
-            />
-
-            {/* Top bar: back + like */}
-            <View style={[S.topBar, { paddingTop: topBarPad }]}>
-              <Pressable
-                style={S.blurBtn}
-                onPress={() => router.back()}
-                hitSlop={10}
-              >
-                {Platform.OS === "ios" ? (
-                  <BlurView intensity={55} tint="dark" style={S.blurInner}>
-                    <Icon name="chevron-back" size={20} color={WHITE} />
-                  </BlurView>
-                ) : (
-                  <View style={[S.blurInner, { backgroundColor: "rgba(0,0,0,0.35)" }]}>
-                    <Icon name="chevron-back" size={20} color={WHITE} />
-                  </View>
-                )}
-              </Pressable>
-
-              <Pressable
-                style={S.blurBtn}
-                onPress={handleToggleFollow}
-                hitSlop={10}
-                disabled={followLoading}
-              >
-                {Platform.OS === "ios" ? (
-                  <BlurView intensity={55} tint="dark" style={S.blurInner}>
-                    <Icon name={liked ? "heart" : "heart-outline"} size={19} color={liked ? "#FF4466" : WHITE} />
-                  </BlurView>
-                ) : (
-                  <View style={[S.blurInner, { backgroundColor: "rgba(0,0,0,0.35)" }]}>
-                    <Icon name={liked ? "heart" : "heart-outline"} size={19} color={liked ? "#FF4466" : WHITE} />
-                  </View>
-                )}
-              </Pressable>
-            </View>
-          </View>
+              </View>
+            );
+          })()}
 
           {/* ── Bottom sheet card ── */}
           <View style={S.sheet}>
@@ -657,10 +700,15 @@ const S = StyleSheet.create({
 
   // Hero
   heroWrap:            { position: "relative", height: 330 },
-  heroImg:             { width: "100%", height: 330 },
+  heroImg:             { width: WIN_W, height: 330 },
   heroPlaceholderInner:{ alignItems: "center", justifyContent: "center", flex: 1 },
   heroScrim:           { position: "absolute", bottom: 0, left: 0, right: 0, height: 160 },
   topBar:              { position: "absolute", top: 0, left: 0, right: 0, paddingHorizontal: 16, paddingBottom: 12, flexDirection: "row", justifyContent: "space-between" },
+  dotRow:              { position: "absolute", bottom: 16, left: 0, right: 0, flexDirection: "row", justifyContent: "center", gap: 5 },
+  dot:                 { width: 6, height: 6, borderRadius: 3, backgroundColor: "rgba(255,255,255,0.5)" },
+  dotActive:           { width: 18, backgroundColor: WHITE },
+  photoCounter:        { position: "absolute", bottom: 14, right: 14, backgroundColor: "rgba(0,0,0,0.42)", borderRadius: 10, paddingHorizontal: 9, paddingVertical: 3 },
+  photoCounterTxt:     { fontSize: 12, fontFamily: "Inter_600SemiBold", color: WHITE },
   blurBtn:             { width: 40, height: 40, borderRadius: 20, overflow: "hidden" },
   blurInner:           { width: 40, height: 40, borderRadius: 20, alignItems: "center", justifyContent: "center" },
 

@@ -1,0 +1,123 @@
+🐾 CAN YOLDAŞI — Hayvan İlanı Fotoğraf Sistemi Düzeltme Promptu
+
+Hayvan ilanı oluşturma ve ilan düzenleme ekranındaki fotoğraf yükleme sistemini tamamen düzelt.
+
+Mevcut sorun:
+
+Kullanıcı ilk fotoğrafı ekleyebiliyor ancak ikinci fotoğraf ekleme alanına bastığında fotoğraf seçilemiyor.
+Fotoğraf listesi birden fazla görsel desteklemiyor.
+İstenen özellikler:
+1. Çoklu fotoğraf yükleme
+
+Hayvan ilanlarında kullanıcı maksimum 5 adet fotoğraf yükleyebilmeli.
+
+Akış:
+
+İlk eklenen fotoğraf:
+otomatik kapak fotoğrafı olur.
+üzerinde "KAPAK" etiketi görünür.
+Sonraki fotoğraflar:
+2,3,4,5 olarak eklenir.
+Kullanıcı fotoğraf ekle butonuna basınca tekrar galeri/kamera açılır.
+
+Fotoğraf limiti:
+
+minimum: 1 fotoğraf
+maximum: 5 fotoğraf
+
+5 fotoğraf yüklendikten sonra:
+
+"Fotoğraf Ekle" kartı gizlensin veya pasif olsun.
+2. Fotoğraf bileşeni düzenlemesi
+
+Fotoğraf alanı şu yapıda olmalı:
+
+[FOTOĞRAF 1] [ + Fotoğraf Ekle ]
+
+[FOTOĞRAF 2] [FOTOĞRAF 3]
+
+[FOTOĞRAF 4] [FOTOĞRAF 5]
+
+Her fotoğraf kartında:
+
+Çöp kutusu / X butonu
+Kapak etiketi
+Basılı tutarak sıralama değiştirme desteği
+3. Backend kontrolü
+
+İlan oluştururken:
+
+Database içinde:
+
+images: [
+ "url1",
+ "url2",
+ "url3",
+ "url4",
+ "url5"
+]
+
+array olarak kayıt edilmeli.
+
+Sadece:
+
+image
+
+tek alan kullanılmamalı.
+
+4. İlan düzenleme ekranı
+
+Mevcut ilan düzenlenirken:
+
+Daha önce yüklenmiş fotoğraflar gösterilecek.
+Yeni fotoğraf eklenince eski fotoğraflar silinmeyecek.
+Silinen fotoğraf database'den kaldırılacak.
+Güncelle butonu tüm fotoğraf listesini kaydedecek.
+5. Upload sistemi kontrolü
+
+Kontrol et:
+
+React Native Image Picker doğru çalışıyor mu?
+Kamera izni var mı?
+Galeri izni var mı?
+Multiple selection aktif mi?
+
+Expo kullanılıyorsa:
+
+expo-image-picker
+
+ile:
+
+allowsMultipleSelection: true
+selectionLimit: 5
+
+uyumlu şekilde düzenle.
+
+6. UI düzeltmesi
+
+Mevcut tasarım korunacak.
+
+Sadece:
+
+Fotoğraf ekleme kartı çalışacak.
+Kart boyutları bozulmayacak.
+Mor tema korunacak.
+Apple seviyesinde temiz görünüm devam edecek.
+7. Test zorunluluğu
+
+Tamamlandıktan sonra test et:
+
+✅ Yeni ilan oluştur
+✅ 5 fotoğraf yükle
+✅ Fotoğrafları sırala
+✅ Kapak değiştir
+✅ Fotoğraf sil
+✅ İlanı kaydet
+✅ İlan detayında tüm fotoğraflar görünmeli
+✅ Düzenle ekranına gir
+✅ Yeni fotoğraf ekle
+✅ Eski fotoğraflar korunmalı
+
+Beklenen sonuç:
+
+Kullanıcı artık hayvan ilanına 5 adet fotoğraf yükleyebilmeli ve sistem sahibinden.com mantığında çalışmalı.

@@ -215,13 +215,61 @@ function PickerModal({ visible, title, items, selected, onSelect, onClose, searc
 }
 
 /* ── Photo grid constants ── */
-const MAX_PHOTOS = 10;
+const MAX_PHOTOS = 5;
 const _WIN_W  = Dimensions.get("window").width;
 const WIN_W   = Math.min(_WIN_W, 430);
 const GRID_GAP = 6;
 const GRID_PAD = 20;
 const PHOTO_W = (WIN_W - GRID_PAD * 2 - GRID_GAP * 2) / 3;
 const PHOTO_H = PHOTO_W * 1.15;
+
+/* ── PhotoActionSheet ── */
+type PhotoAction = "cover" | "moveLeft" | "moveRight" | "delete" | "close";
+function PhotoActionSheet({ visible, isFirst, isLast, isCover, onAction }: {
+  visible: boolean; isFirst: boolean; isLast: boolean; isCover: boolean;
+  onAction: (a: PhotoAction) => void;
+}) {
+  const T      = useTheme();
+  const insets = useSafeAreaInsets();
+  type Btn = { label: string; icon: string; action: PhotoAction; color?: string };
+  const btns: Btn[] = [
+    ...(!isCover ? [{ label: "Kapak Yap", icon: "star", action: "cover" as PhotoAction, color: C.purple }] : []),
+    ...(!isFirst ? [{ label: "Öne Taşı",  icon: "arrow-back",    action: "moveLeft"  as PhotoAction }] : []),
+    ...(!isLast  ? [{ label: "Geri Taşı", icon: "arrow-forward", action: "moveRight" as PhotoAction }] : []),
+    { label: "Fotoğrafı Sil", icon: "trash-outline", action: "delete" as PhotoAction, color: C.error },
+  ];
+  return (
+    <Modal visible={visible} transparent animationType="slide" onRequestClose={() => onAction("close")}>
+      <Pressable style={PAS.overlay} onPress={() => onAction("close")} />
+      <View style={[PAS.sheet, { paddingBottom: insets.bottom + 8, backgroundColor: T.card }]}>
+        <View style={[PAS.handle, { backgroundColor: T.border }]} />
+        {btns.map((b) => (
+          <Pressable key={b.action} style={({ pressed }) => [PAS.row, { opacity: pressed ? 0.7 : 1 }]}
+            onPress={() => { Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light); onAction(b.action); }}>
+            <View style={[PAS.iconWrap, b.color === C.error && PAS.iconWrapRed]}>
+              <Icon name={b.icon as any} size={18} color={b.color ?? C.purpleDark} />
+            </View>
+            <Text style={[PAS.rowTxt, { color: T.text }, b.color === C.error && { color: C.error }]}>{b.label}</Text>
+          </Pressable>
+        ))}
+        <Pressable style={({ pressed }) => [PAS.cancelRow, { opacity: pressed ? 0.7 : 1 }]} onPress={() => onAction("close")}>
+          <Text style={PAS.cancelTxt}>Vazgeç</Text>
+        </Pressable>
+      </View>
+    </Modal>
+  );
+}
+const PAS = StyleSheet.create({
+  overlay:    { flex: 1, backgroundColor: "rgba(0,0,0,0.45)" },
+  sheet:      { borderTopLeftRadius: 24, borderTopRightRadius: 24, paddingTop: 12, paddingHorizontal: 20, gap: 2 },
+  handle:     { width: 40, height: 4, borderRadius: 2, alignSelf: "center", marginBottom: 16 },
+  row:        { flexDirection: "row", alignItems: "center", gap: 14, paddingVertical: 14, borderBottomWidth: StyleSheet.hairlineWidth, borderBottomColor: "rgba(123,94,167,0.1)" },
+  iconWrap:   { width: 40, height: 40, borderRadius: 12, backgroundColor: "rgba(123,94,167,0.08)", alignItems: "center", justifyContent: "center" },
+  iconWrapRed:{ backgroundColor: "rgba(229,62,62,0.08)" },
+  rowTxt:     { fontSize: 15, fontFamily: "Inter_500Medium" },
+  cancelRow:  { paddingVertical: 16, alignItems: "center" },
+  cancelTxt:  { fontSize: 16, fontFamily: "Inter_600SemiBold", color: "#9478D8" },
+});
 
 /* ── AddPhotoSheet ── */
 function AddPhotoSheet({ visible, onCamera, onGallery, onClose }: {
@@ -275,6 +323,8 @@ export default function AddAdoptionScreen() {
   const [petType,           setPetType]           = useState("Kedi");
   const [petAge,            setPetAge]            = useState("");
   const [images,            setImages]            = useState<string[]>([]);
+  const [selectedIdx,       setSelectedIdx]       = useState<number | null>(null);
+  const [showPhotoSheet,    setShowPhotoSheet]    = useState(false);
   const [showAddSheet,      setShowAddSheet]      = useState(false);
   const [province,          setProvince]          = useState("");
   const [district,          setDistrict]          = useState("");
@@ -303,6 +353,47 @@ export default function AddAdoptionScreen() {
 
   const selectedProvince: Province | undefined = TURKEY_PROVINCES.find((p) => p.value === province);
   const districts = selectedProvince?.districts ?? [];
+
+  const handlePhotoAction = (action: PhotoAction) => {
+    setShowPhotoSheet(false);
+    if (selectedIdx === null) return;
+    const idx = selectedIdx;
+
+    if (action === "cover") {
+      setImages((prev) => {
+        const arr = [...prev];
+        const [item] = arr.splice(idx, 1);
+        return [item, ...arr];
+      });
+      Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
+    } else if (action === "moveLeft" && idx > 0) {
+      setImages((prev) => {
+        const arr = [...prev];
+        [arr[idx - 1], arr[idx]] = [arr[idx], arr[idx - 1]];
+        return arr;
+      });
+      Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
+    } else if (action === "moveRight" && idx < images.length - 1) {
+      setImages((prev) => {
+        const arr = [...prev];
+        [arr[idx + 1], arr[idx]] = [arr[idx], arr[idx + 1]];
+        return arr;
+      });
+      Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
+    } else if (action === "delete") {
+      Alert.alert("Fotoğrafı Sil", "Bu fotoğrafı silmek istediğinize emin misiniz?", [
+        { text: "İptal", style: "cancel" },
+        {
+          text: "Sil", style: "destructive",
+          onPress: () => {
+            setImages((prev) => prev.filter((_, i) => i !== idx));
+            Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
+          },
+        },
+      ]);
+    }
+    setSelectedIdx(null);
+  };
 
   const openCamera = async () => {
     if (images.length >= MAX_PHOTOS) {
@@ -506,22 +597,38 @@ export default function AddAdoptionScreen() {
                 )}
                 <View style={S.photoGrid}>
                   {images.map((uri, idx) => (
-                    <View key={`${uri}-${idx}`} style={S.photoCell}>
+                    <Pressable
+                      key={`${uri}-${idx}`}
+                      style={({ pressed }) => [S.photoCell, { opacity: pressed ? 0.85 : 1 }]}
+                      onLongPress={() => {
+                        Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
+                        setSelectedIdx(idx);
+                        setShowPhotoSheet(true);
+                      }}
+                      delayLongPress={350}
+                    >
                       <Image source={{ uri }} style={S.photoImg} contentFit="cover" />
-                      {idx === 0 && (
+                      {idx === 0 ? (
                         <View style={S.coverBadge}>
                           <Icon name="star" size={9} color="#FFF" />
                           <Text style={S.coverBadgeTxt}>KAPAK</Text>
+                        </View>
+                      ) : (
+                        <View style={S.indexBadge}>
+                          <Text style={S.indexBadgeTxt}>{idx + 1}</Text>
                         </View>
                       )}
                       <Pressable
                         style={S.deletePhotoBtn}
                         hitSlop={6}
-                        onPress={() => setImages((prev) => prev.filter((_, i) => i !== idx))}
+                        onPress={() => {
+                          Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+                          setImages((prev) => prev.filter((_, i) => i !== idx));
+                        }}
                       >
                         <Icon name="close-circle" size={20} color="#FFF" />
                       </Pressable>
-                    </View>
+                    </Pressable>
                   ))}
                   {images.length < MAX_PHOTOS && (
                     <Pressable
@@ -924,6 +1031,13 @@ export default function AddAdoptionScreen() {
         </View>
       </View>
 
+      <PhotoActionSheet
+        visible={showPhotoSheet}
+        isFirst={selectedIdx === 0}
+        isLast={selectedIdx === images.length - 1}
+        isCover={selectedIdx === 0}
+        onAction={handlePhotoAction}
+      />
       <AddPhotoSheet
         visible={showAddSheet}
         onCamera={openCamera}
@@ -1066,9 +1180,16 @@ const S = StyleSheet.create({
   coverBadge:     {
     position: "absolute", top: 6, left: 6,
     flexDirection: "row", alignItems: "center", gap: 3,
-    backgroundColor: "rgba(0,0,0,0.55)", paddingHorizontal: 7, paddingVertical: 3, borderRadius: 8,
+    backgroundColor: C.purple, paddingHorizontal: 7, paddingVertical: 3, borderRadius: 8,
   },
   coverBadgeTxt: { fontSize: 8, fontFamily: "Inter_700Bold", color: "#FFF" },
+  indexBadge: {
+    position: "absolute", top: 6, left: 6,
+    backgroundColor: "rgba(0,0,0,0.45)",
+    width: 22, height: 22, borderRadius: 11,
+    alignItems: "center", justifyContent: "center",
+  },
+  indexBadgeTxt: { fontSize: 11, fontFamily: "Inter_700Bold", color: "#FFF" },
   deletePhotoBtn: { position: "absolute", top: 4, right: 4 },
   addPhotoBtn:    {
     width: PHOTO_W, height: PHOTO_H, borderRadius: 12,

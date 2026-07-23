@@ -1,3 +1,4 @@
+import AsyncStorage from "@react-native-async-storage/async-storage";
 import { Icon } from "@/components/Icon";
 import * as Haptics from "expo-haptics";
 import * as ImagePicker from "expo-image-picker";
@@ -46,7 +47,7 @@ const C = {
   errorBg:     "#FFF5F5",
 };
 
-const MAX_PHOTOS = 10;
+const MAX_PHOTOS = 5;
 const _RAW_WIN_W = Dimensions.get("window").width;
 const WIN_W      = Math.min(_RAW_WIN_W, 430);
 const GRID_GAP   = 6;
@@ -76,6 +77,8 @@ const API_BASE = process.env.EXPO_PUBLIC_DOMAIN
   ? `https://${process.env.EXPO_PUBLIC_DOMAIN}/api`
   : "http://localhost:8080/api";
 
+const TOKEN_KEY = "@canyoldasi:jwt";
+
 async function uploadPhoto(localUri: string): Promise<string> {
   const filename = localUri.split("/").pop() ?? "photo.jpg";
   const match = /\.(\w+)$/.exec(filename);
@@ -88,7 +91,10 @@ async function uploadPhoto(localUri: string): Promise<string> {
   } else {
     formData.append("image", { uri: localUri, name: filename, type: mimeType } as unknown as Blob);
   }
-  const res = await fetch(`${API_BASE}/upload`, { method: "POST", body: formData });
+  const token = await AsyncStorage.getItem(TOKEN_KEY);
+  const headers: Record<string, string> = {};
+  if (token) headers["Authorization"] = `Bearer ${token}`;
+  const res = await fetch(`${API_BASE}/upload`, { method: "POST", body: formData, headers });
   if (!res.ok) throw new Error("Fotoğraf yüklenemedi");
   const data = await res.json() as { url: string };
   return data.url;
