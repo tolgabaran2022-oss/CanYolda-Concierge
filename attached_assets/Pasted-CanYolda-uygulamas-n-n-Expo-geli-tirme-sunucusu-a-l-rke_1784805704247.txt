@@ -1,0 +1,44 @@
+CanYoldaşı uygulamasının Expo geliştirme sunucusu açılırken çöküyor. Aşağıdaki hata görülüyor:
+
+- `Your CanYoldaşı artifact crashed`
+- `ERR_PNPM_RECURSIVE_EXEC_FIRST_FAIL`
+- `Command was killed with SIGKILL`
+- `ERR_PNPM_RECURSIVE_RUN_FIRST_FAIL`
+- `Exit status 1`
+
+Hata zincirinde şu satırlar görünüyor:
+
+- `artifacts/mobile/contexts/AuthContext.tsx:11`
+- `artifacts/mobile/app/(auth)/login-form.tsx:50`
+
+`AuthContext.tsx:11`, `@/services/notifications` modülünü içe aktarıyor. Bu servis de `expo-notifications`, `expo-device` ve `expo-constants` kullanıyor.
+
+Lütfen sorunu şu şekilde inceleyip düzelt:
+
+1. Expo sürecini tekrar çalıştır ve `SIGKILL` mesajından önce oluşan ilk gerçek hatayı tam olarak tespit et. Yalnızca son `ERR_PNPM...` mesajını sebep kabul etme.
+2. `expo-notifications`, `expo-device`, `expo-constants`, Expo SDK 54 ve React Native 0.81 sürümlerinin birbiriyle uyumlu olup olmadığını kontrol et.
+3. Uyumsuz bağımlılık varsa Expo SDK 54’ün önerdiği sürümü `npx expo install` veya pnpm uyumlu eşdeğeriyle kur. Bağımlılık sürümlerini tahmin ederek değiştirme.
+4. `services/notifications.ts` dosyasının Web ortamında uygulama açılırken native bildirim API’lerini çalıştırmamasını sağla.
+5. Modül seviyesinde çalışan `Notifications.setNotificationHandler(...)` çağrısı Web veya desteklenmeyen ortamda çökmeye neden oluyorsa güvenli, platform uyumlu bir yapıya taşı.
+6. Bildirim servisi yüklenemese bile giriş ekranı ve `AuthContext` çökmemeli. Push bildirimi yardımcı bir özellik olarak kalmalı; auth akışını bloke etmemeli.
+7. Eğer neden bellek yetersizliği ise önce gerçek bellek tüketimini doğrula; gereksiz önbellekleri temizle ve Expo worker sayısını düşük tut. Kod hatasını bellek sorunu gibi gizleme.
+8. Mevcut giriş, kayıt, çıkış ve push-token kaydetme/kaldırma işlevlerini bozma.
+9. Kutucuk grid düzeni dâhil ilgisiz dosyalarda değişiklik yapma.
+10. Platforma özel kopya ekranlar oluşturma; ortak kodu koru.
+
+Düzeltmeden sonra şu kontrolleri yap:
+
+- `pnpm run typecheck`
+- Expo geliştirme sunucusunun temiz önbellekle başlaması
+- Giriş ekranının açılması
+- Web’de bildirim servisi yüzünden çökme olmaması
+- iOS ve Android’de bildirim fonksiyonlarının korunması
+- Çalışan Expo sürecinin yeniden `SIGKILL` ile kapanmaması
+
+Sonuç raporunda şunları açıkça yaz:
+
+- İlk gerçek hata mesajı
+- Hatanın kesin kök nedeni
+- Değiştirilen dosyalar ve bağımlılıklar
+- Yapılan doğrulamalar
+- `iOS: PASS | Android: PASS | Web: PASS`
