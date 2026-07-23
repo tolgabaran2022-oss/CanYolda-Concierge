@@ -23,6 +23,7 @@ import {
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { useAuth } from "@/contexts/AuthContext";
 import { usePets } from "@/contexts/PetsContext";
+import { usePetPremium } from "@/contexts/PetPremiumContext";
 
 const P     = "#7B5EA7";
 const P2    = "#9E78CC";
@@ -116,6 +117,7 @@ type ManageGridItem = {
   icon: string;
   color: string;
   route: string;
+  premium?: boolean;
 };
 
 export default function PetDetailScreen() {
@@ -123,6 +125,7 @@ export default function PetDetailScreen() {
   const { petId } = useLocalSearchParams<{ petId: string }>();
   const { getPet, updatePet, deletePet } = usePets();
   const { user } = useAuth();
+  const { isPremium } = usePetPremium();
   const router = useRouter();
   const insets = useSafeAreaInsets();
 
@@ -146,8 +149,8 @@ export default function PetDetailScreen() {
     { key: "vaccinations",   label: t("pets.detail.vaccinations"),   icon: "shield-checkmark-outline", color: "#FF9500",  route: `/evcilim/${petId}/vaccinations` },
     { key: "appointments",   label: t("pets.detail.appointments"),   icon: "calendar-outline",         color: P,          route: `/evcilim/${petId}/appointments` },
     { key: "nutrition",      label: t("pets.detail.nutrition"),      icon: "bag-handle-outline",       color: GREEN,      route: `/evcilim/${petId}/nutrition` },
-    { key: "documents",      label: t("pets.detail.documents"),      icon: "document-text-outline",    color: "#FF9500",  route: `/evcilim/${petId}/documents` },
-    { key: "medications",    label: t("pets.detail.medications"),    icon: "medical-outline",           color: "#E55D6F",  route: `/evcilim/${petId}/medications` },
+    { key: "documents",      label: t("pets.detail.documents"),      icon: "document-text-outline",    color: "#FF9500",  route: `/evcilim/${petId}/documents`,   premium: true },
+    { key: "medications",    label: t("pets.detail.medications"),    icon: "medical-outline",           color: "#E55D6F",  route: `/evcilim/${petId}/medications`, premium: true },
     { key: "notes",          label: t("pets.detail.notes"),          icon: "pencil-outline",           color: "#AF52DE",  route: `/evcilim/${petId}/notes` },
   ];
 
@@ -341,11 +344,27 @@ export default function PetDetailScreen() {
                       ]}
                       onPress={() => {
                         Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+                        if (item.premium && !isPremium) {
+                          router.replace({
+                            pathname: "/pets",
+                            params: {
+                              openPremium: "true",
+                              premiumSource: item.key,
+                              premiumReturnTo: encodeURIComponent(item.route),
+                            },
+                          } as Parameters<typeof router.replace>[0]);
+                          return;
+                        }
                         router.push(item.route as Parameters<typeof router.push>[0]);
                       }}
                     >
                       <View style={[st.gridIcon, { backgroundColor: `${item.color}18` }]}>
                         <Icon name={item.icon} size={26} color={item.color} />
+                        {item.premium && !isPremium && (
+                          <View style={st.premiumBadge}>
+                            <Icon name="diamond" size={9} color={WHITE} />
+                          </View>
+                        )}
                       </View>
                       <Text style={st.gridLabel}>{item.label}</Text>
                     </Pressable>
@@ -382,7 +401,8 @@ const st = StyleSheet.create({
   grid:        { gap: GRID_GAP },
   gridRow:     { flexDirection: "row", gap: GRID_GAP },
   gridCell:    { width: CARD_W, height: CARD_H, alignItems: "center", justifyContent: "center", backgroundColor: WHITE, borderRadius: 16, padding: 12, gap: 8, borderWidth: 1, borderColor: BORDER },
-  gridIcon:    { width: 52, height: 52, borderRadius: 26, alignItems: "center", justifyContent: "center" },
+  gridIcon:    { width: 52, height: 52, borderRadius: 26, alignItems: "center", justifyContent: "center", position: "relative" },
+  premiumBadge:{ position: "absolute", top: -4, right: -4, width: 18, height: 18, borderRadius: 9, backgroundColor: P, alignItems: "center", justifyContent: "center", borderWidth: 2, borderColor: WHITE },
   gridLabel:   { fontSize: 12, fontFamily: "Inter_500Medium", color: DARK, textAlign: "center" },
   typePill:    { flexDirection: "row", alignItems: "center", gap: 6, paddingHorizontal: 14, paddingVertical: 9, borderRadius: 50, backgroundColor: WHITE, borderWidth: 1.5, borderColor: BORDER },
   typePillActive: { borderColor: P, backgroundColor: `${P}10` },
