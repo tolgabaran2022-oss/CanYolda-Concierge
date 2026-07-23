@@ -28,27 +28,12 @@
       "infoPlist": {
         "ITSAppUsesNonExemptEncryption": false,
         "CFBundleDevelopmentRegion": "tr",
-        "CFBundleLocalizations": [
-          "tr",
-          "en",
-          "tr",
-          "en"
-        ],
+        "CFBundleLocalizations": ["tr", "en"],
         "CFBundleDisplayName": "CanYoldaşı",
         "CFBundleURLTypes": [
           {
             "CFBundleURLName": "com.canyoldasi.app",
-            "CFBundleURLSchemes": [
-              "com.canyoldasi.app",
-              "mobile"
-            ]
-          },
-          {
-            "CFBundleURLName": "com.canyoldasi.app",
-            "CFBundleURLSchemes": [
-              "com.canyoldasi.app",
-              "mobile"
-            ]
+            "CFBundleURLSchemes": ["com.canyoldasi.app", "mobile"]
           }
         ],
         "LSApplicationQueriesSchemes": [
@@ -68,27 +53,10 @@
           "mapswithme",
           "osmandmaps",
           "gett",
-          "nmap",
-          "comgooglemaps",
-          "citymapper",
-          "uber",
-          "lyft",
-          "transit",
-          "truckmap",
-          "waze",
-          "yandexnavi",
-          "yandextaxi",
-          "yandexmaps",
-          "kakaomap",
-          "tmap",
-          "szn-mapy",
-          "mapswithme",
-          "osmandmaps",
-          "gett",
           "nmap"
         ],
-        "NSLocationWhenInUseUsageDescription": "CanYoldasi, sokak hayvanlarinin konumunu haritada gostermek ve yakinindaki veterinerleri listelemek icin konumunuzu kullanir.",
-        "NSPhotoLibraryUsageDescription": "CanYoldasi, sokak hayvani fotograflari yuklemenizi ve profil fotografinizi ayarlamanizi saglamak icin fotograf kitapliginiza erisir.",
+        "NSLocationWhenInUseUsageDescription": "CanYoldaşı, sokak hayvanlarının konumunu haritada göstermek ve yakınındaki veterinerleri listelemek için konumunuzu kullanır.",
+        "NSPhotoLibraryUsageDescription": "CanYoldaşı, sokak hayvanı fotoğrafları yüklemenizi ve profil fotoğrafınızı ayarlamanızı sağlamak için fotoğraf kitaplığınıza erişir.",
         "NSCameraUsageDescription": "Yakındaki sokak hayvanlarının durumunu fotoğraflayarak bildirebilmeniz için kamera erişimi gereklidir."
       },
       "entitlements": {
@@ -103,23 +71,15 @@
         "android.permission.ACCESS_COARSE_LOCATION",
         "android.permission.CAMERA",
         "android.permission.VIBRATE",
-        "android.permission.POST_NOTIFICATIONS",
-        "android.permission.RECORD_AUDIO",
-        "android.permission.ACCESS_FINE_LOCATION",
-        "android.permission.ACCESS_COARSE_LOCATION",
-        "android.permission.CAMERA",
-        "android.permission.VIBRATE",
-        "android.permission.POST_NOTIFICATIONS",
+        "android.permission.POST_NOTIFICATIONS"
+      ],
+      "blockedPermissions": [
         "android.permission.RECORD_AUDIO"
       ],
       "adaptiveIcon": {
         "foregroundImage": "./assets/images/icon.png",
         "backgroundColor": "#FAF7F0"
-      },
-      "blockedPermissions": [
-        "android.permission.RECORD_AUDIO",
-        "android.permission.RECORD_AUDIO"
-      ]
+      }
     },
     "web": {
       "favicon": "./assets/images/icon.png",
@@ -136,7 +96,7 @@
       [
         "expo-location",
         {
-          "locationAlwaysAndWhenInUsePermission": "CanYoldasi, sokak hayvanlarinin konumunu belirlemek icin konumunuzu kullanir.",
+          "locationAlwaysAndWhenInUsePermission": "CanYoldaşı, sokak hayvanlarının konumunu belirlemek için konumunuzu kullanır.",
           "isIosBackgroundLocationEnabled": false,
           "isAndroidBackgroundLocationEnabled": false
         }
@@ -144,7 +104,7 @@
       [
         "expo-image-picker",
         {
-          "photosPermission": "CanYoldasi, hayvan fotografi eklemek icin fotograf kitapliginiza erisir.",
+          "photosPermission": "CanYoldaşı, hayvan fotoğrafı eklemek için fotoğraf kitaplığınıza erişir.",
           "cameraPermission": "Yakındaki sokak hayvanlarının durumunu fotoğraflayarak bildirebilmeniz için kamera erişimi gereklidir."
         }
       ],

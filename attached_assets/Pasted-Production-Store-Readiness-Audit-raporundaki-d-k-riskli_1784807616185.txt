@@ -1,0 +1,124 @@
+Production/Store Readiness Audit raporundaki düşük riskli kod ve yapılandırma bulgularını düzelt. Bu çalışma sırasında uygulamanın çalışan özelliklerini bozma.
+
+## Kesin kapsam
+
+Yalnızca şu maddeleri ele al:
+
+1. `app.json` tekrarları ve izin çelişkileri
+2. iOS izin açıklamalarındaki bozuk Türkçe karakterler
+3. Production’da çalışan hassas `console.log` satırları
+4. Mesaj ekranındaki polling’in uygulama arka plana geçtiğinde durdurulması
+
+Şimdilik şunları yapma:
+
+- Bağımlılık veya Expo SDK sürümü değiştirme
+- EAS build oluşturma
+- OTA update yayımlama
+- Production deployment yapma
+- Secret veya environment variable değerlerini değiştirme
+- RevenueCat dashboard yapılandırmasını değiştirme
+- Veritabanı migration’ı çalıştırma
+- Global tasarım veya navigasyon değişikliği yapma
+- İlgisiz dosyaları formatlama
+- React Compiler ayarını değiştirme
+- Tablet desteğini kapatma
+- Sentry veya başka yeni paket kurma
+
+## 1. app.json temizliği
+
+`artifacts/mobile/app.json` dosyasını JSON yapısını koruyarak incele.
+
+Şunların yinelenen kopyalarını temizle:
+
+- `CFBundleLocalizations`
+- `CFBundleURLTypes`
+- `LSApplicationQueriesSchemes`
+- Android `permissions`
+- `blockedPermissions`
+- Aynı config/plugin ayarının diğer yinelenen öğeleri
+
+Kurallar:
+
+- Her benzersiz değer yalnızca bir kez bulunsun.
+- URL scheme değerlerini kaybetme.
+- Kamera, fotoğraf, konum ve bildirim için gerçekten kullanılan izinleri koru.
+- Uygulamada ses kaydı kullanılmıyorsa `RECORD_AUDIO` izin listesinde bulunmasın ve `blockedPermissions` içinde yalnızca bir kez bulunsun.
+- `react-native-maps` paketini `plugins` listesine ekleme.
+- Bundle identifier, package name, EAS project ID, icon, splash, RevenueCat ve bildirim yapılandırmasını bozma.
+- Temizlik öncesi ve sonrası etkin config farkını raporla.
+
+## 2. iOS izin açıklamaları
+
+Aşağıdakiler dâhil tüm kullanıcıya gösterilen izin metinlerini düzgün ve doğal Türkçeye çevir:
+
+- Konum kullanımı
+- Kamera
+- Fotoğraf galerisi
+- Bildirimle ilgili açıklamalar
+- Plugin ayarlarındaki izin metinleri
+- `infoPlist` içindeki usage description alanları
+
+Türkçe karakterleri doğru kullan:
+
+`CanYoldaşı`, `hayvanlarının`, `konumunu`, `göstermek`, `fotoğraf`, `erişim`, `bildirim`
+
+İzin açıklaması yalnızca “özelliğin çalışması için gereklidir” gibi genel olmasın. Verinin hangi kullanıcı özelliğinde ve neden kullanıldığını açıkça anlatsın.
+
+İzin kapsamını genişletme ve gereksiz yeni izin ekleme.
+
+## 3. Production logları
+
+Audit raporunda belirtilen korumasız logları düzelt:
+
+- `app/animal/[id].tsx`
+- `services/revenueCat.ts`
+- Araştırma sırasında bulunan diğer hassas production logları
+
+Kurallar:
+
+- Kullanıcı ID’si, kayıt ID’si, ödeme/RevenueCat bilgisi, token, e-posta veya kişisel veri production loguna yazılmasın.
+- Geliştirme için gerekli logları `if (__DEV__)` ile sınırla veya tamamen kaldır.
+- Gerçek hata loglarını körlemesine silme; hassas veri içermeyen güvenli hata raporlamasını koru.
+- Backend Pino loglarını bu kapsamda değiştirme.
+
+## 4. Mesaj polling yaşam döngüsü
+
+`app/messages/[conversationId].tsx` içindeki 3 saniyelik polling’i güvenli hale getir:
+
+- Ekran odaktayken ve uygulama `active` durumundayken polling çalışsın.
+- Uygulama `inactive` veya `background` durumuna geçtiğinde interval hemen temizlensin.
+- Ekrandan çıkıldığında interval temizlensin.
+- Uygulama tekrar `active` olduğunda yalnızca bir interval başlatılsın.
+- Aynı anda birden fazla interval oluşmasın.
+- Mevcut ilk yükleme, mesaj gönderme, okundu işareti, fotoğraf gönderme ve hata davranışını değiştirme.
+- Closure kaynaklı eski conversation ID/token kullanımını engelle.
+- Mümkünse mevcut screen-focus yaklaşımıyla `AppState` kontrolünü birlikte kullan.
+- Poll isteği devam ederken yeni poll başlatılmasını engelle.
+- UI ve mesaj sıralamasını değiştirme.
+
+## Doğrulama
+
+Değişikliklerden sonra:
+
+1. Değiştirilen dosyaları listele.
+2. Yalnızca kapsam içindeki dosyaların değiştiğini doğrula.
+3. `pnpm run typecheck` çalıştır.
+4. `npx expo config --type public` veya dosya değiştirmeyen uygun Expo config kontrolünü çalıştır.
+5. `app.json` dosyasının geçerli JSON olduğunu doğrula.
+6. Tekrarlanan izin, localization, URL scheme ve blocked permission kalmadığını kontrol et.
+7. `RECORD_AUDIO` çelişkisinin kalktığını doğrula.
+8. Korumasız hassas production logu kalmadığını tekrar tara.
+9. Mesaj ekranında tek interval, background temizliği ve unmount temizliğini kod üzerinden doğrula.
+10. Auth, Evcilim, hatırlatıcı, bildirim ve RevenueCat dosyalarının ilgisiz bölümlerinin değişmediğini doğrula.
+
+Bu aşamada EAS build veya OTA update yayımlama. Önce değişiklik özetini ve test sonuçlarını sunup benden onay bekle.
+
+Sonucu şu formatta ver:
+
+- Değiştirilen dosyalar
+- Her dosyada yapılan değişiklik
+- Typecheck sonucu
+- Expo config sonucu
+- Kalan P0/P1 maddeleri
+- `iOS: KOD KONTROLÜ PASS | Android: KOD KONTROLÜ PASS | Web: KOD KONTROLÜ PASS`
+- `Production build: DOĞRULANMADI`

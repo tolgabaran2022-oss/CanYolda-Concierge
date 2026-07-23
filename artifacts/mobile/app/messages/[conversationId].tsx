@@ -7,12 +7,12 @@ import { API_BASE } from "@/lib/apiClient";
 import React, {
   useCallback,
   useEffect,
-  useLayoutEffect,
   useRef,
   useState,
 } from "react";
 import {
   ActivityIndicator,
+  AppState,
   FlatList,
   KeyboardAvoidingView,
   Platform,
@@ -91,9 +91,10 @@ export default function ChatScreen() {
   const [sending,  setSending]  = useState(false);
   const [loading,  setLoading]  = useState(true);
 
-  const flatRef  = useRef<FlatList>(null);
-  const pollRef  = useRef<ReturnType<typeof setInterval> | null>(null);
-  const latestAt = useRef<string>("");
+  const flatRef        = useRef<FlatList>(null);
+  const pollRef        = useRef<ReturnType<typeof setInterval> | null>(null);
+  const latestAt       = useRef<string>("");
+  const isPollInFlight = useRef(false);
 
   const topPad = Platform.OS === "web" ? 67 : insets.top;
 
@@ -134,6 +135,33 @@ export default function ChatScreen() {
     } catch { /* ignore */ }
   }, [user, conversationId]);
 
+  /* ── Polling helpers ────────────────────────────────────────────────────
+     - isPollInFlight prevents concurrent requests when a poll takes longer
+       than POLL_INTERVAL (e.g. slow network).
+     - clearPolling / startPolling ensure at most one interval exists at any
+       time; startPolling always clears any existing interval first.
+     - AppState listener stops polling the moment the OS suspends the app
+       and restarts it when the app returns to the foreground.
+  ──────────────────────────────────────────────────────────────────────── */
+  const clearPolling = useCallback(() => {
+    if (pollRef.current !== null) {
+      clearInterval(pollRef.current);
+      pollRef.current = null;
+    }
+  }, []);
+
+  const safePollNew = useCallback(async () => {
+    if (isPollInFlight.current) return;
+    isPollInFlight.current = true;
+    try { await pollNew(); }
+    finally { isPollInFlight.current = false; }
+  }, [pollNew]);
+
+  const startPolling = useCallback(() => {
+    clearPolling();
+    pollRef.current = setInterval(safePollNew, POLL_INTERVAL);
+  }, [clearPolling, safePollNew]);
+
   useEffect(() => {
     loadConv();
     loadMsgs();
@@ -145,10 +173,23 @@ export default function ChatScreen() {
     }
   }, [loading]);
 
-  useLayoutEffect(() => {
-    pollRef.current = setInterval(pollNew, POLL_INTERVAL);
-    return () => { if (pollRef.current) clearInterval(pollRef.current); };
-  }, [pollNew]);
+  /* Start polling; pause when app backgrounds; resume when app returns. */
+  useEffect(() => {
+    startPolling();
+
+    const subscription = AppState.addEventListener("change", (nextState) => {
+      if (nextState === "active") {
+        startPolling();
+      } else {
+        clearPolling();
+      }
+    });
+
+    return () => {
+      clearPolling();
+      subscription.remove();
+    };
+  }, [startPolling, clearPolling]);
 
   const handleSend = async () => {
     if (sending || !text.trim()) return;
