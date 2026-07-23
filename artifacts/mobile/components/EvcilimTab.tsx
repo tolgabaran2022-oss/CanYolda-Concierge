@@ -744,40 +744,56 @@ function ManagementGrid({
     { key: "notes",        label: t("evcilimTab.gridItemNotes"),        icon: "pencil-outline",           route: `/evcilim/${petId}/notes` },
   ];
 
+  const COLS = 4;
+  const rows: (GridItem | null)[][] = [];
+  for (let i = 0; i < GRID.length; i += COLS) {
+    const row: (GridItem | null)[] = GRID.slice(i, i + COLS);
+    while (row.length < COLS) row.push(null);
+    rows.push(row);
+  }
+
   return (
     <View style={mg.section}>
       <Text style={mg.title}>{t("evcilimTab.managementTitle")}</Text>
       <View style={mg.grid}>
-        {GRID.map((item) => (
-          <Pressable
-            key={item.key}
-            accessibilityRole="button"
-            accessibilityLabel={t("evcilimTab.gridItemAccessibility", { label: item.label })}
-            style={({ pressed }) => [mg.cell, pressed && { opacity: 0.75 }]}
-            onPress={() => {
-              Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
-              if (item.premium && !isPremium) {
-                onPremiumNav(item.key, item.route);
-              } else {
-                onNav(item.route);
-              }
-            }}
-          >
-            <View style={mg.iconBox}>
-              <Icon name={item.icon} size={22} color={C.purple} />
-              {item.badge !== undefined && item.badge > 0 && (
-                <View style={mg.badge}>
-                  <Text style={mg.badgeTxt}>{item.badge}</Text>
-                </View>
-              )}
-              {item.premium && !isPremium && (
-                <View style={mg.premiumBadge}>
-                  <Icon name="diamond" size={9} color="#fff" />
-                </View>
-              )}
-            </View>
-            <Text style={mg.cellLabel} numberOfLines={2}>{item.label}</Text>
-          </Pressable>
+        {rows.map((row, ri) => (
+          <View key={ri} style={mg.row}>
+            {row.map((item, ci) =>
+              item ? (
+                <Pressable
+                  key={item.key}
+                  accessibilityRole="button"
+                  accessibilityLabel={t("evcilimTab.gridItemAccessibility", { label: item.label })}
+                  style={({ pressed }) => [mg.cell, pressed && { opacity: 0.75 }]}
+                  onPress={() => {
+                    Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+                    if (item.premium && !isPremium) {
+                      onPremiumNav(item.key, item.route);
+                    } else {
+                      onNav(item.route);
+                    }
+                  }}
+                >
+                  <View style={mg.iconBox}>
+                    <Icon name={item.icon} size={22} color={C.purple} />
+                    {item.badge !== undefined && item.badge > 0 && (
+                      <View style={mg.badge}>
+                        <Text style={mg.badgeTxt}>{item.badge}</Text>
+                      </View>
+                    )}
+                    {item.premium && !isPremium && (
+                      <View style={mg.premiumBadge}>
+                        <Icon name="diamond" size={9} color="#fff" />
+                      </View>
+                    )}
+                  </View>
+                  <Text style={mg.cellLabel} numberOfLines={2}>{item.label}</Text>
+                </Pressable>
+              ) : (
+                <View key={`empty-${ri}-${ci}`} style={mg.emptyCell} />
+              )
+            )}
+          </View>
         ))}
       </View>
     </View>
@@ -786,9 +802,10 @@ function ManagementGrid({
 const mg = StyleSheet.create({
   section:   { marginHorizontal: 20, marginTop: 24 },
   title:     { fontSize: 18, fontFamily: "Inter_700Bold", color: C.text, marginBottom: 12, letterSpacing: -0.3 },
-  grid:      { flexDirection: "row", flexWrap: "wrap", justifyContent: "space-between", rowGap: 12 },
+  grid:      { gap: 10 },
+  row:       { flexDirection: "row", gap: 10 },
   cell:      {
-    width: "23.5%",
+    flex: 1,
     minHeight: 88,
     alignItems: "center",
     justifyContent: "center",
@@ -801,6 +818,7 @@ const mg = StyleSheet.create({
     gap: 8,
     ...SHADOW_SM,
   },
+  emptyCell: { flex: 1 },
   iconBox:   {
     width: 44, height: 44, borderRadius: 22,
     backgroundColor: `${C.purple}14`,
