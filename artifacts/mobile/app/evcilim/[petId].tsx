@@ -142,12 +142,20 @@ export default function PetDetailScreen() {
   const [isSaving, setIsSaving] = useState(false);
 
   const MANAGE_GRID: ManageGridItem[] = [
+    { key: "identification", label: t("pets.detail.identification"), icon: "id-card-outline",          color: "#5856D6",  route: `/evcilim/${petId}/identification` },
     { key: "vaccinations",   label: t("pets.detail.vaccinations"),   icon: "shield-checkmark-outline", color: "#FF9500",  route: `/evcilim/${petId}/vaccinations` },
     { key: "appointments",   label: t("pets.detail.appointments"),   icon: "calendar-outline",         color: P,          route: `/evcilim/${petId}/appointments` },
-    { key: "identification", label: t("pets.detail.identification"), icon: "id-card-outline",          color: "#5856D6",  route: `/evcilim/${petId}/identification` },
     { key: "nutrition",      label: t("pets.detail.nutrition"),      icon: "bag-handle-outline",       color: GREEN,      route: `/evcilim/${petId}/nutrition` },
+    { key: "documents",      label: t("pets.detail.documents"),      icon: "document-text-outline",    color: "#FF9500",  route: `/evcilim/${petId}/documents` },
+    { key: "medications",    label: t("pets.detail.medications"),    icon: "medical-outline",           color: "#E55D6F",  route: `/evcilim/${petId}/medications` },
     { key: "notes",          label: t("pets.detail.notes"),          icon: "pencil-outline",           color: "#AF52DE",  route: `/evcilim/${petId}/notes` },
   ];
+
+  /* Split into rows of 4 for consistent left-aligned grid */
+  const GRID_ROWS: ManageGridItem[][] = [];
+  for (let i = 0; i < MANAGE_GRID.length; i += 4) {
+    GRID_ROWS.push(MANAGE_GRID.slice(i, i + 4));
+  }
 
   if (!pet) {
     return (
@@ -321,20 +329,24 @@ export default function PetDetailScreen() {
           <>
             <Text style={st.sectionTitle}>{t("pets.detail.management")}</Text>
             <View style={st.grid}>
-              {MANAGE_GRID.map((item) => (
-                <Pressable
-                  key={item.key}
-                  style={({ pressed }) => [st.gridCell, pressed && { opacity: 0.75 }]}
-                  onPress={() => {
-                    Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
-                    router.push(item.route as Parameters<typeof router.push>[0]);
-                  }}
-                >
-                  <View style={[st.gridIcon, { backgroundColor: `${item.color}18` }]}>
-                    <Icon name={item.icon} size={26} color={item.color} />
-                  </View>
-                  <Text style={st.gridLabel}>{item.label}</Text>
-                </Pressable>
+              {GRID_ROWS.map((row, rowIdx) => (
+                <View key={rowIdx} style={st.gridRow}>
+                  {row.map((item) => (
+                    <Pressable
+                      key={item.key}
+                      style={({ pressed }) => [st.gridCell, pressed && { opacity: 0.75 }]}
+                      onPress={() => {
+                        Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+                        router.push(item.route as Parameters<typeof router.push>[0]);
+                      }}
+                    >
+                      <View style={[st.gridIcon, { backgroundColor: `${item.color}18` }]}>
+                        <Icon name={item.icon} size={26} color={item.color} />
+                      </View>
+                      <Text style={st.gridLabel}>{item.label}</Text>
+                    </Pressable>
+                  ))}
+                </View>
               ))}
             </View>
           </>
@@ -363,7 +375,8 @@ const st = StyleSheet.create({
   infoLabel:   { fontSize: 11, fontFamily: "Inter_600SemiBold", color: BODY, textTransform: "uppercase", letterSpacing: 0.5 },
   infoValue:   { fontSize: 15, fontFamily: "Inter_600SemiBold", color: DARK },
   sectionTitle:{ fontSize: 16, fontFamily: "Inter_700Bold", color: DARK, letterSpacing: -0.3 },
-  grid:        { flexDirection: "row", flexWrap: "wrap", gap: GRID_GAP, justifyContent: "flex-start" },
+  grid:        { gap: GRID_GAP },
+  gridRow:     { flexDirection: "row", gap: GRID_GAP },
   gridCell:    { width: CARD_W, height: CARD_H, alignItems: "center", justifyContent: "center", backgroundColor: WHITE, borderRadius: 16, padding: 12, gap: 8, borderWidth: 1, borderColor: BORDER },
   gridIcon:    { width: 52, height: 52, borderRadius: 26, alignItems: "center", justifyContent: "center" },
   gridLabel:   { fontSize: 12, fontFamily: "Inter_500Medium", color: DARK, textAlign: "center" },
