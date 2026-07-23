@@ -1,0 +1,323 @@
+En güvenlisi iki aşamalı ilerlemek: Replit önce **hiçbir şeyi değiştirmeden salt-okunur yayın öncesi denetim** yapsın. Kritik eksikleri raporladıktan sonra yalnızca onayladıklarımızı düzeltsin.
+
+Özellikle uygulamadaki dijital “Boost/öne çıkarma” satışlarının Stripe üzerinden yapılması mağaza reddi oluşturabilir; Apple ve Google’ın uygulama içi dijital ürün ödeme kuralları ayrıca incelenmeli.
+
+Replit’e şu promptu gönder:
+
+CanYoldaşı uygulamasını önümüzdeki 24 saat içinde Apple App Store ve Google Play Store’a göndermek istiyoruz. Kapsamlı bir **production/store readiness audit** gerçekleştir.
+
+## Çok önemli çalışma kuralı
+
+Bu ilk aşama yalnızca denetim ve raporlama aşamasıdır:
+
+- Hiçbir kaynak kodu, yapılandırmayı, bağımlılığı, veritabanını veya lock dosyasını değiştirme.
+- Otomatik düzeltme, formatlama, paket güncelleme veya migration çalıştırma.
+- Commit, OTA update, EAS build, mağaza gönderimi veya deployment yapma.
+- Production verisini değiştiren API testleri yapma.
+- Gerçek kullanıcılara e-posta, SMS veya push bildirimi gönderme.
+- Ücretli işlem ya da gerçek ödeme oluşturma.
+- Gizli anahtarları, tokenları veya kişisel verileri rapora yazma.
+- Test sırasında çalışan özellikleri bozabilecek işlem yapma.
+- Önce mevcut durumu ölç, kanıtla ve ayrıntılı raporla. Düzeltmeler için benden ayrıca onay bekle.
+
+## Hedef
+
+Aşağıdaki sorulara kanıta dayalı yanıt ver:
+
+1. Uygulama bugün mağazalara gönderilmeye teknik olarak hazır mı?
+2. Apple veya Google tarafından reddedilmesine yol açabilecek sorunlar var mı?
+3. Production kullanıcılarını etkileyebilecek kritik hata, güvenlik açığı veya veri kaybı riski var mı?
+4. Önümüzdeki 24 saat içinde mutlaka düzeltilmesi gerekenler nelerdir?
+5. Gönderimden sonra yapılabilecek düşük öncelikli işler nelerdir?
+
+“Hazır” sonucunu yalnızca typecheck geçtiği için verme. Gerçek iOS ve Android production build, mağaza politikaları, backend ve temel kullanıcı akışlarını birlikte değerlendir.
+
+## 1. Mevcut proje ve değişiklik güvenliği
+
+- Önce mevcut proje yapısını, çalışma ağacını ve değiştirilmiş dosyaları kaydet.
+- Denetim öncesi ve sonrası dosya durumunu karşılaştır.
+- Denetimin hiçbir dosyayı değiştirmediğini doğrula.
+- Uygulama sürümü, build numarası, Android versionCode, bundle identifier ve package name değerlerini belirle.
+- Expo SDK, React Native, Expo Router, EAS CLI ve kritik bağımlılıkların uyumluluğunu kontrol et.
+- `npx expo-doctor` veya projenin pnpm yapısına uygun salt-okunur eşdeğerini çalıştır.
+- Bağımlılık sorunlarını listele fakat bu aşamada sürüm değiştirme.
+- Lock dosyası ile package dosyalarının tutarlı olduğunu kontrol et.
+- `.ios.tsx`, `.android.tsx` ve `.web.tsx` kopyalarını inceleyip eski/uyumsuz ekran olup olmadığını bildir.
+
+## 2. Statik kontroller
+
+Güvenli ve veri değiştirmeyen kontrolleri çalıştır:
+
+- `pnpm run typecheck`
+- Mevcut lint komutu varsa lint
+- Mevcut test komutları varsa unit/integration testleri
+- Production build ön kontrolleri
+- Kullanılmayan, eksik veya çözülemeyen importlar
+- Expo Router route çakışmaları ve kayıtsız route’lar
+- Uygulama açılışında çalışan modül seviyesindeki riskli native çağrılar
+- iOS, Android ve Web’de desteklenmeyen paket kullanımları
+- `console.log`, debug paneli, test endpoint’i, mock veri ve geliştirme URL’si kalıntıları
+- Hard-coded localhost, Replit development domain ve test anahtarı kullanımları
+- TODO, FIXME, geçici bypass ve devre dışı bırakılmış güvenlik kontrolleri
+- Kullanıcıya gösterilebilecek bozuk Türkçe karakterler ve eksik çeviri anahtarları
+
+Kontrol komutlarından biri dosya değiştirecekse çalıştırma; raporda neden çalıştırılmadığını belirt.
+
+## 3. Gerçek production build hazırlığı
+
+Mümkünse yeni bağımlılık kurmadan ve mevcut dosyaları değiştirmeden şu kontrolleri yap:
+
+- EAS project bağlantısı ve `eas.json`
+- Production build profilleri
+- iOS archive yapılandırması
+- Android AAB yapılandırması
+- Gerekli environment variables ve secrets’ın varlığı; değerlerini kesinlikle gösterme
+- Production API domaininin doğru olması
+- Bundle identifier/package name tutarlılığı
+- iOS build number ve Android versionCode’un önceki sürümlerden büyük olup olmadığı
+- App icon, adaptive icon, splash screen ve notification icon
+- iPad/tablet desteğinin gerçekten test edilip edilmediği
+- Orientation ve cihaz desteği
+- Hermes/New Architecture uyumluluğu
+- Native config plugin gereksinimleri
+- Push notification entitlements
+- iOS provisioning, certificates ve App Store Connect bağlantısı
+- Android signing/keystore ve Play Console bağlantısı
+- dSYM/source map ve crash reporting hazırlığı
+- Expo Go sonucunu production build sonucu olarak kabul etme
+
+Build oluşturmak ücret veya dış sistem değişikliği gerektiriyorsa oluşturma. Bunun yerine tam olarak hangi komutun ve yetkinin gerektiğini raporla.
+
+## 4. Kritik kullanıcı akışları
+
+Mock sonuç üretme. Test edilebilenleri güvenli test hesaplarıyla doğrula; test edilemeyenleri açıkça “DOĞRULANMADI” olarak işaretle:
+
+- İlk açılış, splash ve onboarding
+- Kayıt
+- Giriş
+- Yanlış parola ve hata mesajları
+- Şifremi unuttum
+- Oturumun uygulama yeniden açıldığında korunması
+- Çıkış
+- Hesap silme
+- Profil oluşturma ve güncelleme
+- Fotoğraf yükleme
+- Kamera ve galeri izinleri
+- Konum izni reddedildiğinde uygulamanın davranışı
+- Harita ve hayvan işaretçileri
+- Sokak hayvanı bildirimi oluşturma/düzenleme/silme
+- Mama verme ve yorum
+- Sahiplendirme ilanı oluşturma/düzenleme/silme
+- Sahiplenme talebi gönderme/kabul/reddetme/iptal
+- Evcil hayvan oluşturma/düzenleme/silme
+- Kimlik, aşı, randevu, beslenme, belge, ilaç, not ve hatırlatıcı ekranları
+- Hatırlatıcı boş/yükleniyor/dolu durumları
+- Mesajlaşma ve fotoğraflı mesaj
+- Bildirim listesi
+- Deep link ile doğru ekrana yönlenme
+- Uçak modu, yavaş bağlantı, API timeout ve sunucu hatası
+- Çift tıklama ve mükerrer kayıt
+- Küçük ekran, büyük yazı boyutu ve klavye açıkken formlar
+- Dark/light mode destekleniyorsa her iki tema
+- Türkçe karakterler, uzun metinler ve boş durumlar
+
+Test verisi oluşturmak zorunluysa yalnızca açıkça tanımlanmış test ortamını kullan ve oluşturulan test verisini raporla. Production ortamında yazma işlemi yapma.
+
+## 5. iOS, Android ve Web görsel denetimi
+
+Her kritik ekran için kontrol et:
+
+- Safe area, notch ve Dynamic Island
+- Android status/navigation bar
+- Başlık, geri ve ekleme düğmeleri
+- Alt sekme çubuğu ve home indicator
+- Klavye nedeniyle kapanan giriş alanları
+- ScrollView ve bottom sheet
+- Taşan, kesilen veya üst üste binen metin
+- Eşit olmayan grid/kart aralıkları
+- Dokunma alanları
+- Büyük yazı ve erişilebilirlik
+- Renk kontrastı
+- Yükleniyor, boş, hata ve dolu durumları
+
+Simülatör veya gerçek cihaz çalıştırılmadıysa “PASS” yazma. “DOĞRULANMADI” yaz ve hangi cihaz/build gerektiğini belirt.
+
+## 6. Backend ve veritabanı
+
+Production verisini değiştirmeden incele:
+
+- API sağlık durumu
+- Authentication ve authorization
+- JWT süresi ve token saklama
+- Başkasına ait kayıtları okuma/değiştirme/silme ihtimali
+- IDOR/BOLA riskleri
+- Rate limiting
+- Brute-force koruması
+- CORS
+- Güvenlik başlıkları
+- Input validation
+- SQL injection
+- Dosya yükleme türü, boyutu ve içerik doğrulaması
+- Zararlı dosya/SVG engeli
+- Dosya isimleri ve erişim yetkileri
+- Hassas loglar
+- Şifre hashleme
+- Şifre sıfırlama kodlarının süresi ve tekrar kullanımı
+- Veritabanı migration durumu
+- Schema ile production veritabanı uyumu
+- Index, constraint ve mükerrer kayıt koruması
+- Backup ve geri yükleme planı
+- Veri saklama ve hesap silme sonrası veri temizliği
+- Health check, timeout ve graceful shutdown
+- Production monitoring, hata takibi ve alarm eksikleri
+
+Aktif saldırı veya yıkıcı penetrasyon testi yapma.
+
+## 7. Apple App Store uygunluğu
+
+Denetim tarihinde yürürlükte olan resmi Apple kurallarına göre kontrol et ve kullandığın resmi bağlantıları rapora ekle:
+
+- App Store Connect uygulama kaydı
+- App adı, alt başlık, açıklama, kategori, yaş derecelendirmesi ve anahtar kelimeler
+- iPhone ekran görüntüleri ve gerekiyorsa iPad ekran görüntüleri
+- Support URL, Marketing URL ve Privacy Policy URL
+- Privacy Nutrition Labels ile gerçek veri toplamanın uyumu
+- `PrivacyInfo.xcprivacy` ve kullanılan SDK’ların privacy manifest durumu
+- Required Reason API kullanımları
+- Tracking/ATT gereksinimi
+- Konum, kamera, fotoğraf ve bildirim izin açıklamalarının açık ve Türkçe olması
+- Uygulamada hesap açılabiliyorsa uygulama içinden hesap silme
+- Kullanıcı tarafından oluşturulan içerikler için raporlama, engelleme ve moderasyon
+- Şikâyet/iletişim mekanizması
+- Sosyal giriş varsa Sign in with Apple gereksinimi
+- İnceleme ekibi için çalışan test hesabı ve inceleme notları
+- Uygulamanın yalnızca web sitesi sarmalayıcısı olmaması
+- Çökme, placeholder ve tamamlanmamış özellikler
+- Sağlık/veterinerlik konusunda yanıltıcı iddialar veya gerekli açıklamalar
+- Hayvan konumlarının kötüye kullanım/güvenlik riski
+- Çocuk güvenliği ve yaş derecelendirmesi
+
+## 8. Google Play uygunluğu
+
+Denetim tarihinde yürürlükte olan resmi Google Play kurallarına göre kontrol et ve kullandığın resmi bağlantıları rapora ekle:
+
+- Güncel zorunlu target API seviyesi
+- AAB formatı ve Play App Signing
+- Uygulama adı, kısa/tam açıklama, kategori ve içerik derecelendirmesi
+- Telefon/tablet ekran görüntüleri, icon ve feature graphic
+- Privacy Policy
+- Data Safety formu ile gerçek veri toplamanın uyumu
+- Veri silme formu ve web tabanlı hesap silme bağlantısı gereksinimi
+- Hassas izinler ve izin beyanları
+- Konumun arka planda kullanılıp kullanılmadığı
+- Kullanıcı tarafından oluşturulan içerik ve moderasyon
+- Reklam kimliği kullanımı
+- Families/çocuk politikaları
+- Test hesapları ve App Access talimatları
+- Kapalı test/production erişimi için hesap koşulları
+- Pre-launch report hazırlığı
+- 64-bit, cihaz uyumluluğu ve native library sorunları
+
+## 9. Ödeme ve abonelik — kritik red riski
+
+Uygulamada RevenueCat, Stripe ve “Boost/öne çıkarma” özellikleri bulunuyor. Şunları özellikle incele:
+
+- Satılan şey fiziksel hizmet mi, uygulama içinde tüketilen dijital özellik mi?
+- İlanı öne çıkarma/Boost dijital ürün sayılıyorsa Stripe kullanımının Apple ve Google politikalarına uygun olup olmadığını doğrula.
+- Gerekliyse Apple In-App Purchase ve Google Play Billing kullanımını kontrol et.
+- RevenueCat ürünleri, entitlement’lar ve offering’ler doğru mu?
+- Sandbox ve production ürün kimlikleri doğru ayrılmış mı?
+- Restore Purchases var mı?
+- Satın alma beklemede, iptal, hata ve geri yükleme senaryoları işleniyor mu?
+- Abonelik varsa fiyat, süre, otomatik yenileme, iptal ve kullanım şartları açık mı?
+- Sunucu webhook doğrulaması ve mükerrer event koruması var mı?
+- Stripe secret veya RevenueCat secret istemci paketine gömülmüş mü?
+- Gerçek ödeme oluşturma; yalnızca yapılandırma ve politika uygunluğunu denetle.
+
+Ödeme politikası belirsizse bunu P0 mağaza red riski olarak işaretle.
+
+## 10. Gizlilik, güvenlik ve yasal metinler
+
+- Gizlilik politikası uygulamanın gerçekten topladığı verileri doğru açıklıyor mu?
+- Kullanım şartları güncel mi?
+- Kullanıcı fotoğrafı, konum, mesaj, iletişim bilgisi ve evcil hayvan verilerinin kullanım amacı açıklanıyor mu?
+- Üçüncü taraf servisler listelenmiş mi?
+- Veri sorumlusu ve iletişim bilgileri var mı?
+- KVKK ve uygulanabilir diğer mevzuat açısından belirgin eksikleri işaretle.
+- Uygulama içindeki metinlerle web’deki yayınlanmış metinler tutarlı mı?
+- Gizlilik politikası URL’si oturum açmadan erişilebilir mi?
+- Hesap silme işlemi ve veri saklama süreleri açıklanıyor mu?
+
+Hukuki uygunluğu kesin garanti etme; profesyonel hukuk incelemesi gereken noktaları belirt.
+
+## 11. Performans ve dayanıklılık
+
+- Açılış süresi
+- Bundle büyüklüğü
+- Büyük görseller ve bellek tüketimi
+- Liste performansı
+- Gereksiz polling ve API trafiği
+- Mesaj ve bildirim ekranlarındaki 3 saniyelik polling’in ölçeklenme etkisi
+- Görsel önbellekleme
+- Sonsuz render/useEffect döngüsü
+- Uygulama arka plana alındığında devam eden timer’lar
+- API retry ve timeout davranışı
+- Düşük bellekli Android cihaz riski
+- Crash ve unhandled promise rejection
+- Offline durumda veri kaybı
+- Backend soğuk başlatma ve Replit barındırma güvenilirliği
+- Production uptime, özel domain ve SSL durumu
+
+## 12. Sonuç raporunun zorunlu formatı
+
+Raporun başında tek bir karar ver:
+
+- `GO` — mağazaya gönderilebilir
+- `CONDITIONAL GO` — belirtilen zorunlu maddeler tamamlanırsa gönderilebilir
+- `NO-GO` — kritik engeller var
+
+Ardından bulguları şu seviyelerde sırala:
+
+- `P0 — Gönderimi engeller / mağaza reddi / güvenlik veya veri kaybı`
+- `P1 — 24 saat içinde düzeltilmeli`
+- `P2 — Gönderimden hemen sonra`
+- `P3 — İyileştirme`
+
+Her bulgu için şu bilgileri ver:
+
+- Başlık
+- Platform
+- Etkilenen dosya/ayar
+- Kanıt veya test sonucu
+- Kullanıcı/mağaza etkisi
+- Önerilen çözüm
+- Tahmini süre
+- Düzeltmenin risk seviyesi
+- Yeniden test adımları
+
+Ayrıca şu bölümleri ekle:
+
+1. Çalıştırılan komutlar ve sonuçları
+2. Çalıştırılamayan testler ve nedenleri
+3. Değiştirilen dosya olmadığının doğrulaması
+4. iOS build durumu
+5. Android build durumu
+6. Backend durumu
+7. App Store metadata eksikleri
+8. Play Store metadata eksikleri
+9. Gerekli test hesapları
+10. Gerekli insan/onay işlemleri
+11. 24 saatlik sıralı yayın planı
+12. Gönderim öncesi son kontrol listesi
+13. Gönderim sonrası ilk 24 saat izleme planı
+
+Platform sonucunu kanıta göre yaz:
+
+`iOS: PASS / FAIL / DOĞRULANMADI`
+`Android: PASS / FAIL / DOĞRULANMADI`
+`Web: PASS / FAIL / DOĞRULANMADI`
+`Backend: PASS / FAIL / DOĞRULANMADI`
+
+Simülatör, gerçek cihaz veya production build olmadan PASS verme. Varsayım yapma; kanıt bulunmayan her noktayı açıkça “DOĞRULANMADI” olarak işaretle.
+
+Raporu tamamladıktan sonra dur ve benden düzeltme onayı bekle.
