@@ -51,12 +51,15 @@ router.get("/adoption", async (req, res) => {
      * 3. Among non-promoted: newest created_at first
      * 4. Stable ID tiebreaker (deterministic across equal timestamps)
      */
-    const listings = await db.select().from(adoptionListings).orderBy(
-      sql`CASE WHEN ${adoptionListings.promotedUntil} IS NOT NULL AND ${adoptionListings.promotedUntil} > NOW() THEN 0 ELSE 1 END`,
-      sql`CASE WHEN ${adoptionListings.promotedUntil} IS NOT NULL AND ${adoptionListings.promotedUntil} > NOW() THEN ${adoptionListings.promotedUntil} ELSE NULL END DESC NULLS LAST`,
-      desc(adoptionListings.createdAt),
-      desc(adoptionListings.id)
-    );
+    /* Public feed: only active listings */
+    const listings = await db.select().from(adoptionListings)
+      .where(eq(adoptionListings.status, "Aktif"))
+      .orderBy(
+        sql`CASE WHEN ${adoptionListings.promotedUntil} IS NOT NULL AND ${adoptionListings.promotedUntil} > NOW() THEN 0 ELSE 1 END`,
+        sql`CASE WHEN ${adoptionListings.promotedUntil} IS NOT NULL AND ${adoptionListings.promotedUntil} > NOW() THEN ${adoptionListings.promotedUntil} ELSE NULL END DESC NULLS LAST`,
+        desc(adoptionListings.createdAt),
+        desc(adoptionListings.id)
+      );
 
     if (!listings.length) {
       res.json([]);

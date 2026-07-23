@@ -46,7 +46,8 @@ export interface AdoptionListing {
 }
 
 interface AdoptionContextType {
-  listings: AdoptionListing[];
+  listings: AdoptionListing[];       /* public active listings (all users) */
+  myListings: AdoptionListing[];     /* current user's own listings (any status) */
   isLoading: boolean;
   error: string | null;
   refresh: () => Promise<void>;
@@ -132,6 +133,7 @@ function mapFromApi(raw: Record<string, unknown>): AdoptionListing {
 
 export function AdoptionProvider({ children }: { children: React.ReactNode }) {
   const [listings, setListings]         = useState<AdoptionListing[]>([]);
+  const [myListings, setMyListings]     = useState<AdoptionListing[]>([]);
   const [isLoading, setIsLoading]       = useState(true);
   const [error, setError]               = useState<string | null>(null);
   const [followedIds, setFollowedIds]   = useState<Set<string>>(new Set());
@@ -141,6 +143,7 @@ export function AdoptionProvider({ children }: { children: React.ReactNode }) {
   /* mutation lock — prevents double-tap duplicates */
   const followInFlight = useRef<Set<string>>(new Set());
 
+  /** Public active listings — no auth required */
   const fetchListings = useCallback(async () => {
     try {
       setError(null);
@@ -152,6 +155,20 @@ export function AdoptionProvider({ children }: { children: React.ReactNode }) {
       setError("İlanlar yüklenemedi");
     } finally {
       setIsLoading(false);
+    }
+  }, []);
+
+  /** Current user's own listings (all statuses) — requires auth */
+  const loadMyListings = useCallback(async () => {
+    const token = await AsyncStorage.getItem(TOKEN_KEY);
+    if (!token) { setMyListings([]); return; }
+    try {
+      const res = await apiFetch("/adoption/my");
+      if (!res.ok) return;
+      const data = await safeJson<Array<Record<string, unknown>>>(res);
+      setMyListings(data.map(mapFromApi));
+    } catch {
+      /* silently ignore */
     }
   }, []);
 
@@ -175,8 +192,9 @@ export function AdoptionProvider({ children }: { children: React.ReactNode }) {
 
   useEffect(() => {
     fetchListings();
+    loadMyListings();
     loadFollowed();
-  }, [fetchListings, loadFollowed]);
+  }, [fetchListings, loadMyListings, loadFollowed]);
 
   const followListing = useCallback(async (id: string) => {
     if (followInFlight.current.has(id)) return;
@@ -269,15 +287,17 @@ export function AdoptionProvider({ children }: { children: React.ReactNode }) {
       if (!res.ok) throw new Error(String(data.error ?? "İlan oluşturulamadı"));
 
       const newListing = mapFromApi(data);
-      setListings((prev) => [newListing, ...prev]);
+      /* Optimistic updates for immediate UI feedback */
+      setMyListings((prev) => [newListing, ...prev]);
+      /* Re-sync public feed in background (new active listing must appear in Tüm İlanlar) */
+      fetchListings().catch(() => {});
       return newListing.id;
     },
-    []
+    [fetchListings]
   );
 
   const updateListing = useCallback(
     async (id: string, updates: Partial<Omit<AdoptionListing, "id" | "createdAt">>) => {
-      const userId = updates.userId ?? listings.find((l) => l.id === id)?.userId ?? "";
       const res = await apiFetch(`/adoption/${id}`, {
         method: "PATCH",
         body: JSON.stringify({
@@ -307,35 +327,40 @@ export function AdoptionProvider({ children }: { children: React.ReactNode }) {
       const data = await safeJson<Record<string, unknown>>(res);
       if (!res.ok) throw new Error(String(data.error ?? "İlan güncellenemedi"));
 
-      setListings((prev) =>
-        prev.map((l) => (l.id === id ? mapFromApi(data) : l))
-      );
+      const updated = mapFromApi(data);
+      /* Update both public and personal lists */
+      setListings((prev) => prev.map((l) => (l.id === id ? updated : l)));
+      setMyListings((prev) => prev.map((l) => (l.id === id ? updated : l)));
+      /* Re-sync public feed in background (status change may add/remove from Tüm İlanlar) */
+      fetchListings().catch(() => {});
     },
-    [listings]
+    [fetchListings]
   );
 
   const deleteListing = useCallback(async (id: string) => {
-    const userId = listings.find((l) => l.id === id)?.userId ?? "";
-    const res = await apiFetch(`/adoption/${id}`, {
-      method: "DELETE",
-    });
+    const res = await apiFetch(`/adoption/${id}`, { method: "DELETE" });
     const data = await safeJson<Record<string, unknown>>(res);
     if (!res.ok) throw new Error(String(data.error ?? "İlan silinemedi"));
     setListings((prev) => prev.filter((l) => l.id !== id));
+    setMyListings((prev) => prev.filter((l) => l.id !== id));
     /* Also remove from followed */
     setFollowedIds((prev) => { const next = new Set(prev); next.delete(id); return next; });
     setFollowedListings((prev) => prev.filter((l) => l.id !== id));
-  }, [listings]);
+  }, []);
 
   const getListing = useCallback(
-    (id: string) => listings.find((l) => l.id === id),
-    [listings]
+    (id: string) => myListings.find((l) => l.id === id) ?? listings.find((l) => l.id === id),
+    [listings, myListings]
   );
+
+  const refresh = useCallback(async () => {
+    await Promise.all([fetchListings(), loadMyListings()]);
+  }, [fetchListings, loadMyListings]);
 
   return (
     <AdoptionContext.Provider value={{
-      listings, isLoading, error,
-      refresh: fetchListings,
+      listings, myListings, isLoading, error,
+      refresh,
       addListing, updateListing, deleteListing, getListing,
       followedIds, followListing, unfollowListing, isFollowed,
       followedListings, loadFollowed, followedLoading,

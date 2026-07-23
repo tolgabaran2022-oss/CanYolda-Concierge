@@ -1341,7 +1341,7 @@ export default function AdoptionScreen() {
   const insets        = useSafeAreaInsets();
   const { width: SW } = useWindowDimensions();
   const router        = useRouter();
-  const { listings, deleteListing } = useAdoption();
+  const { listings, myListings, deleteListing } = useAdoption();
   const { boostStatuses }           = useBoost();
   const { user, token }             = useAuth();
   const { tab: tabParam }           = useLocalSearchParams<{ tab?: string }>();
@@ -1483,7 +1483,7 @@ export default function AdoptionScreen() {
           <MyListingsSection
             userId={user.id}
             userEmail={user.email}
-            listings={listings}
+            listings={myListings}
             boostStatuses={boostStatuses}
             deleteListing={deleteListing}
             botPad={botPad}

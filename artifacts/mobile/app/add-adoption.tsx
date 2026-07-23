@@ -515,7 +515,9 @@ export default function AddAdoptionScreen() {
       });
       apiSaveListingContact(newId, `+90${phone}`, allowPhoneContact, allowMessages).catch(() => {});
       Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
-      router.back();
+      /* Navigate to mylistings tab — listing is immediately visible in both
+         "İlanlarım" (via optimistic update) and "Tüm İlanlar" (background re-fetch) */
+      router.replace({ pathname: "/(tabs)/adoption", params: { tab: "mylistings" } } as any);
     } catch {
       setErrors({ _global: "İlan oluşturulamadı. Lütfen tekrar deneyin." });
     } finally {
