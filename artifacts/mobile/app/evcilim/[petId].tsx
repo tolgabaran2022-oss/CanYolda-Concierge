@@ -331,10 +331,14 @@ export default function PetDetailScreen() {
             <View style={st.grid}>
               {GRID_ROWS.map((row, rowIdx) => (
                 <View key={rowIdx} style={st.gridRow}>
-                  {row.map((item) => (
+                  {row.map((item, colIdx) => (
                     <Pressable
                       key={item.key}
-                      style={({ pressed }) => [st.gridCell, pressed && { opacity: 0.75 }]}
+                      style={({ pressed }) => [
+                        st.gridCell,
+                        colIdx < row.length - 1 && { marginRight: GRID_GAP },
+                        pressed && { opacity: 0.75 },
+                      ]}
                       onPress={() => {
                         Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
                         router.push(item.route as Parameters<typeof router.push>[0]);
