@@ -49,7 +49,9 @@ const BoostContext = createContext<BoostContextType | null>(null);
 const API_BASE =
   Platform.OS === "web"
     ? "/api"
-    : `https://${process.env.EXPO_PUBLIC_DOMAIN ?? "localhost"}/api`;
+    : process.env.EXPO_PUBLIC_DOMAIN
+    ? `https://${process.env.EXPO_PUBLIC_DOMAIN}/api`
+    : "http://localhost:8080/api";
 
 async function apiFetch(path: string, options?: RequestInit) {
   const res = await fetch(`${API_BASE}${path}`, {
