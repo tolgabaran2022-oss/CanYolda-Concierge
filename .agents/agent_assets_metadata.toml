@@ -197,3 +197,9 @@ id = "YlTXvd5EYowCfTwHnXXbD"
 uri = "file://.local/outputs/CanYolda-Concierge.pdf"
 type = "pdf"
 title = "CanYolda Concierge.pdf"
+
+[[outputs]]
+id = "T7bKx2ih98zYRyvHcpvaL"
+uri = "file://canyoldasi-project.zip"
+type = "unspecified"
+title = "CanYoldaşı — Proje Kaynak Kodu"
