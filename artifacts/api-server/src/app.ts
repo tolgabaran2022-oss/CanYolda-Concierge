@@ -158,6 +158,19 @@ app.use("/api/uploads", (_req, res, next) => {
 });
 app.use("/api/uploads", express.static(uploadsDir));
 
+/* ── Public static pages (account-deletion, privacy-policy, …) ──────────────
+   Served at root paths so mağaza URLs work:
+     GET /account-deletion  → public/account-deletion.html
+     GET /privacy-policy    → public/privacy-policy.html
+──────────────────────────────────────────────────────────────────────────── */
+const publicDir = path.resolve(__dirname, "../public");
+app.use(
+  express.static(publicDir, {
+    extensions: ["html"],
+    index: false,
+  })
+);
+
 /* ── Password-reset web page ─────────────────────────────────────────────────
    Served at GET /reset-password so email links work in both development
    (REPLIT_EXPO_DEV_DOMAIN) and production (REPLIT_DOMAINS).
