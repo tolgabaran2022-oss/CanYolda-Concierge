@@ -1,0 +1,22 @@
+# EAS Build archive exclusions — placed at git root so paths resolve correctly
+# Goal: reduce 786MB archive that caused worker OOM during Gradle phase
+
+# Workspace node_modules (pnpm virtual store)
+node_modules/
+
+# Other artifacts — not needed for mobile native build
+artifacts/api-server/
+artifacts/pitch-deck/
+artifacts/pitch-deck-light/
+artifacts/mockup-sandbox/
+
+# Docs and agent memory
+docs/
+.agents/
+.local/
+
+# Build outputs
+dist/
+*.log
+*.tsbuildinfo
+.expo/
