@@ -1,14 +1,28 @@
 # EAS Build archive exclusions — placed at git root so paths resolve correctly
-# Goal: reduce 786MB archive that caused worker OOM during Gradle phase
+# Key offenders that inflated archive to 786MB:
+#   tolga.7z           330MB
+#   attached_assets/   ~200MB (design references & generated images)
+#   artifacts/uploads/ user-uploaded files
 
-# Workspace node_modules (pnpm virtual store)
-node_modules/
+# Large binary files at root
+tolga.7z
+*.7z
+*.zip
+
+# Design references and generated assets (not needed for mobile build)
+attached_assets/
+
+# User-uploaded files stored in api-server public dir
+artifacts/uploads/
 
 # Other artifacts — not needed for mobile native build
 artifacts/api-server/
 artifacts/pitch-deck/
 artifacts/pitch-deck-light/
 artifacts/mockup-sandbox/
+
+# Workspace node_modules (pnpm virtual store)
+node_modules/
 
 # Docs and agent memory
 docs/
