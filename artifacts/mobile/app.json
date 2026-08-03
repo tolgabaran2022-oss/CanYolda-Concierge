@@ -66,6 +66,11 @@
     "android": {
       "package": "com.canyoldasi.app",
       "versionCode": 1,
+      "config": {
+        "googleMaps": {
+          "apiKey": "AIzaSyAQf-BlnSDDatowvQuI1e2BzktVzYDoUuc"
+        }
+      },
       "permissions": [
         "android.permission.ACCESS_FINE_LOCATION",
         "android.permission.ACCESS_COARSE_LOCATION",
