@@ -121,7 +121,7 @@
       "subtitle": "Join the community and make a difference in animals' lives.",
       "name": "Full Name",
       "namePlaceholder": "Your full name",
-      "phone": "Phone Number",
+      "phone": "Phone Number (optional)",
       "phonePlaceholder": "(5__) ___ __ __",
       "phoneAccessibility": "Phone number",
       "email": "Email",

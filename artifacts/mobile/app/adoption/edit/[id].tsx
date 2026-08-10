@@ -127,7 +127,7 @@ function parseEmailFromContact(ci: string): string {
 }
 
 function validatePhone(d: string) {
-  if (!d) return "Telefon zorunludur";
+  if (!d) return null; // isteğe bağlı
   if (!d.startsWith("5")) return "5 ile başlamalıdır";
   if (d.length !== 10) return "10 hane giriniz";
   return null;
@@ -511,7 +511,9 @@ export default function EditAdoptionScreen() {
         petAge,
         location:          `${district}, ${province}`,
         description:       description.trim(),
-        contactInfo:       `Tel: +90 ${formatPhone(phone)} | E-posta: ${email.trim()}`,
+        contactInfo:       phone.replace(/\D/g, "").length === 10
+          ? `Tel: +90 ${formatPhone(phone)} | E-posta: ${email.trim()}`
+          : `E-posta: ${email.trim()}`,
         allowPhoneContact,
         allowMessages,
         healthStatus,
@@ -522,13 +524,15 @@ export default function EditAdoptionScreen() {
         dogCompatibility,
         toiletTraining,
       });
-      /* Sync phone + prefs to backend */
-      apiSaveListingContact(
-        listing.id,
-        `+90${phone.replace(/\D/g, "")}`,
-        allowPhoneContact,
-        allowMessages
-      ).catch(() => {});
+      /* Sync phone + prefs to backend (only when phone is provided) */
+      if (phone.replace(/\D/g, "").length === 10) {
+        apiSaveListingContact(
+          listing.id,
+          `+90${phone.replace(/\D/g, "")}`,
+          allowPhoneContact,
+          allowMessages
+        ).catch(() => {});
+      }
       Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
       router.back();
     } catch {
@@ -831,7 +835,7 @@ export default function EditAdoptionScreen() {
               </View>
 
               {/* Phone */}
-              <FieldWrap label="Telefon Numarası" required error={errors.phone}>
+              <FieldWrap label="Telefon Numarası (isteğe bağlı)" error={errors.phone}>
                 <View style={[S.phoneWrap, errors.phone ? S.inputErr : {}]}>
                   <View style={S.phonePrefix}>
                     <Text style={{ fontSize: 14, fontFamily: "Inter_600SemiBold", color: "#7B5CBF" }}>TR</Text>

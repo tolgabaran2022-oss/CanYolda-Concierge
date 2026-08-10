@@ -101,7 +101,7 @@ function formatPhoneDisplay(digits: string): string {
 
 function validatePhone(digits: string): string | null {
   const d = digits.replace(/\D/g, "");
-  if (d.length === 0) return "Telefon numarası zorunludur";
+  if (d.length === 0) return null; // isteğe bağlı
   if (!d.startsWith("5")) return "Numara 5 ile başlamalıdır (GSM)";
   if (d.length !== 10) return "10 haneli numara giriniz";
   return null;
@@ -502,7 +502,9 @@ export default function AddAdoptionScreen() {
         description:        description.trim(),
         userId:             user.id,
         userName:           user.name,
-        contactInfo:        `Tel: +90 ${formatPhoneDisplay(phone)} | E-posta: ${email.trim()}`,
+        contactInfo:        phone.length === 10
+          ? `Tel: +90 ${formatPhoneDisplay(phone)} | E-posta: ${email.trim()}`
+          : `E-posta: ${email.trim()}`,
         allowPhoneContact,
         allowMessages,
         healthStatus,
@@ -513,7 +515,9 @@ export default function AddAdoptionScreen() {
         dogCompatibility,
         toiletTraining,
       });
-      apiSaveListingContact(newId, `+90${phone}`, allowPhoneContact, allowMessages).catch(() => {});
+      if (phone.length === 10) {
+        apiSaveListingContact(newId, `+90${phone}`, allowPhoneContact, allowMessages).catch(() => {});
+      }
       Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
       /* Navigate to mylistings tab — listing is immediately visible in both
          "İlanlarım" (via optimistic update) and "Tüm İlanlar" (background re-fetch) */
@@ -889,7 +893,7 @@ export default function AddAdoptionScreen() {
               </View>
 
               {/* Telefon */}
-              <FieldWrap label="Telefon Numarası" required error={errors.phone}>
+              <FieldWrap label="Telefon Numarası (isteğe bağlı)" error={errors.phone}>
                 <View style={[
                   S.phoneWrap,
                   { backgroundColor: T.input, borderColor: T.inputBorder },
@@ -915,7 +919,7 @@ export default function AddAdoptionScreen() {
                   )}
                 </View>
                 <Text style={[S.phoneHint, { color: T.textMuted }]}>
-                  Sadece cep telefonu numarası (10 hane)
+                  İsteğe bağlı — cep telefonu numarası (10 hane)
                 </Text>
               </FieldWrap>
 

@@ -289,10 +289,9 @@ export default function RegisterScreen() {
   const valid = useMemo(
     () =>
       name.trim().length >= 2 &&
-      PHONE_RE.test(phoneRaw) &&
       EMAIL_RE.test(email.trim()) &&
       password.length >= 6,
-    [name, phoneRaw, email, password]
+    [name, email, password]
   );
 
   const btnScale = useSharedValue(1);
@@ -384,7 +383,7 @@ export default function RegisterScreen() {
 
             <View style={styles.fieldGap} />
 
-            {/* ── Telefon Numarası ── */}
+            {/* ── Telefon Numarası (isteğe bağlı) ── */}
             <AnimatedField
               label={t("auth.register.phone")} focused={focusedField === "phone"} delay={370}
               icon={

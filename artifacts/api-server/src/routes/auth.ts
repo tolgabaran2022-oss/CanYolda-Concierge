@@ -19,7 +19,9 @@ const JWT_EXPIRES = "30d";
 const RegisterSchema = z.object({
   name:     z.string().trim().min(1, "Ad gerekli").max(100),
   phone:    z.string()
-    .regex(/^5[0-9]{9}$/, "Geçerli bir Türk GSM numarası girin (5XX XXX XX XX)"),
+    .regex(/^5[0-9]{9}$/, "Geçerli bir Türk GSM numarası girin (5XX XXX XX XX)")
+    .optional()
+    .or(z.literal("")),
   email:    z.string().trim().email("Geçerli bir e-posta girin").max(255),
   password: z.string().min(6, "Şifre en az 6 karakter olmalı").max(128),
 });
@@ -279,8 +281,10 @@ router.post("/auth/register", authLimiter, validateBody(RegisterSchema), async (
 
   try {
     const normalizedEmail = email.toLowerCase().trim();
-    // Normalize: 10-digit local number → E.164 without +
-    const normalizedPhone = "90" + phone.replace(/\D/g, "");
+    // Normalize phone: only when provided and non-empty
+    const normalizedPhone = phone && phone.trim().length > 0
+      ? "90" + phone.replace(/\D/g, "")
+      : null;
 
     // Email uniqueness check
     const existing = await db
@@ -294,16 +298,18 @@ router.post("/auth/register", authLimiter, validateBody(RegisterSchema), async (
       return;
     }
 
-    // Phone uniqueness check
-    const existingPhone = await db
-      .select({ id: localUsers.id })
-      .from(localUsers)
-      .where(eq(localUsers.phoneNumber, normalizedPhone))
-      .limit(1);
+    // Phone uniqueness check (only when phone is provided)
+    if (normalizedPhone) {
+      const existingPhone = await db
+        .select({ id: localUsers.id })
+        .from(localUsers)
+        .where(eq(localUsers.phoneNumber, normalizedPhone))
+        .limit(1);
 
-    if (existingPhone.length > 0) {
-      res.status(409).json({ error: "Bu telefon numarası zaten kayıtlı." });
-      return;
+      if (existingPhone.length > 0) {
+        res.status(409).json({ error: "Bu telefon numarası zaten kayıtlı." });
+        return;
+      }
     }
 
     const passwordHash = await bcrypt.hash(password, BCRYPT_ROUNDS);

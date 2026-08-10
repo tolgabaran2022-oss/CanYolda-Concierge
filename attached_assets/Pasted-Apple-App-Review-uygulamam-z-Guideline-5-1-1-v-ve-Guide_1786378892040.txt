@@ -1,0 +1,95 @@
+Apple App Review, uygulamamızı Guideline 5.1.1(v) ve Guideline 2.1 kapsamında reddetti. Mevcut projeyi dikkatlice incele ve aşağıdaki düzeltmeleri eksiksiz uygula.
+
+APPLE’IN TESPİT ETTİĞİ SORUNLAR
+
+1. Kullanıcıların telefon numarası vermesi zorunlu tutuluyor. Apple, telefon numarasının uygulamanın temel işlevi için gerekli olmadığına karar verdi.
+2. App Review için verilen demo hesapla giriş yapılamadı.
+
+YAPILACAK DÜZELTMELER
+
+1. Telefon numarasını tamamen isteğe bağlı yap:
+
+* Kayıt, profil oluşturma, profil düzenleme, onboarding ve ilgili tüm ekranları kontrol et.
+* Kullanıcı telefon numarası girmeden hesap oluşturabilmeli, giriş yapabilmeli ve uygulamanın bütün temel özelliklerini kullanabilmeli.
+* Telefon alanındaki zorunlu işareti kaldır.
+* Alan etiketinde açıkça “Telefon numarası (isteğe bağlı)” yaz.
+* Telefon numarası boşken form doğrulama hatası gösterme.
+* Frontend doğrulama şemasını buna göre güncelle.
+* Backend/API doğrulamasını telefon numarası olmadan istek kabul edecek şekilde güncelle.
+* Veritabanındaki telefon alanı zorunluysa nullable/optional hale getir ve güvenli migration oluştur.
+* Telefon numarası boş olduğunda null veya mevcut veri yapısına en uygun güvenli değeri kullan.
+* SMS doğrulaması veya telefon doğrulaması varsa, telefon numarası vermeyen kullanıcılar için bunu zorunlu tutma.
+* Mevcut kullanıcıların bilgilerini veya hesaplarını silme.
+* Telefon numarası giren kullanıcılar için mevcut özellikler çalışmaya devam etsin.
+* Telefon numarası kullanılmıyorsa mümkünse kayıt formundan tamamen kaldır; profil bölümünde isteğe bağlı olarak bulunabilir.
+
+2. Giriş ve demo hesap sistemini kontrol et:
+
+* Production ortamındaki giriş akışını incele.
+* Geçerli kullanıcı adı/e-posta ve şifreyle giriş yapılabildiğini doğrula.
+* Giriş sırasında oluşabilecek frontend, backend, API, veritabanı ve authentication hatalarını tespit edip düzelt.
+* Büyük/küçük harf, boşluk temizleme ve kullanıcı adı/e-posta eşleşmesi sorunlarını kontrol et.
+* Hatalı girişte anlaşılır bir hata mesajı göster.
+* Demo hesabın giriş sırasında SMS, OTP, e-posta doğrulaması, zorunlu şifre değiştirme veya yönetici onayı istememesini sağla.
+* Demo hesabın uygulamanın bütün özelliklerine erişebilmesini sağla.
+* Kaynak koda gerçek demo hesabı şifresi veya herhangi bir gizli anahtar ekleme.
+* Demo hesap bilgilerini loglara yazdırma.
+
+3. iPad uyumluluğunu kontrol et:
+
+Apple uygulamayı iPad Air 11 inç üzerinde incelemiştir.
+
+* Kayıt, giriş, onboarding ve ana ekranların iPad’de düzgün görünmesini sağla.
+* Butonların ekran dışında kalmadığını kontrol et.
+* Klavye açıldığında giriş alanlarının ve giriş butonunun erişilebilir kalmasını sağla.
+* Tablet düzeninde taşma, üst üste binme veya kullanılamayan alan bırakma.
+* Mevcut telefon tasarımını bozma.
+
+4. App Store gizlilik uyumunu kontrol et:
+
+* Uygulamada telefon numarasının zorunlu olduğunu belirten metinleri güncelle.
+* Gizlilik politikası uygulama içinde bulunuyorsa, telefon numarasının isteğe bağlı olduğunu doğru biçimde belirt.
+* Uygulamanın telefon numarası izni veya cihaz rehberi erişimi istemediğini doğrula; kullanılmıyorsa ilgili izinleri ve gereksiz yapılandırmaları kaldır.
+* Apple ile giriş, e-posta ile giriş veya mevcut diğer giriş yöntemlerini bozma.
+* RevenueCat, abonelikler ve diğer mevcut production özelliklerini bozma.
+
+5. Testleri gerçekleştir:
+
+Aşağıdaki senaryoları gerçekten test et:
+
+* Telefon numarası boşken yeni kullanıcı kaydı
+* Telefon numarası boşken onboarding tamamlama
+* Telefon numarası boşken profil kaydetme
+* Mevcut kullanıcıyla giriş
+* Geçerli demo kullanıcıyla giriş
+* Hatalı şifreyle giriş
+* Çıkış yapıp yeniden giriş
+* Uygulamayı yeniden açtıktan sonra oturumun korunması
+* iPhone ekran boyutunda giriş ve kayıt
+* iPad Air 11 inç ekran boyutunda giriş ve kayıt
+* Production API ve veritabanı bağlantısı
+
+ÖNEMLİ SINIRLAMALAR
+
+* Şimdilik EAS build veya App Store gönderimi başlatma.
+* Sürüm numarasını ve build numarasını henüz değiştirme.
+* Alakasız ekranları yeniden tasarlama.
+* Mevcut çalışan özellikleri kaldırma.
+* Veritabanını sıfırlama veya mevcut kullanıcı verilerini silme.
+* Production secret değerlerini ekrana veya rapora yazdırma.
+* Yalnızca Apple’ın ret nedenlerini çözen güvenli ve gerekli değişiklikleri yap.
+
+İşlem tamamlandığında bana şu formatta rapor ver:
+
+1. Tespit edilen temel nedenler
+2. Değiştirilen dosyaların listesi
+3. Her dosyada yapılan değişiklik
+4. Frontend doğrulamasında yapılan düzeltmeler
+5. Backend ve veritabanında yapılan düzeltmeler
+6. Giriş sisteminde bulunan ve düzeltilen sorunlar
+7. Çalıştırılan testler ve sonuçları
+8. Manuel olarak benim yapmam gereken işlemler
+9. Yeni EAS production build oluşturmaya hazır olup olmadığı
+10. Varsa çözülemeyen hata veya riskler
+
+Tüm değişiklikleri tamamla, ancak yeni build oluşturmadan önce benden onay bekle.
