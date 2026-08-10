@@ -337,6 +337,7 @@ export default function RegisterScreen() {
           bounces={false}
           showsVerticalScrollIndicator={false}
         >
+          <View style={styles.innerWrap}>
           {/* Geri butonu */}
           <Animated.View entering={FadeIn.delay(0).duration(350)}>
             <Pressable
@@ -494,6 +495,7 @@ export default function RegisterScreen() {
               {t("auth.securityHint")}
             </Text>
           </Animated.View>
+          </View>
         </ScrollView>
       </KeyboardAvoidingView>
     </SafeAreaView>
@@ -503,7 +505,8 @@ export default function RegisterScreen() {
 const styles = StyleSheet.create({
   container: { flex: 1, backgroundColor: C.lavender },
   flex: { flex: 1 },
-  scroll: { flexGrow: 1, paddingHorizontal: 26, paddingBottom: 24 },
+  scroll: { flexGrow: 1, paddingHorizontal: 26, paddingBottom: 24, alignItems: "center" },
+  innerWrap: { width: "100%", maxWidth: 480 },
 
   blob: { position: "absolute", backgroundColor: C.purple100 },
   blobTopRight: { width: 220, height: 220, top: -70, right: -80 },

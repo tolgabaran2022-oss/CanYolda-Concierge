@@ -311,6 +311,7 @@ export default function LoginScreen() {
 
       <KeyboardAvoidingView style={styles.flex} behavior={Platform.OS === "ios" ? "padding" : "height"}>
         <ScrollView contentContainerStyle={styles.scroll} keyboardShouldPersistTaps="handled" bounces={false}>
+          <View style={styles.innerWrap}>
 
           {/* Geri butonu */}
           <Animated.View entering={FadeIn.delay(0).duration(350)}>
@@ -429,6 +430,7 @@ export default function LoginScreen() {
               {t("auth.securityHint")}
             </Text>
           </Animated.View>
+          </View>
         </ScrollView>
       </KeyboardAvoidingView>
     </SafeAreaView>
@@ -438,7 +440,8 @@ export default function LoginScreen() {
 const styles = StyleSheet.create({
   container: { flex: 1, backgroundColor: C.lavender },
   flex: { flex: 1 },
-  scroll: { flexGrow: 1, paddingHorizontal: 26, paddingBottom: 24 },
+  scroll: { flexGrow: 1, paddingHorizontal: 26, paddingBottom: 24, alignItems: "center" },
+  innerWrap: { width: "100%", maxWidth: 480 },
 
   blob: { position: "absolute", backgroundColor: C.purple100 },
   blobTopRight: { width: 220, height: 220, top: -70, right: -80 },

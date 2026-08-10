@@ -1,0 +1,99 @@
+Apple App Review düzeltmelerinin son kontrollerini tamamla ve ardından düzeltilmiş iOS production build’ini hazırla.
+
+Mevcut düzeltmeler commit 8a9a258’de bulunuyor. Önce bu commit’in aktif çalışma dalında bulunduğunu doğrula. Mevcut kullanıcı verilerini silme ve veritabanını sıfırlama.
+
+1. IPAD UYUMLULUĞUNU DÜZELT
+
+Kayıt ve giriş ekranlarını iPad Air 11 inç dahil tabletlerde düzgün görünecek şekilde güncelle:
+
+* Form ana kapsayıcısına uygun şekilde `width: "100%"`, `maxWidth: 480` ve `alignSelf: "center"` uygula.
+* Değişikliği yalnızca gerekli form kapsayıcısına uygula.
+* iPhone görünümünü bozma.
+* KeyboardAvoidingView ve ScrollView davranışını koru.
+* Klavye açıldığında bütün alanlar ve gönder butonu erişilebilir kalsın.
+* Landscape ve portrait düzenlerinde yatay taşma veya üst üste binme olmasın.
+* Giriş, kayıt ve varsa onboarding formunu kontrol et.
+* Tasarım sistemindeki mevcut spacing ve renkleri koru.
+
+2. TELEFON NUMARASI DÜZELTMESİNİ YENİDEN DOĞRULA
+
+* Kullanıcı telefon numarası vermeden kayıt olabilmeli.
+* Telefon alanı boş bırakıldığında frontend ve backend hata vermemeli.
+* Kullanıcı telefon numarası olmadan giriş yapabilmeli.
+* Kullanıcı uygulamanın temel özelliklerine erişebilmeli.
+* İlan oluşturma ve düzenleme telefon numarası olmadan tamamlanabilmeli.
+* Telefon verilirse mevcut doğrulama çalışmaya devam etmeli.
+* Production backend’in commit 8a9a258’deki değişikliklerle deploy edildiğini doğrula.
+* Deploy edilmediyse mevcut güvenli deployment sürecini kullanarak backend’i production’a deploy et.
+* Production veritabanında migration veya veri silme işlemi yapma; mevcut kolon zaten nullable.
+
+3. YENİ APPLE DEMO HESABI
+
+Apple’ın eski hesabı kullanma. Eski `baranx23` hesabına güvenme.
+
+Production ortamında App Review için yeni bir demo hesap oluşturulması gerekiyor:
+
+* E-posta: `demo@canyoldasi.app`
+* Şifreyi kaynak koda, commit’e, loglara veya rapora yazma.
+* Şifreyi benden Replit Secrets üzerinden girmemi iste veya güvenli bir secret adı kullan: `APPLE_REVIEW_DEMO_PASSWORD`.
+* Secret mevcut değilse işlemi durdurup benden girmemi iste.
+* Demo hesabı sadece secret tanımlandıktan sonra production ortamında oluştur.
+* Hesabın telefon numarası boş olsun.
+* Hesap aktif ve süresiz olsun.
+* SMS, OTP, e-posta doğrulaması veya zorunlu şifre değiştirme istemesin.
+* Uygulamadaki bütün temel özelliklere ve varsa premium/abonelikle kilitli inceleme özelliklerine erişebilsin.
+* Hesap zaten varsa verileri silmeden girişini doğrula.
+* Production giriş API’sinde bu e-posta ve secret şifreyle gerçekten `200 OK` alındığını doğrula.
+* Şifreyi test çıktısında maskele.
+
+Demo hesabı oluşturmak için kalıcı, herkese açık veya güvenliksiz bir API endpoint’i ekleme. Geçici script gerekiyorsa işlemden sonra kaldır ve commit’e dahil etme.
+
+4. TESTLER
+
+Aşağıdaki testleri gerçekleştir ve sonuçlarını raporla:
+
+* Telefonsuz production kayıt
+* Demo hesapla production giriş
+* Telefon numarası olmadan ilan oluşturma
+* Telefon numarası olmadan ilan düzenleme
+* Çıkış ve tekrar giriş
+* Uygulama yeniden açıldığında oturum kontrolü
+* iPhone portrait görünümü
+* iPad Air 11 inç portrait görünümü
+* iPad Air 11 inç landscape görünümü
+* Production API bağlantısı
+* RevenueCat ve mevcut abonelik akışlarının bozulmadığına ilişkin kontrol
+
+5. IOS BUILD HAZIRLIĞI
+
+Bütün kontroller başarılı olduktan sonra:
+
+* `app.json`, `app.config.*`, `eas.json` ve package yapılandırmasını kontrol et.
+* Uygulama sürümü `1.0` olarak kalabilir.
+* iOS build number mevcut 3’ten yüksek olmalı. Production profilinde `autoIncrement: true` varsa bunu koru ve yeni build numarasını EAS’in artırmasını sağla.
+* Bundle identifier’ı değiştirme.
+* Production environment değişkenlerini kullan.
+* Android için yeniden build oluşturma.
+* Önce `npx expo-doctor` çalıştır ve kritik sorunları düzelt.
+* Ardından `eas build --platform ios --profile production` komutuyla yeni iOS production build başlat.
+* Apple’a otomatik submit yapma. Build tamamlandıktan sonra benden onay bekle.
+* App Store Connect’e henüz gönderme.
+* App Review mesajına henüz cevap verme.
+
+6. SON RAPOR
+
+İşlem sonunda şunları bildir:
+
+* Değiştirilen dosyalar
+* iPad için yapılan düzenlemeler
+* Production backend deployment durumu
+* Demo hesabın oluşturulup oluşturulmadığı
+* Demo giriş testinin sonucu; şifreyi kesinlikle gösterme
+* Test sonuçları
+* Expo Doctor sonucu
+* iOS build numarası
+* EAS iOS build bağlantısı ve build durumu
+* App Store Connect’e göndermeye hazır olup olmadığı
+* Varsa kalan hata veya riskler
+
+Demo hesabı ve testler tamamlanmadan iOS build başlatma. Herhangi bir aşamada kritik hata oluşursa build’i başlatmadan dur ve hatayı ayrıntılı raporla.
