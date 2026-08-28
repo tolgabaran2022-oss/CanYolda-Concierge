@@ -21,9 +21,28 @@ export type PetPremiumStatus = {
   canAddPet: boolean;
 };
 
-function active(status: string, expiresAt: Date | null): boolean {
+type PetAccessRow = Pick<
+  typeof petPremiumAccess.$inferSelect,
+  "status" | "expiresAt" | "grandfatheredPetLimit"
+>;
+
+function active(status: string, expiresAt: Date | null, now = Date.now()): boolean {
   return (status === "active" || status === "trialing") &&
-    (!expiresAt || expiresAt.getTime() > Date.now());
+    (!expiresAt || expiresAt.getTime() > now);
+}
+
+export function evaluatePetAccess(
+  row: PetAccessRow,
+  petCount: number,
+  now = Date.now(),
+) {
+  const isPremium = active(row.status, row.expiresAt, now);
+  const effectivePetLimit = resolveEffectivePetLimit(row.grandfatheredPetLimit);
+  return {
+    isPremium,
+    effectivePetLimit,
+    canAddPet: isPremium || petCount === 0 || petCount < effectivePetLimit,
+  };
 }
 
 /** Ensure old users keep every pet that already existed before Premium gates. */
@@ -33,27 +52,28 @@ export async function ensurePetAccessRow(userId: string) {
     .from(petProfiles)
     .where(eq(petProfiles.ownerId, userId));
 
-  const existing = await db
-    .select()
-    .from(petPremiumAccess)
-    .where(eq(petPremiumAccess.userId, userId))
-    .limit(1);
-
-  if (existing[0]) return { row: existing[0], petCount: Number(petCount) };
-
-  const [row] = await db.insert(petPremiumAccess).values({
+  const [inserted] = await db.insert(petPremiumAccess).values({
     userId,
     status: "inactive",
     grandfatheredPetLimit: Math.max(1, Number(petCount)),
-  }).returning();
+  }).onConflictDoNothing({ target: petPremiumAccess.userId }).returning();
 
-  return { row: row!, petCount: Number(petCount) };
+  const [row] = inserted
+    ? [inserted]
+    : await db
+      .select()
+      .from(petPremiumAccess)
+      .where(eq(petPremiumAccess.userId, userId))
+      .limit(1);
+
+  if (!row) throw new Error("pet_access_row_missing");
+
+  return { row, petCount: Number(petCount) };
 }
 
 export async function getPetPremiumStatus(userId: string): Promise<PetPremiumStatus> {
   const { row, petCount } = await ensurePetAccessRow(userId);
-  const isPremium = active(row.status, row.expiresAt);
-  const effectivePetLimit = resolveEffectivePetLimit(row.grandfatheredPetLimit);
+  const { isPremium, effectivePetLimit, canAddPet } = evaluatePetAccess(row, petCount);
   const petLimit = isPremium ? -1 : effectivePetLimit;
   return {
     isPremium,
@@ -65,7 +85,7 @@ export async function getPetPremiumStatus(userId: string): Promise<PetPremiumSta
     existingPetCount: petCount,
     freePetLimit: FREE_PET_LIMIT,
     effectivePetLimit,
-    canAddPet: isPremium || petCount === 0 || petCount < effectivePetLimit,
+    canAddPet,
   };
 }
 

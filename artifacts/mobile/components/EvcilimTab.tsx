@@ -1138,27 +1138,20 @@ export function EvcilimTab({ botPad }: { botPad: number }) {
   }, [refreshPetPremiumStatus, nav, showPremiumModal]);
 
   // "Evcil Hayvan Ekle" button handler.
-  // The first pet is always free — navigate immediately without an API round-trip.
-  // For subsequent pets, fetch fresh premium status to decide between form or paywall.
+  // Use the server's fresh canAddPet decision for free, grandfathered, and
+  // premium users so the client never applies a different count rule.
   const handleAddPet = useCallback(async () => {
     if (addingPetLockRef.current) return;
     addingPetLockRef.current = true;
     setAddingPet(true);
     try {
-      if (pets.length === 0) {
-        // First pet is always free — skip the premium check entirely.
-        Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
-        nav("/evcilim/add");
-        return;
-      }
-      // Subsequent pets: verify premium entitlement before opening the form.
       const latestStatus = await refreshPetPremiumStatus(false);
       if (!latestStatus) {
         Alert.alert(t("evcilimTab.loginRequired"), t("evcilimTab.loginRequiredMsg"));
         return;
       }
       Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
-      if (latestStatus.isPremium === true) {
+      if (latestStatus.canAddPet === true) {
         nav("/evcilim/add");
       } else {
         showPremiumModal("add_second_pet", "/evcilim/add");
@@ -1172,7 +1165,7 @@ export function EvcilimTab({ botPad }: { botPad: number }) {
       addingPetLockRef.current = false;
       setAddingPet(false);
     }
-  }, [pets.length, refreshPetPremiumStatus, nav, showPremiumModal, t]);
+  }, [refreshPetPremiumStatus, nav, showPremiumModal, t]);
 
   const handleDeletePet = useCallback(async (id: string) => {
     setDeletingPetId(id);

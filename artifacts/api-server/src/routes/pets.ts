@@ -3,9 +3,8 @@ import { db } from "@workspace/db";
 import { petProfiles, petPosts, petHealth, petFollowers, petPremiumAccess } from "@workspace/db";
 import { count, eq, and, desc, sql } from "drizzle-orm";
 import {
-  ensurePetAccessRow,
+  evaluatePetAccess,
   FREE_PET_LIMIT,
-  resolveEffectivePetLimit,
 } from "../services/petPremiumAccess.js";
 
 import { extractUserId } from "../lib/jwtAuth.js";
@@ -53,27 +52,27 @@ router.post("/pets", async (req, res) => {
   const { name, type, breed, age, gender, birthDate, weight, color, avatarUrl, bio, location, vaccinationInfo, feedingNotes } = req.body as Record<string, string>;
   if (!name?.trim()) { res.status(400).json({ error: "name required" }); return; }
   try {
-    // Ensure the premium access row exists (grandfathers any pre-existing pets)
-    await ensurePetAccessRow(userId);
-
-    // Serialize concurrent add-pet requests: lock the access row, count fresh, check, insert
+    // Create/lock the access row and enforce the limit in one transaction so
+    // concurrent first-pet requests cannot both pass the count check.
     const result = await db.transaction(async (tx) => {
-      // Lock the user's premium access row to prevent race conditions
+      const [{ value: initialRawCount }] = await tx
+        .select({ value: count() })
+        .from(petProfiles)
+        .where(eq(petProfiles.ownerId, userId));
+
+      await tx.insert(petPremiumAccess).values({
+        userId,
+        status: "inactive",
+        grandfatheredPetLimit: Math.max(FREE_PET_LIMIT, Number(initialRawCount)),
+      }).onConflictDoNothing({ target: petPremiumAccess.userId });
+
       await tx.execute(sql`SELECT id FROM pet_premium_access WHERE user_id = ${userId} FOR UPDATE`);
       const [accessRow] = await tx.select().from(petPremiumAccess).where(eq(petPremiumAccess.userId, userId));
       if (!accessRow) throw new Error("access_row_missing");
 
-      // Fresh count inside the transaction
       const [{ value: rawCount }] = await tx.select({ value: count() }).from(petProfiles).where(eq(petProfiles.ownerId, userId));
       const petCount = Number(rawCount);
-
-      const isPremiumActive = (accessRow.status === "active" || accessRow.status === "trialing") &&
-        (!accessRow.expiresAt || new Date(accessRow.expiresAt).getTime() > Date.now());
-      const effectivePetLimit = resolveEffectivePetLimit(accessRow.grandfatheredPetLimit);
-      // The first pet is always free, even if an old/corrupt access row has an
-      // invalid grandfathered limit. Subsequent pets still require an active
-      // Premium entitlement unless covered by a legitimate grandfathered limit.
-      const canAddPet = isPremiumActive || petCount === 0 || petCount < effectivePetLimit;
+      const { effectivePetLimit, canAddPet } = evaluatePetAccess(accessRow, petCount);
 
       if (!canAddPet) {
         return { denied: true as const, petCount, effectivePetLimit };
