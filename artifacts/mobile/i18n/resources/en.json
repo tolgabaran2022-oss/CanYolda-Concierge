@@ -1341,6 +1341,8 @@
     "buyBtn": "Go Premium",
     "restoreBtn": "Restore Purchases",
     "footer": "Your existing records won't be deleted when Premium ends. Manage your subscription from your store account.",
+    "weeklyTitle": "Evcilim Premium Weekly",
+    "weeklyDesc": "Renews every week",
     "monthlyTitle": "Evcilim Premium Monthly",
     "monthlyDesc": "Renews every month",
     "annualTitle": "Evcilim Premium Annual",

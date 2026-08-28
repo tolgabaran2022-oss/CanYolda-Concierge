@@ -55,6 +55,8 @@ function PremiumInner({
   /** Maps RC package identifier to user-friendly translated presentation. */
   function getPackagePresentation(pkg: PurchasesPackage): { title: string; description: string } {
     switch (pkg.identifier) {
+      case "$rc_weekly":
+        return { title: t("premium.weeklyTitle"), description: t("premium.weeklyDesc") };
       case "$rc_monthly":
         return { title: t("premium.monthlyTitle"), description: t("premium.monthlyDesc") };
       case "$rc_annual":
@@ -92,8 +94,9 @@ function PremiumInner({
     fetchPetPremiumOfferings()
       .then((items) => {
         setPackages(items);
+        const weekly = items.find((p) => p.identifier === "$rc_weekly");
         const annual = items.find((p) => p.identifier === "$rc_annual");
-        setSelected(annual ?? items[0] ?? null);
+        setSelected(weekly ?? annual ?? items[0] ?? null);
       })
       .catch((err: unknown) => {
         setPackages([]);
