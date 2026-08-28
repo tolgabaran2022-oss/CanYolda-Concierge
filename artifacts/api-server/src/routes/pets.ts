@@ -2,7 +2,11 @@ import { Router } from "express";
 import { db } from "@workspace/db";
 import { petProfiles, petPosts, petHealth, petFollowers, petPremiumAccess } from "@workspace/db";
 import { count, eq, and, desc, sql } from "drizzle-orm";
-import { ensurePetAccessRow, FREE_PET_LIMIT } from "../services/petPremiumAccess.js";
+import {
+  ensurePetAccessRow,
+  FREE_PET_LIMIT,
+  resolveEffectivePetLimit,
+} from "../services/petPremiumAccess.js";
 
 import { extractUserId } from "../lib/jwtAuth.js";
 
@@ -65,8 +69,11 @@ router.post("/pets", async (req, res) => {
 
       const isPremiumActive = (accessRow.status === "active" || accessRow.status === "trialing") &&
         (!accessRow.expiresAt || new Date(accessRow.expiresAt).getTime() > Date.now());
-      const effectivePetLimit = Math.max(FREE_PET_LIMIT, accessRow.grandfatheredPetLimit);
-      const canAddPet = isPremiumActive || petCount < effectivePetLimit;
+      const effectivePetLimit = resolveEffectivePetLimit(accessRow.grandfatheredPetLimit);
+      // The first pet is always free, even if an old/corrupt access row has an
+      // invalid grandfathered limit. Subsequent pets still require an active
+      // Premium entitlement unless covered by a legitimate grandfathered limit.
+      const canAddPet = isPremiumActive || petCount === 0 || petCount < effectivePetLimit;
 
       if (!canAddPet) {
         return { denied: true as const, petCount, effectivePetLimit };
