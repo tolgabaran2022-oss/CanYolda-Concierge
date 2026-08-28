@@ -186,7 +186,7 @@ export const PET_PREMIUM_OFFERING_ID = "canyoldasi_pet_premium";
 export const PET_PREMIUM_ENTITLEMENT_ID = "pet_premium";
 
 /** The only package identifiers accepted for Evcilim Premium. */
-const SUPPORTED_PET_PREMIUM_PACKAGE_IDS = new Set(["$rc_monthly", "$rc_annual"]);
+const SUPPORTED_PET_PREMIUM_PACKAGE_IDS = new Set(["$rc_weekly", "$rc_monthly", "$rc_annual"]);
 
 /**
  * Fetch boost packages from RevenueCat.
@@ -227,7 +227,7 @@ export async function fetchOfferings(): Promise<PurchasesPackage[]> {
  * Always uses offerings.all["canyoldasi_pet_premium"] — never offerings.current,
  * because canyoldasi_boost may be set as current for the boost feature.
  *
- * Only $rc_monthly and $rc_annual packages are returned, sorted monthly-first.
+ * Only $rc_weekly, $rc_monthly and $rc_annual packages are returned, sorted weekly-first.
  * Throws descriptive errors so the UI can show specific messages per failure type.
  */
 export async function fetchPetPremiumOfferings(): Promise<PurchasesPackage[]> {
@@ -255,12 +255,18 @@ export async function fetchPetPremiumOfferings(): Promise<PurchasesPackage[]> {
     throw new Error(`offering_not_found:${PET_PREMIUM_OFFERING_ID}`);
   }
 
+  const PACKAGE_SORT_ORDER: Record<string, number> = {
+    $rc_weekly: 0,
+    $rc_monthly: 1,
+    $rc_annual: 2,
+  };
+
   const packages = (offering.availablePackages as PurchasesPackage[])
     .filter((pkg) => SUPPORTED_PET_PREMIUM_PACKAGE_IDS.has(pkg.identifier))
     .sort((a, b) => {
-      if (a.identifier === "$rc_monthly") return -1;
-      if (b.identifier === "$rc_monthly") return 1;
-      return 0;
+      const orderA = PACKAGE_SORT_ORDER[a.identifier] ?? 99;
+      const orderB = PACKAGE_SORT_ORDER[b.identifier] ?? 99;
+      return orderA - orderB;
     });
 
   if (packages.length === 0) {
