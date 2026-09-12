@@ -47,3 +47,6 @@ Thumbs.db
 # Replit
 .cache/
 .local/
+
+# Local Expo/EAS CLI settings
+.config/eas-cli-nodejs/user-settings.json

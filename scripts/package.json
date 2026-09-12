@@ -7,7 +7,12 @@
     "hello": "tsx ./src/hello.ts",
     "seed-boost-products": "tsx ./src/seed-boost-products.ts",
     "seed-revenuecat": "tsx ./src/seedRevenueCat.ts",
+    "seed-demo-account": "tsx ./src/seedDemoAccount.ts",
     "typecheck": "tsc -p tsconfig.json --noEmit"
+  },
+  "dependencies": {
+    "@workspace/db": "workspace:*",
+    "drizzle-orm": "catalog:"
   },
   "devDependencies": {
     "@replit/connectors-sdk": "catalog:",
